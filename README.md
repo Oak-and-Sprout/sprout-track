@@ -71,6 +71,7 @@ docker-compose up -d
   - [Customizing Port Numbers](#customizing-port-numbers)
   - [Database Scripts](#database-scripts)
   - [Utility Scripts](#utility-scripts)
+  - [Admin Scripts](#admin-scripts)
   - [Updating the Application](#updating-the-application)
 - [Environment Variables](#environment-variables)
 
@@ -255,6 +256,15 @@ This change will persist across application updates. For Docker deployments, use
 - `./scripts/family-migration.js` - Migrate existing data for multi-family support
 - `./scripts/family-update.sh` - Update database after multi-family migration
 - `./scripts/ensure-utc-dates-improved.js` - Convert all database dates to UTC format
+
+### Admin Scripts
+
+- `node scripts/reset-admin-password.js` - Reset the system administrator password
+  - This script allows you to reset the admin password stored in the AppConfig table
+  - Only works with existing configurations (will not create new data)
+  - Uses the same encryption utilities as the main application
+  - Requires confirmation of the new password
+  - Must be run from the project root directory
 
 ### Updating the Application
 
