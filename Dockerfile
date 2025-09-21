@@ -24,17 +24,18 @@ RUN npm exec next telemetry disable
 # Copy application files
 COPY . .
 
-# Create base .env file (ENC_HASH will be generated at container startup)
-RUN echo "Creating base .env file..." && \
-    echo "# Environment variables for Docker container" > .env && \
-    echo "DATABASE_URL=\"file:/db/baby-tracker.db\"" >> .env && \
-    echo "NODE_ENV=production" >> .env && \
-    echo "PORT=3000" >> .env && \
-    echo "TZ=UTC" >> .env && \
-    echo "AUTH_LIFE=86400" >> .env && \
-    echo "IDLE_TIME=28800" >> .env && \
-    echo "APP_VERSION=0.94.24" >> .env && \
-    echo "COOKIE_SECURE=false" >> .env && \
+# Create env directory and base .env file (ENC_HASH will be generated at container startup)
+RUN mkdir -p /app/env && \
+    echo "Creating base .env file..." && \
+    echo "# Environment variables for Docker container" > /app/env/.env && \
+    echo "DATABASE_URL=\"file:/db/baby-tracker.db\"" >> /app/env/.env && \
+    echo "NODE_ENV=production" >> /app/env/.env && \
+    echo "PORT=3000" >> /app/env/.env && \
+    echo "TZ=UTC" >> /app/env/.env && \
+    echo "AUTH_LIFE=86400" >> /app/env/.env && \
+    echo "IDLE_TIME=28800" >> /app/env/.env && \
+    echo "APP_VERSION=0.94.24" >> /app/env/.env && \
+    echo "COOKIE_SECURE=false" >> /app/env/.env && \
     echo "Base .env file created (ENC_HASH will be generated at startup)"
 
 # Build the application
@@ -50,6 +51,7 @@ ENV DATABASE_URL="file:/db/baby-tracker.db"
 
 # Create volume mount points
 VOLUME /db
+VOLUME /app/env
 
 # Copy startup script that runs migrations and starts the app
 COPY docker-startup.sh /usr/local/bin/docker-startup.sh

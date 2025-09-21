@@ -19,7 +19,7 @@ fi
 
 # Check and generate ENC_HASH if missing
 echo "Checking for ENC_HASH in .env file..."
-ENV_FILE="/app/.env"
+ENV_FILE="/app/env/.env"
 
 # Check if ENC_HASH exists and has a value
 ENC_HASH_EXISTS=$(grep -E "^ENC_HASH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
