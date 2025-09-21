@@ -88,7 +88,7 @@ async function main() {
     { unitAbbr: 'CC', unitName: 'Cubic Centimeters', activityTypes: 'medicine' },
     { unitAbbr: 'MOL', unitName: 'Moles', activityTypes: 'medicine' },
     { unitAbbr: 'MMOL', unitName: 'Millimoles', activityTypes: 'medicine' },
-    { unitAbbr: 'DROPS', unitName: 'Drops', activityTypes: 'medicine' },
+    { unitAbbr: 'DROP', unitName: 'Drops', activityTypes: 'medicine' },
     { unitAbbr: 'DOSE', unitName: 'Dose', activityTypes: 'medicine' },
     { unitAbbr: 'PILL', unitName: 'Pill', activityTypes: 'medicine' },
     { unitAbbr: 'CAP', unitName: 'Cap', activityTypes: 'medicine' },
