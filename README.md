@@ -258,22 +258,78 @@ This change will persist across application updates. For Docker deployments, use
 
 ### Updating the Application
 
-**1. Backup your database:**  
-Before upgrading, it is recommended to back up your `baby-tracker.db` file. You can do this by downloading the file from the settings page in either the main app or the family manager pages.
+**1. Backup your data:**
+Before upgrading, it is **critical** to back up both your database and environment configuration:
+- **Database**: Download your `baby-tracker.db` file from the settings page in either the main app or the family manager pages.
+- **Environment File**: For Docker deployments, your `.env` file (including encryption keys) is now stored persistently. While this survives container updates, it's still recommended to back up your environment settings.
 
-**2. For Docker deployments:**  
-- Stop the old container.
-- Pull the latest Docker image.
-- Start the new container.
-- Import your backed-up database file from the inital setup page.
-The import process will automatically handle any required database migrations or updates.
+**2. For Docker deployments:**
 
-**3. For local (non-Docker) builds:**  
-- Run the deployment script:  
+**Important**: Starting with version 0.94.24+, Docker deployments use persistent volumes for both database and environment files. This means your settings (including encryption keys) will survive container updates.
+
+For **new Docker installations** (version 0.94.24+):
+- Your `.env` file and database are automatically persisted in Docker volumes
+- Upgrades preserve your settings without manual intervention
+- Simply pull the latest image and restart the container
+
+For **existing Docker installations** upgrading to 0.94.24+:
+1. **Before upgrading**: Back up your current `.env` file if you have custom settings
+2. Stop the old container
+3. Pull the latest Docker image (`docker pull sprouttrack/sprout-track:latest`)
+4. Update your `docker-compose.yml` to use the new volume structure (if using custom compose file)
+5. Start the new container
+6. If needed, restore any custom environment settings through the family manager interface
+
+For **Docker upgrades** (version 0.94.24+):
+```bash
+# Stop the current container
+docker-compose down
+
+# Pull the latest image
+docker pull sprouttrack/sprout-track:latest
+
+# Start with updated configuration
+docker-compose up -d
+```
+
+Your database and environment settings will automatically persist across updates.
+
+**3. For local (non-Docker) builds:**
+- Run the deployment script:
   ```bash
   ./scripts/deployment.sh
   ```
   This script will handle all necessary updates and migrations. You do **not** need to re-import your database, as the script manages updates in place.
+
+### Docker Volume Management
+
+Starting with version 0.94.24+, Docker deployments use named volumes for data persistence:
+
+- `sprout-track-db`: Stores your SQLite database
+- `sprout-track-env`: Stores your environment configuration (including encryption keys)
+
+**To view your Docker volumes:**
+```bash
+docker volume ls | grep sprout-track
+```
+
+**To backup Docker volumes manually:**
+```bash
+# Backup database volume
+docker run --rm -v sprout-track-db:/data -v $(pwd):/backup alpine tar czf /backup/database-backup.tar.gz -C /data .
+
+# Backup environment volume
+docker run --rm -v sprout-track-env:/data -v $(pwd):/backup alpine tar czf /backup/env-backup.tar.gz -C /data .
+```
+
+**To restore Docker volumes:**
+```bash
+# Restore database volume
+docker run --rm -v sprout-track-db:/data -v $(pwd):/backup alpine tar xzf /backup/database-backup.tar.gz -C /data
+
+# Restore environment volume
+docker run --rm -v sprout-track-env:/data -v $(pwd):/backup alpine tar xzf /backup/env-backup.tar.gz -C /data
+```
 
 ## Environment Variables
 
