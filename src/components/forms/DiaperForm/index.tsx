@@ -6,6 +6,7 @@ import { DiaperLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
+import { Checkbox } from '@/src/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -58,6 +59,7 @@ export default function DiaperForm({
     type: '' as DiaperType | '',
     condition: '',
     color: '',
+    blowout: false,
   });
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -106,6 +108,7 @@ export default function DiaperForm({
           type: activity.type,
           condition: activity.condition || '',
           color: activity.color || '',
+          blowout: activity.blowout || false,
         });
       } else {
         // New entry mode - the selectedDateTime is already set in the useState initialization
@@ -176,6 +179,7 @@ export default function DiaperForm({
         type: formData.type,
         condition: formData.condition || null,
         color: formData.color || null,
+        blowout: formData.blowout,
       };
 
       // Get auth token from localStorage
@@ -204,6 +208,7 @@ export default function DiaperForm({
         type: '' as DiaperType | '',
         condition: '',
         color: '',
+        blowout: false,
       });
     } catch (error) {
       console.error('Error saving diaper log:', error);
@@ -253,7 +258,21 @@ export default function DiaperForm({
                 </SelectContent>
               </Select>
             </div>
-            
+
+            {/* Blowout/Leakage checkbox - visible for all diaper types */}
+            {formData.type && (
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  checked={formData.blowout}
+                  onCheckedChange={(checked) => setFormData({ ...formData, blowout: checked })}
+                  disabled={loading}
+                />
+                <label className="form-label text-sm">
+                  Blowout/Leakage
+                </label>
+              </div>
+            )}
+
             {formData.type && formData.type !== 'WET' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

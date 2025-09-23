@@ -284,6 +284,11 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         }
       }
 
+      // Show blowout/leakage for all diaper types
+      if (activity.blowout) {
+        details.push({ label: 'Blowout/Leakage', value: 'Yes' });
+      }
+
       return {
         title: 'Diaper Record',
         details: [...details, ...caretakerDetail],
@@ -583,11 +588,14 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
           details = ` (${conditions.join(', ')}) - `;
         }
       }
-      
+
+      // Add blowout information for all diaper types
+      const blowoutText = activity.blowout ? ' - Blowout/Leakage' : '';
+
       const time = formatTime(activity.time, settings, true);
       return {
         type: formatDiaperType(activity.type),
-        details: `${details}${time}`
+        details: `${details}${time}${blowoutText}`
       };
     }
   }
