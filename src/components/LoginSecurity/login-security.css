@@ -53,3 +53,25 @@ html.dark .login-button:hover:not(:disabled) {
 html.dark .login-error {
   color: #f87171; /* red-400 */
 }
+
+/* Field highlighting styles */
+.login-field-active {
+  background-color: rgba(20, 184, 166, 0.05); /* teal-500 with very low opacity */
+  border: 1px solid rgba(20, 184, 166, 0.2); /* teal-500 with low opacity */
+}
+
+.login-field-inactive {
+  background-color: transparent;
+  border: 1px solid transparent;
+}
+
+/* Dark mode field highlighting */
+html.dark .login-field-active {
+  background-color: rgba(94, 234, 212, 0.05); /* teal-300 with very low opacity */
+  border: 1px solid rgba(94, 234, 212, 0.15); /* teal-300 with low opacity */
+}
+
+html.dark .login-field-inactive {
+  background-color: transparent;
+  border: 1px solid transparent;
+}
