@@ -57,6 +57,7 @@ async function main() {
         familyId: defaultFamilyId,
         familyName: "My Family",
         securityPin: "111222",
+        // authType will be auto-detected based on caretaker existence
         defaultBottleUnit: "OZ",
         defaultSolidsUnit: "TBSP",
         defaultHeightUnit: "IN",
