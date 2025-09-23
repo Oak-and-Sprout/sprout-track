@@ -360,6 +360,7 @@ model DiaperLog {
   type        DiaperType
   condition   String?
   color       String?
+  blowout     Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   deletedAt   DateTime?
