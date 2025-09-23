@@ -27,7 +27,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
   const [error, setError] = useState<string>('');
   const [attempts, setAttempts] = useState(0);
   const [lockoutTime, setLockoutTime] = useState<number | null>(null);
-  const [hasCaretakers, setHasCaretakers] = useState(false);
+  const [authType, setAuthType] = useState<'SYSTEM' | 'CARETAKER'>('SYSTEM');
   const [activeInput, setActiveInput] = useState<'loginId' | 'pin'>('loginId');
   const [isMounted, setIsMounted] = useState(false);
   
@@ -85,32 +85,39 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
     return () => clearInterval(timer);
   }, [lockoutTime]);
 
-  // Check if any caretakers exist
+  // Check authentication type and caretakers
   useEffect(() => {
-    const checkCaretakers = async () => {
+    const checkAuthSettings = async () => {
       try {
-        let url = '/api/auth/caretaker-exists';
+        // Check caretakers and authType in one call
+        let caretakerUrl = '/api/auth/caretaker-exists';
         if (familySlug) {
-          url += `?familySlug=${encodeURIComponent(familySlug)}`;
+          caretakerUrl += `?familySlug=${encodeURIComponent(familySlug)}`;
         }
-        
-        const response = await fetch(url);
-        if (response.ok) {
-          const data = await response.json();
-          const caretakersExist = data.success && data.data.exists;
-          setHasCaretakers(caretakersExist);
-          
-          // If no caretakers exist, focus on the PIN field immediately
-          if (!caretakersExist) {
-            setActiveInput('pin');
+
+        const caretakerResponse = await fetch(caretakerUrl);
+        if (caretakerResponse.ok) {
+          const caretakerData = await caretakerResponse.json();
+          if (caretakerData.success && caretakerData.data) {
+            const caretakersExist = caretakerData.data.exists;
+            const familyAuthType = caretakerData.data.authType || (caretakersExist ? 'CARETAKER' : 'SYSTEM');
+
+            setAuthType(familyAuthType);
+
+            // Set initial active input based on auth type
+            if (familyAuthType === 'CARETAKER') {
+              setActiveInput('loginId');
+            } else {
+              setActiveInput('pin');
+            }
           }
         }
       } catch (error) {
-        console.error('Error checking caretakers:', error);
+        console.error('Error checking auth settings:', error);
       }
     };
-    
-    checkCaretakers();
+
+    checkAuthSettings();
   }, [familySlug]);
 
   const handleLoginIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,8 +235,8 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
       return;
     }
 
-    // Don't attempt authentication if login ID is required but not complete
-    if (hasCaretakers && loginId.length !== 2) {
+    // Don't attempt authentication if login ID is required but not complete (for CARETAKER auth type)
+    if (authType === 'CARETAKER' && loginId.length !== 2) {
       setError('Please enter a valid 2-character login ID first');
       setActiveInput('loginId');
       return;
@@ -261,7 +268,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          loginId: hasCaretakers ? loginId : undefined,
+          loginId: authType === 'CARETAKER' ? loginId : undefined,
           securityPin: pin,
           familySlug: familySlug,
         }),
@@ -338,7 +345,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
   // Handle secret admin mode activation
   const handleGoButtonClick = () => {
     // If button is enabled, perform normal authentication
-    const isButtonDisabled = !!lockoutTime || (hasCaretakers && loginId.length !== 2) || (pin.length < 6 && !adminMode) || (adminMode && !adminPassword.trim());
+    const isButtonDisabled = !!lockoutTime || (authType === 'CARETAKER' && loginId.length !== 2) || (pin.length < 6 && !adminMode) || (adminMode && !adminPassword.trim());
     
     if (!isButtonDisabled) {
       handleAuthenticate();
@@ -430,7 +437,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
           <p id="pin-description" className="text-sm text-gray-500 login-description">
             {adminMode
               ? 'Please enter the system administrator password'
-              : (!hasCaretakers
+              : (authType === 'SYSTEM'
                 ? 'Please enter your system security PIN'
                 : 'Please enter your login ID and security PIN')
             }
@@ -495,8 +502,8 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
               </div>
             ) : (
               <>
-                {/* Login ID section - only show if caretakers exist */}
-                {hasCaretakers && (
+                {/* Login ID section - only show if authType is CARETAKER */}
+                {authType === 'CARETAKER' && (
                   <div className="space-y-2">
                     <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Login ID</h2>
                     
