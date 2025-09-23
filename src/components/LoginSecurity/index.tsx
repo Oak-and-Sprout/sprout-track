@@ -128,6 +128,13 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
     }
     if (value.length === 2) {
       setActiveInput('pin');
+      // Focus the PIN input after state update
+      setTimeout(() => {
+        const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
+        if (pinInput) {
+          pinInput.focus();
+        }
+      }, 0);
     }
   };
 
@@ -136,6 +143,98 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
     if (value.length <= 10) {
       setPin(value);
       setError('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Determine which field is actually focused based on the target element
+    const target = e.target as HTMLInputElement;
+    const isLoginIdField = target.placeholder === 'ID';
+    const isPinField = target.placeholder === 'PIN';
+
+    // Allow only numbers, backspace, delete, arrow keys, tab, and enter
+    const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter'];
+    const isNumber = /^[0-9]$/.test(e.key);
+
+    if (!isNumber && !allowedKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+
+    // Handle number input based on which field is focused
+    if (isNumber) {
+      e.preventDefault();
+      if (isLoginIdField && loginId.length < 2) {
+        const newLoginId = loginId + e.key;
+        setLoginId(newLoginId);
+        setError('');
+        setActiveInput('loginId');
+
+        // Auto-switch to PIN when login ID is complete
+        if (newLoginId.length === 2) {
+          setActiveInput('pin');
+          setTimeout(() => {
+            const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
+            if (pinInput) {
+              pinInput.focus();
+            }
+          }, 0);
+        }
+      } else if (isPinField && pin.length < 10) {
+        setPin(pin + e.key);
+        setError('');
+        setActiveInput('pin');
+      }
+    }
+
+    // Handle backspace and delete for removing characters
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      if (isLoginIdField && loginId.length > 0) {
+        setLoginId(loginId.slice(0, -1));
+        setError('');
+        setActiveInput('loginId');
+      } else if (isPinField && pin.length > 0) {
+        setPin(pin.slice(0, -1));
+        setError('');
+        setActiveInput('pin');
+      } else if (isPinField && pin.length === 0 && loginId.length > 0 && authType === 'CARETAKER') {
+        // Switch back to login ID if PIN is empty and there's content in login ID
+        setActiveInput('loginId');
+        setTimeout(() => {
+          const loginInput = document.querySelector('input[placeholder="ID"]') as HTMLInputElement;
+          if (loginInput) {
+            loginInput.focus();
+          }
+        }, 0);
+      }
+    }
+
+    // Handle tab and arrow key navigation between fields
+    if ((e.key === 'Tab' || e.key === 'ArrowUp' || e.key === 'ArrowDown') && authType === 'CARETAKER') {
+      e.preventDefault();
+      if (isLoginIdField) {
+        setActiveInput('pin');
+        setTimeout(() => {
+          const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
+          if (pinInput) {
+            pinInput.focus();
+          }
+        }, 0);
+      } else if (isPinField) {
+        setActiveInput('loginId');
+        setTimeout(() => {
+          const loginInput = document.querySelector('input[placeholder="ID"]') as HTMLInputElement;
+          if (loginInput) {
+            loginInput.focus();
+          }
+        }, 0);
+      }
+    }
+
+    // Handle enter key for authentication
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAuthenticate();
     }
   };
 
@@ -153,6 +252,13 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
         // Automatically switch to PIN input when login ID is complete
         if (newLoginId.length === 2) {
           setActiveInput('pin');
+          // Focus the PIN input after state update
+          setTimeout(() => {
+            const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
+            if (pinInput) {
+              pinInput.focus();
+            }
+          }, 0);
         }
       }
     } else {
@@ -504,12 +610,12 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
               <>
                 {/* Login ID section - only show if authType is CARETAKER */}
                 {authType === 'CARETAKER' && (
-                  <div className="space-y-2">
+                  <div className={`space-y-2 p-1rounded-lg transition-all duration-200 ${activeInput === 'loginId' ? 'login-field-active' : 'login-field-inactive'}`}>
                     <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Login ID</h2>
-                    
+
                     {/* Login ID Display */}
-                    <div 
-                      className="flex gap-2 justify-center my-2 cursor-pointer" 
+                    <div
+                      className="flex gap-2 justify-center my-2 cursor-pointer"
                       onClick={handleFocusLoginId}
                     >
                       {loginId.length === 0 ? (
@@ -533,6 +639,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
                     <Input
                       value={loginId}
                       onChange={handleLoginIdChange}
+                      onKeyDown={handleKeyDown}
                       className="text-center text-xl font-semibold sr-only login-input"
                       placeholder="ID"
                       maxLength={2}
@@ -544,12 +651,12 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
                 )}
                 
                 {/* PIN input section */}
-                <div className="space-y-2">
+                <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' ? 'login-field-active' : 'login-field-inactive'}`}>
                   <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Security PIN</h2>
-                  
+
                   {/* PIN Display */}
-                  <div 
-                    className="flex gap-2 justify-center my-2 cursor-pointer" 
+                  <div
+                    className="flex gap-2 justify-center my-2 cursor-pointer"
                     onClick={handleFocusPin}
                   >
                     {pin.length === 0 ? (
@@ -574,6 +681,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
                     type="password"
                     value={pin}
                     onChange={handlePinChange}
+                    onKeyDown={handleKeyDown}
                     className="text-center text-xl font-semibold sr-only login-input"
                     placeholder="PIN"
                     maxLength={10}
