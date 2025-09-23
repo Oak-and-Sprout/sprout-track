@@ -122,10 +122,56 @@ export function TimeEntry({
         // Convert angle to hour (each hour is 30 degrees)
         let hour = Math.round(angle / 30);
         if (hour === 0 || hour > 12) hour = 12;
-        
-        setState(prev => ({ ...prev, hours: hour }));
-        
-        const newHours24 = state.isPM
+
+        // Detect crossing 12 o'clock and auto-flip AM/PM
+        let shouldFlipAmPm = false;
+
+        if (previousAngle !== null) {
+          const prevHour = Math.round(previousAngle / 30);
+          const prevHourNormalized = prevHour === 0 || prevHour > 12 ? 12 : prevHour;
+
+          // Calculate angle difference with proper wraparound handling
+          const angleDiff = angle - previousAngle;
+          let normalizedDiff = angleDiff;
+
+          // Handle angle wraparound (crossing 0/360 degrees)
+          if (normalizedDiff > 180) normalizedDiff -= 360;
+          if (normalizedDiff < -180) normalizedDiff += 360;
+
+          // Check if we crossed the 12 o'clock line (0 degrees)
+          // This happens when we cross from 11-12 or 12-1 zones
+          const crossed12Line = (
+            // Going from 11 to 12 (clockwise)
+            (prevHourNormalized === 11 && hour === 12) ||
+            // Going from 1 to 12 (counter-clockwise)
+            (prevHourNormalized === 1 && hour === 12) ||
+            // Going from 12 to 11 (counter-clockwise)
+            (prevHourNormalized === 12 && hour === 11) ||
+            // Going from 12 to 1 (clockwise)
+            (prevHourNormalized === 12 && hour === 1)
+          );
+
+          if (crossed12Line) {
+            // Determine if we should flip based on direction and current AM/PM
+            if (normalizedDiff > 0) {
+              // Clockwise movement: if AM, switch to PM
+              if (!state.isPM) shouldFlipAmPm = true;
+            } else if (normalizedDiff < 0) {
+              // Counter-clockwise movement: if PM, switch to AM
+              if (state.isPM) shouldFlipAmPm = true;
+            }
+          }
+        }
+
+        const newIsPM = shouldFlipAmPm ? !state.isPM : state.isPM;
+
+        setState(prev => ({
+          ...prev,
+          hours: hour,
+          isPM: newIsPM
+        }));
+
+        const newHours24 = newIsPM
           ? (hour === 12 ? 12 : hour + 12)
           : (hour === 12 ? 0 : hour);
         baseDate.setHours(newHours24);
@@ -146,10 +192,13 @@ export function TimeEntry({
       
       baseDate.setSeconds(0);
       baseDate.setMilliseconds(0);
-      
+
       if (isTimeValid(baseDate)) {
         onChange(baseDate);
       }
+
+      // Store current angle for next comparison
+      setPreviousAngle(angle);
     };
     
     const handleMouseUp = () => {
