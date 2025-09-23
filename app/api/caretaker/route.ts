@@ -112,24 +112,45 @@ async function postHandler(req: NextRequest, authContext: AuthResult) {
 
 async function putHandler(req: NextRequest, authContext: AuthResult) {
   try {
-    const { familyId: userFamilyId, caretakerRole } = authContext;
+    const { familyId: userFamilyId, caretakerRole, isSysAdmin, isSetupAuth, isAccountAuth } = authContext;
 
-    if (!userFamilyId) {
+    // System administrators, setup auth, and account auth need a family context for caretakers
+    if (!userFamilyId && !isSysAdmin && !isSetupAuth && !isAccountAuth) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
     }
-    if (caretakerRole !== 'ADMIN') {
+    if (!isSysAdmin && !isSetupAuth && !isAccountAuth && caretakerRole !== 'ADMIN') {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Only admins can update caretakers.' }, { status: 403 });
     }
 
-    const body: CaretakerUpdate = await req.json();
-    const { id, ...updateData } = body;
+    const requestBody = await req.json();
+    const { familyId: bodyFamilyId, id, ...updateData } = requestBody;
+    const body: CaretakerUpdate = { id, ...updateData };
+
+    // For system administrators, setup auth, and account auth, require familyId to be passed as query parameter or in body
+    let targetFamilyId = userFamilyId;
+    if (isSysAdmin || isSetupAuth || isAccountAuth) {
+      const { searchParams } = new URL(req.url);
+      const queryFamilyId = searchParams.get('familyId');
+
+      if (bodyFamilyId) {
+        targetFamilyId = bodyFamilyId;
+      } else if (queryFamilyId) {
+        targetFamilyId = queryFamilyId;
+      } else if (!userFamilyId) {
+        const userType = isSysAdmin ? 'System administrators' : isSetupAuth ? 'Setup authentication' : 'Account authentication';
+        return NextResponse.json<ApiResponse<null>>({
+          success: false,
+          error: `${userType} must specify familyId parameter or in request body.`
+        }, { status: 400 });
+      }
+    }
 
     // Note: System caretaker can be updated (e.g., for PIN changes during setup)
 
     const existingCaretaker = await prisma.caretaker.findFirst({
-      where: { 
-        id, 
-        familyId: userFamilyId,
+      where: {
+        id,
+        familyId: targetFamilyId,
       },
     });
 
@@ -149,7 +170,7 @@ async function putHandler(req: NextRequest, authContext: AuthResult) {
           loginId: updateData.loginId,
           id: { not: id },
           deletedAt: null,
-          familyId: userFamilyId,
+          familyId: targetFamilyId,
         },
       });
 
@@ -168,7 +189,7 @@ async function putHandler(req: NextRequest, authContext: AuthResult) {
       where: { id },
       data: {
         ...updateData,
-        familyId: userFamilyId,
+        familyId: targetFamilyId,
       },
     });
 
@@ -197,17 +218,34 @@ async function putHandler(req: NextRequest, authContext: AuthResult) {
 
 async function deleteHandler(req: NextRequest, authContext: AuthResult) {
   try {
-    const { familyId: userFamilyId, caretakerRole } = authContext;
+    const { familyId: userFamilyId, caretakerRole, isSysAdmin, isSetupAuth, isAccountAuth } = authContext;
 
-    if (!userFamilyId) {
+    // System administrators, setup auth, and account auth need a family context for caretakers
+    if (!userFamilyId && !isSysAdmin && !isSetupAuth && !isAccountAuth) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
     }
-    if (caretakerRole !== 'ADMIN') {
+    if (!isSysAdmin && !isSetupAuth && !isAccountAuth && caretakerRole !== 'ADMIN') {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Only admins can delete caretakers.' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+
+    // For system administrators, setup auth, and account auth, require familyId to be passed as query parameter
+    let targetFamilyId = userFamilyId;
+    if (isSysAdmin || isSetupAuth || isAccountAuth) {
+      const queryFamilyId = searchParams.get('familyId');
+
+      if (queryFamilyId) {
+        targetFamilyId = queryFamilyId;
+      } else if (!userFamilyId) {
+        const userType = isSysAdmin ? 'System administrators' : isSetupAuth ? 'Setup authentication' : 'Account authentication';
+        return NextResponse.json<ApiResponse<null>>({
+          success: false,
+          error: `${userType} must specify familyId parameter.`
+        }, { status: 400 });
+      }
+    }
 
     if (!id) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Caretaker ID is required' }, { status: 400 });
@@ -215,10 +253,10 @@ async function deleteHandler(req: NextRequest, authContext: AuthResult) {
 
     // Check if this is the system caretaker
     const isSystemCaretaker = await prisma.caretaker.findFirst({
-      where: { 
+      where: {
         id,
         loginId: '00',
-        familyId: userFamilyId 
+        familyId: targetFamilyId
       }
     });
 
@@ -233,7 +271,7 @@ async function deleteHandler(req: NextRequest, authContext: AuthResult) {
     }
 
     const existingCaretaker = await prisma.caretaker.findFirst({
-      where: { id, familyId: userFamilyId },
+      where: { id, familyId: targetFamilyId },
     });
 
     if (!existingCaretaker) {
@@ -251,7 +289,7 @@ async function deleteHandler(req: NextRequest, authContext: AuthResult) {
       await prisma.familyMember.deleteMany({
         where: {
           caretakerId: id,
-          familyId: userFamilyId,
+          familyId: targetFamilyId,
         },
       });
     }
@@ -265,7 +303,7 @@ async function deleteHandler(req: NextRequest, authContext: AuthResult) {
 
 async function getHandler(req: NextRequest, authContext: AuthResult) {
   try {
-    const { familyId: userFamilyId, isAccountAuth, caretakerId, accountId } = authContext;
+    const { familyId: userFamilyId, isAccountAuth, caretakerId, accountId, isSysAdmin, isSetupAuth } = authContext;
 
     // Debug logging for account users
     if (isAccountAuth) {
@@ -278,30 +316,48 @@ async function getHandler(req: NextRequest, authContext: AuthResult) {
       });
     }
 
-    if (!userFamilyId) {
-      if (isAccountAuth) {
-        console.log('Caretaker API: Account user missing familyId - possible setup incomplete');
-        return NextResponse.json<ApiResponse<null>>({ 
-          success: false, 
-          error: 'Account setup incomplete. Please complete family setup.' 
-        }, { status: 403 });
-      } else {
-        return NextResponse.json<ApiResponse<null>>({ 
-          success: false, 
-          error: 'User is not associated with a family.' 
-        }, { status: 403 });
-      }
+    // System administrators, setup auth, and account auth need a family context for caretakers
+    if (!userFamilyId && !isSysAdmin && !isSetupAuth && !isAccountAuth) {
+      return NextResponse.json<ApiResponse<null>>({
+        success: false,
+        error: 'User is not associated with a family.'
+      }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
+    // For system administrators, setup auth, and account auth, require familyId to be passed as query parameter
+    let targetFamilyId = userFamilyId;
+    if (isSysAdmin || isSetupAuth || isAccountAuth) {
+      const queryFamilyId = searchParams.get('familyId');
+
+      if (queryFamilyId) {
+        targetFamilyId = queryFamilyId;
+      } else if (!userFamilyId) {
+        const userType = isSysAdmin ? 'System administrators' : isSetupAuth ? 'Setup authentication' : 'Account authentication';
+        return NextResponse.json<ApiResponse<null>>({
+          success: false,
+          error: `${userType} must specify familyId parameter.`
+        }, { status: 400 });
+      }
+    }
+
+    // Handle incomplete account setup
+    if (!targetFamilyId && isAccountAuth) {
+      console.log('Caretaker API: Account user missing familyId - possible setup incomplete');
+      return NextResponse.json<ApiResponse<null>>({
+        success: false,
+        error: 'Account setup incomplete. Please complete family setup.'
+      }, { status: 403 });
+    }
+
     if (id) {
       const caretaker = await prisma.caretaker.findFirst({
-        where: { 
+        where: {
           id,
           deletedAt: null,
-          familyId: userFamilyId,
+          familyId: targetFamilyId,
         },
       });
 
@@ -325,7 +381,7 @@ async function getHandler(req: NextRequest, authContext: AuthResult) {
     const caretakers = await prisma.caretaker.findMany({
       where: {
         deletedAt: null,
-        familyId: userFamilyId,
+        familyId: targetFamilyId,
         loginId: { not: '00' }, // Exclude system caretaker from lists
       },
       orderBy: {
