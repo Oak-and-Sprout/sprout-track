@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
     let authType = settings.authType;
     if (!authType) {
       // Auto-detect based on caretaker existence
-      authType = caretakerCount > 0 ? 'CARETAKER' : 'SYSTEM';
+      authType = caretakerCount > 1 ? 'CARETAKER' : 'SYSTEM';
     }
 
     // Handle SYSTEM authentication type
