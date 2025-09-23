@@ -95,12 +95,12 @@ function question(prompt) {
 
 async function resetAdminPassword() {
   try {
-    console.log('🔐 Admin Password Reset Tool');
+    console.log('Admin Password Reset Tool');
     console.log('============================\n');
 
     // Check if ENC_HASH is set
     if (!process.env.ENC_HASH) {
-      console.error('❌ Error: ENC_HASH environment variable is not set.');
+      console.error('Error: ENC_HASH environment variable is not set.');
       console.error('Please ensure your .env file contains the ENC_HASH value.');
       process.exit(1);
     }
@@ -109,12 +109,12 @@ async function resetAdminPassword() {
     const appConfig = await prisma.appConfig.findFirst();
 
     if (!appConfig) {
-      console.log('❌ No app configuration found.');
+      console.log('No app configuration found.');
       console.log('This script only updates existing configurations. Please ensure the application has been properly initialized.');
       process.exit(1);
     }
 
-    console.log('📋 Current app configuration found.');
+    console.log('Current app configuration found.');
 
     console.log('\nPlease enter a new admin password:');
 
@@ -126,7 +126,7 @@ async function resetAdminPassword() {
       password = await question('New password: ');
 
       if (password.length < 6) {
-        console.log('❌ Password must be at least 6 characters long. Please try again.\n');
+        console.log('Password must be at least 6 characters long. Please try again.\n');
         continue;
       }
 
@@ -135,7 +135,7 @@ async function resetAdminPassword() {
       if (password === confirmPassword) {
         passwordsMatch = true;
       } else {
-        console.log('❌ Passwords do not match. Please try again.\n');
+        console.log('Passwords do not match. Please try again.\n');
       }
     }
 
@@ -147,11 +147,11 @@ async function resetAdminPassword() {
       data: { adminPass: encryptedPassword }
     });
 
-    console.log('\n✅ Admin password has been successfully reset!');
-    console.log('🔒 Password has been encrypted and stored securely.');
+    console.log('\nAdmin password has been successfully reset!');
+    console.log('Password has been encrypted and stored securely.');
 
   } catch (error) {
-    console.error('\n❌ Error resetting admin password:', error.message);
+    console.error('\nError resetting admin password:', error.message);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
@@ -161,7 +161,7 @@ async function resetAdminPassword() {
 
 // Handle Ctrl+C gracefully
 process.on('SIGINT', async () => {
-  console.log('\n\n👋 Operation cancelled by user.');
+  console.log('\n\nOperation cancelled by user.');
   await prisma.$disconnect();
   rl.close();
   process.exit(0);
@@ -169,7 +169,7 @@ process.on('SIGINT', async () => {
 
 // Run the script
 resetAdminPassword().catch(async (error) => {
-  console.error('❌ Unexpected error:', error);
+  console.error('Unexpected error:', error);
   await prisma.$disconnect();
   rl.close();
   process.exit(1);
