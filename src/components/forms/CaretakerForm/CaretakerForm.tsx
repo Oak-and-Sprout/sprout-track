@@ -63,7 +63,7 @@ export default function CaretakerForm({
         name: caretaker.name,
         type: caretaker.type || '',
         role: caretaker.role || 'USER',
-        inactive: (caretaker as any).inactive || false,
+        inactive: caretaker.inactive || false,
         securityPin: caretaker.securityPin || '',
       });
       setConfirmPin(caretaker.securityPin || '');
@@ -98,9 +98,37 @@ export default function CaretakerForm({
         try {
           // Get the JWT token from localStorage
           const token = localStorage.getItem('authToken');
-          
-          // The backend will automatically scope this to the user's family
-          const response = await fetch(`/api/caretaker`, {
+
+          // Check if user is a system administrator and get family context
+          let isSysAdmin = false;
+          let familyId = null;
+
+          if (token) {
+            try {
+              const payload = token.split('.')[1];
+              const decodedPayload = JSON.parse(atob(payload));
+              isSysAdmin = decodedPayload.isSysAdmin || false;
+
+              // For sysadmins, get the family context from session storage
+              if (isSysAdmin) {
+                const familyContext = sessionStorage.getItem('sysadmin-family-context');
+                if (familyContext) {
+                  const family = JSON.parse(familyContext);
+                  familyId = family.id;
+                }
+              }
+            } catch (error) {
+              console.error('Error parsing JWT token:', error);
+            }
+          }
+
+          // Build URL with family context for sysadmins
+          let url = '/api/caretaker';
+          if (isSysAdmin && familyId) {
+            url += `?familyId=${familyId}`;
+          }
+
+          const response = await fetch(url, {
             headers: {
               'Authorization': token ? `Bearer ${token}` : '',
             },
@@ -184,20 +212,47 @@ export default function CaretakerForm({
     try {
       setIsSubmitting(true);
       setError('');
-      
+
       // Get the JWT token from localStorage
       const token = localStorage.getItem('authToken');
-      
+
+      // Check if user is a system administrator and get family context
+      let isSysAdmin = false;
+      let familyId = null;
+
+      if (token) {
+        try {
+          const payload = token.split('.')[1];
+          const decodedPayload = JSON.parse(atob(payload));
+          isSysAdmin = decodedPayload.isSysAdmin || false;
+
+          // For sysadmins, get the family context from session storage
+          if (isSysAdmin) {
+            const familyContext = sessionStorage.getItem('sysadmin-family-context');
+            if (familyContext) {
+              const family = JSON.parse(familyContext);
+              familyId = family.id;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing JWT token:', error);
+        }
+      }
+
+      // Prepare request body with family context for sysadmins
+      const requestBody = {
+        ...formData,
+        id: caretaker?.id,
+        ...(isSysAdmin && familyId && { familyId })
+      };
+
       const response = await fetch('/api/caretaker', {
         method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
         },
-        body: JSON.stringify({
-          ...formData,
-          id: caretaker?.id,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

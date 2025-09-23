@@ -340,6 +340,7 @@ export default function SettingsForm({
 
   const handleCaretakerFormClose = async () => {
     setShowCaretakerForm(false);
+    setSelectedCaretaker(null); // Clear selected caretaker to avoid stale data
     await fetchData(); // Refresh local caretakers list
   };
 
@@ -564,7 +565,7 @@ export default function SettingsForm({
                       <SelectContent>
                         {caretakers.map((caretaker) => (
                           <SelectItem key={caretaker.id} value={caretaker.id}>
-                            {caretaker.name} {caretaker.type ? `(${caretaker.type})` : ''}{(caretaker as any).inactive ? ' (Inactive)' : ''}
+                            {caretaker.name} {caretaker.type ? `(${caretaker.type})` : ''}{caretaker.inactive ? ' (Inactive)' : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
