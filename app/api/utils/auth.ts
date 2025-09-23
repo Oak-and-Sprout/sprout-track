@@ -39,7 +39,8 @@ export interface AuthResult {
   isSysAdmin?: boolean;
   isSetupAuth?: boolean;
   setupToken?: string;
-  
+  authType?: string;        // Authentication type used for this session
+
   // New account fields
   isAccountAuth?: boolean;  // True if authenticated via account
   accountId?: string;       // Account ID
@@ -225,6 +226,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
           familyId: regularDecoded.familyId,
           familySlug: regularDecoded.familySlug,
           isSysAdmin: regularDecoded.isSysAdmin || false,
+          authType: (regularDecoded as any).authType || 'CARETAKER',
         };
         
 
@@ -250,8 +252,8 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
       });
       
       if (caretaker) {
-        return { 
-          authenticated: true, 
+        return {
+          authenticated: true,
           caretakerId: caretaker.id,
           caretakerType: caretaker.type,
           // Use type assertion for role until Prisma types are updated
@@ -259,6 +261,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
           familyId: caretaker.familyId,
           familySlug: caretaker.family?.slug,
           isSysAdmin: false,
+          authType: 'CARETAKER',
         };
       }
     }

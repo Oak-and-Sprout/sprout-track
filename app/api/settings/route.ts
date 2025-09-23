@@ -92,8 +92,8 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
 
     const data: Partial<Settings> = {};
     const allowedFields: (keyof Settings)[] = [
-      'familyName', 'securityPin', 'defaultBottleUnit', 'defaultSolidsUnit', 
-      'defaultHeightUnit', 'defaultWeightUnit', 'defaultTempUnit', 
+      'familyName', 'securityPin', 'authType', 'defaultBottleUnit', 'defaultSolidsUnit',
+      'defaultHeightUnit', 'defaultWeightUnit', 'defaultTempUnit',
       'enableDebugTimer', 'enableDebugTimezone'
     ];
 

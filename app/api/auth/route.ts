@@ -151,43 +151,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Get settings to check authentication type
+    let settings = targetFamily
+      ? await prisma.settings.findFirst({ where: { familyId: targetFamily.id } })
+      : await prisma.settings.findFirst();
+
+    // If no settings exist, fail authentication
+    if (!settings) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: 'Family settings not found. Please contact administrator.',
+        },
+        { status: 500 }
+      );
+    }
+
     // Count active caretakers (excluding system caretaker)
-    // If family is specified, only count caretakers for that family
     const caretakerCount = await prisma.caretaker.count({
       where: {
         deletedAt: null,
         loginId: { not: '00' }, // Exclude system caretaker
-        // If family slug is provided, only count caretakers in that family
         ...(targetFamily ? { familyId: targetFamily.id } : {}),
       },
     });
 
-    // If no caretakers exist, use system PIN from settings
-    if (caretakerCount === 0) {
-      // Check system PIN - if family is specified, get settings for that family
-      let settings = targetFamily 
-        ? await prisma.settings.findFirst({ where: { familyId: targetFamily.id } })
-        : await prisma.settings.findFirst();
-      
-      // If no settings exist for the family, create default settings
-      if (!settings && targetFamily) {
-        settings = await prisma.settings.create({
-          data: {
-            id: randomUUID(),
-            familyId: targetFamily.id,
-            familyName: targetFamily.name,
-            securityPin: '111222', // Default PIN
-            defaultBottleUnit: 'OZ',
-            defaultSolidsUnit: 'TBSP',
-            defaultHeightUnit: 'IN',
-            defaultWeightUnit: 'LB',
-            defaultTempUnit: 'F',
-          },
-        });
-        console.log(`Created default settings for family ${targetFamily.name}`);
-      }
-      
-      if (settings && settings.securityPin === securityPin) {
+    // Auto-detect authentication type if not set
+    let authType = settings.authType;
+    if (!authType) {
+      // Auto-detect based on caretaker existence
+      authType = caretakerCount > 0 ? 'CARETAKER' : 'SYSTEM';
+    }
+
+    // Handle SYSTEM authentication type
+    if (authType === 'SYSTEM') {
+      if (settings.securityPin === securityPin) {
         // Find the system caretaker to get family information
         let systemCaretaker = await prisma.caretaker.findFirst({
           where: {
@@ -231,6 +229,7 @@ export async function POST(req: NextRequest) {
               role: (systemCaretaker as any).role || 'ADMIN',
               familyId: systemCaretaker.familyId,
               familySlug: systemCaretaker.family?.slug,
+              authType: 'SYSTEM',
             },
             JWT_SECRET,
             { expiresIn: `${TOKEN_EXPIRATION}s` } // Token expires based on AUTH_LIFE env variable
@@ -269,9 +268,21 @@ export async function POST(req: NextRequest) {
             path: '/',
           });
           
+          // Update settings with detected authType if it was auto-detected
+          if (!settings.authType) {
+            try {
+              await prisma.settings.update({
+                where: { id: settings.id },
+                data: { authType: authType }
+              });
+            } catch (error) {
+              console.error('Error updating authType in settings:', error);
+            }
+          }
+
           // Reset failed attempts on successful login
           resetFailedAttempts(ip);
-          
+
           return response;
         } else {
           // This should not happen now since we create system caretakers on-demand
@@ -284,7 +295,22 @@ export async function POST(req: NextRequest) {
           );
         }
       }
-    } else if (loginId) {
+    } else if (authType === 'CARETAKER') {
+      // If authType is CARETAKER, block system PIN authentication
+      if (!loginId) {
+        recordFailedAttempt(ip);
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: 'Login ID is required for caretaker authentication.',
+          },
+          { status: 401 }
+        );
+      }
+    }
+
+    // Handle caretaker authentication (when loginId is provided)
+    if (loginId) {
       // If caretakers exist, require loginId and check caretaker credentials
       const caretaker = await prisma.caretaker.findFirst({
         where: {
@@ -299,7 +325,19 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Security check: If this is a system caretaker (loginId '00') and regular caretakers exist,
+      // Security check: If authType is CARETAKER and this is a system caretaker (loginId '00'), deny access
+      if (caretaker && caretaker.loginId === '00' && authType === 'CARETAKER') {
+        recordFailedAttempt(ip);
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: 'System account access is disabled in caretaker authentication mode',
+          },
+          { status: 403 }
+        );
+      }
+
+      // Legacy security check: If this is a system caretaker (loginId '00') and regular caretakers exist,
       // deny access to prevent unauthorized use of the default system account
       if (caretaker && caretaker.loginId === '00') {
         const regularCaretakerCount = await prisma.caretaker.count({
@@ -334,6 +372,7 @@ export async function POST(req: NextRequest) {
             role: (caretaker as any).role || 'USER',
             familyId: caretaker.familyId,
             familySlug: caretaker.family?.slug,
+            authType: authType,
           },
           JWT_SECRET,
           { expiresIn: `${TOKEN_EXPIRATION}s` } // Token expires based on AUTH_LIFE env variable
@@ -373,9 +412,21 @@ export async function POST(req: NextRequest) {
           path: '/',
         });
         
+        // Update settings with detected authType if it was auto-detected
+        if (!settings.authType) {
+          try {
+            await prisma.settings.update({
+              where: { id: settings.id },
+              data: { authType: authType }
+            });
+          } catch (error) {
+            console.error('Error updating authType in settings:', error);
+          }
+        }
+
         // Reset failed attempts on successful login
         resetFailedAttempts(ip);
-        
+
         return response;
       }
     }

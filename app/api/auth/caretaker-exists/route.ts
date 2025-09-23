@@ -40,10 +40,23 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json<ApiResponse<{ exists: boolean }>>({
+    // Get authType from settings if familyId is available
+    let authType = null;
+    if (familyId) {
+      const settings = await prisma.settings.findFirst({
+        where: { familyId },
+        select: { authType: true }
+      });
+
+      // Auto-detect authType if not set
+      authType = settings?.authType || (caretakerCount > 0 ? 'CARETAKER' : 'SYSTEM');
+    }
+
+    return NextResponse.json<ApiResponse<{ exists: boolean; authType?: string }>>({
       success: true,
       data: {
-        exists: caretakerCount > 0
+        exists: caretakerCount > 0,
+        authType: authType || undefined
       },
     });
   } catch (error) {
