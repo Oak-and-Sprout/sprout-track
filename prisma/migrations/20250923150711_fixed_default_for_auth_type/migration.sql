@@ -19,7 +19,7 @@ CREATE TABLE "new_Settings" (
     "familyId" TEXT,
     CONSTRAINT "Settings_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "Family" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
-INSERT INTO "new_Settings" ("activitySettings", "authType", "createdAt", "defaultBottleUnit", "defaultHeightUnit", "defaultSolidsUnit", "defaultTempUnit", "defaultWeightUnit", "enableDebugTimer", "enableDebugTimezone", "familyId", "familyName", "id", "securityPin", "updatedAt") SELECT "activitySettings", "authType", "createdAt", "defaultBottleUnit", "defaultHeightUnit", "defaultSolidsUnit", "defaultTempUnit", "defaultWeightUnit", "enableDebugTimer", "enableDebugTimezone", "familyId", "familyName", "id", "securityPin", "updatedAt" FROM "Settings";
+INSERT INTO "new_Settings" ("activitySettings", "authType", "createdAt", "defaultBottleUnit", "defaultHeightUnit", "defaultSolidsUnit", "defaultTempUnit", "defaultWeightUnit", "enableDebugTimer", "enableDebugTimezone", "familyId", "familyName", "id", "securityPin", "updatedAt") SELECT "activitySettings", NULL, "createdAt", "defaultBottleUnit", "defaultHeightUnit", "defaultSolidsUnit", "defaultTempUnit", "defaultWeightUnit", "enableDebugTimer", "enableDebugTimezone", "familyId", "familyName", "id", "securityPin", "updatedAt" FROM "Settings";
 DROP TABLE "Settings";
 ALTER TABLE "new_Settings" RENAME TO "Settings";
 CREATE INDEX "Settings_familyId_idx" ON "Settings"("familyId");
