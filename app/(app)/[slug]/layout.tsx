@@ -529,6 +529,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
               onLogout={handleLogout}
               isAdmin={isAdmin}
               className="h-screen sticky top-0"
+              familySlug={familySlug}
+              familyName={family?.name || familyName}
             />
           )}
           
@@ -612,6 +614,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
               }}
               onLogout={handleLogout}
               isAdmin={isAdmin}
+              familySlug={familySlug}
+              familyName={family?.name || familyName}
             />
           )}
         </div>
