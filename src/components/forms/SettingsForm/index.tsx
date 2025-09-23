@@ -514,6 +514,7 @@ export default function SettingsForm({
                     checked={localAuthType === 'CARETAKER'}
                     onCheckedChange={(checked) => handleAuthTypeChange(checked ? 'CARETAKER' : 'SYSTEM')}
                     disabled={loading}
+                    variant="green"
                   />
                   <span className="text-sm text-gray-500">Caretaker IDs</span>
                 </div>
