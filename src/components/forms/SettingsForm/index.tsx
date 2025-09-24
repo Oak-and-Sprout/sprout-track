@@ -498,17 +498,8 @@ export default function SettingsForm({
             <div className="space-y-4 border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">Authentication Settings</h3>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="form-label">Authentication Type</Label>
-                  <p className="text-sm text-gray-500">
-                    {localAuthType === 'CARETAKER'
-                      ? 'Use individual caretaker login IDs and PINs'
-                      : 'Use shared system PIN for all users'
-                    }
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
+              <div className="space-y-4">
+              <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-500">System PIN</span>
                   <Switch
                     checked={localAuthType === 'CARETAKER'}
@@ -518,6 +509,15 @@ export default function SettingsForm({
                   />
                   <span className="text-sm text-gray-500">Caretaker IDs</span>
                 </div>
+                <div>
+                  <p className="text-sm text-gray-500">
+                    {localAuthType === 'CARETAKER'
+                      ? 'Use individual caretaker login IDs and PINs'
+                      : 'Use shared system PIN for all users'
+                    }
+                  </p>
+                </div>
+                
               </div>
 
               <div>
@@ -532,7 +532,7 @@ export default function SettingsForm({
                   <Button
                     variant="outline"
                     onClick={() => setShowChangePinModal(true)}
-                    disabled={loading || localAuthType === 'CARETAKER'}
+                    disabled={loading}
                   >
                     Change PIN
                   </Button>
@@ -877,10 +877,7 @@ export default function SettingsForm({
         
         <FormPageFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={onClose}>
-            Save
+            Close
           </Button>
         </FormPageFooter>
       </FormPage>
