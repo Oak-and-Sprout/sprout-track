@@ -164,10 +164,36 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Famil
           },
         });
 
-        // Update account to link to family
+        // Update account to link to family and set trial if needed
+        const accountUpdateData: any = { familyId: newFamily.id };
+
+        // Check if we're in SAAS mode and user is not a beta participant
+        const deploymentMode = process.env.DEPLOYMENT_MODE;
+        const isSaasMode = deploymentMode === 'saas';
+
+        if (isSaasMode) {
+          // Get current account to check beta status
+          const currentAccount = await tx.account.findUnique({
+            where: { id: authResult.accountId },
+            select: { betaparticipant: true, trialEnds: true, planType: true }
+          });
+
+          // If not a beta participant and no existing trial/plan, set 14-day trial
+          if (currentAccount && !currentAccount.betaparticipant && !currentAccount.trialEnds && !currentAccount.planType) {
+            // Set trial to end at 11:59 PM 14 days from today
+            const trialEndDate = new Date();
+            trialEndDate.setDate(trialEndDate.getDate() + 14);
+            trialEndDate.setHours(23, 59, 59, 999); // End at 11:59:59 PM
+
+            accountUpdateData.trialEnds = trialEndDate;
+
+            console.log(`Setting 14-day trial for account ${authResult.accountId}, ending ${trialEndDate.toISOString()}`);
+          }
+        }
+
         await tx.account.update({
           where: { id: authResult.accountId },
-          data: { familyId: newFamily.id }
+          data: accountUpdateData
         });
 
         return newFamily;
