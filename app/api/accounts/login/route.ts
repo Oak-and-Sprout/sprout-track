@@ -156,6 +156,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
       accountId: account.id,
       accountEmail: account.email,
       verified: account.verified,
+      betaparticipant: account.betaparticipant,
+      trialEnds: account.trialEnds?.toISOString(),
+      planExpires: account.planExpires?.toISOString(),
+      planType: account.planType,
     }, JWT_SECRET, { expiresIn: `${TOKEN_EXPIRATION}s` });
 
     const response: AccountLoginResponse = {
