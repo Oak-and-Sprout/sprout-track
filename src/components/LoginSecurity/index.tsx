@@ -9,6 +9,7 @@ import { X, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useDeployment } from '@/app/context/deployment';
 import { ShareButton } from '@/src/components/ui/share-button';
+import ExpiredAccountMessage from '@/src/components/ExpiredAccountMessage';
 import './login-security.css';
 import { ApiResponse } from '@/app/api/types';
 
@@ -37,6 +38,15 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [goButtonClicks, setGoButtonClicks] = useState(0);
   const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Account status for SAAS mode
+  const [accountStatus, setAccountStatus] = useState<{
+    isExpired: boolean;
+    isTrialExpired: boolean;
+    expirationDate?: string;
+    betaparticipant: boolean;
+  } | null>(null);
+  const [checkingAccountStatus, setCheckingAccountStatus] = useState(false);
 
   // Track when component has mounted to prevent hydration issues
   useEffect(() => {
@@ -119,6 +129,87 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
 
     checkAuthSettings();
   }, [familySlug]);
+
+  // Check account status in SAAS mode
+  useEffect(() => {
+    const checkAccountStatus = async () => {
+      if (!isSaasMode || !familySlug) return;
+
+      setCheckingAccountStatus(true);
+      try {
+        // First get family info to find the account
+        const familyResponse = await fetch(`/api/family/by-slug/${encodeURIComponent(familySlug)}`);
+        const familyData = await familyResponse.json();
+
+        if (!familyData.success || !familyData.data || !familyData.data.accountId) {
+          // Family doesn't have an account - allow access (legacy families)
+          setAccountStatus(null);
+          return;
+        }
+
+        // Get account status
+        const accountResponse = await fetch(`/api/accounts/status`, {
+          headers: {
+            'Authorization': `Bearer temp-${familyData.data.accountId}` // Temp token for status check
+          }
+        });
+
+        if (accountResponse.ok) {
+          const accountData = await accountResponse.json();
+          if (accountData.success) {
+            const account = accountData.data;
+
+            // Check if beta participant (always allow access)
+            if (account.betaparticipant) {
+              setAccountStatus({ isExpired: false, isTrialExpired: false, betaparticipant: true });
+              return;
+            }
+
+            // Check subscription/trial status
+            const now = new Date();
+            let isExpired = false;
+            let isTrialExpired = false;
+            let expirationDate: string | undefined;
+
+            if (account.trialEnds) {
+              const trialEndDate = new Date(account.trialEnds);
+              if (now > trialEndDate) {
+                isTrialExpired = true;
+                isExpired = true;
+                expirationDate = account.trialEnds;
+              }
+            } else if (account.planExpires) {
+              const planEndDate = new Date(account.planExpires);
+              if (now > planEndDate) {
+                isExpired = true;
+                expirationDate = account.planExpires;
+              }
+            } else if (!account.planType) {
+              // No trial, no plan, and not beta - expired
+              isExpired = true;
+            }
+
+            setAccountStatus({
+              isExpired,
+              isTrialExpired,
+              expirationDate,
+              betaparticipant: false
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking account status:', error);
+        // On error, don't block access
+        setAccountStatus(null);
+      } finally {
+        setCheckingAccountStatus(false);
+      }
+    };
+
+    if (isMounted) {
+      checkAccountStatus();
+    }
+  }, [isSaasMode, familySlug, isMounted]);
 
   const handleLoginIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -520,6 +611,19 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Show expired account message if account is expired in SAAS mode
+  if (isSaasMode && accountStatus?.isExpired && !checkingAccountStatus) {
+    return (
+      <ExpiredAccountMessage
+        familyName={familyName}
+        familySlug={familySlug}
+        isTrialExpired={accountStatus.isTrialExpired}
+        expirationDate={accountStatus.expirationDate}
+      />
+    );
+  }
+
+  // Show loading or normal login if account is valid or not in SAAS mode
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white login-container">
       <div className="w-full max-w-md mx-auto p-6">
