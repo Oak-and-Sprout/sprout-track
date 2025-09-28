@@ -880,9 +880,25 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               )}
 
               {accountStatus.subscriptionActive && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Subscription Active</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      {accountStatus.accountStatus === 'trial' ? 'Active Trial' : 'Subscription Active'}
+                    </span>
+                  </div>
+                  {accountStatus.accountStatus === 'trial' && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        // Placeholder for future payment flow
+                        alert('Payment management coming soon!');
+                      }}
+                    >
+                      <Crown className="h-4 w-4 mr-2" />
+                      Upgrade
+                    </Button>
+                  )}
                 </div>
               )}
 
