@@ -25,6 +25,13 @@ interface AccountStatus {
   familySlug?: string;
   familyName?: string;
   betaparticipant: boolean;
+  closed: boolean;
+  closedAt?: string;
+  planType?: string;
+  planExpires?: string;
+  trialEnds?: string;
+  subscriptionActive: boolean;
+  accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family';
 }
 
 interface AccountButtonProps {
@@ -95,7 +102,10 @@ export function AccountButton({
                 hasFamily: !!user.familySlug,
                 familySlug: user.familySlug,
                 familyName: undefined,
-                betaparticipant: false // Default to false for cached data
+                betaparticipant: false, // Default to false for cached data
+                closed: false,
+                subscriptionActive: true, // Assume active for cached data
+                accountStatus: !!user.familySlug ? 'active' : 'no_family'
               });
               setIsLoggedIn(true);
             } catch (parseError) {

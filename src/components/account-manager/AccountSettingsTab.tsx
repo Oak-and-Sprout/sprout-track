@@ -794,6 +794,49 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </div>
               </div>
             </div>
+          ) : !accountStatus.hasFamily ? (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <Home className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-blue-800 mb-2">
+                      No Family Created Yet
+                    </h4>
+                    <p className="text-blue-700 mb-3">
+                      Get started by creating your family to begin tracking activities.
+                    </p>
+                    {accountStatus.trialEnds && (
+                      <p className="text-sm text-blue-600 mb-3">
+                        You have a trial that expires on {new Date(accountStatus.trialEnds).toLocaleDateString()}.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => window.location.href = '/account/family-setup'}
+                  className="flex-1"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Create Family
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Placeholder for future payment flow
+                    alert('Payment management coming soon!');
+                  }}
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Upgrade Plan
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -803,10 +846,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   accountStatus.accountStatus === 'trial' ? "bg-blue-500" :
                   accountStatus.accountStatus === 'expired' ? "bg-red-500" :
                   accountStatus.accountStatus === 'closed' ? "bg-gray-500" :
+                  accountStatus.accountStatus === 'no_family' ? "bg-orange-500" :
                   "bg-yellow-500"
                 )} />
                 <span className="font-medium capitalize">
-                  {accountStatus.accountStatus} Account
+                  {accountStatus.accountStatus.replace('_', ' ')} Account
                 </span>
               </div>
 

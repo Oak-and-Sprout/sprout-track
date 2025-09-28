@@ -36,7 +36,7 @@ export interface AccountStatus {
   planExpires?: string;
   trialEnds?: string;
   subscriptionActive: boolean;
-  accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed';
+  accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family';
 }
 
 /**
