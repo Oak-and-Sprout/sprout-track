@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { useDeployment } from '../../app/context/deployment';
 
 interface Family {
   id: string;
@@ -17,11 +18,12 @@ interface FamilyContextType {
   setFamily: (family: Family) => void;
   families: Family[];
   loadFamilies: () => Promise<void>;
+  handleLogout?: () => void;
 }
 
 const FamilyContext = createContext<FamilyContextType | undefined>(undefined);
 
-export function FamilyProvider({ children }: { children: ReactNode }) {
+export function FamilyProvider({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
   const [family, setFamily] = useState<Family | null>(() => {
     // Try to get from localStorage first for persistence
     if (typeof window !== 'undefined') {
@@ -34,7 +36,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
+  const { isSaasMode } = useDeployment();
 
   // Extract family slug from URL
   const getFamilySlugFromUrl = () => {
@@ -116,7 +118,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error('Failed to load families');
       }
-      
+
       const data = await response.json();
       if (data.success && data.data) {
         setFamilies(data.data);
@@ -130,13 +132,83 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to check if account has expired in SAAS mode (checks JWT token in memory)
+  const checkAccountExpiration = useCallback(() => {
+    // Only check if we have a family and are in client environment
+    if (typeof window === 'undefined' || !family?.slug) return;
+
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+
+      // Only check expiration in SAAS mode
+      if (!isSaasMode) return;
+
+      // Decode JWT token to get account info
+      let decodedPayload;
+      try {
+        const payload = authToken.split('.')[1];
+        decodedPayload = JSON.parse(atob(payload));
+      } catch (error) {
+        console.error('Error parsing JWT token for expiration check:', error);
+        return;
+      }
+
+      // Only check expiration for account-based auth
+      if (!decodedPayload.isAccountAuth) return;
+
+      // Skip check for beta participants (from JWT token)
+      if (decodedPayload.betaparticipant) return;
+
+      // Check if account/trial is expired based on JWT token data
+      const now = new Date();
+      let isExpired = false;
+
+      if (decodedPayload.trialEnds) {
+        const trialEndDate = new Date(decodedPayload.trialEnds);
+        isExpired = now > trialEndDate;
+      } else if (decodedPayload.planExpires) {
+        const planEndDate = new Date(decodedPayload.planExpires);
+        isExpired = now > planEndDate;
+      } else if (!decodedPayload.planType && !decodedPayload.betaparticipant) {
+        // No trial, no plan, and not beta - expired
+        isExpired = true;
+      }
+
+      if (isExpired) {
+        console.log('Account expired (from JWT token), logging out user...');
+        if (onLogout) {
+          onLogout();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking account expiration:', error);
+    }
+  }, [family?.slug, onLogout, isSaasMode]);
+
+  // Set up periodic account expiration checking
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Initial check
+    checkAccountExpiration();
+
+    // Check every 30 seconds
+    const expirationCheckInterval = setInterval(checkAccountExpiration, 30000);
+
+    return () => {
+      clearInterval(expirationCheckInterval);
+    };
+  }, [checkAccountExpiration]);
+
   const value = {
     family,
     loading,
     error,
     setFamily,
     families,
-    loadFamilies
+    loadFamilies,
+    handleLogout: onLogout
   };
 
   return <FamilyContext.Provider value={value}>{children}</FamilyContext.Provider>;
