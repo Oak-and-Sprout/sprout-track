@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Validate family slug if provided
+    // Validate family slug if provided and check subscription status in SAAS mode
     let targetFamily = null;
     if (familySlug) {
       targetFamily = await prisma.family.findFirst({
@@ -138,6 +138,17 @@ export async function POST(req: NextRequest) {
           slug: familySlug,
           isActive: true,
         },
+        include: {
+          account: {
+            select: {
+              id: true,
+              betaparticipant: true,
+              trialEnds: true,
+              planType: true,
+              planExpires: true
+            }
+          }
+        }
       });
 
       if (!targetFamily) {
@@ -148,6 +159,41 @@ export async function POST(req: NextRequest) {
           },
           { status: 404 }
         );
+      }
+
+      // Check subscription status in SAAS mode
+      const deploymentMode = process.env.DEPLOYMENT_MODE;
+      if (deploymentMode === 'saas' && targetFamily.account) {
+        const account = targetFamily.account;
+
+        // Skip check for beta participants
+        if (!account.betaparticipant) {
+          const now = new Date();
+          let isExpired = false;
+
+          if (account.trialEnds) {
+            const trialEndDate = new Date(account.trialEnds);
+            isExpired = now > trialEndDate;
+          } else if (account.planExpires) {
+            const planEndDate = new Date(account.planExpires);
+            isExpired = now > planEndDate;
+          } else if (!account.planType) {
+            // No trial, no plan, and not beta - expired
+            isExpired = true;
+          }
+
+          if (isExpired) {
+            // Record failed attempt to prevent brute force on expired families
+            recordFailedAttempt(ip);
+            return NextResponse.json<ApiResponse<null>>(
+              {
+                success: false,
+                error: 'Family access has expired. Please renew your subscription.',
+              },
+              { status: 403 }
+            );
+          }
+        }
       }
     }
 
@@ -221,19 +267,27 @@ export async function POST(req: NextRequest) {
         
         if (systemCaretaker) {
           // Create JWT token for system caretaker with actual caretaker data
-          const token = jwt.sign(
-            {
-              id: systemCaretaker.id,
-              name: systemCaretaker.name,
-              type: systemCaretaker.type,
-              role: (systemCaretaker as any).role || 'ADMIN',
-              familyId: systemCaretaker.familyId,
-              familySlug: systemCaretaker.family?.slug,
-              authType: 'SYSTEM',
-            },
-            JWT_SECRET,
-            { expiresIn: `${TOKEN_EXPIRATION}s` } // Token expires based on AUTH_LIFE env variable
-          );
+          // Include subscription data for family context checking
+          let tokenData: any = {
+            id: systemCaretaker.id,
+            name: systemCaretaker.name,
+            type: systemCaretaker.type,
+            role: (systemCaretaker as any).role || 'ADMIN',
+            familyId: systemCaretaker.familyId,
+            familySlug: systemCaretaker.family?.slug,
+            authType: 'SYSTEM',
+            isAccountAuth: false,
+          };
+
+          // Add subscription data if family has an account (for SAAS mode)
+          if (targetFamily?.account) {
+            tokenData.betaparticipant = targetFamily.account.betaparticipant;
+            tokenData.trialEnds = targetFamily.account.trialEnds?.toISOString();
+            tokenData.planExpires = targetFamily.account.planExpires?.toISOString();
+            tokenData.planType = targetFamily.account.planType;
+          }
+
+          const token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: `${TOKEN_EXPIRATION}s` });
           
           // Create response with token
           const response = NextResponse.json<ApiResponse<{ 
@@ -364,19 +418,27 @@ export async function POST(req: NextRequest) {
 
       if (caretaker && caretaker.securityPin === securityPin) {
         // Create JWT token for caretaker
-        const token = jwt.sign(
-          {
-            id: caretaker.id,
-            name: caretaker.name,
-            type: caretaker.type,
-            role: (caretaker as any).role || 'USER',
-            familyId: caretaker.familyId,
-            familySlug: caretaker.family?.slug,
-            authType: authType,
-          },
-          JWT_SECRET,
-          { expiresIn: `${TOKEN_EXPIRATION}s` } // Token expires based on AUTH_LIFE env variable
-        );
+        // Include subscription data for family context checking
+        let tokenData: any = {
+          id: caretaker.id,
+          name: caretaker.name,
+          type: caretaker.type,
+          role: (caretaker as any).role || 'USER',
+          familyId: caretaker.familyId,
+          familySlug: caretaker.family?.slug,
+          authType: authType,
+          isAccountAuth: false,
+        };
+
+        // Add subscription data if family has an account (for SAAS mode)
+        if (targetFamily?.account) {
+          tokenData.betaparticipant = targetFamily.account.betaparticipant;
+          tokenData.trialEnds = targetFamily.account.trialEnds?.toISOString();
+          tokenData.planExpires = targetFamily.account.planExpires?.toISOString();
+          tokenData.planType = targetFamily.account.planType;
+        }
+
+        const token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: `${TOKEN_EXPIRATION}s` });
         
         // Create response with token
         const response = NextResponse.json<ApiResponse<{ 
