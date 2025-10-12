@@ -137,65 +137,22 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
 
       setCheckingAccountStatus(true);
       try {
-        // First get family info to find the account
+        // Get family info with account status
         const familyResponse = await fetch(`/api/family/by-slug/${encodeURIComponent(familySlug)}`);
         const familyData = await familyResponse.json();
 
-        if (!familyData.success || !familyData.data || !familyData.data.accountId) {
-          // Family doesn't have an account - allow access (legacy families)
+        if (!familyData.success || !familyData.data) {
+          // Family doesn't exist - allow the normal flow to handle this
           setAccountStatus(null);
           return;
         }
 
-        // Get account status
-        const accountResponse = await fetch(`/api/accounts/status`, {
-          headers: {
-            'Authorization': `Bearer temp-${familyData.data.accountId}` // Temp token for status check
-          }
-        });
-
-        if (accountResponse.ok) {
-          const accountData = await accountResponse.json();
-          if (accountData.success) {
-            const account = accountData.data;
-
-            // Check if beta participant (always allow access)
-            if (account.betaparticipant) {
-              setAccountStatus({ isExpired: false, isTrialExpired: false, betaparticipant: true });
-              return;
-            }
-
-            // Check subscription/trial status
-            const now = new Date();
-            let isExpired = false;
-            let isTrialExpired = false;
-            let expirationDate: string | undefined;
-
-            if (account.trialEnds) {
-              const trialEndDate = new Date(account.trialEnds);
-              if (now > trialEndDate) {
-                isTrialExpired = true;
-                isExpired = true;
-                expirationDate = account.trialEnds;
-              }
-            } else if (account.planExpires) {
-              const planEndDate = new Date(account.planExpires);
-              if (now > planEndDate) {
-                isExpired = true;
-                expirationDate = account.planExpires;
-              }
-            } else if (!account.planType) {
-              // No trial, no plan, and not beta - expired
-              isExpired = true;
-            }
-
-            setAccountStatus({
-              isExpired,
-              isTrialExpired,
-              expirationDate,
-              betaparticipant: false
-            });
-          }
+        // Check if family has account status data
+        if (familyData.data.accountStatus) {
+          setAccountStatus(familyData.data.accountStatus);
+        } else {
+          // No account associated with family - allow access (legacy families)
+          setAccountStatus(null);
         }
       } catch (error) {
         console.error('Error checking account status:', error);
