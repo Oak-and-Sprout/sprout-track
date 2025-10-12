@@ -117,7 +117,7 @@ model Account {
   // Future billing fields
   stripeCustomerId String?
   subscriptionId   String?
-  planType         String? // 'free', 'premium', 'enterprise'
+  planType         String? // 'sub', 'full'
   planExpires      DateTime?
   trialEnds        DateTime?
   

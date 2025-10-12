@@ -102,7 +102,7 @@ async function listFamilies() {
       let details = '';
 
       if (account.betaparticipant) {
-        status = 'Beta Participant (Lifetime Access)';
+        status = 'Beta Participant (full Access)';
         details = 'No expiration';
       } else if (account.trialEnds) {
         const trialEnd = new Date(account.trialEnds);
@@ -123,7 +123,7 @@ async function listFamilies() {
           details = `Plan: ${account.planType}, Expires: ${formatDate(planEnd)}`;
         }
       } else if (account.planType && !account.planExpires) {
-        status = 'Lifetime License';
+        status = 'Full License';
         details = `Plan: ${account.planType}, No expiration`;
       } else {
         status = 'No Active Plan';
@@ -198,7 +198,7 @@ async function setFamilyStatus(familyId, statusType) {
 
       updateData = {
         trialEnds: null,
-        planType: 'premium',
+        planType: 'sub',
         planExpires: subEnd,
         betaparticipant: false
       };
@@ -212,35 +212,35 @@ async function setFamilyStatus(familyId, statusType) {
 
       updateData = {
         trialEnds: null,
-        planType: 'premium',
+        planType: 'sub',
         planExpires: expiredSub,
         betaparticipant: false
       };
       console.log(`✓ Set subscription expired: expired ${formatDate(expiredSub)}`);
       break;
 
-    case 'lifetime':
-      // Lifetime license (500 years in the future)
-      const lifetimeEnd = new Date(now.getTime() + (500 * 365 * 24 * 60 * 60 * 1000));
+    case 'full':
+      // full license (500 years in the future)
+      const fullEnd = new Date(now.getTime() + (500 * 365 * 24 * 60 * 60 * 1000));
 
       updateData = {
         trialEnds: null,
-        planType: 'lifetime',
-        planExpires: lifetimeEnd,
+        planType: 'full',
+        planExpires: fullEnd,
         betaparticipant: false
       };
-      console.log(`✓ Set lifetime license: expires ${formatDate(lifetimeEnd)}`);
+      console.log(`✓ Set full license: expires ${formatDate(fullEnd)}`);
       break;
 
     case 'beta':
-      // Beta participant (lifetime access)
+      // Beta participant (full access)
       updateData = {
         trialEnds: null,
         planType: null,
         planExpires: null,
         betaparticipant: true
       };
-      console.log(`✓ Set beta participant: lifetime access`);
+      console.log(`✓ Set beta participant: full access`);
       break;
 
     default:
@@ -322,8 +322,8 @@ async function setFamilyStatusMenu() {
   console.log('2. Trial Expired (2 days ago)');
   console.log('3. Subscription Active (30 days from now)');
   console.log('4. Subscription Expired (2 days ago)');
-  console.log('5. Lifetime License (500 years)');
-  console.log('6. Beta Participant (lifetime access)');
+  console.log('5. Full License (500 years)');
+  console.log('6. Beta Participant (full access)');
   console.log('7. Cancel');
 
   const statusChoice = await askQuestion('Choose status (1-7): ');
@@ -333,7 +333,7 @@ async function setFamilyStatusMenu() {
     '2': 'trial_expired',
     '3': 'sub_active',
     '4': 'sub_expired',
-    '5': 'lifetime',
+    '5': 'full',
     '6': 'beta'
   };
 
