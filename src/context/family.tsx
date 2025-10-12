@@ -19,6 +19,7 @@ interface FamilyContextType {
   families: Family[];
   loadFamilies: () => Promise<void>;
   handleLogout?: () => void;
+  authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const FamilyContext = createContext<FamilyContextType | undefined>(undefined);
@@ -201,6 +202,80 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
     };
   }, [checkAccountExpiration]);
 
+  // Set up global fetch interceptor for 401 handling
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Store the original fetch function
+    const originalFetch = window.fetch;
+
+    // Override fetch to intercept 401 responses
+    window.fetch = async (...args) => {
+      try {
+        const response = await originalFetch(...args);
+
+        // If we get a 401 Unauthorized, trigger logout
+        if (response.status === 401) {
+          // Trigger logout after a short delay to avoid interfering with the current call stack
+          if (onLogout) {
+            setTimeout(() => {
+              if (onLogout) {
+                onLogout();
+              }
+            }, 100);
+          }
+        }
+
+        return response;
+      } catch (error) {
+        throw error;
+      }
+    };
+
+    // Restore original fetch on cleanup
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [onLogout]);
+
+  // Authenticated fetch wrapper that automatically handles 401 responses
+  const authenticatedFetch = useCallback(async (url: string, options?: RequestInit): Promise<Response> => {
+    // Get auth token from localStorage
+    const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+    // Merge authorization header with provided options
+    const headers = new Headers(options?.headers || {});
+    if (authToken && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${authToken}`);
+    }
+
+    const mergedOptions: RequestInit = {
+      ...options,
+      headers,
+    };
+
+    try {
+      const response = await fetch(url, mergedOptions);
+
+      // If we get a 401 Unauthorized, trigger logout
+      if (response.status === 401) {
+        // Trigger logout after a short delay to avoid interfering with the current call stack
+        if (onLogout) {
+          setTimeout(() => {
+            if (onLogout) {
+              onLogout();
+            }
+          }, 100);
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }, [onLogout]);
+
   const value = {
     family,
     loading,
@@ -208,7 +283,8 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
     setFamily,
     families,
     loadFamilies,
-    handleLogout: onLogout
+    handleLogout: onLogout,
+    authenticatedFetch,
   };
 
   return <FamilyContext.Provider value={value}>{children}</FamilyContext.Provider>;
