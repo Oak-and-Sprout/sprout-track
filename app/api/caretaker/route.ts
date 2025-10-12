@@ -285,7 +285,7 @@ async function deleteHandler(req: NextRequest, authContext: AuthResult) {
 
     // Also remove the FamilyMember association for regular caretakers only
     // System caretakers don't have FamilyMember associations
-    if (existingCaretaker.loginId !== '00') {
+    if (existingCaretaker.loginId !== '00' && targetFamilyId) {
       await prisma.familyMember.deleteMany({
         where: {
           caretakerId: id,
