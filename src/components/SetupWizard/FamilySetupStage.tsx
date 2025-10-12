@@ -99,12 +99,17 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
       .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
   };
 
-  // Handle slug field click - auto-generate if empty
-  const handleSlugFieldClick = () => {
+  // Handle slug field focus - auto-generate if empty and set cursor to end
+  const handleSlugFieldFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     if (!familySlug && familyName) {
       const autoSlug = generateSlugFromName(familyName);
       if (autoSlug) {
         setFamilySlug(autoSlug);
+        // Use setTimeout to ensure the value is set before moving cursor
+        setTimeout(() => {
+          const input = e.target as HTMLInputElement;
+          input.setSelectionRange(input.value.length, input.value.length);
+        }, 0);
       }
     }
   };
@@ -162,10 +167,10 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
                 id="familySlug"
                 value={familySlug}
                 onChange={(e) => setFamilySlug(e.target.value.toLowerCase())}
-                onClick={handleSlugFieldClick}
+                onFocus={handleSlugFieldFocus}
                 placeholder="family-url"
                 className={cn(
-                  styles.formInput, 
+                  styles.formInput,
                   "setup-wizard-form-input",
                   slugError ? 'border-red-500' : ''
                 )}
