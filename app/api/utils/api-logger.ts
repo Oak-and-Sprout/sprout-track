@@ -16,6 +16,11 @@ export interface ApiLogEntry {
 }
 
 export async function logApiCall(entry: ApiLogEntry): Promise<void> {
+  // Check if logging is enabled
+  if (process.env.ENABLE_LOG !== 'true') {
+    return;
+  }
+
   try {
     await logPrisma.apiLog.create({
       data: {

@@ -49,27 +49,30 @@ export function withLogging<T = any>(
       status = 500;
       throw err;
     } finally {
-      // Log the API call asynchronously (don't await to avoid slowing down response)
-      const durationMs = Date.now() - startTime;
+      // Only log if logging is enabled
+      if (process.env.ENABLE_LOG === 'true') {
+        // Log the API call asynchronously (don't await to avoid slowing down response)
+        const durationMs = Date.now() - startTime;
 
-      const logEntry: ApiLogEntry = {
-        method: req.method,
-        path: url.pathname,
-        status,
-        durationMs,
-        ip,
-        userAgent,
-        caretakerId: authContext?.caretakerId,
-        familyId: authContext?.familyId,
-        error,
-        requestBody,
-        responseBody,
-      };
+        const logEntry: ApiLogEntry = {
+          method: req.method,
+          path: url.pathname,
+          status,
+          durationMs,
+          ip,
+          userAgent,
+          caretakerId: authContext?.caretakerId ?? undefined,
+          familyId: authContext?.familyId ?? undefined,
+          error,
+          requestBody,
+          responseBody,
+        };
 
-      // Don't await - fire and forget
-      logApiCall(logEntry).catch((logError) => {
-        console.error('Failed to log API call:', logError);
-      });
+        // Don't await - fire and forget
+        logApiCall(logEntry).catch((logError) => {
+          console.error('Failed to log API call:', logError);
+        });
+      }
     }
   };
 }
