@@ -204,8 +204,20 @@ The logging system is designed to be non-blocking:
 Configure logging via `.env`:
 
 ```env
+# Enable or disable API logging
+ENABLE_LOG=true
+
+# Location of the log database file
 LOG_DATABASE_URL="file:../db/api-logs.db"
 ```
+
+**Important**: API logging is **disabled by default** (`ENABLE_LOG=false`). To enable logging, set `ENABLE_LOG=true` in your `.env` file.
+
+When `ENABLE_LOG=false` or is not set:
+- No logs will be written to the database
+- Logging functions return immediately without any database operations
+- Zero performance overhead from the logging system
+- The log database file will not be created or accessed
 
 ### Example: Auth Endpoint Logging
 

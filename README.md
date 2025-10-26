@@ -341,6 +341,17 @@ docker run --rm -v sprout-track-db:/data -v $(pwd):/backup alpine tar xzf /backu
 docker run --rm -v sprout-track-env:/data -v $(pwd):/backup alpine tar xzf /backup/env-backup.tar.gz -C /data
 ```
 
+## API Logging
+
+Sprout Track includes an optional API logging system for debugging and monitoring. API logging is **disabled by default**. To enable it:
+
+```env
+ENABLE_LOG=true
+LOG_DATABASE_URL="file:../db/api-logs.db"
+```
+
+See [app/api/utils/logging.README.md](app/api/utils/logging.README.md) for complete documentation.
+
 ## Environment Variables
 
 The application can be configured using environment variables in the `.env` file. Here are the available options:
@@ -348,6 +359,8 @@ The application can be configured using environment variables in the `.env` file
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `DATABASE_URL` | Path to the SQLite database | `"file:../db/baby-tracker.db"` | `"file:/path/to/custom/db.sqlite"` |
+| `LOG_DATABASE_URL` | Path to the API log database | `"file:../db/api-logs.db"` | `"file:/path/to/logs.db"` |
+| `ENABLE_LOG` | Enable API request/response logging | `"false"` | `"true"` |
 | `SERVICE_NAME` | Name of the systemd service | `"baby-tracker"` | `"sprout-track"` |
 | `AUTH_LIFE` | Authentication token validity period in seconds | `"86400"` (24 hours) | `"43200"` (12 hours) |
 | `IDLE_TIME` | Idle timeout before automatic logout in seconds | `"28800"` (8 hours) | `"3600"` (1 hour) |
