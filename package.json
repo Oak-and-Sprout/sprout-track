@@ -8,8 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
+    "prisma:generate:log": "prisma generate --schema=prisma/log-schema.prisma",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:push:log": "prisma db push --schema=prisma/log-schema.prisma",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "prisma:studio:log": "prisma studio --schema=prisma/log-schema.prisma",
     "prisma:seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts"
   },
   "dependencies": {

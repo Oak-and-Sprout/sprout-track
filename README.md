@@ -231,10 +231,22 @@ This change will persist across application updates. For Docker deployments, use
 
 ### Database Scripts
 
+#### Main Database (baby-tracker.db)
 - `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:migrate` - Run database migrations
+- `npm run prisma:migrate` - Create and apply new migration (prompts for name)
+- `npm run prisma:deploy` - Apply existing migrations (no prompts, for production)
 - `npm run prisma:seed` - Seed the database with initial data
 - `npm run prisma:studio` - Open Prisma Studio to view/edit database
+
+#### Log Database (api-logs.db)
+- `npm run prisma:generate:log` - Generate log database Prisma client
+- `npm run prisma:push:log` - Sync log schema to database (no migrations, for simple schemas)
+- `npm run prisma:studio:log` - Open Prisma Studio to view/edit log database
+
+**Development workflow:**
+- When you change the main schema, run: `npm run prisma:migrate`
+- When you change the log schema, run: `npm run prisma:push:log`
+- The log database uses `db push` instead of migrations to avoid conflicts with the main database migrations folder
 
 ### Setup and Deployment Scripts
 
@@ -349,6 +361,20 @@ Sprout Track includes an optional API logging system for debugging and monitorin
 ENABLE_LOG=true
 LOG_DATABASE_URL="file:../db/api-logs.db"
 ```
+
+### Log Database Management
+
+The API log database (`api-logs.db`) is managed separately from the main application database:
+
+- **Schema Management**: Uses `prisma db push` instead of migrations for simplicity
+- **Setup**: Automatically created during initial setup via `./scripts/setup.sh`
+- **Updates**: Run `npm run prisma:push:log` to sync schema changes
+- **Data Persistence**: Log data is preserved during schema updates when possible
+  - Adding fields: Safe, preserves existing logs
+  - Removing/renaming fields: May cause data loss for those fields
+  - For production: Back up `api-logs.db` before schema changes if log history is important
+
+**Note**: Since logs are typically ephemeral debugging data, the log database uses a simpler schema sync approach rather than versioned migrations. This avoids migration conflicts with the main database.
 
 See [app/api/utils/logging.README.md](app/api/utils/logging.README.md) for complete documentation.
 
