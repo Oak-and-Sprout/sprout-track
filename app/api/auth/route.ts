@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { checkIpLockout, recordFailedAttempt, resetFailedAttempts } from '../utils/ip-lockout';
 import { decrypt, isEncrypted } from '../utils/encryption';
 import { randomUUID } from 'crypto';
+import { logApiCall, getClientInfo } from '../utils/api-logger';
 
 // Secret key for JWT signing - in production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
@@ -13,12 +14,12 @@ const TOKEN_EXPIRATION = parseInt(process.env.AUTH_LIFE || '1800', 10);
 
 // Authentication endpoint for caretakers or system PIN
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  const { ip, userAgent } = getClientInfo(req);
+  let requestBody: any;
+
   try {
-    // Get the client IP
-    const ip = req.headers.get('x-forwarded-for') || 
-               req.headers.get('x-real-ip') || 
-               'unknown';
-    
+
     // Check if the IP is locked out
     const { locked, remainingTime } = checkIpLockout(ip);
     if (locked) {
@@ -31,7 +32,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { loginId, securityPin, familySlug, adminPassword } = await req.json();
+    requestBody = await req.json();
+    const { loginId, securityPin, familySlug, adminPassword } = requestBody;
 
     if (!securityPin && !adminPassword) {
       return NextResponse.json<ApiResponse<null>>(
@@ -105,6 +107,20 @@ export async function POST(req: NextRequest) {
               isSysAdmin: true,
             },
           });
+
+          // Log successful admin authentication
+          logApiCall({
+            method: req.method,
+            path: '/api/auth',
+            status: 200,
+            durationMs: Date.now() - startTime,
+            ip,
+            userAgent,
+            caretakerId: 'sysadmin',
+            familyId: undefined,
+            requestBody: { ...requestBody, adminPassword: '[REDACTED]' },
+            responseBody: { success: true, data: { id: 'sysadmin', name: 'System Administrator', type: 'SYSADMIN' } },
+          }).catch(err => console.error('Failed to log API call:', err));
 
           return response;
         } else {
@@ -337,6 +353,20 @@ export async function POST(req: NextRequest) {
           // Reset failed attempts on successful login
           resetFailedAttempts(ip);
 
+          // Log successful system caretaker authentication
+          logApiCall({
+            method: req.method,
+            path: '/api/auth',
+            status: 200,
+            durationMs: Date.now() - startTime,
+            ip,
+            userAgent,
+            caretakerId: systemCaretaker.id,
+            familyId: systemCaretaker.familyId ?? undefined,
+            requestBody: { ...requestBody, securityPin: '[REDACTED]' },
+            responseBody: { success: true, data: { id: systemCaretaker.id, name: systemCaretaker.name, familySlug: systemCaretaker.family?.slug } },
+          }).catch(err => console.error('Failed to log API call:', err));
+
           return response;
         } else {
           // This should not happen now since we create system caretakers on-demand
@@ -489,6 +519,20 @@ export async function POST(req: NextRequest) {
         // Reset failed attempts on successful login
         resetFailedAttempts(ip);
 
+        // Log successful caretaker authentication
+        logApiCall({
+          method: req.method,
+          path: '/api/auth',
+          status: 200,
+          durationMs: Date.now() - startTime,
+          ip,
+          userAgent,
+          caretakerId: caretaker.id,
+          familyId: caretaker.familyId ?? undefined,
+          requestBody: { ...requestBody, securityPin: '[REDACTED]' },
+          responseBody: { success: true, data: { id: caretaker.id, name: caretaker.name, familySlug: caretaker.family?.slug } },
+        }).catch(err => console.error('Failed to log API call:', err));
+
         return response;
       }
     }
@@ -496,12 +540,30 @@ export async function POST(req: NextRequest) {
     // If we get here, authentication failed
     // Record the failed attempt
     recordFailedAttempt(ip);
-    
+
     // Provide a more specific error message if family validation failed
-    const errorMessage = targetFamily 
+    const errorMessage = targetFamily
       ? 'Invalid credentials or user does not have access to this family'
       : 'Invalid credentials';
-    
+
+    // Log failed authentication attempt
+    logApiCall({
+      method: req.method,
+      path: '/api/auth',
+      status: 401,
+      durationMs: Date.now() - startTime,
+      ip,
+      userAgent,
+      familyId: targetFamily?.id,
+      error: errorMessage,
+      requestBody: {
+        ...requestBody,
+        securityPin: requestBody?.securityPin ? '[REDACTED]' : undefined,
+        adminPassword: requestBody?.adminPassword ? '[REDACTED]' : undefined
+      },
+      responseBody: { success: false, error: errorMessage },
+    }).catch(err => console.error('Failed to log API call:', err));
+
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
