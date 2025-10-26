@@ -275,3 +275,7 @@ export const GET = withAuthContext(handleGet as (req: NextRequest, authContext: 
 export const POST = withAuthContext(handlePost as (req: NextRequest, authContext: AuthResult) => Promise<NextResponse<ApiResponse<any>>>);
 export const PUT = withAuthContext(handlePut as (req: NextRequest, authContext: AuthResult) => Promise<NextResponse<ApiResponse<any>>>);
 export const DELETE = withAuthContext(handleDelete as (req: NextRequest, authContext: AuthResult) => Promise<NextResponse<ApiResponse<any>>>);
+
+// OPTIONAL: If you want to add logging, import withLogging and wrap handlers like this:
+// import { withLogging } from '../utils/with-logging';
+// export const GET = withAuthContext(withLogging(handleGet) as ...);
