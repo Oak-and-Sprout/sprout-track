@@ -91,20 +91,20 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const familyId = baby.familyId; // Use the verified family ID for all queries
 
     // Get the full URL to debug
-    const fullUrl = req.url;
-    console.log(`Full request URL: ${fullUrl}`);
+    // const fullUrl = req.url;
+    // console.log(`Full request URL: ${fullUrl}`);
     
     // Log all search parameters for debugging
     console.log("All search parameters:");
-    Array.from(searchParams.entries()).forEach(([key, value]) => {
-      console.log(`${key}: ${value}`);
-    });
+    // Array.from(searchParams.entries()).forEach(([key, value]) => {
+      // console.log(`${key}: ${value}`);
+    // });
     
     const limit = Number(searchParams.get('limit')) || 200;
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     
-    console.log(`API Request - babyId: ${babyId}, startDate: ${startDate}, endDate: ${endDate}`);
+    // console.log(`API Request - babyId: ${babyId}, startDate: ${startDate}, endDate: ${endDate}`);
 
     let effectiveStartDate = startDate;
     let effectiveEndDate = endDate;
@@ -113,16 +113,16 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     if (startDate && endDate) {
       // Don't use limit when filtering by date range
       useLimit = false;
-      console.log(`Using date range: ${startDate} to ${endDate}`);
+      // console.log(`Using date range: ${startDate} to ${endDate}`);
     } else {
-      console.log(`No date parameters provided, using limit: ${limit}`);
+      // console.log(`No date parameters provided, using limit: ${limit}`);
     }
 
     // Log query parameters
-    console.log(`Query parameters - useLimit: ${useLimit}, limit: ${limit}`);
-    console.log(`Date filtering: ${effectiveStartDate ? 'Yes' : 'No'}`);
-    console.log(`Effective start date: ${effectiveStartDate}`);
-    console.log(`Effective end date: ${effectiveEndDate}`);
+    // console.log(`Query parameters - useLimit: ${useLimit}, limit: ${limit}`);
+    // console.log(`Date filtering: ${effectiveStartDate ? 'Yes' : 'No'}`);
+    // console.log(`Effective start date: ${effectiveStartDate}`);
+    // console.log(`Effective end date: ${effectiveEndDate}`);
     
     // Convert date strings to UTC for database queries
     const startDateUTC = effectiveStartDate ? toUTC(effectiveStartDate) : undefined;
