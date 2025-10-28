@@ -50,6 +50,7 @@
 
 #### Bug Fixes & Technical Improvements
 - Made .env files persistent in docker images
+- Removed timeline console logging that was accidently left on for debugging
 - Added generic units to database seeds
 - Updated formatting for drops unit display
 - Fixed tab functionality to properly populate family slug
