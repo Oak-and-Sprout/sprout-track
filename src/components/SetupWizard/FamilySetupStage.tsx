@@ -27,6 +27,7 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [generatingSlug, setGeneratingSlug] = useState(false);
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const adminResetResolverRef = React.useRef<(() => void) | null>(null);
 
   // Handle admin password reset notification
   const handleAdminPasswordReset = useCallback(() => {
@@ -37,7 +38,18 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
   // Handle modal confirmation
   const handlePasswordResetConfirm = useCallback(() => {
     console.log('User acknowledged password reset notification');
-    // Modal will close automatically via onConfirm
+    // Resolve the promise to allow BackupRestore to proceed
+    if (adminResetResolverRef.current) {
+      adminResetResolverRef.current();
+      adminResetResolverRef.current = null;
+    }
+  }, []);
+
+  // Promise that resolves when user acknowledges the password reset
+  const handleAdminResetAcknowledged = useCallback(() => {
+    return new Promise<void>((resolve) => {
+      adminResetResolverRef.current = resolve;
+    });
   }, []);
 
   // Handle post-import logout and redirect
@@ -253,6 +265,7 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
               // Error handling is managed by the BackupRestore component
             }}
             onAdminPasswordReset={handleAdminPasswordReset}
+            onAdminResetAcknowledged={handleAdminResetAcknowledged}
           />
         </div>
       )}

@@ -22,7 +22,14 @@ export interface BackupRestoreProps {
 
   /** Callback for when admin password reset is detected during restore */
   onAdminPasswordReset?: () => void;
-  
+
+  /**
+   * Callback that returns a promise for when restore completes with admin reset.
+   * Parent should resolve this promise after user acknowledges the password reset modal.
+   * If not provided, the default behavior (immediate redirect/reload) will occur.
+   */
+  onAdminResetAcknowledged?: () => Promise<void>;
+
   /** Custom className for the container */
   className?: string;
 
@@ -39,16 +46,19 @@ export interface BackupRestoreProps {
 export interface BackupRestoreState {
   /** Whether a restore operation is in progress */
   isRestoring: boolean;
-  
+
   /** Whether a migration is in progress after restore */
   isMigrating: boolean;
-  
+
   /** Error message if operation fails */
   error: string | null;
-  
+
   /** Success message if operation succeeds */
   success: string | null;
-  
+
   /** Current migration step for progress tracking */
   migrationStep: string | null;
+
+  /** Whether admin password was reset and we're waiting for user acknowledgment */
+  awaitingAdminResetAck: boolean;
 } 

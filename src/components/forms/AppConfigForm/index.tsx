@@ -82,6 +82,7 @@ export default function AppConfigForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
   const closeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const adminResetResolverRef = React.useRef<(() => void) | null>(null);
 
   // Handle admin password reset notification
   const handleAdminPasswordReset = () => {
@@ -92,7 +93,18 @@ export default function AppConfigForm({
   // Handle modal confirmation
   const handlePasswordResetConfirm = () => {
     console.log('User acknowledged password reset notification');
-    // Modal will close automatically via onConfirm
+    // Resolve the promise to allow BackupRestore to proceed
+    if (adminResetResolverRef.current) {
+      adminResetResolverRef.current();
+      adminResetResolverRef.current = null;
+    }
+  };
+
+  // Promise that resolves when user acknowledges the password reset
+  const handleAdminResetAcknowledged = () => {
+    return new Promise<void>((resolve) => {
+      adminResetResolverRef.current = resolve;
+    });
   };
 
   // Fetch app config data
@@ -758,6 +770,7 @@ export default function AppConfigForm({
                 onBackupError={(error) => setError(error)}
                 onRestoreError={(error) => setError(error)}
                 onAdminPasswordReset={handleAdminPasswordReset}
+                onAdminResetAcknowledged={handleAdminResetAcknowledged}
               />
 
               {/* Status Messages */}
