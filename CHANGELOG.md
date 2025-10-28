@@ -31,10 +31,7 @@
 - **IMPORTANT**: When upgrading from v0.94.24 or earlier, admin passwords will be automatically reset to default "admin" for compatibility
 - Added automatic admin password reset to default "admin" when importing older database backups
 - Implemented modal notification system to inform users when admin password has been reset
-- Added delayed redirect/reload functionality - users must acknowledge password reset notification before being redirected
-- Enhanced authentication system to accept default "admin" password when appConfig.adminPass is blank
 - Improved database restore workflow in both Setup Wizard and Family Manager with password reset notifications
-- Added comprehensive user notification with security recommendations and Family Manager access instructions
 
 #### User Interface Enhancements
 - Added family name and share button to side navigation for easy URL sharing
@@ -59,6 +56,7 @@
 
 #### Bug Fixes & Technical Improvements
 - Made .env files persistent in docker images
+- Updated backup\restore functioanlity to include environment files in with the database backup (now in a zip file)
 - Removed timeline console logging that was accidently left on for debugging
 - Added generic units to database seeds
 - Updated formatting for drops unit display
