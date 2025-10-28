@@ -61,9 +61,18 @@ export async function POST(req: NextRequest) {
         }
 
         // Decrypt the stored admin password and compare
-        const decryptedAdminPass = isEncrypted(appConfig.adminPass) 
-          ? decrypt(appConfig.adminPass) 
-          : appConfig.adminPass;
+        // If adminPass is blank/empty, use default "admin" password
+        let decryptedAdminPass: string;
+
+        if (!appConfig.adminPass || appConfig.adminPass.trim() === '') {
+          // Use default password if stored password is blank
+          decryptedAdminPass = 'admin';
+        } else {
+          // Decrypt if encrypted, otherwise use as-is
+          decryptedAdminPass = isEncrypted(appConfig.adminPass)
+            ? decrypt(appConfig.adminPass)
+            : appConfig.adminPass;
+        }
 
         if (adminPassword === decryptedAdminPass) {
           // Create system admin JWT token
