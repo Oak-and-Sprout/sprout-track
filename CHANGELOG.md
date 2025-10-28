@@ -1,6 +1,6 @@
 # Sprout Track Changelog
 
-## v0.94.80 - API Logging, Account Management, and QoL Improvements - October 26, 2025
+## v0.94.89 - API Logging, Account Management, and QoL Improvements - October 28, 2025
 
 ### Changes
 
@@ -26,6 +26,15 @@
 - Updated caretaker API to use sysadmin context properly
 - Fixed authentication mode switching to handle sysadmin context and reset stale data
 - Updated settings form to group authentication settings with toggle for auth mode
+
+#### Admin Password Reset System (Docker Environment File Improvements)
+- **IMPORTANT**: When upgrading from v0.94.24 or earlier, admin passwords will be automatically reset to default "admin" for compatibility
+- Added automatic admin password reset to default "admin" when importing older database backups
+- Implemented modal notification system to inform users when admin password has been reset
+- Added delayed redirect/reload functionality - users must acknowledge password reset notification before being redirected
+- Enhanced authentication system to accept default "admin" password when appConfig.adminPass is blank
+- Improved database restore workflow in both Setup Wizard and Family Manager with password reset notifications
+- Added comprehensive user notification with security recommendations and Family Manager access instructions
 
 #### User Interface Enhancements
 - Added family name and share button to side navigation for easy URL sharing

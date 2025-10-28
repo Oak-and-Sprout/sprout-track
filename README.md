@@ -1,5 +1,9 @@
 # Sprout Track
 
+> **⚠️ IMPORTANT NOTICE - Version 0.94.89 Upgrade**
+>
+> **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** This is required for Docker environment file improvements. You'll receive a notification modal with instructions. [Read full details here](documentation/admin-password-reset-notification.md).
+
 A Next.js application for tracking baby activities, milestones, and development.
 
 ## Screenshots
