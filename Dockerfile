@@ -19,7 +19,9 @@ RUN npm ci
 # Disable Next.js telemetry
 RUN npm exec next telemetry disable
 
-# Note: Prisma client generation moved to docker-startup.sh
+# Generate Prisma clients (both main and log clients needed for build)
+RUN npm run prisma:generate && \
+    npm run prisma:generate:log
 
 # Copy application files
 COPY . .
@@ -29,6 +31,8 @@ RUN mkdir -p /app/env && \
     echo "Creating base .env file..." && \
     echo "# Environment variables for Docker container" > /app/env/.env && \
     echo "DATABASE_URL=\"file:/db/baby-tracker.db\"" >> /app/env/.env && \
+    echo "LOG_DATABASE_URL=\"file:/db/baby-tracker-logs.db\"" >> /app/env/.env && \
+    echo "ENABLE_LOG=\"false\"" >> /app/env/.env && \
     echo "NODE_ENV=production" >> /app/env/.env && \
     echo "PORT=3000" >> /app/env/.env && \
     echo "TZ=UTC" >> /app/env/.env && \
@@ -46,8 +50,9 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV TZ=UTC
 
-# Update database URL to point to the volume
+# Update database URLs to point to the volume
 ENV DATABASE_URL="file:/db/baby-tracker.db"
+ENV LOG_DATABASE_URL="file:/db/baby-tracker-logs.db"
 
 # Create volume mount points
 VOLUME /db

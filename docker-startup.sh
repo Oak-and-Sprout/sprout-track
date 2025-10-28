@@ -40,8 +40,9 @@ else
     echo "ENC_HASH already exists in .env file"
 fi
 
-echo "Generating Prisma client..."
-DATABASE_URL="file:/db/baby-tracker.db" npx prisma generate
+echo "Generating Prisma clients..."
+DATABASE_URL="file:/db/baby-tracker.db" npm run prisma:generate
+LOG_DATABASE_URL="file:/db/baby-tracker-logs.db" npm run prisma:generate:log
 
 echo "Running database migrations..."
 # Explicitly set DATABASE_URL for migrations
