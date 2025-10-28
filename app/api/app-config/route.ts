@@ -36,9 +36,17 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
     }
 
     // Decrypt sensitive fields for the response
+    // If adminPass is blank/empty, use default "admin" password
+    let decryptedAdminPass: string;
+    if (!appConfig.adminPass || appConfig.adminPass.trim() === '') {
+      decryptedAdminPass = 'admin';
+    } else {
+      decryptedAdminPass = isEncrypted(appConfig.adminPass) ? decrypt(appConfig.adminPass) : appConfig.adminPass;
+    }
+
     const decryptedAppConfig = {
       ...appConfig,
-      adminPass: isEncrypted(appConfig.adminPass) ? decrypt(appConfig.adminPass) : appConfig.adminPass,
+      adminPass: decryptedAdminPass,
     };
 
     const decryptedEmailConfig = {
@@ -122,10 +130,19 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
     const finalAppConfig = await prisma.appConfig.findFirst();
     const finalEmailConfig = await prisma.emailConfig.findFirst();
 
-    const decryptedAppConfig = finalAppConfig ? {
-      ...finalAppConfig,
-      adminPass: isEncrypted(finalAppConfig.adminPass) ? decrypt(finalAppConfig.adminPass) : finalAppConfig.adminPass,
-    } : null;
+    // Decrypt the final app config, using default "admin" if password is blank
+    const decryptedAppConfig = finalAppConfig ? (() => {
+      let decryptedAdminPass: string;
+      if (!finalAppConfig.adminPass || finalAppConfig.adminPass.trim() === '') {
+        decryptedAdminPass = 'admin';
+      } else {
+        decryptedAdminPass = isEncrypted(finalAppConfig.adminPass) ? decrypt(finalAppConfig.adminPass) : finalAppConfig.adminPass;
+      }
+      return {
+        ...finalAppConfig,
+        adminPass: decryptedAdminPass,
+      };
+    })() : null;
 
     const decryptedEmailConfig = finalEmailConfig ? {
       ...finalEmailConfig,
