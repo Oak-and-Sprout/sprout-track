@@ -16,9 +16,12 @@ export interface BackupRestoreProps {
   
   /** Callback for when restore succeeds */
   onRestoreSuccess?: () => void;
-  
+
   /** Callback for when restore fails */
   onRestoreError?: (error: string) => void;
+
+  /** Callback for when admin password reset is detected during restore */
+  onAdminPasswordReset?: () => void;
   
   /** Custom className for the container */
   className?: string;

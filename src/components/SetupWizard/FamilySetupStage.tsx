@@ -7,6 +7,7 @@ import { cn } from '@/src/lib/utils';
 import { styles } from './setup-wizard.styles';
 import { FamilySetupStageProps } from './setup-wizard.types';
 import { BackupRestore } from '@/src/components/BackupRestore';
+import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 
 /**
  * FamilySetupStage Component
@@ -25,16 +26,29 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
   const [slugError, setSlugError] = useState('');
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [generatingSlug, setGeneratingSlug] = useState(false);
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+
+  // Handle admin password reset notification
+  const handleAdminPasswordReset = useCallback(() => {
+    console.log('Admin password was reset to default during import');
+    setShowPasswordResetModal(true);
+  }, []);
+
+  // Handle modal confirmation
+  const handlePasswordResetConfirm = useCallback(() => {
+    console.log('User acknowledged password reset notification');
+    // Modal will close automatically via onConfirm
+  }, []);
 
   // Handle post-import logout and redirect
   const handleImportSuccess = useCallback(() => {
     console.log('Database imported successfully during setup');
-    
+
     // Clear all authentication data
     localStorage.removeItem('authToken');
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
-    
+
     // Redirect to home page - user will need to login with imported data
     router.push('/');
   }, [router]);
@@ -238,9 +252,17 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
               console.error('Database import failed during setup:', error);
               // Error handling is managed by the BackupRestore component
             }}
+            onAdminPasswordReset={handleAdminPasswordReset}
           />
         </div>
       )}
+
+      {/* Admin Password Reset Modal */}
+      <AdminPasswordResetModal
+        open={showPasswordResetModal}
+        onOpenChange={setShowPasswordResetModal}
+        onConfirm={handlePasswordResetConfirm}
+      />
     </div>
   );
 };

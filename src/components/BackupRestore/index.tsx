@@ -19,6 +19,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
   onBackupError,
   onRestoreSuccess,
   onRestoreError,
+  onAdminPasswordReset,
   className,
   importOnly = false,
   initialSetup = false
@@ -42,26 +43,58 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
   // Handle post-restore migrations
   const runPostRestoreMigrations = async () => {
     try {
-      setState(prev => ({ 
-        ...prev, 
-        isMigrating: true, 
+      setState(prev => ({
+        ...prev,
+        isMigrating: true,
         migrationStep: 'Preparing database migration...',
-        error: null 
+        error: null
       }));
-      
+
       // Add a small delay to show the initial step
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setState(prev => ({ 
-        ...prev, 
-        migrationStep: 'Running schema migrations and updates...' 
+
+      // Step 1: Run pre-migration check
+      setState(prev => ({
+        ...prev,
+        migrationStep: 'Checking database version and compatibility...'
       }));
-      
+
       const authToken = localStorage.getItem('authToken');
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...(authToken && { 'Authorization': `Bearer ${authToken}` })
       };
+
+      const preMigrationEndpoint = initialSetup
+        ? '/api/database/pre-migration-check-initial'
+        : '/api/database/pre-migration-check';
+
+      const preMigrationResponse = await fetch(preMigrationEndpoint, {
+        method: 'POST',
+        headers
+      });
+
+      if (!preMigrationResponse.ok) {
+        console.warn('Pre-migration check failed, continuing with migration...');
+      } else {
+        const preMigrationResult = await preMigrationResponse.json();
+        if (preMigrationResult.success && preMigrationResult.data?.adminResetRequired) {
+          console.log('Admin password reset was required and has been completed');
+          // Notify parent component that admin password was reset
+          onAdminPasswordReset?.();
+          setState(prev => ({
+            ...prev,
+            migrationStep: 'Database compatibility check complete. Running migrations...'
+          }));
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setState(prev => ({
+        ...prev,
+        migrationStep: 'Running schema migrations and updates...'
+      }));
 
       const migrationEndpoint = initialSetup ? '/api/database/migrate-initial' : '/api/database/migrate';
       const response = await fetch(migrationEndpoint, {
@@ -212,7 +245,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
       <input
         type="file"
         ref={fileInputRef}
-        accept=".db"
+        accept=".db,.zip"
         onChange={handleRestore}
         style={{ display: 'none' }}
       />
