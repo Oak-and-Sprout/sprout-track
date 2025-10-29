@@ -38,7 +38,7 @@ RUN mkdir -p /app/env && \
     echo "TZ=UTC" >> /app/env/.env && \
     echo "AUTH_LIFE=86400" >> /app/env/.env && \
     echo "IDLE_TIME=28800" >> /app/env/.env && \
-    echo "APP_VERSION=0.94.24" >> /app/env/.env && \
+    echo "APP_VERSION=0.94.89" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
     echo "Base .env file created (ENC_HASH will be generated at startup)"
 
