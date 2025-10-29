@@ -4,6 +4,12 @@
 
 ### Changes
 
+#### Mandatory Admin Password Reset (Docker Environment File Improvements)
+- **IMPORTANT - Only For Self Hosting Family's:** When upgrading from v0.94.24 or earlier, admin passwords will be automatically reset to default "admin" for compatibility
+- Added automatic admin password reset to default "admin" when importing older database backups
+- Implemented modal notification system to inform users when admin password has been reset
+- Improved database restore workflow in both Setup Wizard and Family Manager with password reset notifications
+
 #### API Logging System
 - Added comprehensive API logging system with dedicated api-logs.db database
 - Implemented authentication logging for security auditing
@@ -26,12 +32,6 @@
 - Updated caretaker API to use sysadmin context properly
 - Fixed authentication mode switching to handle sysadmin context and reset stale data
 - Updated settings form to group authentication settings with toggle for auth mode
-
-#### Admin Password Reset System (Docker Environment File Improvements)
-- **IMPORTANT**: When upgrading from v0.94.24 or earlier, admin passwords will be automatically reset to default "admin" for compatibility
-- Added automatic admin password reset to default "admin" when importing older database backups
-- Implemented modal notification system to inform users when admin password has been reset
-- Improved database restore workflow in both Setup Wizard and Family Manager with password reset notifications
 
 #### User Interface Enhancements
 - Added family name and share button to side navigation for easy URL sharing
