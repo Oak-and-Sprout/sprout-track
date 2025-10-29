@@ -119,6 +119,13 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
               setActiveInput('loginId');
             } else {
               setActiveInput('pin');
+              // Focus the PIN input for SYSTEM auth type
+              setTimeout(() => {
+                const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
+                if (pinInput) {
+                  pinInput.focus();
+                }
+              }, 0);
             }
           }
         }
