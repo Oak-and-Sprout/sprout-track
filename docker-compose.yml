@@ -10,6 +10,7 @@ services:
       - "${PORT:-3000}:3000"
     volumes:
       - db-data:/db
+      - env-data:/app/env
     environment:
       - NODE_ENV=production
     healthcheck:
@@ -22,3 +23,5 @@ services:
 volumes:
   db-data:
     name: sprout-track-db
+  env-data:
+    name: sprout-track-env

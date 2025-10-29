@@ -468,6 +468,9 @@ const TimelineActivityList = ({
                                             if (activity.color) {
                                               details.push(activity.color.charAt(0) + activity.color.slice(1).toLowerCase());
                                             }
+                                            if (activity.blowout) {
+                                              details.push('Blowout/Leakage');
+                                            }
                                             return details.join(' • ');
                                           }
                                           

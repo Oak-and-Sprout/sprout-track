@@ -127,6 +127,7 @@ export interface DiaperLogCreate {
   type: DiaperType;
   condition?: string;
   color?: string;
+  blowout?: boolean;
 }
 
 // Mood log types

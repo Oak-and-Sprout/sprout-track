@@ -3,8 +3,8 @@
 # This script performs the initial setup for the Sprout Track application:
 # 1. Checks for Node.js installation (must be installed beforehand)
 # 2. Installs dependencies
-# 3. Generates the Prisma client
-# 4. Runs database migrations (creates the database schema)
+# 3. Generates the Prisma clients (main and log)
+# 4. Runs database migrations (creates the database schemas for main and log databases)
 # 5. Seeds the database with initial data (creates default family, system caretaker with PIN 111222, and units)
 # 6. Builds the Next.js application
 
@@ -59,23 +59,47 @@ echo "Disabling Next.js telemetry..."
 npm exec next telemetry disable
 echo "Next.js telemetry disabled."
 
-# Step 4: Generate Prisma client
-echo "Step 4: Generating Prisma client..."
+# Step 4: Generate Prisma clients (main and log)
+echo "Step 4: Generating Prisma clients..."
+
+echo "  - Generating main Prisma client..."
 npm run prisma:generate
 if [ $? -ne 0 ]; then
-    echo "Error: Prisma client generation failed! Setup aborted."
+    echo "Error: Main Prisma client generation failed! Setup aborted."
     exit 1
 fi
-echo "Prisma client generated successfully."
+echo "  - Main Prisma client generated successfully."
 
-# Step 5: Run database migrations
-echo "Step 5: Running database migrations..."
-npm run prisma:migrate
+echo "  - Generating log Prisma client..."
+npx prisma generate --schema=prisma/log-schema.prisma
 if [ $? -ne 0 ]; then
-    echo "Error: Prisma migrations failed! Setup aborted."
+    echo "Error: Log Prisma client generation failed! Setup aborted."
     exit 1
 fi
-echo "Database migrations applied successfully."
+echo "  - Log Prisma client generated successfully."
+
+echo "Prisma clients generated successfully."
+
+# Step 5: Run database migrations (main and log)
+echo "Step 5: Running database migrations..."
+
+echo "  - Deploying main database migrations..."
+npx prisma migrate deploy
+if [ $? -ne 0 ]; then
+    echo "Error: Main database migrations failed! Setup aborted."
+    exit 1
+fi
+echo "  - Main database migrations deployed successfully."
+
+echo "  - Creating log database schema..."
+npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss
+if [ $? -ne 0 ]; then
+    echo "Error: Log database creation failed! Setup aborted."
+    exit 1
+fi
+echo "  - Log database schema created successfully."
+
+echo "Database migrations deployed successfully."
 
 # Step 6: Seed the database (creates default family, system caretaker, settings, and units)
 echo "Step 6: Seeding the database with default family, system caretaker (PIN: 111222), and units..."

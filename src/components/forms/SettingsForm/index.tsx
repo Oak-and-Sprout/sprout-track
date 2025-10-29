@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Baby, Unit, Caretaker } from '@prisma/client';
 import { Settings } from '@/app/api/types';
-import { Settings as Plus, Edit, ExternalLink, AlertCircle, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, Edit, ExternalLink, AlertCircle, Loader2, Plus } from 'lucide-react';
 import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -22,6 +22,7 @@ import {
   FormPageFooter 
 } from '@/src/components/ui/form-page';
 import { ShareButton } from '@/src/components/ui/share-button';
+import { Switch } from '@/src/components/ui/switch';
 import BabyForm from '@/src/components/forms/BabyForm';
 import CaretakerForm from '@/src/components/forms/CaretakerForm';
 import ContactForm from '@/src/components/forms/ContactForm';
@@ -79,6 +80,9 @@ export default function SettingsForm({
   const [slugError, setSlugError] = useState<string>('');
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [savingFamily, setSavingFamily] = useState(false);
+
+  // Local authType state for immediate UI feedback
+  const [localAuthType, setLocalAuthType] = useState<'SYSTEM' | 'CARETAKER'>('SYSTEM');
 
   useEffect(() => {
     // Only set the selected baby ID if explicitly provided
@@ -169,6 +173,22 @@ export default function SettingsForm({
       if (settingsResponse.ok) {
         const settingsData = await settingsResponse.json();
         setSettings(settingsData.data);
+
+        // Set local authType from settings, auto-detect if not set
+        if (settingsData.data?.authType) {
+          setLocalAuthType(settingsData.data.authType);
+        } else {
+          // Auto-detect based on caretakers
+          const willHaveCaretakers = caretakersResponse.ok;
+          let caretakerData = [];
+          if (willHaveCaretakers) {
+            const caretakersData = await caretakersResponse.json();
+            if (caretakersData.success) {
+              caretakerData = caretakersData.data.filter((c: any) => c.loginId !== '00' && !c.deletedAt);
+            }
+          }
+          setLocalAuthType(caretakerData.length > 0 ? 'CARETAKER' : 'SYSTEM');
+        }
       }
 
       if (familyResponse.ok) {
@@ -261,6 +281,11 @@ export default function SettingsForm({
     }
   };
 
+  const handleAuthTypeChange = (newAuthType: 'SYSTEM' | 'CARETAKER') => {
+    setLocalAuthType(newAuthType);
+    handleSettingsChange({ authType: newAuthType });
+  };
+
   const handleFamilyEdit = () => {
     setEditingFamily(true);
     setFamilyEditData({
@@ -340,6 +365,7 @@ export default function SettingsForm({
 
   const handleCaretakerFormClose = async () => {
     setShowCaretakerForm(false);
+    setSelectedCaretaker(null); // Clear selected caretaker to avoid stale data
     await fetchData(); // Refresh local caretakers list
   };
 
@@ -469,7 +495,31 @@ export default function SettingsForm({
               </div>
             </div>
 
-            <div className="space-y-4">              
+            <div className="space-y-4 border-t border-slate-200 pt-6">
+              <h3 className="form-label mb-4">Authentication Settings</h3>
+
+              <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">System PIN</span>
+                  <Switch
+                    checked={localAuthType === 'CARETAKER'}
+                    onCheckedChange={(checked) => handleAuthTypeChange(checked ? 'CARETAKER' : 'SYSTEM')}
+                    disabled={loading}
+                    variant="green"
+                  />
+                  <span className="text-sm text-gray-500">Caretaker IDs</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">
+                    {localAuthType === 'CARETAKER'
+                      ? 'Use individual caretaker login IDs and PINs'
+                      : 'Use shared system PIN for all users'
+                    }
+                  </p>
+                </div>
+                
+              </div>
+
               <div>
                 <Label className="form-label">Security PIN</Label>
                 <div className="flex gap-2">
@@ -482,20 +532,69 @@ export default function SettingsForm({
                   <Button
                     variant="outline"
                     onClick={() => setShowChangePinModal(true)}
-                    disabled={loading || caretakers.length > 0}
+                    disabled={loading}
                   >
                     Change PIN
                   </Button>
                 </div>
-                {caretakers.length > 0 ? (
-                  <p className="text-sm text-red-500 mt-1">System PIN is disabled when caretakers exist. Use caretaker authentication instead.</p>
+                {localAuthType === 'CARETAKER' ? (
+                  <p className="text-sm text-red-500 mt-1">System PIN is disabled when using caretaker authentication.</p>
                 ) : (
                   <p className="text-sm text-gray-500 mt-1">PIN must be between 6 and 10 digits</p>
                 )}
               </div>
-            </div>
-            
 
+              {/* Caretaker Management Section */}
+              <div className="mb-4">
+                <Label className="form-label">Manage Caretakers</Label>
+                {localAuthType === 'SYSTEM' && (
+                  <p className="text-sm text-red-500 mt-1">Caretaker logins are disabled in System PIN mode</p>
+                )}
+              </div>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2 w-full">
+                    <div className="flex-1 min-w-[200px]">
+                      <Select
+                        value={selectedCaretaker?.id || ''}
+                        onValueChange={(caretakerId) => {
+                          const caretaker = caretakers.find(c => c.id === caretakerId);
+                          setSelectedCaretaker(caretaker || null);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a caretaker" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {caretakers.map((caretaker) => (
+                            <SelectItem key={caretaker.id} value={caretaker.id}>
+                              {caretaker.name} {caretaker.type ? `(${caretaker.type})` : ''}{caretaker.inactive ? ' (Inactive)' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      variant="outline"
+                      disabled={!selectedCaretaker}
+                      onClick={() => {
+                        setIsEditing(true);
+                        setShowCaretakerForm(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                      setIsEditing(false);
+                      setSelectedCaretaker(null);
+                      setShowCaretakerForm(true);
+                    }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+            </div>
 
             <div className="border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">Manage Babies</h3>
@@ -531,7 +630,7 @@ export default function SettingsForm({
                       setShowBabyForm(true);
                     }}
                   >
-                    <Edit className="h-4 w-3 mr-2" />
+                    <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
                   <Button variant="outline" onClick={() => {
@@ -539,59 +638,13 @@ export default function SettingsForm({
                     setSelectedBaby(null);
                     setShowBabyForm(true);
                   }}>
-                    <Plus className="h-4 w-3 mr-2" />
+                    <Plus className="h-4 w-4 mr-2" />
                     Add
                   </Button>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-6">
-              <h3 className="form-label mb-4">Manage Caretakers</h3>
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-2 w-full">
-                  <div className="flex-1 min-w-[200px]">
-                    <Select 
-                      value={selectedCaretaker?.id || ''} 
-                      onValueChange={(caretakerId) => {
-                        const caretaker = caretakers.find(c => c.id === caretakerId);
-                        setSelectedCaretaker(caretaker || null);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a caretaker" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {caretakers.map((caretaker) => (
-                          <SelectItem key={caretaker.id} value={caretaker.id}>
-                            {caretaker.name} {caretaker.type ? `(${caretaker.type})` : ''}{(caretaker as any).inactive ? ' (Inactive)' : ''}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button 
-                    variant="outline"
-                    disabled={!selectedCaretaker}
-                    onClick={() => {
-                      setIsEditing(true);
-                      setShowCaretakerForm(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-3 mr-2" />
-                    Edit
-                  </Button>
-                  <Button variant="outline" onClick={() => {
-                    setIsEditing(false);
-                    setSelectedCaretaker(null);
-                    setShowCaretakerForm(true);
-                  }}>
-                    <Plus className="h-4 w-3 mr-2" />
-                    Add
-                  </Button>
-                </div>
-              </div>
-            </div>
 
             <div className="border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">Manage Contacts</h3>
@@ -625,7 +678,7 @@ export default function SettingsForm({
                       setShowContactForm(true);
                     }}
                   >
-                    <Edit className="h-4 w-3 mr-2" />
+                    <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
                   <Button variant="outline" onClick={() => {
@@ -633,7 +686,7 @@ export default function SettingsForm({
                     setSelectedContact(null);
                     setShowContactForm(true);
                   }}>
-                    <Plus className="h-4 w-3 mr-2" />
+                    <Plus className="h-4 w-4 mr-2" />
                     Add
                   </Button>
                 </div>
@@ -824,10 +877,7 @@ export default function SettingsForm({
         
         <FormPageFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={onClose}>
-            Save
+            Close
           </Button>
         </FormPageFooter>
       </FormPage>

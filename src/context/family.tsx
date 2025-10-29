@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { useDeployment } from '../../app/context/deployment';
 
 interface Family {
   id: string;
@@ -17,11 +18,13 @@ interface FamilyContextType {
   setFamily: (family: Family) => void;
   families: Family[];
   loadFamilies: () => Promise<void>;
+  handleLogout?: () => void;
+  authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const FamilyContext = createContext<FamilyContextType | undefined>(undefined);
 
-export function FamilyProvider({ children }: { children: ReactNode }) {
+export function FamilyProvider({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
   const [family, setFamily] = useState<Family | null>(() => {
     // Try to get from localStorage first for persistence
     if (typeof window !== 'undefined') {
@@ -34,7 +37,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
+  const { isSaasMode } = useDeployment();
 
   // Extract family slug from URL
   const getFamilySlugFromUrl = () => {
@@ -116,7 +119,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error('Failed to load families');
       }
-      
+
       const data = await response.json();
       if (data.success && data.data) {
         setFamilies(data.data);
@@ -130,13 +133,158 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to check if account has expired in SAAS mode (checks JWT token in memory)
+  const checkAccountExpiration = useCallback(() => {
+    // Only check if we have a family and are in client environment
+    if (typeof window === 'undefined' || !family?.slug) return;
+
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+
+      // Only check expiration in SAAS mode
+      if (!isSaasMode) return;
+
+      // Decode JWT token to get account info
+      let decodedPayload;
+      try {
+        const payload = authToken.split('.')[1];
+        decodedPayload = JSON.parse(atob(payload));
+      } catch (error) {
+        console.error('Error parsing JWT token for expiration check:', error);
+        return;
+      }
+
+      // Only check expiration for account-based auth
+      if (!decodedPayload.isAccountAuth) return;
+
+      // Skip check for beta participants (from JWT token)
+      if (decodedPayload.betaparticipant) return;
+
+      // Check if account/trial is expired based on JWT token data
+      const now = new Date();
+      let isExpired = false;
+
+      if (decodedPayload.trialEnds) {
+        const trialEndDate = new Date(decodedPayload.trialEnds);
+        isExpired = now > trialEndDate;
+      } else if (decodedPayload.planExpires) {
+        const planEndDate = new Date(decodedPayload.planExpires);
+        isExpired = now > planEndDate;
+      } else if (!decodedPayload.planType && !decodedPayload.betaparticipant) {
+        // No trial, no plan, and not beta - expired
+        isExpired = true;
+      }
+
+      if (isExpired) {
+        console.log('Account expired (from JWT token), logging out user...');
+        if (onLogout) {
+          onLogout();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking account expiration:', error);
+    }
+  }, [family?.slug, onLogout, isSaasMode]);
+
+  // Set up periodic account expiration checking
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Initial check
+    checkAccountExpiration();
+
+    // Check every 30 seconds
+    const expirationCheckInterval = setInterval(checkAccountExpiration, 30000);
+
+    return () => {
+      clearInterval(expirationCheckInterval);
+    };
+  }, [checkAccountExpiration]);
+
+  // Set up global fetch interceptor for 401 handling
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Store the original fetch function
+    const originalFetch = window.fetch;
+
+    // Override fetch to intercept 401 responses
+    window.fetch = async (...args) => {
+      try {
+        const response = await originalFetch(...args);
+
+        // If we get a 401 Unauthorized, trigger logout
+        if (response.status === 401) {
+          // Trigger logout after a short delay to avoid interfering with the current call stack
+          if (onLogout) {
+            setTimeout(() => {
+              if (onLogout) {
+                onLogout();
+              }
+            }, 100);
+          }
+        }
+
+        return response;
+      } catch (error) {
+        throw error;
+      }
+    };
+
+    // Restore original fetch on cleanup
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [onLogout]);
+
+  // Authenticated fetch wrapper that automatically handles 401 responses
+  const authenticatedFetch = useCallback(async (url: string, options?: RequestInit): Promise<Response> => {
+    // Get auth token from localStorage
+    const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+    // Merge authorization header with provided options
+    const headers = new Headers(options?.headers || {});
+    if (authToken && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${authToken}`);
+    }
+
+    const mergedOptions: RequestInit = {
+      ...options,
+      headers,
+    };
+
+    try {
+      const response = await fetch(url, mergedOptions);
+
+      // If we get a 401 Unauthorized, trigger logout
+      if (response.status === 401) {
+        // Trigger logout after a short delay to avoid interfering with the current call stack
+        if (onLogout) {
+          setTimeout(() => {
+            if (onLogout) {
+              onLogout();
+            }
+          }, 100);
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }, [onLogout]);
+
   const value = {
     family,
     loading,
     error,
     setFamily,
     families,
-    loadFamilies
+    loadFamilies,
+    handleLogout: onLogout,
+    authenticatedFetch,
   };
 
   return <FamilyContext.Provider value={value}>{children}</FamilyContext.Provider>;

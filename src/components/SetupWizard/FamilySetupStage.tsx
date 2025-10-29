@@ -7,6 +7,7 @@ import { cn } from '@/src/lib/utils';
 import { styles } from './setup-wizard.styles';
 import { FamilySetupStageProps } from './setup-wizard.types';
 import { BackupRestore } from '@/src/components/BackupRestore';
+import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 
 /**
  * FamilySetupStage Component
@@ -25,16 +26,41 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
   const [slugError, setSlugError] = useState('');
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [generatingSlug, setGeneratingSlug] = useState(false);
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const adminResetResolverRef = React.useRef<(() => void) | null>(null);
+
+  // Handle admin password reset notification
+  const handleAdminPasswordReset = useCallback(() => {
+    console.log('Admin password was reset to default during import');
+    setShowPasswordResetModal(true);
+  }, []);
+
+  // Handle modal confirmation
+  const handlePasswordResetConfirm = useCallback(() => {
+    console.log('User acknowledged password reset notification');
+    // Resolve the promise to allow BackupRestore to proceed
+    if (adminResetResolverRef.current) {
+      adminResetResolverRef.current();
+      adminResetResolverRef.current = null;
+    }
+  }, []);
+
+  // Promise that resolves when user acknowledges the password reset
+  const handleAdminResetAcknowledged = useCallback(() => {
+    return new Promise<void>((resolve) => {
+      adminResetResolverRef.current = resolve;
+    });
+  }, []);
 
   // Handle post-import logout and redirect
   const handleImportSuccess = useCallback(() => {
     console.log('Database imported successfully during setup');
-    
+
     // Clear all authentication data
     localStorage.removeItem('authToken');
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
-    
+
     // Redirect to home page - user will need to login with imported data
     router.push('/');
   }, [router]);
@@ -99,12 +125,17 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
       .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
   };
 
-  // Handle slug field click - auto-generate if empty
-  const handleSlugFieldClick = () => {
+  // Handle slug field focus - auto-generate if empty and set cursor to end
+  const handleSlugFieldFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     if (!familySlug && familyName) {
       const autoSlug = generateSlugFromName(familyName);
       if (autoSlug) {
         setFamilySlug(autoSlug);
+        // Use setTimeout to ensure the value is set before moving cursor
+        setTimeout(() => {
+          const input = e.target as HTMLInputElement;
+          input.setSelectionRange(input.value.length, input.value.length);
+        }, 0);
       }
     }
   };
@@ -162,10 +193,10 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
                 id="familySlug"
                 value={familySlug}
                 onChange={(e) => setFamilySlug(e.target.value.toLowerCase())}
-                onClick={handleSlugFieldClick}
+                onFocus={handleSlugFieldFocus}
                 placeholder="family-url"
                 className={cn(
-                  styles.formInput, 
+                  styles.formInput,
                   "setup-wizard-form-input",
                   slugError ? 'border-red-500' : ''
                 )}
@@ -233,9 +264,18 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
               console.error('Database import failed during setup:', error);
               // Error handling is managed by the BackupRestore component
             }}
+            onAdminPasswordReset={handleAdminPasswordReset}
+            onAdminResetAcknowledged={handleAdminResetAcknowledged}
           />
         </div>
       )}
+
+      {/* Admin Password Reset Modal */}
+      <AdminPasswordResetModal
+        open={showPasswordResetModal}
+        onOpenChange={setShowPasswordResetModal}
+        onConfirm={handlePasswordResetConfirm}
+      />
     </div>
   );
 };

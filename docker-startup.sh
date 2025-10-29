@@ -19,7 +19,7 @@ fi
 
 # Check and generate ENC_HASH if missing
 echo "Checking for ENC_HASH in .env file..."
-ENV_FILE="/app/.env"
+ENV_FILE="/app/env/.env"
 
 # Check if ENC_HASH exists and has a value
 ENC_HASH_EXISTS=$(grep -E "^ENC_HASH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
@@ -40,8 +40,9 @@ else
     echo "ENC_HASH already exists in .env file"
 fi
 
-echo "Generating Prisma client..."
-DATABASE_URL="file:/db/baby-tracker.db" npx prisma generate
+echo "Generating Prisma clients..."
+DATABASE_URL="file:/db/baby-tracker.db" npm run prisma:generate
+LOG_DATABASE_URL="file:/db/baby-tracker-logs.db" npm run prisma:generate:log
 
 echo "Running database migrations..."
 # Explicitly set DATABASE_URL for migrations

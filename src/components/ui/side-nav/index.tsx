@@ -3,6 +3,8 @@ import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackForm from '@/src/components/forms/FeedbackForm';
 import { X, Settings, LogOut, MessageSquare } from 'lucide-react';
 import ThemeToggle from '@/src/components/ui/theme-toggle';
+import { ShareButton } from '@/src/components/ui/share-button';
+import { Label } from '@/src/components/ui/label';
 import Image from 'next/image';
 import { useTheme } from '@/src/context/theme';
 import { useDeployment } from '@/app/context/deployment';
@@ -114,6 +116,8 @@ export const SideNav: React.FC<SideNavProps> = ({
   isAdmin,
   className,
   nonModal = false,
+  familySlug,
+  familyName,
 }) => {
   const { theme } = useTheme();
   const { isSaasMode } = useDeployment();
@@ -188,15 +192,10 @@ export const SideNav: React.FC<SideNavProps> = ({
         {/* Header - matching the structure of the green bar in the main layout */}
         <header className="w-full bg-white sticky top-0 z-40 side-nav-header">
           <div className="mx-auto">
-            <div className={cn("flex justify-between items-center h-20", sideNavStyles.header)}>
-              {isSaasMode ? (
-                <button
-                  onClick={() => {
-                    window.location.href = '/';
-                  }}
-                  className={cn(sideNavStyles.logoContainer, "cursor-pointer hover:opacity-80 transition-opacity")}
-                  aria-label="Go to home page"
-                >
+            <div className={cn("flex justify-between items-center min-h-20", sideNavStyles.header)}>
+              <div className="flex items-center gap-3 flex-1">
+                {/* Logo positioned to center between app name and family name */}
+                <div className="flex items-center">
                   <Image
                     src="/sprout-128.png"
                     alt="Sprout Logo"
@@ -205,21 +204,45 @@ export const SideNav: React.FC<SideNavProps> = ({
                     className={sideNavStyles.logo}
                     priority
                   />
-                  <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
-                </button>
-              ) : (
-                <div className={sideNavStyles.logoContainer}>
-                  <Image
-                    src="/sprout-128.png"
-                    alt="Sprout Logo"
-                    width={40}
-                    height={40}
-                    className={sideNavStyles.logo}
-                    priority
-                  />
-                  <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
                 </div>
-              )}
+
+                {/* App name and family name container */}
+                <div className="flex flex-col justify-center flex-1">
+                  {isSaasMode ? (
+                    <button
+                      onClick={() => {
+                        window.location.href = '/';
+                      }}
+                      className="text-left cursor-pointer hover:opacity-80 transition-opacity"
+                      aria-label="Go to home page"
+                    >
+                      <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
+                    </button>
+                  ) : (
+                    <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
+                  )}
+
+                  {/* Family name with share button */}
+                  {familyName && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Label className="text-sm text-gray-600 truncate">
+                        {familyName}
+                      </Label>
+                      {familySlug && (
+                        <ShareButton
+                          familySlug={familySlug}
+                          familyName={familyName}
+                          variant="ghost"
+                          size="sm"
+                          showText={false}
+                          className="h-5 w-5 p-0"
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Only show close button in modal mode */}
               {!nonModal && (
                 <button

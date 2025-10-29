@@ -1,5 +1,75 @@
 # Sprout Track Changelog
 
+## v0.94.89 - API Logging, Account Management, and QoL Improvements - October 28, 2025
+
+### Changes
+
+#### Mandatory Admin Password Reset (Docker Environment File Improvements)
+- **IMPORTANT - Only For Self Hosting Family's:** When upgrading from v0.94.24 or earlier, admin passwords will be automatically reset to default "admin" for compatibility
+- Added automatic admin password reset to default "admin" when importing older database backups
+- Implemented modal notification system to inform users when admin password has been reset
+- Improved database restore workflow in both Setup Wizard and Family Manager with password reset notifications
+
+#### API Logging System
+- Added comprehensive API logging system with dedicated api-logs.db database
+- Implemented authentication logging for security auditing
+- Added configuration flag to enable/disable logging
+- Created documentation for API logging features and usage
+
+#### Account & Subscription Management
+- Added account status tracking for trials and subscriptions
+- Implemented account expiration handling with automatic logout for expired accounts
+- Added subscription type management in database schema
+- Enhanced family-manager and account pages to display account status information correctly
+- Updated setup wizard to check for deployment mode, beta participation, and plan limits
+- Added security checks to prevent brute force login attempts on expired accounts
+- Fixed account family context to ensure smooth family setup process
+
+#### Authentication Improvements
+- Updated schema to support storing authentication mode at family level
+- Added ability to switch between authentication modes (PIN/password)
+- Enhanced security login page to work based on family authentication mode
+- Updated caretaker API to use sysadmin context properly
+- Fixed authentication mode switching to handle sysadmin context and reset stale data
+- Updated settings form to group authentication settings with toggle for auth mode
+
+#### User Interface Enhancements
+- Added family name and share button to side navigation for easy URL sharing
+- Enhanced login component with keyboard input support on desktop devices
+- Added visual highlighting for active PIN/password input fields
+- Updated share button with toast message notification
+- Switched green colors throughout app for better visual consistency
+- Removed emojis from interface
+
+#### Activity Tracking Improvements
+- Added blowout/leakage flag to diaper tracking model and forms
+- Added blowout/leakage indicator to timeline views
+- Fixed hardcoded feed amount in stats tab to use dynamic values
+- Enhanced time selector to auto-switch between minutes and hours based on input
+- Added QoL improvement for AM/PM auto-switching when crossing 12 on time selector
+
+#### System Administration
+- Added utility to reset administrator password for family-manager page
+- Created documentation for system administrator password reset tool
+- Enhanced family upgrade context checks
+- Added expired account component to block login for expired accounts
+
+#### Bug Fixes & Technical Improvements
+- Made .env files persistent in docker images
+- Updated backup\restore functioanlity to include environment files in with the database backup (now in a zip file)
+- Removed timeline console logging that was accidently left on for debugging
+- Added generic units to database seeds
+- Updated formatting for drops unit display
+- Fixed tab functionality to properly populate family slug
+- Fixed type errors in account expiration handling
+- Updated API to allow expired accounts with valid JWTs limited access
+- Added migration to nullify authType system defaults from previous versions
+- Adjusted caretaker counting logic to account for single '00' system caretaker
+- Fixed account expiration status appearing incorrectly on family login page
+- Added documentation on expiration validation logic
+
+---
+
 ## v0.94.24 - Breastfeed Timer Patch - August, 24 2025
 
 ### Changes

@@ -12,13 +12,21 @@ interface AccountStatusResponse {
   familySlug?: string;
   familyName?: string;
   betaparticipant: boolean;
+  closed: boolean;
+  closedAt?: string;
+  planType?: string;
+  planExpires?: string;
+  trialEnds?: string;
+  subscriptionActive: boolean;
+  accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family';
 }
 
 async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<AccountStatusResponse>>> {
   try {
-    // Use the standard auth method
-    const authResult = await getAuthenticatedUser(req);
-    
+    // Use the standard auth method but skip expiration check
+    // This allows expired accounts to see their status
+    const authResult = await getAuthenticatedUser(req, true);
+
     if (!authResult.authenticated) {
       return NextResponse.json<ApiResponse<AccountStatusResponse>>(
         {
@@ -63,6 +71,46 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Accou
       );
     }
 
+    // Determine account status
+    let accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family' = 'active';
+    let subscriptionActive = false;
+
+    if (account.closed) {
+      accountStatus = 'closed';
+    } else if (!account.family) {
+      // No family created yet
+      accountStatus = 'no_family';
+      // Check if they have a trial for when they do create a family
+      if (account.trialEnds) {
+        const trialEndDate = new Date(account.trialEnds);
+        const now = new Date();
+        if (now <= trialEndDate) {
+          subscriptionActive = true; // Trial is still valid for when they create family
+        }
+      } else if (account.planType || account.betaparticipant) {
+        subscriptionActive = true;
+      }
+    } else if (account.trialEnds) {
+      const trialEndDate = new Date(account.trialEnds);
+      const now = new Date();
+      if (now > trialEndDate) {
+        accountStatus = 'expired';
+      } else {
+        accountStatus = 'trial';
+        subscriptionActive = true;
+      }
+    } else if (account.planExpires) {
+      const planEndDate = new Date(account.planExpires);
+      const now = new Date();
+      if (now > planEndDate) {
+        accountStatus = 'expired';
+      } else {
+        subscriptionActive = true;
+      }
+    } else if (account.betaparticipant) {
+      subscriptionActive = true;
+    }
+
     return NextResponse.json<ApiResponse<AccountStatusResponse>>({
       success: true,
       data: {
@@ -74,7 +122,14 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Accou
         hasFamily: !!account.family,
         familySlug: account.family?.slug,
         familyName: account.family?.name,
-        betaparticipant: account.betaparticipant
+        betaparticipant: account.betaparticipant,
+        closed: account.closed,
+        closedAt: account.closedAt?.toISOString(),
+        planType: account.planType || undefined,
+        planExpires: account.planExpires?.toISOString(),
+        trialEnds: account.trialEnds?.toISOString(),
+        subscriptionActive,
+        accountStatus
       }
     });
 

@@ -39,13 +39,15 @@ export interface AuthResult {
   isSysAdmin?: boolean;
   isSetupAuth?: boolean;
   setupToken?: string;
-  
+  authType?: string;        // Authentication type used for this session
+
   // New account fields
   isAccountAuth?: boolean;  // True if authenticated via account
   accountId?: string;       // Account ID
   accountEmail?: string;    // Account email
   isAccountOwner?: boolean; // True if account owns the family
   verified?: boolean;       // True if account email is verified
+  betaparticipant?: boolean; // True if account is a beta participant
   error?: string;
 }
 
@@ -62,21 +64,21 @@ export async function verifyAuthentication(req: NextRequest): Promise<boolean> {
 /**
  * Gets the authenticated user information from the request
  * @param req The Next.js request object
+ * @param skipExpirationCheck Optional flag to skip expiration checking (for status endpoints that need to work with expired accounts)
  * @returns Authentication result with caretaker information
  */
-export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult> {
+export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck: boolean = false): Promise<AuthResult> {
   try {
     // First try to get the JWT token from the Authorization header
     const authHeader = req.headers.get('Authorization');
     let token: string | undefined;
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7); // Remove 'Bearer ' prefix
     }
-    
+
     // If no token in header, try to get caretakerId from cookies (backward compatibility)
     const caretakerId = req.cookies.get('caretakerId')?.value;
-    
 
     // If we have a JWT token, verify it
     if (token) {
@@ -84,22 +86,10 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
       if (tokenBlacklist.has(token)) {
         return { authenticated: false, error: 'Token has been invalidated' };
       }
-      
+
       try {
         // Verify and decode the token
         const decoded = jwt.verify(token, JWT_SECRET) as any;
-        
-        // Debug logging for intermittent 401s
-        if (decoded.isAccountAuth) {
-          console.log('Processing account auth token:', {
-            accountId: decoded.accountId,
-            accountEmail: decoded.accountEmail,
-            familyId: decoded.familyId,
-            familySlug: decoded.familySlug,
-            exp: decoded.exp,
-            isExpired: decoded.exp && decoded.exp * 1000 < Date.now()
-          });
-        }
         
         // Handle setup authentication tokens
         if (decoded.isSetupAuth && decoded.setupToken) {
@@ -134,17 +124,40 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
               return { authenticated: false, error: 'Account not found' };
             }
 
-            // Debug logging for account authentication
-            console.log('Account authentication result:', {
-              accountId: account.id,
-              email: account.email,
-              hasFamily: !!account.family,
-              familyId: account.family?.id,
-              familySlug: account.family?.slug,
-              hasLinkedCaretaker: !!account.caretaker,
-              caretakerId: account.caretaker?.id,
-              caretakerRole: account.caretaker?.role
-            });
+            // Check if account is closed
+            if (account.closed) {
+              console.log('Account authentication failed: Account is closed for ID:', decoded.accountId);
+              return { authenticated: false, error: 'Account is closed' };
+            }
+
+            // Check account expiration in SAAS mode only
+            // Only check if account has a family (no point checking expiration during setup)
+            // Skip expiration check if explicitly requested (e.g., for status endpoint)
+            const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';
+
+            if (!skipExpirationCheck && isSaasMode && account.family && !account.betaparticipant) {
+              const now = new Date();
+              let isExpired = false;
+
+              // Check trial expiration
+              if (account.trialEnds) {
+                const trialEndDate = new Date(account.trialEnds);
+                isExpired = now > trialEndDate;
+              }
+              // Check plan expiration (if no trial)
+              else if (account.planExpires) {
+                const planEndDate = new Date(account.planExpires);
+                isExpired = now > planEndDate;
+              }
+              // No trial and no plan = expired
+              else if (!account.planType) {
+                isExpired = true;
+              }
+
+              if (isExpired) {
+                return { authenticated: false, error: 'Account subscription has expired' };
+              }
+            }
 
             // If account has a linked caretaker, use that caretaker's permissions
             if (account.caretaker) {
@@ -160,6 +173,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
                 accountEmail: decoded.accountEmail,
                 isAccountOwner: true,
                 verified: account.verified,
+                betaparticipant: account.betaparticipant,
               };
             } else {
               // Account without linked caretaker - limited permissions (during setup)
@@ -180,6 +194,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
                   accountEmail: decoded.accountEmail,
                   isAccountOwner: true,
                   verified: account.verified,
+                  betaparticipant: account.betaparticipant,
                 };
               } else {
                 // Account has family but no caretaker - this shouldn't happen after proper setup
@@ -196,6 +211,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
                   accountEmail: decoded.accountEmail,
                   isAccountOwner: true,
                   verified: account.verified,
+                  betaparticipant: account.betaparticipant,
                 };
               }
             }
@@ -205,7 +221,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
           }
         }
         
-        // Handle regular user/admin tokens
+        // Handle regular user/admin tokens (PIN-based JWT tokens)
         const regularDecoded = decoded as {
           id: string;
           name: string;
@@ -215,9 +231,68 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
           familySlug: string | null;
           isSysAdmin?: boolean;
         };
-        
+
+        // Check account expiration for regular tokens (if family has an account)
+        if (!skipExpirationCheck && regularDecoded.familyId && !regularDecoded.isSysAdmin) {
+          try {
+            const family = await prisma.family.findUnique({
+              where: { id: regularDecoded.familyId },
+              include: {
+                account: {
+                  select: {
+                    id: true,
+                    betaparticipant: true,
+                    trialEnds: true,
+                    planType: true,
+                    planExpires: true,
+                    closed: true,
+                  }
+                }
+              }
+            });
+
+            if (family?.account) {
+              const account = family.account;
+              const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';
+
+              // Check account closure
+              if (account.closed) {
+                return { authenticated: false, error: 'Family account is closed' };
+              }
+
+              // Check expiration only in SAAS mode and for non-beta accounts
+              if (isSaasMode && !account.betaparticipant) {
+                const now = new Date();
+                let isExpired = false;
+
+                // Check trial expiration
+                if (account.trialEnds) {
+                  const trialEndDate = new Date(account.trialEnds);
+                  isExpired = now > trialEndDate;
+                }
+                // Check plan expiration (if no trial)
+                else if (account.planExpires) {
+                  const planEndDate = new Date(account.planExpires);
+                  isExpired = now > planEndDate;
+                }
+                // No trial and no plan = expired
+                else if (!account.planType) {
+                  isExpired = true;
+                }
+
+                if (isExpired) {
+                  return { authenticated: false, error: 'Family account subscription has expired' };
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error checking account expiration for regular token:', error);
+            // Don't fail auth if we can't check expiration - allow the request through
+          }
+        }
+
         // Return authenticated user info from token
-        const authResult = {
+        return {
           authenticated: true,
           caretakerId: regularDecoded.isSysAdmin ? null : regularDecoded.id,
           caretakerType: regularDecoded.type,
@@ -225,11 +300,8 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
           familyId: regularDecoded.familyId,
           familySlug: regularDecoded.familySlug,
           isSysAdmin: regularDecoded.isSysAdmin || false,
+          authType: (regularDecoded as any).authType || 'CARETAKER',
         };
-        
-
-        
-        return authResult;
       } catch (jwtError) {
         console.error('JWT verification error:', jwtError);
         return { authenticated: false, error: 'Invalid or expired token' };
@@ -245,13 +317,62 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
           deletedAt: null,
         },
         include: {
-          family: true,
+          family: {
+            include: {
+              account: {
+                select: {
+                  id: true,
+                  betaparticipant: true,
+                  trialEnds: true,
+                  planType: true,
+                  planExpires: true,
+                  closed: true,
+                }
+              }
+            }
+          },
         },
       });
-      
+
       if (caretaker) {
-        return { 
-          authenticated: true, 
+        // Check if family has an expired account (only in SAAS mode)
+        if (!skipExpirationCheck && caretaker.family?.account) {
+          const account = caretaker.family.account;
+          const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';
+
+          // Check account closure
+          if (account.closed) {
+            return { authenticated: false, error: 'Family account is closed' };
+          }
+
+          // Check expiration only in SAAS mode and for non-beta accounts
+          if (isSaasMode && !account.betaparticipant) {
+            const now = new Date();
+            let isExpired = false;
+
+            // Check trial expiration
+            if (account.trialEnds) {
+              const trialEndDate = new Date(account.trialEnds);
+              isExpired = now > trialEndDate;
+            }
+            // Check plan expiration (if no trial)
+            else if (account.planExpires) {
+              const planEndDate = new Date(account.planExpires);
+              isExpired = now > planEndDate;
+            }
+            // No trial and no plan = expired
+            else if (!account.planType) {
+              isExpired = true;
+            }
+
+            if (isExpired) {
+              return { authenticated: false, error: 'Family account subscription has expired' };
+            }
+          }
+        }
+
+        return {
+          authenticated: true,
           caretakerId: caretaker.id,
           caretakerType: caretaker.type,
           // Use type assertion for role until Prisma types are updated
@@ -259,10 +380,11 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
           familyId: caretaker.familyId,
           familySlug: caretaker.family?.slug,
           isSysAdmin: false,
+          authType: 'CARETAKER',
         };
       }
     }
-    
+
     return { authenticated: false, error: 'No valid authentication found' };
   } catch (error) {
     console.error('Authentication verification error:', error);

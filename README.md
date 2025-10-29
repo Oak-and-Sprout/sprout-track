@@ -1,5 +1,9 @@
 # Sprout Track
 
+> **⚠️ IMPORTANT NOTICE - Version 0.94.89 Upgrade**
+>
+> **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** This is required for Docker environment file improvements. You'll receive a notification modal with instructions. [Read full details here](documentation/admin-password-reset-notification.md).
+
 A Next.js application for tracking baby activities, milestones, and development.
 
 ## Screenshots
@@ -71,6 +75,7 @@ docker-compose up -d
   - [Customizing Port Numbers](#customizing-port-numbers)
   - [Database Scripts](#database-scripts)
   - [Utility Scripts](#utility-scripts)
+  - [Admin Scripts](#admin-scripts)
   - [Updating the Application](#updating-the-application)
 - [Environment Variables](#environment-variables)
 
@@ -230,10 +235,22 @@ This change will persist across application updates. For Docker deployments, use
 
 ### Database Scripts
 
+#### Main Database (baby-tracker.db)
 - `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:migrate` - Run database migrations
+- `npm run prisma:migrate` - Create and apply new migration (prompts for name)
+- `npm run prisma:deploy` - Apply existing migrations (no prompts, for production)
 - `npm run prisma:seed` - Seed the database with initial data
 - `npm run prisma:studio` - Open Prisma Studio to view/edit database
+
+#### Log Database (api-logs.db)
+- `npm run prisma:generate:log` - Generate log database Prisma client
+- `npm run prisma:push:log` - Sync log schema to database (no migrations, for simple schemas)
+- `npm run prisma:studio:log` - Open Prisma Studio to view/edit log database
+
+**Development workflow:**
+- When you change the main schema, run: `npm run prisma:migrate`
+- When you change the log schema, run: `npm run prisma:push:log`
+- The log database uses `db push` instead of migrations to avoid conflicts with the main database migrations folder
 
 ### Setup and Deployment Scripts
 
@@ -256,24 +273,114 @@ This change will persist across application updates. For Docker deployments, use
 - `./scripts/family-update.sh` - Update database after multi-family migration
 - `./scripts/ensure-utc-dates-improved.js` - Convert all database dates to UTC format
 
+### Admin Scripts
+
+- `node scripts/reset-admin-password.js` - Reset the system administrator password
+  - This script allows you to reset the admin password stored in the AppConfig table
+  - Only works with existing configurations (will not create new data)
+  - Uses the same encryption utilities as the main application
+  - Requires confirmation of the new password
+  - Must be run from the project root directory
+
 ### Updating the Application
 
-**1. Backup your database:**  
-Before upgrading, it is recommended to back up your `baby-tracker.db` file. You can do this by downloading the file from the settings page in either the main app or the family manager pages.
+**1. Backup your data:**
+Before upgrading, it is **critical** to back up both your database and environment configuration:
+- **Database**: Download your `baby-tracker.db` file from the settings page in either the main app or the family manager pages.
+- **Environment File**: For Docker deployments, your `.env` file (including encryption keys) is now stored persistently. While this survives container updates, it's still recommended to back up your environment settings.
 
-**2. For Docker deployments:**  
-- Stop the old container.
-- Pull the latest Docker image.
-- Start the new container.
-- Import your backed-up database file from the inital setup page.
-The import process will automatically handle any required database migrations or updates.
+**2. For Docker deployments:**
 
-**3. For local (non-Docker) builds:**  
-- Run the deployment script:  
+**Important**: Starting with version 0.94.24+, Docker deployments use persistent volumes for both database and environment files. This means your settings (including encryption keys) will survive container updates.
+
+For **new Docker installations** (version 0.94.24+):
+- Your `.env` file and database are automatically persisted in Docker volumes
+- Upgrades preserve your settings without manual intervention
+- Simply pull the latest image and restart the container
+
+For **existing Docker installations** upgrading to 0.94.24+:
+1. **Before upgrading**: Back up your current `.env` file if you have custom settings
+2. Stop the old container
+3. Pull the latest Docker image (`docker pull sprouttrack/sprout-track:latest`)
+4. Update your `docker-compose.yml` to use the new volume structure (if using custom compose file)
+5. Start the new container
+6. If needed, restore any custom environment settings through the family manager interface
+
+For **Docker upgrades** (version 0.94.24+):
+```bash
+# Stop the current container
+docker-compose down
+
+# Pull the latest image
+docker pull sprouttrack/sprout-track:latest
+
+# Start with updated configuration
+docker-compose up -d
+```
+
+Your database and environment settings will automatically persist across updates.
+
+**3. For local (non-Docker) builds:**
+- Run the deployment script:
   ```bash
   ./scripts/deployment.sh
   ```
   This script will handle all necessary updates and migrations. You do **not** need to re-import your database, as the script manages updates in place.
+
+### Docker Volume Management
+
+Starting with version 0.94.24+, Docker deployments use named volumes for data persistence:
+
+- `sprout-track-db`: Stores your SQLite database
+- `sprout-track-env`: Stores your environment configuration (including encryption keys)
+
+**To view your Docker volumes:**
+```bash
+docker volume ls | grep sprout-track
+```
+
+**To backup Docker volumes manually:**
+```bash
+# Backup database volume
+docker run --rm -v sprout-track-db:/data -v $(pwd):/backup alpine tar czf /backup/database-backup.tar.gz -C /data .
+
+# Backup environment volume
+docker run --rm -v sprout-track-env:/data -v $(pwd):/backup alpine tar czf /backup/env-backup.tar.gz -C /data .
+```
+
+**To restore Docker volumes:**
+```bash
+# Restore database volume
+docker run --rm -v sprout-track-db:/data -v $(pwd):/backup alpine tar xzf /backup/database-backup.tar.gz -C /data
+
+# Restore environment volume
+docker run --rm -v sprout-track-env:/data -v $(pwd):/backup alpine tar xzf /backup/env-backup.tar.gz -C /data
+```
+
+## API Logging
+
+Sprout Track includes an optional API logging system for debugging and monitoring. API logging is **disabled by default**. To enable it:
+
+```env
+ENABLE_LOG=true
+LOG_DATABASE_URL="file:../db/api-logs.db"
+```
+
+### Log Database Management
+
+The API log database (`api-logs.db`) is managed separately from the main application database:
+
+- **Schema Management**: Uses `prisma db push` instead of migrations for simplicity
+- **Setup**: Automatically created during initial setup via `./scripts/setup.sh`
+- **Updates**: Run `npm run prisma:push:log` to sync schema changes
+- **Data Persistence**: Log data is preserved during schema updates when possible
+  - Adding fields: Safe, preserves existing logs
+  - Removing/renaming fields: May cause data loss for those fields
+  - For production: Back up `api-logs.db` before schema changes if log history is important
+
+**Note**: Since logs are typically ephemeral debugging data, the log database uses a simpler schema sync approach rather than versioned migrations. This avoids migration conflicts with the main database.
+
+See [app/api/utils/logging.README.md](app/api/utils/logging.README.md) for complete documentation.
 
 ## Environment Variables
 
@@ -282,6 +389,8 @@ The application can be configured using environment variables in the `.env` file
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
 | `DATABASE_URL` | Path to the SQLite database | `"file:../db/baby-tracker.db"` | `"file:/path/to/custom/db.sqlite"` |
+| `LOG_DATABASE_URL` | Path to the API log database | `"file:../db/api-logs.db"` | `"file:/path/to/logs.db"` |
+| `ENABLE_LOG` | Enable API request/response logging | `"false"` | `"true"` |
 | `SERVICE_NAME` | Name of the systemd service | `"baby-tracker"` | `"sprout-track"` |
 | `AUTH_LIFE` | Authentication token validity period in seconds | `"86400"` (24 hours) | `"43200"` (12 hours) |
 | `IDLE_TIME` | Idle timeout before automatic logout in seconds | `"28800"` (8 hours) | `"3600"` (1 hour) |

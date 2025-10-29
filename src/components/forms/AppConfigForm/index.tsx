@@ -12,6 +12,7 @@ import {
 } from '@/src/components/ui/form-page';
 import { Settings, Loader2, Save, X, Mail, ChevronDown } from 'lucide-react';
 import { BackupRestore } from '@/src/components/BackupRestore';
+import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,7 +80,32 @@ export default function AppConfigForm({
   const [originalPassword, setOriginalPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
   const closeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const adminResetResolverRef = React.useRef<(() => void) | null>(null);
+
+  // Handle admin password reset notification
+  const handleAdminPasswordReset = () => {
+    console.log('Admin password was reset to default during restore');
+    setShowPasswordResetModal(true);
+  };
+
+  // Handle modal confirmation
+  const handlePasswordResetConfirm = () => {
+    console.log('User acknowledged password reset notification');
+    // Resolve the promise to allow BackupRestore to proceed
+    if (adminResetResolverRef.current) {
+      adminResetResolverRef.current();
+      adminResetResolverRef.current = null;
+    }
+  };
+
+  // Promise that resolves when user acknowledges the password reset
+  const handleAdminResetAcknowledged = () => {
+    return new Promise<void>((resolve) => {
+      adminResetResolverRef.current = resolve;
+    });
+  };
 
   // Fetch app config data
   const fetchAppConfig = async () => {
@@ -743,6 +769,8 @@ export default function AppConfigForm({
                 isSaving={saving}
                 onBackupError={(error) => setError(error)}
                 onRestoreError={(error) => setError(error)}
+                onAdminPasswordReset={handleAdminPasswordReset}
+                onAdminResetAcknowledged={handleAdminResetAcknowledged}
               />
 
               {/* Status Messages */}
@@ -804,6 +832,13 @@ export default function AppConfigForm({
           </div>
         </FormPageFooter>
       </form>
+
+      {/* Admin Password Reset Modal */}
+      <AdminPasswordResetModal
+        open={showPasswordResetModal}
+        onOpenChange={setShowPasswordResetModal}
+        onConfirm={handlePasswordResetConfirm}
+      />
     </FormPage>
   );
 } 

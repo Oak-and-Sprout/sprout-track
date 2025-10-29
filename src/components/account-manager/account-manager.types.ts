@@ -30,6 +30,13 @@ export interface AccountStatus {
   familySlug?: string;
   familyName?: string;
   betaparticipant: boolean;
+  closed: boolean;
+  closedAt?: string;
+  planType?: string;
+  planExpires?: string;
+  trialEnds?: string;
+  subscriptionActive: boolean;
+  accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family';
 }
 
 /**

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { BabyProvider, useBaby } from '../../context/baby';
 import { TimezoneProvider } from '../../context/timezone';
-import { DeploymentProvider } from '../../context/deployment';
+import { DeploymentProvider, useDeployment } from '../../context/deployment';
 import { ThemeProvider } from '@/src/context/theme';
 import { FamilyProvider, useFamily } from '@/src/context/family';
 import Image from 'next/image';
@@ -32,6 +32,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const { family } = useFamily();
   const { selectedBaby, setSelectedBaby, sleepingBabies } = useBaby();
+  const { isSaasMode } = useDeployment();
   const [mounted, setMounted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [quickStatsOpen, setQuickStatsOpen] = useState(false);
@@ -269,6 +270,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
   };
 
+
   // Check if screen is wider than 600px
   const checkScreenWidth = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -435,6 +437,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     };
   }, [mounted, router, handleLogout, familySlug, pathname]);
 
+
   // Check unlock status based on JWT token and extract user info
   useEffect(() => {
     const checkUnlockStatus = () => {
@@ -529,6 +532,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
               onLogout={handleLogout}
               isAdmin={isAdmin}
               className="h-screen sticky top-0"
+              familySlug={familySlug}
+              familyName={family?.name || familyName}
             />
           )}
           
@@ -612,6 +617,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
               }}
               onLogout={handleLogout}
               isAdmin={isAdmin}
+              familySlug={familySlug}
+              familyName={family?.name || familyName}
             />
           )}
         </div>
@@ -651,9 +658,69 @@ export default function AppLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Define handleLogout function within the layout scope
+  const handleLogout = async () => {
+    // Get the token to invalidate it server-side
+    const token = localStorage.getItem('authToken');
+    const currentCaretakerId = localStorage.getItem('caretakerId');
+
+    // Check if this is an account holder
+    let isAccountAuth = false;
+    if (token) {
+      try {
+        const payload = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        isAccountAuth = decodedPayload.isAccountAuth || false;
+      } catch (error) {
+        console.error('Error parsing JWT token during logout:', error);
+      }
+    }
+
+    // Call the logout API to clear server-side cookies and invalidate the token
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+
+    // Clear all client-side authentication data including JWT token
+    localStorage.removeItem('unlockTime');
+    localStorage.removeItem('caretakerId');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('accountUser'); // Clear account user info
+    localStorage.removeItem('attempts');
+    localStorage.removeItem('lockoutTime');
+
+    // Dispatch a custom event to notify components about caretaker change
+    if (currentCaretakerId) {
+      const caretakerChangedEvent = new CustomEvent('caretakerChanged', {
+        detail: { caretakerId: null }
+      });
+      window.dispatchEvent(caretakerChangedEvent);
+    }
+
+    // Redirect to home page for account holders or family login for PIN users
+    if (isAccountAuth) {
+      window.location.href = '/';
+    } else {
+      const familySlug = window.location.pathname.split('/')[1];
+      if (familySlug) {
+        window.location.href = `/${familySlug}/login`;
+      } else {
+        window.location.href = '/login';
+      }
+    }
+  };
+
   return (
     <DeploymentProvider>
-      <FamilyProvider>
+      <FamilyProvider onLogout={handleLogout}>
         <BabyProvider>
           <TimezoneProvider>
             <ThemeProvider>

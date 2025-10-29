@@ -191,6 +191,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
     let feedingCount = 0;
     let totalFeedAmount = 0;
     let feedAmountCount = 0;
+    const feedUnits: Record<string, number> = {};
 
     // Count diapers
     let diaperCount = 0;
@@ -316,6 +317,12 @@ const StatsTab: React.FC<StatsTabProps> = ({
         if ('amount' in a && a.amount && typeof a.amount === 'number') {
           totalFeedAmount += a.amount;
           feedAmountCount++;
+
+          // Track units used in feeding logs
+          if ('unitAbbr' in a && a.unitAbbr && typeof a.unitAbbr === 'string') {
+            const unit = a.unitAbbr.toLowerCase();
+            feedUnits[unit] = (feedUnits[unit] || 0) + 1;
+          }
         }
       });
 
@@ -367,6 +374,11 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const nightsCount = Object.keys(nightSleepByNight).length;
     const avgNightSleepTime = nightsCount > 0 ? Math.round(totalNightSleepMinutes / nightsCount) : 0;
     const avgNightWakings = nightsCount > 0 ? Math.round(nightWakings / nightsCount * 10) / 10 : 0;
+    // Determine the most common unit used
+    const mostCommonUnit = Object.keys(feedUnits).length > 0
+      ? Object.entries(feedUnits).reduce((a, b) => feedUnits[a[0]] > feedUnits[b[0]] ? a : b)[0]
+      : 'oz';
+
     const avgFeedings = daysInPeriod > 0 ? Math.round(feedingCount / daysInPeriod * 10) / 10 : 0;
     const avgFeedAmount = feedAmountCount > 0 ? Math.round(totalFeedAmount / feedAmountCount * 10) / 10 : 0;
     const avgDiaperChanges = daysInPeriod > 0 ? Math.round(diaperCount / daysInPeriod * 10) / 10 : 0;
@@ -380,7 +392,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
       avgFeedings,
       avgFeedAmount,
       avgDiaperChanges,
-      avgPoops
+      avgPoops,
+      feedUnit: mostCommonUnit
     };
   }
 
@@ -489,8 +502,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
           
           <CardVisual
             title="Avg Feed Amount"
-            mainValue={mainStats.avgFeedAmount.toFixed(1) + ' oz'}
-            comparativeValue={compareStats.avgFeedAmount.toFixed(1) + ' oz'}
+            mainValue={mainStats.avgFeedAmount.toFixed(1) + ' ' + mainStats.feedUnit}
+            comparativeValue={compareStats.avgFeedAmount.toFixed(1) + ' ' + compareStats.feedUnit}
             trend={mainStats.avgFeedAmount >= compareStats.avgFeedAmount ? 'positive' : 'negative'}
           />
           

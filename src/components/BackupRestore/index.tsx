@@ -19,19 +19,23 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
   onBackupError,
   onRestoreSuccess,
   onRestoreError,
+  onAdminPasswordReset,
+  onAdminResetAcknowledged,
   className,
   importOnly = false,
   initialSetup = false
 }) => {
   const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  const adminResetDetectedRef = useRef<boolean>(false);
+
   const [state, setState] = useState<BackupRestoreState>({
     isRestoring: false,
     isMigrating: false,
     error: null,
     success: null,
-    migrationStep: null
+    migrationStep: null,
+    awaitingAdminResetAck: false
   });
 
   // Clear messages helper
@@ -42,26 +46,60 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
   // Handle post-restore migrations
   const runPostRestoreMigrations = async () => {
     try {
-      setState(prev => ({ 
-        ...prev, 
-        isMigrating: true, 
+      setState(prev => ({
+        ...prev,
+        isMigrating: true,
         migrationStep: 'Preparing database migration...',
-        error: null 
+        error: null
       }));
-      
+
       // Add a small delay to show the initial step
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setState(prev => ({ 
-        ...prev, 
-        migrationStep: 'Running schema migrations and updates...' 
+
+      // Step 1: Run pre-migration check
+      setState(prev => ({
+        ...prev,
+        migrationStep: 'Checking database version and compatibility...'
       }));
-      
+
       const authToken = localStorage.getItem('authToken');
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...(authToken && { 'Authorization': `Bearer ${authToken}` })
       };
+
+      const preMigrationEndpoint = initialSetup
+        ? '/api/database/pre-migration-check-initial'
+        : '/api/database/pre-migration-check';
+
+      const preMigrationResponse = await fetch(preMigrationEndpoint, {
+        method: 'POST',
+        headers
+      });
+
+      if (!preMigrationResponse.ok) {
+        console.warn('Pre-migration check failed, continuing with migration...');
+      } else {
+        const preMigrationResult = await preMigrationResponse.json();
+        if (preMigrationResult.success && preMigrationResult.data?.adminResetRequired) {
+          console.log('Admin password reset was required and has been completed');
+          // Track that admin reset was detected
+          adminResetDetectedRef.current = true;
+          // Notify parent component that admin password was reset
+          onAdminPasswordReset?.();
+          setState(prev => ({
+            ...prev,
+            migrationStep: 'Database compatibility check complete. Running migrations...'
+          }));
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setState(prev => ({
+        ...prev,
+        migrationStep: 'Running schema migrations and updates...'
+      }));
 
       const migrationEndpoint = initialSetup ? '/api/database/migrate-initial' : '/api/database/migrate';
       const response = await fetch(migrationEndpoint, {
@@ -85,34 +123,75 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
 
       const result = await response.json();
       
-      setState(prev => ({ 
-        ...prev, 
-        migrationStep: 'Migration completed! Reloading application...' 
-      }));
-      
-      // Show completion message briefly before reload/redirect
-      setTimeout(() => {
-        setState(prev => ({ 
-          ...prev, 
-          isMigrating: false,
-          migrationStep: null,
-          success: initialSetup 
-            ? 'Database imported and migrated successfully. Redirecting...' 
-            : 'Database restored and migrated successfully. Application is reloading...' 
+      // Check if admin reset occurred and we should wait for acknowledgment
+      const shouldWaitForAck = adminResetDetectedRef.current && onAdminResetAcknowledged;
+
+      if (shouldWaitForAck) {
+        // Admin reset occurred - wait for user to acknowledge before proceeding
+        setState(prev => ({
+          ...prev,
+          migrationStep: 'Migration completed! Please acknowledge the password reset notification.'
         }));
-        
+
+        // Wait briefly to show the message, then set awaiting state
+        setTimeout(() => {
+          setState(prev => ({
+            ...prev,
+            isMigrating: false,
+            migrationStep: null,
+            success: initialSetup
+              ? 'Database imported and migrated successfully.'
+              : 'Database restored and migrated successfully.',
+            awaitingAdminResetAck: true
+          }));
+        }, 1000);
+
+        // Wait for acknowledgment, then proceed with redirect/reload
+        await onAdminResetAcknowledged();
+
+        // Reset the awaiting state
+        setState(prev => ({
+          ...prev,
+          awaitingAdminResetAck: false
+        }));
+
+        // Now proceed with redirect/reload
         if (!initialSetup) {
-          // Refresh the page after successful migration (normal mode)
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
+          window.location.reload();
         } else {
-          // For initial setup, call the success callback after showing the message
-          setTimeout(() => {
-            onRestoreSuccess?.();
-          }, 1000);
+          onRestoreSuccess?.();
         }
-      }, 1000);
+      } else {
+        // No admin reset or no callback - proceed with normal flow
+        setState(prev => ({
+          ...prev,
+          migrationStep: 'Migration completed! Reloading application...'
+        }));
+
+        // Show completion message briefly before reload/redirect
+        setTimeout(() => {
+          setState(prev => ({
+            ...prev,
+            isMigrating: false,
+            migrationStep: null,
+            success: initialSetup
+              ? 'Database imported and migrated successfully. Redirecting...'
+              : 'Database restored and migrated successfully. Application is reloading...'
+          }));
+
+          if (!initialSetup) {
+            // Refresh the page after successful migration (normal mode)
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            // For initial setup, call the success callback after showing the message
+            setTimeout(() => {
+              onRestoreSuccess?.();
+            }, 1000);
+          }
+        }, 1000);
+      }
       
     } catch (error) {
       console.error('Migration error:', error);
@@ -212,7 +291,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
       <input
         type="file"
         ref={fileInputRef}
-        accept=".db"
+        accept=".db,.zip"
         onChange={handleRestore}
         style={{ display: 'none' }}
       />

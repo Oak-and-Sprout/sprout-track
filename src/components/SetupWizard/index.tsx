@@ -414,14 +414,42 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
         
         // Setup complete - pass the family data to the callback
         if (createdFamily) {
-          // For non-account authentication, clear tokens to force re-login with new family context
-          // For account authentication, keep the user logged in
-          if (!isAccountAuth()) {
+          const accountAuth = isAccountAuth();
+
+          console.log('Setup completion - account auth check:', accountAuth);
+
+          // For account authentication, refresh the token to include family info
+          if (accountAuth) {
+            console.log('Refreshing token for account auth with family info');
+            try {
+              const refreshResponse = await fetch('/api/auth/refresh-token', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+              });
+
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                if (refreshData.success && refreshData.data?.token) {
+                  // Update the token in localStorage
+                  localStorage.setItem('authToken', refreshData.data.token);
+                  console.log('Token refreshed successfully with family info');
+                } else {
+                  console.error('Failed to refresh token:', refreshData.error);
+                }
+              } else {
+                console.error('Token refresh request failed:', refreshResponse.status);
+              }
+            } catch (error) {
+              console.error('Error refreshing token:', error);
+            }
+          } else {
+            // For non-account authentication, clear tokens to force re-login with new family context
+            console.log('Clearing tokens for non-account auth');
             localStorage.removeItem('authToken');
             localStorage.removeItem('unlockTime');
             localStorage.removeItem('caretakerId');
           }
-          
+
           onComplete(createdFamily);
         }
       } catch (error) {

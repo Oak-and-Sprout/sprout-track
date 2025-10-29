@@ -134,8 +134,32 @@ export default function SetupPage() {
 
   const handleSetupComplete = (family: { id: string; name: string; slug: string }) => {
     console.log('Setup completed for family:', family);
-    // Redirect to the newly created family's login page (user was logged out)
-    router.push(`/${family.slug}/login`);
+
+    // Check if user is authenticated with an account
+    const authToken = localStorage.getItem('authToken');
+    let isAccountAuth = false;
+
+    if (authToken) {
+      try {
+        const base64Url = authToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        const decoded = JSON.parse(jsonPayload);
+        isAccountAuth = decoded.isAccountAuth === true;
+      } catch (error) {
+        console.error('Error checking account auth:', error);
+      }
+    }
+
+    // For account auth, redirect to family dashboard; for other auth, redirect to login
+    if (isAccountAuth) {
+      router.push(`/${family.slug}`);
+    } else {
+      router.push(`/${family.slug}/login`);
+    }
   };
 
   if (isLoading) {

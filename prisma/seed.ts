@@ -57,6 +57,7 @@ async function main() {
         familyId: defaultFamilyId,
         familyName: "My Family",
         securityPin: "111222",
+        // authType will be auto-detected based on caretaker existence
         defaultBottleUnit: "OZ",
         defaultSolidsUnit: "TBSP",
         defaultHeightUnit: "IN",
@@ -88,6 +89,18 @@ async function main() {
     { unitAbbr: 'CC', unitName: 'Cubic Centimeters', activityTypes: 'medicine' },
     { unitAbbr: 'MOL', unitName: 'Moles', activityTypes: 'medicine' },
     { unitAbbr: 'MMOL', unitName: 'Millimoles', activityTypes: 'medicine' },
+    { unitAbbr: 'DROP', unitName: 'Drops', activityTypes: 'medicine' },
+    { unitAbbr: 'DOSE', unitName: 'Dose', activityTypes: 'medicine' },
+    { unitAbbr: 'PILL', unitName: 'Pill', activityTypes: 'medicine' },
+    { unitAbbr: 'CAP', unitName: 'Cap', activityTypes: 'medicine' },
+    { unitAbbr: 'TAB', unitName: 'Tab', activityTypes: 'medicine' },
+    { unitAbbr: 'SPRAY', unitName: 'Spray', activityTypes: 'medicine' },
+    { unitAbbr: 'INHALER', unitName: 'Inhaler', activityTypes: 'medicine' },
+    { unitAbbr: 'INJECTION', unitName: 'Injection', activityTypes: 'medicine' },
+    { unitAbbr: 'PATCH', unitName: 'Patch', activityTypes: 'medicine' },
+    { unitAbbr: 'CREAM', unitName: 'Cream', activityTypes: 'medicine' },
+    { unitAbbr: 'OINTMENT', unitName: 'Ointment', activityTypes: 'medicine' },
+    { unitAbbr: 'SUPPOSITORY', unitName: 'Suppository', activityTypes: 'medicine' },
   ];
 
   // Handle units separately

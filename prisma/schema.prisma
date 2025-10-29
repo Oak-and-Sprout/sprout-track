@@ -117,7 +117,7 @@ model Account {
   // Future billing fields
   stripeCustomerId String?
   subscriptionId   String?
-  planType         String? // 'free', 'premium', 'enterprise'
+  planType         String? // 'sub', 'full'
   planExpires      DateTime?
   trialEnds        DateTime?
   
@@ -360,6 +360,7 @@ model DiaperLog {
   type        DiaperType
   condition   String?
   color       String?
+  blowout     Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   deletedAt   DateTime?
@@ -438,6 +439,7 @@ model Settings {
   id                String   @id @default(uuid())
   familyName        String   @default("My Family")
   securityPin       String   @default("111222")
+  authType          String?  // "SYSTEM" or "CARETAKER" - determines authentication method, auto-detected if empty
   defaultBottleUnit String   @default("OZ")    // Default unit for bottle feeding
   defaultSolidsUnit String   @default("TBSP")  // Default unit for solid feeding
   defaultHeightUnit String   @default("IN")    // Default unit for height measurement

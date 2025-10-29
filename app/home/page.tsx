@@ -83,7 +83,7 @@ const home = () => {
     return () => clearTimeout(timeout);
   }, [currentCaretakerVideo, theme]);
 
-  // Check for verification and password reset hashes on load
+  // Check for verification, password reset hashes, and upgrade query parameter on load
   useEffect(() => {
     const checkHash = () => {
       const hash = window.location.hash;
@@ -110,8 +110,27 @@ const home = () => {
       }
     };
 
+    const checkQueryParams = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const upgrade = urlParams.get('upgrade');
+      const family = urlParams.get('family');
+
+      if (upgrade === 'true') {
+        // Show login modal for account upgrade
+        setAccountModalMode('login');
+        setShowAccountModal(true);
+
+        // Clear the query parameter after processing
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('upgrade');
+        newUrl.searchParams.delete('family');
+        window.history.replaceState(null, '', newUrl.toString());
+      }
+    };
+
     // Check on mount
     checkHash();
+    checkQueryParams();
 
     // Listen for hash changes
     window.addEventListener('hashchange', checkHash);

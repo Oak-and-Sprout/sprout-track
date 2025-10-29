@@ -5,19 +5,22 @@ import { AccountSettingsTabProps } from './account-manager.types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
-import { 
-  User, 
-  Mail, 
-  Home, 
-  Link, 
-  Download, 
-  AlertTriangle, 
-  Edit, 
-  Save, 
-  X, 
+import {
+  User,
+  Mail,
+  Home,
+  Link,
+  Download,
+  AlertTriangle,
+  Edit,
+  Save,
+  X,
   Loader2,
   CheckCircle,
-  Key
+  Key,
+  Crown,
+  Calendar,
+  Shield
 } from 'lucide-react';
 
 /**
@@ -759,6 +762,160 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Account Status Section */}
+      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
+            Account Status
+          </h3>
+        </div>
+
+        <div className={styles.formGroup}>
+          {accountStatus.betaparticipant ? (
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <Crown className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-purple-800 mb-2">
+                    Beta Participant
+                  </h4>
+                  <p className="text-purple-700 mb-3">
+                    Thank you for being a beta participant and helping Sprout Track grow!
+                    You have full access to all features and functionality.
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-purple-600">
+                    <Shield className="h-4 w-4" />
+                    <span className="font-medium">Full Access</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : !accountStatus.hasFamily ? (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <Home className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-blue-800 mb-2">
+                      No Family Created Yet
+                    </h4>
+                    <p className="text-blue-700 mb-3">
+                      Get started by creating your family to begin tracking activities.
+                    </p>
+                    {accountStatus.trialEnds && (
+                      <p className="text-sm text-blue-600 mb-3">
+                        You have a trial that expires on {new Date(accountStatus.trialEnds).toLocaleDateString()}.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => window.location.href = '/account/family-setup'}
+                  className="flex-1"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Create Family
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Placeholder for future payment flow
+                    alert('Payment management coming soon!');
+                  }}
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Upgrade Plan
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-3 h-3 rounded-full",
+                  accountStatus.accountStatus === 'active' ? "bg-green-500" :
+                  accountStatus.accountStatus === 'trial' ? "bg-blue-500" :
+                  accountStatus.accountStatus === 'expired' ? "bg-red-500" :
+                  accountStatus.accountStatus === 'closed' ? "bg-gray-500" :
+                  accountStatus.accountStatus === 'no_family' ? "bg-orange-500" :
+                  "bg-yellow-500"
+                )} />
+                <span className="font-medium capitalize">
+                  {accountStatus.accountStatus.replace('_', ' ')} Account
+                </span>
+              </div>
+
+              {accountStatus.planType && (
+                <div className="flex items-center gap-2">
+                  <Crown className="h-4 w-4 text-gray-500" />
+                  <span className="capitalize">{accountStatus.planType} Plan</span>
+                </div>
+              )}
+
+              {accountStatus.trialEnds && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span>
+                    Trial ends: {new Date(accountStatus.trialEnds).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              {accountStatus.planExpires && !accountStatus.trialEnds && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span>
+                    Subscription ends: {new Date(accountStatus.planExpires).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              {accountStatus.subscriptionActive && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      {accountStatus.accountStatus === 'trial' ? 'Active Trial' : 'Subscription Active'}
+                    </span>
+                  </div>
+                  {accountStatus.accountStatus === 'trial' && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        // Placeholder for future payment flow
+                        alert('Payment management coming soon!');
+                      }}
+                    >
+                      <Crown className="h-4 w-4 mr-2" />
+                      Upgrade
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {accountStatus.accountStatus === 'expired' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-medium">Account Expired</span>
+                  </div>
+                  <p className="text-sm text-red-600 mt-1">
+                    Your subscription has expired. Please update your payment method to continue using Sprout Track.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Family Information Section - Only show if family data exists */}

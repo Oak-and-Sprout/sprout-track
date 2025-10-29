@@ -1,0 +1,34 @@
+// Separate Prisma schema for API logging
+// This keeps logs isolated from main application data
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/log-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("LOG_DATABASE_URL")
+}
+
+model ApiLog {
+  id           Int      @id @default(autoincrement())
+  timestamp    DateTime @default(now())
+  method       String
+  path         String
+  status       Int?
+  durationMs   Int?
+  ip           String?
+  userAgent    String?
+  caretakerId  String?
+  familyId     String?
+  error        String?
+  requestBody  String?
+  responseBody String?
+
+  @@index([timestamp])
+  @@index([status])
+  @@index([familyId])
+  @@index([path])
+  @@map("api_logs")
+}
