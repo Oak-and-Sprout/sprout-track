@@ -2,7 +2,7 @@
 
 > **⚠️ IMPORTANT NOTICE - Version 0.94.89 Upgrade**
 >
-> **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** In attempt to smooth over upgrades for self-hosters that use Docker the /family-manager admin password will be reset to defaults during the import process for new installations.  If you manually backup your database and environment file without using the built in import utility then you will not be affected. [Read full details here](documentation/admin-password-reset-notification.md).
+> **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** In attempt to smooth over upgrades for self-hosters that use Docker the /family-manager admin password will be reset to defaults during the import process for new installations.  If you manually save/restore your database backup and envirnoment file before the  upgrade and do not use the import utility then you will not be affected. [Read full details here](documentation/admin-password-reset-notification.md).
 
 A Next.js application for tracking baby activities, milestones, and development.
 
