@@ -4,6 +4,7 @@
 
 ### Changes
 
+#### Docker Startup Script
 - Updated entry point script to properly seed databases on startup
 
 ## v0.94.89 - API Logging, Account Management, and QoL Improvements - October 28, 2025
