@@ -45,33 +45,17 @@ DATABASE_URL="file:/db/baby-tracker.db" npm run prisma:generate
 LOG_DATABASE_URL="file:/db/baby-tracker-logs.db" npm run prisma:generate:log
 
 echo "Running database migrations..."
-# Explicitly set DATABASE_URL for migrations
+# Deploy main database migrations
 DATABASE_URL="file:/db/baby-tracker.db" npx prisma migrate deploy
 
-echo "Checking if database needs seeding..."
-# Use the same DATABASE_URL for checking settings
-SETTINGS_COUNT=$(DATABASE_URL="file:/db/baby-tracker.db" node -e "
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-async function checkSettings() {
-  try {
-    const count = await prisma.settings.count();
-    console.log(count);
-  } catch (error) {
-    console.log(0);
-  } finally {
-    await prisma.\$disconnect();
-  }
-}
-checkSettings();
-")
+echo "Creating log database schema..."
+# Create/update log database schema
+LOG_DATABASE_URL="file:/db/baby-tracker-logs.db" npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
 
-if [ "$SETTINGS_COUNT" = "0" ] || [ -z "$SETTINGS_COUNT" ]; then
-  echo "Settings table is empty. Running seed script..."
-  DATABASE_URL="file:/db/baby-tracker.db" npx prisma db seed
-else
-  echo "Database already seeded. Skipping seed script."
-fi
+echo "Seeding database..."
+# Seed script has built-in checks for all entities (families, caretakers, settings, units)
+# It only creates/updates what doesn't exist, so it's safe to run on every startup
+DATABASE_URL="file:/db/baby-tracker.db" npx prisma db seed
 
 echo "Starting application..."
 exec "$@"
