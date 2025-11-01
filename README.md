@@ -2,7 +2,7 @@
 
 > **⚠️ IMPORTANT NOTICE - Version 0.94.89 Upgrade**
 >
-> **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** This is required for Docker environment file improvements. You'll receive a notification modal with instructions. [Read full details here](documentation/admin-password-reset-notification.md).
+> **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** In attempt to smooth over upgrades for self-hosters that use Docker the /family-manager admin password will be reset to defaults during the import process for new installations.  If you manually save/restore your database backup and envirnoment file before the  upgrade and do not use the import utility then you will not be affected. [Read full details here](documentation/admin-password-reset-notification.md).
 
 A Next.js application for tracking baby activities, milestones, and development.
 
@@ -48,12 +48,12 @@ To deploy the latest version using Docker:
 #### For image pulls:
 x64:
 ```bash
-docker pull sprouttrack/sprout-track:0.94.24x64
+docker pull sprouttrack/sprout-track:0.94.89x64
 ```
 
 arm64:
 ```bash
-docker pull sprouttrack/sprout-track:0.94.24arm64
+docker pull sprouttrack/sprout-track:0.94.89arm64
 ```
 #### Build locally
 ```bash
