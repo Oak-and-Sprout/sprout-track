@@ -50,18 +50,25 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
   React.useEffect(() => {
     const fetchData = async () => {
       try {
+        const authToken = localStorage.getItem('authToken');
+        const fetchOptions = authToken ? {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        } : {};
+
         // Fetch babies
-        const babiesResponse = await fetch('/api/baby');
+        const babiesResponse = await fetch('/api/baby', fetchOptions);
         const babiesData = await babiesResponse.json();
-        
+
         // Fetch caretakers
-        const caretakersResponse = await fetch('/api/caretaker');
+        const caretakersResponse = await fetch('/api/caretaker', fetchOptions);
         const caretakersData = await caretakersResponse.json();
-        
+
         // Fetch contacts
-        const contactsResponse = await fetch('/api/contact');
+        const contactsResponse = await fetch('/api/contact', fetchOptions);
         const contactsData = await contactsResponse.json();
-        
+
         // Update state with fetched data
         setBabies(babiesData.success ? babiesData.data : []);
         setCaretakers(caretakersData.success ? caretakersData.data : []);
@@ -197,11 +204,13 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
       
       const method = eventData.id ? 'PUT' : 'POST';
       const url = eventData.id ? `/api/calendar-event?id=${eventData.id}` : '/api/calendar-event';
-      
+
+      const authToken = localStorage.getItem('authToken');
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
         },
         body: JSON.stringify({
           ...eventData,
@@ -236,8 +245,12 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
   // Handle event delete
   const handleDeleteEvent = async (eventId: string) => {
     try {
+      const authToken = localStorage.getItem('authToken');
       const response = await fetch(`/api/calendar-event?id=${eventId}`, {
         method: 'DELETE',
+        headers: authToken ? {
+          'Authorization': `Bearer ${authToken}`
+        } : {}
       });
       const data = await response.json();
       if (data.success) {

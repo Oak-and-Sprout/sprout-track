@@ -131,9 +131,15 @@ export function Calendar({ selectedBabyId, userTimezone, onDateSelect }: Calenda
         queryParams.append('babyId', selectedBabyId);
       }
       
-      // Fetch calendar events
+      // Fetch calendar events with authentication token
+      const authToken = localStorage.getItem('authToken');
       const eventsResponse = await fetch(
-        `/api/calendar-event?${queryParams.toString()}`
+        `/api/calendar-event?${queryParams.toString()}`,
+        {
+          headers: authToken ? {
+            'Authorization': `Bearer ${authToken}`
+          } : {}
+        }
       );
       const eventsData = await eventsResponse.json();
       

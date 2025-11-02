@@ -800,10 +800,12 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     
                     try {
                       // Delete the event
+                      const authToken = localStorage.getItem('authToken');
                       const response = await fetch(`/api/calendar-event?id=${event.id}`, {
                         method: 'DELETE',
                         headers: {
                           'Content-Type': 'application/json',
+                          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
                         },
                       });
                       
