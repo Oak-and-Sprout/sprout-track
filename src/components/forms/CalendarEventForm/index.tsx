@@ -278,21 +278,33 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
   // Handle adding a new contact
   const handleAddContact = (newContact: Contact) => {
     console.log('Add new contact:', newContact);
-    
-    // Add the new contact to our local contacts list
+
+    // Ensure the contact has an ID before proceeding
+    if (!newContact.id) {
+      console.error('New contact missing ID:', newContact);
+      return;
+    }
+
+    // Add the new contact to our local contacts list immediately
     setLocalContacts(prev => {
       // Check if the contact already exists
       if (!prev.some(c => c.id === newContact.id)) {
-        return [...prev, newContact];
+        const updated = [...prev, newContact];
+        console.log('Updated local contacts:', updated);
+        return updated;
       }
       return prev;
     });
-    
-    // Select the new contact
-    setFormData(prev => ({
-      ...prev,
-      contactIds: [...prev.contactIds, newContact.id]
-    }));
+
+    // Select the new contact immediately
+    setFormData(prev => {
+      const updatedFormData = {
+        ...prev,
+        contactIds: [...prev.contactIds, newContact.id]
+      };
+      console.log('Updated form data with new contact:', updatedFormData);
+      return updatedFormData;
+    });
   };
   
   // Handle editing a contact

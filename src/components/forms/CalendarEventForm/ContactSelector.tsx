@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/src/lib/utils';
 import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
 import { Check, X, Plus, Phone, Mail, Edit, User } from 'lucide-react';
@@ -33,55 +33,9 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   const [showContactForm, setShowContactForm] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Fetch contacts from API - memoized to avoid dependency issues
-  const fetchContacts = useCallback(async () => {
-    try {
-      // Get auth token from localStorage
-      const authToken = localStorage.getItem('authToken');
-      
-      if (!authToken) {
-        console.error('Authentication token not found');
-        return;
-      }
-      
-      // Fetch contacts from API
-      const response = await fetch('/api/contact', {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch contacts');
-      }
-      
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        // If we have a callback to update contacts in the parent component
-        if (onAddNewContact && Array.isArray(result.data)) {
-          // This is a bit of a hack - we're using onAddNewContact as a way to update the contacts list
-          // In a real implementation, you would have a separate callback for this
-          result.data.forEach((contact: Contact) => {
-            if (!contacts.some(c => c.id === contact.id)) {
-              onAddNewContact(contact);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching contacts:', error);
-    }
-  }, [contacts, onAddNewContact]);
-  
-  // Fetch contacts on component mount
-  useEffect(() => {
-    // Only fetch if we have the callback to update contacts
-    if (onAddNewContact) {
-      fetchContacts();
-    }
-  }, [fetchContacts, onAddNewContact]);
+
+  // Note: Contacts are fetched by the parent component (CalendarDayView)
+  // We don't need to fetch them here to avoid duplicate API calls
   
   // Filter contacts based on search term
   const filteredContacts = contacts.filter(contact => 
@@ -121,33 +75,30 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   // Handle saving a contact
   const handleSaveContact = async (contactData: any) => {
     setIsLoading(true);
-    
+
     try {
-      // The ContactForm component now handles the API call and returns the saved contact
-      
-      // Close the form first to prevent UI issues
-      setShowContactForm(false);
-      setSelectedContact(undefined);
-      
-      // Then update the parent component
-      // If it's a new contact
-      if (onAddNewContact) {
-        // Always pass the contact data to the parent component
+      // The ContactForm component handles the API call and returns the saved contact
+
+      // Determine if this is a new contact or an edit
+      const isNewContact = !selectedContact?.id;
+
+      // Update the parent component with the saved contact
+      if (isNewContact && onAddNewContact) {
+        // For new contacts: add to the list and auto-select
         onAddNewContact(contactData);
-        
+
         // Auto-select the newly added contact if it has an ID
         if (contactData.id) {
           onContactsChange([...selectedContactIds, contactData.id]);
         }
-      } 
-      // If it's an existing contact
-      else if (contactData.id && onEditContact) {
+      } else if (!isNewContact && onEditContact) {
+        // For existing contacts: update the contact in the list
         onEditContact(contactData);
       }
-      
-      // Immediately refresh contacts list from the API
-      // This is important to do AFTER updating the parent component
-      await fetchContacts();
+
+      // Close the form after updating
+      setShowContactForm(false);
+      setSelectedContact(undefined);
     } catch (error) {
       console.error('Error handling saved contact:', error);
     } finally {
@@ -159,22 +110,19 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   const handleDeleteContact = async (contactId: string) => {
     if (onDeleteContact) {
       setIsLoading(true);
-      
+
       try {
-        // Close the form first to prevent UI issues
-        setShowContactForm(false);
-        setSelectedContact(undefined);
-        
-        // Update the parent component
+        // Update the parent component (remove from contacts list)
         onDeleteContact(contactId);
-        
+
         // Remove the contact from selection if it's selected
         if (selectedContactIds.includes(contactId)) {
           onContactsChange(selectedContactIds.filter(id => id !== contactId));
         }
-        
-        // Refresh contacts list from the API after updating parent component
-        await fetchContacts();
+
+        // Close the form after deletion
+        setShowContactForm(false);
+        setSelectedContact(undefined);
       } catch (error) {
         console.error('Error handling contact deletion:', error);
       } finally {
