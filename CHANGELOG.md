@@ -1,5 +1,16 @@
 # Sprout Track Changelog
 
+## v0.94.95 - Calendar Hotfix for Accounts
+
+### Changes
+
+#### Calendar\Account Auth Failures
+- Fixed account authorization failures on the calendar the caused auto log out in the event an account called an api without the proper context
+
+#### Performance Optimizations
+- Removed unnecessary calls from the CalendarEventForm
+- Fixed an error that gets generated when a user tries to save a calendar event when a new contact created during the event creation or edit
+
 ## v0.94.90 - Docker Entrypoint Script Update
 
 ### Changes
