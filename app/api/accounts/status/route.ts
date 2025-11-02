@@ -18,6 +18,7 @@ interface AccountStatusResponse {
   planExpires?: string;
   trialEnds?: string;
   subscriptionActive: boolean;
+  subscriptionId?: string;
   accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family';
 }
 
@@ -129,6 +130,7 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Accou
         planExpires: account.planExpires?.toISOString(),
         trialEnds: account.trialEnds?.toISOString(),
         subscriptionActive,
+        subscriptionId: account.subscriptionId || undefined,
         accountStatus
       }
     });

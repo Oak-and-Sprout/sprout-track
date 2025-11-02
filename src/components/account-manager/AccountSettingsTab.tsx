@@ -5,6 +5,7 @@ import { AccountSettingsTabProps } from './account-manager.types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
+import PaymentModal from './PaymentModal';
 import {
   User,
   Mail,
@@ -94,6 +95,9 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   // Success/error messages
   const [accountMessage, setAccountMessage] = useState('');
   const [familyMessage, setFamilyMessage] = useState('');
+
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Check slug uniqueness
   const checkSlugUniqueness = useCallback(async (slug: string) => {
@@ -827,10 +831,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // Placeholder for future payment flow
-                    alert('Payment management coming soon!');
-                  }}
+                  onClick={() => setShowPaymentModal(true)}
                 >
                   <Crown className="h-4 w-4 mr-2" />
                   Upgrade Plan
@@ -890,10 +891,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   {accountStatus.accountStatus === 'trial' && (
                     <Button
                       size="sm"
-                      onClick={() => {
-                        // Placeholder for future payment flow
-                        alert('Payment management coming soon!');
-                      }}
+                      onClick={() => setShowPaymentModal(true)}
                     >
                       <Crown className="h-4 w-4 mr-2" />
                       Upgrade
@@ -908,9 +906,30 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     <AlertTriangle className="h-4 w-4" />
                     <span className="font-medium">Account Expired</span>
                   </div>
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-red-600 mt-1 mb-3">
                     Your subscription has expired. Please update your payment method to continue using Sprout Track.
                   </p>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPaymentModal(true)}
+                    variant="destructive"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Renew Subscription
+                  </Button>
+                </div>
+              )}
+
+              {accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial' && (
+                <div className="flex justify-end mt-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowPaymentModal(true)}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Manage Subscription
+                  </Button>
                 </div>
               )}
             </div>
@@ -1219,6 +1238,24 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        accountStatus={{
+          accountStatus: accountStatus.accountStatus,
+          planType: accountStatus.planType,
+          subscriptionActive: accountStatus.subscriptionActive,
+          trialEnds: accountStatus.trialEnds,
+          planExpires: accountStatus.planExpires,
+          subscriptionId: accountStatus.subscriptionId,
+        }}
+        onPaymentSuccess={() => {
+          setShowPaymentModal(false);
+          onDataRefresh();
+        }}
+      />
     </div>
   );
 };
