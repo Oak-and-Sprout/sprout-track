@@ -1,0 +1,144 @@
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import prisma from '@/app/api/db';
+import { withAccountOwner, ApiResponse, AuthResult } from '@/app/api/utils/auth';
+
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2025-10-29.clover',
+});
+
+/**
+ * POST /api/accounts/payments/verify-session
+ *
+ * Verifies a Stripe Checkout session and updates account status immediately.
+ * This is called from the payment success page to ensure the account is updated
+ * before the user returns to the app, rather than waiting for the webhook.
+ *
+ * Request body:
+ * - sessionId: string - Stripe Checkout session ID
+ *
+ * Returns:
+ * - success: boolean
+ * - planType: string - The activated plan type
+ */
+async function handler(
+  req: NextRequest,
+  authContext: AuthResult
+): Promise<NextResponse<ApiResponse<{ planType: string; subscriptionId?: string }>>> {
+  try {
+    const accountId = authContext.accountId;
+
+    if (!accountId) {
+      return NextResponse.json(
+        { success: false, error: 'Account ID not found' },
+        { status: 400 }
+      );
+    }
+
+    // Parse request body
+    const body = await req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { success: false, error: 'Missing sessionId' },
+        { status: 400 }
+      );
+    }
+
+    // Retrieve the checkout session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'payment_intent']
+    });
+
+    // Verify the session belongs to this account
+    if (session.metadata?.accountId !== accountId) {
+      return NextResponse.json(
+        { success: false, error: 'Session does not belong to this account' },
+        { status: 403 }
+      );
+    }
+
+    // Check if payment was successful
+    if (session.payment_status !== 'paid') {
+      return NextResponse.json(
+        { success: false, error: 'Payment not completed' },
+        { status: 400 }
+      );
+    }
+
+    const planType = session.metadata?.planType as 'sub' | 'full';
+
+    if (!planType || !['sub', 'full'].includes(planType)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid plan type in session' },
+        { status: 400 }
+      );
+    }
+
+    // Update account based on plan type
+    if (planType === 'sub') {
+      // Subscription
+      const subscription = session.subscription as Stripe.Subscription;
+
+      if (!subscription) {
+        return NextResponse.json(
+          { success: false, error: 'Subscription not found' },
+          { status: 400 }
+        );
+      }
+
+      // Get the subscription item's current period end
+      const periodEnd = subscription.items.data[0]?.current_period_end;
+
+      await prisma.account.update({
+        where: { id: accountId },
+        data: {
+          planType: 'sub',
+          subscriptionId: subscription.id,
+          planExpires: periodEnd ? new Date(periodEnd * 1000) : null,
+          stripeCustomerId: session.customer as string,
+        }
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          planType: 'sub',
+          subscriptionId: subscription.id,
+        }
+      });
+
+    } else {
+      // One-time payment (lifetime)
+      await prisma.account.update({
+        where: { id: accountId },
+        data: {
+          planType: 'full',
+          planExpires: null, // Lifetime access
+          stripeCustomerId: session.customer as string,
+        }
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          planType: 'full',
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Error verifying session:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to verify session'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export const POST = withAccountOwner(handler);

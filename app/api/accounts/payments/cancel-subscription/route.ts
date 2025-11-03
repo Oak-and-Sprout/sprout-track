@@ -70,11 +70,11 @@ async function handler(
         {
           cancel_at_period_end: true,
         }
-      );
+      ) as Stripe.Subscription;
 
       console.log(`Cancelled subscription ${account.subscriptionId} for account ${accountId}`);
 
-      // Get the billing period end from the first subscription item
+      // Get billing period end date from subscription item (API v2025-10-29+ uses item-level periods)
       const periodEnd = subscription.items.data[0]?.current_period_end;
       const endDate = periodEnd ? new Date(periodEnd * 1000).toLocaleDateString() : 'the end of your billing period';
 

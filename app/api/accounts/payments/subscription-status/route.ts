@@ -81,7 +81,7 @@ async function handler(
     try {
       const subscription = await stripe.subscriptions.retrieve(account.subscriptionId, {
         expand: ['default_payment_method']
-      });
+      }) as Stripe.Subscription;
 
       // Get payment method details if available
       let paymentMethod: { brand: string; last4: string } | undefined;
@@ -96,7 +96,7 @@ async function handler(
         }
       }
 
-      // Get billing period from the first subscription item
+      // Get billing period end date from subscription item (API v2025-10-29+ uses item-level periods)
       const periodEnd = subscription.items.data[0]?.current_period_end;
 
       return NextResponse.json({
