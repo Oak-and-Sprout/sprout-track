@@ -5,7 +5,7 @@ import { withAccountOwner, ApiResponse, AuthResult } from '@/app/api/utils/auth'
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-10-29.clover',
 });
 
 interface SubscriptionStatusData {
@@ -96,12 +96,15 @@ async function handler(
         }
       }
 
+      // Get billing period from the first subscription item
+      const periodEnd = subscription.items.data[0]?.current_period_end;
+
       return NextResponse.json({
         success: true,
         data: {
           isActive: subscription.status === 'active' || subscription.status === 'trialing',
           planType: 'sub',
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+          currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
           paymentMethod,
         }

@@ -5,7 +5,7 @@ import { withAccountOwner, ApiResponse, AuthResult } from '@/app/api/utils/auth'
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-10-29.clover',
 });
 
 /**
@@ -74,10 +74,14 @@ async function handler(
 
       console.log(`Cancelled subscription ${account.subscriptionId} for account ${accountId}`);
 
+      // Get the billing period end from the first subscription item
+      const periodEnd = subscription.items.data[0]?.current_period_end;
+      const endDate = periodEnd ? new Date(periodEnd * 1000).toLocaleDateString() : 'the end of your billing period';
+
       return NextResponse.json({
         success: true,
         data: {
-          message: `Subscription cancelled. You will have access until ${new Date(subscription.current_period_end * 1000).toLocaleDateString()}`
+          message: `Subscription cancelled. You will have access until ${endDate}`
         }
       });
 

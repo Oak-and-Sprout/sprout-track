@@ -4,7 +4,7 @@ import prisma from '@/app/api/db';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-10-29.clover',
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -105,12 +105,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // Fetch subscription details
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
+      // Get billing period from the first subscription item
+      const periodEnd = subscription.items.data[0]?.current_period_end;
+
       await prisma.account.update({
         where: { id: accountId },
         data: {
           subscriptionId: subscriptionId,
           planType: 'sub',
-          planExpires: new Date(subscription.current_period_end * 1000),
+          planExpires: periodEnd ? new Date(periodEnd * 1000) : null,
           trialEnds: null, // Clear trial when subscription starts
         }
       });
@@ -152,12 +155,15 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
 
   try {
+    // Get billing period from the first subscription item
+    const periodEnd = subscription.items.data[0]?.current_period_end;
+
     await prisma.account.update({
       where: { id: accountId },
       data: {
         subscriptionId: subscription.id,
         planType: 'sub',
-        planExpires: new Date(subscription.current_period_end * 1000),
+        planExpires: periodEnd ? new Date(periodEnd * 1000) : null,
         trialEnds: null,
       }
     });
@@ -200,9 +206,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
  * Handle successful invoice payment (recurring subscription payments)
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-  const subscriptionId = typeof invoice.subscription === 'string'
-    ? invoice.subscription
-    : invoice.subscription?.id;
+  // Get subscription from parent.subscription_details
+  const subscriptionId = invoice.parent?.subscription_details?.subscription
+    ? (typeof invoice.parent.subscription_details.subscription === 'string'
+        ? invoice.parent.subscription_details.subscription
+        : invoice.parent.subscription_details.subscription.id)
+    : null;
 
   if (!subscriptionId) {
     return;
@@ -218,11 +227,14 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       return;
     }
 
+    // Get billing period from the first subscription item
+    const periodEnd = subscription.items.data[0]?.current_period_end;
+
     // Update the subscription period end date
     await prisma.account.update({
       where: { id: accountId },
       data: {
-        planExpires: new Date(subscription.current_period_end * 1000),
+        planExpires: periodEnd ? new Date(periodEnd * 1000) : null,
       }
     });
 
@@ -236,9 +248,12 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
  * Handle failed invoice payment
  */
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-  const subscriptionId = typeof invoice.subscription === 'string'
-    ? invoice.subscription
-    : invoice.subscription?.id;
+  // Get subscription from parent.subscription_details
+  const subscriptionId = invoice.parent?.subscription_details?.subscription
+    ? (typeof invoice.parent.subscription_details.subscription === 'string'
+        ? invoice.parent.subscription_details.subscription
+        : invoice.parent.subscription_details.subscription.id)
+    : null;
 
   if (!subscriptionId) {
     return;
