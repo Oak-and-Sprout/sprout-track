@@ -265,23 +265,66 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
         </div>
 
-        {accountStatus.planType === 'sub' && !subscriptionStatus.cancelAtPeriodEnd && (
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleCancelSubscription}
-              disabled={cancelingSubscription}
-            >
-              {cancelingSubscription ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Cancelling...
-                </>
-              ) : (
-                'Cancel Subscription'
-              )}
-            </Button>
+        {accountStatus.planType === 'sub' && (
+          <div className="space-y-4">
+            {/* Upgrade to Lifetime Section */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="flex-shrink-0">
+                  <Crown className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h5 className="font-semibold text-purple-800 mb-1">Upgrade to Lifetime Access</h5>
+                  <p className="text-sm text-purple-700 mb-2">
+                    Get lifetime access for a one-time payment of $12. No more recurring charges!
+                  </p>
+                  <ul className="text-xs text-purple-600 space-y-1 mb-3">
+                    <li>• Your subscription will be automatically cancelled</li>
+                    <li>• You'll maintain access for the remainder of your current billing period</li>
+                    <li>• Lifetime access starts immediately after payment</li>
+                  </ul>
+                </div>
+              </div>
+              <Button
+                onClick={() => handleSelectPlan(pricingPlans.find(p => p.interval === 'lifetime')!)}
+                disabled={loading}
+                size="sm"
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Lifetime
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Cancel Subscription */}
+            {!subscriptionStatus.cancelAtPeriodEnd && (
+              <div className="flex justify-end">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleCancelSubscription}
+                  disabled={cancelingSubscription}
+                >
+                  {cancelingSubscription ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    'Cancel Subscription'
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -21,7 +21,8 @@ import {
   Key,
   Crown,
   Calendar,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
 
 /**
@@ -855,48 +856,42 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </span>
               </div>
 
-              {accountStatus.planType && (
-                <div className="flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-gray-500" />
-                  <span className="capitalize">{accountStatus.planType} Plan</span>
-                </div>
-              )}
-
-              {accountStatus.trialEnds && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span>
-                    Trial ends: {new Date(accountStatus.trialEnds).toLocaleDateString()}
+              {accountStatus.subscriptionActive && (
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="font-medium">
+                    {accountStatus.accountStatus === 'trial' ? 'Active Trial' :
+                     accountStatus.planType === 'full' ? 'Lifetime Member' :
+                     'Subscription Active'}
                   </span>
                 </div>
               )}
 
-              {accountStatus.planExpires && !accountStatus.trialEnds && (
+              {accountStatus.trialEnds && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span>
+                      Trial ends: {new Date(accountStatus.trialEnds).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPaymentModal(true)}
+                    className="mt-2"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade
+                  </Button>
+                </>
+              )}
+
+              {accountStatus.planExpires && !accountStatus.trialEnds && accountStatus.planType !== 'full' && (
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <span>
                     Subscription ends: {new Date(accountStatus.planExpires).toLocaleDateString()}
                   </span>
-                </div>
-              )}
-
-              {accountStatus.subscriptionActive && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    <span>
-                      {accountStatus.accountStatus === 'trial' ? 'Active Trial' : 'Subscription Active'}
-                    </span>
-                  </div>
-                  {accountStatus.accountStatus === 'trial' && (
-                    <Button
-                      size="sm"
-                      onClick={() => setShowPaymentModal(true)}
-                    >
-                      <Crown className="h-4 w-4 mr-2" />
-                      Upgrade
-                    </Button>
-                  )}
                 </div>
               )}
 
@@ -1245,11 +1240,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         onClose={() => setShowPaymentModal(false)}
         accountStatus={{
           accountStatus: accountStatus.accountStatus,
-          planType: accountStatus.planType,
+          planType: accountStatus.planType || null,
           subscriptionActive: accountStatus.subscriptionActive,
-          trialEnds: accountStatus.trialEnds,
-          planExpires: accountStatus.planExpires,
-          subscriptionId: accountStatus.subscriptionId,
+          trialEnds: accountStatus.trialEnds || null,
+          planExpires: accountStatus.planExpires || null,
+          subscriptionId: accountStatus.subscriptionId || null,
         }}
         onPaymentSuccess={() => {
           setShowPaymentModal(false);
