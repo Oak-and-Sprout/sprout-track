@@ -99,6 +99,7 @@ async function handler(
           subscriptionId: subscription.id,
           planExpires: periodEnd ? new Date(periodEnd * 1000) : null,
           stripeCustomerId: session.customer as string,
+          trialEnds: null, // Clear trial when subscription starts
         }
       });
 
@@ -112,12 +113,36 @@ async function handler(
 
     } else {
       // One-time payment (lifetime)
+
+      // Check if user has an active subscription to cancel
+      const account = await prisma.account.findUnique({
+        where: { id: accountId },
+        select: { subscriptionId: true }
+      });
+
+      if (account?.subscriptionId) {
+        try {
+          // Cancel the existing subscription immediately
+          await stripe.subscriptions.cancel(account.subscriptionId);
+          console.log('Cancelled existing subscription:', account.subscriptionId);
+        } catch (error) {
+          console.error('Failed to cancel subscription:', error);
+          // Continue with upgrade even if cancellation fails
+        }
+      }
+
+      // Set planExpires to 100 years in the future for lifetime access
+      const lifetimeExpires = new Date();
+      lifetimeExpires.setFullYear(lifetimeExpires.getFullYear() + 100);
+
       await prisma.account.update({
         where: { id: accountId },
         data: {
           planType: 'full',
-          planExpires: null, // Lifetime access
+          planExpires: lifetimeExpires, // Lifetime access (100 years)
           stripeCustomerId: session.customer as string,
+          trialEnds: null, // Clear trial
+          subscriptionId: null, // Clear subscription ID
         }
       });
 

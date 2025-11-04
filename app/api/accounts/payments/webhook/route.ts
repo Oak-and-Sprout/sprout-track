@@ -146,6 +146,24 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     else if (session.mode === 'payment' && planType === 'full') {
       console.log('[WEBHOOK DEBUG] Processing lifetime payment for account:', accountId);
 
+      // Check if user has an active subscription to cancel
+      const account = await prisma.account.findUnique({
+        where: { id: accountId },
+        select: { subscriptionId: true }
+      });
+
+      if (account?.subscriptionId) {
+        console.log('[WEBHOOK DEBUG] Cancelling existing subscription:', account.subscriptionId);
+        try {
+          // Cancel the existing subscription immediately
+          await stripe.subscriptions.cancel(account.subscriptionId);
+          console.log('[WEBHOOK DEBUG] Subscription cancelled successfully');
+        } catch (error) {
+          console.error('[WEBHOOK ERROR] Failed to cancel subscription:', error);
+          // Continue with upgrade even if cancellation fails
+        }
+      }
+
       // Set planExpires to 100 years in the future for lifetime access
       const lifetimeExpires = new Date();
       lifetimeExpires.setFullYear(lifetimeExpires.getFullYear() + 100);
