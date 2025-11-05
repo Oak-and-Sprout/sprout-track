@@ -11,6 +11,30 @@
   color: white;
 }
 
+.account-button-white {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: white;
+  background-color: transparent !important;
+  transition: all 0.2s ease;
+}
+
+.account-button-white:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: white;
+}
+
+/* Dark mode override to prevent gray background */
+html.dark .account-button-white {
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  color: white !important;
+}
+
+html.dark .account-button-white:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: white !important;
+}
+
 .account-button-logged-in {
   border: 1px solid #059669; /* emerald-600 */
   color: #059669;
@@ -76,7 +100,8 @@ html.dark .account-button-link:hover {
 
 /* Focus states for accessibility */
 .account-button-guest:focus,
-.account-button-logged-in:focus {
+.account-button-logged-in:focus,
+.account-button-white:focus {
   outline: 2px solid #0d9488;
   outline-offset: 2px;
 }
@@ -86,9 +111,15 @@ html.dark .account-button-logged-in:focus {
   outline-color: #5eead4;
 }
 
+.account-button-white:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
 /* Ensure proper spacing and alignment */
 .account-button-guest,
-.account-button-logged-in {
+.account-button-logged-in,
+.account-button-white {
   display: flex;
   align-items: center;
   white-space: nowrap;
@@ -97,7 +128,8 @@ html.dark .account-button-logged-in:focus {
 
 /* Icon spacing */
 .account-button-guest svg,
-.account-button-logged-in svg {
+.account-button-logged-in svg,
+.account-button-white svg {
   flex-shrink: 0;
 }
 

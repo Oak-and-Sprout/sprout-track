@@ -42,52 +42,52 @@ html.dark .button-dark-link {
 }
 
 html.dark .button-dark-input {
-  background-color: #1f2937 !important; /* gray-800 */
-  border-color: #4b5563 !important; /* gray-600 */
-  color: #e5e7eb !important; /* gray-200 */
+  background-color: #1f2937; /* gray-800 */
+  border-color: #4b5563; /* gray-600 */
+  color: #e5e7eb; /* gray-200 */
 }
 
 html.dark .button-dark-input::placeholder {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af; /* gray-400 */
 }
 
 html.dark .button-dark-input:hover {
-  background-color: #374151 !important; /* gray-700 */
-  border-color: #6b7280 !important; /* gray-500 */
+  background-color: #374151; /* gray-700 */
+  border-color: #6b7280; /* gray-500 */
 }
 
 html.dark .button-dark-input:focus {
-  border-color: #6366f1 !important; /* indigo-500 */
-  background-color: #1f2937 !important; /* gray-800 */
-  ring-color: rgba(99, 102, 241, 0.2) !important; /* indigo-500 with opacity */
+  border-color: #6366f1; /* indigo-500 */
+  background-color: #1f2937; /* gray-800 */
+  ring-color: rgba(99, 102, 241, 0.2); /* indigo-500 with opacity */
 }
 
 html.dark .button-dark-input:disabled {
-  background-color: #374151 !important; /* gray-700 */
-  border-color: #4b5563 !important; /* gray-600 */
-  color: #9ca3af !important; /* gray-400 */
+  background-color: #374151; /* gray-700 */
+  border-color: #4b5563; /* gray-600 */
+  color: #9ca3af; /* gray-400 */
 }
 
 /* Dark mode styles for timer active button variant */
 html.dark .button-timer-active {
-  background-image: linear-gradient(to right, #dc2626, #be185d) !important; /* red-600 to pink-600 for dark mode */
-  color: #ffffff !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+  background-image: linear-gradient(to right, #dc2626, #be185d); /* red-600 to pink-600 for dark mode */
+  color: #ffffff;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
 html.dark .button-timer-active:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
-  transform: translateY(-2px) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
 }
 
 /* Dark mode outline button variant */
 html.dark .button-dark-outline {
-  border-color: #4b5563 !important; /* gray-600 */
-  background-color: #1f2937 !important; /* gray-800 */
-  color: #e5e7eb !important; /* gray-200 */
+  border-color: #4b5563; /* gray-600 */
+  background-color: #1f2937; /* gray-800 */
+  color: #e5e7eb; /* gray-200 */
 }
 
 html.dark .button-dark-outline:hover {
-  border-color: #5eead4 !important; /* teal-300 */
-  background-color: rgba(94, 234, 212, 0.1) !important; /* teal-300 with opacity */
+  border-color: #5eead4; /* teal-300 */
+  background-color: rgba(94, 234, 212, 0.1); /* teal-300 with opacity */
 }

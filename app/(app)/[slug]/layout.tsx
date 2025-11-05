@@ -20,6 +20,8 @@ import BabySelector from '@/src/components/BabySelector';
 import BabyQuickInfo from '@/src/components/BabyQuickInfo';
 import SetupWizard from '@/src/components/SetupWizard';
 import { DynamicTitle } from '@/src/components/ui/dynamic-title';
+import { AccountButton } from '@/src/components/ui/account-button';
+import AccountManager from '@/src/components/account-manager';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -54,6 +56,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   
   const [caretakerName, setCaretakerName] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [showAccountManager, setShowAccountManager] = useState(false);
+  const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
   const familySlug = params?.slug as string;
 
   // Function to calculate baby's age
@@ -121,8 +125,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
               isAccountAuth: true
             };
             setCaretakerName(decodedPayload.name);
+            setIsAccountAuth(true);
             // Account holders are always admins of their family
             setIsAdmin(true);
+          } else {
+            setIsAccountAuth(false);
           }
         } catch (error) {
           console.error('Error parsing JWT token for user info:', error);
@@ -561,14 +568,26 @@ function AppContent({ children }: { children: React.ReactNode }) {
                       </SideNavTrigger>
                     ) : null}
                     <div className="flex flex-col">
-                      {caretakerName && caretakerName !== 'system' && (
+                      {/* Show caretaker name for PIN-based authentication */}
+                      {!isAccountAuth && caretakerName && caretakerName !== 'system' && (
                         <span className="text-white text-xs opacity-80">
                           Hi, {caretakerName}
                         </span>
                       )}
+                      {/* Show AccountButton for account-based authentication */}
+                      {isAccountAuth && (
+                        <div className="mb-1">
+                          <AccountButton
+                            variant="white"
+                            className="h-8 px-2 text-xs origin-left"
+                            showIcon={false}
+                            onAccountManagerOpen={() => setShowAccountManager(true)}
+                          />
+                        </div>
+                      )}
                       <span className="text-white text-sm font-medium">
-                        {family?.name || familyName} - {pathname?.includes('/log-entry') 
-                          ? 'Log Entry' 
+                        {family?.name || familyName} - {pathname?.includes('/log-entry')
+                          ? 'Log Entry'
                           : pathname?.includes('/calendar')
                           ? 'Calendar'
                           : 'Full Log'}
@@ -649,6 +668,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
       {/* Debug components - only visible in development mode */}
       <DebugSessionTimer />
       <TimezoneDebug />
+
+      {/* Account Manager */}
+      <AccountManager
+        isOpen={showAccountManager}
+        onClose={() => setShowAccountManager(false)}
+      />
     </>
   );
 }
