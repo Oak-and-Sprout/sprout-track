@@ -4,6 +4,7 @@ import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { AlertTriangle, Crown } from 'lucide-react';
 import Image from 'next/image';
+import './expired-account.css';
 
 interface ExpiredAccountMessageProps {
   familyName?: string;
@@ -26,7 +27,7 @@ export default function ExpiredAccountMessage({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white expired-account-container">
       <div className="w-full max-w-md mx-auto p-6 text-center">
 
         {/* Logo */}
@@ -45,26 +46,26 @@ export default function ExpiredAccountMessage({
 
         {/* Warning Icon */}
         <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center expired-account-icon-bg">
+            <AlertTriangle className="w-8 h-8 text-red-600 expired-account-icon" />
           </div>
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4 expired-account-title">
           {isTrialExpired ? 'Trial Expired' : 'Subscription Expired'}
         </h2>
 
         {/* Family Name */}
         {familyName && (
-          <p className="text-lg text-gray-700 mb-4">
+          <p className="text-lg text-gray-700 mb-4 expired-account-family-name">
             Access to <strong>{familyName}</strong> is currently suspended
           </p>
         )}
 
         {/* Expiration Details */}
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-700 text-sm">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 expired-account-expiration-box">
+          <p className="text-red-700 text-sm expired-account-expiration">
             {isTrialExpired
               ? 'Your free trial expired'
               : 'Your subscription expired'
@@ -76,7 +77,7 @@ export default function ExpiredAccountMessage({
         </div>
 
         {/* Message */}
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-6 expired-account-message">
           To continue tracking your family's activities, please log in to your account
           and {isTrialExpired ? 'upgrade to a full plan' : 'renew your subscription'}.
         </p>
@@ -92,7 +93,7 @@ export default function ExpiredAccountMessage({
         </Button>
 
         {/* Support Text */}
-        <p className="text-xs text-gray-500 mt-4">
+        <p className="text-xs text-gray-500 mt-4 expired-account-support">
           Need help? Contact support for assistance with your account.
         </p>
       </div>
