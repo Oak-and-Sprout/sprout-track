@@ -4,6 +4,9 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Home, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
+import { Card, CardContent } from '@/src/components/ui/card';
+import { Label } from '@/src/components/ui/label';
+import '../account.css';
 
 /**
  * Payment Success Content Component
@@ -82,9 +85,9 @@ function PaymentSuccessContent() {
   }, [countdown, router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
-        <div className="text-center">
+    <div className="payment-success-layout min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full">
+        <CardContent className="text-center pt-8">
           {/* Verification Status */}
           {verifying ? (
             <>
@@ -93,9 +96,9 @@ function PaymentSuccessContent() {
                   <Loader2 className="w-12 h-12 text-teal-600 animate-spin" />
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <Label className="text-3xl font-bold text-gray-900 mb-4 block">
                 Verifying Payment...
-              </h1>
+              </Label>
               <p className="text-lg text-gray-600 mb-6">
                 Please wait while we confirm your payment.
               </p>
@@ -107,9 +110,9 @@ function PaymentSuccessContent() {
                   <AlertTriangle className="w-12 h-12 text-amber-600" />
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <Label className="text-3xl font-bold text-gray-900 mb-4 block">
                 Payment Verification Issue
-              </h1>
+              </Label>
               <p className="text-lg text-gray-600 mb-6">
                 {verificationError}
               </p>
@@ -128,9 +131,9 @@ function PaymentSuccessContent() {
               </div>
 
               {/* Success Message */}
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <Label className="text-3xl font-bold text-gray-900 mb-4 block">
                 Payment Successful!
-              </h1>
+              </Label>
 
               <p className="text-lg text-gray-600 mb-6">
                 Thank you for your purchase. Your subscription has been activated.
@@ -174,8 +177,8 @@ function PaymentSuccessContent() {
               </Button>
             </>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -192,19 +195,19 @@ export default function PaymentSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
-            <div className="text-center">
+        <div className="payment-success-layout min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full">
+            <CardContent className="text-center pt-8">
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center">
                   <Loader2 className="w-12 h-12 text-teal-600 animate-spin" />
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <Label className="text-3xl font-bold text-gray-900 mb-4 block">
                 Loading...
-              </h1>
-            </div>
-          </div>
+              </Label>
+            </CardContent>
+          </Card>
         </div>
       }
     >

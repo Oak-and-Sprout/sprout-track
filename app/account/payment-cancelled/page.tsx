@@ -4,6 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { XCircle, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
+import { Card, CardContent } from '@/src/components/ui/card';
+import { Label } from '@/src/components/ui/label';
+import '../account.css';
 
 /**
  * Payment Cancelled Page
@@ -32,9 +35,9 @@ export default function PaymentCancelledPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
-        <div className="text-center">
+    <div className="payment-cancelled-layout min-h-screen bg-gradient-to-br from-gray-50 to-slate-50 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full">
+        <CardContent className="text-center pt-8">
           {/* Cancel Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-20 h-20 bg-gray-400 rounded-full flex items-center justify-center">
@@ -43,9 +46,9 @@ export default function PaymentCancelledPage() {
           </div>
 
           {/* Cancel Message */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <Label className="text-3xl font-bold text-gray-900 mb-4 block">
             Payment Cancelled
-          </h1>
+          </Label>
 
           <p className="text-lg text-gray-600 mb-6">
             Your payment was cancelled. No charges were made to your account.
@@ -88,8 +91,8 @@ export default function PaymentCancelledPage() {
               Go Back
             </Button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

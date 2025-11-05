@@ -41,3 +41,117 @@
 .dark .accounts-layout .bg-slate-200 {
     background-color: #475569; /* slate-600 */
 }
+
+/* Payment Success Page Dark Mode */
+.dark .payment-success-layout {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important; /* gray-800 to gray-900 */
+}
+
+.dark .payment-success-layout .from-teal-50 {
+    --tw-gradient-from: transparent;
+}
+
+.dark .payment-success-layout .to-blue-50 {
+    --tw-gradient-to: transparent;
+}
+
+.dark .payment-success-layout .bg-white {
+    background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity - matches card */
+}
+
+.dark .payment-success-layout .text-gray-900 {
+    color: #e5e7eb; /* gray-200 */
+}
+
+.dark .payment-success-layout .text-gray-600 {
+    color: #9ca3af; /* gray-400 */
+}
+
+.dark .payment-success-layout .text-gray-500 {
+    color: #9ca3af; /* gray-400 */
+}
+
+.dark .payment-success-layout .bg-green-500 {
+    background-color: #10b981; /* green-500 - keep vibrant */
+}
+
+.dark .payment-success-layout .bg-teal-100 {
+    background-color: #134e4a; /* teal-900 */
+}
+
+.dark .payment-success-layout .text-teal-600 {
+    color: #5eead4; /* teal-300 */
+}
+
+.dark .payment-success-layout .bg-teal-50 {
+    background-color: rgba(20, 184, 166, 0.15); /* teal with low opacity */
+}
+
+.dark .payment-success-layout .text-teal-700 {
+    color: #5eead4; /* teal-300 */
+}
+
+.dark .payment-success-layout .bg-teal-200 {
+    background-color: #134e4a; /* teal-900 */
+}
+
+.dark .payment-success-layout .bg-teal-600 {
+    background-color: #14b8a6; /* teal-500 */
+}
+
+.dark .payment-success-layout .bg-amber-100 {
+    background-color: rgba(245, 158, 11, 0.2); /* amber with low opacity */
+}
+
+.dark .payment-success-layout .text-amber-600 {
+    color: #fbbf24; /* amber-400 */
+}
+
+/* Payment Cancelled Page Dark Mode */
+.dark .payment-cancelled-layout {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important; /* gray-800 to gray-900 */
+}
+
+.dark .payment-cancelled-layout .from-gray-50 {
+    --tw-gradient-from: transparent;
+}
+
+.dark .payment-cancelled-layout .to-slate-50 {
+    --tw-gradient-to: transparent;
+}
+
+.dark .payment-cancelled-layout .bg-white {
+    background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity - matches card */
+}
+
+.dark .payment-cancelled-layout .text-gray-900 {
+    color: #e5e7eb; /* gray-200 */
+}
+
+.dark .payment-cancelled-layout .text-gray-600 {
+    color: #9ca3af; /* gray-400 */
+}
+
+.dark .payment-cancelled-layout .text-gray-500 {
+    color: #9ca3af; /* gray-400 */
+}
+
+.dark .payment-cancelled-layout .text-gray-700 {
+    color: #d1d5db; /* gray-300 */
+}
+
+.dark .payment-cancelled-layout .bg-gray-400 {
+    background-color: #6b7280; /* gray-500 - slightly lighter for visibility */
+}
+
+.dark .payment-cancelled-layout .bg-gray-50 {
+    background-color: rgba(75, 85, 99, 0.2); /* gray with low opacity */
+}
+
+.dark .payment-cancelled-layout .bg-gray-200 {
+    background-color: #374151; /* gray-700 */
+}
+
+.dark .payment-cancelled-layout .bg-gray-600 {
+    background-color: #4b5563; /* gray-600 */
+}
