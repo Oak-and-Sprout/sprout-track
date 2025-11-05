@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Home, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 
 /**
- * Payment Success Page
- *
- * Displayed after successful Stripe Checkout completion.
- * Shows confirmation and redirects user back to their account.
+ * Payment Success Content Component
+ * 
+ * Handles the payment verification and countdown logic.
+ * Separated to allow Suspense boundary wrapping.
  */
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
@@ -177,5 +177,38 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Payment Success Page
+ *
+ * Displayed after successful Stripe Checkout completion.
+ * Shows confirmation and redirects user back to their account.
+ * 
+ * Wrapped in Suspense to handle useSearchParams() requirement.
+ */
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
+            <div className="text-center">
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center">
+                  <Loader2 className="w-12 h-12 text-teal-600 animate-spin" />
+                </div>
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Loading...
+              </h1>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
