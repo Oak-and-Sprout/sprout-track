@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackForm from '@/src/components/forms/FeedbackForm';
-import { X, Settings, LogOut, MessageSquare } from 'lucide-react';
+import PaymentModal from '@/src/components/account-manager/PaymentModal';
+import { X, Settings, LogOut, MessageSquare, CreditCard, Clock } from 'lucide-react';
+import { Button } from '@/src/components/ui/button';
 import ThemeToggle from '@/src/components/ui/theme-toggle';
 import { ShareButton } from '@/src/components/ui/share-button';
 import { Label } from '@/src/components/ui/label';
@@ -21,6 +23,26 @@ interface FooterButtonProps {
   label: string;
   onClick: () => void;
   ariaLabel?: string;
+}
+
+// Interface for account status
+interface AccountStatus {
+  accountId: string;
+  email: string;
+  firstName: string;
+  lastName?: string;
+  verified: boolean;
+  hasFamily: boolean;
+  familySlug?: string;
+  familyName?: string;
+  betaparticipant: boolean;
+  closed: boolean;
+  closedAt?: string;
+  planType?: string;
+  planExpires?: string;
+  trialEnds?: string;
+  subscriptionActive: boolean;
+  accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family';
 }
 
 /**
@@ -124,17 +146,61 @@ export const SideNav: React.FC<SideNavProps> = ({
   const [isSystemDarkMode, setIsSystemDarkMode] = useState<boolean>(false);
   const [showChangelog, setShowChangelog] = useState<boolean>(false);
   const [showFeedback, setShowFeedback] = useState<boolean>(false);
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+  const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
+  const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
   
+  // Fetch account status if in SaaS mode and authenticated
+  useEffect(() => {
+    const fetchAccountStatus = async () => {
+      if (!isSaasMode) return;
+
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        setIsAccountAuth(false);
+        return;
+      }
+
+      // Check if this is account-based authentication
+      try {
+        const payload = authToken.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        const isAccountBased = decodedPayload.isAccountAuth || false;
+        setIsAccountAuth(isAccountBased);
+
+        if (!isAccountBased) return;
+
+        // Fetch account status
+        const response = await fetch('/api/accounts/status', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setAccountStatus(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching account status:', error);
+      }
+    };
+
+    fetchAccountStatus();
+  }, [isSaasMode]);
+
   // Check if system is in dark mode
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       setIsSystemDarkMode(darkModeMediaQuery.matches);
-      
+
       const handleChange = (e: MediaQueryListEvent) => {
         setIsSystemDarkMode(e.matches);
       };
-      
+
       darkModeMediaQuery.addEventListener('change', handleChange);
       return () => darkModeMediaQuery.removeEventListener('change', handleChange);
     }
@@ -305,6 +371,43 @@ export const SideNav: React.FC<SideNavProps> = ({
               </button>
             </div>
           )}
+
+          {/* Trial information and payment button - only shown in SaaS mode for accounts in trial */}
+          {isSaasMode && isAccountAuth && accountStatus && (
+            <>
+              {/* Show trial info if user is in trial and not a beta participant */}
+              {accountStatus.trialEnds &&
+               !accountStatus.subscriptionActive &&
+               !accountStatus.betaparticipant &&
+               accountStatus.accountStatus === 'trial' && (
+                <div className="mt-4 px-4">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-center text-amber-700 dark:text-amber-400">
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span className="text-xs font-medium">Trial Version</span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Ending: {new Date(accountStatus.trialEnds).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white"
+                      onClick={() => setShowPaymentModal(true)}
+                    >
+                      <CreditCard className="h-3 w-3 mr-1" />
+                      Buy Now
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Changelog Modal */}
@@ -325,6 +428,48 @@ export const SideNav: React.FC<SideNavProps> = ({
               if (!nonModal) {
                 onClose();
               }
+            }}
+          />
+        )}
+
+        {/* Payment Modal - only shown in SaaS mode */}
+        {isSaasMode && isAccountAuth && accountStatus && (
+          <PaymentModal
+            isOpen={showPaymentModal}
+            onClose={() => setShowPaymentModal(false)}
+            accountStatus={{
+              accountStatus: accountStatus.accountStatus,
+              planType: accountStatus.planType || null,
+              subscriptionActive: accountStatus.subscriptionActive,
+              trialEnds: accountStatus.trialEnds || null,
+              planExpires: accountStatus.planExpires || null,
+              subscriptionId: null, // This will be fetched by the modal if needed
+            }}
+            onPaymentSuccess={() => {
+              setShowPaymentModal(false);
+              // Refresh account status after successful payment
+              const fetchAccountStatus = async () => {
+                const authToken = localStorage.getItem('authToken');
+                if (!authToken) return;
+
+                try {
+                  const response = await fetch('/api/accounts/status', {
+                    headers: {
+                      'Authorization': `Bearer ${authToken}`
+                    }
+                  });
+
+                  if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                      setAccountStatus(data.data);
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error refreshing account status:', error);
+                }
+              };
+              fetchAccountStatus();
             }}
           />
         )}
