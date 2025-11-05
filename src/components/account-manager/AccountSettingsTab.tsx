@@ -971,7 +971,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </div>
               )}
 
-              {accountStatus.trialEnds && (
+              {accountStatus.trialEnds && accountStatus.accountStatus !== 'expired' && (
                 <>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
@@ -1003,10 +1003,15 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-red-700">
                     <AlertTriangle className="h-4 w-4" />
-                    <span className="font-medium">Account Expired</span>
+                    <span className="font-medium">
+                      {accountStatus.trialEnds ? 'Trial Expired' : 'Subscription Expired'}
+                    </span>
                   </div>
                   <p className="text-sm text-red-600 mt-1 mb-3">
-                    Your subscription has expired. Please update your payment method to continue using Sprout Track.
+                    {accountStatus.trialEnds 
+                      ? 'Your trial has expired. Please subscribe to continue using Sprout Track.'
+                      : 'Your subscription has expired. Please renew your subscription to continue using Sprout Track.'
+                    }
                   </p>
                   <Button
                     size="sm"
@@ -1014,7 +1019,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     variant="destructive"
                   >
                     <Crown className="h-4 w-4 mr-2" />
-                    Renew Subscription
+                    {accountStatus.trialEnds ? 'Subscribe Now' : 'Renew Subscription'}
                   </Button>
                 </div>
               )}
