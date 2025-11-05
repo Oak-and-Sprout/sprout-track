@@ -581,6 +581,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                             variant="white"
                             className="h-8 px-2 text-xs origin-left"
                             showIcon={false}
+                            hideFamilyDashboardLink={true}
                             onAccountManagerOpen={() => setShowAccountManager(true)}
                           />
                         </div>

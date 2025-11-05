@@ -41,17 +41,19 @@ interface AccountButtonProps {
   variant?: 'button' | 'link' | 'white';
   initialMode?: 'login' | 'register';
   hideWhenLoggedIn?: boolean;
+  hideFamilyDashboardLink?: boolean;
   onAccountManagerOpen?: () => void;
   onOpenAccountModal?: (mode: 'login' | 'register') => void;
 }
 
-export function AccountButton({ 
-  className, 
+export function AccountButton({
+  className,
   label,
   showIcon = true,
   variant = 'button',
   initialMode = 'register',
   hideWhenLoggedIn = false,
+  hideFamilyDashboardLink = false,
   onAccountManagerOpen,
   onOpenAccountModal
 }: AccountButtonProps) {
@@ -324,7 +326,7 @@ export function AccountButton({
           </DropdownMenuItem>
           
           {/* Family dashboard link for verified users with family */}
-          {accountStatus.verified && accountStatus.hasFamily && (
+          {!hideFamilyDashboardLink && accountStatus.verified && accountStatus.hasFamily && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleFamilyLink}>
