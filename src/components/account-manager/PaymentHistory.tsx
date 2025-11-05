@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/components/ui/dialog';
+import './account-manager.css';
 
 /**
  * Payment history transaction data
@@ -173,35 +174,35 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-gray-900">
+          <DialogTitle className={cn("text-2xl font-bold text-gray-900", "payment-history-title")}>
             Payment History
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto py-4">
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2 text-red-700">
+            <div className={cn("mb-4 p-4 bg-red-50 border border-red-200 rounded-lg", "payment-history-error")}>
+              <div className={cn("flex items-center gap-2 text-red-700", "payment-history-error-text")}>
                 <AlertTriangle className="h-5 w-5" />
                 <span className="font-medium">Error</span>
               </div>
-              <p className="text-sm text-red-600 mt-1">{error}</p>
+              <p className={cn("text-sm text-red-600 mt-1", "payment-history-error-description")}>{error}</p>
             </div>
           )}
 
           {loading && transactions.length === 0 ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+              <Loader2 className={cn("h-8 w-8 animate-spin text-teal-600", "payment-history-loading")} />
             </div>
           ) : transactions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <div className={cn("flex flex-col items-center justify-center py-12 text-gray-500", "payment-history-empty")}>
               <Receipt className="h-12 w-12 mb-3" />
               <p className="text-lg font-medium">No payment history</p>
               <p className="text-sm">You haven't made any payments yet.</p>
             </div>
           ) : (
             <>
-              <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <div className={cn("rounded-lg border border-gray-200 overflow-hidden", "payment-history-table-container")}>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -250,7 +251,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        <div className="flex justify-end pt-4 border-t">
+        <div className={cn("flex justify-end pt-4 border-t", "payment-history-footer")}>
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
             Close

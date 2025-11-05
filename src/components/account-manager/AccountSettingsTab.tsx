@@ -821,11 +821,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">{accountStatus.firstName} {accountStatus.lastName}</span>
+                  <Label className="font-medium">{accountStatus.firstName} {accountStatus.lastName}</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{accountStatus.email}</span>
+                  <Label>{accountStatus.email}</Label>
                   {!accountStatus.verified && (
                     <span className="text-amber-600 text-sm">(Unverified)</span>
                   )}
@@ -947,9 +947,9 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   accountStatus.accountStatus === 'no_family' ? "bg-orange-500" :
                   "bg-yellow-500"
                 )} />
-                <span className="font-medium capitalize">
+                <Label className="font-medium capitalize">
                   {accountStatus.accountStatus.replace('_', ' ')} Account
-                </span>
+                </Label>
               </div>
 
               {accountStatus.subscriptionActive && (
@@ -958,17 +958,15 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     "h-4 w-4",
                     subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-600" : "text-green-600"
                   )} />
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "font-medium",
-                      subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-700" : "text-green-600"
-                    )}>
-                      {accountStatus.accountStatus === 'trial' ? 'Active Trial' :
-                       accountStatus.planType === 'full' ? 'Lifetime Member' :
-                       subscriptionStatus?.cancelAtPeriodEnd ? 'Subscription Active (Cancelled)' :
-                       'Subscription Active'}
-                    </span>
-                  </div>
+                  <Label className={cn(
+                    "font-medium",
+                    subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-700" : "text-green-600"
+                  )}>
+                    {accountStatus.accountStatus === 'trial' ? 'Active Trial' :
+                     accountStatus.planType === 'full' ? 'Lifetime Member' :
+                     subscriptionStatus?.cancelAtPeriodEnd ? 'Subscription Active (Cancelled)' :
+                     'Subscription Active'}
+                  </Label>
                 </div>
               )}
 
@@ -976,9 +974,9 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 <>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>
-                      Trial ends: {new Date(accountStatus.trialEnds).toLocaleDateString()}
-                    </span>
+                    <Label className="text-sm">
+                      Trial ends {new Date(accountStatus.trialEnds).toLocaleDateString()}
+                    </Label>
                   </div>
                   <Button
                     size="sm"
@@ -994,9 +992,9 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               {accountStatus.planExpires && !accountStatus.trialEnds && accountStatus.planType !== 'full' && (
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span>
-                    Subscription ends: {new Date(accountStatus.planExpires).toLocaleDateString()}
-                  </span>
+                  <Label className="text-sm">
+                    Subscription ends {new Date(accountStatus.planExpires).toLocaleDateString()}
+                  </Label>
                 </div>
               )}
 
@@ -1179,11 +1177,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className={styles.formGroup}>
               <div className="flex items-center gap-2 mb-2">
                 <Home className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">{familyData.name}</span>
+                <Label className="font-medium">{familyData.name}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Link className="h-4 w-4 text-gray-500" />
-                <span className="font-mono">/{familyData.slug}</span>
+                <Label className="font-mono text-sm">/{familyData.slug}</Label>
               </div>
             </div>
           )}

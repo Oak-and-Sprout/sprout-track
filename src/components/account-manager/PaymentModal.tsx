@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { PaymentModalProps, PricingPlan, SubscriptionStatus } from './payment-modal.types';
+import './account-manager.css';
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
@@ -201,7 +202,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     if (loadingStatus) {
       return (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <Loader2 className={cn("h-8 w-8 animate-spin text-teal-600", "payment-modal-loading")} />
         </div>
       );
     }
@@ -212,19 +213,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
     return (
       <div className="space-y-4">
-        <div className="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-lg p-6">
+        <div className={cn("bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-lg p-6", "payment-modal-active-subscription")}>
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
               <CheckCircle className="h-6 w-6 text-teal-600" />
             </div>
             <div className="flex-1">
-              <h4 className="text-lg font-semibold text-teal-800 mb-2">
+              <h4 className={cn("text-lg font-semibold text-teal-800 mb-2", "payment-modal-subscription-title")}>
                 Active {accountStatus.planType === 'full' ? 'Lifetime' : 'Subscription'}
               </h4>
 
               {accountStatus.planType === 'sub' && subscriptionStatus.currentPeriodEnd && (
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-teal-700">
+                  <div className={cn("flex items-center gap-2 text-teal-700", "payment-modal-subscription-info")}>
                     <Calendar className="h-4 w-4" />
                     <span>
                       {subscriptionStatus.cancelAtPeriodEnd ? 'Expires' : 'Renews'} on{' '}
@@ -233,7 +234,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   </div>
 
                   {subscriptionStatus.paymentMethod && (
-                    <div className="flex items-center gap-2 text-teal-700">
+                    <div className={cn("flex items-center gap-2 text-teal-700", "payment-modal-subscription-info")}>
                       <CreditCard className="h-4 w-4" />
                       <span>
                         {subscriptionStatus.paymentMethod.brand.toUpperCase()} ending in{' '}
@@ -243,12 +244,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   )}
 
                   {subscriptionStatus.cancelAtPeriodEnd && (
-                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                      <div className="flex items-center gap-2 text-amber-700">
+                    <div className={cn("mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md", "payment-modal-cancelled-warning")}>
+                      <div className={cn("flex items-center gap-2 text-amber-700", "payment-modal-cancelled-warning-text")}>
                         <AlertTriangle className="h-4 w-4" />
                         <span className="font-medium">Subscription Cancelled</span>
                       </div>
-                      <p className="text-sm text-amber-600 mt-1">
+                      <p className={cn("text-sm text-amber-600 mt-1", "payment-modal-cancelled-warning-description")}>
                         You will have access until {new Date(subscriptionStatus.currentPeriodEnd).toLocaleDateString()}
                       </p>
                     </div>
@@ -257,7 +258,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               )}
 
               {accountStatus.planType === 'full' && (
-                <p className="text-teal-700">
+                <p className={cn("text-teal-700", "payment-modal-lifetime-text")}>
                   You have lifetime access to all features. Thank you for your support!
                 </p>
               )}
@@ -268,17 +269,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         {accountStatus.planType === 'sub' && (
           <div className="space-y-4">
             {/* Upgrade to Lifetime Section */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+            <div className={cn("bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4", "payment-modal-upgrade-section")}>
               <div className="flex items-start gap-3 mb-3">
                 <div className="flex-shrink-0">
                   <Crown className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <h5 className="font-semibold text-purple-800 mb-1">Upgrade to Lifetime Access</h5>
-                  <p className="text-sm text-purple-700 mb-2">
+                  <h5 className={cn("font-semibold text-purple-800 mb-1", "payment-modal-upgrade-title")}>Upgrade to Lifetime Access</h5>
+                  <p className={cn("text-sm text-purple-700 mb-2", "payment-modal-upgrade-description")}>
                     Get lifetime access for a one-time payment of $12. No more recurring charges!
                   </p>
-                  <ul className="text-xs text-purple-600 space-y-1 mb-3">
+                  <ul className={cn("text-xs text-purple-600 space-y-1 mb-3", "payment-modal-upgrade-list")}>
                     <li>• Your subscription will be automatically cancelled</li>
                     <li>• You'll maintain access for the remainder of your current billing period</li>
                     <li>• Lifetime access starts immediately after payment</li>
@@ -341,8 +342,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             className={cn(
               "relative border rounded-lg p-6 flex flex-col",
               plan.highlighted
-                ? "border-teal-500 shadow-lg bg-teal-50"
-                : "border-gray-200 bg-white"
+                ? "border-teal-500 shadow-lg bg-teal-50 payment-modal-plan-highlighted"
+                : "border-gray-200 bg-white payment-modal-plan"
             )}
           >
             {plan.highlighted && (
@@ -353,20 +354,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
             <div className="flex-1">
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h3>
-                <p className="text-sm text-gray-600">{plan.description}</p>
+                <h3 className={cn("text-xl font-bold text-gray-900 mb-1", "payment-modal-plan-name")}>{plan.name}</h3>
+                <p className={cn("text-sm text-gray-600", "payment-modal-plan-description")}>{plan.description}</p>
               </div>
 
               <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
+                <span className={cn("text-4xl font-bold text-gray-900", "payment-modal-plan-price")}>${plan.price}</span>
                 {plan.interval !== 'lifetime' && (
-                  <span className="text-gray-600">/{plan.interval}</span>
+                  <span className={cn("text-gray-600", "payment-modal-plan-interval")}>/{plan.interval}</span>
                 )}
               </div>
 
               <ul className="space-y-2 mb-6">
                 {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                  <li key={index} className={cn("flex items-start gap-2 text-sm text-gray-700", "payment-modal-plan-feature")}>
                     <CheckCircle className="h-4 w-4 text-teal-600 flex-shrink-0 mt-0.5" />
                     <span>{feature}</span>
                   </li>
@@ -402,10 +403,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-gray-900">
+          <DialogTitle className={cn("text-2xl font-bold text-gray-900", "payment-modal-title")}>
             {accountStatus.subscriptionActive ? 'Manage Subscription' : 'Choose Your Plan'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="payment-modal-description">
             {accountStatus.subscriptionActive
               ? 'View and manage your current subscription'
               : 'Select the plan that works best for you'}
@@ -414,12 +415,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
         <div className="py-4">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2 text-red-700">
+            <div className={cn("mb-6 p-4 bg-red-50 border border-red-200 rounded-lg", "payment-modal-error")}>
+              <div className={cn("flex items-center gap-2 text-red-700", "payment-modal-error-text")}>
                 <AlertTriangle className="h-5 w-5" />
                 <span className="font-medium">Error</span>
               </div>
-              <p className="text-sm text-red-600 mt-1">{error}</p>
+              <p className={cn("text-sm text-red-600 mt-1", "payment-modal-error-description")}>{error}</p>
             </div>
           )}
 
@@ -430,7 +431,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             : renderPricingPlans()}
         </div>
 
-        <div className="flex justify-end pt-4 border-t">
+        <div className={cn("flex justify-end pt-4 border-t border-gray-400", "payment-modal-footer")}>
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
             Close

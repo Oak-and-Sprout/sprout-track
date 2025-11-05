@@ -381,13 +381,13 @@ export const SideNav: React.FC<SideNavProps> = ({
                !accountStatus.betaparticipant &&
                accountStatus.accountStatus === 'trial' && (
                 <div className="mt-4 px-4">
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-center text-amber-700 dark:text-amber-400">
+                  <div className={cn("bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2", "side-nav-trial-container")}>
+                    <div className={cn("flex items-center justify-center text-amber-700", "side-nav-trial-header")}>
                       <Clock className="h-4 w-4 mr-1" />
                       <span className="text-xs font-medium">Trial Version</span>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                      <p className={cn("text-xs text-amber-600", "side-nav-trial-text")}>
                         Ending: {new Date(accountStatus.trialEnds).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
