@@ -817,7 +817,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           </div>
         ) : (
           <div className={styles.formGroup}>
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-500" />
@@ -838,6 +838,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   setChangingPassword(true);
                   setPasswordMessage('');
                 }}
+                className="self-start"
               >
                 <Key className="h-4 w-4 mr-2" />
                 Reset Password
@@ -1019,12 +1020,13 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               )}
 
               {((accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial') || accountStatus.planType === 'full') && (
-                <div className="flex justify-end gap-2 mt-3">
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-3">
                   {accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial' && !subscriptionStatus?.cancelAtPeriodEnd && (
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setShowPaymentModal(true)}
+                      className="w-full sm:w-auto"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
                       Manage Subscription
@@ -1036,6 +1038,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                       variant="default"
                       onClick={handleRenewSubscription}
                       disabled={renewingSubscription}
+                      className="w-full sm:w-auto"
                     >
                       {renewingSubscription ? (
                         <>
@@ -1054,6 +1057,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => setShowPaymentHistory(true)}
+                    className="w-full sm:w-auto"
                   >
                     <Receipt className="h-4 w-4 mr-2" />
                     Payment History
