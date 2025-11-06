@@ -1010,53 +1010,11 @@ In self-hosted mode, all accounts function normally regardless of expiration dat
 
 ---
 
-### Task 8.3: Deploy to Staging
-
-**Goal**: Deploy all changes to staging environment for final verification.
-
-**Documentation**: [Phase 8.2](./soft-account-expiration-implementation.md#82-deployment-steps)
-
-**Actions**:
-1. Deploy backend changes to staging
-2. Deploy frontend changes to staging
-3. Run full test suite in staging
-4. Manual smoke testing with test accounts
-5. Verify expiration banner appearance
-6. Test upgrade flow navigation
-7. Check error logging and monitoring
-
-**Testing Checklist**:
-- [ ] Staging deployment successful
-- [ ] All tests pass in staging
-- [ ] Manual testing complete
-- [ ] No errors in logs
-- [ ] Monitoring/analytics working
-
----
-
-### Task 8.4: Deploy to Production
+### Task 8.3: Deploy to Production
 
 **Goal**: Deploy to production during low-traffic period with monitoring.
 
 **Documentation**: [Phase 8.2](./soft-account-expiration-implementation.md#82-deployment-steps)
-
-**Actions**:
-1. Schedule deployment during low-traffic period
-2. Deploy backend changes first
-3. Monitor error rates for 5-10 minutes
-4. Deploy frontend changes
-5. Monitor user sessions
-6. Verify no spike in errors
-7. Check that active users are unaffected
-8. Monitor for 1-2 hours post-deployment
-
-**Monitoring Checklist**:
-- [ ] Error rates normal
-- [ ] No spike in 403 errors beyond expected
-- [ ] No spike in support tickets
-- [ ] Active users unaffected
-- [ ] Login success rate maintained
-- [ ] API response times normal
 
 ---
 
@@ -1088,22 +1046,7 @@ In self-hosted mode, all accounts function normally regardless of expiration dat
 
 ## Phase 9: User Communication
 
-### Task 9.1: Email Currently Expired Users
-
-**Goal**: Notify currently expired users about new read-only access.
-
-**Documentation**: [Phase 9.1](./soft-account-expiration-implementation.md#91-in-app-messaging)
-
-**Actions**:
-1. Write email copy explaining new read-only access
-2. Highlight that they can now view their data
-3. Include clear upgrade CTA
-4. Send to all currently expired users
-5. Track email open and click rates
-
----
-
-### Task 9.2: Update Help Documentation
+### Task 9: Update Help Documentation
 
 **Goal**: Update support docs to reflect new expiration behavior.
 
@@ -1116,25 +1059,6 @@ In self-hosted mode, all accounts function normally regardless of expiration dat
 - [ ] "What features are available in read-only mode?"
 - [ ] FAQ section
 - [ ] Troubleshooting guide
-
----
-
-## Summary
-
-**Total Tasks**: 54 tasks across 9 phases
-
-**Estimated Timeline**:
-- Phase 1 (Backend): 2-3 days (Tasks 1.1 - 1.7)
-- Phase 2 (Login): 1 day (Tasks 2.1A - 2.1C)
-- Phase 3 (Layout): 1-2 days (Tasks 3.1A - 3.3)
-- Phase 4 (UI Components): 1-2 days (Tasks 4.1 - 4.3)
-- Phase 5 (API Client): 0.5 days (Task 5.1)
-- Phase 6 (Testing): 2-3 days (Tasks 6.1 - 6.11)
-- Phase 7 (Database): 0.5 days (Tasks 7.1 - 7.2)
-- Phase 8 (Deployment): 1 day (Tasks 8.1 - 8.5)
-- Phase 9 (Communication): 0.5 days (Tasks 9.1 - 9.2)
-
-**Total**: 10-15 days
 
 ---
 
