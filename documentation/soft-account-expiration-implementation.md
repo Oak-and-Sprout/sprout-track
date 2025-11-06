@@ -1516,11 +1516,6 @@ If critical issues arise:
 
 ### 9.1 In-App Messaging
 
-**For Currently Expired Users**:
-- Email notification about new read-only access
-- Highlight that they can now view their data
-- Clear upgrade CTA
-
 **For All Users**:
 - No action required for active subscriptions
 - Change is invisible to active users
