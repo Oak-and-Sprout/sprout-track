@@ -1,7 +1,5 @@
 # Soft Account Expiration Experience - Implementation Plan
 
-> **IMPORTANT NOTE**: This implementation uses the existing `PaymentModal` component for upgrades instead of creating a dedicated billing page. See [MODAL_APPROACH_SUMMARY.md](./MODAL_APPROACH_SUMMARY.md) for a quick reference of key differences from a routing-based approach.
-
 ## Overview
 
 This document outlines the plan to convert the current "hard lockout" account expiration system to a "soft notification" system that allows expired users to:
@@ -12,6 +10,13 @@ This document outlines the plan to convert the current "hard lockout" account ex
 - Have a clear path to upgrade/renew
 
 This replaces the current system documented in `AccountExpirationCheck.md` which completely locks users out of the application when their subscription or trial expires.
+
+**IMPORTANT: Deployment Mode Compatibility**
+
+This soft expiration system is **only active in SaaS mode** (`DEPLOYMENT_MODE=saas`). In self-hosted mode, all expiration checks are bypassed entirely to maintain backward compatibility. This ensures that self-hosted installations continue to function exactly as before, with no impact on existing behavior.
+
+- **SaaS Mode**: Full soft expiration system with read-only access for expired accounts
+- **Self-Hosted Mode**: No expiration enforcement - all accounts function normally regardless of expiration dates
 
 ## Problem Statement
 
@@ -161,7 +166,8 @@ if (account.closed) {
   };
 }
 
-// Check account expiration in SAAS mode only
+// IMPORTANT: Check account expiration in SAAS mode only
+// In self-hosted mode, skip expiration checks entirely to maintain backward compatibility
 const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';
 if (!skipExpirationCheck && isSaasMode && account.family && !account.betaparticipant) {
   const now = new Date();
@@ -218,20 +224,23 @@ if (!skipExpirationCheck && isSaasMode && account.family && !account.betapartici
     };
   }
 }
+// If not in SaaS mode, all expiration checks are skipped and authentication continues normally
 ```
 
 #### C. Update Caretaker Auth Expiration Check (lines 236-292)
-Apply similar changes to the caretaker auth block.
+Apply similar changes to the caretaker auth block, including the same SaaS mode check.
 
 #### D. Update withAuth Wrappers
 Modify `withAuth`, `withAuthContext`, `withAccountOwner`, `withAdminAuth` to pass through `accountExpired` and `expirationInfo` in the request context.
 
 **Testing**:
-- [ ] Expired accounts return `authenticated: true` with `accountExpired: true`
-- [ ] `expirationInfo` contains correct type, date, and permissions
+- [ ] Expired accounts return `authenticated: true` with `accountExpired: true` (SaaS mode only)
+- [ ] `expirationInfo` contains correct type, date, and permissions (SaaS mode only)
 - [ ] Beta participants still bypass all checks
 - [ ] Closed accounts still return hard block
 - [ ] Status endpoint with `skipExpirationCheck: true` still works
+- [ ] Self-hosted mode: All accounts authenticate normally regardless of expiration dates
+- [ ] Self-hosted mode: No expiration info is returned in AuthResult
 
 ---
 
@@ -255,6 +264,9 @@ export type WriteProtectionResponse = {
 /**
  * Check if a write operation should be allowed based on account expiration status
  * Use this at the top of POST/PUT/DELETE endpoints
+ *
+ * IMPORTANT: This only enforces write protection in SaaS mode.
+ * In self-hosted mode, all write operations are allowed (maintains backward compatibility).
  */
 export async function checkWritePermission(
   req: NextRequest,
@@ -278,6 +290,7 @@ export async function checkWritePermission(
   }
 
   // Check if account is expired and write operations are blocked
+  // This will only happen in SaaS mode, as auth.ts only sets accountExpired in SaaS mode
   if (authResult.accountExpired && authResult.expirationInfo?.canWrite === false) {
     const { expirationInfo } = authResult;
 
@@ -318,13 +331,13 @@ export async function checkWritePermission(
 }
 ```
 
-**Note**: We removed `upgradeUrl` because the frontend will use the existing `PaymentModal` component (`src/components/account-manager/PaymentModal.tsx`) instead of routing to a billing page. The modal will be triggered via custom events and managed in the layout.
 
 **Testing**:
-- [ ] Returns `allowed: false` for expired accounts on write endpoints
-- [ ] Returns proper error message based on expiration type
-- [ ] Includes `familySlug` in response data for context
-- [ ] Returns `allowed: true` for active accounts
+- [ ] Returns `allowed: false` for expired accounts on write endpoints (SaaS mode only)
+- [ ] Returns proper error message based on expiration type (SaaS mode only)
+- [ ] Includes `familySlug` in response data for context (SaaS mode only)
+- [ ] Returns `allowed: true` for active accounts (all modes)
+- [ ] Returns `allowed: true` for all accounts in self-hosted mode
 
 ---
 
@@ -459,6 +472,8 @@ const handleLogin = async () => {
 ### 3.1 Modify Layout Authentication Logic
 
 **File**: `app/(app)/[slug]/layout.tsx`
+
+**Important Note**: The frontend should use the `useDeployment` hook from `app/context/deployment.tsx` to check if the app is in SaaS mode. Banner and UI components should only render in SaaS mode. In self-hosted mode, the frontend should behave as if expiration features don't exist.
 
 **Changes**:
 
@@ -804,11 +819,16 @@ export default function AccountExpirationBanner({
 
 **File**: `app/(app)/[slug]/layout.tsx`
 
-Add the banner component right after the `<body>` tag:
+Add the banner component right after the `<body>` tag. **Important**: Only show in SaaS mode.
 
 ```typescript
+import { useDeployment } from '@/app/context/deployment';
+
+// Inside component:
+const { isSaasMode } = useDeployment();
+
 <body className={inter.className}>
-  {accountExpirationStatus?.isExpired && (
+  {isSaasMode && accountExpirationStatus?.isExpired && (
     <AccountExpirationBanner
       type={accountExpirationStatus.type || 'NO_PLAN'}
       expirationDate={accountExpirationStatus.expirationDate}

@@ -1,7 +1,5 @@
 # Soft Account Expiration - Action List
 
-> **IMPORTANT NOTE**: This implementation uses the existing `PaymentModal` component for upgrades instead of routing to billing pages. When you see tasks mentioning "upgrade URL" or "navigate to billing", refer to [MODAL_APPROACH_SUMMARY.md](./MODAL_APPROACH_SUMMARY.md) for the modal-based alternative.
-
 ## Overview
 
 This action list breaks down the soft account expiration implementation into discrete, actionable tasks. Each task references the implementation plan and lists all files that need to be modified or used for context.
@@ -10,7 +8,14 @@ This action list breaks down the soft account expiration implementation into dis
 
 **Endpoint Protection Details**: [phase-1-4-write-protected-endpoints.md](./phase-1-4-write-protected-endpoints.md)
 
-**Modal Approach Summary**: [MODAL_APPROACH_SUMMARY.md](./MODAL_APPROACH_SUMMARY.md) ⭐ **Read this for key implementation differences**
+**IMPORTANT: Deployment Mode Compatibility**
+
+All soft expiration features are **only active in SaaS mode** (`DEPLOYMENT_MODE=saas`). In self-hosted mode, the system maintains backward compatibility with no expiration enforcement. This is enforced at:
+- **Backend**: Via `process.env.DEPLOYMENT_MODE === 'saas'` checks in auth middleware
+- **Frontend**: Via `useDeployment` hook from `app/context/deployment.tsx` (check `isSaasMode`)
+
+In self-hosted mode, all accounts function normally regardless of expiration dates, and no UI elements related to expiration are shown.
+
 ---
 
 ## Phase 1: Backend Authentication Changes
@@ -73,18 +78,23 @@ This action list breaks down the soft account expiration implementation into dis
 
 **Actions**:
 1. Locate the account expiration check block (lines 136-160)
-2. For closed accounts: Keep hard block but return `authenticated: true` with `accountExpired: true` and `canRead: false`, `canWrite: false`
-3. For expired accounts: Change from returning `authenticated: false` to returning `authenticated: true`
-4. Add expiration metadata to the return object: `accountExpired: true`, `expirationInfo` with type, date, slug, permissions
-5. Set `canRead: true` and `canWrite: false` for expired accounts
-6. Include all normal auth fields (`userId`, `familyId`, `caretakerId`, `role`, etc.)
+2. **Add SaaS mode check**: `const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';`
+3. **Wrap expiration logic in SaaS check**: Only run expiration checks if `isSaasMode` is true
+4. For closed accounts: Keep hard block but return `authenticated: true` with `accountExpired: true` and `canRead: false`, `canWrite: false`
+5. For expired accounts (SaaS mode only): Change from returning `authenticated: false` to returning `authenticated: true`
+6. Add expiration metadata to the return object: `accountExpired: true`, `expirationInfo` with type, date, slug, permissions
+7. Set `canRead: true` and `canWrite: false` for expired accounts
+8. Include all normal auth fields (`userId`, `familyId`, `caretakerId`, `role`, etc.)
+9. **Important**: If not in SaaS mode, skip all expiration checks and continue with normal authentication
 
 **Testing Checklist**:
-- [ ] Expired accounts return `authenticated: true` with `accountExpired: true`
-- [ ] `expirationInfo` contains correct type (`TRIAL_EXPIRED`, `PLAN_EXPIRED`, or `NO_PLAN`)
-- [ ] `expirationInfo` contains correct date and familySlug
-- [ ] Beta participants still bypass all checks
-- [ ] Closed accounts return hard block with `canRead: false`
+- [ ] **SaaS mode**: Expired accounts return `authenticated: true` with `accountExpired: true`
+- [ ] **SaaS mode**: `expirationInfo` contains correct type (`TRIAL_EXPIRED`, `PLAN_EXPIRED`, or `NO_PLAN`)
+- [ ] **SaaS mode**: `expirationInfo` contains correct date and familySlug
+- [ ] Beta participants still bypass all checks (all modes)
+- [ ] Closed accounts return hard block with `canRead: false` (all modes)
+- [ ] **Self-hosted mode**: All accounts authenticate normally, no expiration checks performed
+- [ ] **Self-hosted mode**: No `accountExpired` or `expirationInfo` fields in AuthResult
 
 ---
 
@@ -102,9 +112,12 @@ This action list breaks down the soft account expiration implementation into dis
 
 **Actions**:
 1. Locate the caretaker auth expiration check block (lines 236-292)
-2. Apply the same changes made in Task 1.2B but for caretaker authentication flow
-3. Change from returning `authenticated: false` to `authenticated: true` with expiration metadata
-4. Ensure consistency with account auth expiration handling
+2. **Add the same SaaS mode check** as in Task 1.2B: `const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';`
+3. **Wrap expiration logic in SaaS check**: Only run expiration checks if `isSaasMode` is true
+4. Apply the same changes made in Task 1.2B but for caretaker authentication flow
+5. Change from returning `authenticated: false` to `authenticated: true` with expiration metadata
+6. Ensure consistency with account auth expiration handling
+7. **Important**: If not in SaaS mode, skip all expiration checks
 
 **Testing Checklist**:
 - [ ] Caretakers in expired families return `authenticated: true` with `accountExpired: true`
@@ -229,6 +242,9 @@ This action list breaks down the soft account expiration implementation into dis
 3. `app/api/caretaker/route.ts`
 4. `app/api/settings/route.ts`
 5. `app/api/activity-settings/route.ts`
+6. `app/api/baby-last-activities/route.ts`
+7. `app/api/baby-upcoming-events/route.ts`
+8. `app/api/timeline/route.ts`
 
 **Files for Context**:
 - `app/api/utils/writeProtection.ts`
@@ -241,6 +257,9 @@ This action list breaks down the soft account expiration implementation into dis
 5. For `caretaker/route.ts`: Protect `postHandler`, `putHandler`, `deleteHandler`
 6. For `settings/route.ts`: Protect `handlePut` (no POST/DELETE in this file)
 7. For `activity-settings/route.ts`: Protect all write handlers
+8. For `baby-last-activities/route.ts` allow all read actions
+9. For `baby-upcoming-events/route.ts` allow all read actions
+10. For `timeline/route.ts` allow all read actions
 
 **Testing Checklist**:
 - [ ] Cannot create babies with expired account
@@ -391,6 +410,8 @@ This action list breaks down the soft account expiration implementation into dis
 
 ## Phase 3: Frontend Layout Changes
 
+**IMPORTANT**: All frontend components in this phase should check deployment mode using the `useDeployment` hook from `app/context/deployment.tsx` and only render expiration-related UI in SaaS mode.
+
 ### Task 3.1A: Add Expiration State to Layout
 
 **Goal**: Create state management for tracking account expiration status throughout the app.
@@ -401,9 +422,11 @@ This action list breaks down the soft account expiration implementation into dis
 - `app/(app)/[slug]/layout.tsx` (around line 50)
 
 **Actions**:
-1. Add state hook for `accountExpirationStatus`
-2. Define type with fields: `isExpired`, `type`, `expirationDate`, `message`
-3. Initialize as null
+1. **Import deployment context**: `import { useDeployment } from '@/app/context/deployment';`
+2. **Get SaaS mode flag**: `const { isSaasMode } = useDeployment();`
+3. Add state hook for `accountExpirationStatus`
+4. Define type with fields: `isExpired`, `type`, `expirationDate`, `message`
+5. Initialize as null
 
 **Testing Checklist**:
 - [ ] State variable is available throughout the layout component
@@ -542,20 +565,24 @@ This action list breaks down the soft account expiration implementation into dis
 **Actions**:
 1. Import `AccountExpirationBanner` component
 2. Add conditional rendering right after `<body>` tag
-3. Show banner only when `accountExpirationStatus?.isExpired` is true
+3. **Check both SaaS mode AND expiration status**: Show banner only when `isSaasMode && accountExpirationStatus?.isExpired`
 4. Pass required props: `type`, `expirationDate`, `familySlug`
 5. Ensure banner appears above all other content
+6. **Important**: Banner should never show in self-hosted mode
 
 **Testing Checklist**:
-- [ ] Banner shows for expired accounts
-- [ ] Banner does not show for active accounts
-- [ ] Banner appears on all pages in the app
+- [ ] **SaaS mode**: Banner shows for expired accounts
+- [ ] **SaaS mode**: Banner does not show for active accounts
+- [ ] **SaaS mode**: Banner appears on all pages in the app
+- [ ] **Self-hosted mode**: Banner never shows regardless of expiration status
 - [ ] Props are passed correctly
 - [ ] No layout shift or flashing
 
 ---
 
 ## Phase 4: UI Feedback Components
+
+**IMPORTANT**: All UI components in this phase should also check deployment mode and only render in SaaS mode. Components should receive deployment context as a prop or use the `useDeployment` hook internally.
 
 ### Task 4.1: Create Upgrade Prompt Modal
 
@@ -687,6 +714,10 @@ This action list breaks down the soft account expiration implementation into dis
 ---
 
 ## Phase 6: Testing
+
+**CRITICAL**: All testing must be performed in BOTH deployment modes to ensure backward compatibility:
+- **SaaS Mode** (`DEPLOYMENT_MODE=saas`): Verify all soft expiration features work correctly
+- **Self-Hosted Mode** (`DEPLOYMENT_MODE=selfhosted`): Verify system works exactly as before with NO expiration enforcement
 
 ### Task 6.1: Backend Testing - Login Flow
 
