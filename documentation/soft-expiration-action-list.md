@@ -1,5 +1,7 @@
 # Soft Account Expiration - Action List
 
+> **IMPORTANT NOTE**: This implementation uses the existing `PaymentModal` component for upgrades instead of routing to billing pages. When you see tasks mentioning "upgrade URL" or "navigate to billing", refer to [MODAL_APPROACH_SUMMARY.md](./MODAL_APPROACH_SUMMARY.md) for the modal-based alternative.
+
 ## Overview
 
 This action list breaks down the soft account expiration implementation into discrete, actionable tasks. Each task references the implementation plan and lists all files that need to be modified or used for context.
@@ -8,6 +10,7 @@ This action list breaks down the soft account expiration implementation into dis
 
 **Endpoint Protection Details**: [phase-1-4-write-protected-endpoints.md](./phase-1-4-write-protected-endpoints.md)
 
+**Modal Approach Summary**: [MODAL_APPROACH_SUMMARY.md](./MODAL_APPROACH_SUMMARY.md) ⭐ **Read this for key implementation differences**
 ---
 
 ## Phase 1: Backend Authentication Changes

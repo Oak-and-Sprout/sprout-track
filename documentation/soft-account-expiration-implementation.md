@@ -1,5 +1,7 @@
 # Soft Account Expiration Experience - Implementation Plan
 
+> **IMPORTANT NOTE**: This implementation uses the existing `PaymentModal` component for upgrades instead of creating a dedicated billing page. See [MODAL_APPROACH_SUMMARY.md](./MODAL_APPROACH_SUMMARY.md) for a quick reference of key differences from a routing-based approach.
+
 ## Overview
 
 This document outlines the plan to convert the current "hard lockout" account expiration system to a "soft notification" system that allows expired users to:
@@ -299,7 +301,7 @@ export async function checkWritePermission(
             expirationInfo: {
               type: expirationInfo.type,
               date: expirationInfo.date,
-              upgradeUrl: `/accounts/${expirationInfo.familySlug}/billing`
+              familySlug: expirationInfo.familySlug
             }
           }
         } as any,
@@ -316,10 +318,12 @@ export async function checkWritePermission(
 }
 ```
 
+**Note**: We removed `upgradeUrl` because the frontend will use the existing `PaymentModal` component (`src/components/account-manager/PaymentModal.tsx`) instead of routing to a billing page. The modal will be triggered via custom events and managed in the layout.
+
 **Testing**:
 - [ ] Returns `allowed: false` for expired accounts on write endpoints
 - [ ] Returns proper error message based on expiration type
-- [ ] Includes `upgradeUrl` in response data
+- [ ] Includes `familySlug` in response data for context
 - [ ] Returns `allowed: true` for active accounts
 
 ---
@@ -576,6 +580,79 @@ if (response.status === 401) {
 - [ ] 403 expiration errors show notification only
 - [ ] Expiration status persists across page refreshes
 
+#### E. Integrate PaymentModal Component
+
+Add the existing `PaymentModal` component to the layout for upgrade handling:
+
+```typescript
+import PaymentModal from '@/src/components/account-manager/PaymentModal';
+
+// Add state for modal
+const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+// Auto-open modal on first load after login if expired
+useEffect(() => {
+  const status = localStorage.getItem('accountExpirationStatus');
+  if (status) {
+    const parsed = JSON.parse(status);
+    if (parsed.isExpired && !sessionStorage.getItem('paymentModalShown')) {
+      setShowPaymentModal(true);
+      sessionStorage.setItem('paymentModalShown', 'true');
+    }
+  }
+}, []);
+
+// Listen for payment modal requests from child components
+useEffect(() => {
+  const handleOpenPayment = () => setShowPaymentModal(true);
+  window.addEventListener('openPaymentModal', handleOpenPayment);
+  return () => window.removeEventListener('openPaymentModal', handleOpenPayment);
+}, []);
+
+// Update API error handler to also open modal
+useEffect(() => {
+  const handleApiError = (event: CustomEvent) => {
+    const { status, error } = event.detail;
+    if (status === 403 && error === 'ACCOUNT_EXPIRED') {
+      setShowPaymentModal(true); // Open modal on write attempt
+      setAccountExpirationStatus({ ...event.detail.expirationInfo, isExpired: true });
+    }
+  };
+  window.addEventListener('apiError', handleApiError as EventListener);
+  return () => window.removeEventListener('apiError', handleApiError as EventListener);
+}, []);
+
+// Handle successful payment
+const handlePaymentSuccess = () => {
+  localStorage.removeItem('accountExpirationStatus');
+  setAccountExpirationStatus(null);
+  setShowPaymentModal(false);
+  window.location.reload(); // Refresh to get new subscription status
+};
+
+// Add modal to layout JSX (before closing </body>)
+<PaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  accountStatus={accountStatus} // Pass current account status
+  onPaymentSuccess={handlePaymentSuccess}
+/>
+```
+
+**Key Points**:
+- Modal opens automatically after login for expired users (once per session)
+- Any component can trigger modal via `openPaymentModal` event
+- 403 errors also trigger the modal automatically
+- Payment success refreshes the page to update subscription status
+
+**Testing**:
+- [ ] Modal opens automatically after login for expired accounts
+- [ ] Modal opens when `openPaymentModal` event dispatched
+- [ ] Modal opens when API returns 403 expiration error
+- [ ] Modal shows correct pricing plans
+- [ ] Payment success closes modal and refreshes page
+- [ ] Only shows once per session (sessionStorage check)
+
 ---
 
 ### 3.2 Create Account Expiration Banner Component
@@ -585,32 +662,25 @@ if (response.status === 401) {
 ```typescript
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { X } from 'lucide-react'; // Or your icon library
+import { useState } from 'react';
 
 interface AccountExpirationBannerProps {
   type: 'TRIAL_EXPIRED' | 'PLAN_EXPIRED' | 'NO_PLAN' | 'CLOSED';
   expirationDate?: string;
-  familySlug: string;
+  onUpgradeClick: () => void; // Callback to open PaymentModal
 }
 
 export default function AccountExpirationBanner({
   type,
   expirationDate,
-  familySlug
+  onUpgradeClick
 }: AccountExpirationBannerProps) {
-  const router = useRouter();
   const [isDismissed, setIsDismissed] = useState(false);
 
   // Banner is non-dismissible, but can be minimized
   const [isMinimized, setIsMinimized] = useState(() => {
     return localStorage.getItem('expirationBannerMinimized') === 'true';
   });
-
-  const handleUpgradeClick = () => {
-    router.push(`/accounts/${familySlug}/billing`);
-  };
 
   const handleMinimize = () => {
     setIsMinimized(true);
@@ -699,7 +769,7 @@ export default function AccountExpirationBanner({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={handleUpgradeClick}
+              onClick={onUpgradeClick}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-amber-600 bg-white hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
             >
               {ctaText}
@@ -725,7 +795,7 @@ export default function AccountExpirationBanner({
 - [ ] Banner shows at top of all pages when account expired
 - [ ] Can minimize/expand banner
 - [ ] Minimized state persists across page loads
-- [ ] Upgrade button navigates to billing page
+- [ ] Upgrade button opens PaymentModal
 - [ ] Shows correct message for each expiration type
 
 ---
@@ -742,7 +812,7 @@ Add the banner component right after the `<body>` tag:
     <AccountExpirationBanner
       type={accountExpirationStatus.type || 'NO_PLAN'}
       expirationDate={accountExpirationStatus.expirationDate}
-      familySlug={params.slug}
+      onUpgradeClick={() => setShowPaymentModal(true)}
     />
   )}
 
@@ -757,9 +827,13 @@ Add the banner component right after the `<body>` tag:
 
 ## Phase 4: UI Feedback Components
 
-### 4.1 Create Upgrade Prompt Modal
+### 4.1 Use Existing PaymentModal (DO NOT CREATE NEW MODAL)
 
-**File**: `src/components/UpgradePromptModal/index.tsx` (NEW FILE)
+**IMPORTANT**: Do NOT create a separate `UpgradePromptModal` component. Use the existing `PaymentModal` component (`src/components/account-manager/PaymentModal.tsx`) which already handles all subscription/payment functionality.
+
+The `PaymentModal` is integrated into the layout (see Phase 3.1E) and can be triggered via the `openPaymentModal` custom event from any component.
+
+**Integration Pattern for Components**
 
 ```typescript
 'use client';
@@ -1175,7 +1249,7 @@ export type ApiResponse<T> = {
   expirationInfo?: {
     type: 'TRIAL_EXPIRED' | 'PLAN_EXPIRED' | 'NO_PLAN' | 'CLOSED';
     date?: string;
-    upgradeUrl?: string;
+    familySlug?: string;
   };
 };
 ```
