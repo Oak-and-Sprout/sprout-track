@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Home, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
@@ -21,6 +21,28 @@ function PaymentSuccessContent() {
   const [countdown, setCountdown] = useState(5);
   const [verifying, setVerifying] = useState(true);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+
+  // Get redirect URL based on family slug from JWT token
+  const getRedirectUrl = useCallback((): string => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (authToken) {
+        const payload = authToken.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        const familySlug = decodedPayload.familySlug;
+        
+        // If we have a family slug, redirect to the family's log-entry page
+        if (familySlug) {
+          return `/${familySlug}/log-entry`;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing JWT token for redirect:', error);
+    }
+    
+    // Fallback to home page if no family slug found
+    return '/';
+  }, []);
 
   // Verify the payment session on mount
   useEffect(() => {
@@ -80,9 +102,9 @@ function PaymentSuccessContent() {
   // Separate effect to handle redirect when countdown reaches 0
   useEffect(() => {
     if (countdown === 0) {
-      router.push('/');
+      router.push(getRedirectUrl());
     }
-  }, [countdown, router]);
+  }, [countdown, router, getRedirectUrl]);
 
   return (
     <div className="payment-success-layout min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
@@ -169,7 +191,7 @@ function PaymentSuccessContent() {
 
               {/* Manual Navigation */}
               <Button
-                onClick={() => router.push('/')}
+                onClick={() => router.push(getRedirectUrl())}
                 className="w-full"
               >
                 <Home className="h-4 w-4 mr-2" />
