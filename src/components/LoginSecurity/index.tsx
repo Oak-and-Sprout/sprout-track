@@ -6,11 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/src/context/theme';
 import { useDeployment } from '@/app/context/deployment';
 import { ShareButton } from '@/src/components/ui/share-button';
-import ExpiredAccountMessage from '@/src/components/ExpiredAccountMessage';
 import PinLogin from './PinLogin';
 import AccountLogin from './AccountLogin';
 import './login-security.css';
-import { ApiResponse } from '@/app/api/types';
 
 interface LoginSecurityProps {
   onUnlock: (caretakerId?: string) => void;
@@ -112,19 +110,8 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
     setLoginMode(loginMode === 'pin' ? 'account' : 'pin');
   };
 
-  // Show expired account message if account is expired in SAAS mode
-  if (isSaasMode && accountStatus?.isExpired && !checkingAccountStatus) {
-    return (
-      <ExpiredAccountMessage
-        familyName={familyName}
-        familySlug={familySlug}
-        isTrialExpired={accountStatus.isTrialExpired}
-        expirationDate={accountStatus.expirationDate}
-      />
-    );
-  }
-
-  // Show loading or normal login if account is valid or not in SAAS mode
+  // Show loading or normal login regardless of expiration status (soft expiration approach)
+  // In soft expiration, we allow users to log in even if expired
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white login-container">
       <div className="w-full max-w-md mx-auto p-6">
