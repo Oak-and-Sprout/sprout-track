@@ -13,6 +13,7 @@ import {
 } from '@/src/components/ui/form-page';
 import CalendarEventForm from '@/src/components/forms/CalendarEventForm';
 import { CalendarEventFormData } from '@/src/components/forms/CalendarEventForm/calendar-event-form.types';
+import { useToast } from '@/src/components/ui/toast';
 import './calendar-day-view.css';
 
 /**
@@ -38,6 +39,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
   onClose,
   isOpen,
 }) => {
+  const { showToast } = useToast();
   
   // State for event form
   const [showEventForm, setShowEventForm] = useState(false);
@@ -219,6 +221,92 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
           recurrenceEnd: eventData.recurrenceEnd?.toISOString(),
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const expirationInfo = errorData.data?.expirationInfo;
+          
+          // Determine user type from JWT token
+          let isAccountUser = false;
+          let isSysAdmin = false;
+          try {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+              const payload = token.split('.')[1];
+              const decodedPayload = JSON.parse(atob(payload));
+              isAccountUser = decodedPayload.isAccountAuth || false;
+              isSysAdmin = decodedPayload.isSysAdmin || false;
+            }
+          } catch (error) {
+            console.error('Error parsing JWT token:', error);
+          }
+          
+          // Determine expiration type and message
+          let variant: 'warning' | 'error' = 'warning';
+          let title = 'Account Expired';
+          let message = errorData.error || 'Your account has expired. Please upgrade to continue.';
+          
+          if (expirationInfo?.type === 'TRIAL_EXPIRED') {
+            title = 'Free Trial Ended';
+            message = isAccountUser 
+              ? 'Your free trial has ended. Upgrade to continue managing calendar events.'
+              : 'The account owner\'s free trial has ended. Please contact them to upgrade.';
+          } else if (expirationInfo?.type === 'PLAN_EXPIRED') {
+            title = 'Subscription Expired';
+            message = isAccountUser
+              ? 'Your subscription has expired. Please renew to continue managing events.'
+              : 'The account owner\'s subscription has expired. Please contact them to renew.';
+          } else if (expirationInfo?.type === 'NO_PLAN') {
+            title = 'No Active Subscription';
+            message = isAccountUser
+              ? 'Subscribe now to continue managing your calendar events.'
+              : 'The account owner needs to subscribe. Please contact them to upgrade.';
+          }
+          
+          // Show toast notification with appropriate action
+          if (isAccountUser && !isSysAdmin) {
+            // Account user: show upgrade button that opens PaymentModal
+            showToast({
+              variant,
+              title,
+              message,
+              duration: 6000,
+              action: {
+                label: 'Upgrade Now',
+                onClick: () => {
+                  // Dispatch event to open PaymentModal (layout listens for this)
+                  window.dispatchEvent(new CustomEvent('openPaymentModal'));
+                }
+              }
+            });
+          } else {
+            // Caretaker or system user: show message without upgrade button
+            showToast({
+              variant,
+              title,
+              message,
+              duration: 6000,
+              // No action button for caretakers
+            });
+          }
+          
+          // Don't close the form, let user see the error
+          return;
+        }
+        
+        // For other errors, show error message
+        console.error('Error saving event:', errorData.error);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save event',
+          duration: 5000,
+        });
+        return;
+      }
       
       const data = await response.json();
       
@@ -236,9 +324,21 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
         // This will update the CalendarDayView with the latest events
       } else {
         console.error('Error saving event:', data.error);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: data.error || 'Failed to save event',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error saving event:', error);
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: 'An unexpected error occurred. Please try again.',
+        duration: 5000,
+      });
     }
   };
   
