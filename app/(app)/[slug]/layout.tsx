@@ -7,6 +7,7 @@ import { TimezoneProvider } from '../../context/timezone';
 import { DeploymentProvider, useDeployment } from '../../context/deployment';
 import { ThemeProvider } from '@/src/context/theme';
 import { FamilyProvider, useFamily } from '@/src/context/family';
+import { ToastProvider } from '@/src/components/ui/toast';
 import Image from 'next/image';
 import '../../globals.css';
 import SettingsForm from '@/src/components/forms/SettingsForm';
@@ -22,6 +23,7 @@ import SetupWizard from '@/src/components/SetupWizard';
 import { DynamicTitle } from '@/src/components/ui/dynamic-title';
 import { AccountButton } from '@/src/components/ui/account-button';
 import AccountManager from '@/src/components/account-manager';
+import PaymentModal from '@/src/components/account-manager/PaymentModal';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -58,6 +60,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [showAccountManager, setShowAccountManager] = useState(false);
   const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAccountStatus, setPaymentAccountStatus] = useState<any>(null);
   const familySlug = params?.slug as string;
 
   // Function to calculate baby's age
@@ -445,6 +449,63 @@ function AppContent({ children }: { children: React.ReactNode }) {
   }, [mounted, router, handleLogout, familySlug, pathname]);
 
 
+  // Listen for payment modal requests from child components
+  useEffect(() => {
+    const handleOpenPayment = () => {
+      // Check if user is an account user before opening modal
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return;
+      
+      try {
+        const payload = authToken.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        const isAccountUser = decodedPayload.isAccountAuth || false;
+        
+        // Only open PaymentModal for account users
+        if (!isAccountUser) {
+          console.log('PaymentModal can only be opened by account users');
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing JWT token for payment modal:', error);
+        return;
+      }
+      
+      // Fetch account status for PaymentModal
+      const fetchAccountStatusForPayment = async () => {
+        try {
+          const response = await fetch('/api/accounts/status', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              setPaymentAccountStatus({
+                accountStatus: data.data.accountStatus || 'active',
+                planType: data.data.planType || null,
+                subscriptionActive: data.data.subscriptionActive || false,
+                trialEnds: data.data.trialEnds || null,
+                planExpires: data.data.planExpires || null,
+                subscriptionId: data.data.subscriptionId || null,
+              });
+              setShowPaymentModal(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching account status for payment modal:', error);
+        }
+      };
+      
+      fetchAccountStatusForPayment();
+    };
+    
+    window.addEventListener('openPaymentModal', handleOpenPayment);
+    return () => window.removeEventListener('openPaymentModal', handleOpenPayment);
+  }, []);
+
   // Check unlock status based on JWT token and extract user info
   useEffect(() => {
     const checkUnlockStatus = () => {
@@ -675,6 +736,20 @@ function AppContent({ children }: { children: React.ReactNode }) {
         isOpen={showAccountManager}
         onClose={() => setShowAccountManager(false)}
       />
+
+      {/* Payment Modal - can be opened from toast or other components */}
+      {isAccountAuth && paymentAccountStatus && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          accountStatus={paymentAccountStatus}
+          onPaymentSuccess={() => {
+            setShowPaymentModal(false);
+            // Refresh page to get updated subscription status
+            window.location.reload();
+          }}
+        />
+      )}
     </>
   );
 }
@@ -750,8 +825,10 @@ export default function AppLayout({
         <BabyProvider>
           <TimezoneProvider>
             <ThemeProvider>
-              <DynamicTitle />
-              <AppContent>{children}</AppContent>
+              <ToastProvider>
+                <DynamicTitle />
+                <AppContent>{children}</AppContent>
+              </ToastProvider>
             </ThemeProvider>
           </TimezoneProvider>
         </BabyProvider>
