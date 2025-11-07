@@ -24,6 +24,7 @@ import { DynamicTitle } from '@/src/components/ui/dynamic-title';
 import { AccountButton } from '@/src/components/ui/account-button';
 import AccountManager from '@/src/components/account-manager';
 import PaymentModal from '@/src/components/account-manager/PaymentModal';
+import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -671,6 +672,9 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             </header>
+            
+            {/* Account Expiration Banner - shows for both account users and caretakers */}
+            <AccountExpirationBanner isAccountAuth={isAccountAuth} />
             
             <main className="flex-1 relative z-0">
               {showSetup ? (
