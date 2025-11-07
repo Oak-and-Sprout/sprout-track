@@ -1,0 +1,101 @@
+/* Account Expiration Banner Styles */
+
+.account-expiration-banner {
+  width: 100%;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-bottom: 1px solid #f59e0b;
+  padding: 0.75rem 1rem;
+  z-index: 30;
+  position: relative;
+}
+
+.account-expiration-banner-dark {
+  background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+  border-bottom-color: #d97706;
+}
+
+.account-expiration-banner-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.account-expiration-banner-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #92400e;
+}
+
+.account-expiration-banner-dark .account-expiration-banner-message {
+  color: #fde68a;
+}
+
+.account-expiration-banner-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.account-expiration-banner-button {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background-color: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.account-expiration-banner-button:hover {
+  background-color: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.account-expiration-banner-button:active {
+  transform: translateY(0);
+}
+
+.account-expiration-banner-dark .account-expiration-banner-button {
+  background-color: #d97706;
+  color: #fef3c7;
+}
+
+.account-expiration-banner-dark .account-expiration-banner-button:hover {
+  background-color: #b45309;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .account-expiration-banner {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .account-expiration-banner-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .account-expiration-banner-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .account-expiration-banner-message {
+    font-size: 0.8125rem;
+  }
+}
+
