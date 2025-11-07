@@ -4,6 +4,7 @@ import { ApiResponse } from '../types';
 import { CalendarEventType, RecurrencePattern } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
+import { checkWritePermission } from '../utils/writeProtection';
 
 // Type for calendar event response
 interface CalendarEventResponse {
@@ -289,6 +290,12 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, caretakerId: userCaretakerId } = authContext;
     if (!userFamilyId) {
@@ -437,6 +444,12 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handlePut(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId } = authContext;
     if (!userFamilyId) {
@@ -598,6 +611,12 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handleDelete(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId } = authContext;
     if (!userFamilyId) {
