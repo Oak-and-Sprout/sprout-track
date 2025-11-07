@@ -160,16 +160,124 @@ showToast({
 
 The toast system is integrated with the soft account expiration feature to provide user-friendly notifications when expired accounts attempt write operations.
 
-### Implementation Pattern
+### Recommended Approach: Using the Utility Function
 
-When a write operation fails due to account expiration (403 error), the form should:
+**We strongly recommend using the reusable `handleExpirationError` utility function** instead of implementing the logic manually in each form. This approach:
 
-1. **Detect the expiration error** (403 status)
-2. **Parse expiration information** from the API response
-3. **Determine user type** (account user vs caretaker/system user)
-4. **Show appropriate toast** based on user type
+- ✅ Reduces code duplication (70+ lines → 5 lines)
+- ✅ Ensures consistent behavior across all forms
+- ✅ Makes maintenance easier (update messages in one place)
+- ✅ Provides context-aware messaging
 
-### Example: DiaperForm Implementation
+#### Using the Utility Function
+
+```tsx
+// src/components/forms/ContactForm/index.tsx
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+
+export default function ContactForm({ ... }) {
+  const { showToast } = useToast();
+
+  const handleSubmit = async () => {
+    // ... form validation ...
+
+    const response = await fetch('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authToken ? `Bearer ${authToken}` : '',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      // Check if this is an account expiration error
+      if (response.status === 403) {
+        const { isExpirationError, errorData } = await handleExpirationError(
+          response, 
+          showToast, 
+          'managing contacts' // Optional context for customizing messages
+        );
+        if (isExpirationError) {
+          // Don't close the form, let user see the error
+          return;
+        }
+        // If it's a 403 but not an expiration error, handle it normally
+        if (errorData) {
+          showToast({
+            variant: 'error',
+            title: 'Error',
+            message: errorData.error || 'Failed to save contact',
+            duration: 5000,
+          });
+          throw new Error(errorData.error || 'Failed to save contact');
+        }
+      }
+      
+      // Handle other errors
+      const errorData = await response.json();
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: errorData.error || 'Failed to save contact',
+        duration: 5000,
+      });
+      throw new Error(errorData.error || 'Failed to save contact');
+    }
+
+    // Success handling...
+  };
+}
+```
+
+#### Utility Function API
+
+```typescript
+/**
+ * Handles account expiration errors in forms
+ * 
+ * @param response - The fetch Response object (must be a 403 error)
+ * @param showToast - The showToast function from useToast hook
+ * @param context - Optional context string for customizing messages 
+ *                  (e.g., "managing contacts", "tracking baths", "adding entries")
+ * @returns Promise<{ isExpirationError: boolean; errorData?: any }>
+ *          - isExpirationError: true if this was an expiration error
+ *          - errorData: parsed error data (useful for non-expiration 403 errors)
+ */
+handleExpirationError(
+  response: Response,
+  showToast: ShowToastFunction,
+  context?: string
+): Promise<{ isExpirationError: boolean; errorData?: any }>
+```
+
+#### Context Examples
+
+The `context` parameter allows you to customize messages for different operations:
+
+```tsx
+// For contact management
+await handleExpirationError(response, showToast, 'managing contacts');
+
+// For bath tracking
+await handleExpirationError(response, showToast, 'tracking baths');
+
+// For diaper changes
+await handleExpirationError(response, showToast, 'tracking diaper changes');
+
+// For feeding
+await handleExpirationError(response, showToast, 'logging feedings');
+
+// Generic (no context)
+await handleExpirationError(response, showToast);
+```
+
+### Legacy Approach: Manual Implementation
+
+If you need to implement expiration handling manually (not recommended), here's the pattern:
+
+### Example: Manual DiaperForm Implementation (Legacy)
 
 ```tsx
 // src/components/forms/DiaperForm/index.tsx
@@ -275,12 +383,14 @@ export default function DiaperForm({ ... }) {
 }
 ```
 
-### Key Points
+### Key Points (Manual Implementation)
 
 1. **User Type Detection**: Parse JWT token to determine if user is account owner or caretaker
 2. **Conditional Messaging**: Different messages for account users vs caretakers
 3. **Action Button**: Only show upgrade button for account users
 4. **Event-Based Modal**: Use `openPaymentModal` event to trigger PaymentModal (see below)
+
+**Note**: The utility function handles all of these automatically. Use `handleExpirationError` instead of implementing this manually.
 
 ## PaymentModal Integration
 
@@ -437,24 +547,145 @@ showToast({
 
 ## Applying to Other Forms
 
-To add expiration handling to other forms (FeedForm, SleepForm, etc.), follow this pattern:
+To add expiration handling to other forms (FeedForm, SleepForm, etc.), follow this simple pattern:
 
-1. **Import useToast hook**
+### Step 1: Import Required Dependencies
+
 ```tsx
 import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 ```
 
-2. **Add error handling in submit handler**
+### Step 2: Initialize Toast Hook
+
 ```tsx
-if (!response.ok && response.status === 403) {
-  // Parse expiration error and show toast
-  // (Copy pattern from DiaperForm)
+export default function YourForm({ ... }) {
+  const { showToast } = useToast();
+  // ... rest of component
 }
 ```
 
-3. **Check user type and show appropriate message**
-   - Account users: Show upgrade button
-   - Caretakers: Show contact owner message
+### Step 3: Add Error Handling in Submit Handler
+
+```tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // ... form validation and payload preparation ...
+
+  const response = await fetch('/api/your-endpoint', {
+    method: 'POST', // or 'PUT' for updates
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': authToken ? `Bearer ${authToken}` : '',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    // Check if this is an account expiration error
+    if (response.status === 403) {
+      const { isExpirationError, errorData } = await handleExpirationError(
+        response, 
+        showToast, 
+        'your operation context' // e.g., 'adding entries', 'managing settings'
+      );
+      if (isExpirationError) {
+        // Don't close the form, let user see the error
+        return;
+      }
+      // Handle other 403 errors if needed
+      if (errorData) {
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Operation failed',
+          duration: 5000,
+        });
+        return;
+      }
+    }
+    
+    // Handle other errors
+    const errorData = await response.json();
+    showToast({
+      variant: 'error',
+      title: 'Error',
+      message: errorData.error || 'Operation failed',
+      duration: 5000,
+    });
+    return;
+  }
+
+  // Success handling...
+  const result = await response.json();
+  if (result.success) {
+    onClose();
+    onSuccess?.();
+  }
+};
+```
+
+### Complete Example: FeedForm
+
+```tsx
+'use client';
+
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+
+export default function FeedForm({ isOpen, onClose, babyId, onSuccess }) {
+  const { showToast } = useToast();
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const authToken = localStorage.getItem('authToken');
+    const response = await fetch('/api/feed-log', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authToken ? `Bearer ${authToken}` : '',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        const { isExpirationError } = await handleExpirationError(
+          response, 
+          showToast, 
+          'logging feedings'
+        );
+        if (isExpirationError) return;
+      }
+      
+      const errorData = await response.json();
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: errorData.error || 'Failed to save feeding',
+        duration: 5000,
+      });
+      return;
+    }
+
+    // Success...
+    onClose();
+    onSuccess?.();
+  };
+
+  // ... rest of component
+}
+```
+
+### Benefits of Using the Utility Function
+
+- **Consistency**: All forms handle expiration errors the same way
+- **Maintainability**: Update messages/logic in one place (`src/lib/expiration-error-handler.ts`)
+- **Less Code**: Reduces ~70 lines of duplicated code to ~5 lines per form
+- **Type Safety**: TypeScript types ensure correct usage
+- **Context-Aware**: Messages automatically include operation context
 
 ## Testing
 
@@ -509,6 +740,7 @@ if (!response.ok && response.status === 403) {
 ## Related Documentation
 
 - **Component Documentation**: `src/components/ui/toast/README.md`
+- **Expiration Error Handler**: `src/lib/expiration-error-handler.ts` - Reusable utility for handling account expiration errors
 - **Soft Expiration Implementation**: `documentation/soft-account-expiration-implementation.md`
 - **Action List**: `documentation/soft-expiration-action-list.md`
 - **Modal Approach**: `documentation/MODAL_APPROACH_SUMMARY.md`
