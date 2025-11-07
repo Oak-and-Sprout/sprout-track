@@ -185,41 +185,6 @@ export async function POST(req: NextRequest) {
           { status: 404 }
         );
       }
-
-      // Check subscription status in SAAS mode
-      const deploymentMode = process.env.DEPLOYMENT_MODE;
-      if (deploymentMode === 'saas' && targetFamily.account) {
-        const account = targetFamily.account;
-
-        // Skip check for beta participants
-        if (!account.betaparticipant) {
-          const now = new Date();
-          let isExpired = false;
-
-          if (account.trialEnds) {
-            const trialEndDate = new Date(account.trialEnds);
-            isExpired = now > trialEndDate;
-          } else if (account.planExpires) {
-            const planEndDate = new Date(account.planExpires);
-            isExpired = now > planEndDate;
-          } else if (!account.planType) {
-            // No trial, no plan, and not beta - expired
-            isExpired = true;
-          }
-
-          if (isExpired) {
-            // Record failed attempt to prevent brute force on expired families
-            recordFailedAttempt(ip);
-            return NextResponse.json<ApiResponse<null>>(
-              {
-                success: false,
-                error: 'Family access has expired. Please renew your subscription.',
-              },
-              { status: 403 }
-            );
-          }
-        }
-      }
     }
 
     // Get settings to check authentication type

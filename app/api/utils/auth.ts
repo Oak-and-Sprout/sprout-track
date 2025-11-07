@@ -48,6 +48,13 @@ export interface AuthResult {
   isAccountOwner?: boolean; // True if account owns the family
   verified?: boolean;       // True if account email is verified
   betaparticipant?: boolean; // True if account is a beta participant
+
+  // Expiration metadata (soft expiration)
+  isExpired?: boolean;      // True if account has expired
+  trialEnds?: string | null; // ISO date string when trial ends
+  planExpires?: string | null; // ISO date string when plan expires
+  planType?: string | null; // Current plan type
+
   error?: string;
 }
 
@@ -64,10 +71,9 @@ export async function verifyAuthentication(req: NextRequest): Promise<boolean> {
 /**
  * Gets the authenticated user information from the request
  * @param req The Next.js request object
- * @param skipExpirationCheck Optional flag to skip expiration checking (for status endpoints that need to work with expired accounts)
- * @returns Authentication result with caretaker information
+ * @returns Authentication result with caretaker information (includes expiration metadata)
  */
-export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck: boolean = false): Promise<AuthResult> {
+export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult> {
   try {
     // First try to get the JWT token from the Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -130,14 +136,13 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
               return { authenticated: false, error: 'Account is closed' };
             }
 
-            // Check account expiration in SAAS mode only
+            // Calculate expiration status in SAAS mode
             // Only check if account has a family (no point checking expiration during setup)
-            // Skip expiration check if explicitly requested (e.g., for status endpoint)
             const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';
+            let isExpired = false;
 
-            if (!skipExpirationCheck && isSaasMode && account.family && !account.betaparticipant) {
+            if (isSaasMode && account.family && !account.betaparticipant) {
               const now = new Date();
-              let isExpired = false;
 
               // Check trial expiration
               if (account.trialEnds) {
@@ -152,10 +157,6 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
               // No trial and no plan = expired
               else if (!account.planType) {
                 isExpired = true;
-              }
-
-              if (isExpired) {
-                return { authenticated: false, error: 'Account subscription has expired' };
               }
             }
 
@@ -174,6 +175,10 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
                 isAccountOwner: true,
                 verified: account.verified,
                 betaparticipant: account.betaparticipant,
+                isExpired,
+                trialEnds: account.trialEnds?.toISOString() || null,
+                planExpires: account.planExpires?.toISOString() || null,
+                planType: account.planType,
               };
             } else {
               // Account without linked caretaker - limited permissions (during setup)
@@ -195,6 +200,10 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
                   isAccountOwner: true,
                   verified: account.verified,
                   betaparticipant: account.betaparticipant,
+                  isExpired,
+                  trialEnds: account.trialEnds?.toISOString() || null,
+                  planExpires: account.planExpires?.toISOString() || null,
+                  planType: account.planType,
                 };
               } else {
                 // Account has family but no caretaker - this shouldn't happen after proper setup
@@ -212,6 +221,10 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
                   isAccountOwner: true,
                   verified: account.verified,
                   betaparticipant: account.betaparticipant,
+                  isExpired,
+                  trialEnds: account.trialEnds?.toISOString() || null,
+                  planExpires: account.planExpires?.toISOString() || null,
+                  planType: account.planType,
                 };
               }
             }
@@ -233,7 +246,13 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
         };
 
         // Check account expiration for regular tokens (if family has an account)
-        if (!skipExpirationCheck && regularDecoded.familyId && !regularDecoded.isSysAdmin) {
+        let isExpired = false;
+        let trialEnds: string | null = null;
+        let planExpires: string | null = null;
+        let planType: string | null = null;
+        let betaparticipant = false;
+
+        if (regularDecoded.familyId && !regularDecoded.isSysAdmin) {
           try {
             const family = await prisma.family.findUnique({
               where: { id: regularDecoded.familyId },
@@ -260,10 +279,15 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
                 return { authenticated: false, error: 'Family account is closed' };
               }
 
-              // Check expiration only in SAAS mode and for non-beta accounts
+              // Store account metadata
+              betaparticipant = account.betaparticipant || false;
+              trialEnds = account.trialEnds?.toISOString() || null;
+              planExpires = account.planExpires?.toISOString() || null;
+              planType = account.planType;
+
+              // Calculate expiration status in SAAS mode for non-beta accounts
               if (isSaasMode && !account.betaparticipant) {
                 const now = new Date();
-                let isExpired = false;
 
                 // Check trial expiration
                 if (account.trialEnds) {
@@ -279,10 +303,6 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
                 else if (!account.planType) {
                   isExpired = true;
                 }
-
-                if (isExpired) {
-                  return { authenticated: false, error: 'Family account subscription has expired' };
-                }
               }
             }
           } catch (error) {
@@ -291,7 +311,7 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
           }
         }
 
-        // Return authenticated user info from token
+        // Return authenticated user info from token with expiration metadata
         return {
           authenticated: true,
           caretakerId: regularDecoded.isSysAdmin ? null : regularDecoded.id,
@@ -301,6 +321,11 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
           familySlug: regularDecoded.familySlug,
           isSysAdmin: regularDecoded.isSysAdmin || false,
           authType: (regularDecoded as any).authType || 'CARETAKER',
+          betaparticipant,
+          isExpired,
+          trialEnds,
+          planExpires,
+          planType,
         };
       } catch (jwtError) {
         console.error('JWT verification error:', jwtError);
@@ -335,8 +360,14 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
       });
 
       if (caretaker) {
-        // Check if family has an expired account (only in SAAS mode)
-        if (!skipExpirationCheck && caretaker.family?.account) {
+        // Calculate expiration status if family has an account (only in SAAS mode)
+        let isExpired = false;
+        let trialEnds: string | null = null;
+        let planExpires: string | null = null;
+        let planType: string | null = null;
+        let betaparticipant = false;
+
+        if (caretaker.family?.account) {
           const account = caretaker.family.account;
           const isSaasMode = process.env.DEPLOYMENT_MODE === 'saas';
 
@@ -345,10 +376,15 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
             return { authenticated: false, error: 'Family account is closed' };
           }
 
-          // Check expiration only in SAAS mode and for non-beta accounts
+          // Store account metadata
+          betaparticipant = account.betaparticipant || false;
+          trialEnds = account.trialEnds?.toISOString() || null;
+          planExpires = account.planExpires?.toISOString() || null;
+          planType = account.planType;
+
+          // Calculate expiration status in SAAS mode for non-beta accounts
           if (isSaasMode && !account.betaparticipant) {
             const now = new Date();
-            let isExpired = false;
 
             // Check trial expiration
             if (account.trialEnds) {
@@ -364,10 +400,6 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
             else if (!account.planType) {
               isExpired = true;
             }
-
-            if (isExpired) {
-              return { authenticated: false, error: 'Family account subscription has expired' };
-            }
           }
         }
 
@@ -381,6 +413,11 @@ export async function getAuthenticatedUser(req: NextRequest, skipExpirationCheck
           familySlug: caretaker.family?.slug,
           isSysAdmin: false,
           authType: 'CARETAKER',
+          betaparticipant,
+          isExpired,
+          trialEnds,
+          planExpires,
+          planType,
         };
       }
     }
