@@ -21,6 +21,7 @@ import {
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useParams } from 'next/navigation';
 
 interface DiaperFormProps {
@@ -202,75 +203,15 @@ export default function DiaperForm({
       if (!response.ok) {
         // Check if this is an account expiration error
         if (response.status === 403) {
-          const errorData = await response.json();
-          const expirationInfo = errorData.data?.expirationInfo;
-          
-          // Determine user type from JWT token
-          let isAccountUser = false;
-          let isSysAdmin = false;
-          try {
-            const token = localStorage.getItem('authToken');
-            if (token) {
-              const payload = token.split('.')[1];
-              const decodedPayload = JSON.parse(atob(payload));
-              isAccountUser = decodedPayload.isAccountAuth || false;
-              isSysAdmin = decodedPayload.isSysAdmin || false;
-            }
-          } catch (error) {
-            console.error('Error parsing JWT token:', error);
+          const { isExpirationError } = await handleExpirationError(
+            response, 
+            showToast, 
+            'tracking diaper changes'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
           }
-          
-          // Determine expiration type and message
-          let variant: 'warning' | 'error' = 'warning';
-          let title = 'Account Expired';
-          let message = errorData.error || 'Your account has expired. Please upgrade to continue.';
-          
-          if (expirationInfo?.type === 'TRIAL_EXPIRED') {
-            title = 'Free Trial Ended';
-            message = isAccountUser 
-              ? 'Your free trial has ended. Upgrade to continue tracking diaper changes.'
-              : 'The account owner\'s free trial has ended. Please contact them to upgrade.';
-          } else if (expirationInfo?.type === 'PLAN_EXPIRED') {
-            title = 'Subscription Expired';
-            message = isAccountUser
-              ? 'Your subscription has expired. Please renew to continue adding entries.'
-              : 'The account owner\'s subscription has expired. Please contact them to renew.';
-          } else if (expirationInfo?.type === 'NO_PLAN') {
-            title = 'No Active Subscription';
-            message = isAccountUser
-              ? 'Subscribe now to continue tracking your baby\'s activities.'
-              : 'The account owner needs to subscribe. Please contact them to upgrade.';
-          }
-          
-          // Show toast notification with appropriate action
-          if (isAccountUser && !isSysAdmin) {
-            // Account user: show upgrade button that opens PaymentModal
-            showToast({
-              variant,
-              title,
-              message,
-              duration: 6000,
-              action: {
-                label: 'Upgrade Now',
-                onClick: () => {
-                  // Dispatch event to open PaymentModal (layout listens for this)
-                  window.dispatchEvent(new CustomEvent('openPaymentModal'));
-                }
-              }
-            });
-          } else {
-            // Caretaker or system user: show message without upgrade button
-            showToast({
-              variant,
-              title,
-              message,
-              duration: 6000,
-              // No action button for caretakers
-            });
-          }
-          
-          // Don't close the form, let user see the error
-          return;
         }
         
         // For other errors, throw as before

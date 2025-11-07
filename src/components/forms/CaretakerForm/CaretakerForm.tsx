@@ -18,6 +18,7 @@ import {
 } from '@/src/components/ui/form-page';
 import { caretakerFormStyles } from './caretaker-form.styles';
 import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 // Extended type to include the loginId field
 interface Caretaker extends PrismaCaretaker {
@@ -258,82 +259,32 @@ export default function CaretakerForm({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        
         // Check if this is an account expiration error
         if (response.status === 403) {
-          const expirationInfo = errorData.data?.expirationInfo;
-          
-          // Determine user type from JWT token
-          let isAccountUser = false;
-          let isSysAdmin = false;
-          try {
-            const token = localStorage.getItem('authToken');
-            if (token) {
-              const payload = token.split('.')[1];
-              const decodedPayload = JSON.parse(atob(payload));
-              isAccountUser = decodedPayload.isAccountAuth || false;
-              isSysAdmin = decodedPayload.isSysAdmin || false;
-            }
-          } catch (error) {
-            console.error('Error parsing JWT token:', error);
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response, 
+            showToast, 
+            'managing caretakers'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            setError('');
+            return;
           }
-          
-          // Determine expiration type and message
-          let variant: 'warning' | 'error' = 'warning';
-          let title = 'Account Expired';
-          let message = errorData.error || 'Your account has expired. Please upgrade to continue.';
-          
-          if (expirationInfo?.type === 'TRIAL_EXPIRED') {
-            title = 'Free Trial Ended';
-            message = isAccountUser 
-              ? 'Your free trial has ended. Upgrade to continue managing caretakers.'
-              : 'The account owner\'s free trial has ended. Please contact them to upgrade.';
-          } else if (expirationInfo?.type === 'PLAN_EXPIRED') {
-            title = 'Subscription Expired';
-            message = isAccountUser
-              ? 'Your subscription has expired. Please renew to continue managing caretakers.'
-              : 'The account owner\'s subscription has expired. Please contact them to renew.';
-          } else if (expirationInfo?.type === 'NO_PLAN') {
-            title = 'No Active Subscription';
-            message = isAccountUser
-              ? 'Subscribe now to continue managing caretakers.'
-              : 'The account owner needs to subscribe. Please contact them to upgrade.';
-          }
-          
-          // Show toast notification with appropriate action
-          if (isAccountUser && !isSysAdmin) {
-            // Account user: show upgrade button that opens PaymentModal
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
             showToast({
-              variant,
-              title,
-              message,
-              duration: 6000,
-              action: {
-                label: 'Upgrade Now',
-                onClick: () => {
-                  // Dispatch event to open PaymentModal (layout listens for this)
-                  window.dispatchEvent(new CustomEvent('openPaymentModal'));
-                }
-              }
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save caretaker',
+              duration: 5000,
             });
-          } else {
-            // Caretaker or system user: show message without upgrade button
-            showToast({
-              variant,
-              title,
-              message,
-              duration: 6000,
-              // No action button for caretakers
-            });
+            throw new Error(errorData.error || 'Failed to save caretaker');
           }
-          
-          // Don't close the form, let user see the error
-          setError('');
-          return;
         }
         
-        // For other errors, show toast and set local error
+        // For other errors, parse and show toast
+        const errorData = await response.json();
         showToast({
           variant: 'error',
           title: 'Error',

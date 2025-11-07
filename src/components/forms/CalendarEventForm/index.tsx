@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
 } from '@/src/components/ui/dropdown-menu';
 import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import './calendar-event-form.css';
 
 /**
@@ -824,81 +825,31 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                       });
 
                       if (!response.ok) {
-                        const errorData = await response.json();
-                        
                         // Check if this is an account expiration error
                         if (response.status === 403) {
-                          const expirationInfo = errorData.data?.expirationInfo;
-                          
-                          // Determine user type from JWT token
-                          let isAccountUser = false;
-                          let isSysAdmin = false;
-                          try {
-                            const token = localStorage.getItem('authToken');
-                            if (token) {
-                              const payload = token.split('.')[1];
-                              const decodedPayload = JSON.parse(atob(payload));
-                              isAccountUser = decodedPayload.isAccountAuth || false;
-                              isSysAdmin = decodedPayload.isSysAdmin || false;
-                            }
-                          } catch (error) {
-                            console.error('Error parsing JWT token:', error);
+                          const { isExpirationError, errorData } = await handleExpirationError(
+                            response, 
+                            showToast, 
+                            'managing calendar events'
+                          );
+                          if (isExpirationError) {
+                            // Don't close the form, let user see the error
+                            return;
                           }
-                          
-                          // Determine expiration type and message
-                          let variant: 'warning' | 'error' = 'warning';
-                          let title = 'Account Expired';
-                          let message = errorData.error || 'Your account has expired. Please upgrade to continue.';
-                          
-                          if (expirationInfo?.type === 'TRIAL_EXPIRED') {
-                            title = 'Free Trial Ended';
-                            message = isAccountUser 
-                              ? 'Your free trial has ended. Upgrade to continue managing calendar events.'
-                              : 'The account owner\'s free trial has ended. Please contact them to upgrade.';
-                          } else if (expirationInfo?.type === 'PLAN_EXPIRED') {
-                            title = 'Subscription Expired';
-                            message = isAccountUser
-                              ? 'Your subscription has expired. Please renew to continue managing events.'
-                              : 'The account owner\'s subscription has expired. Please contact them to renew.';
-                          } else if (expirationInfo?.type === 'NO_PLAN') {
-                            title = 'No Active Subscription';
-                            message = isAccountUser
-                              ? 'Subscribe now to continue managing your calendar events.'
-                              : 'The account owner needs to subscribe. Please contact them to upgrade.';
-                          }
-                          
-                          // Show toast notification with appropriate action
-                          if (isAccountUser && !isSysAdmin) {
-                            // Account user: show upgrade button that opens PaymentModal
+                          // If it's a 403 but not an expiration error, use the errorData we got
+                          if (errorData) {
                             showToast({
-                              variant,
-                              title,
-                              message,
-                              duration: 6000,
-                              action: {
-                                label: 'Upgrade Now',
-                                onClick: () => {
-                                  // Dispatch event to open PaymentModal (layout listens for this)
-                                  window.dispatchEvent(new CustomEvent('openPaymentModal'));
-                                }
-                              }
+                              variant: 'error',
+                              title: 'Error',
+                              message: errorData.error || 'Failed to delete event',
+                              duration: 5000,
                             });
-                          } else {
-                            // Caretaker or system user: show message without upgrade button
-                            showToast({
-                              variant,
-                              title,
-                              message,
-                              duration: 6000,
-                              // No action button for caretakers
-                            });
+                            return;
                           }
-                          
-                          // Don't close the form, let user see the error
-                          return;
                         }
                         
-                        // For other errors, show error message
+                        // For other errors, parse and show error message
+                        const errorData = await response.json();
                         console.error('Error deleting event:', errorData.error);
                         showToast({
                           variant: 'error',
