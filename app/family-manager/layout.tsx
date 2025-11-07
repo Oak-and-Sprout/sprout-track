@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { TimezoneProvider } from '../context/timezone';
 import { ThemeProvider } from '@/src/context/theme';
 import { DeploymentProvider } from '../context/deployment';
+import { ToastProvider } from '@/src/components/ui/toast';
 import Image from 'next/image';
 import '../globals.css';
 import './layout.css';
@@ -188,7 +189,9 @@ export default function AppLayout({
     <DeploymentProvider>
       <TimezoneProvider>
         <ThemeProvider>
-          <AppContent>{children}</AppContent>
+          <ToastProvider>
+            <AppContent>{children}</AppContent>
+          </ToastProvider>
         </ThemeProvider>
       </TimezoneProvider>
     </DeploymentProvider>
