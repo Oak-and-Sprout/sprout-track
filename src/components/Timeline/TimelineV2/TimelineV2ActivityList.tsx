@@ -200,244 +200,243 @@ const TimelineV2ActivityList = ({
           {activities.length > 0 ? (
             <div className="relative">
               {/* Timeline vertical line */}
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 timeline-vertical-line"></div>
-              
-              <AnimatePresence>
-                {groupedActivities.map((group, groupIndex) => (
-                  <motion.div
-                    key={group.timeOfDay}
-                    className="relative timeline-hour-group mb-6"
-                    initial={isAnimated ? { opacity: 0, y: -10 } : false}
-                    animate={isAnimated ? { opacity: 1, y: 0 } : false}
-                    transition={isAnimated ? {
-                      delay: groupIndex * 0.05,
-                      duration: 0.2,
-                      ease: "easeOut"
-                    } : { duration: 0 }}
-                  >
-                    {/* Time of Day Header */}
-                    <div className="flex items-center mb-3 ml-0">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {getTimeOfDayLabel(group.timeOfDay)}
+              <div className="border-l-2 border-gray-200 pl-5 ml-2.5 timeline-container">
+                <AnimatePresence>
+                  {groupedActivities.map((group, groupIndex) => (
+                    <motion.div
+                      key={group.timeOfDay}
+                      className="relative timeline-hour-group mb-6"
+                      initial={isAnimated ? { opacity: 0, y: -10 } : false}
+                      animate={isAnimated ? { opacity: 1, y: 0 } : false}
+                      transition={isAnimated ? {
+                        delay: groupIndex * 0.05,
+                        duration: 0.2,
+                        ease: "easeOut"
+                      } : { duration: 0 }}
+                    >
+                      {/* Time of Day Header */}
+                      <div className="flex items-center mb-3 -ml-5">
+                        <div className="text-sm font-semibold text-gray-500">
+                          {getTimeOfDayLabel(group.timeOfDay)}
+                        </div>
                       </div>
-                    </div>
-                    
-                    {/* Activities in this time period */}
-                    <div className="space-y-2.5 pb-4">
-                      {group.activities.map((activity, activityIndex) => {
-                        const style = getActivityStyle(activity);
-                        const description = getActivityDescription(activity, settings);
-                        const activityTime = new Date(getActivityTime(activity));
-                        let timeStr: string;
-                        
-                        if ('duration' in activity && 'startTime' in activity) {
-                          const startTime = new Date(activity.startTime);
-                          const startTimeStr = startTime.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          });
+                      
+                      {/* Activities in this time period */}
+                      <div className="space-y-0 pb-4">
+                        {group.activities.map((activity, activityIndex) => {
+                          const style = getActivityStyle(activity);
+                          const description = getActivityDescription(activity, settings);
+                          const activityTime = new Date(getActivityTime(activity));
+                          let timeStr: string;
                           
-                          if (activity.endTime) {
-                            const endTime = new Date(activity.endTime);
-                            const endTimeStr = endTime.toLocaleTimeString('en-US', {
+                          if ('duration' in activity && 'startTime' in activity) {
+                            const startTime = new Date(activity.startTime);
+                            const startTimeStr = startTime.toLocaleTimeString('en-US', {
                               hour: 'numeric',
                               minute: '2-digit',
                               hour12: true,
                             });
-                            timeStr = `${startTimeStr} - ${endTimeStr}`;
+                            
+                            if (activity.endTime) {
+                              const endTime = new Date(activity.endTime);
+                              const endTimeStr = endTime.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                              });
+                              timeStr = `${startTimeStr} - ${endTimeStr}`;
+                            } else {
+                              timeStr = startTimeStr;
+                            }
                           } else {
-                            timeStr = startTimeStr;
+                            timeStr = activityTime.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            });
                           }
-                        } else {
-                          timeStr = activityTime.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          });
-                        }
-                        
-                        const getActivityColor = (bgClass: string) => {
-                          if (bgClass.includes('bg-gradient-to-br from-gray-400')) return '#9ca3af';
-                          if (bgClass.includes('bg-sky-200')) return '#7dd3fc';
-                          if (bgClass.includes('bg-gradient-to-r from-teal-600')) return '#0d9488';
-                          if (bgClass.includes('bg-[#FFFF99]')) return '#fef08a';
-                          if (bgClass.includes('bg-gradient-to-r from-orange-400')) return '#fb923c';
-                          if (bgClass.includes('bg-gradient-to-r from-purple-200')) return '#c084fc';
-                          if (bgClass.includes('bg-[#4875EC]')) return '#4875EC';
-                          if (bgClass.includes('bg-[#EA6A5E]')) return '#EA6A5E';
-                          if (bgClass.includes('bg-[#43B755]')) return '#43B755';
-                          return '#9ca3af';
-                        };
-                        
-                        const activityColor = getActivityColor(style.bg);
-                        
-                        return (
-                          <motion.div
-                            key={activity.id}
-                            className="relative timeline-activity-wrapper flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                            initial={isAnimated ? { opacity: 0, x: -20 } : false}
-                            animate={isAnimated ? { opacity: 1, x: 0 } : false}
-                            transition={isAnimated ? {
-                              delay: (groupIndex * 0.1) + (activityIndex * 0.05),
-                              duration: 0.3,
-                              type: "tween",
-                              ease: "easeOut"
-                            } : { duration: 0 }}
-                            onClick={() => {
-                              setTimeout(() => onActivitySelect(activity), 0);
-                            }}
-                          >
-                            {/* Timeline dot */}
-                            <div 
-                              className="absolute w-2 h-2 rounded-full z-10 border-2 border-white"
-                              style={{ 
-                                backgroundColor: activityColor,
-                                left: 'calc(1rem - 4px)',
-                                top: '50%',
-                                transform: 'translateY(-50%)'
+                          
+                          const getActivityColor = (bgClass: string) => {
+                            if (bgClass.includes('bg-gradient-to-br from-gray-400')) return '#9ca3af'; // gray-400 - matches old timeline
+                            if (bgClass.includes('bg-sky-200')) return '#7dd3fc'; // sky-300 - matches old timeline
+                            if (bgClass.includes('bg-gradient-to-r from-teal-600')) return '#0d9488'; // teal-600 - matches old timeline
+                            if (bgClass.includes('bg-[#FFFF99]')) return '#fef08a'; // yellow-200 - matches old timeline
+                            if (bgClass.includes('bg-gradient-to-r from-orange-400')) return '#fb923c'; // orange-400 - matches old timeline
+                            if (bgClass.includes('bg-gradient-to-r from-purple-200')) return '#c084fc'; // purple-400 - matches old timeline
+                            if (bgClass.includes('bg-[#4875EC]')) return '#4875EC'; // blue - matches old timeline
+                            if (bgClass.includes('bg-[#EA6A5E]')) return '#EA6A5E'; // red - matches old timeline
+                            if (bgClass.includes('bg-[#43B755]')) return '#43B755'; // green - matches old timeline
+                            return '#9ca3af'; // default gray
+                          };
+                          
+                          const activityColor = getActivityColor(style.bg);
+                          
+                          // Determine activity type class for styling
+                          let activityTypeClass = '';
+                          if ('duration' in activity) activityTypeClass = 'sleep';
+                          else if ('amount' in activity) activityTypeClass = 'feed';
+                          else if ('condition' in activity) activityTypeClass = 'diaper';
+                          else if ('content' in activity) activityTypeClass = 'note';
+                          else if ('soapUsed' in activity) activityTypeClass = 'bath';
+                          else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
+                          else if ('title' in activity && 'category' in activity) activityTypeClass = 'milestone';
+                          else if ('value' in activity && 'unit' in activity) activityTypeClass = 'measurement';
+                          else if ('doseAmount' in activity && 'medicineId' in activity) activityTypeClass = 'medicine';
+                          
+                          return (
+                            <motion.div
+                              key={activity.id}
+                              className={`relative timeline-event ${activityTypeClass}`}
+                              initial={isAnimated ? { opacity: 0, x: -20 } : false}
+                              animate={isAnimated ? { opacity: 1, x: 0 } : false}
+                              transition={isAnimated ? {
+                                delay: (groupIndex * 0.1) + (activityIndex * 0.05),
+                                duration: 0.3,
+                                type: "tween",
+                                ease: "easeOut"
+                              } : { duration: 0 }}
+                              onClick={() => {
+                                setTimeout(() => onActivitySelect(activity), 0);
                               }}
-                            />
-                            
-                            {/* Activity Icon */}
-                            <div className={`flex-shrink-0 ${style.bg} p-2.5 rounded-lg ml-8`}>
-                              {getActivityIcon(activity)}
-                            </div>
-                            
-                            {/* Activity Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-gray-900 mb-0.5">
-                                {description.type}
+                              style={{
+                                '--activity-color': activityColor,
+                              } as React.CSSProperties & { '--activity-color': string }}
+                            >
+                              {/* Event Icon */}
+                              <div className={`flex-shrink-0 event-icon ${activityTypeClass}`}>
+                                {getActivityIcon(activity)}
                               </div>
-                              <div className="text-xs text-gray-600">
-                                {(() => {
-                                  if ('duration' in activity) {
-                                    const location = ('location' in activity && activity.location && activity.location !== 'OTHER') ? 
-                                      activity.location.split('_').map((word: string) => 
-                                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                                      ).join(' ') : '';
-                                    const duration = activity.duration ? `Duration: ${Math.floor(activity.duration / 60)}h ${activity.duration % 60}m` : '';
-                                    const quality = ('quality' in activity && activity.quality) ? 
-                                      activity.quality.charAt(0).toUpperCase() + activity.quality.slice(1).toLowerCase() : '';
-                                    const parts = [];
-                                    if (location) parts.push(location);
-                                    if (duration) parts.push(duration);
-                                    if (quality) parts.push(quality);
-                                    if (!activity.endTime) parts.push('Currently sleeping');
-                                    return parts.length > 0 ? parts.join(' • ') : 'Sleep activity';
-                                  }
-                                  
-                                  if ('amount' in activity) {
-                                    if (activity.type === 'BREAST') {
-                                      const side = activity.side ? activity.side.charAt(0) + activity.side.slice(1).toLowerCase() : '';
-                                      let duration = '';
-                                      if (activity.feedDuration) {
-                                        const minutes = Math.floor(activity.feedDuration / 60);
-                                        const seconds = activity.feedDuration % 60;
-                                        duration = seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes} min`;
-                                      } else if (activity.amount) {
-                                        duration = `${activity.amount} min`;
-                                      }
-                                      return [side + ' side', duration].filter(Boolean).join(' • ');
-                                    } else if (activity.type === 'BOTTLE') {
-                                      const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
-                                      return `Formula • ${activity.amount} ${unit}`;
-                                    } else if (activity.type === 'SOLIDS') {
-                                      const unit = ((activity as any).unitAbbr || 'g').toLowerCase();
-                                      const food = activity.food ? activity.food : '';
-                                      return food ? `${activity.amount} ${unit} of ${food}` : `${activity.amount} ${unit}`;
+                              
+                              {/* Event Content */}
+                              <div className="flex-1 min-w-0 event-content">
+                                <div className="text-sm font-semibold text-gray-900 mb-0.5 event-title">
+                                  {description.type}
+                                </div>
+                                <div className="text-xs text-gray-600 event-details">
+                                  {(() => {
+                                    if ('duration' in activity) {
+                                      const location = ('location' in activity && activity.location && activity.location !== 'OTHER') ? 
+                                        activity.location.split('_').map((word: string) => 
+                                          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                                        ).join(' ') : '';
+                                      const duration = activity.duration ? `${Math.floor(activity.duration / 60)}h ${activity.duration % 60}m` : '';
+                                      const parts = [];
+                                      if (location) parts.push(location);
+                                      if (duration) parts.push(duration);
+                                      if (!activity.endTime) parts.push('Still asleep');
+                                      return parts.length > 0 ? parts.join(' • ') : 'Sleep activity';
                                     }
-                                  }
-                                  
-                                  if ('condition' in activity) {
-                                    const details = [];
-                                    if (activity.condition) {
-                                      details.push(activity.condition.charAt(0) + activity.condition.slice(1).toLowerCase());
-                                    }
-                                    if (activity.color) {
-                                      details.push(activity.color.charAt(0) + activity.color.slice(1).toLowerCase());
-                                    }
-                                    if (activity.blowout) {
-                                      details.push('Blowout/Leakage');
-                                    }
-                                    return details.length > 0 ? details.join(' • ') : 'Diaper change';
-                                  }
-                                  
-                                  if ('content' in activity) {
-                                    return activity.content.length > 50 ? 
-                                      activity.content.substring(0, 50) + '...' : 
-                                      activity.content;
-                                  }
-                                  
-                                  if ('soapUsed' in activity) {
-                                    const details = [];
-                                    if (activity.soapUsed) details.push('Soap');
-                                    if (activity.shampooUsed) details.push('Shampoo');
-                                    if (details.length === 0) details.push('Water only');
-                                    if (activity.notes) {
-                                      const notes = activity.notes.length > 30 ? 
-                                        activity.notes.substring(0, 30) + '...' : 
-                                        activity.notes;
-                                      details.push(notes);
-                                    }
-                                    return details.join(' • ');
-                                  }
-                                  
-                                  if ('leftAmount' in activity || 'rightAmount' in activity) {
-                                    const amounts = [];
-                                    const unit = ((activity as any).unit || 'oz').toLowerCase();
-                                    if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
-                                    if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);
-                                    if ((activity as any).totalAmount) amounts.push(`Total: ${(activity as any).totalAmount} ${unit}`);
-                                    return amounts.join(' • ');
-                                  }
-                                  
-                                  if ('title' in activity && 'category' in activity) {
-                                    const title = activity.title.length > 40 ? 
-                                      activity.title.substring(0, 40) + '...' : 
-                                      activity.title;
-                                    return title;
-                                  }
-                                  
-                                  if ('value' in activity && 'unit' in activity) {
-                                    let unit = ('type' in activity && activity.type === 'TEMPERATURE') ? 
-                                      activity.unit : activity.unit.toLowerCase();
-                                    if ('type' in activity && activity.type !== 'TEMPERATURE' && activity.value >= 1) {
-                                      if (unit === 'lb') {
-                                        unit = 'lbs';
+                                    
+                                    if ('amount' in activity) {
+                                      if (activity.type === 'BREAST') {
+                                        const side = activity.side ? activity.side.charAt(0) + activity.side.slice(1).toLowerCase() : '';
+                                        let duration = '';
+                                        if (activity.feedDuration) {
+                                          const minutes = Math.floor(activity.feedDuration / 60);
+                                          const seconds = activity.feedDuration % 60;
+                                          duration = seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes} min`;
+                                        } else if (activity.amount) {
+                                          duration = `${activity.amount} min`;
+                                        }
+                                        return [side + ' side', duration].filter(Boolean).join(' • ');
+                                      } else if (activity.type === 'BOTTLE') {
+                                        const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
+                                        return `Formula • ${activity.amount} ${unit}`;
+                                      } else if (activity.type === 'SOLIDS') {
+                                        const unit = ((activity as any).unitAbbr || 'g').toLowerCase();
+                                        const food = activity.food ? activity.food : '';
+                                        return food ? `${activity.amount} ${unit} of ${food}` : `${activity.amount} ${unit}`;
                                       }
                                     }
-                                    return `${activity.value} ${unit}`;
-                                  }
-                                  
-                                  if ('doseAmount' in activity && 'medicineId' in activity) {
-                                    const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
-                                    const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
-                                    let medName = 'Medicine';
-                                    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
-                                      medName = (activity.medicine as { name?: string }).name || medName;
+                                    
+                                    if ('condition' in activity) {
+                                      const details = [];
+                                      if (activity.condition) {
+                                        details.push(activity.condition.charAt(0) + activity.condition.slice(1).toLowerCase());
+                                      }
+                                      if (activity.color) {
+                                        details.push(activity.color.charAt(0) + activity.color.slice(1).toLowerCase());
+                                      }
+                                      if (activity.blowout) {
+                                        details.push('Blowout/Leakage');
+                                      }
+                                      return details.length > 0 ? details.join(' • ') : 'Diaper change';
                                     }
-                                    return `${medName} - ${dose}`;
-                                  }
-                                  
-                                  return 'Activity logged';
-                                })()}
+                                    
+                                    if ('content' in activity) {
+                                      return activity.content.length > 50 ? 
+                                        activity.content.substring(0, 50) + '...' : 
+                                        activity.content;
+                                    }
+                                    
+                                    if ('soapUsed' in activity) {
+                                      const details = [];
+                                      if (activity.soapUsed) details.push('Soap');
+                                      if (activity.shampooUsed) details.push('Shampoo');
+                                      if (details.length === 0) details.push('Water only');
+                                      if (activity.notes) {
+                                        const notes = activity.notes.length > 30 ? 
+                                          activity.notes.substring(0, 30) + '...' : 
+                                          activity.notes;
+                                        details.push(notes);
+                                      }
+                                      return details.join(' • ');
+                                    }
+                                    
+                                    if ('leftAmount' in activity || 'rightAmount' in activity) {
+                                      const amounts = [];
+                                      const unit = ((activity as any).unit || 'oz').toLowerCase();
+                                      if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
+                                      if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);
+                                      if ((activity as any).totalAmount) amounts.push(`Total: ${(activity as any).totalAmount} ${unit}`);
+                                      return amounts.join(' • ');
+                                    }
+                                    
+                                    if ('title' in activity && 'category' in activity) {
+                                      const title = activity.title.length > 40 ? 
+                                        activity.title.substring(0, 40) + '...' : 
+                                        activity.title;
+                                      return title;
+                                    }
+                                    
+                                    if ('value' in activity && 'unit' in activity) {
+                                      let unit = ('type' in activity && activity.type === 'TEMPERATURE') ? 
+                                        activity.unit : activity.unit.toLowerCase();
+                                      if ('type' in activity && activity.type !== 'TEMPERATURE' && activity.value >= 1) {
+                                        if (unit === 'lb') {
+                                          unit = 'lbs';
+                                        }
+                                      }
+                                      return `${activity.value} ${unit}`;
+                                    }
+                                    
+                                    if ('doseAmount' in activity && 'medicineId' in activity) {
+                                      const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
+                                      const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
+                                      let medName = 'Medicine';
+                                      if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
+                                        medName = (activity.medicine as { name?: string }).name || medName;
+                                      }
+                                      return `${medName} - ${dose}`;
+                                    }
+                                    
+                                    return 'Activity logged';
+                                  })()}
+                                </div>
                               </div>
-                            </div>
-                            
-                            {/* Time Badge */}
-                            <div className="flex-shrink-0">
-                              <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                              
+                              {/* Event Time */}
+                              <div className="flex-shrink-0 text-xs text-gray-500 event-time">
                                 {timeStr}
-                              </span>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             </div>
           ) : !isLoading && (
             <div className="absolute inset-0 flex items-center justify-center h-full">

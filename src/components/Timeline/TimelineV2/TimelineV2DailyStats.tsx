@@ -5,7 +5,11 @@ import {
   Moon,
   Sun,
   PillBottle,
-  Activity,
+  Edit,
+  Bath,
+  LampWallDown,
+  Trophy,
+  Ruler,
   Icon
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
@@ -19,6 +23,7 @@ import { Calendar as CalendarComponent } from '@/src/components/ui/calendar';
 import { Card } from '@/src/components/ui/card';
 import { FilterType } from '../types';
 import { ActivityType } from '../types';
+import './TimelineV2DailyStats.css';
 
 interface TimelineV2DailyStatsProps {
   activities: ActivityType[];
@@ -28,6 +33,17 @@ interface TimelineV2DailyStatsProps {
   onDateChange: (days: number) => void;
   onDateSelection: (date: Date) => void;
   onFilterChange: (filter: FilterType) => void;
+}
+
+interface StatTile {
+  filter: FilterType;
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  bgColor: string;
+  iconColor: string;
+  borderColor: string;
+  bgActiveColor: string;
 }
 
 const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({ 
@@ -48,8 +64,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     return `${hours}h ${mins}m`;
   };
 
-  // Calculate stats
-  const stats = useMemo(() => {
+  // Calculate stats and create dynamic tiles
+  const statTiles = useMemo(() => {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     
@@ -60,7 +76,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let diaperCount = 0;
     let feedCount = 0;
     let medicineCount = 0;
-    let activityCount = 0;
+    let noteCount = 0;
+    let bathCount = 0;
+    let pumpCount = 0;
+    let milestoneCount = 0;
+    let measurementCount = 0;
+    let awakeMinutes = 0;
 
     activities.forEach(activity => {
       // Sleep activities
@@ -69,11 +90,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         const endTime = 'endTime' in activity && activity.endTime ? new Date(activity.endTime) : null;
         
         if (endTime) {
-          // Calculate overlap with the current day
           const overlapStart = Math.max(startTime.getTime(), startOfDay.getTime());
           const overlapEnd = Math.min(endTime.getTime(), endOfDay.getTime());
           
-          // If there is an overlap, add to sleep time
           if (overlapEnd > overlapStart) {
             const overlapMinutes = Math.floor((overlapEnd - overlapStart) / (1000 * 60));
             totalSleepMinutes += overlapMinutes;
@@ -107,32 +126,198 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
       }
       
-      // Count all activities for the day
-      let activityTime: Date | null = null;
-      if ('time' in activity && activity.time) {
-        activityTime = new Date(activity.time);
-      } else if ('startTime' in activity && activity.startTime) {
-        activityTime = new Date(activity.startTime);
-      } else if ('date' in activity && activity.date) {
-        activityTime = new Date(activity.date);
+      // Note activities
+      if ('content' in activity) {
+        const time = new Date(activity.time);
+        if (time >= startOfDay && time <= endOfDay) {
+          noteCount++;
+        }
       }
       
-      if (activityTime && activityTime >= startOfDay && activityTime <= endOfDay) {
-        activityCount++;
+      // Bath activities
+      if ('soapUsed' in activity) {
+        const time = new Date(activity.time);
+        if (time >= startOfDay && time <= endOfDay) {
+          bathCount++;
+        }
+      }
+      
+      // Pump activities
+      if ('leftAmount' in activity || 'rightAmount' in activity) {
+        let time: Date | null = null;
+        if ('startTime' in activity && activity.startTime) {
+          time = new Date(activity.startTime);
+        } else if ('time' in activity && activity.time) {
+          time = new Date(activity.time);
+        }
+        if (time && time >= startOfDay && time <= endOfDay) {
+          pumpCount++;
+        }
+      }
+      
+      // Milestone activities
+      if ('title' in activity && 'category' in activity) {
+        const activityDate = new Date(activity.date);
+        if (activityDate >= startOfDay && activityDate <= endOfDay) {
+          milestoneCount++;
+        }
+      }
+      
+      // Measurement activities
+      if ('value' in activity && 'unit' in activity) {
+        const activityDate = new Date(activity.date);
+        if (activityDate >= startOfDay && activityDate <= endOfDay) {
+          measurementCount++;
+        }
       }
     });
 
     // Calculate awake time (24 hours - sleep time)
-    const awakeMinutes = (24 * 60) - totalSleepMinutes;
+    awakeMinutes = (24 * 60) - totalSleepMinutes;
 
-    return {
-      sleepTime: formatMinutes(totalSleepMinutes),
-      feedCount: feedCount.toString(),
-      diaperCount: diaperCount.toString(),
-      medicineCount: medicineCount > 0 ? `${medicineCount}x` : '0x',
-      awakeTime: formatMinutes(awakeMinutes),
-      activityCount: activityCount.toString(),
-    };
+    const tiles: StatTile[] = [];
+
+    // Awake Time tile - always first
+    if (awakeMinutes > 0) {
+      tiles.push({
+        filter: null,
+        label: 'Awake Time',
+        value: formatMinutes(awakeMinutes),
+        icon: <Sun className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-amber-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Sleep tile
+    if (totalSleepMinutes > 0) {
+      tiles.push({
+        filter: 'sleep',
+        label: 'Total Sleep',
+        value: formatMinutes(totalSleepMinutes),
+        icon: <Moon className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-gray-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Feed tile
+    if (feedCount > 0) {
+      tiles.push({
+        filter: 'feed',
+        label: 'Feeds',
+        value: feedCount.toString(),
+        icon: <Icon iconNode={bottleBaby} className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-sky-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Diaper tile
+    if (diaperCount > 0) {
+      tiles.push({
+        filter: 'diaper',
+        label: 'Diapers',
+        value: diaperCount.toString(),
+        icon: <Icon iconNode={diaper} className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-teal-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Medicine tile
+    if (medicineCount > 0) {
+      tiles.push({
+        filter: 'medicine',
+        label: 'Medicine',
+        value: `${medicineCount}x`,
+        icon: <PillBottle className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-green-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Note tile
+    if (noteCount > 0) {
+      tiles.push({
+        filter: 'note',
+        label: 'Notes',
+        value: noteCount.toString(),
+        icon: <Edit className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-yellow-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Bath tile
+    if (bathCount > 0) {
+      tiles.push({
+        filter: 'bath',
+        label: 'Baths',
+        value: bathCount.toString(),
+        icon: <Bath className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-orange-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Pump tile
+    if (pumpCount > 0) {
+      tiles.push({
+        filter: 'pump',
+        label: 'Pump',
+        value: pumpCount.toString(),
+        icon: <LampWallDown className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-purple-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Milestone tile
+    if (milestoneCount > 0) {
+      tiles.push({
+        filter: 'milestone',
+        label: 'Milestones',
+        value: milestoneCount.toString(),
+        icon: <Trophy className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-blue-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Measurement tile
+    if (measurementCount > 0) {
+      tiles.push({
+        filter: 'measurement',
+        label: 'Measurements',
+        value: measurementCount.toString(),
+        icon: <Ruler className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-red-600',
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    return tiles;
   }, [activities, date]);
 
   const formatDate = (date: Date): string => {
@@ -144,11 +329,13 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   };
 
   return (
-    <Card className="overflow-hidden border-0 border-b border-gray-200 bg-white">
-      <div className="p-5">
+    <Card className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10 shadow-none">
+      {/* Fade gradient at bottom - 2rem tall */}
+      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-b from-transparent via-white/50 to-white pointer-events-none z-20"></div>
+      <div className="p-5 relative z-10">
         {/* Date Navigation Header */}
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3 border border-gray-300 rounded-lg p-1">
+          <div className="flex items-center gap-3 border border-gray-300 rounded-lg p-1 shadow-sm">
             <Button
               variant="ghost"
               size="icon"
@@ -200,119 +387,49 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         <div className="text-sm font-medium text-gray-600 mb-3">Daily Summary</div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-2.5">
-          {/* Sleep Stat */}
-          <button
-            onClick={() => onFilterChange(activeFilter === 'sleep' ? null : 'sleep')}
-            className={`bg-gray-50 p-3.5 rounded-xl text-center border transition-all cursor-pointer ${
-              activeFilter === 'sleep' 
-                ? 'border-gray-500 bg-gray-100 shadow-sm' 
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-center mb-1.5">
-              <div className="bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 p-2 rounded-lg">
-                <Moon className="h-5 w-5 text-white" />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-gray-800 mb-0.5">{stats.sleepTime}</div>
-            <div className="text-xs text-gray-600 font-medium">Total Sleep</div>
-          </button>
-
-          {/* Feed Stat */}
-          <button
-            onClick={() => onFilterChange(activeFilter === 'feed' ? null : 'feed')}
-            className={`bg-gray-50 p-3.5 rounded-xl text-center border transition-all cursor-pointer ${
-              activeFilter === 'feed' 
-                ? 'border-sky-500 bg-sky-50 shadow-sm' 
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-center mb-1.5">
-              <div className="bg-sky-200 p-2 rounded-lg">
-                <Icon iconNode={bottleBaby} className="h-5 w-5 text-gray-700" />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-gray-800 mb-0.5">{stats.feedCount}</div>
-            <div className="text-xs text-gray-600 font-medium">Feeds</div>
-          </button>
-
-          {/* Diaper Stat */}
-          <button
-            onClick={() => onFilterChange(activeFilter === 'diaper' ? null : 'diaper')}
-            className={`bg-gray-50 p-3.5 rounded-xl text-center border transition-all cursor-pointer ${
-              activeFilter === 'diaper' 
-                ? 'border-teal-500 bg-teal-50 shadow-sm' 
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-center mb-1.5">
-              <div className="bg-gradient-to-r from-teal-600 to-teal-700 p-2 rounded-lg">
-                <Icon iconNode={diaper} className="h-5 w-5 text-white" />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-gray-800 mb-0.5">{stats.diaperCount}</div>
-            <div className="text-xs text-gray-600 font-medium">Diapers</div>
-          </button>
-
-          {/* Medicine Stat */}
-          <button
-            onClick={() => onFilterChange(activeFilter === 'medicine' ? null : 'medicine')}
-            className={`bg-gray-50 p-3.5 rounded-xl text-center border transition-all cursor-pointer ${
-              activeFilter === 'medicine' 
-                ? 'border-green-500 bg-green-50 shadow-sm' 
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-center mb-1.5">
-              <div className="bg-[#43B755] p-2 rounded-lg">
-                <PillBottle className="h-5 w-5 text-white" />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-gray-800 mb-0.5">{stats.medicineCount}</div>
-            <div className="text-xs text-gray-600 font-medium">Medicine</div>
-          </button>
-
-          {/* Awake Time Stat */}
-          <button
-            onClick={() => onFilterChange(null)}
-            className={`bg-gray-50 p-3.5 rounded-xl text-center border transition-all cursor-pointer ${
-              activeFilter === null 
-                ? 'border-amber-500 bg-amber-50 shadow-sm' 
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-center mb-1.5">
-              <div className="bg-amber-100 p-2 rounded-lg">
-                <Sun className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-gray-800 mb-0.5">{stats.awakeTime}</div>
-            <div className="text-xs text-gray-600 font-medium">Awake Time</div>
-          </button>
-
-          {/* Activities Stat */}
-          <button
-            onClick={() => onFilterChange(null)}
-            className={`bg-gray-50 p-3.5 rounded-xl text-center border transition-all cursor-pointer ${
-              activeFilter === null 
-                ? 'border-gray-500 bg-gray-100 shadow-sm' 
-                : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-center mb-1.5">
-              <div className="bg-gray-200 p-2 rounded-lg">
-                <Activity className="h-5 w-5 text-gray-700" />
-              </div>
-            </div>
-            <div className="text-lg font-bold text-gray-800 mb-0.5">{stats.activityCount}</div>
-            <div className="text-xs text-gray-600 font-medium">Activities</div>
-          </button>
-        </div>
+        {statTiles.length > 0 ? (
+          <div className="flex flex-wrap gap-2.5">
+            {statTiles.map((tile) => (
+              <button
+                key={tile.filter || 'awake'}
+                onClick={() => {
+                  // Only allow filtering if it's not the awake time tile
+                  if (tile.filter !== null) {
+                    onFilterChange(tile.filter === activeFilter ? null : tile.filter);
+                  }
+                }}
+                className={`relative bg-gray-50 w-24 h-24 rounded-xl text-left border transition-all overflow-hidden shadow-sm ${
+                  // Never show awake time tile as selected, only show selected state for filterable tiles
+                  tile.filter !== null && activeFilter === tile.filter
+                    ? 'border-2 border-gray-500 bg-gray-100 shadow-md cursor-pointer' 
+                    : tile.filter !== null
+                    ? 'border border-gray-200 hover:border-gray-300 hover:shadow-md cursor-pointer'
+                    : 'border border-gray-200 cursor-default'
+                }`}
+              >
+                {/* Icon in top right, taking up 75% of tile size */}
+                <div className="absolute top-0 right-0 w-[75%] h-[75%] flex items-start justify-end p-2">
+                  <div className={tile.iconColor}>
+                    {tile.icon}
+                  </div>
+                </div>
+                
+                {/* Content */}
+                <div className="relative z-10 p-2.5 h-full flex flex-col justify-end">
+                  <div className="text-base font-bold text-gray-800 mb-0.5 leading-tight">{tile.value}</div>
+                  <div className="text-xs text-gray-600 font-medium leading-tight">{tile.label}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500 text-center py-4">
+            No activities recorded for this day
+          </div>
+        )}
       </div>
     </Card>
   );
 };
 
 export default TimelineV2DailyStats;
-

@@ -72,8 +72,198 @@
   color: #6b7280; /* gray-500 */
 }
 
+/* Timeline - Style 2 Minimal List (matching mockup) */
+.timeline-container {
+  border-left: 2px solid #e5e7eb; /* gray-200 */
+  padding-left: 1.25rem; /* 20px */
+  margin-left: 0.625rem; /* 10px */
+}
+
+.timeline-hour-group {
+  margin-bottom: 1.5rem; /* 25px */
+}
+
+.timeline-event {
+  display: flex;
+  align-items: center;
+  gap: 0.9375rem; /* 15px */
+  padding: 0.75rem; /* 12px */
+  margin-bottom: 0.625rem; /* 10px */
+  position: relative;
+  transition: all 0.2s ease;
+  border-radius: 0.5rem; /* 8px */
+  cursor: pointer;
+}
+
+.timeline-event::before {
+  content: '';
+  position: absolute;
+  left: -1.625rem; /* -26px */
+  width: 0.5rem; /* 8px */
+  height: 0.5rem; /* 8px */
+  border-radius: 50%;
+  background: #ffffff; /* white */
+  border: 2px solid #d1d5db; /* gray-300 */
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.timeline-event:hover {
+  background: #f9fafb; /* gray-50 */
+}
+
+.timeline-event:hover::before {
+  border-color: var(--activity-color);
+  transform: scale(1.3);
+}
+
+.timeline-event.sleep::before { 
+  border-color: #9ca3af; /* gray-400 - matches old timeline */
+}
+.timeline-event.feed::before { 
+  border-color: #7dd3fc; /* sky-300 - matches old timeline */
+}
+.timeline-event.diaper::before { 
+  border-color: #0d9488; /* teal-600 - matches old timeline */
+}
+.timeline-event.note::before { 
+  border-color: #fef08a; /* yellow-200 - matches old timeline */
+}
+.timeline-event.bath::before { 
+  border-color: #fb923c; /* orange-400 - matches old timeline */
+}
+.timeline-event.pump::before { 
+  border-color: #c084fc; /* purple-400 - matches old timeline */
+}
+.timeline-event.milestone::before { 
+  border-color: #4875EC; /* blue - matches old timeline */
+}
+.timeline-event.measurement::before { 
+  border-color: #EA6A5E; /* red - matches old timeline */
+}
+.timeline-event.medicine::before { 
+  border-color: #43B755; /* green - matches old timeline */
+}
+
+.event-icon {
+  width: 2.25rem; /* 36px */
+  height: 2.25rem; /* 36px */
+  border-radius: 0.625rem; /* 10px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb; /* gray-50 */
+  padding: 0.5rem;
+}
+
+.event-icon.sleep { 
+  background: linear-gradient(to bottom right, #9ca3af, #6b7280, #4b5563); /* gray gradient - matches old timeline */
+}
+.event-icon.sleep svg,
+.event-icon.sleep svg path {
+  color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.feed { 
+  background: #bae6fd; /* sky-200 - matches old timeline */
+}
+.event-icon.feed svg,
+.event-icon.feed svg path {
+  color: #374151 !important; /* gray-700 - matches old timeline */
+  stroke: #374151 !important;
+}
+.event-icon.diaper { 
+  background: linear-gradient(to right, #0d9488, #0f766e); /* teal gradient - matches old timeline */
+}
+.event-icon.diaper svg,
+.event-icon.diaper svg path {
+  color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.note { 
+  background: #ffff99; /* yellow - matches old timeline */
+}
+.event-icon.note svg,
+.event-icon.note svg path {
+  color: #374151 !important; /* gray-700 - matches old timeline */
+  stroke: #374151 !important;
+}
+.event-icon.bath { 
+  background: linear-gradient(to right, #fb923c, #f97316); /* orange gradient - matches old timeline */
+}
+.event-icon.bath svg,
+.event-icon.bath svg path {
+  color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.pump { 
+  background: linear-gradient(to right, #e9d5ff, #d8b4fe); /* purple gradient - matches old timeline */
+}
+.event-icon.pump svg,
+.event-icon.pump svg path {
+  color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.milestone { 
+  background: #4875EC; /* blue - matches old timeline */
+}
+.event-icon.milestone svg,
+.event-icon.milestone svg path {
+  color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.measurement { 
+  background: #EA6A5E; /* red - matches old timeline */
+}
+.event-icon.measurement svg,
+.event-icon.measurement svg path {
+  color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.medicine { 
+  background: #43B755; /* green - matches old timeline */
+}
+.event-icon.medicine svg,
+.event-icon.medicine svg path {
+  color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+
+.event-content {
+  flex: 1;
+}
+
+.event-title {
+  font-weight: 600;
+  font-size: 0.875rem; /* 14px */
+  color: #1f2937; /* gray-800 */
+  margin-bottom: 0.125rem; /* 2px */
+}
+
+.event-details {
+  font-size: 0.75rem; /* 12px */
+  color: #4b5563; /* gray-600 */
+}
+
+.event-time {
+  font-size: 0.75rem; /* 12px */
+  color: #6b7280; /* gray-500 */
+}
+
 .timeline-activity-wrapper {
   position: relative;
+}
+
+.timeline-activity-wrapper:hover .timeline-dot-hover {
+  transform: translateY(-50%) scale(1.5);
+}
+
+.timeline-connector-line {
+  z-index: 5;
+}
+
+.timeline-activity-wrapper:hover .timeline-connector-line {
+  width: 3rem !important; /* Expand connector line on hover */
 }
 
 .timeline-hour-group:not(:last-child) .timeline-activity-wrapper:last-child {
@@ -164,4 +354,12 @@ html.dark .timeline-swipe-shadow-left {
 
 html.dark .timeline-swipe-shadow-right {
   background: linear-gradient(to left, rgba(75, 85, 99, 0.5), transparent) !important;
+}
+
+html.dark .timeline-activity-wrapper {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .timeline-activity-wrapper:hover {
+  background-color: #4b5563 !important; /* gray-600 */
 }
