@@ -27,6 +27,8 @@ import BabyForm from '@/src/components/forms/BabyForm';
 import CaretakerForm from '@/src/components/forms/CaretakerForm';
 import ContactForm from '@/src/components/forms/ContactForm';
 import ChangePinModal from '@/src/components/modals/ChangePinModal';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 interface FamilyData {
   id: string;
@@ -55,6 +57,7 @@ export default function SettingsForm({
   familyId,
 }: SettingsFormProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [family, setFamily] = useState<FamilyData | null>(null);
   const [babies, setBabies] = useState<Baby[]>([]);
@@ -272,12 +275,60 @@ export default function SettingsForm({
         body: JSON.stringify(updates),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response,
+            showToast,
+            'updating settings'
+          );
+          if (isExpirationError) {
+            // Don't proceed with the update
+            return;
+          }
+          // If it's a 403 but not an expiration error, handle it normally
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to update settings',
+              duration: 5000,
+            });
+            return;
+          }
+        }
+        
+        // Handle other errors
+        const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to update settings',
+          duration: 5000,
+        });
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
         setSettings(data.data);
+      } else {
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: data.error || 'Failed to update settings',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error updating settings:', error);
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: 'Failed to update settings',
+        duration: 5000,
+      });
     }
   };
 
@@ -331,6 +382,41 @@ export default function SettingsForm({
         }),
       });
 
+      if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response,
+            showToast,
+            'updating family information'
+          );
+          if (isExpirationError) {
+            // Don't proceed with the update
+            return;
+          }
+          // If it's a 403 but not an expiration error, handle it normally
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save changes',
+              duration: 5000,
+            });
+            return;
+          }
+        }
+        
+        // Handle other errors
+        const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save changes',
+          duration: 5000,
+        });
+        return;
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -344,12 +430,21 @@ export default function SettingsForm({
           console.log('Family slug updated successfully');
         }
       } else {
-        console.error('Failed to save family:', data.error);
-        alert('Failed to save changes: ' + data.error);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: data.error || 'Failed to save changes',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error saving family:', error);
-      alert('Error saving changes');
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: 'Error saving changes',
+        duration: 5000,
+      });
     } finally {
       setSavingFamily(false);
     }

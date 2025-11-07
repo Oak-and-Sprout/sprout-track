@@ -13,6 +13,8 @@ import {
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
 import { Textarea } from '@/src/components/ui/textarea';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 interface MeasurementFormProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ export default function MeasurementForm({
   onSuccess,
 }: MeasurementFormProps) {
   const { formatDate, toUTCString } = useTimezone();
+  const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     try {
       // Try to parse the initialTime
@@ -351,7 +354,38 @@ export default function MeasurementForm({
           });
           
           if (!response.ok) {
-            throw new Error('Failed to update measurement');
+            // Check if this is an account expiration error
+            if (response.status === 403) {
+              const { isExpirationError, errorData } = await handleExpirationError(
+                response,
+                showToast,
+                'updating measurements'
+              );
+              if (isExpirationError) {
+                // Don't close the form, let user see the error
+                return;
+              }
+              // If it's a 403 but not an expiration error, handle it normally
+              if (errorData) {
+                showToast({
+                  variant: 'error',
+                  title: 'Error',
+                  message: errorData.error || 'Failed to update measurement',
+                  duration: 5000,
+                });
+                throw new Error(errorData.error || 'Failed to update measurement');
+              }
+            }
+            
+            // Handle other errors
+            const errorData = await response.json();
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to update measurement',
+              duration: 5000,
+            });
+            throw new Error(errorData.error || 'Failed to update measurement');
           }
         } else {
           // If the user cleared the value for the edited measurement type
@@ -364,7 +398,38 @@ export default function MeasurementForm({
           });
           
           if (!response.ok) {
-            throw new Error('Failed to delete measurement');
+            // Check if this is an account expiration error
+            if (response.status === 403) {
+              const { isExpirationError, errorData } = await handleExpirationError(
+                response,
+                showToast,
+                'deleting measurements'
+              );
+              if (isExpirationError) {
+                // Don't close the form, let user see the error
+                return;
+              }
+              // If it's a 403 but not an expiration error, handle it normally
+              if (errorData) {
+                showToast({
+                  variant: 'error',
+                  title: 'Error',
+                  message: errorData.error || 'Failed to delete measurement',
+                  duration: 5000,
+                });
+                throw new Error(errorData.error || 'Failed to delete measurement');
+              }
+            }
+            
+            // Handle other errors
+            const errorData = await response.json();
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to delete measurement',
+              duration: 5000,
+            });
+            throw new Error(errorData.error || 'Failed to delete measurement');
           }
         }
       } else {
@@ -380,7 +445,38 @@ export default function MeasurementForm({
           });
           
           if (!response.ok) {
-            throw new Error(`Failed to save ${measurement.type.toLowerCase()} measurement`);
+            // Check if this is an account expiration error
+            if (response.status === 403) {
+              const { isExpirationError, errorData } = await handleExpirationError(
+                response,
+                showToast,
+                'logging measurements'
+              );
+              if (isExpirationError) {
+                // Don't close the form, let user see the error
+                return;
+              }
+              // If it's a 403 but not an expiration error, handle it normally
+              if (errorData) {
+                showToast({
+                  variant: 'error',
+                  title: 'Error',
+                  message: errorData.error || `Failed to save ${measurement.type.toLowerCase()} measurement`,
+                  duration: 5000,
+                });
+                throw new Error(errorData.error || `Failed to save ${measurement.type.toLowerCase()} measurement`);
+              }
+            }
+            
+            // Handle other errors
+            const errorData = await response.json();
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || `Failed to save ${measurement.type.toLowerCase()} measurement`,
+              duration: 5000,
+            });
+            throw new Error(errorData.error || `Failed to save ${measurement.type.toLowerCase()} measurement`);
           }
         }
       }
@@ -400,7 +496,7 @@ export default function MeasurementForm({
       });
     } catch (error) {
       console.error('Error saving measurements:', error);
-      alert('Error saving measurements. Please try again.');
+      // Error toast already shown above for non-expiration errors
     } finally {
       setLoading(false);
     }

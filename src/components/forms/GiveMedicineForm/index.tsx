@@ -22,6 +22,8 @@ import {
   FormPageFooter 
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 interface GiveMedicineFormProps {
   isOpen: boolean;
@@ -49,6 +51,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
   activity,
 }) => {
   const { toUTCString } = useTimezone();
+  const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,7 +252,38 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
       });
 
       if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response,
+            showToast,
+            'logging medicine'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, handle it normally
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || `Failed to ${activity ? 'update' : 'save'} log`,
+              duration: 5000,
+            });
+            setError(errorData.error || `Failed to ${activity ? 'update' : 'save'} log`);
+            return;
+          }
+        }
+        
+        // Handle other errors
         const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || `Failed to ${activity ? 'update' : 'save'} log`,
+          duration: 5000,
+        });
         throw new Error(errorData.error || `Failed to ${activity ? 'update' : 'save'} log`);
       }
       
@@ -265,11 +299,18 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
         // Then call onSuccess to close the form
         onSuccess?.();
       } else {
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: result.error || `Failed to ${activity ? 'update' : 'save'} log`,
+          duration: 5000,
+        });
         throw new Error(result.error || `Failed to ${activity ? 'update' : 'save'} log`);
       }
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      // Error toast already shown above for non-expiration errors
     } finally {
       setIsLoading(false);
     }

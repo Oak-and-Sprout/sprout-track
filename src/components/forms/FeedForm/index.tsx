@@ -14,6 +14,8 @@ import {
 import { Check } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import './feed-form.css';
 
 // Import subcomponents
@@ -40,6 +42,7 @@ export default function FeedForm({
 }: FeedFormProps) {
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     try {
@@ -420,6 +423,11 @@ export default function FeedForm({
       });
     } catch (error) {
       console.error('Error saving feed log:', error);
+      // If it's an expiration error, don't close the form (already handled by handleExpirationError)
+      if (error instanceof Error && error.message === 'EXPIRATION_ERROR') {
+        return;
+      }
+      // Other errors are already handled with toast in createSingleFeedEntry
     } finally {
       setLoading(false);
     }
@@ -497,7 +505,37 @@ export default function FeedForm({
     });
 
     if (!response.ok) {
+      // Check if this is an account expiration error
+      if (response.status === 403) {
+        const { isExpirationError, errorData } = await handleExpirationError(
+          response,
+          showToast,
+          'logging feedings'
+        );
+        if (isExpirationError) {
+          // Don't close the form, let user see the error
+          throw new Error('EXPIRATION_ERROR');
+        }
+        // If it's a 403 but not an expiration error, handle it normally
+        if (errorData) {
+          showToast({
+            variant: 'error',
+            title: 'Error',
+            message: errorData.error || 'Failed to save feed log',
+            duration: 5000,
+          });
+          throw new Error(errorData.error || 'Failed to save feed log');
+        }
+      }
+      
+      // Handle other errors
       const errorData = await response.json();
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: errorData.error || 'Failed to save feed log',
+        duration: 5000,
+      });
       throw new Error(errorData.error || 'Failed to save feed log');
     }
 
