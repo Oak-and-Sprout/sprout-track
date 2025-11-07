@@ -24,9 +24,9 @@ interface AccountStatusResponse {
 
 async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<AccountStatusResponse>>> {
   try {
-    // Use the standard auth method but skip expiration check
-    // This allows expired accounts to see their status
-    const authResult = await getAuthenticatedUser(req, true);
+    // Use the standard auth method
+    // Expired accounts are allowed to authenticate and see their status
+    const authResult = await getAuthenticatedUser(req);
 
     if (!authResult.authenticated) {
       return NextResponse.json<ApiResponse<AccountStatusResponse>>(
