@@ -98,12 +98,12 @@
 .timeline-event::before {
   content: '';
   position: absolute;
-  left: -1.625rem; /* -26px */
-  width: 0.5rem; /* 8px */
-  height: 0.5rem; /* 8px */
+  left: -1.75rem; /* -28px - adjusted for larger dot */
+  width: 1rem; /* 16px - twice the size */
+  height: 1rem; /* 16px - twice the size */
   border-radius: 50%;
-  background: #ffffff; /* white */
-  border: 2px solid #d1d5db; /* gray-300 */
+  background: var(--activity-color); /* solid color using activity color */
+  border: none; /* no border for solid dot */
   transition: all 0.2s ease;
   z-index: 10;
 }
@@ -113,36 +113,35 @@
 }
 
 .timeline-event:hover::before {
-  border-color: var(--activity-color);
   transform: scale(1.3);
 }
 
 .timeline-event.sleep::before { 
-  border-color: #9ca3af; /* gray-400 - matches old timeline */
+  background: #9ca3af !important; /* gray-400 - matches old timeline */
 }
 .timeline-event.feed::before { 
-  border-color: #7dd3fc; /* sky-300 - matches old timeline */
+  background: #7dd3fc !important; /* sky-300 - matches old timeline */
 }
 .timeline-event.diaper::before { 
-  border-color: #0d9488; /* teal-600 - matches old timeline */
+  background: #0d9488 !important; /* teal-600 - matches old timeline */
 }
 .timeline-event.note::before { 
-  border-color: #fef08a; /* yellow-200 - matches old timeline */
+  background: #fef08a !important; /* yellow-200 - matches old timeline */
 }
 .timeline-event.bath::before { 
-  border-color: #fb923c; /* orange-400 - matches old timeline */
+  background: #fb923c !important; /* orange-400 - matches old timeline */
 }
 .timeline-event.pump::before { 
-  border-color: #c084fc; /* purple-400 - matches old timeline */
+  background: #c084fc !important; /* purple-400 - matches old timeline */
 }
 .timeline-event.milestone::before { 
-  border-color: #4875EC; /* blue - matches old timeline */
+  background: #4875EC !important; /* blue - matches old timeline */
 }
 .timeline-event.measurement::before { 
-  border-color: #EA6A5E; /* red - matches old timeline */
+  background: #EA6A5E !important; /* red - matches old timeline */
 }
 .timeline-event.medicine::before { 
-  border-color: #43B755; /* green - matches old timeline */
+  background: #43B755 !important; /* green - matches old timeline */
 }
 
 .event-icon {

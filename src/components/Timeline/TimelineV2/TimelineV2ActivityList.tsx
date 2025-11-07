@@ -197,6 +197,8 @@ const TimelineV2ActivityList = ({
         
         {/* Timeline View */}
         <div className="min-h-full bg-white relative timeline-activity-list px-5 py-5">
+          {/* Fade gradient at top - from white to transparent */}
+          <div className="absolute position: sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-white to-transparent pointer-events-none z-20"></div>
           {activities.length > 0 ? (
             <div className="relative">
               {/* Timeline vertical line */}
@@ -215,7 +217,7 @@ const TimelineV2ActivityList = ({
                       } : { duration: 0 }}
                     >
                       {/* Time of Day Header */}
-                      <div className="flex items-center mb-3 -ml-5">
+                      <div className="flex items-center mb-3 ml-2">
                         <div className="text-sm font-semibold text-gray-500">
                           {getTimeOfDayLabel(group.timeOfDay)}
                         </div>
@@ -323,7 +325,7 @@ const TimelineV2ActivityList = ({
                                       const parts = [];
                                       if (location) parts.push(location);
                                       if (duration) parts.push(duration);
-                                      if (!activity.endTime) parts.push('Still asleep');
+                                      if (!('endTime' in activity)) parts.push('Still asleep');
                                       return parts.length > 0 ? parts.join(' • ') : 'Sleep activity';
                                     }
                                     

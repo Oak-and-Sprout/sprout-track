@@ -329,13 +329,11 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   };
 
   return (
-    <Card className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10 shadow-none">
-      {/* Fade gradient at bottom - 2rem tall */}
-      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-b from-transparent via-white/50 to-white pointer-events-none z-20"></div>
+    <Card className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10 shadow-none hover:shadow-none">
       <div className="p-5 relative z-10">
         {/* Date Navigation Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3 border border-gray-300 rounded-lg p-1 shadow-sm">
+        <div className="flex items-center justify-center mb-5">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
