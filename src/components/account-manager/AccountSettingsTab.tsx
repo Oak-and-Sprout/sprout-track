@@ -1025,13 +1025,13 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               )}
 
               {((accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial') || accountStatus.planType === 'full') && (
-                <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-3">
+                <div className="flex flex-col items-start sm:flex-row sm:justify-end gap-2 mt-3">
                   {accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial' && !subscriptionStatus?.cancelAtPeriodEnd && (
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setShowPaymentModal(true)}
-                      className="w-full sm:w-auto"
+                      className="self-start"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
                       Manage Subscription
@@ -1043,7 +1043,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                       variant="default"
                       onClick={handleRenewSubscription}
                       disabled={renewingSubscription}
-                      className="w-full sm:w-auto"
+                      className="self-start"
                     >
                       {renewingSubscription ? (
                         <>
@@ -1062,7 +1062,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => setShowPaymentHistory(true)}
-                    className="w-full sm:w-auto"
+                    className="self-start"
                   >
                     <Receipt className="h-4 w-4 mr-2" />
                     Payment History
