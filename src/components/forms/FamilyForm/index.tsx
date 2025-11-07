@@ -24,6 +24,8 @@ import {
 import { ShareButton } from '@/src/components/ui/share-button';
 import { format } from 'date-fns';
 import { cn } from '@/src/lib/utils';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import './FamilyForm.css';
 
 interface FamilyData {
@@ -61,6 +63,7 @@ export default function FamilyForm({
   onFamilyChange,
 }: FamilyFormProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [appConfig, setAppConfig] = useState<{ rootDomain: string; enableHttps: boolean } | null>(null);
 
@@ -357,6 +360,31 @@ export default function FamilyForm({
         }),
       });
 
+      if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response, 
+            showToast, 
+            'creating setup invitations'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
+            setError(errorData.error || 'Failed to generate setup token');
+            return;
+          }
+        }
+        
+        // For other errors, parse and show error
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to generate setup token');
+        return;
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -451,6 +479,31 @@ export default function FamilyForm({
         }),
       });
 
+      if (!familyResponse.ok) {
+        // Check if this is an account expiration error
+        if (familyResponse.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            familyResponse, 
+            showToast, 
+            'creating families'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
+            throw new Error(errorData.error || 'Failed to create family');
+          }
+          // Fallback if errorData is somehow missing
+          throw new Error('Failed to create family');
+        }
+        
+        // For other errors, parse and throw
+        const errorData = await familyResponse.json();
+        throw new Error(errorData.error || 'Failed to create family');
+      }
+
       const familyData = await familyResponse.json();
       
       if (!familyData.success) {
@@ -471,6 +524,17 @@ export default function FamilyForm({
         });
         
         if (!settingsResponse.ok) {
+          // Check if this is an account expiration error
+          if (settingsResponse.status === 403) {
+            const { isExpirationError } = await handleExpirationError(
+              settingsResponse, 
+              showToast, 
+              'saving security settings'
+            );
+            if (isExpirationError) {
+              return;
+            }
+          }
           throw new Error('Failed to save security PIN');
         }
       } else {
@@ -486,6 +550,17 @@ export default function FamilyForm({
           });
           
           if (!caretakerResponse.ok) {
+            // Check if this is an account expiration error
+            if (caretakerResponse.status === 403) {
+              const { isExpirationError } = await handleExpirationError(
+                caretakerResponse, 
+                showToast, 
+                'adding caretakers'
+              );
+              if (isExpirationError) {
+                return;
+              }
+            }
             throw new Error(`Failed to save caretaker: ${caretaker.name}`);
           }
         }
@@ -500,6 +575,17 @@ export default function FamilyForm({
         });
         
         if (!settingsResponse.ok) {
+          // Check if this is an account expiration error
+          if (settingsResponse.status === 403) {
+            const { isExpirationError } = await handleExpirationError(
+              settingsResponse, 
+              showToast, 
+              'saving security settings'
+            );
+            if (isExpirationError) {
+              return;
+            }
+          }
           throw new Error('Failed to update family name in settings');
         }
       }
@@ -520,6 +606,17 @@ export default function FamilyForm({
       });
       
       if (!babyResponse.ok) {
+        // Check if this is an account expiration error
+        if (babyResponse.status === 403) {
+          const { isExpirationError } = await handleExpirationError(
+            babyResponse, 
+            showToast, 
+            'adding baby information'
+          );
+          if (isExpirationError) {
+            return;
+          }
+        }
         throw new Error('Failed to save baby information');
       }
 
