@@ -6,10 +6,10 @@
 
 #### Timeline Overhaul
 - Added a more streamlined version of the timeline
-- Made daily summary the filter for activities that exist on the day
+- Made daily summary the filter for activities that exist within the day selected
 
 #### Account Expiration & Payments
-- Added functionality for expired accounts to have soft user experience
+- Added functionality for expired accounts to have a soft read-only user experience
 - Added in subscription and full license payment management with Stripe
 - Overhauled account usage to not affect self hosted versions of the app
 
