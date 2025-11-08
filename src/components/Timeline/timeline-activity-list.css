@@ -109,7 +109,7 @@
 }
 
 .timeline-event:hover {
-  background: #f9fafb; /* gray-50 */
+  background: #f3f4f6; /* gray-100 - matches selected filter color */
 }
 
 .timeline-event:hover::before {
@@ -391,9 +391,9 @@ html.dark .timeline-hour-group .text-gray-500 {
   color: rgb(209, 213, 219) !important; /* gray-300 */
 }
 
-/* Timeline event hover */
+/* Timeline event hover - matches selected filter color */
 html.dark .timeline-event:hover {
-  background-color: rgb(31, 41, 55) !important; /* gray-800 */
+  background-color: rgb(55, 65, 81) !important; /* gray-700 - matches selected filter color */
 }
 
 /* Event title */
