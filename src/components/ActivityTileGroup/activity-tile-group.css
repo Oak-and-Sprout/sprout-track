@@ -1,6 +1,6 @@
 /* Gradient background for ActivityTileGroup - same for light and dark mode */
 /* Left-to-right gradient: teal-600 (#0d9488) to teal-700 (#0f766e) */
-/* Opacity fade: 100% opacity at top 10%, fades to transparent at 50% from top */
+/* Diagonal edge: left side 25% down, right side 75% down */
 .activity-tile-group {
   /* White background in light mode */
   background-color: white;
@@ -24,29 +24,9 @@
     rgba(13, 148, 136, 1) 0%,
     rgba(15, 118, 110, 1) 100%
   );
-  /* Opacity mask using mask-image for better control */
-  mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 10%,
-    rgba(0, 0, 0, 0.8) 20%,
-    rgba(0, 0, 0, 0.6) 30%,
-    rgba(0, 0, 0, 0.4) 40%,
-    rgba(0, 0, 0, 0.2) 45%,
-    rgba(0, 0, 0, 0) 50%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 10%,
-    rgba(0, 0, 0, 0.8) 20%,
-    rgba(0, 0, 0, 0.6) 30%,
-    rgba(0, 0, 0, 0.4) 40%,
-    rgba(0, 0, 0, 0.2) 45%,
-    rgba(0, 0, 0, 0) 50%,
-    transparent 100%
-  );
+  /* Clip-path creates diagonal edge: left at 50%, right at 25% */
+  clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%);
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%);
   pointer-events: none; /* Allow clicks to pass through */
 }
 
@@ -69,28 +49,8 @@ html.dark .activity-tile-group::before {
     rgba(13, 148, 136, 1) 0%,
     rgba(15, 118, 110, 1) 100%
   ) !important;
-  mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 10%,
-    rgba(0, 0, 0, 0.8) 20%,
-    rgba(0, 0, 0, 0.6) 30%,
-    rgba(0, 0, 0, 0.4) 40%,
-    rgba(0, 0, 0, 0.2) 45%,
-    rgba(0, 0, 0, 0) 50%,
-    transparent 100%
-  ) !important;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 10%,
-    rgba(0, 0, 0, 0.8) 20%,
-    rgba(0, 0, 0, 0.6) 30%,
-    rgba(0, 0, 0, 0.4) 40%,
-    rgba(0, 0, 0, 0.2) 45%,
-    rgba(0, 0, 0, 0) 50%,
-    transparent 100%
-  ) !important;
+  clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%) !important;
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%) !important;
 }
 
 html.dark .activity-dropdown-item {
