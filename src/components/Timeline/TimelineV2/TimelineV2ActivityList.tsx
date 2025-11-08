@@ -108,9 +108,9 @@ const TimelineV2ActivityList = ({
         ref={contentRef}
       >
         {/* Timeline View */}
-        <div className="min-h-full bg-white relative timeline-activity-list px-5 py-5">
+        <div className="min-h-full bg-white relative timeline-activity-list px-5 pb-5">
           {/* Fade gradient at top - from white to transparent */}
-          <div className="absolute position: sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-white to-transparent pointer-events-none z-20 timeline-top-gradient"></div>
+          <div className="absolute position: sticky top-0 left-0 right-0 h-2 bg-gradient-to-b from-white to-transparent pointer-events-none z-20 timeline-top-gradient"></div>
           {activities.length > 0 ? (
             <div className="relative">
               {/* Timeline vertical line */}

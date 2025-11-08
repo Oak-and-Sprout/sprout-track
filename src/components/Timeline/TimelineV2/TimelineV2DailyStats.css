@@ -58,9 +58,9 @@ html.dark .timeline-v2-daily-stats .bg-gray-50 {
   background-color: transparent !important; /* transparent in dark mode */
 }
 
-/* Selected tile background in dark mode - darker than hover */
+/* Selected tile background in dark mode - lighter than page background for visibility */
 html.dark .timeline-v2-daily-stats .bg-gray-100 {
-  background-color: rgb(31, 41, 55) !important; /* gray-800 - darker selection */
+  background-color: rgb(55, 65, 81) !important; /* gray-700 - lighter than gray-800 page background */
 }
 
 /* Icon colors in dark mode - maintain activity colors */
