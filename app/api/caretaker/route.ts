@@ -3,8 +3,15 @@ import prisma from '../db';
 import { ApiResponse, CaretakerCreate, CaretakerUpdate, CaretakerResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
+import { checkWritePermission } from '../utils/writeProtection';
 
 async function postHandler(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, caretakerRole, isSysAdmin, isSetupAuth, isAccountAuth } = authContext;
 
@@ -111,6 +118,12 @@ async function postHandler(req: NextRequest, authContext: AuthResult) {
 }
 
 async function putHandler(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, caretakerRole, isSysAdmin, isSetupAuth, isAccountAuth } = authContext;
 
@@ -217,6 +230,12 @@ async function putHandler(req: NextRequest, authContext: AuthResult) {
 }
 
 async function deleteHandler(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, caretakerRole, isSysAdmin, isSetupAuth, isAccountAuth } = authContext;
 

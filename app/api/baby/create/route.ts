@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/prisma/db';
 import { z } from 'zod';
-import { ApiResponse } from '@/app/api/utils/auth';
+import { ApiResponse, getAuthenticatedUser } from '@/app/api/utils/auth';
+import { checkWritePermission } from '@/app/api/utils/writeProtection';
 import { Baby, Gender } from '@prisma/client';
 
 const CreateBabySchema = z.object({
@@ -15,6 +16,20 @@ const CreateBabySchema = z.object({
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<Baby>>> {
+  // Check authentication and write permissions for expired accounts
+  const authContext = await getAuthenticatedUser(req);
+  if (!authContext.authenticated) {
+    return NextResponse.json(
+      { success: false, error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const body = await req.json();
     const validation = CreateBabySchema.safeParse(body);

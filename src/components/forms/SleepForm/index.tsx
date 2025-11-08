@@ -20,6 +20,8 @@ import {
   FormPageFooter 
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 interface SleepFormProps {
   isOpen: boolean;
@@ -43,6 +45,7 @@ export default function SleepForm({
   onSuccess,
 }: SleepFormProps) {
   const { formatDate, calculateDurationMinutes, toUTCString } = useTimezone();
+  const { showToast } = useToast();
   const [startDateTime, setStartDateTime] = useState<Date>(() => {
     try {
       // Try to parse the initialTime
@@ -318,7 +321,38 @@ export default function SleepForm({
       }
 
       if (!response.ok) {
-        throw new Error('Failed to save sleep log');
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response,
+            showToast,
+            'logging sleep'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, handle it normally
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save sleep log',
+              duration: 5000,
+            });
+            throw new Error(errorData.error || 'Failed to save sleep log');
+          }
+        }
+        
+        // Handle other errors
+        const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save sleep log',
+          duration: 5000,
+        });
+        throw new Error(errorData.error || 'Failed to save sleep log');
       }
 
       onClose();
@@ -342,6 +376,7 @@ export default function SleepForm({
       });
     } catch (error) {
       console.error('Error saving sleep log:', error);
+      // Error toast already shown above for non-expiration errors
     } finally {
       setLoading(false);
     }

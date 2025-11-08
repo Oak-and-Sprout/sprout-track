@@ -13,6 +13,8 @@ import {
   FormPageFooter 
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 interface BathFormProps {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export default function BathForm({
   onSuccess,
 }: BathFormProps) {
   const { toUTCString } = useTimezone();
+  const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     try {
       // Try to parse the initialTime
@@ -132,6 +135,9 @@ export default function BathForm({
         notes: formData.notes || null,
       };
       
+      // Get auth token from localStorage
+      const authToken = localStorage.getItem('authToken');
+      
       // Determine if we're creating a new record or updating an existing one
       const url = activity ? `/api/bath-log?id=${activity.id}` : '/api/bath-log';
       const method = activity ? 'PUT' : 'POST';
@@ -140,10 +146,47 @@ export default function BathForm({
         method,
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
         body: JSON.stringify(payload),
       });
-      
+
+      if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response, 
+            showToast, 
+            'tracking baths'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save bath log',
+              duration: 5000,
+            });
+            return;
+          }
+        }
+        
+        // For other errors, parse and show error message
+        const errorData = await response.json();
+        console.error('Error saving bath log:', errorData.error);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save bath log',
+          duration: 5000,
+        });
+        return;
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -152,11 +195,21 @@ export default function BathForm({
         if (onSuccess) onSuccess();
       } else {
         console.error('Error saving bath log:', data.error);
-        alert(`Error: ${data.error || 'Failed to save bath log'}`);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: data.error || 'Failed to save bath log',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error saving bath log:', error);
-      alert('An unexpected error occurred. Please try again.');
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: 'An unexpected error occurred. Please try again.',
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }

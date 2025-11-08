@@ -4,6 +4,7 @@ import { ApiResponse } from '../../types';
 import jwt from 'jsonwebtoken';
 import { verifyPassword } from '../../utils/password-utils';
 import { checkIpLockout, recordFailedAttempt, resetFailedAttempts } from '../../utils/ip-lockout';
+import { logApiCall, getClientInfo } from '../../utils/api-logger';
 
 // Secret key for JWT signing - in production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
@@ -31,54 +32,66 @@ interface AccountLoginResponse {
   };
 }
 
-function getClientIP(req: NextRequest): string {
-  const forwarded = req.headers.get('x-forwarded-for');
-  const realIp = req.headers.get('x-real-ip');
-  
-  if (forwarded) {
-    // x-forwarded-for can contain multiple IPs, take the first one
-    return forwarded.split(',')[0].trim();
-  }
-  
-  if (realIp) {
-    return realIp;
-  }
-  
-  // Fallback to a default value
-  return 'unknown';
-}
-
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<AccountLoginResponse>>> {
+  const startTime = Date.now();
+  const { ip, userAgent } = getClientInfo(req);
+  let requestBody: any;
+
   try {
-    // Get the client IP for rate limiting
-    const ip = getClientIP(req);
     
     // Check if the IP is locked out
     const { locked, remainingTime } = checkIpLockout(ip);
     if (locked) {
+      const errorMsg = `Too many failed attempts. Please try again in ${Math.ceil(remainingTime / 60000)} minutes.`;
+      
+      logApiCall({
+        method: req.method,
+        path: '/api/accounts/login',
+        status: 429,
+        durationMs: Date.now() - startTime,
+        ip,
+        userAgent,
+        error: errorMsg,
+      }).catch(err => console.error('Failed to log API call:', err));
+
       return NextResponse.json<ApiResponse<AccountLoginResponse>>(
         {
           success: false,
-          error: `Too many failed attempts. Please try again in ${Math.ceil(remainingTime / 60000)} minutes.`,
+          error: errorMsg,
         },
         { status: 429 }
       );
     }
 
-    const { email, password }: AccountLoginRequest = await req.json();
+    requestBody = await req.json();
+    const { email, password }: AccountLoginRequest = requestBody;
 
     // Validate input
     if (!email || !password) {
       recordFailedAttempt(ip);
+      const errorMsg = 'Email and password are required';
+
+      logApiCall({
+        method: req.method,
+        path: '/api/accounts/login',
+        status: 400,
+        durationMs: Date.now() - startTime,
+        ip,
+        userAgent,
+        error: errorMsg,
+        requestBody: { email: email || undefined },
+        responseBody: { success: false, error: errorMsg },
+      }).catch(err => console.error('Failed to log API call:', err));
+
       return NextResponse.json<ApiResponse<AccountLoginResponse>>(
         {
           success: false,
-          error: 'Email and password are required',
+          error: errorMsg,
         },
         { status: 400 }
       );
@@ -86,10 +99,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
 
     if (!isValidEmail(email)) {
       recordFailedAttempt(ip);
+      const errorMsg = 'Please enter a valid email address';
+
+      logApiCall({
+        method: req.method,
+        path: '/api/accounts/login',
+        status: 400,
+        durationMs: Date.now() - startTime,
+        ip,
+        userAgent,
+        error: errorMsg,
+        requestBody: { email },
+        responseBody: { success: false, error: errorMsg },
+      }).catch(err => console.error('Failed to log API call:', err));
+
       return NextResponse.json<ApiResponse<AccountLoginResponse>>(
         {
           success: false,
-          error: 'Please enter a valid email address',
+          error: errorMsg,
         },
         { status: 400 }
       );
@@ -107,10 +134,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
     // Check if account exists
     if (!account) {
       recordFailedAttempt(ip);
+      const errorMsg = 'Invalid email or password';
+
+      logApiCall({
+        method: req.method,
+        path: '/api/accounts/login',
+        status: 401,
+        durationMs: Date.now() - startTime,
+        ip,
+        userAgent,
+        error: errorMsg,
+        requestBody: { email, password: '[REDACTED]' },
+        responseBody: { success: false, error: errorMsg },
+      }).catch(err => console.error('Failed to log API call:', err));
+
       return NextResponse.json<ApiResponse<AccountLoginResponse>>(
         {
           success: false,
-          error: 'Invalid email or password',
+          error: errorMsg,
         },
         { status: 401 }
       );
@@ -119,10 +160,25 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
     // Check if account is closed using the proper closed field
     if (account.closed) {
       recordFailedAttempt(ip);
+      const errorMsg = 'This account has been closed';
+
+      logApiCall({
+        method: req.method,
+        path: '/api/accounts/login',
+        status: 401,
+        durationMs: Date.now() - startTime,
+        ip,
+        userAgent,
+        error: errorMsg,
+        requestBody: { email, password: '[REDACTED]' },
+        responseBody: { success: false, error: errorMsg },
+        familyId: account.familyId ?? undefined,
+      }).catch(err => console.error('Failed to log API call:', err));
+
       return NextResponse.json<ApiResponse<AccountLoginResponse>>(
         {
           success: false,
-          error: 'This account has been closed',
+          error: errorMsg,
         },
         { status: 401 }
       );
@@ -132,10 +188,25 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
     const passwordMatch = await verifyPassword(password, account.password);
     if (!passwordMatch) {
       recordFailedAttempt(ip);
+      const errorMsg = 'Invalid email or password';
+
+      logApiCall({
+        method: req.method,
+        path: '/api/accounts/login',
+        status: 401,
+        durationMs: Date.now() - startTime,
+        ip,
+        userAgent,
+        error: errorMsg,
+        requestBody: { email, password: '[REDACTED]' },
+        responseBody: { success: false, error: errorMsg },
+        familyId: account.familyId ?? undefined,
+      }).catch(err => console.error('Failed to log API call:', err));
+
       return NextResponse.json<ApiResponse<AccountLoginResponse>>(
         {
           success: false,
-          error: 'Invalid email or password',
+          error: errorMsg,
         },
         { status: 401 }
       );
@@ -178,6 +249,28 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
       }
     };
 
+    // Log successful account authentication
+    logApiCall({
+      method: req.method,
+      path: '/api/accounts/login',
+      status: 200,
+      durationMs: Date.now() - startTime,
+      ip,
+      userAgent,
+      caretakerId: account.caretakerId ?? undefined,
+      familyId: account.familyId ?? undefined,
+      requestBody: { email, password: '[REDACTED]' },
+      responseBody: { 
+        success: true, 
+        data: { 
+          id: account.id, 
+          email: account.email, 
+          firstName: account.firstName,
+          familySlug: account.family?.slug 
+        } 
+      },
+    }).catch(err => console.error('Failed to log API call:', err));
+
     return NextResponse.json<ApiResponse<AccountLoginResponse>>(
       {
         success: true,
@@ -189,10 +282,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
   } catch (error) {
     console.error('Account login error:', error);
     
+    const errorMsg = 'Internal server error. Please try again later.';
+
+    logApiCall({
+      method: req.method,
+      path: '/api/accounts/login',
+      status: 500,
+      durationMs: Date.now() - startTime,
+      ip,
+      userAgent,
+      error: errorMsg,
+      requestBody: requestBody ? { email: requestBody.email, password: '[REDACTED]' } : undefined,
+      responseBody: { success: false, error: errorMsg },
+    }).catch(err => console.error('Failed to log API call:', err));
+    
     return NextResponse.json<ApiResponse<AccountLoginResponse>>(
       {
         success: false,
-        error: 'Internal server error. Please try again later.',
+        error: errorMsg,
       },
       { status: 500 }
     );

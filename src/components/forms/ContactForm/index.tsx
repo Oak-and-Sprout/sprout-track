@@ -5,6 +5,8 @@ import { AlertCircle, Loader2, Trash2, Mail, Phone, User, Briefcase } from 'luci
 import { FormPage, FormPageContent, FormPageFooter } from '@/src/components/ui/form-page';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 /**
  * ContactForm Component
@@ -20,6 +22,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
   onDelete,
   isLoading: externalIsLoading = false,
 }) => {
+  const { showToast } = useToast();
   // Local loading state
   const [isLoading, setIsLoading] = useState(externalIsLoading);
   
@@ -163,10 +166,36 @@ const ContactForm: React.FC<ContactFormProps> = ({
       });
       
       if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(response, showToast, 'managing contacts');
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save contact',
+              duration: 5000,
+            });
+            throw new Error(errorData.error || 'Failed to save contact');
+          }
+        }
+        
+        // For other errors, parse and show toast
         const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save contact',
+          duration: 5000,
+        });
         throw new Error(errorData.error || 'Failed to save contact');
       }
-      
+
       const result = await response.json();
       
       if (result.success) {
@@ -184,11 +213,17 @@ const ContactForm: React.FC<ContactFormProps> = ({
         // Close the form
         onClose();
       } else {
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: result.error || 'Failed to save contact',
+          duration: 5000,
+        });
         throw new Error(result.error || 'Failed to save contact');
       }
     } catch (error) {
       console.error('Error saving contact:', error);
-      // You could add error state handling here to show an error message to the user
+      // Error toast already shown above for API errors
     } finally {
       setIsLoading(false);
     }
@@ -220,7 +255,33 @@ const ContactForm: React.FC<ContactFormProps> = ({
       });
       
       if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(response, showToast, 'managing contacts');
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to delete contact',
+              duration: 5000,
+            });
+            throw new Error(errorData.error || 'Failed to delete contact');
+          }
+        }
+        
+        // For other errors, parse and show toast
         const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to delete contact',
+          duration: 5000,
+        });
         throw new Error(errorData.error || 'Failed to delete contact');
       }
       
@@ -258,12 +319,18 @@ const ContactForm: React.FC<ContactFormProps> = ({
           // Close the form
           onClose();
         } else {
+          showToast({
+            variant: 'error',
+            title: 'Error',
+            message: result.error || 'Failed to delete contact',
+            duration: 5000,
+          });
           throw new Error(result.error || 'Failed to delete contact');
         }
       }
     } catch (error) {
       console.error('Error deleting contact:', error);
-      // You could add error state handling here to show an error message to the user
+      // Error toast already shown above for API errors
     } finally {
       setIsLoading(false);
     }

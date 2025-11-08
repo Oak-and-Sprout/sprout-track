@@ -59,12 +59,17 @@ const StatsTab: React.FC<StatsTabProps> = ({
         
         // Make API call to get activities for the baby using the timeline endpoint
         const url = `/api/timeline?babyId=${selectedBaby.id}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&_t=${timestamp}`;
-        
+
         console.log(`Fetching activities from: ${url}`);
-        
+
+        // Get auth token from localStorage
+        const authToken = localStorage.getItem('authToken');
+
         const response = await fetch(url, {
           cache: 'no-store',
           headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authToken ? `Bearer ${authToken}` : '',
             'Pragma': 'no-cache',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Expires': '0'

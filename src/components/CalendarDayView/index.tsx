@@ -13,6 +13,8 @@ import {
 } from '@/src/components/ui/form-page';
 import CalendarEventForm from '@/src/components/forms/CalendarEventForm';
 import { CalendarEventFormData } from '@/src/components/forms/CalendarEventForm/calendar-event-form.types';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import './calendar-day-view.css';
 
 /**
@@ -38,6 +40,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
   onClose,
   isOpen,
 }) => {
+  const { showToast } = useToast();
   
   // State for event form
   const [showEventForm, setShowEventForm] = useState(false);
@@ -219,6 +222,42 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
           recurrenceEnd: eventData.recurrenceEnd?.toISOString(),
         }),
       });
+
+      if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response, 
+            showToast, 
+            'managing calendar events'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save event',
+              duration: 5000,
+            });
+            return;
+          }
+        }
+        
+        // For other errors, parse and show error message
+        const errorData = await response.json();
+        console.error('Error saving event:', errorData.error);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save event',
+          duration: 5000,
+        });
+        return;
+      }
       
       const data = await response.json();
       
@@ -236,9 +275,21 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
         // This will update the CalendarDayView with the latest events
       } else {
         console.error('Error saving event:', data.error);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: data.error || 'Failed to save event',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error saving event:', error);
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: 'An unexpected error occurred. Please try again.',
+        duration: 5000,
+      });
     }
   };
   

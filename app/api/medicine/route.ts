@@ -3,11 +3,18 @@ import prisma from '../db';
 import { ApiResponse, MedicineCreate, MedicineResponse, MedicineUpdate } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
+import { checkWritePermission } from '../utils/writeProtection';
 
 /**
  * Handle POST request to create a new medicine
  */
 async function handlePost(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, caretakerId } = authContext;
     if (!userFamilyId) {
@@ -89,6 +96,12 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
  * Handle PUT request to update a medicine
  */
 async function handlePut(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId } = authContext;
     if (!userFamilyId) {
@@ -340,6 +353,12 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
  * Handle DELETE request to soft delete a medicine
  */
 async function handleDelete(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId } = authContext;
     if (!userFamilyId) {

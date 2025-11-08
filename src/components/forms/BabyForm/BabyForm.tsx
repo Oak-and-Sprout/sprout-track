@@ -22,6 +22,8 @@ import {
 } from '@/src/components/ui/form-page';
 import { cn } from '@/src/lib/utils';
 import { babyFormStyles } from './baby-form.styles';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 interface BabyFormProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ export default function BabyForm({
   baby,
   onBabyChange,
 }: BabyFormProps) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -101,6 +104,20 @@ export default function BabyForm({
       });
 
       if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError } = await handleExpirationError(
+            response, 
+            showToast, 
+            'managing babies'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+        }
+        
+        // For other errors, throw as before
         throw new Error('Failed to save baby');
       }
 

@@ -17,6 +17,8 @@ import {
   FormPageFooter 
 } from '@/src/components/ui/form-page';
 import { caretakerFormStyles } from './caretaker-form.styles';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 // Extended type to include the loginId field
 interface Caretaker extends PrismaCaretaker {
@@ -47,6 +49,7 @@ export default function CaretakerForm({
   caretaker,
   onCaretakerChange,
 }: CaretakerFormProps) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState(defaultFormData);
   const [confirmPin, setConfirmPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -256,7 +259,38 @@ export default function CaretakerForm({
       });
 
       if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response, 
+            showToast, 
+            'managing caretakers'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            setError('');
+            return;
+          }
+          // If it's a 403 but not an expiration error, use the errorData we got
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save caretaker',
+              duration: 5000,
+            });
+            throw new Error(errorData.error || 'Failed to save caretaker');
+          }
+        }
+        
+        // For other errors, parse and show toast
         const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save caretaker',
+          duration: 5000,
+        });
         throw new Error(errorData.error || 'Failed to save caretaker');
       }
 
@@ -267,7 +301,10 @@ export default function CaretakerForm({
       onClose();
     } catch (error) {
       console.error('Error saving caretaker:', error);
-      setError(error instanceof Error ? error.message : 'Failed to save caretaker');
+      // Only set local error if it's not an expiration error (already handled above)
+      if (!(error instanceof Error && error.message.includes('Account Expired'))) {
+        setError(error instanceof Error ? error.message : 'Failed to save caretaker');
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,56 @@
+/* Gradient background for ActivityTileGroup - same for light and dark mode */
+/* Left-to-right gradient: teal-600 (#0d9488) to teal-700 (#0f766e) */
+/* Diagonal edge: left side 25% down, right side 75% down */
+.activity-tile-group {
+  /* White background in light mode */
+  background-color: white;
+  /* Ensure pseudo-element is positioned correctly */
+  position: relative;
+}
+
+/* Gradient background using pseudo-element to keep it behind content */
+/* Background stays static while tiles scroll horizontally */
+.activity-tile-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  /* Base horizontal gradient */
+  background-image: linear-gradient(
+    to right,
+    rgba(13, 148, 136, 1) 0%,
+    rgba(15, 118, 110, 1) 100%
+  );
+  /* Clip-path creates diagonal edge: left at 50%, right at 25% */
+  clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%);
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%);
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+/* Ensure content is above the background */
+.activity-tile-group > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* Dark mode overrides for ActivityTileGroup component */
 html.dark .activity-tile-group {
-  background-color: #1f2937 !important; /* dark:bg-gray-800 */
+  /* Gray-800 background in dark mode - matches TimelineV2DailyStats */
+  background-color: #1f2937 !important;
+}
+
+html.dark .activity-tile-group::before {
+  /* Same gradient in dark mode */
+  background-image: linear-gradient(
+    to right,
+    rgba(13, 148, 136, 1) 0%,
+    rgba(15, 118, 110, 1) 100%
+  ) !important;
+  clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%) !important;
+  -webkit-clip-path: polygon(0 0, 100% 0, 100% 25%, 0 50%) !important;
 }
 
 html.dark .activity-dropdown-item {

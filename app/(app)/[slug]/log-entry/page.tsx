@@ -7,7 +7,7 @@ import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
 import { StatusBubble } from "@/src/components/ui/status-bubble";
 import { Baby as BabyIcon } from 'lucide-react';
-import Timeline from '@/src/components/Timeline';
+import TimelineV2 from '@/src/components/Timeline/TimelineV2';
 import SettingsModal from '@/src/components/modals/SettingsModal';
 import { useBaby } from '../../../context/baby';
 import { useTimezone } from '../../../context/timezone';
@@ -381,14 +381,14 @@ function HomeContent(): React.ReactElement {
       {selectedBaby && (
         <Card className="overflow-hidden border-0 relative z-0">
           {activities.length > 0 ? (
-            <Timeline 
+            <TimelineV2 
               activities={activities} 
               onActivityDeleted={(dateFilter?: Date) => {
                 if (selectedBaby?.id) {
                   // If a date filter is provided, use it when refreshing activities
                   if (dateFilter) {
                     console.log(`Refreshing with date filter: ${dateFilter.toISOString()}`);
-                    // Don't call refreshActivities here, let the Timeline component handle it
+                    // Don't call refreshActivities here, let the TimelineV2 component handle it
                   } else {
                     refreshActivities(selectedBaby.id);
                   }

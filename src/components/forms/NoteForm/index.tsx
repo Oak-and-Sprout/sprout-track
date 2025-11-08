@@ -22,6 +22,8 @@ import {
 import { ChevronDown } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import './note-form.css';
 
 interface NoteFormProps {
@@ -43,6 +45,7 @@ export default function NoteForm({
 }: NoteFormProps) {
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     try {
       // Try to parse the initialTime
@@ -252,7 +255,38 @@ export default function NoteForm({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save note');
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError, errorData } = await handleExpirationError(
+            response,
+            showToast,
+            'saving notes'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+          // If it's a 403 but not an expiration error, handle it normally
+          if (errorData) {
+            showToast({
+              variant: 'error',
+              title: 'Error',
+              message: errorData.error || 'Failed to save note',
+              duration: 5000,
+            });
+            throw new Error(errorData.error || 'Failed to save note');
+          }
+        }
+        
+        // Handle other errors
+        const errorData = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: errorData.error || 'Failed to save note',
+          duration: 5000,
+        });
+        throw new Error(errorData.error || 'Failed to save note');
       }
 
       onClose();
@@ -267,6 +301,7 @@ export default function NoteForm({
       });
     } catch (error) {
       console.error('Error saving note:', error);
+      // Error toast already shown above for non-expiration errors
     } finally {
       setLoading(false);
     }

@@ -177,10 +177,11 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
       }
 
       if (isExpired) {
-        console.log('Account expired (from JWT token), logging out user...');
-        if (onLogout) {
-          onLogout();
-        }
+        console.log('Account expired (from JWT token) - soft expiration: user remains logged in with read-only access');
+        // SOFT EXPIRATION: Do NOT log out expired accounts
+        // They should remain logged in with read-only access
+        // The backend will block write operations via writeProtection middleware
+        // The UI will show expiration banners and upgrade prompts
       }
     } catch (error) {
       console.error('Error checking account expiration:', error);
@@ -202,16 +203,41 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
     };
   }, [checkAccountExpiration]);
 
-  // Set up global fetch interceptor for 401 handling
+  // Set up global fetch interceptor to add Authorization header and handle 401
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     // Store the original fetch function
     const originalFetch = window.fetch;
 
-    // Override fetch to intercept 401 responses
+    // Override fetch to automatically add Authorization header and intercept 401 responses
     window.fetch = async (...args) => {
       try {
+        // Get auth token from localStorage
+        const authToken = localStorage.getItem('authToken');
+
+        // Only add Authorization header for API calls to our own backend
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url;
+        // Ensure url is a string before calling string methods
+        const isApiCall = url && typeof url === 'string' && (url.startsWith('/api') || url.includes('/api/'));
+
+        // If this is an API call and we have a token, add the Authorization header
+        if (isApiCall && authToken) {
+          const options = args[1] || {};
+          const headers = new Headers(options.headers || {});
+
+          // Only add header if not already present
+          if (!headers.has('Authorization')) {
+            headers.set('Authorization', `Bearer ${authToken}`);
+          }
+
+          // Update the request with the new headers
+          args[1] = {
+            ...options,
+            headers
+          };
+        }
+
         const response = await originalFetch(...args);
 
         // If we get a 401 Unauthorized, trigger logout

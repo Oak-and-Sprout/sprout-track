@@ -3,6 +3,7 @@ import prisma from '../db';
 import { ApiResponse } from '../types';
 import { Settings } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { checkWritePermission } from '../utils/writeProtection';
 
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
@@ -57,6 +58,12 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handlePut(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
     

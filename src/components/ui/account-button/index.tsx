@@ -38,20 +38,22 @@ interface AccountButtonProps {
   className?: string;
   label?: string;
   showIcon?: boolean;
-  variant?: 'button' | 'link';
+  variant?: 'button' | 'link' | 'white';
   initialMode?: 'login' | 'register';
   hideWhenLoggedIn?: boolean;
+  hideFamilyDashboardLink?: boolean;
   onAccountManagerOpen?: () => void;
   onOpenAccountModal?: (mode: 'login' | 'register') => void;
 }
 
-export function AccountButton({ 
-  className, 
+export function AccountButton({
+  className,
   label,
   showIcon = true,
   variant = 'button',
   initialMode = 'register',
   hideWhenLoggedIn = false,
+  hideFamilyDashboardLink = false,
   onAccountManagerOpen,
   onOpenAccountModal
 }: AccountButtonProps) {
@@ -218,9 +220,9 @@ export function AccountButton({
 
   if (isLoggedIn && accountStatus) {
     // Determine button state and styling
-    let buttonClass = 'account-button-logged-in';
+    let buttonClass = variant === 'white' ? 'account-button-white' : 'account-button-logged-in';
     let buttonText = `Hi, ${accountStatus.firstName}`;
-    
+
     if (!accountStatus.verified) {
       buttonClass = 'account-button-verification-needed';
       buttonText = 'Verify Account';
@@ -232,17 +234,21 @@ export function AccountButton({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className={`${buttonClass} ${className}`}
           >
-            {!accountStatus.verified ? (
-              <AlertCircle className="w-4 h-4 mr-2" />
-            ) : !accountStatus.hasFamily ? (
-              <Users className="w-4 h-4 mr-2" />
-            ) : (
-              <User className="w-4 h-4 mr-2" />
+            {showIcon && (
+              <>
+                {!accountStatus.verified ? (
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                ) : !accountStatus.hasFamily ? (
+                  <Users className="w-4 h-4 mr-2" />
+                ) : (
+                  <User className="w-4 h-4 mr-2" />
+                )}
+              </>
             )}
             {buttonText}
           </Button>
@@ -320,7 +326,7 @@ export function AccountButton({
           </DropdownMenuItem>
           
           {/* Family dashboard link for verified users with family */}
-          {accountStatus.verified && accountStatus.hasFamily && (
+          {!hideFamilyDashboardLink && accountStatus.verified && accountStatus.hasFamily && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleFamilyLink}>
@@ -348,7 +354,11 @@ export function AccountButton({
   }
 
   const buttonVariant = variant === 'link' ? 'ghost' : 'outline';
-  const buttonClass = variant === 'link' ? 'account-button-link' : 'account-button-guest';
+  const buttonClass = variant === 'link'
+    ? 'account-button-link'
+    : variant === 'white'
+    ? 'account-button-white'
+    : 'account-button-guest';
   const displayLabel = label || 'Account';
 
   return (

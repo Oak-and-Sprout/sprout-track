@@ -21,6 +21,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/src/components/ui/dropdown-menu';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import './calendar-event-form.css';
 
 /**
@@ -40,6 +42,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
   contacts,
   isLoading = false,
 }) => {
+  const { showToast } = useToast();
   
   // Helper function to get initial form data
   const getInitialFormData = (
@@ -820,6 +823,42 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                           ...(authToken && { 'Authorization': `Bearer ${authToken}` })
                         },
                       });
+
+                      if (!response.ok) {
+                        // Check if this is an account expiration error
+                        if (response.status === 403) {
+                          const { isExpirationError, errorData } = await handleExpirationError(
+                            response, 
+                            showToast, 
+                            'managing calendar events'
+                          );
+                          if (isExpirationError) {
+                            // Don't close the form, let user see the error
+                            return;
+                          }
+                          // If it's a 403 but not an expiration error, use the errorData we got
+                          if (errorData) {
+                            showToast({
+                              variant: 'error',
+                              title: 'Error',
+                              message: errorData.error || 'Failed to delete event',
+                              duration: 5000,
+                            });
+                            return;
+                          }
+                        }
+                        
+                        // For other errors, parse and show error message
+                        const errorData = await response.json();
+                        console.error('Error deleting event:', errorData.error);
+                        showToast({
+                          variant: 'error',
+                          title: 'Error',
+                          message: errorData.error || 'Failed to delete event',
+                          duration: 5000,
+                        });
+                        return;
+                      }
                       
                       const data = await response.json();
                       
@@ -835,9 +874,21 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                         });
                       } else {
                         console.error('Error deleting event:', data.error);
+                        showToast({
+                          variant: 'error',
+                          title: 'Error',
+                          message: data.error || 'Failed to delete event',
+                          duration: 5000,
+                        });
                       }
                     } catch (error) {
                       console.error('Error deleting event:', error);
+                      showToast({
+                        variant: 'error',
+                        title: 'Error',
+                        message: 'An unexpected error occurred. Please try again.',
+                        duration: 5000,
+                      });
                     }
                   }}
                   disabled={isLoading}

@@ -21,6 +21,8 @@ import {
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { Plus, Minus } from 'lucide-react';
 import './pump-form.css';
 
@@ -44,6 +46,7 @@ export default function PumpForm({
 }: PumpFormProps) {
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [selectedStartDateTime, setSelectedStartDateTime] = useState<Date>(() => {
     try {
       // Initialize with current time - 15 minutes as default (start time is in the past)
@@ -340,6 +343,31 @@ export default function PumpForm({
         body: JSON.stringify(payload),
       });
       
+      if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError } = await handleExpirationError(
+            response,
+            showToast,
+            'logging pump sessions'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+        }
+        
+        // For other errors, parse and display
+        const data = await response.json();
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: data.error || 'Failed to save pump log',
+          duration: 5000,
+        });
+        return;
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -347,12 +375,21 @@ export default function PumpForm({
         onClose();
         if (onSuccess) onSuccess();
       } else {
-        console.error('Error saving pump log:', data.error);
-        alert(`Error: ${data.error || 'Failed to save pump log'}`);
+        showToast({
+          variant: 'error',
+          title: 'Error',
+          message: data.error || 'Failed to save pump log',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error saving pump log:', error);
-      alert('An unexpected error occurred. Please try again.');
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: 'An unexpected error occurred. Please try again.',
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }

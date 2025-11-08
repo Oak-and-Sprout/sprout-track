@@ -5,6 +5,8 @@ import { AccountSettingsTabProps } from './account-manager.types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
+import PaymentModal from './PaymentModal';
+import PaymentHistory from './PaymentHistory';
 import {
   User,
   Mail,
@@ -20,7 +22,9 @@ import {
   Key,
   Crown,
   Calendar,
-  Shield
+  Shield,
+  CreditCard,
+  Receipt
 } from 'lucide-react';
 
 /**
@@ -94,6 +98,26 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   // Success/error messages
   const [accountMessage, setAccountMessage] = useState('');
   const [familyMessage, setFamilyMessage] = useState('');
+
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Payment history modal state
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+
+  // Subscription status state
+  const [subscriptionStatus, setSubscriptionStatus] = useState<{
+    isActive: boolean;
+    planType: string | null;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    paymentMethod?: {
+      brand: string;
+      last4: string;
+    };
+  } | null>(null);
+  const [loadingSubscriptionStatus, setLoadingSubscriptionStatus] = useState(false);
+  const [renewingSubscription, setRenewingSubscription] = useState(false);
 
   // Check slug uniqueness
   const checkSlugUniqueness = useCallback(async (slug: string) => {
@@ -244,6 +268,83 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
       alert('Error: Failed to download data');
     } finally {
       setDownloadingData(false);
+    }
+  };
+
+  // Fetch subscription status
+  const fetchSubscriptionStatus = useCallback(async () => {
+    if (!accountStatus.subscriptionId || accountStatus.planType !== 'sub') {
+      return;
+    }
+
+    setLoadingSubscriptionStatus(true);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/accounts/payments/subscription-status', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setSubscriptionStatus(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+    } finally {
+      setLoadingSubscriptionStatus(false);
+    }
+  }, [accountStatus.subscriptionId, accountStatus.planType]);
+
+  // Fetch subscription status on mount and when account status changes
+  React.useEffect(() => {
+    if (accountStatus.subscriptionActive && accountStatus.subscriptionId && accountStatus.planType === 'sub') {
+      fetchSubscriptionStatus();
+    }
+  }, [accountStatus.subscriptionActive, accountStatus.subscriptionId, accountStatus.planType, fetchSubscriptionStatus]);
+
+  // Handle renewing a cancelled subscription
+  const handleRenewSubscription = async () => {
+    setRenewingSubscription(true);
+    try {
+      const authToken = localStorage.getItem('authToken');
+
+      // Check if subscription is still valid (before period end)
+      if (subscriptionStatus?.currentPeriodEnd) {
+        const periodEndDate = new Date(subscriptionStatus.currentPeriodEnd);
+        const now = new Date();
+
+        if (now < periodEndDate) {
+          // Subscription is still active, just reactivate it
+          const response = await fetch('/api/accounts/payments/reactivate-subscription', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            }
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            await fetchSubscriptionStatus();
+            onDataRefresh();
+          } else {
+            alert(`Error: ${data.error || 'Failed to reactivate subscription'}`);
+          }
+        } else {
+          // Subscription has ended, redirect to payment modal to create new subscription
+          setShowPaymentModal(true);
+        }
+      } else {
+        // No period end info, redirect to payment modal
+        setShowPaymentModal(true);
+      }
+    } catch (error) {
+      console.error('Error renewing subscription:', error);
+      alert('Error: Failed to renew subscription');
+    } finally {
+      setRenewingSubscription(false);
     }
   };
 
@@ -716,15 +817,15 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           </div>
         ) : (
           <div className={styles.formGroup}>
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">{accountStatus.firstName} {accountStatus.lastName}</span>
+                  <Label className="font-medium">{accountStatus.firstName} {accountStatus.lastName}</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{accountStatus.email}</span>
+                  <Label>{accountStatus.email}</Label>
                   {!accountStatus.verified && (
                     <span className="text-amber-600 text-sm">(Unverified)</span>
                   )}
@@ -737,6 +838,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   setChangingPassword(true);
                   setPasswordMessage('');
                 }}
+                className="self-start"
               >
                 <Key className="h-4 w-4 mr-2" />
                 Reset Password
@@ -827,10 +929,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    // Placeholder for future payment flow
-                    alert('Payment management coming soon!');
-                  }}
+                  onClick={() => setShowPaymentModal(true)}
                 >
                   <Crown className="h-4 w-4 mr-2" />
                   Upgrade Plan
@@ -849,56 +948,54 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   accountStatus.accountStatus === 'no_family' ? "bg-orange-500" :
                   "bg-yellow-500"
                 )} />
-                <span className="font-medium capitalize">
+                <Label className="font-medium capitalize">
                   {accountStatus.accountStatus.replace('_', ' ')} Account
-                </span>
+                </Label>
               </div>
 
-              {accountStatus.planType && (
-                <div className="flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-gray-500" />
-                  <span className="capitalize">{accountStatus.planType} Plan</span>
-                </div>
-              )}
-
-              {accountStatus.trialEnds && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span>
-                    Trial ends: {new Date(accountStatus.trialEnds).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-
-              {accountStatus.planExpires && !accountStatus.trialEnds && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span>
-                    Subscription ends: {new Date(accountStatus.planExpires).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-
               {accountStatus.subscriptionActive && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    <span>
-                      {accountStatus.accountStatus === 'trial' ? 'Active Trial' : 'Subscription Active'}
-                    </span>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className={cn(
+                    "h-4 w-4",
+                    subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-600" : "text-green-600"
+                  )} />
+                  <Label className={cn(
+                    "font-medium",
+                    subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-700" : "text-green-600"
+                  )}>
+                    {accountStatus.accountStatus === 'trial' ? 'Active Trial' :
+                     accountStatus.planType === 'full' ? 'Lifetime Member' :
+                     subscriptionStatus?.cancelAtPeriodEnd ? 'Subscription Active (Cancelled)' :
+                     'Subscription Active'}
+                  </Label>
+                </div>
+              )}
+
+              {accountStatus.trialEnds && accountStatus.accountStatus !== 'expired' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <Label className="text-sm">
+                      Trial ends {new Date(accountStatus.trialEnds).toLocaleDateString()}
+                    </Label>
                   </div>
-                  {accountStatus.accountStatus === 'trial' && (
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        // Placeholder for future payment flow
-                        alert('Payment management coming soon!');
-                      }}
-                    >
-                      <Crown className="h-4 w-4 mr-2" />
-                      Upgrade
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPaymentModal(true)}
+                    className="mt-2"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade
+                  </Button>
+                </>
+              )}
+
+              {accountStatus.planExpires && !accountStatus.trialEnds && accountStatus.planType !== 'full' && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Label className="text-sm">
+                    Subscription ends {new Date(accountStatus.planExpires).toLocaleDateString()}
+                  </Label>
                 </div>
               )}
 
@@ -906,11 +1003,70 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-red-700">
                     <AlertTriangle className="h-4 w-4" />
-                    <span className="font-medium">Account Expired</span>
+                    <span className="font-medium">
+                      {accountStatus.trialEnds ? 'Trial Expired' : 'Subscription Expired'}
+                    </span>
                   </div>
-                  <p className="text-sm text-red-600 mt-1">
-                    Your subscription has expired. Please update your payment method to continue using Sprout Track.
+                  <p className="text-sm text-red-600 mt-1 mb-3">
+                    {accountStatus.trialEnds 
+                      ? 'Your trial has expired. Please subscribe to continue using Sprout Track.'
+                      : 'Your subscription has expired. Please renew your subscription to continue using Sprout Track.'
+                    }
                   </p>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPaymentModal(true)}
+                    variant="destructive"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    {accountStatus.trialEnds ? 'Subscribe Now' : 'Renew Subscription'}
+                  </Button>
+                </div>
+              )}
+
+              {((accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial') || accountStatus.planType === 'full') && (
+                <div className="flex flex-col items-start sm:flex-row sm:justify-end gap-2 mt-3">
+                  {accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial' && !subscriptionStatus?.cancelAtPeriodEnd && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowPaymentModal(true)}
+                      className="self-start"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Manage Subscription
+                    </Button>
+                  )}
+                  {subscriptionStatus?.cancelAtPeriodEnd && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleRenewSubscription}
+                      disabled={renewingSubscription}
+                      className="self-start"
+                    >
+                      {renewingSubscription ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Renewing...
+                        </>
+                      ) : (
+                        <>
+                          <Crown className="h-4 w-4 mr-2" />
+                          Renew Subscription
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowPaymentHistory(true)}
+                    className="self-start"
+                  >
+                    <Receipt className="h-4 w-4 mr-2" />
+                    Payment History
+                  </Button>
                 </div>
               )}
             </div>
@@ -1030,11 +1186,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className={styles.formGroup}>
               <div className="flex items-center gap-2 mb-2">
                 <Home className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">{familyData.name}</span>
+                <Label className="font-medium">{familyData.name}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Link className="h-4 w-4 text-gray-500" />
-                <span className="font-mono">/{familyData.slug}</span>
+                <Label className="font-mono text-sm">/{familyData.slug}</Label>
               </div>
             </div>
           )}
@@ -1219,6 +1375,30 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        accountStatus={{
+          accountStatus: accountStatus.accountStatus,
+          planType: accountStatus.planType || null,
+          subscriptionActive: accountStatus.subscriptionActive,
+          trialEnds: accountStatus.trialEnds || null,
+          planExpires: accountStatus.planExpires || null,
+          subscriptionId: accountStatus.subscriptionId || null,
+        }}
+        onPaymentSuccess={() => {
+          setShowPaymentModal(false);
+          onDataRefresh();
+        }}
+      />
+
+      {/* Payment History Modal */}
+      <PaymentHistory
+        isOpen={showPaymentHistory}
+        onClose={() => setShowPaymentHistory(false)}
+      />
     </div>
   );
 };

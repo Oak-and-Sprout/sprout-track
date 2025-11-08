@@ -118,7 +118,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
   const tabs: FormPageTab[] = [
     {
       id: 'account-settings',
-      label: familyData ? 'Account & Family' : 'Account',
+      label: familyData ? 'Account' : 'Account',
       icon: Settings,
       content: (
         <>
@@ -165,7 +165,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
   if (familyData) {
     tabs.push({
       id: 'family-people',
-      label: 'Family People',
+      label: 'Family & People',
       icon: Users,
       content: (
         <>

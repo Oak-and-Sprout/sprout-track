@@ -88,3 +88,17 @@ html.dark .side-nav-settings-button:hover {
   background-color: #374151; /* gray-700 */
   color: #9ca3af; /* gray-400 */
 }
+
+/* Trial information section */
+html.dark .side-nav-trial-container {
+  background-color: rgba(245, 158, 11, 0.1) !important; /* amber with low opacity */
+  border-color: #d97706 !important; /* amber-600 */
+}
+
+html.dark .side-nav-trial-header {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .side-nav-trial-text {
+  color: #fbbf24 !important; /* amber-400 */
+}

@@ -1,0 +1,39 @@
+/* Dark mode overrides for ExpiredAccountMessage component */
+
+html.dark .expired-account-container {
+  background-color: #1f2937; /* gray-800 */
+}
+
+html.dark .expired-account-icon-bg {
+  background-color: #7f1d1d; /* red-900 - darker red for dark mode */
+}
+
+html.dark .expired-account-icon {
+  color: #fca5a5; /* red-300 - lighter red for icon */
+}
+
+html.dark .expired-account-title {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .expired-account-family-name {
+  color: #d1d5db; /* gray-300 */
+}
+
+html.dark .expired-account-expiration {
+  color: #fca5a5; /* red-300 - lighter red for readability */
+}
+
+html.dark .expired-account-message {
+  color: #9ca3af; /* gray-400 */
+}
+
+html.dark .expired-account-support {
+  color: #6b7280; /* gray-500 */
+}
+
+html.dark .expired-account-expiration-box {
+  background-color: #7f1d1d; /* red-900 */
+  border-color: #991b1b; /* red-800 */
+}
+

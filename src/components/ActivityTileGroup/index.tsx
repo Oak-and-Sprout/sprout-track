@@ -682,12 +682,13 @@ export function ActivityTileGroup({
   };
 
   return (
-    <div className="flex overflow-x-auto border-0 no-scrollbar snap-x snap-mandatory relative bg-gray-50 p-2 gap-1 activity-tile-group">
-      {/* Render activity tiles based on order and visibility */}
-      {activityOrder.map(activity => renderActivityTile(activity))}
+    <div className="activity-tile-group">
+      <div className="flex overflow-x-auto border-0 no-scrollbar snap-x snap-mandatory relative p-2 gap-1">
+        {/* Render activity tiles based on order and visibility */}
+        {activityOrder.map(activity => renderActivityTile(activity))}
 
-      {/* Configure Button for customizing activity tiles */}
-      <div className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+        {/* Configure Button for customizing activity tiles */}
+        <div className="relative w-[82px] h-24 flex-shrink-0 snap-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-full h-full bg-transparent border-0 cursor-pointer p-0 m-0">
@@ -918,6 +919,7 @@ export function ActivityTileGroup({
             {/* No inner wrapper div needed */}
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
       </div>
     </div>
   );

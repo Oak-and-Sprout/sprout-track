@@ -3,6 +3,7 @@ import prisma from '../db';
 import { ApiResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
+import { checkWritePermission } from '../utils/writeProtection';
 
 // Type for contact response
 interface ContactResponse {
@@ -123,6 +124,12 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId } = authContext;
     if (!familyId) {
@@ -182,6 +189,12 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handlePut(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId } = authContext;
     if (!familyId) {
@@ -271,6 +284,12 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handleDelete(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId } = authContext;
     if (!familyId) {

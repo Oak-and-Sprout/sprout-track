@@ -20,6 +20,9 @@ import {
   FormPageFooter 
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useParams } from 'next/navigation';
 
 interface DiaperFormProps {
   isOpen: boolean;
@@ -39,6 +42,9 @@ export default function DiaperForm({
   onSuccess,
 }: DiaperFormProps) {
   const { toUTCString } = useTimezone();
+  const { showToast } = useToast();
+  const params = useParams();
+  const familySlug = params?.slug as string;
   
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     try {
@@ -195,6 +201,20 @@ export default function DiaperForm({
       });
 
       if (!response.ok) {
+        // Check if this is an account expiration error
+        if (response.status === 403) {
+          const { isExpirationError } = await handleExpirationError(
+            response, 
+            showToast, 
+            'tracking diaper changes'
+          );
+          if (isExpirationError) {
+            // Don't close the form, let user see the error
+            return;
+          }
+        }
+        
+        // For other errors, throw as before
         throw new Error('Failed to save diaper log');
       }
 

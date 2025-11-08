@@ -111,3 +111,147 @@ html.dark .account-manager-validation-error {
 html.dark .account-manager-loading-container .animate-spin {
   color: #5eead4 !important; /* teal-300 */
 }
+
+/* Payment History Component */
+html.dark .payment-history-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .payment-history-error {
+  background-color: rgba(239, 68, 68, 0.1) !important; /* red with low opacity */
+  border-color: #dc2626 !important; /* red-600 */
+}
+
+html.dark .payment-history-error-text {
+  color: #f87171 !important; /* red-400 */
+}
+
+html.dark .payment-history-error-description {
+  color: #f87171 !important; /* red-400 */
+}
+
+html.dark .payment-history-loading {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .payment-history-empty {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .payment-history-table-container {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .payment-history-footer {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Payment Modal Component */
+html.dark .payment-modal-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .payment-modal-description {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .payment-modal-error {
+  background-color: rgba(239, 68, 68, 0.1) !important; /* red with low opacity */
+  border-color: #dc2626 !important; /* red-600 */
+}
+
+html.dark .payment-modal-error-text {
+  color: #f87171 !important; /* red-400 */
+}
+
+html.dark .payment-modal-error-description {
+  color: #f87171 !important; /* red-400 */
+}
+
+html.dark .payment-modal-loading {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .payment-modal-footer {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Payment Modal - Active Subscription */
+html.dark .payment-modal-active-subscription {
+  background: linear-gradient(to right, rgba(20, 184, 166, 0.15), rgba(59, 130, 246, 0.15)) !important; /* teal to blue gradient with opacity */
+  border-color: #14b8a6 !important; /* teal-500 */
+}
+
+html.dark .payment-modal-subscription-title {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .payment-modal-subscription-info {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .payment-modal-lifetime-text {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .payment-modal-cancelled-warning {
+  background-color: rgba(245, 158, 11, 0.1) !important; /* amber with low opacity */
+  border-color: #f59e0b !important; /* amber-500 */
+}
+
+html.dark .payment-modal-cancelled-warning-text {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .payment-modal-cancelled-warning-description {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+/* Payment Modal - Upgrade Section */
+html.dark .payment-modal-upgrade-section {
+  background: linear-gradient(to right, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15)) !important; /* purple to pink gradient with opacity */
+  border-color: #a855f7 !important; /* purple-500 */
+}
+
+html.dark .payment-modal-upgrade-title {
+  color: #c084fc !important; /* purple-400 */
+}
+
+html.dark .payment-modal-upgrade-description {
+  color: #c084fc !important; /* purple-400 */
+}
+
+html.dark .payment-modal-upgrade-list {
+  color: #c084fc !important; /* purple-400 */
+}
+
+/* Payment Modal - Pricing Plans */
+html.dark .payment-modal-plan {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .payment-modal-plan-highlighted {
+  background-color: rgba(20, 184, 166, 0.1) !important; /* teal with low opacity */
+  border-color: #14b8a6 !important; /* teal-500 */
+}
+
+html.dark .payment-modal-plan-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .payment-modal-plan-description {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .payment-modal-plan-price {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .payment-modal-plan-interval {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .payment-modal-plan-feature {
+  color: #d1d5db !important; /* gray-300 */
+}

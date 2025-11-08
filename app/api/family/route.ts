@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse, FamilyResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { checkWritePermission } from '../utils/writeProtection';
 
 // GET - Get current user's family data
 async function getHandler(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<FamilyResponse>>> {
@@ -50,6 +51,12 @@ async function getHandler(req: NextRequest, authContext: AuthResult): Promise<Ne
 
 // PUT - Update family data
 async function putHandler(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<FamilyResponse>>> {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId } = authContext;
     

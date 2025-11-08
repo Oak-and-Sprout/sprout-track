@@ -4,8 +4,15 @@ import { ApiResponse, BabyCreate, BabyUpdate, BabyResponse } from '../types';
 import { Gender } from '@prisma/client';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { checkWritePermission } from '../utils/writeProtection';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
     
@@ -57,6 +64,12 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handlePut(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, isSysAdmin } = authContext;
     
@@ -122,6 +135,12 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
 }
 
 async function handleDelete(req: NextRequest, authContext: AuthResult) {
+  // Check write permissions for expired accounts
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) {
+    return writeCheck.response!;
+  }
+
   try {
     const { familyId: userFamilyId, isSysAdmin } = authContext;
     
