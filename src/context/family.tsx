@@ -217,8 +217,9 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
         const authToken = localStorage.getItem('authToken');
 
         // Only add Authorization header for API calls to our own backend
-        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
-        const isApiCall = url.startsWith('/api') || url.includes('/api/');
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url;
+        // Ensure url is a string before calling string methods
+        const isApiCall = url && typeof url === 'string' && (url.startsWith('/api') || url.includes('/api/'));
 
         // If this is an API call and we have a token, add the Authorization header
         if (isApiCall && authToken) {
