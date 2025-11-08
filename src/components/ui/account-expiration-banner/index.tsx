@@ -130,11 +130,12 @@ export default function AccountExpirationBanner({ isAccountAuth }: AccountExpira
   let shouldShow = false;
 
   if (userType === 'account' && accountStatus) {
-    // Show banner if account is expired or subscription is not active
-    // But don't show for accounts without a family (they're still in setup)
+    // Show banner only if account is expired
+    // Don't show for accounts without a family (they're still in setup)
+    // Don't show for accounts in active trial (trial status means trial is still active)
     shouldShow = 
       accountStatus.accountStatus !== 'no_family' &&
-      (accountStatus.accountStatus === 'expired' || !accountStatus.subscriptionActive);
+      accountStatus.accountStatus === 'expired';
   } else if (userType === 'caretaker' && jwtExpirationInfo) {
     // Show banner for caretakers/system PIN users if family account is expired
     // Skip if beta participant (they have lifetime access)

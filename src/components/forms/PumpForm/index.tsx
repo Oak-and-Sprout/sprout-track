@@ -343,12 +343,10 @@ export default function PumpForm({
         body: JSON.stringify(payload),
       });
       
-      const data = await response.json();
-      
       if (!response.ok) {
         // Check if this is an account expiration error
         if (response.status === 403) {
-          const { isExpirationError, errorData } = await handleExpirationError(
+          const { isExpirationError } = await handleExpirationError(
             response,
             showToast,
             'logging pump sessions'
@@ -357,19 +355,10 @@ export default function PumpForm({
             // Don't close the form, let user see the error
             return;
           }
-          // If it's a 403 but not an expiration error, handle it normally
-          if (errorData) {
-            showToast({
-              variant: 'error',
-              title: 'Error',
-              message: errorData.error || 'Failed to save pump log',
-              duration: 5000,
-            });
-            return;
-          }
         }
         
-        // Handle other errors
+        // For other errors, parse and display
+        const data = await response.json();
         showToast({
           variant: 'error',
           title: 'Error',
@@ -378,6 +367,8 @@ export default function PumpForm({
         });
         return;
       }
+      
+      const data = await response.json();
       
       if (data.success) {
         // Close the form and trigger the success callback
