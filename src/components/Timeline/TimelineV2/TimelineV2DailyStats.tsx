@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { 
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Moon,
   Sun,
   PillBottle,
@@ -55,6 +57,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   onFilterChange
 }) => {
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
@@ -334,9 +337,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
 
   return (
     <div className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10">
-      <div className="p-5 relative z-10">
+      <div className="px-5 py-1 relative z-10">
         {/* Date Navigation Header */}
-        <div className="flex items-center justify-center mb-5">
+        <div className="flex items-center justify-center mb-2">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -385,52 +388,67 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           </div>
         </div>
 
-        {/* Daily Summary Title */}
-        <div className="text-sm font-medium text-gray-600 mb-3">Daily Summary</div>
+        {/* Daily Summary Title with Collapse Toggle */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="flex items-center gap-3 text-sm font-medium text-gray-600 mb-1 hover:text-gray-800 transition-colors"
+          aria-label={isCollapsed ? 'Expand daily summary' : 'Collapse daily summary'}
+        >
+          <span>Daily Summary</span>
+          {isCollapsed ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </button>
 
         {/* Stats Grid */}
-        {statTiles.length > 0 ? (
-          <div className="flex flex-wrap gap-2.5">
-            {statTiles.map((tile) => (
-              <button
-                key={tile.filter || 'awake'}
-                onClick={() => {
-                  // Only allow filtering if it's not the awake time tile
-                  if (tile.filter !== null) {
-                    onFilterChange(tile.filter === activeFilter ? null : tile.filter);
-                  }
-                }}
-                className={`relative rounded-xl text-left transition-all duration-200 overflow-hidden ${
-                  // Never show awake time tile as selected, only show selected state for filterable tiles
-                  tile.filter !== null && activeFilter === tile.filter
-                    ? 'bg-gray-100 cursor-pointer scale-105' 
-                    : tile.filter !== null
-                    ? 'bg-transparent cursor-pointer'
-                    : 'bg-transparent cursor-default'
-                }`}
-              >
-                {/* Horizontal layout: icon left, text right */}
-                <div className="flex items-center gap-2.5 px-3 py-2">
-                  {/* Icon */}
-                  <div className={`flex-shrink-0 ${tile.iconColor}`}>
-                    <div className="w-5 h-5">
-                      {tile.icon}
+        {!isCollapsed && (
+          <>
+            {statTiles.length > 0 ? (
+              <div className="flex flex-wrap gap-0.5">
+                {statTiles.map((tile) => (
+                  <button
+                    key={tile.filter || 'awake'}
+                    onClick={() => {
+                      // Only allow filtering if it's not the awake time tile
+                      if (tile.filter !== null) {
+                        onFilterChange(tile.filter === activeFilter ? null : tile.filter);
+                      }
+                    }}
+                    className={`relative rounded-xl text-left transition-all duration-200 overflow-hidden ${
+                      // Never show awake time tile as selected, only show selected state for filterable tiles
+                      tile.filter !== null && activeFilter === tile.filter
+                        ? 'bg-gray-100 cursor-pointer scale-105' 
+                        : tile.filter !== null
+                        ? 'bg-transparent cursor-pointer'
+                        : 'bg-transparent cursor-default'
+                    }`}
+                  >
+                    {/* Horizontal layout: icon left, text right */}
+                    <div className="flex items-center gap-2.5 px-2 py-1">
+                      {/* Icon */}
+                      <div className={`flex-shrink-0 ${tile.iconColor}`}>
+                        <div className="w-5 h-5">
+                          {tile.icon}
+                        </div>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex flex-col min-w-0">
+                        <div className="text-base font-bold text-gray-800 leading-tight">{tile.value}</div>
+                        <div className="text-xs text-gray-600 font-medium leading-tight">{tile.label}</div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex flex-col min-w-0">
-                    <div className="text-base font-bold text-gray-800 leading-tight">{tile.value}</div>
-                    <div className="text-xs text-gray-600 font-medium leading-tight">{tile.label}</div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="text-sm text-gray-500 text-center py-4">
-            No activities recorded for this day
-          </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500 text-center py-4">
+                No activities recorded for this day
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
