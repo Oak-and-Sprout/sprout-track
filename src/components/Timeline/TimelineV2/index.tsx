@@ -273,8 +273,6 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
         isAnimated={isFetchAnimated}
         selectedDate={selectedDate}
         onActivitySelect={(activity) => setSelectedActivity(activity)}
-        onSwipeLeft={() => handleDateChange(1)}
-        onSwipeRight={() => handleDateChange(-1)}
       />
 
       {/* Activity Details */}

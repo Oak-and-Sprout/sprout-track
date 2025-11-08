@@ -20,7 +20,6 @@ import {
   PopoverTrigger,
 } from '@/src/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/src/components/ui/calendar';
-import { Card } from '@/src/components/ui/card';
 import { FilterType } from '../types';
 import { ActivityType } from '../types';
 import './TimelineV2DailyStats.css';
@@ -199,7 +198,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: formatMinutes(totalSleepMinutes),
         icon: <Moon className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-gray-600',
+        iconColor: 'text-[#9ca3af]', // gray-400 - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -213,7 +212,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: feedCount.toString(),
         icon: <Icon iconNode={bottleBaby} className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-sky-600',
+        iconColor: 'text-[#7dd3fc]', // sky-300 - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -227,7 +226,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: diaperCount.toString(),
         icon: <Icon iconNode={diaper} className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-teal-600',
+        iconColor: 'text-[#0d9488]', // teal-600 - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -241,7 +240,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: `${medicineCount}x`,
         icon: <PillBottle className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-green-600',
+        iconColor: 'text-[#43B755]', // green - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -255,7 +254,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: noteCount.toString(),
         icon: <Edit className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-yellow-600',
+        iconColor: 'text-[#fef08a]', // yellow-200 - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -269,7 +268,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: bathCount.toString(),
         icon: <Bath className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-orange-600',
+        iconColor: 'text-[#fb923c]', // orange-400 - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -283,7 +282,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: pumpCount.toString(),
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-purple-600',
+        iconColor: 'text-[#c084fc]', // purple-400 - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -297,7 +296,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: milestoneCount.toString(),
         icon: <Trophy className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-blue-600',
+        iconColor: 'text-[#4875EC]', // blue - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -311,7 +310,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: measurementCount.toString(),
         icon: <Ruler className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-red-600',
+        iconColor: 'text-[#EA6A5E]', // red - matches timeline
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -329,7 +328,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   };
 
   return (
-    <Card className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10 shadow-none hover:shadow-none">
+    <div className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10">
       <div className="p-5 relative z-10">
         {/* Date Navigation Header */}
         <div className="flex items-center justify-center mb-5">
@@ -396,26 +395,29 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
                     onFilterChange(tile.filter === activeFilter ? null : tile.filter);
                   }
                 }}
-                className={`relative bg-gray-50 w-24 h-24 rounded-xl text-left border transition-all overflow-hidden shadow-sm ${
+                className={`relative rounded-xl text-left transition-all duration-200 overflow-hidden ${
                   // Never show awake time tile as selected, only show selected state for filterable tiles
                   tile.filter !== null && activeFilter === tile.filter
-                    ? 'border-2 border-gray-500 bg-gray-100 shadow-md cursor-pointer' 
+                    ? 'bg-gray-100 cursor-pointer scale-105' 
                     : tile.filter !== null
-                    ? 'border border-gray-200 hover:border-gray-300 hover:shadow-md cursor-pointer'
-                    : 'border border-gray-200 cursor-default'
+                    ? 'bg-transparent cursor-pointer'
+                    : 'bg-transparent cursor-default'
                 }`}
               >
-                {/* Icon in top right, taking up 75% of tile size */}
-                <div className="absolute top-0 right-0 w-[75%] h-[75%] flex items-start justify-end p-2">
-                  <div className={tile.iconColor}>
-                    {tile.icon}
+                {/* Horizontal layout: icon left, text right */}
+                <div className="flex items-center gap-2.5 px-3 py-2">
+                  {/* Icon */}
+                  <div className={`flex-shrink-0 ${tile.iconColor}`}>
+                    <div className="w-5 h-5">
+                      {tile.icon}
+                    </div>
                   </div>
-                </div>
-                
-                {/* Content */}
-                <div className="relative z-10 p-2.5 h-full flex flex-col justify-end">
-                  <div className="text-base font-bold text-gray-800 mb-0.5 leading-tight">{tile.value}</div>
-                  <div className="text-xs text-gray-600 font-medium leading-tight">{tile.label}</div>
+                  
+                  {/* Content */}
+                  <div className="flex flex-col min-w-0">
+                    <div className="text-base font-bold text-gray-800 leading-tight">{tile.value}</div>
+                    <div className="text-xs text-gray-600 font-medium leading-tight">{tile.label}</div>
+                  </div>
                 </div>
               </button>
             ))}
@@ -426,7 +428,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
 

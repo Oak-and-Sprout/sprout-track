@@ -1,9 +1,10 @@
 import { Baby as BabyIcon } from 'lucide-react';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useRef, useMemo } from 'react';
 import { ActivityType, TimelineActivityListProps } from '../types';
 import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime } from '../utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/src/context/theme';
+import { Label } from '@/src/components/ui/label';
 import '../timeline-activity-list.css';
 
 const TimelineV2ActivityList = ({
@@ -13,66 +14,10 @@ const TimelineV2ActivityList = ({
   isAnimated = true,
   selectedDate,
   onActivitySelect,
-  onSwipeLeft,
-  onSwipeRight,
 }: TimelineActivityListProps) => {
   const { theme } = useTheme();
   
-  // Swipe handling
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const [swipeProgress, setSwipeProgress] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
-  
-  const minSwipeDistance = 50;
-  const maxSwipeDistance = 150;
-  
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-    setSwipeProgress(0);
-    if (navigator.vibrate) {
-      navigator.vibrate(10);
-    }
-  };
-  
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart) return;
-    const currentTouch = e.targetTouches[0].clientX;
-    setTouchEnd(currentTouch);
-    
-    const distance = touchStart - currentTouch;
-    const absDistance = Math.abs(distance);
-    const progress = Math.min(absDistance / maxSwipeDistance, 1);
-    setSwipeProgress(progress);
-    
-    if (distance > 0) {
-      setSwipeDirection('left');
-    } else if (distance < 0) {
-      setSwipeDirection('right');
-    }
-  };
-  
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isSwipe = Math.abs(distance) > minSwipeDistance;
-    
-    if (isSwipe) {
-      if (distance > 0) {
-        onSwipeLeft?.();
-      } else {
-        onSwipeRight?.();
-      }
-    }
-    
-    setTouchStart(null);
-    setTouchEnd(null);
-    setSwipeDirection(null);
-    setSwipeProgress(0);
-  };
 
   // Group activities by time of day
   const getTimeOfDay = (date: Date): string => {
@@ -154,12 +99,6 @@ const TimelineV2ActivityList = ({
     ].filter(group => group.activities.length > 0);
   }, [activities, selectedDate]);
 
-  useEffect(() => {
-    setTouchStart(null);
-    setTouchEnd(null);
-    setSwipeDirection(null);
-    setSwipeProgress(0);
-  }, [activities]);
 
   return (
     <>
@@ -167,38 +106,11 @@ const TimelineV2ActivityList = ({
       <div 
         className="flex-1 overflow-y-auto relative bg-white timeline-activity-scroll-container" 
         ref={contentRef}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
       >
-        {/* Visual swipe shadow effect */}
-        {swipeProgress > 0 && (
-          <>
-            {swipeDirection === 'right' && (
-              <div 
-                className="absolute inset-y-0 left-0 pointer-events-none z-10 bg-gradient-to-r from-gray-400/50 to-transparent timeline-swipe-shadow-left"
-                style={{ 
-                  width: `${swipeProgress * 30}%`, 
-                  opacity: swipeProgress * 0.7
-                }}
-              />
-            )}
-            {swipeDirection === 'left' && (
-              <div 
-                className="absolute inset-y-0 right-0 pointer-events-none z-10 bg-gradient-to-l from-gray-400/50 to-transparent timeline-swipe-shadow-right"
-                style={{ 
-                  width: `${swipeProgress * 30}%`, 
-                  opacity: swipeProgress * 0.7
-                }}
-              />
-            )}
-          </>
-        )}
-        
         {/* Timeline View */}
         <div className="min-h-full bg-white relative timeline-activity-list px-5 py-5">
           {/* Fade gradient at top - from white to transparent */}
-          <div className="absolute position: sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-white to-transparent pointer-events-none z-20"></div>
+          <div className="absolute position: sticky top-0 left-0 right-0 h-4 bg-gradient-to-b from-white to-transparent pointer-events-none z-20 timeline-top-gradient"></div>
           {activities.length > 0 ? (
             <div className="relative">
               {/* Timeline vertical line */}
@@ -311,9 +223,9 @@ const TimelineV2ActivityList = ({
                               
                               {/* Event Content */}
                               <div className="flex-1 min-w-0 event-content">
-                                <div className="text-sm font-semibold text-gray-900 mb-0.5 event-title">
+                                <Label className="text-sm font-semibold text-gray-900 mb-0.5 event-title">
                                   {description.type}
-                                </div>
+                                </Label>
                                 <div className="text-xs text-gray-600 event-details">
                                   {(() => {
                                     if ('duration' in activity) {

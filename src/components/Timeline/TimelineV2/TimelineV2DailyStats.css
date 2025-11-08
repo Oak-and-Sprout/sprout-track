@@ -1,54 +1,107 @@
 /* Dark mode styles for TimelineV2DailyStats */
-@media (prefers-color-scheme: dark) {
-  .timeline-v2-daily-stats {
-    background-color: rgb(17, 24, 39) !important; /* gray-900 */
-    border-color: rgb(55, 65, 81) !important; /* gray-700 */
-  }
+html.dark .timeline-v2-daily-stats {
+  background-color: #1f2937 !important; /* gray-800 - matches activity-tile background */
+  border-color: rgb(55, 65, 81) !important; /* gray-700 */
+}
 
-  .timeline-v2-daily-stats .text-gray-600 {
-    color: rgb(209, 213, 219) !important; /* gray-300 */
-  }
+html.dark .timeline-v2-daily-stats .text-gray-600 {
+  color: rgb(209, 213, 219) !important; /* gray-300 */
+}
 
-  .timeline-v2-daily-stats .text-gray-800 {
-    color: rgb(243, 244, 246) !important; /* gray-100 */
-  }
+html.dark .timeline-v2-daily-stats .text-gray-800 {
+  color: rgb(243, 244, 246) !important; /* gray-100 */
+}
 
-  .timeline-v2-daily-stats .text-gray-700 {
-    color: rgb(229, 231, 235) !important; /* gray-200 */
-  }
+html.dark .timeline-v2-daily-stats .text-gray-700 {
+  color: rgb(229, 231, 235) !important; /* gray-200 */
+}
 
-  .timeline-v2-daily-stats .text-gray-500 {
-    color: rgb(156, 163, 175) !important; /* gray-400 */
-  }
+html.dark .timeline-v2-daily-stats .text-gray-500 {
+  color: rgb(156, 163, 175) !important; /* gray-400 */
+}
 
-  .timeline-v2-daily-stats .border-gray-300 {
-    border-color: rgb(75, 85, 99) !important; /* gray-600 */
-  }
+html.dark .timeline-v2-daily-stats .border-gray-300 {
+  border-color: rgb(75, 85, 99) !important; /* gray-600 */
+}
 
-  .timeline-v2-daily-stats .border-gray-200 {
-    border-color: rgb(55, 65, 81) !important; /* gray-700 */
-  }
+html.dark .timeline-v2-daily-stats .border-gray-200 {
+  border-color: rgb(55, 65, 81) !important; /* gray-700 */
+}
 
-  .timeline-v2-daily-stats .border-gray-500 {
-    border-color: rgb(107, 114, 128) !important; /* gray-500 */
-  }
+html.dark .timeline-v2-daily-stats .border-gray-500 {
+  border-color: rgb(107, 114, 128) !important; /* gray-500 */
+}
 
-  .timeline-v2-daily-stats .hover\:bg-gray-100:hover {
-    background-color: rgb(31, 41, 55) !important; /* gray-800 */
-  }
+/* Disable hover effects on stat tiles in dark mode - but preserve selected state */
+html.dark .timeline-v2-daily-stats button:not(.bg-gray-100):hover {
+  background-color: transparent !important;
+}
 
-  .timeline-v2-daily-stats .hover\:border-gray-300:hover {
-    border-color: rgb(75, 85, 99) !important; /* gray-600 */
-  }
+html.dark .timeline-v2-daily-stats .hover\:bg-gray-100:hover:not(.bg-gray-100) {
+  background-color: transparent !important;
+}
 
-  /* Stat tile backgrounds in dark mode - all use gray-50/100 */
-  .timeline-v2-daily-stats .bg-gray-50 {
-    background-color: rgb(31, 41, 55) !important; /* gray-800 */
-  }
+html.dark .timeline-v2-daily-stats .hover\:bg-gray-50:hover:not(.bg-gray-100) {
+  background-color: transparent !important;
+}
 
-  .timeline-v2-daily-stats .bg-gray-100 {
-    background-color: rgb(55, 65, 81) !important; /* gray-700 */
-  }
+html.dark .timeline-v2-daily-stats .hover\:border-gray-300:hover:not(.bg-gray-100) {
+  border-color: transparent !important;
+}
+
+/* Stat tile backgrounds in dark mode */
+html.dark .timeline-v2-daily-stats .bg-transparent {
+  background-color: transparent !important;
+}
+
+html.dark .timeline-v2-daily-stats .bg-gray-50 {
+  background-color: transparent !important; /* transparent in dark mode */
+}
+
+/* Selected tile background in dark mode - darker than hover */
+html.dark .timeline-v2-daily-stats .bg-gray-100 {
+  background-color: rgb(31, 41, 55) !important; /* gray-800 - darker selection */
+}
+
+/* Icon colors in dark mode - maintain activity colors */
+html.dark .timeline-v2-daily-stats .text-\[#9ca3af\] {
+  color: #9ca3af !important; /* gray-400 - sleep */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#7dd3fc\] {
+  color: #7dd3fc !important; /* sky-300 - feed */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#0d9488\] {
+  color: #0d9488 !important; /* teal-600 - diaper */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#43B755\] {
+  color: #43B755 !important; /* green - medicine */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#fef08a\] {
+  color: #fef08a !important; /* yellow-200 - note */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#fb923c\] {
+  color: #fb923c !important; /* orange-400 - bath */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#c084fc\] {
+  color: #c084fc !important; /* purple-400 - pump */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#4875EC\] {
+  color: #4875EC !important; /* blue - milestone */
+}
+
+html.dark .timeline-v2-daily-stats .text-\[#EA6A5E\] {
+  color: #EA6A5E !important; /* red - measurement */
+}
+
+html.dark .timeline-v2-daily-stats .text-amber-600 {
+  color: #d97706 !important; /* amber-600 - awake time */
 }
 
 

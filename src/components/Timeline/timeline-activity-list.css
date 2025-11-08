@@ -362,3 +362,142 @@ html.dark .timeline-activity-wrapper {
 html.dark .timeline-activity-wrapper:hover {
   background-color: #4b5563 !important; /* gray-600 */
 }
+
+/* Dark mode styles for TimelineV2ActivityList */
+html.dark .timeline-activity-list {
+  background-color: #1f2937 !important; /* gray-800 - matches activity-tile background */
+}
+
+html.dark .timeline-activity-scroll-container {
+  background-color: #1f2937 !important; /* gray-800 - matches activity-tile background */
+}
+
+  /* Gradient at top - from dark background to transparent - override all Tailwind gradient utilities */
+html.dark .timeline-top-gradient,
+html.dark .timeline-top-gradient.bg-gradient-to-b,
+html.dark .timeline-top-gradient.from-white,
+html.dark .timeline-top-gradient.to-transparent {
+  background-image: linear-gradient(to bottom, #1f2937, transparent) !important; /* gray-800 to transparent */
+  background: linear-gradient(to bottom, #1f2937, transparent) !important;
+}
+
+/* Timeline container border */
+html.dark .timeline-container {
+  border-color: rgb(55, 65, 81) !important; /* gray-700 */
+}
+
+/* Time of day header */
+html.dark .timeline-hour-group .text-gray-500 {
+  color: rgb(209, 213, 219) !important; /* gray-300 */
+}
+
+/* Timeline event hover */
+html.dark .timeline-event:hover {
+  background-color: rgb(31, 41, 55) !important; /* gray-800 */
+}
+
+/* Event title */
+html.dark .event-title {
+  color: rgb(243, 244, 246) !important; /* gray-100 */
+}
+
+/* Event details */
+html.dark .event-details {
+  color: rgb(209, 213, 219) !important; /* gray-300 */
+}
+
+/* Event time */
+html.dark .event-time {
+  color: rgb(156, 163, 175) !important; /* gray-400 */
+}
+
+/* Event icon backgrounds - maintain activity colors in dark mode */
+html.dark .event-icon.sleep {
+  background: linear-gradient(to bottom right, #9ca3af, #6b7280, #4b5563) !important; /* gray gradient */
+}
+
+html.dark .event-icon.sleep svg,
+html.dark .event-icon.sleep svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.feed {
+  background: #bae6fd !important; /* sky-200 - keep light blue background */
+}
+
+html.dark .event-icon.feed svg,
+html.dark .event-icon.feed svg path {
+  color: #374151 !important; /* gray-700 - dark text on light background */
+  stroke: #374151 !important;
+}
+
+html.dark .event-icon.diaper {
+  background: linear-gradient(to right, #0d9488, #0f766e) !important; /* teal gradient */
+}
+
+html.dark .event-icon.diaper svg,
+html.dark .event-icon.diaper svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.note {
+  background: #ffff99 !important; /* yellow */
+}
+
+html.dark .event-icon.note svg,
+html.dark .event-icon.note svg path {
+  color: #374151 !important; /* gray-700 - dark text on light background */
+  stroke: #374151 !important;
+}
+
+html.dark .event-icon.bath {
+  background: linear-gradient(to right, #fb923c, #f97316) !important; /* orange gradient */
+}
+
+html.dark .event-icon.bath svg,
+html.dark .event-icon.bath svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.pump {
+  background: linear-gradient(to right, #e9d5ff, #d8b4fe) !important; /* purple gradient */
+}
+
+html.dark .event-icon.pump svg,
+html.dark .event-icon.pump svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.milestone {
+  background: #4875EC !important; /* blue */
+}
+
+html.dark .event-icon.milestone svg,
+html.dark .event-icon.milestone svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.measurement {
+  background: #EA6A5E !important; /* red */
+}
+
+html.dark .event-icon.measurement svg,
+html.dark .event-icon.measurement svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.medicine {
+  background: #43B755 !important; /* green */
+}
+
+html.dark .event-icon.medicine svg,
+html.dark .event-icon.medicine svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
