@@ -1,5 +1,18 @@
 # Sprout Track Changelog
 
+## v0.96.0 - Timeline Overhaul V2 & Account Payments
+
+### Changes
+
+#### Timeline Overhaul
+- Added a more streamlined version of the timeline
+- Made daily summary the filter for activities that exist on the day
+
+#### Account Expiration & Payments
+- Added functionality for expired accounts to have soft user experience
+- Added in subscription and full license payment management with Stripe
+- Overhauled account usage to not affect self hosted versions of the app
+
 ## v0.94.95 - Calendar Hotfix for Accounts
 
 ### Changes
