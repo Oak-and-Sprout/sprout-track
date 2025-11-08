@@ -171,8 +171,13 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       }
     });
 
-    // Calculate awake time (24 hours - sleep time)
-    awakeMinutes = (24 * 60) - totalSleepMinutes;
+    // Calculate awake time (elapsed time since start of day - sleep time)
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const referenceTime = isToday ? now : endOfDay;
+    
+    const elapsedMinutes = Math.floor((referenceTime.getTime() - startOfDay.getTime()) / (1000 * 60));
+    awakeMinutes = Math.max(0, elapsedMinutes - totalSleepMinutes);
 
     const tiles: StatTile[] = [];
 
