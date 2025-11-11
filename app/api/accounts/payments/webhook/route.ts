@@ -2,12 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/app/api/db';
 
+// Runtime configuration - ensure this route is always executed dynamically
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-10-29.clover',
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+
+/**
+ * GET /api/accounts/payments/webhook
+ *
+ * Health check endpoint for webhook URL verification.
+ * Returns 405 Method Not Allowed to indicate POST is required.
+ */
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method not allowed. This endpoint only accepts POST requests.' },
+    { status: 405 }
+  );
+}
 
 /**
  * POST /api/accounts/payments/webhook
@@ -19,12 +36,24 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
  * signed events from Stripe's servers.
  */
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  console.log('[WEBHOOK] Received webhook request');
+  
   try {
+    // Validate webhook secret is configured
+    if (!webhookSecret) {
+      console.error('[WEBHOOK ERROR] STRIPE_WEBHOOK_SECRET is not configured');
+      return NextResponse.json(
+        { error: 'Webhook secret not configured' },
+        { status: 500 }
+      );
+    }
+
     const body = await req.text();
     const signature = req.headers.get('stripe-signature');
 
     if (!signature) {
-      console.error('No Stripe signature found');
+      console.error('[WEBHOOK ERROR] No Stripe signature found in headers');
       return NextResponse.json(
         { error: 'No signature' },
         { status: 400 }
@@ -35,15 +64,19 @@ export async function POST(req: NextRequest) {
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+      console.log(`[WEBHOOK] Signature verified successfully for event: ${event.type}`);
+    } catch (err: any) {
+      console.error('[WEBHOOK ERROR] Webhook signature verification failed:', {
+        error: err.message,
+        type: err.type,
+      });
       return NextResponse.json(
         { error: 'Invalid signature' },
         { status: 400 }
       );
     }
 
-    console.log(`Processing webhook event: ${event.type}`);
+    console.log(`[WEBHOOK] Processing webhook event: ${event.type} (ID: ${event.id})`);
 
     // Handle different event types
     switch (event.type) {
@@ -72,10 +105,21 @@ export async function POST(req: NextRequest) {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    return NextResponse.json({ received: true });
+    const processingTime = Date.now() - startTime;
+    console.log(`[WEBHOOK SUCCESS] Processed event ${event.type} in ${processingTime}ms`);
+    
+    return NextResponse.json({ received: true }, { status: 200 });
 
-  } catch (error) {
-    console.error('Webhook handler error:', error);
+  } catch (error: any) {
+    const processingTime = Date.now() - startTime;
+    console.error('[WEBHOOK ERROR] Webhook handler error:', {
+      error: error?.message || error,
+      stack: error?.stack,
+      processingTime: `${processingTime}ms`,
+    });
+    
+    // Return 500 to allow Stripe to retry transient failures
+    // Stripe will retry webhooks that return 5xx status codes
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }
@@ -91,12 +135,34 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   console.log('[WEBHOOK DEBUG] Session mode:', session.mode);
   console.log('[WEBHOOK DEBUG] Session metadata:', session.metadata);
   console.log('[WEBHOOK DEBUG] Session subscription:', session.subscription);
+  console.log('[WEBHOOK DEBUG] Session customer:', session.customer);
 
-  const accountId = session.metadata?.accountId;
+  let accountId = session.metadata?.accountId;
   const planType = session.metadata?.planType;
 
+  // Fallback: Check customer metadata if session metadata is missing (important for Link/Amazon Pay)
+  if (!accountId && session.customer) {
+    try {
+      const customerId = typeof session.customer === 'string' 
+        ? session.customer 
+        : session.customer.id;
+      const customer = await stripe.customers.retrieve(customerId);
+      
+      if (customer && !customer.deleted && customer.metadata?.accountId) {
+        accountId = customer.metadata.accountId;
+        console.log('[WEBHOOK DEBUG] Found accountId in customer metadata:', accountId);
+      }
+    } catch (error) {
+      console.error('[WEBHOOK ERROR] Error retrieving customer for metadata fallback:', error);
+    }
+  }
+
   if (!accountId) {
-    console.error('[WEBHOOK ERROR] No accountId in session metadata');
+    console.error('[WEBHOOK ERROR] No accountId in session metadata or customer metadata', {
+      sessionId: session.id,
+      sessionMetadata: session.metadata,
+      customerId: session.customer
+    });
     return;
   }
 
@@ -112,8 +178,53 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // Fetch subscription details
       const subscription = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
 
+      // Ensure subscription metadata has accountId (important for Link/Amazon Pay scenarios)
+      const subscriptionAccountId = subscription.metadata?.accountId;
+      if (!subscriptionAccountId || subscriptionAccountId !== accountId) {
+        try {
+          await stripe.subscriptions.update(subscription.id, {
+            metadata: {
+              ...subscription.metadata,
+              accountId: accountId
+            }
+          });
+          console.log('[WEBHOOK DEBUG] Updated subscription metadata with accountId');
+        } catch (error) {
+          console.error('[WEBHOOK ERROR] Error updating subscription metadata:', error);
+          // Continue with account update even if subscription metadata update fails
+        }
+      }
+
+      // Ensure customer metadata has accountId (important for Link/Amazon Pay scenarios)
+      if (session.customer) {
+        try {
+          const customerId = typeof session.customer === 'string' 
+            ? session.customer 
+            : session.customer.id;
+          const customer = await stripe.customers.retrieve(customerId);
+          
+          if (customer && !customer.deleted && !customer.metadata?.accountId) {
+            await stripe.customers.update(customerId, {
+              metadata: {
+                ...customer.metadata,
+                accountId: accountId
+              }
+            });
+            console.log('[WEBHOOK DEBUG] Updated customer metadata with accountId');
+          }
+        } catch (error) {
+          console.error('[WEBHOOK ERROR] Error updating customer metadata:', error);
+          // Continue with account update even if customer metadata update fails
+        }
+      }
+
       // Get billing period end date from subscription item (API v2025-10-29+ uses item-level periods)
       const periodEnd = subscription.items.data[0]?.current_period_end;
+
+      // Extract customer ID for account update
+      const customerId = typeof session.customer === 'string' 
+        ? session.customer 
+        : session.customer?.id;
 
       console.log('[WEBHOOK DEBUG] Subscription details:', {
         subscriptionId: subscription.id,
@@ -124,14 +235,20 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         current_period_end_date: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
         cancel_at_period_end: subscription.cancel_at_period_end,
         metadata: subscription.metadata,
+        customerId,
       });
 
-      const updateData = {
+      const updateData: any = {
         subscriptionId: subscriptionId,
         planType: 'sub',
         planExpires: periodEnd ? new Date(periodEnd * 1000) : null,
         trialEnds: null, // Clear trial when subscription starts
       };
+
+      // Update customer ID if available
+      if (customerId) {
+        updateData.stripeCustomerId = customerId;
+      }
 
       console.log('[WEBHOOK DEBUG] Updating account with data:', updateData);
 
@@ -164,16 +281,49 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         }
       }
 
+      // Ensure customer metadata has accountId (important for Link/Amazon Pay scenarios)
+      if (session.customer) {
+        try {
+          const customerId = typeof session.customer === 'string' 
+            ? session.customer 
+            : session.customer.id;
+          const customer = await stripe.customers.retrieve(customerId);
+          
+          if (customer && !customer.deleted && !customer.metadata?.accountId) {
+            await stripe.customers.update(customerId, {
+              metadata: {
+                ...customer.metadata,
+                accountId: accountId
+              }
+            });
+            console.log('[WEBHOOK DEBUG] Updated customer metadata with accountId for lifetime payment');
+          }
+        } catch (error) {
+          console.error('[WEBHOOK ERROR] Error updating customer metadata:', error);
+          // Continue with account update even if customer metadata update fails
+        }
+      }
+
       // Set planExpires to 100 years in the future for lifetime access
       const lifetimeExpires = new Date();
       lifetimeExpires.setFullYear(lifetimeExpires.getFullYear() + 100);
 
-      const updateData = {
+      // Extract customer ID for account update
+      const customerId = typeof session.customer === 'string' 
+        ? session.customer 
+        : session.customer?.id;
+
+      const updateData: any = {
         planType: 'full',
         planExpires: lifetimeExpires,
         subscriptionId: null,
         trialEnds: null, // Clear trial
       };
+
+      // Update customer ID if available
+      if (customerId) {
+        updateData.stripeCustomerId = customerId;
+      }
 
       console.log('[WEBHOOK DEBUG] Updating account with lifetime data:', updateData);
 
