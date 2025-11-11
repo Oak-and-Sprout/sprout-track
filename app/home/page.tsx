@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/src/components/ui/button';
-import { Badge } from '@/src/components/ui/badge';
 import { ThemeToggle } from '@/src/components/ui/theme-toggle';
 import { AccountButton } from '@/src/components/ui/account-button';
 import AccountModal from '@/src/components/modals/AccountModal';
@@ -242,10 +241,6 @@ const home = () => {
       <section className="saas-hero">
         <div className="saas-hero-content">
           <div className="saas-hero-text">
-            
-            <Badge className="saas-hero-badge">
-              🎉 The Sprout Track Beta is Live 🎉
-            </Badge>
             <h1 className="saas-hero-title">
               Easily track your baby's{' '}
               <span className={`saas-hero-animated-word ${isAnimating ? 'animating' : ''}`}>
@@ -333,9 +328,6 @@ const home = () => {
                   </div>
                 </div>
               </div>
-              <p className="saas-demo-refresh-note">
-                Demo data refreshes automatically every hour
-              </p>
             </div>
           </div>
         </div>
@@ -569,31 +561,117 @@ const home = () => {
         </div>
       </section>
 
-      {/* Beta CTA Section */}
+      {/* CTA Section - Pricing Content */}
       <section id="signup" className="py-16 bg-gradient-to-r from-teal-600 to-emerald-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Pricing made easy
+            </h2>
+            <p className="text-xl text-teal-100 mb-8">
+              $2 subscription, or $12 for life
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* Monthly Plan */}
+            <div className="saas-pricing-card saas-pricing-card-on-gradient">
+              <div className="mb-4">
+                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">Monthly</h3>
+                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">Perfect for trying out Sprout Track</p>
+              </div>
+              <div className="mb-6">
+                <span className="saas-pricing-card-price saas-pricing-card-price-on-gradient">$2</span>
+                <span className="saas-pricing-card-interval saas-pricing-card-interval-on-gradient">/month</span>
+              </div>
+              <ul className="saas-pricing-card-features">
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Unlimited babies and caretakers</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Track all activities</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Calendar and reminders</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Medicine tracking</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Data export</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Mobile-friendly interface</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Lifetime Plan */}
+            <div className="saas-pricing-card saas-pricing-card-highlighted saas-pricing-card-on-gradient">
+              <div className="saas-pricing-card-badge saas-pricing-card-badge-on-gradient">BEST VALUE</div>
+              <div className="mb-4">
+                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">Lifetime</h3>
+                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">One-time payment, lifetime access</p>
+              </div>
+              <div className="mb-6">
+                <span className="saas-pricing-card-price saas-pricing-card-price-on-gradient">$12</span>
+                <span className="saas-pricing-card-interval saas-pricing-card-interval-on-gradient"> for life</span>
+              </div>
+              <ul className="saas-pricing-card-features">
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Everything in Monthly</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Lifetime updates</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>No recurring payments</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Priority support forever</span>
+                </li>
+                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
+                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
+                  <span>Best long-term value</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section - CTA Content */}
+      <section className="saas-feature-section saas-feature-section-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            The Beta is Live!
+          <h2 className="saas-feature-title mb-6">
+            Start Tracking Today
           </h2>
-          <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
-            Join our beta program and get Sprout Track for free for life for your entire family. 
-            Be among the first to experience the future of baby tracking.
+          <p className="saas-feature-description text-lg mb-8 max-w-2xl mx-auto">
+            Ready to make tracking diaper changes and late-night feedings a breeze? Try Sprout Track free for 14 days — sleep not included!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button
               size="lg"
-              className="bg-white text-teal-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700 font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
               onClick={() => {
                 setAccountModalMode('register');
                 setShowAccountModal(true);
               }}
             >
-              Sign Up for the Beta
+              Click Here to Get Started
             </Button>
           </div>
-          <p className="text-sm text-teal-100 mt-6 max-w-lg mx-auto">
-            Beta users get lifetime free access for their family. No credit card required. 
-            Start tracking your baby's journey today!
+          <p className="saas-feature-description text-sm mt-6 max-w-lg mx-auto">
+            No credit card or commitment required.
           </p>
         </div>
       </section>
@@ -625,9 +703,6 @@ const home = () => {
                 Try the Demo
               </a>
             </Button>
-            <p className="saas-footer-description text-sm mb-4">
-              Demo refreshes every 1 hour
-            </p>
             <div className="space-y-1">
               <p className="saas-footer-description text-sm">
                 <strong>Demo Access:</strong>

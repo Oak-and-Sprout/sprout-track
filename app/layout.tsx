@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     shortcut: '/sprout-128.png',
     apple: '/sprout-128.png',
   },
-  description: 'Track your baby\'s sleep, feeding, diapers, milestones, and more with our intuitive, family-friendly platform. Simple to use, privacy-focused, accessible anywhere. Join the beta for free!',
+  description: 'Track your baby\'s sleep, feeding, diapers, milestones, and more with our intuitive, family-friendly platform. Simple to use, privacy-focused, accessible anywhere. Start your 14 day trial today!',
   keywords: [
     'baby tracker',
     'baby tracking app', 

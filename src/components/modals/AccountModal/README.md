@@ -201,9 +201,9 @@ When adapting this component for React Native, consider:
 
 ## Integration Notes
 
-### Coming Soon Page
-The modal is integrated into the coming-soon page header:
-- Button positioned between beta signup and theme toggle
+### Home Page
+The modal is integrated into the home page header:
+- Button positioned between sign up and theme toggle
 - Uses `User` icon from Lucide React
 - Consistent styling with other header elements
 - Responsive behavior on mobile devices

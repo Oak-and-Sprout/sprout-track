@@ -1220,3 +1220,199 @@ html.dark .saas-phone-mockup-text {
 html.dark .saas-demo-phone-video {
   border-color: #374151;
 }
+
+/* Pricing Section Styles */
+.saas-pricing-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.saas-pricing-card-highlighted {
+  position: relative;
+  border: 2px solid #0d9488;
+  background-color: #ecfdf5;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.saas-pricing-card-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #0d9488;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-bottom-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.saas-pricing-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.saas-pricing-card-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.saas-pricing-card-price {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.saas-pricing-card-interval {
+  color: #6b7280;
+}
+
+.saas-pricing-card-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.saas-pricing-card-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.saas-pricing-card-check {
+  color: #0d9488;
+  margin-top: 0.125rem;
+}
+
+/* Pricing Section Dark Mode */
+html.dark .saas-pricing-card {
+  border-color: #4b5563;
+  background-color: #374151;
+}
+
+html.dark .saas-pricing-card-highlighted {
+  border-color: #14b8a6;
+  background-color: rgba(13, 148, 136, 0.1);
+}
+
+html.dark .saas-pricing-card-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-pricing-card-description {
+  color: #9ca3af;
+}
+
+html.dark .saas-pricing-card-price {
+  color: #f9fafb;
+}
+
+html.dark .saas-pricing-card-interval {
+  color: #9ca3af;
+}
+
+html.dark .saas-pricing-card-feature {
+  color: #d1d5db;
+}
+
+html.dark .saas-pricing-card-check {
+  color: #5eead4;
+}
+
+/* Pricing Cards on Gradient Background */
+.saas-pricing-card-on-gradient {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.saas-pricing-card-on-gradient.saas-pricing-card-highlighted {
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 2px #0d9488;
+}
+
+.saas-pricing-card-title-on-gradient {
+  color: #111827 !important;
+}
+
+.saas-pricing-card-description-on-gradient {
+  color: #4b5563 !important;
+}
+
+.saas-pricing-card-price-on-gradient {
+  color: #111827 !important;
+}
+
+.saas-pricing-card-interval-on-gradient {
+  color: #6b7280 !important;
+}
+
+.saas-pricing-card-feature-on-gradient {
+  color: #374151 !important;
+}
+
+.saas-pricing-card-check-on-gradient {
+  color: #0d9488 !important;
+}
+
+.saas-pricing-card-badge-on-gradient {
+  background-color: #0d9488;
+  color: #ffffff;
+}
+
+/* Dark Mode - Pricing Cards on Gradient Background */
+html.dark .saas-pricing-card-on-gradient {
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+html.dark .saas-pricing-card-on-gradient.saas-pricing-card-highlighted {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 2px #14b8a6;
+}
+
+html.dark .saas-pricing-card-title-on-gradient {
+  color: #ffffff !important;
+}
+
+html.dark .saas-pricing-card-description-on-gradient {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .saas-pricing-card-price-on-gradient {
+  color: #ffffff !important;
+}
+
+html.dark .saas-pricing-card-interval-on-gradient {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .saas-pricing-card-feature-on-gradient {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html.dark .saas-pricing-card-check-on-gradient {
+  color: #5eead4 !important;
+}
+
+html.dark .saas-pricing-card-badge-on-gradient {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #0d9488;
+}
