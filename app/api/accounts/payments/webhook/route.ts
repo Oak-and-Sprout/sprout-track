@@ -49,16 +49,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get the raw body first (before any parsing) - critical for signature verification
     const body = await req.text();
-    const signature = req.headers.get('stripe-signature');
+    console.log('[WEBHOOK DEBUG] Body length:', body.length);
+
+    // Log all headers for debugging
+    const allHeaders: Record<string, string> = {};
+    const headerNames: string[] = [];
+    req.headers.forEach((value, key) => {
+      headerNames.push(key);
+      // Log header names and first 50 chars of values for debugging
+      allHeaders[key] = value.length > 50 ? value.substring(0, 50) + '...' : value;
+    });
+    console.log('[WEBHOOK DEBUG] All headers received:', JSON.stringify(allHeaders, null, 2));
+    console.log('[WEBHOOK DEBUG] Header names:', headerNames.join(', '));
+    
+    // Get the signature from headers (matching Stripe's Express example)
+    // Try multiple header name variations (case-insensitive, with/without hyphens)
+    const signature = 
+      req.headers.get('stripe-signature') ||
+      req.headers.get('Stripe-Signature') ||
+      req.headers.get('STRIPE-SIGNATURE') ||
+      req.headers.get('stripe_signature');
 
     if (!signature) {
-      console.error('[WEBHOOK ERROR] No Stripe signature found in headers');
+      console.error('[WEBHOOK ERROR] No Stripe signature found in headers', {
+        availableHeaders: Object.keys(allHeaders),
+        userAgent: req.headers.get('user-agent'),
+        contentType: req.headers.get('content-type'),
+      });
       return NextResponse.json(
         { error: 'No signature' },
         { status: 400 }
       );
     }
+
+    console.log('[WEBHOOK DEBUG] Signature found, length:', signature.length);
 
     // Verify webhook signature
     let event: Stripe.Event;
