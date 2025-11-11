@@ -328,9 +328,6 @@ const home = () => {
                   </div>
                 </div>
               </div>
-              <p className="saas-demo-refresh-note">
-                Demo data refreshes automatically every hour
-              </p>
             </div>
           </div>
         </div>
@@ -659,7 +656,7 @@ const home = () => {
             Start Tracking Today
           </h2>
           <p className="saas-feature-description text-lg mb-8 max-w-2xl mx-auto">
-            Register for your 14 day trial and experience the future of baby tracking.
+            Ready to make tracking diaper changes and late-night feedings a breeze? Try Sprout Track free for 14 days — sleep not included!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button
@@ -670,11 +667,11 @@ const home = () => {
                 setShowAccountModal(true);
               }}
             >
-              Register for Your 14 Day Trial
+              Click Here to Get Started
             </Button>
           </div>
           <p className="saas-feature-description text-sm mt-6 max-w-lg mx-auto">
-            Start tracking your baby's journey today!
+            No credit card or commitment required.
           </p>
         </div>
       </section>
@@ -706,9 +703,6 @@ const home = () => {
                 Try the Demo
               </a>
             </Button>
-            <p className="saas-footer-description text-sm mb-4">
-              Demo refreshes every 1 hour
-            </p>
             <div className="space-y-1">
               <p className="saas-footer-description text-sm">
                 <strong>Demo Access:</strong>
