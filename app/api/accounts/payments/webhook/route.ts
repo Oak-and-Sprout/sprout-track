@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/app/api/db';
 
-// Runtime configuration - ensure this route is always executed dynamically
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-10-29.clover',
