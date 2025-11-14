@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Textarea } from "@/src/components/ui/textarea";
+import { Card, CardContent } from "@/src/components/ui/card";
 import { 
   Loader2,
   Eye,
@@ -119,7 +120,7 @@ export default function FeedbackThreadModal({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="feedback-thread-modal-content max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 sm:p-0">
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b-[1px]">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
             Feedback Thread
@@ -128,43 +129,45 @@ export default function FeedbackThreadModal({
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
           {/* Original Message */}
-          <div className="feedback-thread-original-message border rounded-lg p-3 sm:p-4 bg-white">
-            <div className="space-y-2 sm:space-y-3">
-              {/* Subject */}
-              <div>
-                <div className="text-xs font-medium text-gray-500 mb-1">Subject</div>
-                <div className="feedback-thread-subject-text text-sm sm:text-base font-semibold text-gray-900 break-words">
-                  {feedback.subject}
+          <Card className="feedback-thread-original-message">
+            <CardContent className="p-3 sm:p-4">
+              <div className="space-y-2 sm:space-y-3">
+                {/* Subject */}
+                <div>
+                  <div className="text-xs font-medium text-gray-500 mb-1">Subject</div>
+                  <div className="feedback-thread-subject-text text-sm sm:text-base font-semibold text-gray-900 break-words">
+                    {feedback.subject}
+                  </div>
                 </div>
-              </div>
 
-              {/* From */}
-              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <User className="h-3 w-3 sm:h-4 sm:w-4 feedback-thread-replies-icon text-gray-400 flex-shrink-0" />
-                  <span className="font-medium feedback-thread-submitter-name text-gray-900">
-                    {feedback.submitterName || 'Anonymous'}
-                  </span>
-                  {feedback.submitterEmail && (
-                    <span className="feedback-thread-submitter-email-text feedback-thread-meta-text text-gray-500 break-all">
-                      &lt;{feedback.submitterEmail}&gt;
+                {/* From */}
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <User className="h-3 w-3 sm:h-4 sm:w-4 feedback-thread-replies-icon text-gray-400 flex-shrink-0" />
+                    <span className="font-medium feedback-thread-submitter-name text-gray-900">
+                      {feedback.submitterName || 'Anonymous'}
                     </span>
-                  )}
+                    {feedback.submitterEmail && (
+                      <span className="feedback-thread-submitter-email-text feedback-thread-meta-text text-gray-500 break-all">
+                        &lt;{feedback.submitterEmail}&gt;
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 feedback-thread-date-text feedback-thread-meta-text text-gray-500">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 feedback-thread-replies-icon flex-shrink-0" />
+                    <span className="break-words">{formatDateTime(feedback.submittedAt)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 feedback-thread-date-text feedback-thread-meta-text text-gray-500">
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 feedback-thread-replies-icon flex-shrink-0" />
-                  <span className="break-words">{formatDateTime(feedback.submittedAt)}</span>
-                </div>
-              </div>
 
-              {/* Message Body */}
-              <div className="pt-2 feedback-thread-divider border-t">
-                <div className="feedback-thread-message-text text-sm text-gray-700 whitespace-pre-wrap break-words">
-                  {feedback.message}
+                {/* Message Body */}
+                <div className="pt-2 feedback-thread-divider border-t">
+                  <div className="feedback-thread-message-text text-sm text-gray-700 whitespace-pre-wrap break-words">
+                    {feedback.message}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Replies Section */}
           {feedback.replies && feedback.replies.length > 0 && (
@@ -181,57 +184,59 @@ export default function FeedbackThreadModal({
                 const canMarkAsRead = isAdmin && !isAdminMsg; // Admin can only mark user messages as read
 
                 return (
-                  <div
+                  <Card
                     key={reply.id}
-                    className={`feedback-thread-reply border-l-4 pl-3 sm:pl-4 py-2 sm:py-3 rounded-r ${
+                    className={`feedback-thread-reply border-l-4 ${
                       isRead 
                         ? 'feedback-thread-reply-read bg-gray-50 border-gray-300' 
                         : 'bg-blue-50 border-blue-500'
                     }`}
                   >
-                    <div className="space-y-2">
-                      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                          <span className="font-medium feedback-thread-reply-name text-gray-900">
-                            {reply.submitterName || 'Admin'}
-                          </span>
-                          {reply.submitterEmail && (
-                            <span className="feedback-thread-submitter-email-text feedback-thread-meta-text text-xs text-gray-500 break-all">
-                              &lt;{reply.submitterEmail}&gt;
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                            <span className="font-medium feedback-thread-reply-name text-gray-900">
+                              {reply.submitterName || 'Admin'}
                             </span>
-                          )}
-                          <span className="feedback-thread-reply-date feedback-thread-meta-text text-xs text-gray-500 whitespace-nowrap">
-                            {formatDateTime(reply.submittedAt)}
-                          </span>
-                        </div>
-                        {!isRead && canMarkAsRead && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              onUpdateFeedback(reply.id, true);
-                            }}
-                            disabled={updatingFeedbackId === reply.id}
-                            title="Mark as read"
-                            className="h-7 text-xs self-start sm:self-auto"
-                          >
-                            {updatingFeedbackId === reply.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Eye className="h-3 w-3" />
+                            {reply.submitterEmail && (
+                              <span className="feedback-thread-submitter-email-text feedback-thread-meta-text text-xs text-gray-500 break-all">
+                                &lt;{reply.submitterEmail}&gt;
+                              </span>
                             )}
-                          </Button>
-                        )}
+                            <span className="feedback-thread-reply-date feedback-thread-meta-text text-xs text-gray-500 whitespace-nowrap">
+                              {formatDateTime(reply.submittedAt)}
+                            </span>
+                          </div>
+                          {!isRead && canMarkAsRead && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                onUpdateFeedback(reply.id, true);
+                              }}
+                              disabled={updatingFeedbackId === reply.id}
+                              title="Mark as read"
+                              className="h-7 text-xs self-start sm:self-auto"
+                            >
+                              {updatingFeedbackId === reply.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Eye className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                        <div className={`feedback-thread-message-text text-xs sm:text-sm whitespace-pre-wrap break-words ${
+                          isRead 
+                            ? 'feedback-thread-reply-message-read text-gray-600' 
+                            : 'feedback-thread-reply-message-unread text-gray-700'
+                        }`}>
+                          {reply.message}
+                        </div>
                       </div>
-                      <div className={`feedback-thread-message-text text-xs sm:text-sm whitespace-pre-wrap break-words ${
-                        isRead 
-                          ? 'feedback-thread-reply-message-read text-gray-600' 
-                          : 'feedback-thread-reply-message-unread text-gray-700'
-                      }`}>
-                        {reply.message}
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
@@ -239,52 +244,54 @@ export default function FeedbackThreadModal({
 
           {/* Reply Form */}
           {showReplyForm ? (
-            <div className="feedback-thread-reply-form border rounded-lg p-3 sm:p-4 bg-gray-50">
-              <div className="space-y-3 sm:space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs sm:text-sm font-medium feedback-thread-form-label text-gray-700">Reply</label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowReplyForm(false);
-                      setReplyMessage('');
-                    }}
-                    className="text-xs sm:text-sm"
-                  >
-                    Cancel
-                  </Button>
+            <Card className="feedback-thread-reply-form bg-gray-50">
+              <CardContent className="p-3 sm:p-4">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs sm:text-sm font-medium feedback-thread-form-label text-gray-700">Reply</label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowReplyForm(false);
+                        setReplyMessage('');
+                      }}
+                      className="text-xs sm:text-sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  <Textarea
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    placeholder="Type your reply here..."
+                    rows={5}
+                    className="bg-white text-sm"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleReply}
+                      disabled={!replyMessage.trim() || sendingReply}
+                      className="text-xs sm:text-sm"
+                    >
+                      {sendingReply ? (
+                        <>
+                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
+                          <span className="hidden sm:inline">Sending...</span>
+                          <span className="sm:hidden">Sending</span>
+                        </>
+                      ) : (
+                        <>
+                          <Reply className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">Send Reply</span>
+                          <span className="sm:hidden">Send</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <Textarea
-                  value={replyMessage}
-                  onChange={(e) => setReplyMessage(e.target.value)}
-                  placeholder="Type your reply here..."
-                  rows={5}
-                  className="bg-white text-sm"
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleReply}
-                    disabled={!replyMessage.trim() || sendingReply}
-                    className="text-xs sm:text-sm"
-                  >
-                    {sendingReply ? (
-                      <>
-                        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
-                        <span className="hidden sm:inline">Sending...</span>
-                        <span className="sm:hidden">Sending</span>
-                      </>
-                    ) : (
-                      <>
-                        <Reply className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">Send Reply</span>
-                        <span className="sm:hidden">Send</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ) : (
             <Button
               variant="outline"
@@ -298,7 +305,7 @@ export default function FeedbackThreadModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t-[1px] flex flex-wrap items-center justify-between gap-2">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2">
           <Button
             variant="outline"
             onClick={() => {
