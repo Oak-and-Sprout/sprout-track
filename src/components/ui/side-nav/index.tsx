@@ -417,8 +417,8 @@ export const SideNav: React.FC<SideNavProps> = ({
           version={packageInfo.version}
         />
 
-        {/* Feedback Page - only shown in SaaS mode */}
-        {isSaasMode && (
+        {/* Feedback Page - only shown in SaaS mode and when feedback is requested */}
+        {isSaasMode && showFeedback && (
           <FeedbackPage
             isOpen={showFeedback}
             onClose={() => setShowFeedback(false)}

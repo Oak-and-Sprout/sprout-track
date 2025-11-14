@@ -343,11 +343,13 @@ export function AccountButton({
           </DropdownMenuItem>
         </DropdownMenuContent>
         
-        {/* Feedback Page */}
-        <FeedbackPage
-          isOpen={showFeedback}
-          onClose={() => setShowFeedback(false)}
-        />
+        {/* Feedback Page - only render when feedback is requested */}
+        {showFeedback && (
+          <FeedbackPage
+            isOpen={showFeedback}
+            onClose={() => setShowFeedback(false)}
+          />
+        )}
       </DropdownMenu>
     );
   }
