@@ -2,11 +2,10 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { 
-  FormPage, 
-  FormPageContent, 
+  FormPage,
   FormPageFooter,
-  FormPageTab
 } from '@/src/components/ui/form-page';
+import type { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
 import { Button } from '@/src/components/ui/button';
 import { MessageSquare, Plus } from 'lucide-react';
 import FeedbackMessagesView from './FeedbackMessagesView';
