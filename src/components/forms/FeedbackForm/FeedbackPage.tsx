@@ -105,15 +105,25 @@ export default function FeedbackPage({
           <FormPageFooter>
             <div className="flex justify-end w-full">
               <Button
-                onClick={() => {
-                  setShowNewFeedbackForm(true);
-                  setActiveTab('new');
-                }}
-                variant="success"
-                className="flex items-center gap-2"
+                onClick={onClose}
+                variant="outline"
               >
-                <Plus className="h-4 w-4" />
-                New Feedback
+                Close
+              </Button>
+            </div>
+          </FormPageFooter>
+        )}
+        {activeTab === 'new' && (
+          <FormPageFooter>
+            <div className="flex justify-end w-full">
+              <Button
+                onClick={() => {
+                  setShowNewFeedbackForm(false);
+                  setActiveTab('messages');
+                }}
+                variant="outline"
+              >
+                Cancel
               </Button>
             </div>
           </FormPageFooter>

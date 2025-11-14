@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import AccountModal from '@/src/components/modals/AccountModal';
-import FeedbackForm from '@/src/components/forms/FeedbackForm';
+import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import './account-button.css';
 
 interface AccountStatus {
@@ -343,11 +343,10 @@ export function AccountButton({
           </DropdownMenuItem>
         </DropdownMenuContent>
         
-        {/* Feedback Form */}
-        <FeedbackForm
+        {/* Feedback Page */}
+        <FeedbackPage
           isOpen={showFeedback}
           onClose={() => setShowFeedback(false)}
-          onSuccess={() => setShowFeedback(false)}
         />
       </DropdownMenu>
     );
