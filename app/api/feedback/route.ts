@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { withAuthContext, ApiResponse } from '../utils/auth';
 import { FeedbackCreate, FeedbackResponse } from '../types';
-import { sendFeedbackConfirmationEmail } from '../utils/account-emails';
+import {
+  sendFeedbackSubmissionConfirmationEmail,
+  sendFeedbackAdminNotificationEmail,
+  sendFeedbackReplyAdminNotificationEmail,
+  sendFeedbackReplyUserNotificationEmail,
+} from '../utils/feedback-emails';
 
 /**
  * POST /api/feedback
@@ -121,17 +126,88 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
       },
     });
 
-    // Send confirmation email if user has an email address
-    if (finalSubmitterEmail && accountId) {
+    // Send emails based on whether this is a new feedback or a reply
+    if (parentId) {
+      // This is a reply - determine if it's from admin or user
+      const isAdminReply = authContext.isSysAdmin || authContext.caretakerRole === 'ADMIN';
+      
+      if (isAdminReply) {
+        // Admin replied - notify the original user
+        // Get the original feedback to find the user's email, subject, and familyId
+        const originalFeedback = await prisma.feedback.findUnique({
+          where: { id: parentId },
+          select: { submitterEmail: true, submitterName: true, subject: true, familyId: true },
+        });
+        
+        if (originalFeedback?.submitterEmail && originalFeedback.submitterEmail !== finalSubmitterEmail) {
+          try {
+            // Use original subject (without "Re: " prefix) for the email
+            const originalSubject = originalFeedback.subject.replace(/^Re:\s*/i, '');
+            await sendFeedbackReplyUserNotificationEmail(
+              originalFeedback.submitterEmail,
+              originalFeedback.submitterName || 'User',
+              originalSubject,
+              trimmedMessage,
+              feedback.id,
+              originalFeedback.familyId || finalFamilyId
+            );
+            console.log('Feedback reply notification email sent to user:', originalFeedback.submitterEmail);
+          } catch (emailError) {
+            console.error('Error sending feedback reply notification email to user:', emailError);
+            // Don't fail the feedback submission if email fails
+          }
+        }
+      } else {
+        // User replied - notify admin
+        // Use the original subject from parentFeedback (already fetched earlier)
+        const originalSubject = parentFeedback?.subject.replace(/^Re:\s*/i, '') || trimmedSubject;
+        
+        try {
+          await sendFeedbackReplyAdminNotificationEmail(
+            originalSubject,
+            trimmedMessage,
+            finalSubmitterName,
+            finalSubmitterEmail,
+            feedback.id,
+            finalFamilyId
+          );
+          console.log('Feedback reply notification email sent to admin');
+        } catch (emailError) {
+          console.error('Error sending feedback reply notification email to admin:', emailError);
+          // Don't fail the feedback submission if email fails
+        }
+      }
+    } else {
+      // This is a new feedback submission
+      // Send confirmation email to user if they have an email address
+      if (finalSubmitterEmail && accountId) {
+        try {
+          await sendFeedbackSubmissionConfirmationEmail(
+            finalSubmitterEmail,
+            finalSubmitterName,
+            trimmedSubject,
+            finalFamilyId
+          );
+          console.log('Feedback submission confirmation email sent to:', finalSubmitterEmail);
+        } catch (emailError) {
+          console.error('Error sending feedback submission confirmation email:', emailError);
+          // Don't fail the feedback submission if email fails
+        }
+      }
+      
+      // Send notification email to admin
       try {
-        await sendFeedbackConfirmationEmail(
-          finalSubmitterEmail,
+        await sendFeedbackAdminNotificationEmail(
+          trimmedSubject,
+          trimmedMessage,
           finalSubmitterName,
-          trimmedSubject
+          finalSubmitterEmail,
+          feedback.id,
+          finalFamilyId
         );
-        console.log('Feedback confirmation email sent to:', finalSubmitterEmail);
+        console.log('Feedback admin notification email sent');
       } catch (emailError) {
-        console.error('Error sending feedback confirmation email:', emailError);
+        console.error('Error sending feedback admin notification email:', emailError);
         // Don't fail the feedback submission if email fails
       }
     }
