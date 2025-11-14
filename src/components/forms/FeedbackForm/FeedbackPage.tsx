@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   FormPage, 
   FormPageContent, 
@@ -26,8 +26,9 @@ export default function FeedbackPage({
   const [activeTab, setActiveTab] = useState('messages');
   const [showNewFeedbackForm, setShowNewFeedbackForm] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const prevActiveTabRef = React.useRef<string | null>(null);
 
-  const formatDateTime = (dateString: string | null): string => {
+  const formatDateTime = useCallback((dateString: string | null): string => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
@@ -38,29 +39,45 @@ export default function FeedbackPage({
       minute: '2-digit',
       hour12: true,
     });
-  };
+  }, []);
 
-  const handleNewFeedbackSuccess = () => {
+  const handleNewFeedbackSuccess = useCallback(() => {
     setShowNewFeedbackForm(false);
     setActiveTab('messages');
     // Trigger refresh of messages view
     setRefreshTrigger(prev => prev + 1);
-  };
+  }, []);
 
-  // Refresh messages when switching to messages tab
-  React.useEffect(() => {
-    if (activeTab === 'messages') {
-      setRefreshTrigger(prev => prev + 1);
+  const handleFeedbackFormClose = useCallback(() => {
+    setShowNewFeedbackForm(false);
+    if (activeTab === 'new') {
+      setActiveTab('messages');
     }
   }, [activeTab]);
 
-  const tabs: FormPageTab[] = [
+  // Refresh messages when switching TO messages tab (not on initial mount)
+  React.useEffect(() => {
+    // Only trigger refresh if we're switching TO messages tab from another tab
+    if (activeTab === 'messages' && prevActiveTabRef.current !== null && prevActiveTabRef.current !== 'messages') {
+      setRefreshTrigger(prev => prev + 1);
+    }
+    // Update the previous tab reference
+    prevActiveTabRef.current = activeTab;
+  }, [activeTab]);
+
+  // Memoize the tabs array to prevent recreating FeedbackMessagesView on every render
+  // This prevents duplicate API calls when FamilyProvider causes re-renders
+  const tabs: FormPageTab[] = useMemo(() => [
     {
       id: 'messages',
       label: 'Messages',
       icon: MessageSquare,
       content: (
-        <FeedbackMessagesView formatDateTime={formatDateTime} refreshTrigger={refreshTrigger} />
+        <FeedbackMessagesView 
+          formatDateTime={formatDateTime} 
+          refreshTrigger={refreshTrigger}
+          isPageOpen={isOpen}
+        />
       ),
     },
     {
@@ -70,18 +87,13 @@ export default function FeedbackPage({
       content: (
         <FeedbackForm
           isOpen={true}
-          onClose={() => {
-            setShowNewFeedbackForm(false);
-            if (activeTab === 'new') {
-              setActiveTab('messages');
-            }
-          }}
+          onClose={handleFeedbackFormClose}
           onSuccess={handleNewFeedbackSuccess}
           embedded={true}
         />
       ),
     },
-  ];
+  ], [formatDateTime, refreshTrigger, isOpen, handleNewFeedbackSuccess, handleFeedbackFormClose]);
 
   // If showing new feedback form, switch to that tab
   React.useEffect(() => {

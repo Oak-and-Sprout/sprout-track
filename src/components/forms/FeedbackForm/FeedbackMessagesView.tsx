@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Loader2, MessageSquare, Calendar, User, Reply } from 'lucide-react';
@@ -11,16 +11,27 @@ import './feedback-messages-view.css';
 interface FeedbackMessagesViewProps {
   formatDateTime: (dateString: string | null) => string;
   refreshTrigger?: number; // Trigger refresh when this changes
+  isPageOpen?: boolean; // Whether the parent page is open
 }
 
-export default function FeedbackMessagesView({ formatDateTime, refreshTrigger }: FeedbackMessagesViewProps) {
+export default function FeedbackMessagesView({ formatDateTime, refreshTrigger, isPageOpen }: FeedbackMessagesViewProps) {
   const [feedbackList, setFeedbackList] = useState<FeedbackResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false, will be true when fetching
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updatingFeedbackId, setUpdatingFeedbackId] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
+  const lastRefreshTriggerRef = useRef<number | undefined>(undefined);
+  const lastPageOpenRef = useRef<boolean | undefined>(undefined);
+  const hasFetchedForCurrentStateRef = useRef<string>('');
 
-  const fetchFeedback = async () => {
+  const fetchFeedback = useCallback(async () => {
+    // Prevent concurrent fetches
+    if (isFetchingRef.current) {
+      return;
+    }
+    
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const authToken = localStorage.getItem('authToken');
@@ -40,12 +51,52 @@ export default function FeedbackMessagesView({ formatDateTime, refreshTrigger }:
       console.error('Error fetching feedback:', error);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, []);
 
+  // Fetch feedback when page opens or refreshTrigger changes
   useEffect(() => {
-    fetchFeedback();
-  }, [refreshTrigger]);
+    // Reset tracking when page closes
+    if (!isPageOpen) {
+      lastPageOpenRef.current = false;
+      hasFetchedForCurrentStateRef.current = '';
+      return;
+    }
+
+    // Create a unique key for the current state
+    const currentStateKey = `${isPageOpen}-${refreshTrigger ?? 'undefined'}`;
+    
+    // Check if we've already fetched for this exact state
+    if (hasFetchedForCurrentStateRef.current === currentStateKey) {
+      return;
+    }
+
+    // Check if page just opened (was closed/undefined, now open)
+    const pageJustOpened = lastPageOpenRef.current !== true && isPageOpen === true;
+    
+    // Check if refreshTrigger changed
+    const refreshTriggerChanged = refreshTrigger !== undefined && refreshTrigger !== lastRefreshTriggerRef.current;
+
+    // Only fetch if:
+    // 1. Page just opened (transition from closed/undefined to open) - only fetch once
+    // 2. RefreshTrigger actually changed (user action)
+    if (pageJustOpened || refreshTriggerChanged) {
+      // Mark that we're fetching for this state before calling fetchFeedback
+      hasFetchedForCurrentStateRef.current = currentStateKey;
+      lastPageOpenRef.current = isPageOpen;
+      if (refreshTrigger !== undefined) {
+        lastRefreshTriggerRef.current = refreshTrigger;
+      }
+      fetchFeedback();
+    } else {
+      // Update refs even if we don't fetch
+      lastPageOpenRef.current = isPageOpen;
+      if (refreshTrigger !== undefined) {
+        lastRefreshTriggerRef.current = refreshTrigger;
+      }
+    }
+  }, [isPageOpen, refreshTrigger, fetchFeedback]);
 
   const handleCardClick = (feedback: FeedbackResponse) => {
     setSelectedFeedback(feedback);
