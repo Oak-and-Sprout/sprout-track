@@ -96,7 +96,7 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       }
 
       const data: Partial<AppConfig> = {};
-      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps'];
+      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail'];
       for (const field of allowedAppFields) {
         if (appConfigData[field] !== undefined) {
           (data as any)[field] = field === 'adminPass' ? encrypt(appConfigData[field]) : appConfigData[field];
