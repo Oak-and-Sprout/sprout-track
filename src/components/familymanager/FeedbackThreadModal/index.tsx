@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/src/components/ui/dialog";
 import { Button } from "@/src/components/ui/button";
 import { Textarea } from "@/src/components/ui/textarea";
@@ -45,8 +45,11 @@ export default function FeedbackThreadModal({
   const [sendingReply, setSendingReply] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const hasAutoMarkedRef = useRef(false);
 
   // Check if current user is admin and get admin email
+  // Uses the same logic as auth.ts withAdminAuth: ADMIN role, system admins, or system caretakers
+  // Account owners (OWNER role) are NOT admins for feedback management
   useEffect(() => {
     if (isOpen) {
       const authToken = localStorage.getItem('authToken');
@@ -54,15 +57,24 @@ export default function FeedbackThreadModal({
         try {
           const payload = authToken.split('.')[1];
           const decodedPayload = JSON.parse(atob(payload));
-          const isAccountAdmin = decodedPayload.isAccountAuth && decodedPayload.role === 'OWNER';
-          const isRegularAdmin = decodedPayload.role === 'ADMIN';
+          
+          // Check admin status using same logic as auth.ts withAdminAuth
+          // 1. Regular caretaker with ADMIN role (role === 'ADMIN' and not account auth)
+          const isRegularAdmin = !decodedPayload.isAccountAuth && decodedPayload.role === 'ADMIN';
+          
+          // 2. Account auth with linked caretaker that has ADMIN role
+          const isAccountAdmin = decodedPayload.isAccountAuth && decodedPayload.caretakerRole === 'ADMIN';
+          
+          // 3. System admin
           const isSysAdmin = decodedPayload.isSysAdmin === true;
-          setIsAdmin(isAccountAdmin || isRegularAdmin || isSysAdmin);
+          
+          // Account owners (role === 'OWNER') are NOT admins for feedback management
+          setIsAdmin(isRegularAdmin || isAccountAdmin || isSysAdmin);
           
           // Get admin email from AppConfig if available
           // For now, we'll check if submitterEmail matches admin email pattern
           // In a real scenario, you might want to fetch this from an API
-          if (isSysAdmin || isRegularAdmin) {
+          if (isSysAdmin || isRegularAdmin || isAccountAdmin) {
             // Admin email will be set when we check replies
             setAdminEmail(decodedPayload.accountEmail || null);
           }
@@ -82,6 +94,80 @@ export default function FeedbackThreadModal({
       }
     }
   }, [feedback]);
+
+  const isAdminMessage = (submitterEmail: string | null, submitterName: string | null) => {
+    // Check by submitter name first (most reliable)
+    if (submitterName === 'Admin') return true;
+    // Then check by email if adminEmail is set
+    if (adminEmail && submitterEmail === adminEmail) return true;
+    return false;
+  };
+
+  // Reset auto-mark flag when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      hasAutoMarkedRef.current = false;
+    }
+  }, [isOpen]);
+
+  // Auto-mark messages as read when modal opens (only once per modal open)
+  useEffect(() => {
+    // Only run if modal is open, we have feedback, and we haven't already auto-marked
+    if (isOpen && feedback && onUpdateFeedback && !hasAutoMarkedRef.current) {
+      // Mark admin replies as read when user opens the modal
+      if (!isAdmin && feedback.replies) {
+        const unreadAdminReplies = feedback.replies.filter(
+          reply => !reply.viewed && isAdminMessage(reply.submitterEmail, reply.submitterName)
+        );
+        if (unreadAdminReplies.length > 0) {
+          hasAutoMarkedRef.current = true;
+          unreadAdminReplies.forEach(reply => {
+            onUpdateFeedback(reply.id, true);
+          });
+        }
+      }
+      
+      // Mark user messages as read when admin opens the modal
+      if (isAdmin && feedback) {
+        let shouldMark = false;
+        
+        // Check if original message needs to be marked
+        if (!feedback.viewed && !isAdminMessage(feedback.submitterEmail, feedback.submitterName)) {
+          shouldMark = true;
+        }
+        
+        // Check if any user replies need to be marked
+        if (feedback.replies) {
+          const unreadUserReplies = feedback.replies.filter(
+            reply => !reply.viewed && !isAdminMessage(reply.submitterEmail, reply.submitterName)
+          );
+          if (unreadUserReplies.length > 0) {
+            shouldMark = true;
+          }
+        }
+        
+        // Only mark if there's something to mark, and set flag to prevent re-runs
+        if (shouldMark) {
+          hasAutoMarkedRef.current = true;
+          
+          // Mark original message if it's from a user
+          if (!feedback.viewed && !isAdminMessage(feedback.submitterEmail, feedback.submitterName)) {
+            onUpdateFeedback(feedback.id, true);
+          }
+          
+          // Mark user replies as read
+          if (feedback.replies) {
+            const unreadUserReplies = feedback.replies.filter(
+              reply => !reply.viewed && !isAdminMessage(reply.submitterEmail, reply.submitterName)
+            );
+            unreadUserReplies.forEach(reply => {
+              onUpdateFeedback(reply.id, true);
+            });
+          }
+        }
+      }
+    }
+  }, [isOpen, feedback?.id, isAdmin]); // Only depend on isOpen, feedback.id, and isAdmin - not onUpdateFeedback or feedback object itself
 
   const handleClose = () => {
     setShowReplyForm(false);
@@ -108,11 +194,6 @@ export default function FeedbackThreadModal({
     } finally {
       setSendingReply(false);
     }
-  };
-
-  const isAdminMessage = (submitterEmail: string | null, submitterName: string | null) => {
-    if (!adminEmail) return false;
-    return submitterEmail === adminEmail || submitterName === 'Admin';
   };
 
   if (!feedback) return null;
@@ -181,7 +262,8 @@ export default function FeedbackThreadModal({
               {feedback.replies.map((reply) => {
                 const isRead = reply.viewed;
                 const isAdminMsg = isAdminMessage(reply.submitterEmail, reply.submitterName);
-                const canMarkAsRead = isAdmin && !isAdminMsg; // Admin can only mark user messages as read
+                // Only admins can mark messages as read/unread, and only user messages (not admin's own messages)
+                const canMarkAsRead = isAdmin && !isAdminMsg;
 
                 return (
                   <Card
@@ -208,19 +290,22 @@ export default function FeedbackThreadModal({
                               {formatDateTime(reply.submittedAt)}
                             </span>
                           </div>
-                          {!isRead && canMarkAsRead && (
+                          {/* Only show read/unread button for admins viewing user messages */}
+                          {isAdmin && canMarkAsRead && (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                onUpdateFeedback(reply.id, true);
+                                onUpdateFeedback(reply.id, !isRead);
                               }}
                               disabled={updatingFeedbackId === reply.id}
-                              title="Mark as read"
+                              title={isRead ? "Mark as unread" : "Mark as read"}
                               className="h-7 text-xs self-start sm:self-auto"
                             >
                               {updatingFeedbackId === reply.id ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : isRead ? (
+                                <EyeOff className="h-3 w-3" />
                               ) : (
                                 <Eye className="h-3 w-3" />
                               )}
@@ -306,24 +391,27 @@ export default function FeedbackThreadModal({
 
         {/* Footer Actions */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              onUpdateFeedback(feedback.id, !feedback.viewed);
-            }}
-            disabled={updatingFeedbackId === feedback.id}
-            className="text-xs sm:text-sm flex-1 sm:flex-initial"
-          >
-            {updatingFeedbackId === feedback.id ? (
-              <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
-            ) : feedback.viewed ? (
-              <EyeOff className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            ) : (
-              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            )}
-            <span className="hidden sm:inline">Mark as {feedback.viewed ? 'Unread' : 'Read'}</span>
-            <span className="sm:hidden">{feedback.viewed ? 'Unread' : 'Read'}</span>
-          </Button>
+          {/* Only show mark as read/unread button for admins */}
+          {isAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                onUpdateFeedback(feedback.id, !feedback.viewed);
+              }}
+              disabled={updatingFeedbackId === feedback.id}
+              className="text-xs sm:text-sm flex-1 sm:flex-initial"
+            >
+              {updatingFeedbackId === feedback.id ? (
+                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
+              ) : feedback.viewed ? (
+                <EyeOff className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              ) : (
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              )}
+              <span className="hidden sm:inline">Mark as {feedback.viewed ? 'Unread' : 'Read'}</span>
+              <span className="sm:hidden">{feedback.viewed ? 'Unread' : 'Read'}</span>
+            </Button>
+          )}
           
           <Button onClick={handleClose} className="text-xs sm:text-sm flex-1 sm:flex-initial">
             Close
