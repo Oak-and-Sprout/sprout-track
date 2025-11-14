@@ -1,0 +1,64 @@
+/* Dark mode styles for FeedbackView component */
+/* Matches table component color scheme for consistency */
+
+html.dark .feedback-view-empty-text {
+  color: #9ca3af !important; /* gray-400 - matches table-caption-dark */
+}
+
+html.dark .feedback-view-row-unread {
+  background-color: #1e3a5f !important; /* dark blue - darker version of blue-50 */
+}
+
+html.dark .feedback-view-row-unread:hover {
+  background-color: #1e40af !important; /* darker blue on hover - matches table hover pattern */
+}
+
+html.dark .feedback-view-unread-indicator {
+  background-color: #3b82f6 !important; /* blue-500 */
+}
+
+html.dark .feedback-view-subject-link {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-view-subject-link:hover {
+  color: #60a5fa !important; /* blue-400 - lighter blue for hover */
+  text-decoration: underline;
+}
+
+html.dark .feedback-view-reply-badge {
+  background-color: #1e3a5f !important; /* dark blue background */
+  color: #93c5fd !important; /* blue-300 - lighter blue text */
+}
+
+html.dark .feedback-view-icon {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .feedback-view-submitter-name {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-view-submitter-email {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .feedback-view-status-read {
+  background-color: #374151 !important; /* gray-700 - matches table-header-dark */
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-view-status-unread {
+  background-color: #1e3a5f !important; /* dark blue background */
+  color: #93c5fd !important; /* blue-300 - lighter blue text */
+}
+
+html.dark .feedback-view-message-preview {
+  color: #d1d5db !important; /* gray-300 - slightly lighter than cell text */
+}
+
+html.dark .feedback-view-unread-badge {
+  background-color: #7f1d1d !important; /* dark red-900 background */
+  color: #fca5a5 !important; /* red-300 - lighter red text */
+}
+

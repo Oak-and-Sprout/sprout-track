@@ -31,6 +31,7 @@ interface AppConfigData {
   adminPass: string;
   rootDomain: string;
   enableHttps: boolean;
+  adminEmail: string | null;
   updatedAt: string;
 }
 
@@ -60,6 +61,7 @@ export default function AppConfigForm({
     adminPass: '',
     rootDomain: '',
     enableHttps: false,
+    adminEmail: '',
   });
   const [emailFormData, setEmailFormData] = useState({
     providerType: 'SENDGRID' as EmailProviderType,
@@ -134,6 +136,7 @@ export default function AppConfigForm({
           adminPass: data.data.appConfig?.adminPass || '',
           rootDomain: data.data.appConfig?.rootDomain || '',
           enableHttps: data.data.appConfig?.enableHttps || false,
+          adminEmail: data.data.appConfig?.adminEmail || '',
         });
         setEmailFormData({
           providerType: data.data.emailConfig?.providerType || 'SENDGRID',
@@ -609,6 +612,24 @@ export default function AppConfigForm({
                     </div>
                     <p className="text-xs text-gray-500 ml-6">
                       Enable secure HTTPS connections for the application
+                    </p>
+                  </div>
+
+                  {/* Admin Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="adminEmail" className="text-sm font-medium">
+                      Admin Email
+                    </Label>
+                    <Input
+                      type="email"
+                      id="adminEmail"
+                      name="adminEmail"
+                      value={formData.adminEmail}
+                      onChange={handleInputChange}
+                      placeholder="admin@example.com"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Email address used for admin replies to feedback submissions
                     </p>
                   </div>
                 </div>

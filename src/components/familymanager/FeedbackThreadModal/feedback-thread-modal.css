@@ -1,0 +1,84 @@
+/* Dark mode styles for FeedbackThreadModal */
+/* Matches table component color scheme for consistency */
+
+html.dark .feedback-thread-modal-content {
+  background-color: #1f2937 !important; /* gray-800 - matches table dark background */
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-thread-original-message {
+  background-color: #111827 !important; /* gray-900 - darker than modal background */
+  border-color: #374151 !important; /* gray-700 - matches table-header-dark */
+}
+
+html.dark .feedback-thread-reply {
+  background-color: #1e3a5f !important; /* dark blue - unread reply background */
+  border-left-color: #3b82f6 !important; /* blue-500 - unread indicator */
+}
+
+html.dark .feedback-thread-reply-read {
+  background-color: #1f2937 !important; /* gray-800 - matches modal background */
+  border-left-color: #6b7280 !important; /* gray-500 - matches table borders */
+}
+
+html.dark .feedback-thread-reply-form {
+  background-color: #111827 !important; /* gray-900 - matches original message */
+  border-color: #374151 !important; /* gray-700 - matches table-header-dark */
+}
+
+html.dark .feedback-thread-meta-text {
+  color: #9ca3af !important; /* gray-400 - matches table-caption-dark */
+}
+
+html.dark .feedback-thread-message-text {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-thread-subject-text {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-thread-submitter-name {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-thread-submitter-email-text {
+  color: #9ca3af !important; /* gray-400 - matches table-caption-dark */
+}
+
+html.dark .feedback-thread-date-text {
+  color: #9ca3af !important; /* gray-400 - matches table-caption-dark */
+}
+
+html.dark .feedback-thread-divider {
+  border-color: #374151 !important; /* gray-700 - matches table-header-dark */
+}
+
+html.dark .feedback-thread-reply-name {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-thread-reply-date {
+  color: #9ca3af !important; /* gray-400 - matches table-caption-dark */
+}
+
+html.dark .feedback-thread-reply-message-read {
+  color: #9ca3af !important; /* gray-400 - dimmer for read messages */
+}
+
+html.dark .feedback-thread-reply-message-unread {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-thread-replies-header {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
+html.dark .feedback-thread-replies-icon {
+  color: #9ca3af !important; /* gray-400 - matches table-caption-dark */
+}
+
+html.dark .feedback-thread-form-label {
+  color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
+}
+
