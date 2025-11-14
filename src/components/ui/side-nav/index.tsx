@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
-import FeedbackForm from '@/src/components/forms/FeedbackForm';
+import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import PaymentModal from '@/src/components/account-manager/PaymentModal';
 import { X, Settings, LogOut, MessageSquare, CreditCard, Clock } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
@@ -417,18 +417,11 @@ export const SideNav: React.FC<SideNavProps> = ({
           version={packageInfo.version}
         />
 
-        {/* Feedback Form - only shown in SaaS mode */}
+        {/* Feedback Page - only shown in SaaS mode */}
         {isSaasMode && (
-          <FeedbackForm
+          <FeedbackPage
             isOpen={showFeedback}
             onClose={() => setShowFeedback(false)}
-            onSuccess={() => {
-              setShowFeedback(false);
-              // Optionally close the side nav after successful feedback submission
-              if (!nonModal) {
-                onClose();
-              }
-            }}
           />
         )}
 

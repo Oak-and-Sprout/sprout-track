@@ -248,43 +248,56 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
 
 /**
  * GET /api/feedback
- * Get feedback entries (admin only)
+ * Get feedback entries
+ * - Admins: Get all feedback (with optional filters)
+ * - Users: Get only their own feedback threads
  */
 async function handleGet(req: NextRequest, authContext: any): Promise<NextResponse<ApiResponse<FeedbackResponse[]>>> {
   try {
-    // Check if user has admin privileges
-    if (!authContext.isSysAdmin && authContext.caretakerRole !== 'ADMIN') {
-      return NextResponse.json<ApiResponse<FeedbackResponse[]>>(
-        {
-          success: false,
-          error: 'Admin access required',
-        },
-        { status: 403 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const viewed = searchParams.get('viewed');
     const familyId = searchParams.get('familyId');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
+    const isAdmin = authContext.isSysAdmin || authContext.caretakerRole === 'ADMIN';
+
     // Build where clause - only show top-level feedback (no replies)
     const where: any = {
       parentId: null, // Only top-level feedback, not replies
     };
     
-    if (viewed !== null) {
-      where.viewed = viewed === 'true';
-    }
-    
-    if (familyId) {
-      where.familyId = familyId;
-    }
+    if (isAdmin) {
+      // Admin can filter by viewed status
+      if (viewed !== null) {
+        where.viewed = viewed === 'true';
+      }
+      
+      if (familyId) {
+        where.familyId = familyId;
+      }
 
-    // For non-system admins, only show feedback from their family
-    if (!authContext.isSysAdmin && authContext.familyId) {
-      where.familyId = authContext.familyId;
+      // For non-system admins, only show feedback from their family
+      if (!authContext.isSysAdmin && authContext.familyId) {
+        where.familyId = authContext.familyId;
+      }
+    } else {
+      // For regular users, only show their own feedback
+      // Match by accountId or caretakerId
+      if (authContext.isAccountAuth && authContext.accountId) {
+        where.accountId = authContext.accountId;
+      } else if (authContext.caretakerId) {
+        where.caretakerId = authContext.caretakerId;
+      } else {
+        // No way to identify user, return empty
+        return NextResponse.json<ApiResponse<FeedbackResponse[]>>(
+          {
+            success: true,
+            data: [],
+          },
+          { status: 200 }
+        );
+      }
     }
 
     const feedback = await prisma.feedback.findMany({
@@ -353,21 +366,12 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
 
 /**
  * PUT /api/feedback
- * Update feedback (mark as viewed, etc.) - admin only
+ * Update feedback (mark as viewed, etc.)
+ * - Admins: Can update any feedback
+ * - Users: Can only update replies to their own feedback threads
  */
 async function handlePut(req: NextRequest, authContext: any): Promise<NextResponse<ApiResponse<FeedbackResponse>>> {
   try {
-    // Check if user has admin privileges
-    if (!authContext.isSysAdmin && authContext.caretakerRole !== 'ADMIN') {
-      return NextResponse.json<ApiResponse<FeedbackResponse>>(
-        {
-          success: false,
-          error: 'Admin access required',
-        },
-        { status: 403 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -383,6 +387,61 @@ async function handlePut(req: NextRequest, authContext: any): Promise<NextRespon
 
     const body = await req.json();
     const { viewed } = body;
+
+    const isAdmin = authContext.isSysAdmin || authContext.caretakerRole === 'ADMIN';
+
+    // For non-admins, verify they own the feedback or it's a reply to their feedback
+    if (!isAdmin) {
+      const existingFeedback = await prisma.feedback.findUnique({
+        where: { id },
+        include: {
+          parent: true, // Include parent to check if this is a reply to user's feedback
+        },
+      });
+
+      if (!existingFeedback) {
+        return NextResponse.json<ApiResponse<FeedbackResponse>>(
+          {
+            success: false,
+            error: 'Feedback not found',
+          },
+          { status: 404 }
+        );
+      }
+
+      // Check if user owns the feedback or if it's a reply to their feedback
+      let userOwnsFeedback = false;
+      
+      if (authContext.isAccountAuth && authContext.accountId) {
+        // Check if this feedback belongs to the user's account
+        if (existingFeedback.accountId === authContext.accountId) {
+          userOwnsFeedback = true;
+        }
+        // Check if this is a reply to feedback owned by the user
+        if (existingFeedback.parent && existingFeedback.parent.accountId === authContext.accountId) {
+          userOwnsFeedback = true;
+        }
+      } else if (authContext.caretakerId) {
+        // Check if this feedback belongs to the user's caretaker
+        if (existingFeedback.caretakerId === authContext.caretakerId) {
+          userOwnsFeedback = true;
+        }
+        // Check if this is a reply to feedback owned by the user
+        if (existingFeedback.parent && existingFeedback.parent.caretakerId === authContext.caretakerId) {
+          userOwnsFeedback = true;
+        }
+      }
+
+      if (!userOwnsFeedback) {
+        return NextResponse.json<ApiResponse<FeedbackResponse>>(
+          {
+            success: false,
+            error: 'You can only update your own feedback',
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // Update the feedback
     const feedback = await prisma.feedback.update({
