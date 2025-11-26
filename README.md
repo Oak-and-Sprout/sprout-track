@@ -48,13 +48,9 @@ To deploy the latest version using Docker:
 #### For image pulls:
 x64:
 ```bash
-docker pull sprouttrack/sprout-trackv0.94.90x64
+docker pull sprouttrack/sprout-track:latest
 ```
 
-arm64:
-```bash
-docker pull sprouttrack/sprout-trackv0.94.90arm64
-```
 #### Build locally
 ```bash
 docker-compose up -d
