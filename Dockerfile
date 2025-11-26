@@ -40,7 +40,9 @@ RUN mkdir -p /app/env && \
     echo "IDLE_TIME=28800" >> /app/env/.env && \
     echo "APP_VERSION=0.96.0" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
-    echo "Base .env file created (ENC_HASH will be generated at startup)"
+    echo "Base .env file created (ENC_HASH will be generated at startup)" && \
+    # Create symlink so Next.js can find the env file at build time and runtime
+    ln -s /app/env/.env /app/.env
 
 # Build the application
 RUN npm run build
