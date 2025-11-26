@@ -4,9 +4,13 @@ import prisma from '@/app/api/db';
 import { withAccountOwner, ApiResponse, AuthResult } from '@/app/api/utils/auth';
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-10-29.clover',
-});
+// Use a safe initialization pattern to prevent build errors in self-hosted mode where Stripe keys are missing
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeKey
+  ? new Stripe(stripeKey, {
+      apiVersion: '2025-10-29.clover',
+    })
+  : ({} as unknown as Stripe);
 
 interface SubscriptionStatusData {
   isActive: boolean;
@@ -62,6 +66,20 @@ async function handler(
         { success: false, error: 'Account not found' },
         { status: 404 }
       );
+    }
+
+    // In self-hosted mode or if Stripe is not configured, return basic status from DB
+    const deploymentMode = process.env.DEPLOYMENT_MODE || 'selfhosted';
+    if (deploymentMode !== 'saas' || !stripeKey) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          isActive: account.planType === 'full', // Simple logic: full plan is always active, subs might depend
+          planType: account.planType,
+          currentPeriodEnd: account.planExpires?.toISOString() || null,
+          cancelAtPeriodEnd: false,
+        }
+      });
     }
 
     // If no subscription ID, return basic status

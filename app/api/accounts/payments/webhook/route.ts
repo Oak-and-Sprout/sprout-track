@@ -3,9 +3,13 @@ import Stripe from 'stripe';
 import prisma from '@/app/api/db';
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-10-29.clover',
-});
+// Use a safe initialization pattern to prevent build errors in self-hosted mode where Stripe keys are missing
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeKey
+  ? new Stripe(stripeKey, {
+      apiVersion: '2025-10-29.clover',
+    })
+  : ({} as unknown as Stripe);
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
@@ -32,6 +36,24 @@ export async function GET() {
  * signed events from Stripe's servers.
  */
 export async function POST(req: NextRequest) {
+  // Check deployment mode - disable webhooks in non-SaaS environments
+  const deploymentMode = process.env.DEPLOYMENT_MODE || 'selfhosted';
+  if (deploymentMode !== 'saas') {
+    return NextResponse.json(
+      { error: 'Payment webhooks are disabled in self-hosted mode' },
+      { status: 404 }
+    );
+  }
+
+  // Check if Stripe is properly configured
+  if (!stripeKey) {
+    console.error('[WEBHOOK ERROR] STRIPE_SECRET_KEY is not configured');
+    return NextResponse.json(
+      { error: 'Stripe not configured' },
+      { status: 500 }
+    );
+  }
+
   const startTime = Date.now();
   console.log('[WEBHOOK] Received webhook request');
   

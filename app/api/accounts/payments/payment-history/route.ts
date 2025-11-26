@@ -4,9 +4,13 @@ import prisma from '@/app/api/db';
 import { withAccountOwner, ApiResponse, AuthResult } from '@/app/api/utils/auth';
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-10-29.clover',
-});
+// Use a safe initialization pattern to prevent build errors in self-hosted mode where Stripe keys are missing
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeKey
+  ? new Stripe(stripeKey, {
+      apiVersion: '2025-10-29.clover',
+    })
+  : ({} as unknown as Stripe);
 
 interface PaymentHistoryItem {
   id: string;
@@ -44,6 +48,24 @@ async function handler(
   authContext: AuthResult
 ): Promise<NextResponse<ApiResponse<PaymentHistoryData>>> {
   try {
+    // Check deployment mode - payments are only available in SaaS mode
+    const deploymentMode = process.env.DEPLOYMENT_MODE || 'selfhosted';
+    if (deploymentMode !== 'saas') {
+      return NextResponse.json(
+        { success: false, error: 'Payments are disabled in self-hosted mode' },
+        { status: 404 }
+      );
+    }
+
+    // Check if Stripe is properly configured
+    if (!stripeKey) {
+      console.error('[PAYMENT ERROR] STRIPE_SECRET_KEY is not configured');
+      return NextResponse.json(
+        { success: false, error: 'Payment system not configured' },
+        { status: 500 }
+      );
+    }
+
     const accountId = authContext.accountId;
 
     if (!accountId) {
