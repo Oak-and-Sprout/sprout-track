@@ -1,5 +1,11 @@
 # Sprout Track Changelog
 
+## v0.96.7 - Fixes for Stripe API's
+
+### Changes
+
+- Added safe Stripe handling for self-hosted apps.  The Stripe API's no longer fail during build and are disabled when the app is not in SaaS mode.
+
 ## v0.96.0 - Timeline Overhaul V2 & Account Payments
 
 ### Changes
