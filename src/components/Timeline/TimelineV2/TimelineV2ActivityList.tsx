@@ -22,14 +22,16 @@ const TimelineV2ActivityList = ({
   // Group activities by time of day
   const getTimeOfDay = (date: Date): string => {
     const hour = date.getHours();
-    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 0 && hour < 6) return 'early-morning';
+    if (hour >= 6 && hour < 12) return 'morning';
     if (hour >= 12 && hour < 17) return 'afternoon';
     if (hour >= 17 && hour < 21) return 'evening';
-    return 'night';
+    return 'night'; // 21:00 (9 PM) to 23:59 (11:59 PM)
   };
 
   const getTimeOfDayLabel = (timeOfDay: string): string => {
     switch (timeOfDay) {
+      case 'early-morning': return 'Early Morning';
       case 'morning': return 'Morning';
       case 'afternoon': return 'Afternoon';
       case 'evening': return 'Evening';
@@ -40,6 +42,7 @@ const TimelineV2ActivityList = ({
 
   const groupedActivities = useMemo(() => {
     const groups: { [key: string]: ActivityType[] } = {
+      'early-morning': [],
       morning: [],
       afternoon: [],
       evening: [],
@@ -90,12 +93,13 @@ const TimelineV2ActivityList = ({
       });
     });
     
-    // Return groups in order: evening, afternoon, morning, night
+    // Return groups in order: night (9 PM-12 AM), evening, afternoon, morning, early-morning (12 AM-6 AM)
     return [
+      { timeOfDay: 'night', activities: groups.night },
       { timeOfDay: 'evening', activities: groups.evening },
       { timeOfDay: 'afternoon', activities: groups.afternoon },
       { timeOfDay: 'morning', activities: groups.morning },
-      { timeOfDay: 'night', activities: groups.night },
+      { timeOfDay: 'early-morning', activities: groups['early-morning'] },
     ].filter(group => group.activities.length > 0);
   }, [activities, selectedDate]);
 
@@ -145,21 +149,45 @@ const TimelineV2ActivityList = ({
                           
                           if ('duration' in activity && 'startTime' in activity) {
                             const startTime = new Date(activity.startTime);
-                            const startTimeStr = startTime.toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                              hour12: true,
-                            });
+                            const startDateStr = startTime.toDateString();
                             
                             if (activity.endTime) {
                               const endTime = new Date(activity.endTime);
+                              const endDateStr = endTime.toDateString();
+                              const isOvernight = startDateStr !== endDateStr;
+                              
+                              const startTimeStr = startTime.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                              });
+                              
                               const endTimeStr = endTime.toLocaleTimeString('en-US', {
                                 hour: 'numeric',
                                 minute: '2-digit',
                                 hour12: true,
                               });
-                              timeStr = `${startTimeStr} - ${endTimeStr}`;
+                              
+                              if (isOvernight) {
+                                // Show dates for overnight entries
+                                const startDateFormatted = startTime.toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                });
+                                const endDateFormatted = endTime.toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                });
+                                timeStr = `${startDateFormatted} ${startTimeStr} - ${endDateFormatted} ${endTimeStr}`;
+                              } else {
+                                timeStr = `${startTimeStr} - ${endTimeStr}`;
+                              }
                             } else {
+                              const startTimeStr = startTime.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                              });
                               timeStr = startTimeStr;
                             }
                           } else {

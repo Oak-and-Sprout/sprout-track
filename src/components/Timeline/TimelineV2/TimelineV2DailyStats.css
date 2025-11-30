@@ -104,4 +104,8 @@ html.dark .timeline-v2-daily-stats .text-amber-600 {
   color: #d97706 !important; /* amber-600 - awake time */
 }
 
+html.dark .timeline-v2-daily-stats .text-amber-700 {
+  color: #b45309 !important; /* amber-700 - poops */
+}
+
 

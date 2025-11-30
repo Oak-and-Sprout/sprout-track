@@ -141,6 +141,9 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
     // For calculating consumed amounts
     const consumedAmounts: Record<string, number> = {};
     
+    // For counting bottle feeds
+    let feedCount = 0;
+    
     // For calculating solids consumed amounts
     const solidsAmounts: Record<string, number> = {};
     
@@ -204,7 +207,15 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
               solidsAmounts[unit] = 0;
             }
             solidsAmounts[unit] += activity.amount;
+          } else if ('type' in activity && activity.type === 'BOTTLE') {
+            // Count bottle feeds and track amounts
+            feedCount++;
+            if (!consumedAmounts[unit]) {
+              consumedAmounts[unit] = 0;
+            }
+            consumedAmounts[unit] += activity.amount;
           } else {
+            // For other feed types (like BREAST with amount), just track amounts
             if (!consumedAmounts[unit]) {
               consumedAmounts[unit] = 0;
             }
@@ -231,7 +242,7 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
       }
       
       // Diaper activities
-      if ('condition' in activity) {
+      if ('condition' in activity && 'type' in activity) {
         const time = new Date(activity.time);
         
         // Only count diapers that occurred on the selected day
@@ -381,10 +392,13 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
     
     const awakeMinutes = totalElapsedMinutes - totalSleepMinutes;
     
-    // Format consumed amounts
-    const formattedConsumed = Object.entries(consumedAmounts)
+    // Format consumed amounts with feed count
+    const formattedAmounts = Object.entries(consumedAmounts)
       .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
       .join(', ');
+    const formattedConsumed = feedCount > 0 
+      ? `${feedCount} feed${feedCount !== 1 ? 's' : ''}, ${formattedAmounts}`
+      : formattedAmounts || 'None';
       
     // Format solids consumed amounts
     const formattedSolidsConsumed = Object.entries(solidsAmounts)
