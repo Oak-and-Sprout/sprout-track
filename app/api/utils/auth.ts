@@ -3,7 +3,11 @@ import prisma from '../db';
 import jwt from 'jsonwebtoken';
 
 // Secret key for JWT signing - in production, use environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
+// Using a getter function to always read the latest value from process.env
+// This allows the secret to be updated when the .env file is reloaded after backup restore
+function getJwtSecret(): string {
+  return process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
+}
 
 // In-memory token blacklist (in a production app, this would be in Redis or similar)
 // This is a simple Map that stores invalidated tokens with their expiry time
@@ -95,7 +99,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
 
       try {
         // Verify and decode the token
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const decoded = jwt.verify(token, getJwtSecret()) as any;
         
         // Handle setup authentication tokens
         if (decoded.isSetupAuth && decoded.setupToken) {
