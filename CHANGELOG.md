@@ -1,5 +1,12 @@
 # Sprout Track Changelog
 
+## v0.96.30 - Update to Nextjs for [CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478)
+
+### Changes
+
+- Patched Next.js and upgraded packages
+- Fixed type errors generated from upgrade for data downloads and buffer handling
+
 ## v0.96.28 - Bug Fixes For Timeilne, Daily Stats and Forms
 
 ### Changes
