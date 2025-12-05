@@ -136,9 +136,14 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   
   if ('type' in activity) {
     if ('duration' in activity) {
-      const startTime = activity.startTime ? formatTime(activity.startTime, settings, false) : 'unknown';
-      const endTime = activity.endTime ? formatTime(activity.endTime, settings, false) : 'ongoing';
-      const day = formatTime(activity.startTime, settings, true).split(' ')[0];
+      // For sleep activities, always show dates with times
+      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true) : 'unknown';
+      let endTime = 'ongoing';
+      
+      if (activity.endTime) {
+        endTime = formatTime(activity.endTime, settings, true);
+      }
+      
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
       const formatSleepQuality = (quality: string) => {
         switch (quality) {
@@ -161,9 +166,16 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       
       // Only show end time and duration if sleep has ended
       if (activity.endTime) {
+        // Format duration as hours and minutes
+        let durationValue = 'unknown';
+        if (activity.duration) {
+          const hours = Math.floor(activity.duration / 60);
+          const mins = activity.duration % 60;
+          durationValue = `${hours}h ${mins}m`;
+        }
         details.push(
           { label: 'End Time', value: endTime },
-          { label: 'Duration', value: `${activity.duration || 'unknown'} minutes` }
+          { label: 'Duration', value: durationValue }
         );
         // Only show quality if sleep has ended
         if (activity.quality) {

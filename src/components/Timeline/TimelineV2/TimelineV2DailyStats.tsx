@@ -76,7 +76,11 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     
     let totalSleepMinutes = 0;
     let diaperCount = 0;
-    let feedCount = 0;
+    let poopCount = 0;
+    let totalFeedCount = 0;
+    const bottleFeedAmounts: Record<string, number> = {};
+    let totalBreastFeedMinutes = 0;
+    const solidsAmounts: Record<string, number> = {};
     let medicineCount = 0;
     let noteCount = 0;
     let bathCount = 0;
@@ -102,21 +106,56 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
       }
       
-      // Feed activities - count bottle and breast feeds, not solids
+      // Feed activities - track all types together
       if ('amount' in activity && 'type' in activity) {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
-          if (activity.type === 'BOTTLE' || activity.type === 'BREAST') {
-            feedCount++;
+          if (activity.type === 'BOTTLE') {
+            totalFeedCount++;
+            // Track bottle feed amounts by unit
+            const unit = activity.unitAbbr || 'oz';
+            if (!bottleFeedAmounts[unit]) {
+              bottleFeedAmounts[unit] = 0;
+            }
+            bottleFeedAmounts[unit] += activity.amount || 0;
+          } else if (activity.type === 'SOLIDS') {
+            totalFeedCount++;
+            // Track solids amounts by unit
+            const unit = activity.unitAbbr || 'g';
+            if (!solidsAmounts[unit]) {
+              solidsAmounts[unit] = 0;
+            }
+            solidsAmounts[unit] += activity.amount || 0;
+          }
+        }
+      }
+      
+      // Breast feed activities - track duration instead of volume
+      if ('type' in activity && activity.type === 'BREAST') {
+        const time = new Date(activity.time);
+        if (time >= startOfDay && time <= endOfDay) {
+          totalFeedCount++;
+          // Track duration: prefer feedDuration (in seconds), fall back to amount (in minutes)
+          if ('feedDuration' in activity && activity.feedDuration) {
+            // Convert seconds to minutes
+            totalBreastFeedMinutes += Math.floor(activity.feedDuration / 60);
+          } else if ('amount' in activity && activity.amount) {
+            // Amount is already in minutes for older records
+            totalBreastFeedMinutes += activity.amount;
           }
         }
       }
       
       // Diaper activities
-      if ('condition' in activity) {
+      if ('condition' in activity && 'type' in activity) {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
           diaperCount++;
+          
+          // Count poops (dirty or wet+dirty)
+          if (activity.type === 'DIRTY' || activity.type === 'BOTH') {
+            poopCount++;
+          }
         }
       }
       
@@ -212,12 +251,38 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
-    // Feed tile
-    if (feedCount > 0) {
+    // Combined feed tile (bottle, breast, and solids)
+    if (totalFeedCount > 0) {
+      // Format bottle feed amounts
+      const formattedBottleAmounts = Object.entries(bottleFeedAmounts)
+        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
+        .join(', ');
+      
+      // Format solids amounts
+      const formattedSolidsAmounts = Object.entries(solidsAmounts)
+        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
+        .join(', ');
+      
+      // Build combined label
+      const labelParts: string[] = [];
+      if (formattedBottleAmounts) {
+        labelParts.push(formattedBottleAmounts);
+      }
+      if (totalBreastFeedMinutes > 0) {
+        labelParts.push(formatMinutes(totalBreastFeedMinutes));
+      }
+      if (formattedSolidsAmounts) {
+        labelParts.push(formattedSolidsAmounts);
+      }
+      
+      const combinedLabel = labelParts.length > 0 
+        ? labelParts.join(' • ')
+        : 'Feeds';
+      
       tiles.push({
         filter: 'feed',
-        label: 'Feeds',
-        value: feedCount.toString(),
+        label: combinedLabel,
+        value: totalFeedCount.toString(),
         icon: <Icon iconNode={bottleBaby} className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#7dd3fc]', // sky-300 - matches timeline
@@ -235,6 +300,20 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         icon: <Icon iconNode={diaper} className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#0d9488]', // teal-600 - matches timeline
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Poop tile
+    if (poopCount > 0) {
+      tiles.push({
+        filter: 'poop',
+        label: 'Poops',
+        value: poopCount.toString(),
+        icon: <Icon iconNode={diaper} className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-amber-700', // amber-700 for poops
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -407,9 +486,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           <>
             {statTiles.length > 0 ? (
               <div className="flex flex-wrap gap-0.5">
-                {statTiles.map((tile) => (
+                {statTiles.map((tile, index) => (
                   <button
-                    key={tile.filter || 'awake'}
+                    key={tile.filter ? `${tile.filter}-${tile.label.toLowerCase().replace(/\s+/g, '-')}` : tile.label.toLowerCase().replace(/\s+/g, '-')}
                     onClick={() => {
                       // Only allow filtering if it's not the awake time tile
                       if (tile.filter !== null) {

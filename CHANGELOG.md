@@ -1,5 +1,15 @@
 # Sprout Track Changelog
 
+## v0.96.28 - Bug Fixes For Timeilne, Daily Stats and Forms
+
+### Changes
+
+- Updated the timeline to include an "Early Morning" sort area
+- Added dates to sleep logs that span over midnight
+- Updated the daily stats to include feed unit counts \ time, and added poopy diaper counter
+- Updated activity forms so that time did not auto increment on background refreshes overriding user entry
+- Added additional logic during database restoration to refresh environment variables across the app once restored
+
 ## v0.96.7 - Fixes for Stripe API's
 
 ### Changes

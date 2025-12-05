@@ -56,45 +56,62 @@ export default function BathForm({
   });
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initializedTime, setInitializedTime] = useState<string | null>(null);
+  const [lastActivityId, setLastActivityId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && !isInitialized) {
-      if (activity) {
-        // Editing mode - populate with activity data
-        try {
-          const activityDate = new Date(activity.time);
-          // Check if the date is valid
-          if (!isNaN(activityDate.getTime())) {
-            setSelectedDateTime(activityDate);
-          }
-        } catch (error) {
-          console.error('Error parsing activity time:', error);
-        }
-        setFormData({
-          soapUsed: activity.soapUsed || false,
-          shampooUsed: activity.shampooUsed || false,
-          notes: activity.notes || '',
-        });
-      } else {
-        // New entry mode - set the time
-        try {
-          const initialDate = new Date(initialTime);
-          // Check if the date is valid
-          if (!isNaN(initialDate.getTime())) {
-            setSelectedDateTime(initialDate);
-          }
-        } catch (error) {
-          console.error('Error parsing initialTime:', error);
-        }
-      }
+    if (isOpen) {
+      // Only initialize if not already initialized, or if activity ID changed (switching between edit/new/different activities)
+      const currentActivityId = activity?.id || null;
+      const shouldInitialize = !isInitialized || currentActivityId !== lastActivityId;
       
-      // Mark as initialized
-      setIsInitialized(true);
+      if (shouldInitialize) {
+        if (activity) {
+          // Editing mode - populate with activity data
+          try {
+            const activityDate = new Date(activity.time);
+            // Check if the date is valid
+            if (!isNaN(activityDate.getTime())) {
+              setSelectedDateTime(activityDate);
+            }
+          } catch (error) {
+            console.error('Error parsing activity time:', error);
+          }
+          setFormData({
+            soapUsed: activity.soapUsed || false,
+            shampooUsed: activity.shampooUsed || false,
+            notes: activity.notes || '',
+          });
+          
+          // Store the initial time used for editing
+          setInitializedTime(activity.time);
+        } else {
+          // New entry mode - initialize from initialTime prop
+          try {
+            const initialDate = new Date(initialTime);
+            // Check if the date is valid
+            if (!isNaN(initialDate.getTime())) {
+              setSelectedDateTime(initialDate);
+            }
+          } catch (error) {
+            console.error('Error parsing initialTime:', error);
+          }
+          
+          // Store the initial time used for new entry
+          setInitializedTime(initialTime);
+        }
+        
+        // Mark as initialized and track activity ID
+        setIsInitialized(true);
+        setLastActivityId(currentActivityId);
+      }
     } else if (!isOpen) {
-      // Reset initialization flag when form closes
+      // Reset initialization flag and stored time when form closes
       setIsInitialized(false);
+      setInitializedTime(null);
+      setLastActivityId(null);
     }
-  }, [isOpen, initialTime, activity, isInitialized]);
+  }, [isOpen, activity, initialTime, isInitialized, lastActivityId]);
 
   // Handle date/time change
   const handleDateTimeChange = (date: Date) => {

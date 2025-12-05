@@ -81,47 +81,74 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedMedicine, setSelectedMedicine] = useState<MedicineWithContacts | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [initializedTime, setInitializedTime] = useState<string | null>(null);
+  const [lastActivityId, setLastActivityId] = useState<string | null>(null);
   
-  // Update form data when activity changes (for editing)
+  // Update form data when form opens or activity changes (for editing)
   useEffect(() => {
-    if (activity) {
-      setFormData({
-        babyId: babyId || '',
-        medicineId: activity.medicineId || '',
-        time: activity.time || toUTCString(new Date(initialTime)) || new Date(initialTime).toISOString(),
-        doseAmount: activity.doseAmount || 0,
-        unitAbbr: activity.unitAbbr || '',
-        notes: activity.notes || '',
-      });
+    if (isOpen) {
+      // Only initialize if not already initialized, or if activity ID changed (switching between edit/new/different activities)
+      const currentActivityId = activity?.id || null;
+      const shouldInitialize = !isInitialized || currentActivityId !== lastActivityId;
       
-      // Update the selected date time as well
-      if (activity.time) {
-        setSelectedDateTime(new Date(activity.time));
+      if (shouldInitialize) {
+        if (activity) {
+          // Editing mode - populate with activity data
+          setFormData({
+            babyId: babyId || '',
+            medicineId: activity.medicineId || '',
+            time: activity.time || toUTCString(new Date(initialTime)) || new Date(initialTime).toISOString(),
+            doseAmount: activity.doseAmount || 0,
+            unitAbbr: activity.unitAbbr || '',
+            notes: activity.notes || '',
+          });
+          
+          // Update the selected date time as well
+          if (activity.time) {
+            setSelectedDateTime(new Date(activity.time));
+          }
+          
+          // Store the initial time used for editing
+          setInitializedTime(activity.time || initialTime);
+          
+          // Find and set the selected medicine if we have medicines loaded
+          if (medicines.length > 0 && activity.medicineId) {
+            const currentMedicine = medicines.find((m: MedicineWithContacts) => m.id === activity.medicineId);
+            setSelectedMedicine(currentMedicine || null);
+          }
+        } else {
+          // New entry mode - initialize from initialTime prop
+          const safeResetTime = initialTime ? new Date(initialTime) : new Date();
+          const isValidResetDate = safeResetTime instanceof Date && !isNaN(safeResetTime.getTime());
+          const defaultResetDate = isValidResetDate ? safeResetTime : new Date();
+          
+          setFormData({
+            babyId: babyId || '',
+            medicineId: '',
+            time: toUTCString(defaultResetDate) || defaultResetDate.toISOString(),
+            doseAmount: 0,
+            unitAbbr: '',
+            notes: '',
+          });
+          setSelectedDateTime(defaultResetDate);
+          setSelectedMedicine(null);
+          
+          // Store the initial time used for new entry
+          setInitializedTime(initialTime);
+        }
+        
+        // Mark as initialized and track activity ID
+        setIsInitialized(true);
+        setLastActivityId(currentActivityId);
       }
-      
-      // Find and set the selected medicine if we have medicines loaded
-      if (medicines.length > 0 && activity.medicineId) {
-        const currentMedicine = medicines.find((m: MedicineWithContacts) => m.id === activity.medicineId);
-        setSelectedMedicine(currentMedicine || null);
-      }
-    } else {
-      // Reset form for new entry
-      const safeResetTime = initialTime ? new Date(initialTime) : new Date();
-      const isValidResetDate = safeResetTime instanceof Date && !isNaN(safeResetTime.getTime());
-      const defaultResetDate = isValidResetDate ? safeResetTime : new Date();
-      
-      setFormData({
-        babyId: babyId || '',
-        medicineId: '',
-        time: toUTCString(defaultResetDate) || defaultResetDate.toISOString(),
-        doseAmount: 0,
-        unitAbbr: '',
-        notes: '',
-      });
-      setSelectedDateTime(defaultResetDate);
-      setSelectedMedicine(null);
+    } else if (!isOpen) {
+      // Reset initialization flag and stored time when form closes
+      setIsInitialized(false);
+      setInitializedTime(null);
+      setLastActivityId(null);
     }
-  }, [activity, babyId, initialTime, toUTCString, medicines]);
+  }, [isOpen, activity, babyId, initialTime, toUTCString, medicines, isInitialized, lastActivityId]);
 
   useEffect(() => {
     if (isOpen) {

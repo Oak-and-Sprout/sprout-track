@@ -4,6 +4,7 @@ import path from 'path';
 import JSZip from 'jszip';
 import prisma from '../db';
 import { withSysAdminAuth, ApiResponse } from '../utils/auth';
+import { reloadEnvFile } from '../utils/env-reload';
 
 // Helper to ensure database is closed before operations
 async function disconnectPrisma() {
@@ -140,6 +141,8 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
         // Write new .env file if provided
         if (envContent) {
           await fs.promises.writeFile(envPath, envContent);
+          // Reload environment variables from the new .env file
+          reloadEnvFile(envPath);
         }
 
         return NextResponse.json<ApiResponse<null>>({ success: true });
