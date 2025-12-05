@@ -212,13 +212,16 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     // Create the data export
     const dataExport = await createDataExport(exportData, family.slug);
     
+    // Convert Buffer to Uint8Array for NextResponse compatibility
+    const bufferArray = new Uint8Array(dataExport.buffer);
+    
     // Create response with zip file
-    return new NextResponse(dataExport.buffer, {
+    return new NextResponse(bufferArray, {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="${dataExport.filename}"`,
-        'Content-Length': dataExport.buffer.length.toString(),
+        'Content-Length': bufferArray.length.toString(),
       },
     });
 
