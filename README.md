@@ -15,7 +15,7 @@
 > - **Local installations**: Update to version 0.96.30 immediately
 > - **All users**: Do not delay this update - your application is vulnerable until upgraded
 >
-> For more details about the vulnerability, see: [Next.js Security Advisory CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478) and []
+> For more details about the vulnerability, see: [Next.js Security Advisory CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478)
 >
 > ---
 
