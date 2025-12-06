@@ -15,6 +15,7 @@
 > - **Local installations**: Follow the manual upgrade steps below
 > - **All users**: Do not delay this update - your application is vulnerable until upgraded
 >
+<<<<<<< HEAD
 > **Manual Upgrade Instructions for Local Installations:**
 >
 > 1. **Backup your database and environment file**:
@@ -30,6 +31,8 @@
 >
 > **Alternative**: You can use `./scripts/deployment.sh` which automates the backup and rebuild process (without deleting the directory).
 >
+=======
+>>>>>>> 1042ac2e506ccbee50857b900fc9b65fe9e4b5bc
 > For more details about the vulnerability, see: [Next.js Security Advisory CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478)
 >
 > ---
