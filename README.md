@@ -11,9 +11,19 @@
 > - **Docker users**: A new patched image has been deployed to `sprouttrack/sprout-track:latest`
 >
 > **Required actions:**
-> - **Docker users**: Pull the latest image: `docker pull sprouttrack/sprout-track:latest` and restart your container
+> - **Docker users**: Follow the Docker upgrade steps below
 > - **Local installations**: Follow the manual upgrade steps below
 > - **All users**: Do not delay this update - your application is vulnerable until upgraded
+>
+> **Docker Upgrade Instructions:**
+>
+> 1. **Backup your database**: Navigate to `/family-manager` in your browser, log in, and download your database backup from the settings page.
+>
+> 2. **Pull the latest patched image**: `docker pull sprouttrack/sprout-track:latest`
+>
+> 3. **Restart your container**: Stop and start your container to use the new image (e.g., `docker-compose down` then `docker-compose up -d`).
+>
+> 4. **Restore your database**: When the new container starts, access the setup wizard and use the import feature to restore your database backup file.
 >
 > **Manual Upgrade Instructions for Local Installations:**
 >
