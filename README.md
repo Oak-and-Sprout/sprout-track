@@ -1,5 +1,24 @@
 # Sprout Track
 
+> **🚨 CRITICAL SECURITY UPDATE - IMMEDIATE ACTION REQUIRED**
+>
+> **All users of Sprout Track must upgrade to version 0.96.30 immediately** due to a critical React Server Components vulnerability (CVE-2025-66478) that allows remote code execution. This vulnerability affects Next.js applications using React Server Components with the App Router.
+>
+> **What you need to know:**
+> - **Affected versions**: All versions prior to 0.96.30
+> - **Fixed version**: Version 0.96.30 (includes Next.js 15.5.7 with security patches)
+> - **Severity**: Critical (CVSS 10.0) - Remote Code Execution vulnerability
+> - **Docker users**: A new patched image has been deployed to `sprouttrack/sprout-track:latest`
+>
+> **Required actions:**
+> - **Docker users**: Pull the latest image: `docker pull sprouttrack/sprout-track:latest` and restart your container
+> - **Local installations**: Update to version 0.96.30 immediately
+> - **All users**: Do not delay this update - your application is vulnerable until upgraded
+>
+> For more details about the vulnerability, see: [Next.js Security Advisory CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478) and []
+>
+> ---
+
 > **⚠️ IMPORTANT NOTICE - Version 0.94.89 Upgrade**
 >
 > **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** In attempt to smooth over upgrades for self-hosters that use Docker the /family-manager admin password will be reset to defaults during the import process for new installations.  If you manually save/restore your database backup and envirnoment file before the  upgrade and do not use the import utility then you will not be affected. [Read full details here](documentation/admin-password-reset-notification.md).
