@@ -12,10 +12,25 @@
 >
 > **Required actions:**
 > - **Docker users**: Pull the latest image: `docker pull sprouttrack/sprout-track:latest` and restart your container
-> - **Local installations**: Update to version 0.96.30 immediately
+> - **Local installations**: Follow the manual upgrade steps below
 > - **All users**: Do not delay this update - your application is vulnerable until upgraded
 >
-> For more details about the vulnerability, see: [Next.js Security Advisory CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478) and []
+> **Manual Upgrade Instructions for Local Installations:**
+>
+> 1. **Backup your database and environment file**:
+>    - Database: `db/baby-tracker.db`
+>    - Log database (if used): `db/api-logs.db`
+>    - Environment file: `.env`
+>
+> 2. **Completely remove your existing project directory** and re-clone the repository from GitHub to get the latest code with security patches.
+>
+> 3. **Follow the standard setup procedure** as described in the [Getting Started](#getting-started) section of this README.
+>
+> 4. **Restore your backed-up database and `.env` file** to the new installation.
+>
+> **Alternative**: You can use `./scripts/deployment.sh` which automates the backup and rebuild process (without deleting the directory).
+>
+> For more details about the vulnerability, see: [Next.js Security Advisory CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478)
 >
 > ---
 
