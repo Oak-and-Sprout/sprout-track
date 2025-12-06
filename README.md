@@ -23,7 +23,7 @@
 >
 > 3. **Restart your container**: Stop and start your container to use the new image (e.g., `docker-compose down` then `docker-compose up -d`).
 >
-> 4. **Restore your database**: When the new container starts, access the setup wizard and use the import feature to restore your database backup file.
+> 4. **Restore your database if prompted**: When the new container starts up existing data should automatically migrate if your previous version was after v.0.94.89. If you see the setup wizard use the import feature to restore your database backup file.
 >
 > **Manual Upgrade Instructions for Local Installations:**
 >
