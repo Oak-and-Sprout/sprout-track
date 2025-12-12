@@ -75,13 +75,14 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     endOfDay.setHours(23, 59, 59, 999);
     
     let totalSleepMinutes = 0;
-    let diaperCount = 0;
+    let wetCount = 0;
+    let dirtyCount = 0;
     let poopCount = 0;
     let totalFeedCount = 0;
     const bottleFeedAmounts: Record<string, number> = {};
     let totalBreastFeedMinutes = 0;
     const solidsAmounts: Record<string, number> = {};
-    let medicineCount = 0;
+    const medicineStats: Record<string, { count: number, total: number, unit: string }> = {};
     let noteCount = 0;
     let bathCount = 0;
     let pumpCount = 0;
@@ -90,8 +91,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let awakeMinutes = 0;
 
     activities.forEach(activity => {
-      // Sleep activities
-      if ('duration' in activity && 'startTime' in activity) {
+      // Sleep activities (exclude pump activities which also have duration and startTime)
+      if ('duration' in activity && 'startTime' in activity && 
+          'type' in activity && // Sleep activities have type (NAP or NIGHT_SLEEP)
+          !('leftAmount' in activity || 'rightAmount' in activity)) { // Exclude pump activities
         const startTime = new Date(activity.startTime);
         const endTime = 'endTime' in activity && activity.endTime ? new Date(activity.endTime) : null;
         
@@ -150,10 +153,16 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       if ('condition' in activity && 'type' in activity) {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
-          diaperCount++;
-          
-          // Count poops (dirty or wet+dirty)
-          if (activity.type === 'DIRTY' || activity.type === 'BOTH') {
+          // Count wet and dirty diapers exclusively
+          if (activity.type === 'WET') {
+            wetCount++;
+          } else if (activity.type === 'DIRTY') {
+            dirtyCount++;
+            poopCount++;
+          } else if (activity.type === 'BOTH') {
+            // BOTH counts as both wet and dirty
+            wetCount++;
+            dirtyCount++;
             poopCount++;
           }
         }
@@ -163,7 +172,26 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       if ('doseAmount' in activity && 'medicineId' in activity) {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
-          medicineCount++;
+          // Get medicine name
+          let medicineName = 'Unknown';
+          if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
+            medicineName = (activity.medicine as { name?: string }).name || medicineName;
+          }
+          
+          // Initialize medicine record if it doesn't exist
+          if (!medicineStats[medicineName]) {
+            medicineStats[medicineName] = { 
+              count: 0, 
+              total: 0, 
+              unit: activity.unitAbbr || '' 
+            };
+          }
+          
+          // Increment count and add to total
+          medicineStats[medicineName].count += 1;
+          if (activity.doseAmount && typeof activity.doseAmount === 'number') {
+            medicineStats[medicineName].total += activity.doseAmount;
+          }
         }
       }
       
@@ -213,9 +241,31 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       }
     });
 
-    // Calculate awake time (elapsed time since start of day - sleep time)
+    // Check for active sleep (sleep without endTime)
+    // Note: Must exclude pump activities which also have duration and startTime
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
+    
+    const activeSleep = activities.find(activity => 
+      'duration' in activity && 
+      'startTime' in activity && 
+      'type' in activity && // Sleep activities have type (NAP or NIGHT_SLEEP)
+      !('leftAmount' in activity || 'rightAmount' in activity) && // Exclude pump activities
+      !('endTime' in activity && activity.endTime) &&
+      new Date(activity.startTime) >= startOfDay &&
+      new Date(activity.startTime) <= endOfDay
+    );
+
+    if (activeSleep && 'startTime' in activeSleep) {
+      const startTime = new Date(activeSleep.startTime);
+      const endTime = isToday ? now : endOfDay;
+      const activeSleepMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+      if (activeSleepMinutes > 0) {
+        totalSleepMinutes += activeSleepMinutes;
+      }
+    }
+
+    // Calculate awake time (elapsed time since start of day - sleep time)
     const referenceTime = isToday ? now : endOfDay;
     
     const elapsedMinutes = Math.floor((referenceTime.getTime() - startOfDay.getTime()) / (1000 * 60));
@@ -291,15 +341,15 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
-    // Diaper tile
-    if (diaperCount > 0) {
+    // Wet diaper tile
+    if (wetCount > 0) {
       tiles.push({
         filter: 'diaper',
-        label: 'Diapers',
-        value: diaperCount.toString(),
+        label: 'Wet Diapers',
+        value: wetCount.toString(),
         icon: <Icon iconNode={diaper} className="h-full w-full" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-[#0d9488]', // teal-600 - matches timeline
+        iconColor: 'text-[#0d9488]', // teal-600 (green) - matches timeline for wet
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -319,18 +369,40 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
-    // Medicine tile
-    if (medicineCount > 0) {
-      tiles.push({
-        filter: 'medicine',
-        label: 'Medicine',
-        value: `${medicineCount}x`,
-        icon: <PillBottle className="h-full w-full" />,
-        bgColor: 'bg-gray-50',
-        iconColor: 'text-[#43B755]', // green - matches timeline
-        borderColor: 'border-gray-500',
-        bgActiveColor: 'bg-gray-100'
-      });
+    // Medicine tiles
+    const medicineEntries = Object.entries(medicineStats).filter(([_, stats]) => stats.count > 0);
+    if (medicineEntries.length > 0) {
+      if (medicineEntries.length === 1) {
+        // Single medicine: show "MedicineName: countx (totalAmount unit)"
+        const [medicineName, stats] = medicineEntries[0];
+        tiles.push({
+          filter: 'medicine',
+          label: `${medicineName}: ${stats.count}x (${stats.total}${stats.unit})`,
+          value: stats.count.toString(),
+          icon: <PillBottle className="h-full w-full" />,
+          bgColor: 'bg-gray-50',
+          iconColor: 'text-[#43B755]', // green - matches timeline
+          borderColor: 'border-gray-500',
+          bgActiveColor: 'bg-gray-100'
+        });
+      } else {
+        // Multiple medicines: show all in label "Med1: 2x (10mg), Med2: 1x (5mg)"
+        const totalCount = medicineEntries.reduce((sum, [_, stats]) => sum + stats.count, 0);
+        const label = medicineEntries
+          .map(([name, stats]) => `${name}: ${stats.count}x (${stats.total}${stats.unit})`)
+          .join(', ');
+        
+        tiles.push({
+          filter: 'medicine',
+          label: label,
+          value: totalCount.toString(),
+          icon: <PillBottle className="h-full w-full" />,
+          bgColor: 'bg-gray-50',
+          iconColor: 'text-[#43B755]', // green - matches timeline
+          borderColor: 'border-gray-500',
+          bgActiveColor: 'bg-gray-100'
+        });
+      }
     }
 
     // Note tile

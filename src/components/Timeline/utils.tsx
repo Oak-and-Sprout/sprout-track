@@ -25,6 +25,10 @@ export const getActivityIcon = (activity: ActivityType) => {
     // Medicine log
     return <PillBottle className="h-4 w-4 text-white" />;
   }
+  // Check for pump activities FIRST (before sleep) since they also have duration and startTime
+  if ('leftAmount' in activity || 'rightAmount' in activity) {
+    return <LampWallDown className="h-4 w-4 text-white" />; // Pump activity
+  }
   if ('type' in activity) {
     if ('duration' in activity) {
       return <Moon className="h-4 w-4 text-white" />; // Sleep activity
@@ -41,9 +45,6 @@ export const getActivityIcon = (activity: ActivityType) => {
   }
   if ('soapUsed' in activity) {
     return <Bath className="h-4 w-4 text-white" />; // Bath activity
-  }
-  if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return <LampWallDown className="h-4 w-4 text-white" />; // Pump activity
   }
   if ('title' in activity && 'category' in activity) {
     return <Trophy className="h-4 w-4 text-white" />; // Milestone activity
@@ -770,6 +771,13 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
       textColor: 'text-white',
     };
   }
+  // Check for pump activities FIRST (before sleep) since they also have duration and startTime
+  if ('leftAmount' in activity || 'rightAmount' in activity) {
+    return {
+      bg: 'bg-gradient-to-r from-purple-200 to-purple-300',
+      textColor: 'text-white',
+    };
+  }
   if ('type' in activity) {
     if ('duration' in activity) {
       return {
@@ -799,12 +807,6 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
   if ('soapUsed' in activity) {
     return {
       bg: 'bg-gradient-to-r from-orange-400 to-orange-500',
-      textColor: 'text-white',
-    };
-  }
-  if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return {
-      bg: 'bg-gradient-to-r from-purple-200 to-purple-300',
       textColor: 'text-white',
     };
   }

@@ -214,13 +214,14 @@ const TimelineV2ActivityList = ({
                           const activityColor = getActivityColor(style.bg);
                           
                           // Determine activity type class for styling
+                          // Check pump FIRST since it also has duration and startTime
                           let activityTypeClass = '';
-                          if ('duration' in activity) activityTypeClass = 'sleep';
+                          if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
+                          else if ('duration' in activity && 'type' in activity) activityTypeClass = 'sleep';
                           else if ('amount' in activity) activityTypeClass = 'feed';
                           else if ('condition' in activity) activityTypeClass = 'diaper';
                           else if ('content' in activity) activityTypeClass = 'note';
                           else if ('soapUsed' in activity) activityTypeClass = 'bath';
-                          else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
                           else if ('title' in activity && 'category' in activity) activityTypeClass = 'milestone';
                           else if ('value' in activity && 'unit' in activity) activityTypeClass = 'measurement';
                           else if ('doseAmount' in activity && 'medicineId' in activity) activityTypeClass = 'medicine';
