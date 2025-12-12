@@ -250,6 +250,20 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         details.push({ label: 'Food', value: activity.food });
       }
 
+      // Show bottle type for bottle feeds
+      if (activity.type === 'BOTTLE' && (activity as any).bottleType) {
+        const bottleType = (activity as any).bottleType;
+        details.push({ 
+          label: 'Bottle Type', 
+          value: bottleType.replace('\\', '/') 
+        });
+      }
+
+      // Show notes for all feed types if present
+      if ((activity as any).notes) {
+        details.push({ label: 'Notes', value: (activity as any).notes });
+      }
+
       return {
         title: 'Feed Record',
         details: [...details, ...caretakerDetail],

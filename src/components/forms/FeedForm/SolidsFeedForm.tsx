@@ -1,16 +1,19 @@
 import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
+import { Textarea } from '@/src/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
 
 interface SolidsFeedFormProps {
   amount: string;
   unit: string;
   food: string;
+  notes: string;
   loading: boolean;
   onAmountChange: (amount: string) => void;
   onUnitChange: (unit: string) => void;
   onFoodChange: (food: string) => void;
+  onNotesChange: (notes: string) => void;
   onIncrement: () => void;
   onDecrement: () => void;
 }
@@ -19,10 +22,12 @@ export default function SolidsFeedForm({
   amount,
   unit,
   food,
+  notes,
   loading,
   onAmountChange,
   onUnitChange,
   onFoodChange,
+  onNotesChange,
   onIncrement,
   onDecrement,
 }: SolidsFeedFormProps) {
@@ -89,6 +94,18 @@ export default function SolidsFeedForm({
           onChange={(e) => onFoodChange(e.target.value)}
           className="w-full"
           placeholder="Enter food"
+          disabled={loading}
+        />
+      </div>
+      <div className="mb-6">
+        <label className="form-label">Notes</label>
+        <Textarea
+          id="notes"
+          name="notes"
+          placeholder="Enter any notes about the feeding"
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          rows={3}
           disabled={loading}
         />
       </div>

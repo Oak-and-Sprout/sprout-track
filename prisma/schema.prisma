@@ -330,6 +330,8 @@ model FeedLog {
   unitAbbr     String?
   side         BreastSide?
   food         String?     // Description of solid foods
+  notes        String?     // Optional notes for any feed type
+  bottleType   String?     // Type of bottle feed: formula, breast milk, formula\breast, milk, other
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?

@@ -65,6 +65,8 @@ export default function FeedForm({
     unit: 'OZ', // Default unit
     side: '' as BreastSide | '',
     food: '',
+    notes: '',
+    bottleType: '',
     feedDuration: 0, // Duration in seconds for breastfeeding timer
     leftDuration: 0, // Duration in seconds for left breast
     rightDuration: 0, // Duration in seconds for right breast
@@ -238,6 +240,8 @@ export default function FeedForm({
            activity.type === 'SOLIDS' ? defaultSettings.defaultSolidsUnit : ''),
         side: activity.side || '',
         food: activity.food || '',
+        notes: (activity as any).notes || '',
+        bottleType: (activity as any).bottleType || '',
         feedDuration: feedDuration,
         leftDuration: activity.side === 'LEFT' ? feedDuration : 0,
         rightDuration: activity.side === 'RIGHT' ? feedDuration : 0,
@@ -413,6 +417,8 @@ export default function FeedForm({
         unit: defaultSettings.defaultBottleUnit,
         side: '' as BreastSide | '',
         food: '',
+        notes: '',
+        bottleType: '',
         feedDuration: 0,
         leftDuration: 0,
         rightDuration: 0,
@@ -485,6 +491,8 @@ export default function FeedForm({
         unitAbbr: formData.unit // This should correctly send 'TBSP' or 'G'
       }),
       ...(formData.type === 'SOLIDS' && formData.food && { food: formData.food }),
+      ...(formData.type === 'BOTTLE' && formData.bottleType && { bottleType: formData.bottleType }),
+      ...(formData.notes && { notes: formData.notes }),
     };
 
     console.log('Payload being sent:', payload); // Debug log for payload
@@ -626,6 +634,8 @@ export default function FeedForm({
       unit: defaultSettings.defaultBottleUnit,
       side: '' as BreastSide | '',
       food: '',
+      notes: '',
+      bottleType: '',
       feedDuration: 0,
       leftDuration: 0,
       rightDuration: 0,
@@ -767,6 +777,8 @@ export default function FeedForm({
                   }
                 }}
                 isEditing={!!activity} // Pass true if editing an existing record
+                notes={formData.notes}
+                onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
               />
             )}
             
@@ -774,9 +786,13 @@ export default function FeedForm({
               <BottleFeedForm
                 amount={formData.amount}
                 unit={formData.unit}
+                bottleType={formData.bottleType}
+                notes={formData.notes}
                 loading={loading}
                 onAmountChange={handleAmountChange}
                 onUnitChange={(unit) => setFormData(prev => ({ ...prev, unit }))}
+                onBottleTypeChange={(bottleType) => setFormData(prev => ({ ...prev, bottleType }))}
+                onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
                 onIncrement={incrementAmount}
                 onDecrement={decrementAmount}
               />
@@ -787,10 +803,12 @@ export default function FeedForm({
                 amount={formData.amount}
                 unit={formData.unit}
                 food={formData.food}
+                notes={formData.notes}
                 loading={loading}
                 onAmountChange={handleAmountChange}
                 onUnitChange={(unit) => setFormData(prev => ({ ...prev, unit }))}
                 onFoodChange={(food) => setFormData({ ...formData, food })}
+                onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
                 onIncrement={incrementAmount}
                 onDecrement={decrementAmount}
               />
