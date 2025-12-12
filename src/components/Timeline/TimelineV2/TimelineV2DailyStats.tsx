@@ -256,7 +256,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       new Date(activity.startTime) <= endOfDay
     );
 
-    if (activeSleep && 'startTime' in activeSleep) {
+    if (activeSleep && 'startTime' in activeSleep && activeSleep.startTime) {
       const startTime = new Date(activeSleep.startTime);
       const endTime = isToday ? now : endOfDay;
       const activeSleepMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
