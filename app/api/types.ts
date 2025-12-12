@@ -342,6 +342,8 @@ export interface FeedbackResponse {
   submitterName: string | null;
   submitterEmail: string | null;
   familyId: string | null;
+  parentId: string | null;
+  replies?: FeedbackResponse[];
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -351,6 +353,7 @@ export interface FeedbackCreate {
   subject: string;
   message: string;
   familyId?: string | null;
+  parentId?: string | null;
   submitterName?: string;
   submitterEmail?: string | null;
 }

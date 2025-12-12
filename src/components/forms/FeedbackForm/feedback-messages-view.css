@@ -1,0 +1,33 @@
+/* Dark mode styles for FeedbackMessagesView */
+
+html.dark .feedback-messages-empty-text {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .feedback-message-card {
+  background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .feedback-message-card-unread {
+  border-left-color: #3b82f6 !important; /* blue-500 */
+  border-left-width: 4px;
+}
+
+html.dark .feedback-message-subject {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .feedback-message-preview {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .feedback-message-meta {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .feedback-message-unread-badge {
+  background-color: #1e3a5f !important; /* dark blue */
+  color: #93c5fd !important; /* blue-300 */
+}
+

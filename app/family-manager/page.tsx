@@ -186,15 +186,49 @@ export default function FamilyManagerPage() {
     return baseTabs;
   }, [families.length, invites, accounts.length, betaSubscribers.length, feedback, isSaasMode]);
 
+  // Helper function to count unread messages from non-admin users
+  const countUnreadUserMessages = useCallback((feedback: FeedbackResponse): number => {
+    if (!feedback.replies || feedback.replies.length === 0) {
+      return feedback.viewed ? 0 : 1; // Original message counts if unread
+    }
+    
+    // Count unread replies from non-admin users
+    const unreadUserReplies = feedback.replies.filter(reply => {
+      const isAdminMessage = reply.submitterName === 'Admin';
+      return !reply.viewed && !isAdminMessage;
+    });
+    
+    // Also count original message if unread
+    const originalUnread = feedback.viewed ? 0 : 1;
+    
+    return unreadUserReplies.length + originalUnread;
+  }, []);
+
   // Get current data based on active tab
   const currentData = useMemo(() => {
     if (activeTab === 'families') return families;
     if (activeTab === 'invites') return invites;
     if (activeTab === 'accounts') return accounts;
     if (activeTab === 'beta') return betaSubscribers;
-    if (activeTab === 'feedback') return feedback;
+    if (activeTab === 'feedback') {
+      // Sort feedback by unread count (descending), then by submittedAt (descending)
+      return [...feedback].sort((a, b) => {
+        const aUnreadCount = countUnreadUserMessages(a);
+        const bUnreadCount = countUnreadUserMessages(b);
+        
+        // First sort by unread count (descending)
+        if (aUnreadCount !== bUnreadCount) {
+          return bUnreadCount - aUnreadCount;
+        }
+        
+        // Then sort by submittedAt (descending - newest first)
+        const aDate = new Date(a.submittedAt).getTime();
+        const bDate = new Date(b.submittedAt).getTime();
+        return bDate - aDate;
+      });
+    }
     return [];
-  }, [activeTab, families, invites, accounts, betaSubscribers, feedback]);
+  }, [activeTab, families, invites, accounts, betaSubscribers, feedback, countUnreadUserMessages]);
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -826,6 +860,7 @@ export default function FamilyManagerPage() {
             onUpdateFeedback={updateFeedback}
             updatingFeedbackId={updatingFeedbackId}
             formatDateTime={formatDateTime}
+            onRefresh={fetchFeedback}
           />
         )}
 

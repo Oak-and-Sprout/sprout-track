@@ -189,7 +189,7 @@ export default function FamilyManagerLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="adminPassword">Administrator Password</Label>
-              <div className="relative">
+              <div className="relative mt-3">
                 <Input
                   id="adminPassword"
                   type={showPassword ? 'text' : 'password'}
