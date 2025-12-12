@@ -170,6 +170,35 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const babyId = searchParams.get('babyId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const locations = searchParams.get('locations');
+    
+    // If locations flag is present, return unique custom locations
+    if (locations === 'true') {
+      const defaultLocations = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
+      
+      const sleepLogs = await prisma.sleepLog.findMany({
+        where: {
+          familyId: userFamilyId,
+          location: {
+            not: null
+          },
+        },
+        distinct: ['location'],
+        select: {
+          location: true
+        }
+      });
+      
+      const uniqueLocations = sleepLogs
+        .map(log => log.location)
+        .filter((location): location is string => location !== null && location.trim() !== '')
+        .filter(location => !defaultLocations.includes(location));
+
+      return NextResponse.json<ApiResponse<string[]>>({
+        success: true,
+        data: uniqueLocations
+      });
+    }
     
     const queryParams: any = {
       familyId: userFamilyId,
