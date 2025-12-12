@@ -80,7 +80,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let poopCount = 0;
     let totalFeedCount = 0;
     const bottleFeedAmounts: Record<string, number> = {};
-    let totalBreastFeedMinutes = 0;
+    let leftBreastFeedMinutes = 0;
+    let rightBreastFeedMinutes = 0;
     const solidsAmounts: Record<string, number> = {};
     const medicineStats: Record<string, { count: number, total: number, unit: string }> = {};
     let noteCount = 0;
@@ -133,19 +134,31 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
       }
       
-      // Breast feed activities - track duration instead of volume
+      // Breast feed activities - track duration separately for left and right
       if ('type' in activity && activity.type === 'BREAST') {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
           totalFeedCount++;
           // Track duration: prefer feedDuration (in seconds), fall back to amount (in minutes)
+          let feedMinutes = 0;
           if ('feedDuration' in activity && activity.feedDuration) {
             // Convert seconds to minutes
-            totalBreastFeedMinutes += Math.floor(activity.feedDuration / 60);
+            feedMinutes = Math.floor(activity.feedDuration / 60);
           } else if ('amount' in activity && activity.amount) {
             // Amount is already in minutes for older records
-            totalBreastFeedMinutes += activity.amount;
+            feedMinutes = activity.amount;
           }
+          
+          // Track by side if available
+          if ('side' in activity && activity.side) {
+            if (activity.side === 'LEFT') {
+              leftBreastFeedMinutes += feedMinutes;
+            } else if (activity.side === 'RIGHT') {
+              rightBreastFeedMinutes += feedMinutes;
+            }
+          }
+          // Note: If no side specified, we don't track it separately to avoid inaccuracy
+          // The feed is still counted in totalFeedCount
         }
       }
       
@@ -313,13 +326,25 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
         .join(', ');
       
+      // Format breast feed amounts separately for left and right
+      const breastFeedParts: string[] = [];
+      if (leftBreastFeedMinutes > 0 && rightBreastFeedMinutes > 0) {
+        breastFeedParts.push(`L: ${formatMinutes(leftBreastFeedMinutes)}`);
+        breastFeedParts.push(`R: ${formatMinutes(rightBreastFeedMinutes)}`);
+      } else if (leftBreastFeedMinutes > 0) {
+        breastFeedParts.push(`Left: ${formatMinutes(leftBreastFeedMinutes)}`);
+      } else if (rightBreastFeedMinutes > 0) {
+        breastFeedParts.push(`Right: ${formatMinutes(rightBreastFeedMinutes)}`);
+      }
+      const formattedBreastFeed = breastFeedParts.length > 0 ? breastFeedParts.join(', ') : '';
+      
       // Build combined label
       const labelParts: string[] = [];
       if (formattedBottleAmounts) {
         labelParts.push(formattedBottleAmounts);
       }
-      if (totalBreastFeedMinutes > 0) {
-        labelParts.push(formatMinutes(totalBreastFeedMinutes));
+      if (formattedBreastFeed) {
+        labelParts.push(formattedBreastFeed);
       }
       if (formattedSolidsAmounts) {
         labelParts.push(formattedSolidsAmounts);
