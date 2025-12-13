@@ -563,7 +563,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
                     }`}
                     onClick={handleFocusLoginId}
                   >
-                    <span className="text-xl text-gray-900">
+                    <span className="text-gray-900">
                       {loginId || '--'}
                     </span>
                   </div>
