@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import type { Stripe } from '@stripe/stripe-js';
 import {
   Dialog,
   DialogContent,
@@ -23,8 +23,21 @@ import { cn } from '@/src/lib/utils';
 import { PaymentModalProps, PricingPlan, SubscriptionStatus } from './payment-modal.types';
 import './account-manager.css';
 
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+// Stripe is lazily initialized only when needed (prevents initialization in self-hosted mode)
+let stripePromise: Promise<Stripe | null> | null = null;
+
+const getStripe = () => {
+  if (!stripePromise) {
+    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (key) {
+      // Dynamically import loadStripe only when needed
+      stripePromise = import('@stripe/stripe-js').then(({ loadStripe }) => loadStripe(key));
+    } else {
+      stripePromise = Promise.resolve(null);
+    }
+  }
+  return stripePromise;
+};
 
 /**
  * PaymentModal Component
@@ -142,7 +155,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         window.location.href = data.data.url;
       } else if (data.success && data.data.sessionId) {
         // Fallback: use legacy redirectToCheckout if URL not provided
-        const stripe = await stripePromise;
+        const stripe = await getStripe();
         if (!stripe) {
           throw new Error('Stripe failed to load');
         }
