@@ -1,8 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
-import FeedbackForm from '@/src/components/forms/FeedbackForm';
-import PaymentModal from '@/src/components/account-manager/PaymentModal';
-import { X, Settings, LogOut, MessageSquare, CreditCard, Clock } from 'lucide-react';
+import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
+import dynamic from 'next/dynamic';
+import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2 } from 'lucide-react';
+
+// Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
+const PaymentModal = dynamic(
+  () => import('@/src/components/account-manager/PaymentModal'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+      </div>
+    )
+  }
+);
 import { Button } from '@/src/components/ui/button';
 import ThemeToggle from '@/src/components/ui/theme-toggle';
 import { ShareButton } from '@/src/components/ui/share-button';
@@ -417,18 +430,11 @@ export const SideNav: React.FC<SideNavProps> = ({
           version={packageInfo.version}
         />
 
-        {/* Feedback Form - only shown in SaaS mode */}
-        {isSaasMode && (
-          <FeedbackForm
+        {/* Feedback Page - only shown in SaaS mode and when feedback is requested */}
+        {isSaasMode && showFeedback && (
+          <FeedbackPage
             isOpen={showFeedback}
             onClose={() => setShowFeedback(false)}
-            onSuccess={() => {
-              setShowFeedback(false);
-              // Optionally close the side nav after successful feedback submission
-              if (!nonModal) {
-                onClose();
-              }
-            }}
           />
         )}
 

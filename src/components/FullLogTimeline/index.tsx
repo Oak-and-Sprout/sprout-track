@@ -97,6 +97,8 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       unitAbbr?: string; 
       side?: string; 
       food?: string;
+      notes?: string;
+      bottleType?: string;
     } => {
       return 'amount' in act;
     };
@@ -174,6 +176,8 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       if (activity.unitAbbr && activity.unitAbbr.toLowerCase().includes(searchLower)) return true;
       if (activity.side && activity.side.toLowerCase().includes(searchLower)) return true;
       if (activity.food && activity.food.toLowerCase().includes(searchLower)) return true;
+      if (activity.notes && activity.notes.toLowerCase().includes(searchLower)) return true;
+      if (activity.bottleType && activity.bottleType.toLowerCase().includes(searchLower)) return true;
       return false;
     }
     

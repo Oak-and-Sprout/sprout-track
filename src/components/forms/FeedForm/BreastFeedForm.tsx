@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BreastSide } from '@prisma/client';
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
+import { Textarea } from '@/src/components/ui/textarea';
 import { Play, Pause, Clock } from 'lucide-react';
 import TimerInput from './TimerInput';
 import './feed-form.css';
@@ -19,6 +20,8 @@ interface BreastFeedFormProps {
   onDurationChange: (breast: 'LEFT' | 'RIGHT', seconds: number) => void;
   isEditing?: boolean; // New prop to indicate if we're editing an existing record
   validationError?: string; // Optional validation error message
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
 }
 
 // Extract hours, minutes, seconds from total seconds
@@ -53,6 +56,8 @@ export default function BreastFeedForm({
   onTimerStop,
   onDurationChange,
   isEditing = false, // Default to false
+  notes = '',
+  onNotesChange,
 }: BreastFeedFormProps) {
   const [isEditingLeft, setIsEditingLeft] = useState(false);
   const [isEditingRight, setIsEditingRight] = useState(false);
@@ -380,6 +385,20 @@ export default function BreastFeedForm({
           </div>
         </div>
       </div>
+      {onNotesChange && (
+        <div className="mt-6">
+          <label className="form-label">Notes</label>
+          <Textarea
+            id="notes"
+            name="notes"
+            placeholder="Enter any notes about the feeding"
+            value={notes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            rows={3}
+            disabled={loading}
+          />
+        </div>
+      )}
     </div>
   );
 }

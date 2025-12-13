@@ -497,7 +497,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
           {adminMode
             ? 'Please enter the system administrator password'
             : (authType === 'SYSTEM'
-              ? 'Please enter your system security PIN'
+              ? 'Please enter your family security PIN'
               : 'Please enter your login ID and security PIN')
           }
         </p>
@@ -547,88 +547,119 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
           </div>
         ) : (
           <>
-            {/* Login ID section - only show if authType is CARETAKER */}
-            {authType === 'CARETAKER' && (
-              <div className={`space-y-2 p-1rounded-lg transition-all duration-200 ${activeInput === 'loginId' ? 'login-field-active' : 'login-field-inactive'}`}>
-                <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Login ID</h2>
+            {authType === 'CARETAKER' ? (
+              /* Combined ID and PIN section for CARETAKER auth */
+              <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' || activeInput === 'loginId' ? 'login-field-active' : 'login-field-inactive'}`}>
+                <h2 className="text-gray-900 text-center login-card-title">Login ID & Security PIN</h2>
 
-                {/* Login ID Display */}
-                <div
-                  className="flex gap-2 justify-center my-2 cursor-pointer"
-                  onClick={handleFocusLoginId}
-                >
-                  {loginId.length === 0 ? (
-                    // Show 2 placeholder dots when no input
-                    Array.from({ length: 2 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-3 h-3 rounded-full ${activeInput === 'loginId' ? 'bg-gray-300 security-dot-focus' : 'bg-gray-200/50 security-dot-placeholder'}`}
-                      />
-                    ))
-                  ) : (
-                    // Show actual characters for entered login ID
-                    Array.from({ length: 2 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-3 h-3 rounded-full ${i < loginId.length ? 'bg-teal-600 security-dot-active' : 'bg-gray-200/50 security-dot-placeholder'}`}
-                      />
-                    ))
-                  )}
+                {/* Combined ID and PIN Display */}
+                <div className="flex items-center justify-center gap-4 my-2">
+                  {/* ID Box - to the left */}
+                  <div
+                    className={`flex items-center justify-center w-16 h-12 border-2 rounded-lg cursor-pointer transition-all ${
+                      activeInput === 'loginId'
+                        ? 'border-teal-600 bg-teal-50'
+                        : 'border-gray-300 bg-gray-50'
+                    }`}
+                    onClick={handleFocusLoginId}
+                  >
+                    <span className="text-gray-900">
+                      {loginId || '--'}
+                    </span>
+                  </div>
+
+                  {/* PIN Display - to the right */}
+                  <div
+                    className="flex gap-2 cursor-pointer"
+                    onClick={handleFocusPin}
+                  >
+                    {pin.length === 0 ? (
+                      // Show 6 placeholder dots when no input
+                      Array.from({ length: 6 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-3 h-3 rounded-full ${activeInput === 'pin' ? 'bg-gray-300 security-dot-focus' : 'bg-gray-200/50 security-dot-placeholder'}`}
+                        />
+                      ))
+                    ) : (
+                      // Show actual number of dots for entered digits
+                      Array.from({ length: Math.max(pin.length, 6) }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-3 h-3 rounded-full ${i < pin.length ? 'bg-teal-600 security-dot-active' : 'bg-gray-200/50 security-dot-placeholder'}`}
+                        />
+                      ))
+                    )}
+                  </div>
                 </div>
+
+                {/* Hidden inputs */}
                 <Input
                   value={loginId}
                   onChange={handleLoginIdChange}
                   onKeyDown={handleKeyDown}
-                  className="text-center text-xl font-semibold sr-only login-input"
+                  className="text-center text-xl sr-only login-input"
                   placeholder="ID"
                   maxLength={2}
                   autoFocus={activeInput === 'loginId'}
                   onFocus={handleFocusLoginId}
                   disabled={!!lockoutTime}
                 />
+                <Input
+                  type="password"
+                  value={pin}
+                  onChange={handlePinChange}
+                  onKeyDown={handleKeyDown}
+                  className="text-center text-xl font-semibold sr-only login-input"
+                  placeholder="PIN"
+                  maxLength={10}
+                  autoFocus={activeInput === 'pin'}
+                  onFocus={handleFocusPin}
+                  disabled={!!lockoutTime}
+                />
+              </div>
+            ) : (
+              /* PIN input section for SYSTEM auth */
+              <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' ? 'login-field-active' : 'login-field-inactive'}`}>
+                <h2 className="text-gray-900 text-center login-card-title">Security PIN</h2>
+
+                {/* PIN Display */}
+                <div
+                  className="flex gap-2 justify-center my-2 cursor-pointer"
+                  onClick={handleFocusPin}
+                >
+                  {pin.length === 0 ? (
+                    // Show 6 placeholder dots when no input
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${activeInput === 'pin' ? 'bg-gray-300 security-dot-focus' : 'bg-gray-200/50 security-dot-placeholder'}`}
+                      />
+                    ))
+                  ) : (
+                    // Show actual number of dots for entered digits
+                    Array.from({ length: Math.max(pin.length, 6) }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${i < pin.length ? 'bg-teal-600 security-dot-active' : 'bg-gray-200/50 security-dot-placeholder'}`}
+                      />
+                    ))
+                  )}
+                </div>
+                <Input
+                  type="password"
+                  value={pin}
+                  onChange={handlePinChange}
+                  onKeyDown={handleKeyDown}
+                  className="text-center text-xl font-semibold sr-only login-input"
+                  placeholder="PIN"
+                  maxLength={10}
+                  autoFocus={activeInput === 'pin'}
+                  onFocus={handleFocusPin}
+                  disabled={!!lockoutTime}
+                />
               </div>
             )}
-
-            {/* PIN input section */}
-            <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' ? 'login-field-active' : 'login-field-inactive'}`}>
-              <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Security PIN</h2>
-
-              {/* PIN Display */}
-              <div
-                className="flex gap-2 justify-center my-2 cursor-pointer"
-                onClick={handleFocusPin}
-              >
-                {pin.length === 0 ? (
-                  // Show 6 placeholder dots when no input
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full ${activeInput === 'pin' ? 'bg-gray-300 security-dot-focus' : 'bg-gray-200/50 security-dot-placeholder'}`}
-                    />
-                  ))
-                ) : (
-                  // Show actual number of dots for entered digits
-                  Array.from({ length: Math.max(pin.length, 6) }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full ${i < pin.length ? 'bg-teal-600 security-dot-active' : 'bg-gray-200/50 security-dot-placeholder'}`}
-                    />
-                  ))
-                )}
-              </div>
-              <Input
-                type="password"
-                value={pin}
-                onChange={handlePinChange}
-                onKeyDown={handleKeyDown}
-                className="text-center text-xl font-semibold sr-only login-input"
-                placeholder="PIN"
-                maxLength={10}
-                autoFocus={activeInput === 'pin'}
-                onFocus={handleFocusPin}
-                disabled={!!lockoutTime}
-              />
-            </div>
           </>
         )}
       </div>

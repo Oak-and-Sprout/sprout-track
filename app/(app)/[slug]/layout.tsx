@@ -23,8 +23,22 @@ import SetupWizard from '@/src/components/SetupWizard';
 import { DynamicTitle } from '@/src/components/ui/dynamic-title';
 import { AccountButton } from '@/src/components/ui/account-button';
 import AccountManager from '@/src/components/account-manager';
-import PaymentModal from '@/src/components/account-manager/PaymentModal';
+import dynamic from 'next/dynamic';
+import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
+
+// Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
+const PaymentModal = dynamic(
+  () => import('@/src/components/account-manager/PaymentModal'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+      </div>
+    )
+  }
+);
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -741,8 +755,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
         onClose={() => setShowAccountManager(false)}
       />
 
-      {/* Payment Modal - can be opened from toast or other components */}
-      {isAccountAuth && paymentAccountStatus && (
+      {/* Payment Modal - can be opened from toast or other components (only in SaaS mode) */}
+      {isSaasMode && isAccountAuth && paymentAccountStatus && (
         <PaymentModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}

@@ -1,14 +1,19 @@
 import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
+import { Textarea } from '@/src/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
 
 interface BottleFeedFormProps {
   amount: string;
   unit: string;
+  bottleType: string;
+  notes: string;
   loading: boolean;
   onAmountChange: (amount: string) => void;
   onUnitChange: (unit: string) => void;
+  onBottleTypeChange: (bottleType: string) => void;
+  onNotesChange: (notes: string) => void;
   onIncrement: () => void;
   onDecrement: () => void;
 }
@@ -16,14 +21,35 @@ interface BottleFeedFormProps {
 export default function BottleFeedForm({
   amount,
   unit,
+  bottleType,
+  notes,
   loading,
   onAmountChange,
   onUnitChange,
+  onBottleTypeChange,
+  onNotesChange,
   onIncrement,
   onDecrement,
 }: BottleFeedFormProps) {
+  const bottleTypes = ['Formula', 'Breast Milk', 'Formula\\Breast', 'Milk', 'Other'];
+  
   return (
     <div>
+      <label className="form-label mb-2">Bottle Type</label>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {bottleTypes.map((type) => (
+          <Button
+            key={type}
+            type="button"
+            variant={bottleType === type ? 'default' : 'outline'}
+            className="flex-1 min-w-[100px]"
+            onClick={() => onBottleTypeChange(type)}
+            disabled={loading}
+          >
+            {type.replace('\\', '/')}
+          </Button>
+        ))}
+      </div>
       <label className="form-label mb-6">Amount ({unit === 'ML' ? 'ml' : 'oz'})</label>
       <div className="flex items-center justify-center mb-6">
         <Button
@@ -75,6 +101,18 @@ export default function BottleFeedForm({
         >
           ml
         </Button>
+      </div>
+      <div className="mt-6">
+        <label className="form-label">Notes</label>
+        <Textarea
+          id="notes"
+          name="notes"
+          placeholder="Enter any notes about the feeding"
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          rows={3}
+          disabled={loading}
+        />
       </div>
     </div>
   );

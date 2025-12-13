@@ -330,6 +330,8 @@ model FeedLog {
   unitAbbr     String?
   side         BreastSide?
   food         String?     // Description of solid foods
+  notes        String?     // Optional notes for any feed type
+  bottleType   String?     // Type of bottle feed: formula, breast milk, formula\breast, milk, other
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?
@@ -900,6 +902,7 @@ model AppConfig {
   adminPass   String   // Sitewide admin password
   rootDomain  String   // Root domain for the application
   enableHttps Boolean  @default(false) // Whether HTTPS is enabled (0/1)
+  adminEmail  String?  // Admin email for feedback replies
   updatedAt   DateTime @updatedAt
 }
 
@@ -958,10 +961,16 @@ model Feedback {
   submitterName  String? // Name from caretaker or account
   submitterEmail String? // Email from account
   
+  // Reply relationship - all replies reference the original feedback
+  parentId   String?   // Nullable - only set for replies, references original feedback
+  parent     Feedback? @relation("FeedbackReplies", fields: [parentId], references: [id])
+  replies    Feedback[] @relation("FeedbackReplies")
+  
   @@index([submittedAt])
   @@index([viewed])
   @@index([familyId])
   @@index([accountId])
   @@index([caretakerId])
   @@index([deletedAt])
+  @@index([parentId])
 }

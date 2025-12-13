@@ -214,13 +214,14 @@ const TimelineV2ActivityList = ({
                           const activityColor = getActivityColor(style.bg);
                           
                           // Determine activity type class for styling
+                          // Check pump FIRST since it also has duration and startTime
                           let activityTypeClass = '';
-                          if ('duration' in activity) activityTypeClass = 'sleep';
+                          if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
+                          else if ('duration' in activity && 'type' in activity) activityTypeClass = 'sleep';
                           else if ('amount' in activity) activityTypeClass = 'feed';
                           else if ('condition' in activity) activityTypeClass = 'diaper';
                           else if ('content' in activity) activityTypeClass = 'note';
                           else if ('soapUsed' in activity) activityTypeClass = 'bath';
-                          else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
                           else if ('title' in activity && 'category' in activity) activityTypeClass = 'milestone';
                           else if ('value' in activity && 'unit' in activity) activityTypeClass = 'measurement';
                           else if ('doseAmount' in activity && 'medicineId' in activity) activityTypeClass = 'medicine';
@@ -280,14 +281,42 @@ const TimelineV2ActivityList = ({
                                         } else if (activity.amount) {
                                           duration = `${activity.amount} min`;
                                         }
-                                        return [side + ' side', duration].filter(Boolean).join(' • ');
+                                        const parts = [side + ' side', duration].filter(Boolean);
+                                        if ((activity as any).notes) {
+                                          const notes = (activity as any).notes;
+                                          const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+                                          parts.push(truncatedNotes);
+                                        }
+                                        return parts.join(' • ');
                                       } else if (activity.type === 'BOTTLE') {
                                         const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
-                                        return `Formula • ${activity.amount} ${unit}`;
+                                        const parts = [];
+                                        if ((activity as any).bottleType) {
+                                          const bottleType = (activity as any).bottleType.replace('\\', '/');
+                                          parts.push(bottleType);
+                                        }
+                                        parts.push(`${activity.amount} ${unit}`);
+                                        if ((activity as any).notes) {
+                                          const notes = (activity as any).notes;
+                                          const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+                                          parts.push(truncatedNotes);
+                                        }
+                                        return parts.join(' • ');
                                       } else if (activity.type === 'SOLIDS') {
                                         const unit = ((activity as any).unitAbbr || 'g').toLowerCase();
                                         const food = activity.food ? activity.food : '';
-                                        return food ? `${activity.amount} ${unit} of ${food}` : `${activity.amount} ${unit}`;
+                                        const parts = [];
+                                        if (food) {
+                                          parts.push(`${activity.amount} ${unit} of ${food}`);
+                                        } else {
+                                          parts.push(`${activity.amount} ${unit}`);
+                                        }
+                                        if ((activity as any).notes) {
+                                          const notes = (activity as any).notes;
+                                          const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+                                          parts.push(truncatedNotes);
+                                        }
+                                        return parts.join(' • ');
                                       }
                                     }
                                     

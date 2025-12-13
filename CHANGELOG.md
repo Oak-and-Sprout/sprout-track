@@ -1,5 +1,40 @@
 # Sprout Track Changelog
 
+## v0.96.77 - December 2025 Rollup
+
+### Changes
+
+#### Updated Nextjs to version 16.0.10
+
+- Patched Next.js and upgraded packages for security updates
+
+#### Feed Log Updates
+
+- Added notes and separate bottle types to feed logs
+
+#### Sleep Log Updates
+
+- New default sleep areas (Bassinets and Strollers)
+- Users can now specify custom locations and on future sleep logs custom locations show in sleep location list
+
+#### Daily Stats and Timeline Updates
+
+- Daily Stats: added details around feeding, added details by bottle types, and breast feeding counts by side
+- Daily Stats: Wet and Dirty Diapers now count separately
+- Daily Stats: Medicines track separately and tally total dose for the day
+- Daily Stats: Active sleep counts towards sleep and not wake time
+- Log Timeline: Fixed pumping so it has proper coloring and does not count towards sleep
+- Log Timeline: Added inline details for new bottle details, notes, and other formatting cleanup
+- Full Log: Added inline details for new bottle details, notes, milestones, breast feeding, pumping
+- Full Log: Enhanced search to look at more fields for activities for easier filtering\searching
+
+#### Optimizations
+
+- Login Page: Made in more PWA friendly by condensing family name, logo, and share button
+- Login Page: Made more PWA friendly by condensing ID and Pin for caretakers
+- Removed excess Stripe calls for self hosted versions
+- Minor performance optimizations in main app, and family-manager
+
 ## v0.96.30 - Update to Nextjs for [CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478)
 
 ### Changes

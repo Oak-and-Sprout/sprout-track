@@ -23,6 +23,8 @@ import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
+const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
+
 interface SleepFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -68,6 +70,34 @@ export default function SleepForm({
   });
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [customLocations, setCustomLocations] = useState<string[]>([]);
+  const [isCustomLocation, setIsCustomLocation] = useState(false);
+  const [customLocationInput, setCustomLocationInput] = useState('');
+
+  // Fetch custom locations when form opens
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCustomLocations = async () => {
+        try {
+          const authToken = localStorage.getItem('authToken');
+          const response = await fetch('/api/sleep-log?locations=true', {
+            headers: {
+              'Authorization': authToken ? `Bearer ${authToken}` : ''
+            }
+          });
+          if (!response.ok) return;
+          
+          const data = await response.json();
+          if (data.success) {
+            setCustomLocations(data.data);
+          }
+        } catch (error) {
+          console.error('Error fetching custom locations:', error);
+        }
+      };
+      fetchCustomLocations();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && !isInitialized) {
@@ -91,11 +121,40 @@ export default function SleepForm({
           console.error('Error parsing activity times:', error);
         }
         
-        setFormData({
-          type: activity.type,
-          location: activity.location || '',
-          quality: activity.quality || '',
-        });
+        const activityLocation = activity.location || '';
+        const isDefaultLocation = activityLocation && DEFAULT_LOCATIONS.includes(activityLocation);
+        
+        // Check if it's a custom location that will be in the dropdown (fetched from API)
+        // We'll set it after customLocations are fetched, but for now set it directly
+        // The customLocations will be populated by the useEffect that runs when isOpen is true
+        if (isDefaultLocation) {
+          setFormData({
+            type: activity.type,
+            location: activityLocation,
+            quality: activity.quality || '',
+          });
+          setIsCustomLocation(false);
+          setCustomLocationInput('');
+        } else if (activityLocation) {
+          // It's a custom location - check if it's in the customLocations array
+          // Since customLocations might not be loaded yet, we'll use a separate effect
+          // For now, set it to Custom mode
+          setFormData({
+            type: activity.type,
+            location: 'Custom',
+            quality: activity.quality || '',
+          });
+          setIsCustomLocation(true);
+          setCustomLocationInput(activityLocation);
+        } else {
+          setFormData({
+            type: activity.type,
+            location: '',
+            quality: activity.quality || '',
+          });
+          setIsCustomLocation(false);
+          setCustomLocationInput('');
+        }
         
         // Mark as initialized
         setIsInitialized(true);
@@ -134,12 +193,23 @@ export default function SleepForm({
                 console.error('Error parsing sleep times:', error);
               }
               
+              const sleepLocation = currentSleep.location || '';
+              const isCustom = sleepLocation && !DEFAULT_LOCATIONS.includes(sleepLocation);
+              
               setFormData(prev => ({
                 ...prev,
                 type: currentSleep.type,
-                location: currentSleep.location || '',
+                location: isCustom ? 'Custom' : sleepLocation,
                 quality: 'GOOD', // Default to GOOD when ending sleep
               }));
+              
+              if (isCustom) {
+                setIsCustomLocation(true);
+                setCustomLocationInput(sleepLocation);
+              } else {
+                setIsCustomLocation(false);
+                setCustomLocationInput('');
+              }
             }
             
             // Mark as initialized
@@ -195,6 +265,8 @@ export default function SleepForm({
         location: '',
         quality: '' as SleepQuality | '',
       });
+      setIsCustomLocation(false);
+      setCustomLocationInput('');
     }
   }, [isOpen, initialTime, isSleeping, babyId, activity?.id, isInitialized]);
 
@@ -216,6 +288,20 @@ export default function SleepForm({
       console.error('Required fields missing');
       return;
     }
+
+    // Validate custom location if Custom is selected
+    if (isCustomLocation && !customLocationInput.trim()) {
+      showToast({
+        variant: 'error',
+        title: 'Error',
+        message: 'Please enter a custom location',
+        duration: 5000,
+      });
+      return;
+    }
+
+    // Determine the location value to use
+    const locationValue = isCustomLocation ? customLocationInput.trim() : (formData.location || null);
 
     setLoading(true);
 
@@ -250,7 +336,7 @@ export default function SleepForm({
           endTime: utcEndTime,
           duration,
           type: formData.type,
-          location: formData.location || null,
+          location: locationValue,
           quality: formData.quality || null,
         };
 
@@ -303,7 +389,7 @@ export default function SleepForm({
           endTime: null,
           duration: null,
           type: formData.type,
-          location: formData.location || null,
+          location: locationValue,
           quality: null,
         };
 
@@ -374,6 +460,8 @@ export default function SleepForm({
         location: '',
         quality: '' as SleepQuality | '',
       });
+      setIsCustomLocation(false);
+      setCustomLocationInput('');
     } catch (error) {
       console.error('Error saving sleep log:', error);
       // Error toast already shown above for non-expiration errors
@@ -445,22 +533,47 @@ export default function SleepForm({
                 <label className="form-label">Location</label>
                 <Select
                   value={formData.location}
-                  onValueChange={(value: string) =>
-                    setFormData({ ...formData, location: value })
-                  }
+                  onValueChange={(value: string) => {
+                    if (value === 'Custom') {
+                      setIsCustomLocation(true);
+                      setFormData({ ...formData, location: 'Custom' });
+                    } else {
+                      setIsCustomLocation(false);
+                      setCustomLocationInput('');
+                      setFormData({ ...formData, location: value });
+                    }
+                  }}
                   disabled={(isSleeping && !isEditMode) || loading} // Only disabled when ending sleep and not editing
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Crib">Crib</SelectItem>
-                    <SelectItem value="Car Seat">Car Seat</SelectItem>
-                    <SelectItem value="Parents Room">Parents Room</SelectItem>
-                    <SelectItem value="Contact">Contact</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    {DEFAULT_LOCATIONS.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="Custom">Custom</SelectItem>
+                    {customLocations.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {isCustomLocation && (
+                  <div className="mt-2">
+                    <Input
+                      type="text"
+                      value={customLocationInput}
+                      onChange={(e) => setCustomLocationInput(e.target.value)}
+                      placeholder="Enter custom location"
+                      disabled={loading}
+                      className="w-full"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             {(isSleeping || (isEditMode && endDateTime)) && (

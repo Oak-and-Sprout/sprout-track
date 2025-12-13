@@ -64,39 +64,40 @@ html.dark .timeline-v2-daily-stats .bg-gray-100 {
 }
 
 /* Icon colors in dark mode - maintain activity colors */
-html.dark .timeline-v2-daily-stats .text-\[#9ca3af\] {
+/* Use attribute selectors to match Tailwind arbitrary value classes */
+html.dark .timeline-v2-daily-stats [class*="text-[#9ca3af"] {
   color: #9ca3af !important; /* gray-400 - sleep */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#7dd3fc\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#7dd3fc"] {
   color: #7dd3fc !important; /* sky-300 - feed */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#0d9488\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#0d9488"] {
   color: #0d9488 !important; /* teal-600 - diaper */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#43B755\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#43B755"] {
   color: #43B755 !important; /* green - medicine */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#fef08a\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#fef08a"] {
   color: #fef08a !important; /* yellow-200 - note */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#fb923c\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#fb923c"] {
   color: #fb923c !important; /* orange-400 - bath */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#c084fc\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#c084fc"] {
   color: #c084fc !important; /* purple-400 - pump */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#4875EC\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#4875EC"] {
   color: #4875EC !important; /* blue - milestone */
 }
 
-html.dark .timeline-v2-daily-stats .text-\[#EA6A5E\] {
+html.dark .timeline-v2-daily-stats [class*="text-[#EA6A5E"] {
   color: #EA6A5E !important; /* red - measurement */
 }
 

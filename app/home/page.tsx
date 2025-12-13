@@ -112,6 +112,7 @@ const home = () => {
     const checkQueryParams = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const upgrade = urlParams.get('upgrade');
+      const login = urlParams.get('login');
       const family = urlParams.get('family');
 
       if (upgrade === 'true') {
@@ -123,6 +124,15 @@ const home = () => {
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete('upgrade');
         newUrl.searchParams.delete('family');
+        window.history.replaceState(null, '', newUrl.toString());
+      } else if (login === 'true') {
+        // Show login modal from email link
+        setAccountModalMode('login');
+        setShowAccountModal(true);
+
+        // Clear the query parameter after processing
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('login');
         window.history.replaceState(null, '', newUrl.toString());
       }
     };

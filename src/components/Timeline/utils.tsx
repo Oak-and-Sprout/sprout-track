@@ -25,6 +25,10 @@ export const getActivityIcon = (activity: ActivityType) => {
     // Medicine log
     return <PillBottle className="h-4 w-4 text-white" />;
   }
+  // Check for pump activities FIRST (before sleep) since they also have duration and startTime
+  if ('leftAmount' in activity || 'rightAmount' in activity) {
+    return <LampWallDown className="h-4 w-4 text-white" />; // Pump activity
+  }
   if ('type' in activity) {
     if ('duration' in activity) {
       return <Moon className="h-4 w-4 text-white" />; // Sleep activity
@@ -41,9 +45,6 @@ export const getActivityIcon = (activity: ActivityType) => {
   }
   if ('soapUsed' in activity) {
     return <Bath className="h-4 w-4 text-white" />; // Bath activity
-  }
-  if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return <LampWallDown className="h-4 w-4 text-white" />; // Pump activity
   }
   if ('title' in activity && 'category' in activity) {
     return <Trophy className="h-4 w-4 text-white" />; // Milestone activity
@@ -247,6 +248,20 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       // Show food for solids
       if (activity.type === 'SOLIDS' && activity.food) {
         details.push({ label: 'Food', value: activity.food });
+      }
+
+      // Show bottle type for bottle feeds
+      if (activity.type === 'BOTTLE' && (activity as any).bottleType) {
+        const bottleType = (activity as any).bottleType;
+        details.push({ 
+          label: 'Bottle Type', 
+          value: bottleType.replace('\\', '/') 
+        });
+      }
+
+      // Show notes for all feed types if present
+      if ((activity as any).notes) {
+        details.push({ label: 'Notes', value: (activity as any).notes });
       }
 
       return {
@@ -492,12 +507,31 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       const startTimeFormatted = activity.startTime ? formatTime(activity.startTime, settings, true) : 'unknown';
       const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true) : 'ongoing';
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
-      const location = activity.location === 'OTHER' ? 'Other' : activity.location?.split('_').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-      ).join(' ');
+      
+      // Format location
+      let locationText = '';
+      if (activity.location) {
+        const location = activity.location === 'OTHER' ? 'Other' : activity.location.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+        locationText = location;
+      }
+      
+      // Format quality
+      let qualityText = '';
+      if (activity.quality) {
+        qualityText = activity.quality.charAt(0) + activity.quality.slice(1).toLowerCase();
+      }
+      
+      // Build details string
+      const detailsParts = [];
+      if (locationText) detailsParts.push(locationText);
+      if (qualityText) detailsParts.push(qualityText);
+      const detailsSuffix = detailsParts.length > 0 ? ` (${detailsParts.join(', ')})` : '';
+      
       return {
         type: activity.type === 'NAP' ? 'Nap' : 'Night Sleep',
-        details: `${startTimeFormatted} - ${endTimeFormatted.split(' ').slice(-2).join(' ')}${duration}`
+        details: `${startTimeFormatted} - ${endTimeFormatted.split(' ').slice(-2).join(' ')}${duration}${detailsSuffix}`
       };
     }
     if ('amount' in activity) {
@@ -542,6 +576,12 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
         // Use unitAbbr instead of hardcoded 'oz'
         const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
         details = `${activity.amount || 'unknown'} ${unit}`;
+        
+        // Add bottle type if available
+        if ((activity as any).bottleType) {
+          const bottleType = (activity as any).bottleType.replace('\\', '/');
+          details += ` (${bottleType})`;
+        }
       } else if (activity.type === 'SOLIDS') {
         // Use unitAbbr instead of hardcoded 'g'
         const unit = ((activity as any).unitAbbr || 'g').toLowerCase();
@@ -549,6 +589,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
         if (activity.food) {
           details += ` of ${activity.food}`;
         }
+      }
+      
+      // Add notes if available for any feed type
+      const notes = (activity as any).notes;
+      if (notes) {
+        const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+        details = details ? `${details} - ${truncatedNotes}` : truncatedNotes;
       }
       
       const time = formatTime(activity.time, settings, true);
@@ -709,11 +756,22 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     };
     
     const date = formatTime(activity.date, settings, true);
-    const truncatedTitle = activity.title.length > 30 ? activity.title.substring(0, 30) + '...' : activity.title;
+    const category = formatMilestoneCategory(activity.category);
+    
+    // Format title with label
+    const truncatedTitle = activity.title.length > 50 ? activity.title.substring(0, 50) + '...' : activity.title;
+    const titleText = `Title: ${truncatedTitle}`;
+    
+    // Format description with label if available
+    let descriptionText = '';
+    if (activity.description) {
+      const truncatedDescription = activity.description.length > 50 ? activity.description.substring(0, 50) + '...' : activity.description;
+      descriptionText = `, Details: ${truncatedDescription}`;
+    }
     
     return {
-      type: formatMilestoneCategory(activity.category),
-      details: `${date} - ${truncatedTitle}`
+      type: category,
+      details: `${date} - ${titleText}${descriptionText}`
     };
   }
 
@@ -770,6 +828,13 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
       textColor: 'text-white',
     };
   }
+  // Check for pump activities FIRST (before sleep) since they also have duration and startTime
+  if ('leftAmount' in activity || 'rightAmount' in activity) {
+    return {
+      bg: 'bg-gradient-to-r from-purple-200 to-purple-300',
+      textColor: 'text-white',
+    };
+  }
   if ('type' in activity) {
     if ('duration' in activity) {
       return {
@@ -799,12 +864,6 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
   if ('soapUsed' in activity) {
     return {
       bg: 'bg-gradient-to-r from-orange-400 to-orange-500',
-      textColor: 'text-white',
-    };
-  }
-  if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return {
-      bg: 'bg-gradient-to-r from-purple-200 to-purple-300',
       textColor: 'text-white',
     };
   }

@@ -198,7 +198,8 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             case 'feed':
               return 'amount' in activity;
             case 'diaper':
-              return 'condition' in activity;
+              return 'condition' in activity && 'type' in activity && 
+                     (activity.type === 'WET' || activity.type === 'BOTH');
             case 'poop':
               return 'condition' in activity && 'type' in activity && 
                      (activity.type === 'DIRTY' || activity.type === 'BOTH');

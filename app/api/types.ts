@@ -98,6 +98,8 @@ export type FeedLogResponse = Omit<FeedLog, 'time' | 'createdAt' | 'updatedAt' |
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  notes?: string | null;
+  bottleType?: string | null;
 };
 
 export interface FeedLogCreate {
@@ -111,6 +113,8 @@ export interface FeedLogCreate {
   startTime?: string;
   endTime?: string;
   feedDuration?: number; // Duration in seconds for feeding time
+  notes?: string;
+  bottleType?: string;
 }
 
 // Diaper log types
@@ -342,6 +346,8 @@ export interface FeedbackResponse {
   submitterName: string | null;
   submitterEmail: string | null;
   familyId: string | null;
+  parentId: string | null;
+  replies?: FeedbackResponse[];
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -351,6 +357,7 @@ export interface FeedbackCreate {
   subject: string;
   message: string;
   familyId?: string | null;
+  parentId?: string | null;
   submitterName?: string;
   submitterEmail?: string | null;
 }

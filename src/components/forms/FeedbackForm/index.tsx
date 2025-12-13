@@ -16,12 +16,14 @@ interface FeedbackFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  embedded?: boolean; // If true, renders without FormPage wrapper
 }
 
 export default function FeedbackForm({
   isOpen,
   onClose,
   onSuccess,
+  embedded = false,
 }: FeedbackFormProps) {
   const { theme } = useTheme();
   const [formData, setFormData] = useState({
@@ -169,6 +171,126 @@ export default function FeedbackForm({
     }
   };
 
+  const formContent = (
+    <>
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="mb-4 p-4 rounded-lg feedback-success-toast">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 feedback-success-toast-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium feedback-success-toast-title">
+                Thank you for your feedback!
+              </p>
+              <p className="text-sm mt-1 feedback-success-toast-message">
+                We appreciate your input and will review your message.
+                {submitterInfo.email && ' A confirmation email has been sent to you.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-4">
+          {/* Submitter Info Display */}
+          <div className="feedback-form-info">
+            <div className="text-sm text-gray-600 feedback-form-submitter-info">
+              <p><strong>From:</strong> {submitterInfo.name}</p>
+              {submitterInfo.email && (
+                <p><strong>Email:</strong> {submitterInfo.email}</p>
+              )}
+              {family && (
+                <p><strong>Family:</strong> {family.name}</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Subject */}
+          <div className="space-y-2">
+            <label htmlFor="subject" className="form-label">
+              Subject <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="subject"
+              name="subject"
+              type="text"
+              placeholder="Brief description of your feedback"
+              value={formData.subject}
+              onChange={handleInputChange}
+              required
+              disabled={loading}
+              className="feedback-form-input"
+            />
+          </div>
+          
+          {/* Message */}
+          <div className="space-y-2">
+            <label htmlFor="message" className="form-label">
+              Message <span className="text-red-500">*</span>
+            </label>
+            <Textarea
+              id="message"
+              name="message"
+              placeholder="Please share your detailed feedback, suggestions, or report any issues you've encountered..."
+              value={formData.message}
+              onChange={handleInputChange}
+              required
+              disabled={loading}
+              rows={6}
+              className="feedback-form-textarea"
+            />
+          </div>
+          
+          {/* Help Text */}
+          <div className="feedback-form-help-text">
+            <p className="text-sm text-gray-500">
+              Your feedback helps us improve the app. Please be as specific as possible 
+              about any issues or suggestions you have.
+            </p>
+          </div>
+        </div>
+      </form>
+    </>
+  );
+
+  const formFooter = (
+    <div className="flex justify-end space-x-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onClose}
+        disabled={loading}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={handleSubmit}
+        disabled={loading || !formData.subject.trim() || !formData.message.trim()}
+        variant="success"
+      >
+        {loading ? 'Sending...' : 'Send Feedback'}
+      </Button>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        <FormPageContent>
+          {formContent}
+        </FormPageContent>
+        <FormPageFooter>
+          {formFooter}
+        </FormPageFooter>
+      </>
+    );
+  }
+
   return (
     <FormPage
       isOpen={isOpen}
@@ -177,108 +299,11 @@ export default function FeedbackForm({
       description="Help us improve by sharing your thoughts and suggestions"
     >
       <FormPageContent>
-        {/* Success Toast */}
-        {showSuccessToast && (
-          <div className="mb-4 p-4 rounded-lg feedback-success-toast">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 feedback-success-toast-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium feedback-success-toast-title">
-                  Thank you for your feedback!
-                </p>
-                <p className="text-sm mt-1 feedback-success-toast-message">
-                  We appreciate your input and will review your message.
-                  {submitterInfo.email && ' A confirmation email has been sent to you.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            {/* Submitter Info Display */}
-            <div className="feedback-form-info">
-              <div className="text-sm text-gray-600 feedback-form-submitter-info">
-                <p><strong>From:</strong> {submitterInfo.name}</p>
-                {submitterInfo.email && (
-                  <p><strong>Email:</strong> {submitterInfo.email}</p>
-                )}
-                {family && (
-                  <p><strong>Family:</strong> {family.name}</p>
-                )}
-              </div>
-            </div>
-            
-            {/* Subject */}
-            <div className="space-y-2">
-              <label htmlFor="subject" className="form-label">
-                Subject <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="subject"
-                name="subject"
-                type="text"
-                placeholder="Brief description of your feedback"
-                value={formData.subject}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-                className="feedback-form-input"
-              />
-            </div>
-            
-            {/* Message */}
-            <div className="space-y-2">
-              <label htmlFor="message" className="form-label">
-                Message <span className="text-red-500">*</span>
-              </label>
-              <Textarea
-                id="message"
-                name="message"
-                placeholder="Please share your detailed feedback, suggestions, or report any issues you've encountered..."
-                value={formData.message}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-                rows={6}
-                className="feedback-form-textarea"
-              />
-            </div>
-            
-            {/* Help Text */}
-            <div className="feedback-form-help-text">
-              <p className="text-sm text-gray-500">
-                Your feedback helps us improve the app. Please be as specific as possible 
-                about any issues or suggestions you have.
-              </p>
-            </div>
-          </div>
-        </form>
+        {formContent}
       </FormPageContent>
       
       <FormPageFooter>
-        <div className="flex justify-end space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading || !formData.subject.trim() || !formData.message.trim()}
-            variant="success"
-          >
-            {loading ? 'Sending...' : 'Send Feedback'}
-          </Button>
-        </div>
+        {formFooter}
       </FormPageFooter>
     </FormPage>
   );

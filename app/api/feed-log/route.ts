@@ -39,13 +39,20 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     const timeUTC = toUTC(body.time);
     
     const data = {
-      ...body,
+      babyId: body.babyId,
       time: timeUTC,
+      type: body.type,
       caretakerId: authContext.caretakerId,
       ...(body.startTime && { startTime: toUTC(body.startTime) }),
       ...(body.endTime && { endTime: toUTC(body.endTime) }),
-      // Ensure feedDuration is properly included
       ...(body.feedDuration !== undefined && { feedDuration: body.feedDuration }),
+      ...(body.amount !== undefined && { amount: body.amount }),
+      ...(body.unitAbbr && { unitAbbr: body.unitAbbr }),
+      ...(body.side && { side: body.side }),
+      ...(body.food && { food: body.food }),
+      // Handle notes and bottleType - convert empty strings to null
+      notes: body.notes && body.notes.trim() ? body.notes : null,
+      bottleType: body.bottleType && body.bottleType.trim() ? body.bottleType : null,
       familyId,
     };
     
@@ -68,10 +75,11 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     });
   } catch (error) {
     console.error('Error creating feed log:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create feed log';
     return NextResponse.json<ApiResponse<FeedLogResponse>>(
       {
         success: false,
-        error: 'Failed to create feed log',
+        error: errorMessage,
       },
       { status: 500 }
     );
@@ -133,8 +141,11 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       ...(body.startTime ? { startTime: toUTC(body.startTime) } : {}),
       ...(body.endTime ? { endTime: toUTC(body.endTime) } : {}),
       ...(body.feedDuration !== undefined ? { feedDuration: body.feedDuration } : {}),
+      // Handle notes and bottleType - convert empty strings to null
+      notes: body.notes && body.notes.trim() ? body.notes : null,
+      ...(body.bottleType && body.bottleType.trim() ? { bottleType: body.bottleType } : { bottleType: null }),
       ...Object.entries(body)
-        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'familyId'].includes(key))
+        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'familyId'].includes(key))
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
     };
 
