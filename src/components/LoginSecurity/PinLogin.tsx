@@ -497,7 +497,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
           {adminMode
             ? 'Please enter the system administrator password'
             : (authType === 'SYSTEM'
-              ? 'Please enter your system security PIN'
+              ? 'Please enter your family security PIN'
               : 'Please enter your login ID and security PIN')
           }
         </p>
@@ -591,7 +591,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
 
             {/* PIN input section */}
             <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' ? 'login-field-active' : 'login-field-inactive'}`}>
-              <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Security PIN</h2>
+              <h2 className="text-gray-900 text-center login-card-title">Security PIN</h2>
 
               {/* PIN Display */}
               <div

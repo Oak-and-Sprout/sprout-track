@@ -116,34 +116,37 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white login-container">
       <div className="w-full max-w-md mx-auto p-6">
         <div className="text-center mt-2 mb-4">
-          <div className="flex items-center justify-center gap-2">
-            <h2 className="text-xl font-semibold login-title">
-              {isMounted && familyName ? familyName : 'Security Check'}
-            </h2>
-            {familySlug && familyName && loginMode === 'pin' && (
-              <ShareButton
-                familySlug={familySlug}
-                familyName={familyName}
-                variant="ghost"
-                size="sm"
+          <div className="flex items-center justify-center gap-3">
+            <div
+              className={`w-[40px] h-[40px] flex items-center justify-center flex-shrink-0 ${isSaasMode ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+              onClick={handleLogoClick}
+            >
+              <Image
+                src="/sprout-128.png"
+                alt="Sprout Logo"
+                width={50}
+                height={50}
+                className="object-contain"
+                priority
               />
-            )}
+            </div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl login-title">
+                {isMounted && familyName ? familyName : 'Security Check'}
+              </h2>
+              {familySlug && familyName && loginMode === 'pin' && (
+                <ShareButton
+                  familySlug={familySlug}
+                  familyName={familyName}
+                  variant="ghost"
+                  size="icon"
+                  showText={false}
+                />
+              )}
+            </div>
           </div>
         </div>
         <div className="flex flex-col items-center space-y-4 pb-6 pl-6 pr-6">
-          <div
-            className={`w-24 h-24 p-1 flex items-center justify-center ${isSaasMode ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-            onClick={handleLogoClick}
-          >
-            <Image
-              src="/sprout-128.png"
-              alt="Sprout Logo"
-              width={128}
-              height={128}
-              className="object-contain"
-              priority
-            />
-          </div>
 
           {/* Render appropriate login component based on mode */}
           {loginMode === 'pin' ? (
