@@ -286,11 +286,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
     setSelectedBaby(null);
     setBabies([]);
     
-    // Account holders go to home page, PIN users go to family login
+    // Account holders go to home page, PIN users go to family root (which shows login UI)
     if (isAccountAuth) {
       router.push('/');
     } else if (familySlug) {
-      router.push(`/${familySlug}/login`);
+      router.push(`/${familySlug}`);
     } else {
       router.push('/login');
     }
@@ -311,8 +311,30 @@ function AppContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
     
-    // Fetch data only once on mount
-    fetchData();
+    // Check if we're on root slug page - if so, don't fetch data (page handles login)
+    const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
+    const authToken = localStorage.getItem('authToken');
+    const unlockTime = localStorage.getItem('unlockTime');
+    
+    // Check if user is authenticated via account
+    let isAccountAuth = false;
+    if (authToken) {
+      try {
+        const payload = authToken.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        isAccountAuth = decodedPayload.isAccountAuth || false;
+      } catch (error) {
+        // Ignore parsing errors
+      }
+    }
+    
+    const isAuthenticated = authToken && (isAccountAuth || unlockTime);
+    
+    // Only fetch data if authenticated or not on root slug page
+    // Root slug page handles its own data fetching for login
+    if (!isRootSlugPage || isAuthenticated) {
+      fetchData();
+    }
     
     // Check screen width initially
     checkScreenWidth();
@@ -336,12 +358,29 @@ function AppContent({ children }: { children: React.ReactNode }) {
     };
   }, [checkScreenWidth]); // Remove fetchData from dependencies to prevent infinite loop
 
-  // Watch for family changes and refetch data
+  // Watch for family changes and refetch data (only if authenticated and not on root slug page)
   useEffect(() => {
-    if (family?.id) {
+    const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
+    const authToken = localStorage.getItem('authToken');
+    const unlockTime = localStorage.getItem('unlockTime');
+    
+    let isAccountAuth = false;
+    if (authToken) {
+      try {
+        const payload = authToken.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        isAccountAuth = decodedPayload.isAccountAuth || false;
+      } catch (error) {
+        // Ignore parsing errors
+      }
+    }
+    
+    const isAuthenticated = authToken && (isAccountAuth || unlockTime);
+    
+    if (family?.id && (!isRootSlugPage || isAuthenticated)) {
       fetchData();
     }
-  }, [family?.id]);
+  }, [family?.id, pathname, familySlug]);
   
   // Validate family slug exists
   const validateFamilySlug = useCallback(async (slug: string) => {
@@ -376,8 +415,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     
+    // Skip auth check entirely if we're on root slug page (page component handles login UI)
+    const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
+    
     // Function to check authentication status
     const checkAuthStatus = () => {
+      // If on root slug page, skip auth checks - page component handles it
+      if (isRootSlugPage) {
+        return;
+      }
+      
       const authToken = localStorage.getItem('authToken');
       const unlockTime = localStorage.getItem('unlockTime');
       
@@ -394,10 +441,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
       }
       
       // Account holders don't need unlockTime, PIN-based users do
+      // If not authenticated and on a sub-route, redirect to root slug page
       if (!authToken || (!isAccountAuth && !unlockTime)) {
-        if (familySlug) {
-          router.push(`/${familySlug}/login`);
-        } else {
+        // If we're on a sub-route, redirect to root slug page to show login
+        if (familySlug && pathname && pathname.startsWith(`/${familySlug}/`)) {
+          router.push(`/${familySlug}`);
+        } else if (!familySlug) {
           router.push('/login');
         }
         return;
@@ -433,12 +482,9 @@ function AppContent({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // Check if user is on the family root page and redirect to log-entry
-      if (pathname === `/${familySlug}` || pathname === `/${familySlug}/`) {
-        console.log('User on family root, redirecting to log-entry...');
-        router.push(`/${familySlug}/log-entry`);
-        return;
-      }
+      // Check if user is on the family root page and authenticated - redirect to log-entry
+      // (This check is skipped if we're already on root slug page due to early return above)
+      // This code only runs for authenticated users on sub-routes
       
       // Check for idle timeout (separate from token expiration)
       if (unlockTime) {
@@ -452,15 +498,19 @@ function AppContent({ children }: { children: React.ReactNode }) {
       }
     };
     
-    // Initial check
-    checkAuthStatus();
-    
-    // Set up continuous checking every second
-    const authCheckInterval = setInterval(checkAuthStatus, 1000);
-    
-    return () => {
-      clearInterval(authCheckInterval);
-    };
+    // Only set up auth checking if NOT on root slug page
+    // Root slug page handles its own auth checking via page component
+    if (!isRootSlugPage) {
+      // Initial check
+      checkAuthStatus();
+      
+      // Set up continuous checking every second for sub-routes only
+      const authCheckInterval = setInterval(checkAuthStatus, 1000);
+      
+      return () => {
+        clearInterval(authCheckInterval);
+      };
+    }
   }, [mounted, router, handleLogout, familySlug, pathname]);
 
 
@@ -594,9 +644,14 @@ function AppContent({ children }: { children: React.ReactNode }) {
     return `/${familySlug}/${path}`;
   };
 
+  // Check if we're on the root slug page and not authenticated
+  // In this case, show only the page content (login UI) without app UI (header, side nav)
+  const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
+  const shouldShowAppUI = (isUnlocked || process.env.NODE_ENV === 'development') && !(isRootSlugPage && !isUnlocked);
+
   return (
     <>
-      {(isUnlocked || process.env.NODE_ENV === 'development') && (
+      {shouldShowAppUI && (
         <div className="min-h-screen flex">
           {/* Side Navigation - non-modal on wide screens */}
           {isWideScreen && (
@@ -723,6 +778,13 @@ function AppContent({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {/* Show page content without app UI when on root slug page and not authenticated */}
+      {!shouldShowAppUI && (
+        <div className="min-h-screen">
+          {children}
+        </div>
+      )}
+
       <SettingsForm
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -824,13 +886,13 @@ export default function AppLayout({
       window.dispatchEvent(caretakerChangedEvent);
     }
 
-    // Redirect to home page for account holders or family login for PIN users
+    // Redirect to home page for account holders or family root (which shows login UI) for PIN users
     if (isAccountAuth) {
       window.location.href = '/';
     } else {
       const familySlug = window.location.pathname.split('/')[1];
       if (familySlug) {
-        window.location.href = `/${familySlug}/login`;
+        window.location.href = `/${familySlug}`;
       } else {
         window.location.href = '/login';
       }

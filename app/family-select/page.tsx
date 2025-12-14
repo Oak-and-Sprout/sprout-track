@@ -155,7 +155,7 @@ export default function FamilySelectPage() {
 
   const handleProceed = () => {
     if (selectedFamily) {
-      router.push(`/${selectedFamily.slug}/login`);
+      router.push(`/${selectedFamily.slug}`);
     }
   };
 

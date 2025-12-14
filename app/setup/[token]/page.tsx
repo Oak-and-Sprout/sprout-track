@@ -31,7 +31,7 @@ export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) 
   const { token } = await params;
 
   const handleSetupComplete = (family: { id: string; name: string; slug: string }) => {
-    router.push(`/${family.slug}/login`);
+    router.push(`/${family.slug}`);
   };
 
   const handleCaretakerCreate = () => {
@@ -147,8 +147,8 @@ export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) 
 
   const handleSetupComplete = (family: { id: string; name: string; slug: string }) => {
     console.log('Token-based setup completed for family:', family);
-    // Redirect to the newly created family's login page (user was logged out)
-    router.push(`/${family.slug}/login`);
+    // Redirect to the newly created family's root page (which shows login UI)
+    router.push(`/${family.slug}`);
   };
 
   if (!mounted || isLoading) {

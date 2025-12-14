@@ -32,7 +32,7 @@ function LoginPageContent() {
   const isSetupFlow = setupType === 'true';
   const isTokenSetupFlow = setupType === 'token' && setupToken;
 
-  // Load families for the dropdown
+  // Load families for the dropdown (only for regular setup flow, not token setup)
   useEffect(() => {
     const loadFamilies = async () => {
       try {
@@ -56,13 +56,13 @@ function LoginPageContent() {
       }
     };
 
-    // Only load families if not in token setup mode
-    if (!isTokenSetupFlow) {
+    // Only load families for regular setup flow (not token setup)
+    if (isSetupFlow && !isTokenSetupFlow) {
       loadFamilies();
     } else {
       setLoading(false);
     }
-  }, [isTokenSetupFlow]);
+  }, [isSetupFlow, isTokenSetupFlow]);
 
   // Handle token authentication
   const handleTokenAuth = async (e: React.FormEvent) => {
@@ -115,7 +115,7 @@ function LoginPageContent() {
     }
   };
 
-  // Handle successful authentication (for regular auth)
+  // Handle successful authentication (for setup flows only)
   const handleUnlock = (caretakerId?: string) => {
     if (isTokenSetupFlow) {
       // Token-based setup flow
@@ -124,12 +124,8 @@ function LoginPageContent() {
       // Regular setup flow - always go to /setup regardless of family context
       router.push('/setup');
     } else {
-      // Normal login - redirect to main app
-      if (selectedFamily) {
-        router.push(`/${selectedFamily}/log-entry`);
-      } else {
-        router.push('/family-select');
-      }
+      // Not a setup flow - redirect to home (shouldn't happen, but safety check)
+      router.push('/');
     }
   };
 
@@ -138,7 +134,7 @@ function LoginPageContent() {
     const authToken = localStorage.getItem('authToken');
     const unlockTime = localStorage.getItem('unlockTime');
     
-    // If user is authenticated, redirect appropriately
+    // If user is authenticated, redirect appropriately (setup flows only)
     if (authToken && unlockTime) {
       try {
         // Basic token validation
@@ -152,11 +148,8 @@ function LoginPageContent() {
           } else if (isSetupFlow) {
             router.push('/setup');
           } else {
-            if (selectedFamily) {
-              router.push(`/${selectedFamily}/log-entry`);
-            } else {
-              router.push('/family-select');
-            }
+            // Not a setup flow and authenticated - redirect to home
+            router.push('/');
           }
         } else {
           // Token expired, clear it
@@ -170,8 +163,11 @@ function LoginPageContent() {
         localStorage.removeItem('unlockTime');
         localStorage.removeItem('caretakerId');
       }
+    } else if (!isSetupFlow && !isTokenSetupFlow) {
+      // Not a setup flow and not authenticated - redirect to home
+      router.push('/');
     }
-  }, [router, selectedFamily, isSetupFlow, isTokenSetupFlow, setupToken]);
+  }, [router, isSetupFlow, isTokenSetupFlow, setupToken]);
 
   // Handle family selection change
   const handleFamilyChange = (value: string) => {
@@ -272,32 +268,10 @@ function LoginPageContent() {
         </div>
       )}
       
-      {/* Only show family selector if not setup flow and multiple families exist */}
-      {!isSetupFlow && families.length > 1 && (
-        <div className="w-full max-w-md mx-auto mb-4 p-4">
-          <label className="block text-sm font-medium mb-2">Select Family</label>
-          <Select
-            value={selectedFamily || ''}
-            onValueChange={handleFamilyChange}
-            disabled={loading}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a family" />
-            </SelectTrigger>
-            <SelectContent>
-              {families.map((f) => (
-                <SelectItem key={f.id} value={f.slug}>
-                  {f.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      
+      {/* This page only handles setup flows - regular login is on slug pages */}
       <LoginSecurity 
         onUnlock={handleUnlock} 
-        familySlug={isSetupFlow ? undefined : selectedFamily || undefined}
+        familySlug={undefined}
       />
     </div>
   );

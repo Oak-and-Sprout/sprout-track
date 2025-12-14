@@ -24,7 +24,7 @@ The ShareButton component accepts all standard HTML button attributes plus the f
 | `familySlug` | `string` | required | The family slug used to generate the share URL |
 | `familyName` | `string` | `undefined` | Optional family name for share content and accessibility |
 | `appConfig` | `{ rootDomain: string; enableHttps: boolean }` | `undefined` | Optional app config to avoid API calls (performance optimization) |
-| `urlSuffix` | `string` | `"/login"` | Optional URL suffix to append to the path. Use `""` for no suffix (e.g., setup tokens) |
+| `urlSuffix` | `string` | `""` | Optional URL suffix to append to the path (e.g., "/dashboard" for custom routes) |
 | `variant` | `'default' \| 'outline' \| 'ghost' \| 'link'` | `'ghost'` | Visual style variant of the button |
 | `size` | `'default' \| 'sm' \| 'lg' \| 'icon'` | `'sm'` | Size variant of the button |
 | `showText` | `boolean` | `true` | Whether to show the text label next to the icon |
@@ -33,7 +33,7 @@ The ShareButton component accepts all standard HTML button attributes plus the f
 
 ## Usage Examples
 
-### Basic ShareButton (Family Login)
+### Basic ShareButton (Family URL)
 
 ```tsx
 import { ShareButton } from "@/components/ui/share-button"
@@ -43,7 +43,7 @@ export function MyComponent() {
     <ShareButton 
       familySlug="my-family-slug"
       familyName="The Smith Family"
-      // urlSuffix="/login" is the default
+      // urlSuffix="" is the default - generates direct family URL
     />
   )
 }
@@ -61,7 +61,6 @@ export function SetupInvitation() {
     <ShareButton 
       familySlug={`setup/${setupToken}`}
       familyName="Family Setup Invitation"
-      urlSuffix="" // Don't add /login for setup URLs
       variant="outline"
       showText={true}
     />
@@ -200,7 +199,7 @@ The ShareButton component automatically:
 
 The component supports different URL types via the `urlSuffix` prop:
 
-- **Family Login URLs** (default): `urlSuffix="/login"` → `https://domain.com/family-slug/login`
+- **Family URLs** (default): `urlSuffix=""` → `https://domain.com/family-slug`
 - **Setup Token URLs**: `urlSuffix=""` → `https://domain.com/setup/abc123`
 - **Custom URLs**: `urlSuffix="/dashboard"` → `https://domain.com/family-slug/dashboard`
 
@@ -287,7 +286,7 @@ When adapting this component for React Native, consider the following:
 - The component only accesses non-sensitive app configuration data
 - URLs are generated client-side using public API endpoints
 - No authentication tokens or sensitive data are included in share URLs
-- The share URLs point to login pages, not authenticated content
+- The share URLs point to family pages (which show login UI when unauthenticated), not authenticated content
 
 This component follows the project's cross-platform compatibility guidelines by:
 1. Separating core logic from platform-specific implementations

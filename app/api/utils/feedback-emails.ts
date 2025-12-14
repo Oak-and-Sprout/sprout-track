@@ -52,7 +52,7 @@ async function getFamilySlug(familyId: string | null): Promise<string | null> {
 
 function getLoginUrl(familySlug: string | null, domainUrl: string): string {
   if (familySlug) {
-    return `${domainUrl}/${familySlug}/login`;
+    return `${domainUrl}/${familySlug}`;
   }
   return `${domainUrl}/?login=true`;
 }

@@ -241,9 +241,17 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
         const response = await originalFetch(...args);
 
         // If we get a 401 Unauthorized, trigger logout
+        // BUT: Don't trigger logout if we're on the root slug page (login page)
+        // The login page expects 401s and handles authentication
         if (response.status === 401) {
-          // Trigger logout after a short delay to avoid interfering with the current call stack
-          if (onLogout) {
+          // Check if we're on a root slug page (login page)
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+          const pathSegments = currentPath.split('/').filter(Boolean);
+          const isRootSlugPage = pathSegments.length === 1; // e.g., /goober-family
+          
+          // Only trigger logout if NOT on root slug page (login page)
+          if (!isRootSlugPage && onLogout) {
+            // Trigger logout after a short delay to avoid interfering with the current call stack
             setTimeout(() => {
               if (onLogout) {
                 onLogout();

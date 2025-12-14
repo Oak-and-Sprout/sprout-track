@@ -609,7 +609,7 @@ export default function FamilyManagerPage() {
 
   // Handle login navigation
   const handleLogin = (family: FamilyData) => {
-    router.push(`/${family.slug}/login`);
+    router.push(`/${family.slug}`);
   };
 
   // Handle add new family
