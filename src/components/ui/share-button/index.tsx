@@ -35,7 +35,7 @@ import "./share-button.css"
  * ```
  */
 const ShareButton = React.forwardRef<HTMLButtonElement, ShareButtonProps>(
-  ({ className, variant, size, asChild = false, familySlug, familyName, appConfig, urlSuffix = "/login", showText = true, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, familySlug, familyName, appConfig, urlSuffix = "", showText = true, ...props }, ref) => {
     const { theme } = useTheme();
     const [copied, setCopied] = React.useState(false);
     const [shareUrl, setShareUrl] = React.useState<string>('');

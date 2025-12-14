@@ -524,7 +524,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
                   setAdminPassword(e.target.value);
                   setError('');
                 }}
-                className="text-center text-lg font-semibold login-input pr-10"
+                className="text-center text-lg font-semibold pr-10"
                 placeholder="Enter admin password"
                 disabled={!!lockoutTime}
                 autoFocus
@@ -556,14 +556,14 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
                 <div className="flex items-center justify-center gap-4 my-2">
                   {/* ID Box - to the left */}
                   <div
-                    className={`flex items-center justify-center w-16 h-12 border-2 rounded-lg cursor-pointer transition-all ${
+                    className={`flex items-center justify-center w-16 h-12 border-2 rounded-lg cursor-pointer transition-all login-id-box ${
                       activeInput === 'loginId'
-                        ? 'border-teal-600 bg-teal-50'
-                        : 'border-gray-300 bg-gray-50'
+                        ? 'login-id-box-active'
+                        : 'login-id-box-inactive'
                     }`}
                     onClick={handleFocusLoginId}
                   >
-                    <span className="text-gray-900">
+                    <span className="login-id-text">
                       {loginId || '--'}
                     </span>
                   </div>
@@ -598,7 +598,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
                   value={loginId}
                   onChange={handleLoginIdChange}
                   onKeyDown={handleKeyDown}
-                  className="text-center text-xl sr-only login-input"
+                  className="text-center text-xl sr-only"
                   placeholder="ID"
                   maxLength={2}
                   autoFocus={activeInput === 'loginId'}
@@ -610,7 +610,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
                   value={pin}
                   onChange={handlePinChange}
                   onKeyDown={handleKeyDown}
-                  className="text-center text-xl font-semibold sr-only login-input"
+                  className="text-center text-xl font-semibold sr-only"
                   placeholder="PIN"
                   maxLength={10}
                   autoFocus={activeInput === 'pin'}
@@ -651,7 +651,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
                   value={pin}
                   onChange={handlePinChange}
                   onKeyDown={handleKeyDown}
-                  className="text-center text-xl font-semibold sr-only login-input"
+                  className="text-center text-xl font-semibold sr-only"
                   placeholder="PIN"
                   maxLength={10}
                   autoFocus={activeInput === 'pin'}

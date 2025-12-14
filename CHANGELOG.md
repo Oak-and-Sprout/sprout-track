@@ -1,5 +1,12 @@
 # Sprout Track Changelog
 
+## v0.96.94 - PWA Update to Streamline Login
+
+- Removed /login and streamlined family slug to facilitate clean PWA usage
+- Cleaned up the login page night mode theme
+
+### Changes
+
 ## v0.96.77 - December 2025 Rollup
 
 ### Changes

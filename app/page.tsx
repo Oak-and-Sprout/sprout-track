@@ -80,8 +80,8 @@ export default function HomePage() {
               // PIN-based user is authenticated, redirect to main app
               router.push(`/${familySlug}/log-entry`);
             } else if (!authToken && !isAccountAuth) {
-              // Not authenticated, redirect to login
-              router.push(`/${familySlug}/login`);
+              // Not authenticated, redirect to family root (which shows login UI)
+              router.push(`/${familySlug}`);
             }
             // If isAccountAuth is true, don't redirect - let them stay on homepage
           } else {

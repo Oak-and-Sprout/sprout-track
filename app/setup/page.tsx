@@ -24,7 +24,7 @@ export default function SetupPage() {
   const router = useRouter();
 
   const handleSetupComplete = (family: { id: string; name: string; slug: string }) => {
-    router.push(`/${family.slug}/login`);
+    router.push(`/${family.slug}`);
   };
 
   const handleCaretakerCreate = () => {
@@ -154,12 +154,8 @@ export default function SetupPage() {
       }
     }
 
-    // For account auth, redirect to family dashboard; for other auth, redirect to login
-    if (isAccountAuth) {
-      router.push(`/${family.slug}`);
-    } else {
-      router.push(`/${family.slug}/login`);
-    }
+    // Redirect to family root (which shows login UI for PIN users, or app for account users)
+    router.push(`/${family.slug}`);
   };
 
   if (isLoading) {

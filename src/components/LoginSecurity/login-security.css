@@ -75,3 +75,43 @@ html.dark .login-field-inactive {
   background-color: transparent;
   border: 1px solid transparent;
 }
+
+/* ID Box styles */
+.login-id-box {
+  border-color: #d1d5db; /* gray-300 */
+  background-color: #f9fafb; /* gray-50 */
+}
+
+.login-id-box-active {
+  border-color: #0d9488; /* teal-600 */
+  background-color: #f0fdfa; /* teal-50 */
+}
+
+.login-id-box-inactive {
+  border-color: #d1d5db; /* gray-300 */
+  background-color: #f9fafb; /* gray-50 */
+}
+
+.login-id-text {
+  color: #111827; /* gray-900 */
+}
+
+/* Dark mode ID Box styles */
+html.dark .login-id-box {
+  border-color: #4b5563; /* gray-600 */
+  background-color: #1f2937; /* gray-800 */
+}
+
+html.dark .login-id-box-active {
+  border-color: #5eead4; /* teal-300 */
+  background-color: rgba(94, 234, 212, 0.1); /* teal-300 with low opacity */
+}
+
+html.dark .login-id-box-inactive {
+  border-color: #4b5563; /* gray-600 */
+  background-color: #1f2937; /* gray-800 */
+}
+
+html.dark .login-id-text {
+  color: #e5e7eb; /* gray-200 */
+}
