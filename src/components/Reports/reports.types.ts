@@ -251,6 +251,7 @@ export interface FeedingStats {
 export interface SleepStats {
   totalSleepMinutes: number;
   avgNapMinutes: number;
+  avgDailyNapMinutes: number;
   avgNightSleepMinutes: number;
   avgNightWakings: number;
   napLocations: LocationStat[];

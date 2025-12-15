@@ -430,7 +430,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       >
         {/* Date Range Display */}
         {mode === "range" && (
-          <div className="px-3 pt-2 pb-4 text-sm text-gray-700 flex justify-between items-center">
+          <div className="calendar-range-display px-3 pt-2 pb-4 text-sm text-gray-700 flex justify-between items-center">
             <div className="flex flex-col">
               <span className="text-xs text-gray-500 font-medium">From</span>
               <span className="font-semibold">{formatDate(rangeFrom) || '—'}</span>

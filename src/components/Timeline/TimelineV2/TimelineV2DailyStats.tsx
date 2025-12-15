@@ -592,7 +592,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             {/* Mobile toggle */}
             <button
               type="button"
-              className="text-xs inline-flex md:hidden items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
+              className="text-xs inline-flex md:hidden items-center gap-1 text-teal-600 hover:text-teal-700"
               onClick={onHeatmapToggle}
             >
               {isHeatmapVisible ? (

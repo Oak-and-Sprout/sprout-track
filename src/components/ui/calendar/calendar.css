@@ -18,6 +18,7 @@ html.dark .calendar-nav-button {
 }
 
 html.dark .calendar-nav-button:hover {
+  background-color: #374151 !important; /* dark:hover:bg-gray-700 */
   color: #e5e7eb !important; /* dark:hover:text-gray-200 */
 }
 
@@ -127,4 +128,21 @@ html.dark .calendar button[class*="hover:bg-teal-50"] {
 html.dark .calendar button[class*="hover:bg-teal-50"]:hover {
   background-color: #134e4a !important; /* dark:hover:bg-teal-900 */
   color: #99f6e4 !important; /* dark:hover:text-teal-200 */
+}
+
+/* Dark mode styles for date range display */
+html.dark .calendar-range-display {
+  color: #e5e7eb !important; /* dark:text-gray-200 */
+}
+
+html.dark .calendar-range-display .text-gray-500 {
+  color: #9ca3af !important; /* dark:text-gray-400 */
+}
+
+html.dark .calendar-range-display .text-gray-700 {
+  color: #e5e7eb !important; /* dark:text-gray-200 */
+}
+
+html.dark .calendar-range-display .bg-gray-300 {
+  background-color: #6b7280 !important; /* dark:bg-gray-500 */
 }
