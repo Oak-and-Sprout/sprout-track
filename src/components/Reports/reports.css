@@ -474,3 +474,16 @@ html.dark .activity-chart-day-wrapper {
 html.dark .activity-chart-hour-label {
   color: #6b7280 !important; /* gray-500 */
 }
+
+/* Heatmap dark mode */
+html.dark .heatmap-legend {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .heatmap-legend span {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .heatmap-slot {
+  opacity: 0.95 !important;
+}
