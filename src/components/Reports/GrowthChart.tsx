@@ -658,6 +658,48 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     return mergedData.sort((a, b) => a.ageMonths - b.ageMonths);
   }, [cdcData, measurementsWithPercentiles, measurementType, selectedBaby, settings, babyCurrentAgeMonths]);
 
+  // Dynamic Y-axis domain based on visible data (min - 10%, max + 10%)
+  const yAxisDomain = useMemo(() => {
+    if (!chartData.length) return ['auto', 'auto'] as const;
+
+    let min = Number.POSITIVE_INFINITY;
+    let max = Number.NEGATIVE_INFINITY;
+
+    chartData.forEach((point) => {
+      const values = [
+        point.p3,
+        point.p5,
+        point.p10,
+        point.p25,
+        point.p50,
+        point.p75,
+        point.p90,
+        point.p95,
+        point.p97,
+        point.measurement,
+      ].filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
+
+      values.forEach((v) => {
+        if (v < min) min = v;
+        if (v > max) max = v;
+      });
+    });
+
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      return ['auto', 'auto'] as const;
+    }
+
+    const range = max - min;
+    const padding = range > 0 ? range * 0.1 : (max || 1) * 0.1;
+    let lower = min - padding;
+    const upper = max + padding;
+
+    // Don't go below zero for growth metrics
+    if (lower < 0) lower = 0;
+
+    return [lower, upper] as const;
+  }, [chartData]);
+
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
     setZoomLevel(prev => Math.min(prev * 1.5, 5));
@@ -874,6 +916,9 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
                 className="growth-chart-axis"
               />
               <YAxis
+                type="number"
+                domain={yAxisDomain as any}
+                tickFormatter={(value) => Number(value).toFixed(0)}
                 label={{ value: unitLabel, angle: -90, position: 'insideLeft', offset: 18 }}
                 className="growth-chart-axis"
               />
