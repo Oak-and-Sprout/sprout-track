@@ -8,8 +8,11 @@ export const growthChartStyles = {
   // Main container
   container: "flex flex-col space-y-4",
 
+  // Top controls row (measurement buttons on left, zoom controls on right)
+  controlsRow: "flex items-center justify-between gap-4 flex-wrap",
+
   // Button group for measurement type selection
-  buttonGroup: "flex flex-wrap gap-2 justify-center",
+  buttonGroup: "flex flex-wrap gap-2 justify-start",
   button: "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors",
   buttonActive: "bg-teal-50 border-teal-500 text-teal-700 hover:bg-teal-100",
 

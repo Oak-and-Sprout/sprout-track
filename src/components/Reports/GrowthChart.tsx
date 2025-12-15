@@ -736,53 +736,56 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
 
   return (
     <div className={cn(growthChartStyles.container, "growth-chart-container", className)}>
-      {/* Measurement type toggle buttons */}
-      <div className={cn(growthChartStyles.buttonGroup, "growth-chart-button-group")}>
-        {measurementTypes.map(({ type, label, icon }) => (
-          <button
-            key={type}
-            onClick={() => setMeasurementType(type)}
-            className={cn(
-              growthChartStyles.button,
-              "growth-chart-button",
-              measurementType === type && growthChartStyles.buttonActive,
-              measurementType === type && "growth-chart-button-active"
-            )}
-          >
-            {icon}
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
+      {/* Top controls row: measurement type buttons (left) and zoom controls (right) */}
+      <div className={cn(growthChartStyles.controlsRow)}>
+        {/* Measurement type toggle buttons */}
+        <div className={cn(growthChartStyles.buttonGroup, "growth-chart-button-group")}>
+          {measurementTypes.map(({ type, label, icon }) => (
+            <button
+              key={type}
+              onClick={() => setMeasurementType(type)}
+              className={cn(
+                growthChartStyles.button,
+                "growth-chart-button",
+                measurementType === type && growthChartStyles.buttonActive,
+                measurementType === type && "growth-chart-button-active"
+              )}
+            >
+              {icon}
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
 
-      {/* Zoom controls */}
-      <div className={cn(growthChartStyles.zoomControls, "growth-chart-zoom-controls")}>
-        <button
-          onClick={handleZoomIn}
-          className={cn(growthChartStyles.zoomButton, "growth-chart-zoom-button")}
-          title="Zoom in"
-        >
-          <ZoomIn className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleZoomOut}
-          className={cn(growthChartStyles.zoomButton, "growth-chart-zoom-button")}
-          title="Zoom out"
-          disabled={zoomLevel <= 1}
-        >
-          <ZoomOut className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleReset}
-          className={cn(growthChartStyles.zoomButton, "growth-chart-zoom-button")}
-          title="Reset zoom"
-          disabled={zoomLevel === 1 && panOffset.x === 0 && panOffset.y === 0}
-        >
-          <RotateCcw className="h-4 w-4" />
-        </button>
-        <span className={cn(growthChartStyles.zoomLabel, "growth-chart-zoom-label")}>
-          {Math.round(zoomLevel * 100)}%
-        </span>
+        {/* Zoom controls */}
+        <div className={cn(growthChartStyles.zoomControls, "growth-chart-zoom-controls")}>
+          <button
+            onClick={handleZoomIn}
+            className={cn(growthChartStyles.zoomButton, "growth-chart-zoom-button")}
+            title="Zoom in"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleZoomOut}
+            className={cn(growthChartStyles.zoomButton, "growth-chart-zoom-button")}
+            title="Zoom out"
+            disabled={zoomLevel <= 1}
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleReset}
+            className={cn(growthChartStyles.zoomButton, "growth-chart-zoom-button")}
+            title="Reset zoom"
+            disabled={zoomLevel === 1 && panOffset.x === 0 && panOffset.y === 0}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          <span className={cn(growthChartStyles.zoomLabel, "growth-chart-zoom-label")}>
+            {Math.round(zoomLevel * 100)}%
+          </span>
+        </div>
       </div>
 
       {/* Chart container with zoom/pan */}
@@ -812,17 +815,17 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
           <ResponsiveContainer width="100%" height={400}>
             <LineChart
               data={chartData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+              margin={{ top: 20, right: 30, left: 2, bottom: 15 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
               <XAxis
                 dataKey="ageMonths"
-                label={{ value: 'Age (months)', position: 'insideBottom', offset: -5 }}
+                label={{ value: 'Age (months)', position: 'insideBottom', offset: -10 }}
                 tickFormatter={(value) => value.toString()}
                 className="growth-chart-axis"
               />
               <YAxis
-                label={{ value: unitLabel, angle: -90, position: 'insideLeft' }}
+                label={{ value: unitLabel, angle: -90, position: 'insideLeft', offset: 18 }}
                 className="growth-chart-axis"
               />
               <Tooltip content={<CustomTooltip settings={settings} measurementType={measurementType} />} />
