@@ -9,22 +9,15 @@ import { cn } from '@/src/lib/utils';
 import { styles } from './reports.styles';
 import { HeatmapsTabProps, ActivityType, SleepActivity, FeedActivity, DiaperActivity, PumpActivity } from './reports.types';
 import { getActivityTime } from '@/src/components/Timeline/utils';
-
-// Number of time slots per day (288 = 5-minute slots)
-const TIME_SLOTS = 288;
-const SLOT_MINUTES = 5; // 5 minutes per slot
+import {
+  TIME_SLOTS,
+  SLOT_MINUTES,
+  HEATMAP_COLORS,
+  getSlotOpacity,
+  interpolateColor,
+  buildHeatmapDataForActivities,
+} from '@/src/components/Timeline/TimelineV2/timeline-heatmap.utils';
 const CHART_HEIGHT = 1500;
-
-// Heatmap color scales - using activity colors as base
-const HEATMAP_COLORS = {
-  wakeTime: { base: '#fbbf24', light: '#fef3c7' },      // amber - sunrise
-  bedtime: { base: '#6366f1', light: '#e0e7ff' },       // indigo - night
-  naps: { base: '#6b7280', light: '#f3f4f6' },          // gray - sleep
-  allSleep: { base: '#6b7280', light: '#f3f4f6' },      // gray - sleep
-  feeds: { base: '#7dd3fc', light: '#e0f2fe' },         // sky - feed
-  diapers: { base: '#0d9488', light: '#ccfbf1' },       // teal - diaper
-  pumps: { base: '#c084fc', light: '#f3e8ff' },         // purple - pump
-};
 
 type HeatmapType = 'wakeTime' | 'bedtime' | 'naps' | 'allSleep' | 'feeds' | 'diapers' | 'pumps';
 
@@ -59,50 +52,6 @@ const timeToSlot = (hours: number): number => {
   return Math.max(0, Math.min(TIME_SLOTS - 1, slot));
 };
 
-// Interpolate between two colors based on intensity (0-1)
-const interpolateColor = (intensity: number, baseColor: string, lightColor: string): string => {
-  // Parse hex colors
-  const parseHex = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16),
-    } : { r: 0, g: 0, b: 0 };
-  };
-
-  const light = parseHex(lightColor);
-  const base = parseHex(baseColor);
-
-  const r = Math.round(light.r + (base.r - light.r) * intensity);
-  const g = Math.round(light.g + (base.g - light.g) * intensity);
-  const b = Math.round(light.b + (base.b - light.b) * intensity);
-
-  return `rgb(${r}, ${g}, ${b})`;
-};
-
-// Map normalized intensity (0-1) to an opacity value with a strong bias toward high intensities.
-// - Below 0.5: smoothly fades toward 0, reaching ~0.2 opacity at 0.5
-// - Above 0.5: curves up toward ~0.9 opacity, emphasizing the top 10–20% of intensities
-const getSlotOpacity = (intensity: number): number => {
-  if (intensity <= 0) return 0;
-
-  const clamped = Math.max(0, Math.min(1, intensity));
-
-  if (clamped <= 0.5) {
-    // 0 -> 0, 0.5 -> 0.2
-    return 0.4 * clamped;
-  }
-
-  // Upper half: ease-in curve from 0.2 at 0.5 to 0.9 at 1.0
-  const t = (clamped - 0.5) / 0.5; // 0..1
-  const minOpacity = 0.2;
-  const maxOpacity = 0.9;
-  const curved = minOpacity + (maxOpacity - minOpacity) * (t * t);
-
-  return curved;
-};
-
 const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
   activities,
   dateRange,
@@ -114,154 +63,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
       return null;
     }
 
-    // Initialize slot counts for each heatmap type
-    const slotCounts: Record<HeatmapType, number[]> = {
-      wakeTime: new Array(TIME_SLOTS).fill(0),
-      bedtime: new Array(TIME_SLOTS).fill(0),
-      naps: new Array(TIME_SLOTS).fill(0),
-      allSleep: new Array(TIME_SLOTS).fill(0),
-      feeds: new Array(TIME_SLOTS).fill(0),
-      diapers: new Array(TIME_SLOTS).fill(0),
-      pumps: new Array(TIME_SLOTS).fill(0),
-    };
-
-    const getHours = (d: Date) => d.getHours() + d.getMinutes() / 60;
-
-    // Process each activity
-    activities.forEach((activity) => {
-      const timeString = getActivityTime(activity as any);
-      const base = new Date(timeString);
-      if (Number.isNaN(base.getTime())) return;
-
-      // Sleep activities
-      if ('duration' in activity && 'startTime' in activity && 'type' in activity && 
-          (activity.type === 'NAP' || activity.type === 'NIGHT_SLEEP')) {
-        const sleepActivity = activity as SleepActivity;
-        const start = sleepActivity.startTime ? new Date(sleepActivity.startTime) : base;
-        const end = sleepActivity.endTime ? new Date(sleepActivity.endTime) : null;
-
-        const startHours = getHours(start);
-        const endHours = end ? getHours(end) : startHours;
-
-        if (sleepActivity.type === 'NIGHT_SLEEP') {
-          // Bedtime - just the start time (±5 min window)
-          if (startHours >= 12) {
-            const bedtimeStart = Math.max(0, startHours - 30/60);
-            const bedtimeEnd = Math.min(24, startHours + 30/60);
-            for (let slot = timeToSlot(bedtimeStart); slot <= timeToSlot(bedtimeEnd); slot++) {
-              slotCounts.bedtime[slot]++;
-            }
-          }
-
-          // Wake time - just the end time (±5 min window) if available
-          if (end && endHours < 12) {
-            const wakeStart = Math.max(0, endHours - 30/60);
-            const wakeEnd = Math.min(24, endHours + 30/60);
-            for (let slot = timeToSlot(wakeStart); slot <= timeToSlot(wakeEnd); slot++) {
-              slotCounts.wakeTime[slot]++;
-            }
-          }
-
-          // All sleep - full duration
-          if (end) {
-            // Handle overnight sleep by checking if it spans midnight
-            if (endHours < startHours) {
-              // From start to midnight
-              for (let slot = timeToSlot(startHours); slot < TIME_SLOTS; slot++) {
-                slotCounts.allSleep[slot]++;
-              }
-              // From midnight to end
-              for (let slot = 0; slot <= timeToSlot(endHours); slot++) {
-                slotCounts.allSleep[slot]++;
-              }
-            } else {
-              for (let slot = timeToSlot(startHours); slot <= timeToSlot(endHours); slot++) {
-                slotCounts.allSleep[slot]++;
-              }
-            }
-          }
-        } else if (sleepActivity.type === 'NAP') {
-          // Nap windows - full duration
-          if (end) {
-            for (let slot = timeToSlot(startHours); slot <= timeToSlot(endHours); slot++) {
-              slotCounts.naps[slot]++;
-            }
-          } else {
-            // No end time, use ±30 min window
-            const napStart = Math.max(0, startHours - 30/60);
-            const napEnd = Math.min(24, startHours + 30/60);
-            for (let slot = timeToSlot(napStart); slot <= timeToSlot(napEnd); slot++) {
-              slotCounts.naps[slot]++;
-            }
-          }
-        }
-      }
-
-      // Feed activities
-      if ('amount' in activity && 'type' in activity) {
-        const feedActivity = activity as FeedActivity;
-        const feedTime = new Date(feedActivity.time);
-        const feedHours = getHours(feedTime);
-        
-        // ±30 min window
-        const feedStart = Math.max(0, feedHours - 30/60);
-        const feedEnd = Math.min(24, feedHours + 30/60);
-        for (let slot = timeToSlot(feedStart); slot <= timeToSlot(feedEnd); slot++) {
-          slotCounts.feeds[slot]++;
-        }
-      }
-
-      // Diaper activities
-      if ('condition' in activity && 'type' in activity) {
-        const diaperActivity = activity as DiaperActivity;
-        const diaperTime = new Date(diaperActivity.time);
-        const diaperHours = getHours(diaperTime);
-        
-        // ±30 min window
-        const diaperStart = Math.max(0, diaperHours - 30/60);
-        const diaperEnd = Math.min(24, diaperHours + 30/60);
-        for (let slot = timeToSlot(diaperStart); slot <= timeToSlot(diaperEnd); slot++) {
-          slotCounts.diapers[slot]++;
-        }
-      }
-
-      // Pump activities
-      if ('leftAmount' in activity || 'rightAmount' in activity) {
-        const pumpActivity = activity as PumpActivity;
-        const start = pumpActivity.startTime ? new Date(pumpActivity.startTime) : base;
-        const end = pumpActivity.endTime ? new Date(pumpActivity.endTime) : null;
-        
-        const startHours = getHours(start);
-        
-        if (end) {
-          const endHours = getHours(end);
-          for (let slot = timeToSlot(startHours); slot <= timeToSlot(endHours); slot++) {
-            slotCounts.pumps[slot]++;
-          }
-        } else {
-          // ±30 min window
-          const pumpStart = Math.max(0, startHours - 30/60);
-          const pumpEnd = Math.min(24, startHours + 30/60);
-          for (let slot = timeToSlot(pumpStart); slot <= timeToSlot(pumpEnd); slot++) {
-            slotCounts.pumps[slot]++;
-          }
-        }
-      }
-    });
-
-    // Normalize counts to intensities (0-1)
-    const normalizedData: Record<HeatmapType, { slots: number[]; maxCount: number }> = {} as any;
-    
-    (Object.keys(slotCounts) as HeatmapType[]).forEach((type) => {
-      const counts = slotCounts[type];
-      const maxCount = Math.max(...counts, 1); // Avoid division by zero
-      normalizedData[type] = {
-        slots: counts.map(count => count / maxCount),
-        maxCount,
-      };
-    });
-
-    return normalizedData;
+    return buildHeatmapDataForActivities(activities as any);
   }, [activities, dateRange]);
 
   // Generate hour lines for the chart

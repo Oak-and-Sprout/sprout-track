@@ -110,3 +110,27 @@ html.dark .timeline-v2-daily-stats .text-amber-700 {
 }
 
 
+/* Dark mode styles for TimelineV2Heatmap */
+html.dark .timeline-v2-heatmap-container {
+  background-color: transparent !important;
+}
+
+html.dark .timeline-v2-heatmap-grid-hour {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .timeline-v2-heatmap-hour-label {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+html.dark .timeline-v2-heatmap-time-bar {
+  background-color: #14b8a6 !important; /* teal-500 */
+}
+
+/* Match Reports heatmap panel styling */
+html.dark .timeline-v2-heatmap-panel {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #4b5563 !important; /* gray-600 */
+}
+
+
