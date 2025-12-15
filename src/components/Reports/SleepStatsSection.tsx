@@ -10,9 +10,10 @@ import {
   AccordionContent,
 } from '@/src/components/ui/accordion';
 import { styles } from './reports.styles';
-import { SleepStats, DateRange } from './reports.types';
+import { SleepStats, DateRange, ActivityType } from './reports.types';
 import SleepChartModal, { SleepChartMetric, SleepChartDataPoint } from './SleepChartModal';
 import SleepLocationsChartModal from './SleepLocationsChartModal';
+import SleepLocationChartModal from './SleepLocationChartModal';
 
 interface SleepStatsSectionProps {
   stats: SleepStats;
@@ -23,6 +24,7 @@ interface SleepStatsSectionProps {
     nightWakings: SleepChartDataPoint[];
   };
   dateRange: DateRange;
+  activities: ActivityType[];
 }
 
 // Helper function to format minutes into hours and minutes
@@ -44,11 +46,14 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
   stats,
   sleepChartSeries,
   dateRange,
+  activities,
 }) => {
   const [sleepChartModalOpen, setSleepChartModalOpen] = useState(false);
   const [sleepChartMetric, setSleepChartMetric] = useState<SleepChartMetric | null>(null);
   const [sleepLocationsModalOpen, setSleepLocationsModalOpen] = useState(false);
   const [sleepLocationsType, setSleepLocationsType] = useState<'nap' | 'night'>('nap');
+  const [locationChartModalOpen, setLocationChartModalOpen] = useState(false);
+  const [locationChartType, setLocationChartType] = useState<'nap' | 'night'>('nap');
 
   const currentSleepSeries =
     sleepChartMetric && sleepChartSeries[sleepChartMetric]
@@ -130,7 +135,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
             <div className="mt-4">
               <button
                 type="button"
-                className={cn(styles.sectionTitle, "reports-section-title text-left w-full")}
+                className={cn(styles.sectionTitle, "reports-section-title text-left w-full cursor-pointer hover:opacity-80")}
                 onClick={() => {
                   setSleepLocationsType('nap');
                   setSleepLocationsModalOpen(true);
@@ -141,12 +146,20 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
               </button>
               <div className={styles.locationList}>
                 {stats.napLocations.slice(0, 5).map((loc) => (
-                  <div key={loc.location} className={cn(styles.locationItem, "reports-location-item")}>
+                  <button
+                    key={loc.location}
+                    type="button"
+                    className={cn(styles.locationItem, "reports-location-item cursor-pointer hover:opacity-80 transition-opacity w-full text-left")}
+                    onClick={() => {
+                      setLocationChartType('nap');
+                      setLocationChartModalOpen(true);
+                    }}
+                  >
                     <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
                       {loc.count}x ({formatMinutes(loc.totalMinutes)})
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -157,7 +170,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
             <div className="mt-4">
               <button
                 type="button"
-                className={cn(styles.sectionTitle, "reports-section-title text-left w-full")}
+                className={cn(styles.sectionTitle, "reports-section-title text-left w-full cursor-pointer hover:opacity-80")}
                 onClick={() => {
                   setSleepLocationsType('night');
                   setSleepLocationsModalOpen(true);
@@ -168,12 +181,20 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
               </button>
               <div className={styles.locationList}>
                 {stats.nightLocations.slice(0, 5).map((loc) => (
-                  <div key={loc.location} className={cn(styles.locationItem, "reports-location-item")}>
+                  <button
+                    key={loc.location}
+                    type="button"
+                    className={cn(styles.locationItem, "reports-location-item cursor-pointer hover:opacity-80 transition-opacity w-full text-left")}
+                    onClick={() => {
+                      setLocationChartType('night');
+                      setLocationChartModalOpen(true);
+                    }}
+                  >
                     <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
                       {loc.count}x ({formatMinutes(loc.totalMinutes)})
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -201,6 +222,16 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
         onOpenChange={setSleepLocationsModalOpen}
         type={sleepLocationsType}
         locations={sleepLocationsType === 'nap' ? stats.napLocations : stats.nightLocations}
+      />
+
+      {/* Location-specific daily count stacked bar chart modal */}
+      <SleepLocationChartModal
+        open={locationChartModalOpen}
+        onOpenChange={setLocationChartModalOpen}
+        type={locationChartType}
+        locations={locationChartType === 'nap' ? stats.napLocations : stats.nightLocations}
+        activities={activities}
+        dateRange={dateRange}
       />
     </>
   );

@@ -749,6 +749,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
           stats={stats.sleep}
           sleepChartSeries={sleepChartSeries}
           dateRange={dateRange}
+          activities={activities}
         />
 
         {/* Feeding Section */}
