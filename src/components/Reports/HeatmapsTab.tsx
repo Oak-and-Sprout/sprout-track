@@ -10,9 +10,9 @@ import { styles } from './reports.styles';
 import { HeatmapsTabProps, ActivityType, SleepActivity, FeedActivity, DiaperActivity, PumpActivity } from './reports.types';
 import { getActivityTime } from '@/src/components/Timeline/utils';
 
-// Number of time slots per day (48 = 30-minute slots)
-const TIME_SLOTS = 48;
-const SLOT_MINUTES = 24 * 60 / TIME_SLOTS; // 30 minutes per slot
+// Number of time slots per day (288 = 5-minute slots)
+const TIME_SLOTS = 288;
+const SLOT_MINUTES = 5; // 5 minutes per slot
 const CHART_HEIGHT = 1500;
 
 // Heatmap color scales - using activity colors as base
@@ -38,11 +38,11 @@ interface HeatmapConfig {
 const HEATMAP_CONFIGS: HeatmapConfig[] = [
   { id: 'wakeTime', title: 'Wake Time', icon: <Sun className="h-4 w-4" />, description: 'When baby wakes from night sleep' },
   { id: 'bedtime', title: 'Bedtime', icon: <Moon className="h-4 w-4" />, description: 'When baby goes to sleep at night' },
-  { id: 'naps', title: 'Nap Windows', icon: <BedDouble className="h-4 w-4" />, description: 'Full nap duration patterns' },
-  { id: 'allSleep', title: 'All Sleep', icon: <Moon className="h-4 w-4" />, description: 'All sleep patterns (naps + night)' },
-  { id: 'feeds', title: 'Feeding Times', icon: <Icon iconNode={bottleBaby} className="h-4 w-4" />, description: 'When baby is fed' },
-  { id: 'diapers', title: 'Diaper Changes', icon: <Icon iconNode={diaper} className="h-4 w-4" />, description: 'When diapers are changed' },
-  { id: 'pumps', title: 'Pump Sessions', icon: <LampWallDown className="h-4 w-4" />, description: 'Breast pump timing patterns' },
+  { id: 'naps', title: 'Naps', icon: <BedDouble className="h-4 w-4" />, description: 'Full nap duration patterns' },
+  { id: 'allSleep', title: 'Night Sleep', icon: <Moon className="h-4 w-4" />, description: 'All sleep patterns (naps + night)' },
+  { id: 'feeds', title: 'Feeds', icon: <Icon iconNode={bottleBaby} className="h-4 w-4" />, description: 'When baby is fed' },
+  { id: 'diapers', title: 'Diapers', icon: <Icon iconNode={diaper} className="h-4 w-4" />, description: 'When diapers are changed' },
+  { id: 'pumps', title: 'Pumps', icon: <LampWallDown className="h-4 w-4" />, description: 'Breast pump timing patterns' },
 ];
 
 // Format hour for chart labels (6a, 7a, 12p, 1p, etc.)
@@ -81,6 +81,28 @@ const interpolateColor = (intensity: number, baseColor: string, lightColor: stri
   return `rgb(${r}, ${g}, ${b})`;
 };
 
+// Map normalized intensity (0-1) to an opacity value with a strong bias toward high intensities.
+// - Below 0.5: smoothly fades toward 0, reaching ~0.2 opacity at 0.5
+// - Above 0.5: curves up toward ~0.9 opacity, emphasizing the top 10–20% of intensities
+const getSlotOpacity = (intensity: number): number => {
+  if (intensity <= 0) return 0;
+
+  const clamped = Math.max(0, Math.min(1, intensity));
+
+  if (clamped <= 0.5) {
+    // 0 -> 0, 0.5 -> 0.2
+    return 0.4 * clamped;
+  }
+
+  // Upper half: ease-in curve from 0.2 at 0.5 to 0.9 at 1.0
+  const t = (clamped - 0.5) / 0.5; // 0..1
+  const minOpacity = 0.2;
+  const maxOpacity = 0.9;
+  const curved = minOpacity + (maxOpacity - minOpacity) * (t * t);
+
+  return curved;
+};
+
 const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
   activities,
   dateRange,
@@ -107,7 +129,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
 
     // Process each activity
     activities.forEach((activity) => {
-      const timeString = getActivityTime(activity);
+      const timeString = getActivityTime(activity as any);
       const base = new Date(timeString);
       if (Number.isNaN(base.getTime())) return;
 
@@ -123,16 +145,18 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
 
         if (sleepActivity.type === 'NIGHT_SLEEP') {
           // Bedtime - just the start time (±5 min window)
-          const bedtimeStart = Math.max(0, startHours - 5/60);
-          const bedtimeEnd = Math.min(24, startHours + 5/60);
-          for (let slot = timeToSlot(bedtimeStart); slot <= timeToSlot(bedtimeEnd); slot++) {
-            slotCounts.bedtime[slot]++;
+          if (startHours >= 12) {
+            const bedtimeStart = Math.max(0, startHours - 30/60);
+            const bedtimeEnd = Math.min(24, startHours + 30/60);
+            for (let slot = timeToSlot(bedtimeStart); slot <= timeToSlot(bedtimeEnd); slot++) {
+              slotCounts.bedtime[slot]++;
+            }
           }
 
           // Wake time - just the end time (±5 min window) if available
-          if (end) {
-            const wakeStart = Math.max(0, endHours - 5/60);
-            const wakeEnd = Math.min(24, endHours + 5/60);
+          if (end && endHours < 12) {
+            const wakeStart = Math.max(0, endHours - 30/60);
+            const wakeEnd = Math.min(24, endHours + 30/60);
             for (let slot = timeToSlot(wakeStart); slot <= timeToSlot(wakeEnd); slot++) {
               slotCounts.wakeTime[slot]++;
             }
@@ -161,15 +185,13 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
           if (end) {
             for (let slot = timeToSlot(startHours); slot <= timeToSlot(endHours); slot++) {
               slotCounts.naps[slot]++;
-              slotCounts.allSleep[slot]++;
             }
           } else {
-            // No end time, use ±5 min window
-            const napStart = Math.max(0, startHours - 5/60);
-            const napEnd = Math.min(24, startHours + 5/60);
+            // No end time, use ±30 min window
+            const napStart = Math.max(0, startHours - 30/60);
+            const napEnd = Math.min(24, startHours + 30/60);
             for (let slot = timeToSlot(napStart); slot <= timeToSlot(napEnd); slot++) {
               slotCounts.naps[slot]++;
-              slotCounts.allSleep[slot]++;
             }
           }
         }
@@ -181,9 +203,9 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
         const feedTime = new Date(feedActivity.time);
         const feedHours = getHours(feedTime);
         
-        // ±5 min window
-        const feedStart = Math.max(0, feedHours - 5/60);
-        const feedEnd = Math.min(24, feedHours + 5/60);
+        // ±30 min window
+        const feedStart = Math.max(0, feedHours - 30/60);
+        const feedEnd = Math.min(24, feedHours + 30/60);
         for (let slot = timeToSlot(feedStart); slot <= timeToSlot(feedEnd); slot++) {
           slotCounts.feeds[slot]++;
         }
@@ -195,9 +217,9 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
         const diaperTime = new Date(diaperActivity.time);
         const diaperHours = getHours(diaperTime);
         
-        // ±5 min window
-        const diaperStart = Math.max(0, diaperHours - 5/60);
-        const diaperEnd = Math.min(24, diaperHours + 5/60);
+        // ±30 min window
+        const diaperStart = Math.max(0, diaperHours - 30/60);
+        const diaperEnd = Math.min(24, diaperHours + 30/60);
         for (let slot = timeToSlot(diaperStart); slot <= timeToSlot(diaperEnd); slot++) {
           slotCounts.diapers[slot]++;
         }
@@ -217,9 +239,9 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
             slotCounts.pumps[slot]++;
           }
         } else {
-          // ±5 min window
-          const pumpStart = Math.max(0, startHours - 5/60);
-          const pumpEnd = Math.min(24, startHours + 5/60);
+          // ±30 min window
+          const pumpStart = Math.max(0, startHours - 30/60);
+          const pumpEnd = Math.min(24, startHours + 30/60);
           for (let slot = timeToSlot(pumpStart); slot <= timeToSlot(pumpEnd); slot++) {
             slotCounts.pumps[slot]++;
           }
@@ -379,7 +401,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
                               top: `${topPercent}%`,
                               height: `${heightPercent}%`,
                               backgroundColor,
-                              opacity: intensity > 0 ? 0.9 : 0,
+                              opacity: getSlotOpacity(intensity),
                             }}
                             title={intensity > 0 ? `${Math.round(intensity * data.maxCount)} occurrences` : undefined}
                           />
@@ -397,35 +419,9 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
                     </div>
                   )}
                 </div>
-
-                {/* Description */}
-                <div className="mt-2 text-center">
-                  <p className="text-[9px] text-gray-400 leading-tight">
-                    {config.description}
-                  </p>
-                </div>
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="mt-4 px-4 py-2 border-t border-gray-200 heatmap-legend">
-        <div className="flex items-center justify-center gap-6 text-xs text-gray-500">
-          <span>Frequency:</span>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#f3f4f6' }} />
-            <span>Low</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#9ca3af' }} />
-            <span>Medium</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-3 rounded" style={{ backgroundColor: '#4b5563' }} />
-            <span>High</span>
-          </div>
         </div>
       </div>
     </div>
