@@ -1,0 +1,235 @@
+/* Dark mode overrides for Reports component */
+
+/* Main container */
+html.dark .reports-container {
+  background-color: #111827 !important; /* gray-900 */
+}
+
+/* Header */
+html.dark .reports-header {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-header-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Date range picker */
+html.dark .reports-date-range-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-date-range-button {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-date-range-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-date-range-icon {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Tab navigation */
+html.dark .reports-tab-container {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-tab-button {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reports-tab-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .reports-tab-button-active {
+  background-color: rgba(20, 184, 166, 0.1) !important; /* teal-500/10 */
+  color: #5eead4 !important; /* teal-300 */
+  border-color: #5eead4 !important; /* teal-300 */
+}
+
+/* Loading state */
+html.dark .reports-loading-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Error state */
+html.dark .reports-error-text {
+  color: #ef4444 !important; /* red-500 */
+}
+
+/* Empty state */
+html.dark .reports-empty-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Stat cards */
+html.dark .reports-stat-card {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .reports-stat-card-value {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .reports-stat-card-label {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reports-stat-card-sublabel {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Accordion sections */
+html.dark .reports-accordion-trigger {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-accordion-trigger:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-accordion-trigger-icon {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-section-title {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Location list */
+html.dark .reports-location-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-location-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-location-count {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Medicine list */
+html.dark .reports-medicine-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-medicine-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-medicine-details {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Placeholder content */
+html.dark .reports-placeholder-icon {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .reports-placeholder-title {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reports-placeholder-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* No baby selected state */
+html.dark .reports-no-baby-icon {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .reports-no-baby-text {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Icon colors for stats */
+html.dark .reports-icon-sleep {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-icon-feed {
+  color: #7dd3fc !important; /* sky-300 */
+}
+
+html.dark .reports-icon-diaper-wet {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .reports-icon-diaper-poop {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .reports-icon-bath {
+  color: #fb923c !important; /* orange-400 */
+}
+
+html.dark .reports-icon-pump {
+  color: #c084fc !important; /* purple-400 */
+}
+
+html.dark .reports-icon-note {
+  color: #fef08a !important; /* yellow-200 */
+}
+
+html.dark .reports-icon-medicine {
+  color: #4ade80 !important; /* green-400 */
+}
+
+html.dark .reports-icon-milestone {
+  color: #60a5fa !important; /* blue-400 */
+}
+
+html.dark .reports-icon-measurement {
+  color: #f87171 !important; /* red-400 */
+}
+
+/* Milestones tab */
+html.dark .reports-age-header {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-age-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-milestone-count {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-milestone-card {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-milestone-icon-bg {
+  background-color: rgba(251, 191, 36, 0.2) !important; /* amber with low opacity */
+}
+
+html.dark .reports-milestone-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-milestone-description {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-milestone-date {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+html.dark .reports-milestone-category {
+  background-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
