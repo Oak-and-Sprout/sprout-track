@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { LampWallDown } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Card, CardContent } from '@/src/components/ui/card';
@@ -10,10 +10,13 @@ import {
   AccordionContent,
 } from '@/src/components/ui/accordion';
 import { styles } from './reports.styles';
-import { PumpStats } from './reports.types';
+import { PumpStats, ActivityType, DateRange } from './reports.types';
+import PumpingChartModal, { PumpingChartMetric } from './PumpingChartModal';
 
 interface PumpingStatsSectionProps {
   stats: PumpStats;
+  activities: ActivityType[];
+  dateRange: DateRange;
 }
 
 // Helper function to format minutes into hours and minutes
@@ -31,47 +34,84 @@ const formatMinutes = (minutes: number): string => {
  *
  * Displays pumping statistics including pumps per day, duration, and amounts.
  */
-const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats }) => {
+const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activities, dateRange }) => {
+  const [chartModalOpen, setChartModalOpen] = useState(false);
+  const [chartMetric, setChartMetric] = useState<PumpingChartMetric | null>(null);
+
   return (
-    <AccordionItem value="pumping">
-      <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-        <LampWallDown className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
-        <span>Pumping Statistics</span>
-      </AccordionTrigger>
-      <AccordionContent className={styles.accordionContent}>
-        <div className={styles.statsGrid}>
-          <Card className={cn(styles.statCard, "reports-stat-card")}>
-            <CardContent className="p-4">
-              <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                {stats.pumpsPerDay.toFixed(1)}
-              </div>
-              <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Pumps per Day</div>
-            </CardContent>
-          </Card>
+    <>
+      <AccordionItem value="pumping">
+        <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
+          <LampWallDown className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
+          <span>Pumping Statistics</span>
+        </AccordionTrigger>
+        <AccordionContent className={styles.accordionContent}>
+          <div className={styles.statsGrid}>
+            <Card
+              className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+              onClick={() => {
+                setChartMetric('count');
+                setChartModalOpen(true);
+              }}
+            >
+              <CardContent className="p-4">
+                <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                  {stats.pumpsPerDay.toFixed(1)}
+                </div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Pumps per Day</div>
+              </CardContent>
+            </Card>
 
-          <Card className={cn(styles.statCard, "reports-stat-card")}>
-            <CardContent className="p-4">
-              <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                {formatMinutes(stats.avgDurationMinutes)}
-              </div>
-              <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Pump Duration</div>
-            </CardContent>
-          </Card>
+            <Card
+              className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+              onClick={() => {
+                setChartMetric('duration');
+                setChartModalOpen(true);
+              }}
+            >
+              <CardContent className="p-4">
+                <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                  {formatMinutes(stats.avgDurationMinutes)}
+                </div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Pump Duration</div>
+              </CardContent>
+            </Card>
 
-          <Card className={cn(styles.statCard, "reports-stat-card")}>
-            <CardContent className="p-4">
-              <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                Left: {stats.avgLeftAmount.toFixed(1)} {stats.unit}
-              </div>
-              <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                Right: {stats.avgRightAmount.toFixed(1)} {stats.unit}
-              </div>
-              <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Amount per Side</div>
-            </CardContent>
-          </Card>
-        </div>
-      </AccordionContent>
-    </AccordionItem>
+            <Card
+              className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+              onClick={() => {
+                setChartMetric('amount');
+                setChartModalOpen(true);
+              }}
+            >
+              <CardContent className="p-4">
+                <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                  Left: {stats.avgLeftAmount.toFixed(1)} {stats.unit}
+                </div>
+                <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                  Right: {stats.avgRightAmount.toFixed(1)} {stats.unit}
+                </div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Amount per Side</div>
+              </CardContent>
+            </Card>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* Pumping chart modal */}
+      <PumpingChartModal
+        open={chartModalOpen}
+        onOpenChange={(open) => {
+          setChartModalOpen(open);
+          if (!open) {
+            setChartMetric(null);
+          }
+        }}
+        metric={chartMetric}
+        activities={activities}
+        dateRange={dateRange}
+      />
+    </>
   );
 };
 
