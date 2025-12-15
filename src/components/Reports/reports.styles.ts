@@ -83,6 +83,26 @@ export const styles = {
   noBabyText: "text-lg font-medium text-gray-600",
 };
 
+// Activity chart specific styles
+export const activityChartStyles = {
+  container: "w-full flex flex-col",
+  scrollArea: "relative w-full overflow-auto pb-4 px-2",
+  daysRow: "inline-flex flex-row gap-4 items-start",
+  dayColumn: "flex-shrink-0 flex flex-col items-stretch",
+  dayHeader: "mb-2 text-center sticky top-0 bg-white z-10 py-1",
+  dayLabel: "text-xs font-medium text-gray-600",
+  dayChartWrapper: "relative border-2 border-gray-300 rounded bg-gray-50",
+  grid: "absolute inset-0 flex flex-col",
+  gridRow: "flex-1 border-t border-gray-100",
+  gridRowHour: "border-t-2 border-gray-200",
+  gridRowHalfHour: "border-t border-gray-100",
+  eventsLayer: "absolute inset-1",
+  eventBlock: "absolute right-1 rounded-md shadow-sm cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-150 focus:outline-none",
+  tooltip: "absolute z-30 -translate-y-1/2 translate-x-2 max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg",
+  tooltipTitle: "text-xs font-semibold text-gray-800 mb-1",
+  tooltipBody: "space-y-0.5 text-gray-700",
+};
+
 // Tab styles (extending form-page tab styles)
 export const tabStyles = {
   // Tab container

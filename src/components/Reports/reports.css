@@ -417,3 +417,56 @@ html.dark .growth-chart-measurement-age {
 html.dark .growth-chart-measurement-date {
   color: #6b7280 !important; /* gray-500 */
 }
+
+/* Activity chart - dark mode */
+html.dark .activity-chart-container {
+  background-color: transparent !important;
+}
+
+html.dark .activity-chart-scroll {
+  scrollbar-color: #4b5563 transparent;
+}
+
+html.dark .activity-chart-day-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .activity-chart-day-wrapper {
+  background-color: #020617 !important; /* slate-950 */
+}
+
+html.dark .activity-chart-tooltip {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .activity-chart-tooltip-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .activity-chart-tooltip-body {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .activity-chart-grid-hour {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .activity-chart-grid-half {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .activity-chart-event {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .activity-chart-day-header {
+  background-color: #111827 !important; /* gray-900 */
+}
+
+html.dark .activity-chart-day-wrapper {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #4b5563 !important; /* gray-600 */
+}
