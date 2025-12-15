@@ -4,6 +4,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Trophy, Loader2, Calendar } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Card, CardContent } from '@/src/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/src/components/ui/accordion';
 import { useBaby } from '@/app/context/baby';
 import { styles } from './reports.styles';
 import { MilestonesTabProps, MilestoneActivity } from './reports.types';
@@ -140,6 +146,11 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
     });
   };
 
+  // Get default open accordion values (all months)
+  const defaultAccordionValues = useMemo(() => {
+    return groupedMilestones.map((group) => `month-${group.ageInMonths}`);
+  }, [groupedMilestones]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -175,30 +186,23 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {groupedMilestones.map((group) => (
-        <div key={group.ageInMonths} className="space-y-3">
-          {/* Age header */}
-          <div className={cn("flex items-center gap-2 pb-2 border-b border-gray-200", "reports-age-header")}>
-            <Trophy className="h-5 w-5 text-amber-500" />
-            <h3 className={cn("text-lg font-semibold text-gray-800", "reports-age-title")}>
-              {group.label}
-            </h3>
-            <span className={cn("text-sm text-gray-500 ml-auto", "reports-milestone-count")}>
-              {group.milestones.length} milestone{group.milestones.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-
-          {/* Milestones for this age */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {group.milestones.map((milestone) => (
-              <Card key={milestone.id} className={cn(styles.statCard, "reports-milestone-card")}>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={cn("p-2 rounded-lg bg-amber-100", "reports-milestone-icon-bg")}>
-                      <Trophy className="h-4 w-4 text-amber-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
+    <div className="space-y-4">
+      <Accordion type="multiple" defaultValue={defaultAccordionValues}>
+        {groupedMilestones.map((group) => (
+          <AccordionItem key={group.ageInMonths} value={`month-${group.ageInMonths}`}>
+            <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
+              <span className={cn("text-gray-700", "reports-age-title")}>
+                {group.label}
+              </span>
+              <span className={cn("text-sm text-gray-500 ml-2", "reports-milestone-count")}>
+                ({group.milestones.length})
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className={styles.accordionContent}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {group.milestones.map((milestone) => (
+                  <Card key={milestone.id} className={cn(styles.statCard, "reports-milestone-card")}>
+                    <CardContent className="p-4">
                       <h4 className={cn("font-medium text-gray-800 truncate", "reports-milestone-title")}>
                         {milestone.title}
                       </h4>
@@ -219,14 +223,14 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
                           </>
                         )}
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </div>
   );
 };

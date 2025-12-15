@@ -1,4 +1,6 @@
 import prisma from './db';
+import * as fs from 'fs';
+import * as path from 'path';
 
 type UnitData = {
   unitAbbr: string;
@@ -105,7 +107,10 @@ async function main() {
 
   // Handle units separately
   await updateUnits(unitData);
-  
+
+  // Seed CDC growth chart data
+  await seedCdcGrowthChartData();
+
   console.log('Seed script completed successfully!');
 }
 
@@ -173,6 +178,123 @@ async function updateUnits(unitData: UnitData[]): Promise<void> {
   }
   
   console.log('Units update completed successfully.');
+}
+
+/**
+ * CDC growth chart record type (without measurementType since we use separate tables)
+ */
+type CdcGrowthRecord = {
+  sex: number;
+  ageMonths: number;
+  l: number;
+  m: number;
+  s: number;
+  p3: number;
+  p5: number;
+  p10: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p90: number;
+  p95: number;
+  p97: number;
+};
+
+/**
+ * Parses a CDC growth chart CSV file and returns structured data
+ * @param filePath Path to the CSV file
+ */
+function parseCdcCsvFile(filePath: string): CdcGrowthRecord[] {
+  let fileContent = fs.readFileSync(filePath, 'utf-8');
+  // Remove UTF-8 BOM if present (appears as U+FEFF when read as UTF-8)
+  fileContent = fileContent.replace(/^\uFEFF/, '');
+  const lines = fileContent.trim().split('\n');
+
+  // Skip the header row
+  const dataLines = lines.slice(1);
+
+  return dataLines.map(line => {
+    const values = line.split(',');
+    return {
+      sex: parseInt(values[0], 10),
+      ageMonths: parseFloat(values[1]),
+      l: parseFloat(values[2]),
+      m: parseFloat(values[3]),
+      s: parseFloat(values[4]),
+      p3: parseFloat(values[5]),
+      p5: parseFloat(values[6]),
+      p10: parseFloat(values[7]),
+      p25: parseFloat(values[8]),
+      p50: parseFloat(values[9]),
+      p75: parseFloat(values[10]),
+      p90: parseFloat(values[11]),
+      p95: parseFloat(values[12]),
+      p97: parseFloat(values[13]),
+    };
+  });
+}
+
+/**
+ * Seeds CDC growth chart reference data from CSV files into separate tables
+ * Only inserts data if it doesn't already exist in each table
+ */
+async function seedCdcGrowthChartData(): Promise<void> {
+  console.log('Checking for CDC growth chart data...');
+
+  const documentationDir = path.join(__dirname, '..', 'documentation');
+
+  // Seed weight-for-age data
+  const weightCount = await prisma.cdcWeightForAge.count();
+  if (weightCount === 0) {
+    const weightFilePath = path.join(documentationDir, 'wtageinf.csv');
+    if (fs.existsSync(weightFilePath)) {
+      const weightData = parseCdcCsvFile(weightFilePath);
+      console.log(`Inserting ${weightData.length} records for weight-for-age...`);
+      await prisma.cdcWeightForAge.createMany({ data: weightData });
+    } else {
+      console.warn('Warning: wtageinf.csv not found');
+    }
+  } else {
+    console.log(`Weight-for-age data already exists (${weightCount} records). Skipping.`);
+  }
+
+  // Seed length-for-age data
+  const lengthCount = await prisma.cdcLengthForAge.count();
+  if (lengthCount === 0) {
+    const lengthFilePath = path.join(documentationDir, 'lenageinf.csv');
+    if (fs.existsSync(lengthFilePath)) {
+      const lengthData = parseCdcCsvFile(lengthFilePath);
+      console.log(`Inserting ${lengthData.length} records for length-for-age...`);
+      // Insert one by one to avoid createMany issues
+      for (const record of lengthData) {
+        await prisma.cdcLengthForAge.create({ data: record });
+      }
+    } else {
+      console.warn('Warning: lenageinf.csv not found');
+    }
+  } else {
+    console.log(`Length-for-age data already exists (${lengthCount} records). Skipping.`);
+  }
+
+  // Seed head circumference-for-age data
+  const hcCount = await prisma.cdcHeadCircumferenceForAge.count();
+  if (hcCount === 0) {
+    const hcFilePath = path.join(documentationDir, 'hcageinf.csv');
+    if (fs.existsSync(hcFilePath)) {
+      const hcData = parseCdcCsvFile(hcFilePath);
+      console.log(`Inserting ${hcData.length} records for head-circumference-for-age...`);
+      // Insert one by one to avoid createMany issues
+      for (const record of hcData) {
+        await prisma.cdcHeadCircumferenceForAge.create({ data: record });
+      }
+    } else {
+      console.warn('Warning: hcageinf.csv not found');
+    }
+  } else {
+    console.log(`Head-circumference-for-age data already exists (${hcCount} records). Skipping.`);
+  }
+
+  console.log('CDC growth chart data seeding complete.');
 }
 
 main()

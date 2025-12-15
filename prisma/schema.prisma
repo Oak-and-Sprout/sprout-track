@@ -936,6 +936,80 @@ model DemoTracker {
   @@index([lastAccessedAt])
 }
 
+// CDC Growth Chart reference data for percentile calculations
+// Data from: https://www.cdc.gov/growthcharts/cdc-data-files.htm
+// Uses LMS method for percentile calculations
+// Separate tables for each measurement type for cleaner organization
+
+// Weight-for-age reference data (infants 0-36 months)
+model CdcWeightForAge {
+  id        String @id @default(uuid())
+  sex       Int    // 1 = Male, 2 = Female
+  ageMonths Float  // Age in months (0, 0.5, 1.5, 2.5, etc.)
+  l         Float  // L parameter (power in Box-Cox transformation)
+  m         Float  // M parameter (median)
+  s         Float  // S parameter (generalized coefficient of variation)
+  p3        Float  // 3rd percentile
+  p5        Float  // 5th percentile
+  p10       Float  // 10th percentile
+  p25       Float  // 25th percentile
+  p50       Float  // 50th percentile (median)
+  p75       Float  // 75th percentile
+  p90       Float  // 90th percentile
+  p95       Float  // 95th percentile
+  p97       Float  // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// Length-for-age reference data (infants 0-36 months)
+model CdcLengthForAge {
+  id        String @id @default(uuid())
+  sex       Int    // 1 = Male, 2 = Female
+  ageMonths Float  // Age in months (0, 0.5, 1.5, 2.5, etc.)
+  l         Float  // L parameter (power in Box-Cox transformation)
+  m         Float  // M parameter (median)
+  s         Float  // S parameter (generalized coefficient of variation)
+  p3        Float  // 3rd percentile
+  p5        Float  // 5th percentile
+  p10       Float  // 10th percentile
+  p25       Float  // 25th percentile
+  p50       Float  // 50th percentile (median)
+  p75       Float  // 75th percentile
+  p90       Float  // 90th percentile
+  p95       Float  // 95th percentile
+  p97       Float  // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// Head circumference-for-age reference data (infants 0-36 months)
+model CdcHeadCircumferenceForAge {
+  id        String @id @default(uuid())
+  sex       Int    // 1 = Male, 2 = Female
+  ageMonths Float  // Age in months (0, 0.5, 1.5, 2.5, etc.)
+  l         Float  // L parameter (power in Box-Cox transformation)
+  m         Float  // M parameter (median)
+  s         Float  // S parameter (generalized coefficient of variation)
+  p3        Float  // 3rd percentile
+  p5        Float  // 5th percentile
+  p10       Float  // 10th percentile
+  p25       Float  // 25th percentile
+  p50       Float  // 50th percentile (median)
+  p75       Float  // 75th percentile
+  p90       Float  // 90th percentile
+  p95       Float  // 95th percentile
+  p97       Float  // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
 // Feedback model for user feedback and support requests
 model Feedback {
   id          String    @id @default(uuid())
