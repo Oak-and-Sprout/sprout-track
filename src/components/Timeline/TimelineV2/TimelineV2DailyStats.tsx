@@ -693,9 +693,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         <div
           className={`
             absolute inset-y-0 right-0 w-1/2 max-w-xs bg-white shadow-xl
-            pointer-events-auto transform transition-transform duration-300
+            transform transition-transform duration-300
             timeline-v2-heatmap-panel
-            ${isHeatmapVisible ? 'translate-x-0' : 'translate-x-full'}
+            ${isHeatmapVisible ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}
           `}
         >
           <div className="flex justify-end px-3 pt-2 mb-2">
