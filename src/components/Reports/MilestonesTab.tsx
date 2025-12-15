@@ -193,9 +193,9 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
             <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
               <span className={cn("text-gray-700", "reports-age-title")}>
                 {group.label}
-              </span>
-              <span className={cn("text-sm text-gray-500 ml-2", "reports-milestone-count")}>
-                ({group.milestones.length})
+                <span className={cn("text-sm text-gray-500 ml-2", "reports-milestone-count")}>
+                  ({group.milestones.length})
+                </span>
               </span>
             </AccordionTrigger>
             <AccordionContent className={styles.accordionContent}>
