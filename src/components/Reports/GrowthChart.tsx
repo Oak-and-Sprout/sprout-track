@@ -311,27 +311,76 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType }: an
           Age: {typeof label === 'number' ? label.toFixed(1) : label} months
         </p>
         {measurementPoint && measurementPoint.value !== null && measurementPoint.value !== undefined && (
-          <>
-            <p className={cn(growthChartStyles.tooltipMeasurement, "growth-chart-tooltip-measurement")}>
-              Measurement: {measurementPoint.value.toFixed(2)} {unitLabel}
-            </p>
-            {dataPoint?.percentile !== undefined && (
-              <p className={cn(growthChartStyles.tooltipPercentile, "growth-chart-tooltip-percentile")}>
-                Percentile: {dataPoint.percentile.toFixed(1)}%
-              </p>
-            )}
-          </>
+          <div className={cn(growthChartStyles.tooltipPercentiles, "growth-chart-tooltip-percentiles")}>
+            {(() => {
+              // Find percentile curves immediately above and below the measurement value
+              const percentileEntries = payload
+                .filter(
+                  (p: any) =>
+                    p.dataKey !== 'measurement' &&
+                    p.dataKey !== 'percentile' &&
+                    p.value !== null &&
+                    p.value !== undefined
+                )
+                .sort((a: any, b: any) => (a.value ?? 0) - (b.value ?? 0));
+
+              if (!percentileEntries.length) return null;
+
+              const measurementValue = measurementPoint.value as number;
+              const measurementPercentile = dataPoint?.percentile;
+              let lower: any = null;
+              let upper: any = null;
+
+              for (let i = 0; i < percentileEntries.length; i++) {
+                const entry = percentileEntries[i];
+                if (entry.value >= measurementValue) {
+                  upper = entry;
+                  lower = i > 0 ? percentileEntries[i - 1] : null;
+                  break;
+                }
+              }
+
+              // If measurement is above all percentile curves, only show the highest one as "below"
+              if (!upper) {
+                lower = percentileEntries[percentileEntries.length - 1];
+              }
+
+              const lines: React.ReactNode[] = [];
+
+              // Percentile above measurement
+              if (upper) {
+                lines.push(
+                  <p key="upper" style={{ color: upper.color }}>
+                    {upper.name}: {upper.value?.toFixed(2)} {unitLabel}
+                  </p>
+                );
+              }
+
+              // Measurement line (percentile + value), bold and orange but same size as others
+              if (measurementPercentile !== undefined) {
+                lines.push(
+                  <p
+                    key="measurement"
+                    className={cn(growthChartStyles.tooltipMeasurement, "growth-chart-tooltip-measurement")}
+                  >
+                    {measurementPercentile.toFixed(1)}%: {measurementValue.toFixed(2)} {unitLabel}
+                  </p>
+                );
+              }
+
+              // Percentile below measurement
+              if (lower) {
+                lines.push(
+                  <p key="lower" style={{ color: lower.color }}>
+                    {lower.name}: {lower.value?.toFixed(2)} {unitLabel}
+                  </p>
+                );
+              }
+
+              return lines;
+            })()}
+          </div>
         )}
-        <div className={cn(growthChartStyles.tooltipPercentiles, "growth-chart-tooltip-percentiles")}>
-          {payload
-            .filter((p: any) => p.dataKey !== 'measurement' && p.dataKey !== 'percentile' && p.value)
-            .slice(0, 5)
-            .map((entry: any, index: number) => (
-              <p key={index} style={{ color: entry.color }}>
-                {entry.name}: {entry.value?.toFixed(2)} {unitLabel}
-              </p>
-            ))}
-        </div>
       </div>
     );
   }
