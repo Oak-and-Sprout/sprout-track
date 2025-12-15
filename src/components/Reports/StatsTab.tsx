@@ -121,6 +121,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
         sleep: {
           totalSleepMinutes: 0,
           avgNapMinutes: 0,
+          avgDailyNapMinutes: 0,
           avgNightSleepMinutes: 0,
           avgNightWakings: 0,
           napLocations: [],
@@ -233,11 +234,11 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
               const location = sleepActivity.location || 'Unknown';
 
-              // Determine if nap or night sleep based on start hour
-              const startHour = startTime.getHours();
-              const isNightSleep = startHour >= 19 || startHour < 7;
+              // Use activity type to distinguish naps from night sleep
+              const isNightSleepType = activityType === 'NIGHT_SLEEP';
+              const isNapType = activityType === 'NAP';
 
-              if (isNightSleep) {
+              if (isNightSleepType) {
                 // Track night location
                 if (!nightLocationMap[location]) {
                   nightLocationMap[location] = { count: 0, totalMinutes: 0 };
@@ -245,22 +246,28 @@ const StatsTab: React.FC<StatsTabProps> = ({
                 nightLocationMap[location].count++;
                 nightLocationMap[location].totalMinutes += sleepMinutes;
 
-                // Group night sleep by the "night" it belongs to
-                // Sleep starting 7pm-midnight belongs to that night
-                // Sleep starting midnight-7am belongs to the previous night
+                // Group night sleep by the "night" period: 12:00 PM (noon) day 1 to 11:59 AM day 2
+                // This groups all evening/night/morning sleep together
+                const startHour = startTime.getHours();
                 let nightDate = new Date(startTime);
-                if (startHour < 7) {
-                  // Early morning sleep - belongs to previous night
+                
+                if (startHour < 12) {
+                  // Sleep starting before noon (12:00 AM - 11:59 AM) belongs to previous day's night
+                  // e.g., sleep at 2 AM on Jan 2 belongs to the night of Jan 1
                   nightDate.setDate(nightDate.getDate() - 1);
                 }
+                // Sleep starting at or after noon (12:00 PM - 11:59 PM) belongs to that day's night
+                // e.g., sleep at 8 PM on Jan 1 belongs to the night of Jan 1
                 const nightKey = nightDate.toISOString().split('T')[0];
 
+                // Group night sleep by the "night" period (12PM day 1 to 11:59AM day 2)
                 if (!nightSleepByNight[nightKey]) {
                   nightSleepByNight[nightKey] = { totalMinutes: 0, sessions: 0 };
                 }
                 nightSleepByNight[nightKey].totalMinutes += sleepMinutes;
                 nightSleepByNight[nightKey].sessions++;
-              } else {
+              } else if (isNapType) {
+                // This is a nap - track separately for nap statistics
                 totalNapMinutes += sleepMinutes;
                 napCount++;
 
@@ -426,7 +433,10 @@ const StatsTab: React.FC<StatsTabProps> = ({
     });
 
     // Calculate averages
+    // Average nap duration per nap instance
     const avgNapMinutes = napCount > 0 ? Math.round(totalNapMinutes / napCount) : 0;
+    // Average total nap time per day
+    const avgDailyNapMinutes = daysInRange > 0 ? Math.round(totalNapMinutes / daysInRange) : 0;
 
     // Calculate night sleep stats from grouped data
     const nightsCount = Object.keys(nightSleepByNight).length;
@@ -507,6 +517,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
       sleep: {
         totalSleepMinutes,
         avgNapMinutes,
+        avgDailyNapMinutes,
         avgNightSleepMinutes,
         avgNightWakings,
         napLocations,
@@ -678,6 +689,15 @@ const StatsTab: React.FC<StatsTabProps> = ({
                     {formatMinutes(stats.sleep.avgNapMinutes)}
                   </div>
                   <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Nap Duration</div>
+                </CardContent>
+              </Card>
+
+              <Card className={cn(styles.statCard, "reports-stat-card")}>
+                <CardContent className="p-4">
+                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                    {formatMinutes(stats.sleep.avgDailyNapMinutes)}
+                  </div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Daily Nap Time</div>
                 </CardContent>
               </Card>
 
