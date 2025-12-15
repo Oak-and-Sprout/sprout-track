@@ -753,7 +753,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
         />
 
         {/* Feeding Section */}
-        <FeedingStatsSection stats={stats.feeding} />
+        <FeedingStatsSection stats={stats.feeding} activities={activities} dateRange={dateRange} />
 
         {/* Diaper Section */}
         <DiaperStatsSection stats={stats.diaper} />
