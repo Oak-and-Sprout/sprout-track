@@ -144,8 +144,8 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     endDate.setHours(23, 59, 59, 999);
 
     const countsByDay: Record<string, number> = {};
-    const leftMinutesByDay: Record<string, number> = {};
-    const rightMinutesByDay: Record<string, number> = {};
+    const leftDurationByDay: Record<string, { total: number; count: number }> = {};
+    const rightDurationByDay: Record<string, { total: number; count: number }> = {};
 
     activities.forEach((activity) => {
       if ('type' in activity && 'time' in activity) {
@@ -159,11 +159,22 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
         if (feedTime >= startDate && feedTime <= endDate) {
           countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
 
-          const duration = feedActivity.feedDuration || 0;
-          if (feedActivity.side === 'LEFT') {
-            leftMinutesByDay[dayKey] = (leftMinutesByDay[dayKey] || 0) + duration;
-          } else if (feedActivity.side === 'RIGHT') {
-            rightMinutesByDay[dayKey] = (rightMinutesByDay[dayKey] || 0) + duration;
+          // Duration is in seconds, convert to minutes
+          const durationSeconds = feedActivity.feedDuration || 0;
+          const durationMinutes = Math.floor(durationSeconds / 60);
+
+          if (feedActivity.side === 'LEFT' && durationMinutes > 0) {
+            if (!leftDurationByDay[dayKey]) {
+              leftDurationByDay[dayKey] = { total: 0, count: 0 };
+            }
+            leftDurationByDay[dayKey].total += durationMinutes;
+            leftDurationByDay[dayKey].count += 1;
+          } else if (feedActivity.side === 'RIGHT' && durationMinutes > 0) {
+            if (!rightDurationByDay[dayKey]) {
+              rightDurationByDay[dayKey] = { total: 0, count: 0 };
+            }
+            rightDurationByDay[dayKey].total += durationMinutes;
+            rightDurationByDay[dayKey].count += 1;
           }
         }
       }
@@ -174,8 +185,12 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
       date: dayKey,
       label: new Date(dayKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       count: countsByDay[dayKey] || 0,
-      leftMinutes: leftMinutesByDay[dayKey] || 0,
-      rightMinutes: rightMinutesByDay[dayKey] || 0,
+      leftAvg: leftDurationByDay[dayKey]?.count > 0 
+        ? leftDurationByDay[dayKey].total / leftDurationByDay[dayKey].count 
+        : 0,
+      rightAvg: rightDurationByDay[dayKey]?.count > 0 
+        ? rightDurationByDay[dayKey].total / rightDurationByDay[dayKey].count 
+        : 0,
     }));
   }, [activities, dateRange, metric]);
 
@@ -344,94 +359,77 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* Line chart for daily counts */}
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Daily Breast Feed Count</h4>
-                  <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <LineChart data={breastData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
-                        <XAxis
-                          dataKey="label"
-                          label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
-                          className="growth-chart-axis"
-                        />
-                        <YAxis
-                          type="number"
-                          domain={[0, 'auto']}
-                          tickFormatter={(value) => value.toFixed(0)}
-                          label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
-                          className="growth-chart-axis"
-                        />
-                        <RechartsTooltip
-                          formatter={(value: any) => [`${value}`, 'Feeds']}
-                          labelFormatter={(label: any) => `Date: ${label}`}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="count"
-                          stroke="#14b8a6"
-                          strokeWidth={2}
-                          dot={{ r: 4, fill: '#14b8a6' }}
-                          activeDot={{ r: 6, fill: '#0f766e' }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Line chart for duration by side */}
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Daily Duration by Side</h4>
-                  <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <LineChart data={breastData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
-                        <XAxis
-                          dataKey="label"
-                          label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
-                          className="growth-chart-axis"
-                        />
-                        <YAxis
-                          type="number"
-                          domain={[0, 'auto']}
-                          tickFormatter={(value) => formatMinutes(value as number)}
-                          label={{ value: 'Duration', angle: -90, position: 'insideLeft' }}
-                          className="growth-chart-axis"
-                        />
-                        <RechartsTooltip
-                          formatter={(value: any, name: string) => [
-                            formatMinutes(value as number),
-                            name === 'leftMinutes' ? 'Left' : 'Right',
-                          ]}
-                          labelFormatter={(label: any) => `Date: ${label}`}
-                        />
-                        <Legend
-                          formatter={(value) => (value === 'leftMinutes' ? 'Left' : value === 'rightMinutes' ? 'Right' : value)}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="leftMinutes"
-                          stroke="#6366f1"
-                          strokeWidth={2}
-                          dot={{ r: 4, fill: '#6366f1' }}
-                          activeDot={{ r: 6, fill: '#4f46e5' }}
-                          name="leftMinutes"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="rightMinutes"
-                          stroke="#ec4899"
-                          strokeWidth={2}
-                          dot={{ r: 4, fill: '#ec4899' }}
-                          activeDot={{ r: 6, fill: '#db2777' }}
-                          name="rightMinutes"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+              <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <ComposedChart data={breastData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
+                    <XAxis
+                      dataKey="label"
+                      angle={-30}
+                      textAnchor="end"
+                      height={60}
+                      className="growth-chart-axis"
+                    />
+                    <YAxis
+                      yAxisId="count"
+                      type="number"
+                      domain={[0, 'auto']}
+                      tickFormatter={(value) => value.toFixed(0)}
+                      label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                      className="growth-chart-axis"
+                    />
+                    <YAxis
+                      yAxisId="duration"
+                      orientation="right"
+                      type="number"
+                      domain={[0, 'auto']}
+                      tickFormatter={(value) => formatMinutes(value as number)}
+                      label={{ value: 'Avg Duration', angle: -90, position: 'insideRight' }}
+                      className="growth-chart-axis"
+                    />
+                    <RechartsTooltip
+                      formatter={(value: any, name: string) => {
+                        if (name === 'count' || name === 'Feed Count') {
+                          const countValue = typeof value === 'number' ? Math.round(value) : parseInt(value, 10);
+                          return [countValue.toString(), 'Feeds'];
+                        }
+                        if (name === 'leftAvg' || name === 'Left Avg') {
+                          return [formatMinutes(value as number), 'Left Avg'];
+                        }
+                        if (name === 'rightAvg' || name === 'Right Avg') {
+                          return [formatMinutes(value as number), 'Right Avg'];
+                        }
+                        return [formatMinutes(value as number), name];
+                      }}
+                      labelFormatter={(label: any) => `Date: ${label}`}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="count"
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#14b8a6"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: '#14b8a6' }}
+                      activeDot={{ r: 6, fill: '#0f766e' }}
+                      name="Feed Count"
+                    />
+                    <Bar
+                      yAxisId="duration"
+                      dataKey="leftAvg"
+                      stackId="duration"
+                      fill="#6366f1"
+                      name="Left Avg"
+                    />
+                    <Bar
+                      yAxisId="duration"
+                      dataKey="rightAvg"
+                      stackId="duration"
+                      fill="#ec4899"
+                      name="Right Avg"
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
               </div>
             )}
           </>
