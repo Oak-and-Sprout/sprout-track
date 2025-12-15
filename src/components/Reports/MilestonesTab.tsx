@@ -191,6 +191,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
         {groupedMilestones.map((group) => (
           <AccordionItem key={group.ageInMonths} value={`month-${group.ageInMonths}`}>
             <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
+              <Trophy className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-milestone")} />
               <span className={cn("text-gray-700", "reports-age-title")}>
                 {group.label}
                 <span className={cn("text-sm text-gray-500 ml-2", "reports-milestone-count")}>
