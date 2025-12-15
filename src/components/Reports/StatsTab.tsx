@@ -49,6 +49,8 @@ import {
   CombinedStats,
   MeasurementActivity,
 } from './reports.types';
+import SleepChartModal, { SleepChartMetric } from './SleepChartModal';
+import SleepLocationsChartModal from './SleepLocationsChartModal';
 
 // Helper to calculate age in months from birth date (copied from GrowthChart)
 const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {
@@ -104,6 +106,10 @@ const StatsTab: React.FC<StatsTabProps> = ({
 }) => {
   const { selectedBaby } = useBaby();
   const [temperatureMeasurements, setTemperatureMeasurements] = useState<MeasurementActivity[]>([]);
+  const [sleepChartModalOpen, setSleepChartModalOpen] = useState(false);
+  const [sleepChartMetric, setSleepChartMetric] = useState<SleepChartMetric | null>(null);
+  const [sleepLocationsModalOpen, setSleepLocationsModalOpen] = useState(false);
+  const [sleepLocationsType, setSleepLocationsType] = useState<'nap' | 'night'>('nap');
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
     if (minutes === 0) return '0m';
@@ -566,6 +572,105 @@ const StatsTab: React.FC<StatsTabProps> = ({
     };
   }, [activities, dateRange]);
 
+  // Sleep chart data for modals (per-day / per-night series)
+  const sleepChartSeries = useMemo(() => {
+    if (!activities.length || !dateRange.from || !dateRange.to) {
+      return {
+        avgNapDuration: [] as { date: string; label: string; value: number }[],
+        dailyNapTotal: [] as { date: string; label: string; value: number }[],
+        nightSleep: [] as { date: string; label: string; value: number }[],
+        nightWakings: [] as { date: string; label: string; value: number }[],
+      };
+    }
+
+    const startDate = new Date(dateRange.from);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(dateRange.to);
+    endDate.setHours(23, 59, 59, 999);
+
+    const napInstances: { date: string; label: string; value: number }[] = [];
+    const napMinutesByDay: Record<string, number> = {};
+    const nightSleepByNight: Record<string, { totalMinutes: number; sessions: number }> = {};
+
+    activities.forEach((activity) => {
+      if ('duration' in activity && 'startTime' in activity && 'type' in activity) {
+        const activityType = (activity as any).type;
+        if (activityType === 'NAP' || activityType === 'NIGHT_SLEEP') {
+          const sleepActivity = activity as any;
+          const startTime = new Date(sleepActivity.startTime);
+          const endTime = sleepActivity.endTime ? new Date(sleepActivity.endTime) : null;
+
+          if (!endTime) return;
+
+          const overlapStart = Math.max(startTime.getTime(), startDate.getTime());
+          const overlapEnd = Math.min(endTime.getTime(), endDate.getTime());
+          if (overlapEnd <= overlapStart) return;
+
+          const sleepMinutes = Math.floor((overlapEnd - overlapStart) / (1000 * 60));
+          const dayKey = startTime.toISOString().split('T')[0];
+          const dayLabel = startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+          if (activityType === 'NAP') {
+            napInstances.push({ date: dayKey, label: dayLabel, value: sleepMinutes });
+            napMinutesByDay[dayKey] = (napMinutesByDay[dayKey] || 0) + sleepMinutes;
+          } else if (activityType === 'NIGHT_SLEEP') {
+            const startHour = startTime.getHours();
+            let nightDate = new Date(startTime);
+            if (startHour < 12) {
+              // Early morning belongs to previous night's period (12PM day 1 -> 11:59AM day 2)
+              nightDate.setDate(nightDate.getDate() - 1);
+            }
+            const nightKey = nightDate.toISOString().split('T')[0];
+
+            if (!nightSleepByNight[nightKey]) {
+              nightSleepByNight[nightKey] = { totalMinutes: 0, sessions: 0 };
+            }
+            nightSleepByNight[nightKey].totalMinutes += sleepMinutes;
+            nightSleepByNight[nightKey].sessions++;
+          }
+        }
+      }
+    });
+
+    const dailyNapTotalSeries = Object.entries(napMinutesByDay)
+      .map(([date, total]) => ({
+        date,
+        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value: total,
+      }))
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    const nightSleepSeries: { date: string; label: string; value: number }[] = [];
+    const nightWakingsSeries: { date: string; label: string; value: number }[] = [];
+
+    Object.entries(nightSleepByNight).forEach(([nightKey, data]) => {
+      const label = new Date(nightKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      nightSleepSeries.push({
+        date: nightKey,
+        label,
+        value: data.totalMinutes,
+      });
+      nightWakingsSeries.push({
+        date: nightKey,
+        label,
+        value: Math.max(0, data.sessions - 1),
+      });
+    });
+
+    nightSleepSeries.sort((a, b) => (a.date < b.date ? -1 : 1));
+    nightWakingsSeries.sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    // Sort nap instances by date for a cleaner line
+    napInstances.sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    return {
+      avgNapDuration: napInstances,
+      dailyNapTotal: dailyNapTotalSeries,
+      nightSleep: nightSleepSeries,
+      nightWakings: nightWakingsSeries,
+    };
+  }, [activities, dateRange]);
+
   // Baby current age in months for chart ranges (birth to current age + 1 month, clamped)
   const babyCurrentAgeMonths = useMemo((): number => {
     if (!selectedBaby?.birthDate) return 12; // default to 12 months if no birthdate
@@ -644,6 +749,11 @@ const StatsTab: React.FC<StatsTabProps> = ({
       .sort((a, b) => a.ageMonths - b.ageMonths);
   }, [temperatureMeasurements, selectedBaby, babyCurrentAgeMonths]);
 
+  const currentSleepSeries =
+    sleepChartMetric && sleepChartSeries[sleepChartMetric]
+      ? sleepChartSeries[sleepChartMetric]
+      : [];
+
   // Loading state
   if (isLoading) {
     return (
@@ -683,7 +793,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
           </AccordionTrigger>
           <AccordionContent className={styles.accordionContent}>
             <div className={styles.statsGrid}>
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
+              <Card
+                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+                onClick={() => {
+                  setSleepChartMetric('avgNapDuration');
+                  setSleepChartModalOpen(true);
+                }}
+              >
                 <CardContent className="p-4">
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {formatMinutes(stats.sleep.avgNapMinutes)}
@@ -692,7 +808,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
                 </CardContent>
               </Card>
 
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
+              <Card
+                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+                onClick={() => {
+                  setSleepChartMetric('dailyNapTotal');
+                  setSleepChartModalOpen(true);
+                }}
+              >
                 <CardContent className="p-4">
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {formatMinutes(stats.sleep.avgDailyNapMinutes)}
@@ -701,7 +823,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
                 </CardContent>
               </Card>
 
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
+              <Card
+                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+                onClick={() => {
+                  setSleepChartMetric('nightSleep');
+                  setSleepChartModalOpen(true);
+                }}
+              >
                 <CardContent className="p-4">
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {formatMinutes(stats.sleep.avgNightSleepMinutes)}
@@ -710,7 +838,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
                 </CardContent>
               </Card>
 
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
+              <Card
+                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+                onClick={() => {
+                  setSleepChartMetric('nightWakings');
+                  setSleepChartModalOpen(true);
+                }}
+              >
                 <CardContent className="p-4">
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {stats.sleep.avgNightWakings}
@@ -723,10 +857,17 @@ const StatsTab: React.FC<StatsTabProps> = ({
             {/* Nap Locations */}
             {stats.sleep.napLocations.length > 0 && (
               <div className="mt-4">
-                <h4 className={cn(styles.sectionTitle, "reports-section-title")}>
+                <button
+                  type="button"
+                  className={cn(styles.sectionTitle, "reports-section-title text-left w-full")}
+                  onClick={() => {
+                    setSleepLocationsType('nap');
+                    setSleepLocationsModalOpen(true);
+                  }}
+                >
                   <MapPin className={styles.sectionTitleIcon} />
                   Popular Nap Locations
-                </h4>
+                </button>
                 <div className={styles.locationList}>
                   {stats.sleep.napLocations.slice(0, 5).map((loc) => (
                     <div key={loc.location} className={cn(styles.locationItem, "reports-location-item")}>
@@ -743,10 +884,17 @@ const StatsTab: React.FC<StatsTabProps> = ({
             {/* Night Sleep Locations */}
             {stats.sleep.nightLocations.length > 0 && (
               <div className="mt-4">
-                <h4 className={cn(styles.sectionTitle, "reports-section-title")}>
+                <button
+                  type="button"
+                  className={cn(styles.sectionTitle, "reports-section-title text-left w-full")}
+                  onClick={() => {
+                    setSleepLocationsType('night');
+                    setSleepLocationsModalOpen(true);
+                  }}
+                >
                   <MapPin className={styles.sectionTitleIcon} />
                   Popular Night Sleep Locations
-                </h4>
+                </button>
                 <div className={styles.locationList}>
                   {stats.sleep.nightLocations.slice(0, 5).map((loc) => (
                     <div key={loc.location} className={cn(styles.locationItem, "reports-location-item")}>
@@ -1005,6 +1153,28 @@ const StatsTab: React.FC<StatsTabProps> = ({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Sleep line chart modal */}
+      <SleepChartModal
+        open={sleepChartModalOpen}
+        onOpenChange={(open) => {
+          setSleepChartModalOpen(open);
+          if (!open) {
+            setSleepChartMetric(null);
+          }
+        }}
+        metric={sleepChartMetric}
+        data={currentSleepSeries}
+        dateRange={dateRange}
+      />
+
+      {/* Sleep locations bar chart modal */}
+      <SleepLocationsChartModal
+        open={sleepLocationsModalOpen}
+        onOpenChange={setSleepLocationsModalOpen}
+        type={sleepLocationsType}
+        locations={sleepLocationsType === 'nap' ? stats.sleep.napLocations : stats.sleep.nightLocations}
+      />
     </div>
   );
 };
