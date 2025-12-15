@@ -233,3 +233,187 @@ html.dark .reports-milestone-category {
   background-color: #374151 !important; /* gray-700 */
   color: #9ca3af !important; /* gray-400 */
 }
+
+/* Growth Chart styles */
+html.dark .growth-chart-container {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-button-group {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-button {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .growth-chart-button-active {
+  background-color: rgba(20, 184, 166, 0.15) !important; /* teal-500/15 */
+  border-color: #14b8a6 !important; /* teal-500 */
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .growth-chart-button-active:hover {
+  background-color: rgba(20, 184, 166, 0.25) !important; /* teal-500/25 */
+}
+
+html.dark .growth-chart-zoom-controls {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-zoom-button {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-zoom-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .growth-chart-zoom-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-wrapper {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Chart elements */
+html.dark .growth-chart-grid line {
+  stroke: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-axis text {
+  fill: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-axis line,
+html.dark .growth-chart-axis path {
+  stroke: #4b5563 !important; /* gray-600 */
+}
+
+/* Recharts specific dark mode */
+html.dark .growth-chart-wrapper .recharts-cartesian-grid-horizontal line,
+html.dark .growth-chart-wrapper .recharts-cartesian-grid-vertical line {
+  stroke: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-wrapper .recharts-cartesian-axis-tick-value {
+  fill: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-wrapper .recharts-cartesian-axis-line {
+  stroke: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .growth-chart-wrapper .recharts-label {
+  fill: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-wrapper .recharts-legend-item-text {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-wrapper .recharts-default-legend {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Tooltip */
+html.dark .growth-chart-tooltip {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .growth-chart-tooltip-label {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .growth-chart-tooltip-measurement {
+  color: #fb923c !important; /* orange-400 */
+}
+
+html.dark .growth-chart-tooltip-percentiles {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Loading state */
+html.dark .growth-chart-loading-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Error state */
+html.dark .growth-chart-error-text {
+  color: #ef4444 !important; /* red-500 */
+}
+
+/* Empty state */
+html.dark .growth-chart-empty-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Legend info */
+html.dark .growth-chart-legend-info {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-legend-text {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-legend-subtext {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* No data message */
+html.dark .growth-chart-no-data {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Tooltip percentile */
+html.dark .growth-chart-tooltip-percentile {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+/* Measurements list */
+html.dark .growth-chart-measurements-list {
+  background-color: #111827 !important; /* gray-900 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-measurements-title {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-measurement-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-measurement-value {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .growth-chart-measurement-percentile {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .growth-chart-measurement-age {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-measurement-date {
+  color: #6b7280 !important; /* gray-500 */
+}

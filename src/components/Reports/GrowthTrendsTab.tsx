@@ -1,31 +1,21 @@
 'use client';
 
 import React from 'react';
-import { TrendingUp } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { styles } from './reports.styles';
 import { GrowthTrendsTabProps } from './reports.types';
+import GrowthChart from './GrowthChart';
 
 /**
  * GrowthTrendsTab Component
  *
- * Placeholder tab for displaying growth trends and measurements over time.
- * Will be implemented in a future update.
+ * Displays growth charts with CDC percentile curves for tracking
+ * baby's weight, length, and head circumference over time.
+ * Ignores date range - always shows all measurements.
  */
-const GrowthTrendsTab: React.FC<GrowthTrendsTabProps> = ({
-  dateRange,
-  isLoading
-}) => {
+const GrowthTrendsTab: React.FC<GrowthTrendsTabProps> = () => {
   return (
-    <div className={cn(styles.placeholderContainer, "reports-placeholder-container")}>
-      <TrendingUp className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
-      <h3 className={cn(styles.placeholderTitle, "reports-placeholder-title")}>
-        Growth Trends
-      </h3>
-      <p className={cn(styles.placeholderText, "reports-placeholder-text")}>
-        Track your baby&apos;s growth over time with height, weight, and head circumference charts.
-        This feature is coming soon!
-      </p>
+    <div className={cn("py-2", "growth-trends-tab-container")}>
+      <GrowthChart />
     </div>
   );
 };
