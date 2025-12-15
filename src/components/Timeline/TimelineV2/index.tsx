@@ -23,7 +23,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(true);
+  const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
   
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
   const [heatmapActivities, setHeatmapActivities] = useState<ActivityType[]>([]);
@@ -311,6 +311,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
       {/* Daily Stats with Integrated Date Navigation */}
       <TimelineV2DailyStats
         activities={dateFilteredActivities}
+        heatmapActivities={heatmapActivities}
         date={selectedDate}
         isLoading={isLoadingActivities}
         activeFilter={activeFilter}
@@ -340,6 +341,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             <TimelineV2Heatmap
               activities={heatmapActivities}
               selectedDate={selectedDate}
+              isVisible={isHeatmapVisible}
             />
           </div>
         )}

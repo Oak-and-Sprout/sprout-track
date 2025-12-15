@@ -13,6 +13,7 @@ import {
 interface TimelineV2HeatmapProps {
   activities: ActivityType[];
   selectedDate: Date;
+  isVisible?: boolean;
 }
 
 const CHART_HEIGHT = 1500;
@@ -30,10 +31,10 @@ const formatHourLabel = (hour: number): string => {
 const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
   activities,
   selectedDate,
+  isVisible = true,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const [hasAnimated, setHasAnimated] = useState(false);
 
   const heatmapData = useMemo(() => {
     if (!activities.length) {
@@ -52,7 +53,7 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
 
   // Animate from midnight at bottom to current time centered
   useEffect(() => {
-    if (hasAnimated) return;
+    if (!isVisible) return;
     const container = containerRef.current;
     const content = contentRef.current;
     if (!container || !content) return;
@@ -73,8 +74,12 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
 
       const currentY = contentHeight - (minutesSinceMidnight / totalMinutes) * contentHeight;
       const targetCenterY = containerHeight / 2;
-      const initialOffset = containerHeight - contentHeight; // midnight at bottom
-      const targetOffset = targetCenterY - currentY;
+      const minOffset = containerHeight - contentHeight; // midnight at bottom (<= 0)
+      const maxOffset = 0; // content fully aligned at top
+      const initialOffset = minOffset;
+      // Center current time when possible, but don't scroll past top/bottom
+      const unclampedTargetOffset = targetCenterY - currentY;
+      const targetOffset = Math.max(minOffset, Math.min(maxOffset, unclampedTargetOffset));
 
       let start: number | null = null;
       const duration = 600; // ms
@@ -89,8 +94,6 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
 
         if (t < 1) {
           requestAnimationFrame(animate);
-        } else {
-          setHasAnimated(true);
         }
       };
 
@@ -100,7 +103,7 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
     };
 
     runAnimation();
-  }, [hasAnimated]);
+  }, [isVisible, activities]);
 
   if (!heatmapData) {
     return null;

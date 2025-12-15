@@ -31,6 +31,7 @@ import './TimelineV2DailyStats.css';
 
 interface TimelineV2DailyStatsProps {
   activities: ActivityType[];
+  heatmapActivities: ActivityType[];
   date: Date;
   isLoading?: boolean;
   activeFilter: FilterType;
@@ -54,6 +55,7 @@ interface StatTile {
 
 const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({ 
   activities, 
+  heatmapActivities,
   date, 
   isLoading = false,
   activeFilter,
@@ -678,35 +680,40 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       </div>
 
       {/* Mobile heatmap slide-out panel (right side, similar to FormPage) */}
-      <div
-        className={`fixed inset-0 z-40 md:hidden pointer-events-none ${
-          isHeatmapVisible ? '' : 'hidden'
-        }`}
-      >
+      <div className="fixed inset-0 z-40 md:hidden pointer-events-none">
         {/* Overlay */}
         <div
-          className="absolute inset-0 bg-black/40 pointer-events-auto"
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+            isHeatmapVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
           onClick={onHeatmapToggle}
         />
 
         {/* Slide-out panel */}
         <div
-          className="absolute inset-y-0 right-0 w-[85%] max-w-sm bg-white shadow-xl pointer-events-auto transform transition-transform duration-300 timeline-v2-heatmap-panel"
+          className={`
+            absolute inset-y-0 right-0 w-1/2 max-w-xs bg-white shadow-xl
+            pointer-events-auto transform transition-transform duration-300
+            timeline-v2-heatmap-panel
+            ${isHeatmapVisible ? 'translate-x-0' : 'translate-x-full'}
+          `}
         >
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
-            <span className="text-sm font-medium text-gray-700">Timeline Heatmap</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+          <div className="flex justify-end px-3 pt-2 mb-2">
+            <button
+              type="button"
+              className="text-xs inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
               onClick={onHeatmapToggle}
-              aria-label="Close heatmap"
             >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
+              <EyeOff className="h-3 w-3" />
+              <span>Hide heatmap</span>
+            </button>
           </div>
           <div className="h-full px-2 py-2">
-            <TimelineV2Heatmap activities={activities} selectedDate={date} />
+            <TimelineV2Heatmap
+              activities={heatmapActivities}
+              selectedDate={date}
+              isVisible={isHeatmapVisible}
+            />
           </div>
         </div>
       </div>
