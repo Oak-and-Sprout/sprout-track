@@ -1,56 +1,25 @@
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
-import {
-  Moon,
-  Sun,
-  Utensils,
-  Bath,
-  Edit,
-  PillBottle,
-  Trophy,
-  Ruler,
-  LampWallDown,
-  MapPin,
-  Loader2,
-  Icon,
-  Thermometer,
-} from 'lucide-react';
-import { diaper, bottleBaby } from '@lucide/lab';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { Card, CardContent } from '@/src/components/ui/card';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/src/components/ui/accordion';
+import { Accordion } from '@/src/components/ui/accordion';
 import { styles } from './reports.styles';
-import { growthChartStyles } from './growth-chart.styles';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-} from 'recharts';
 import { useBaby } from '@/app/context/baby';
 import {
   StatsTabProps,
   ActivityType,
-  SleepStats,
-  FeedingStats,
-  DiaperStats,
-  OtherStats,
-  LocationStat,
-  MedicineStat,
   CombinedStats,
   MeasurementActivity,
+  LocationStat,
+  MedicineStat,
 } from './reports.types';
-import SleepChartModal, { SleepChartMetric } from './SleepChartModal';
-import SleepLocationsChartModal from './SleepLocationsChartModal';
+import SleepStatsSection from './SleepStatsSection';
+import FeedingStatsSection from './FeedingStatsSection';
+import DiaperStatsSection from './DiaperStatsSection';
+import PumpingStatsSection from './PumpingStatsSection';
+import BathStatsSection from './BathStatsSection';
+import TemperatureStatsSection from './TemperatureStatsSection';
 
 // Helper to calculate age in months from birth date (copied from GrowthChart)
 const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {
@@ -73,26 +42,6 @@ const calculateAgeInMonths = (birthDate: string, measurementDate: string): numbe
   return Math.max(0, totalMonths + dayFraction);
 };
 
-// Temperature chart tooltip
-const TemperatureTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const point = payload[0]?.payload as { value: number; unit: string };
-    if (!point) return null;
-
-    return (
-      <div className={cn(growthChartStyles.tooltip, 'growth-chart-tooltip')}>
-        <p className={cn(growthChartStyles.tooltipLabel, 'growth-chart-tooltip-label')}>
-          Age: {typeof label === 'number' ? label.toFixed(1) : label} months
-        </p>
-        <p className={cn(growthChartStyles.tooltipMeasurement, 'growth-chart-tooltip-measurement')}>
-          Temp: {point.value.toFixed(1)} {point.unit}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
 /**
  * StatsTab Component
  *
@@ -106,10 +55,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
 }) => {
   const { selectedBaby } = useBaby();
   const [temperatureMeasurements, setTemperatureMeasurements] = useState<MeasurementActivity[]>([]);
-  const [sleepChartModalOpen, setSleepChartModalOpen] = useState(false);
-  const [sleepChartMetric, setSleepChartMetric] = useState<SleepChartMetric | null>(null);
-  const [sleepLocationsModalOpen, setSleepLocationsModalOpen] = useState(false);
-  const [sleepLocationsType, setSleepLocationsType] = useState<'nap' | 'night'>('nap');
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
     if (minutes === 0) return '0m';
@@ -588,7 +533,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const endDate = new Date(dateRange.to);
     endDate.setHours(23, 59, 59, 999);
 
-    const napInstances: { date: string; label: string; value: number }[] = [];
+    const napDataByDay: Record<string, { totalMinutes: number; count: number }> = {};
     const napMinutesByDay: Record<string, number> = {};
     const nightSleepByNight: Record<string, { totalMinutes: number; sessions: number }> = {};
 
@@ -608,18 +553,31 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
           const sleepMinutes = Math.floor((overlapEnd - overlapStart) / (1000 * 60));
           const dayKey = startTime.toISOString().split('T')[0];
-          const dayLabel = startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
           if (activityType === 'NAP') {
-            napInstances.push({ date: dayKey, label: dayLabel, value: sleepMinutes });
+            // Track nap data for daily average calculation
+            if (!napDataByDay[dayKey]) {
+              napDataByDay[dayKey] = { totalMinutes: 0, count: 0 };
+            }
+            napDataByDay[dayKey].totalMinutes += sleepMinutes;
+            napDataByDay[dayKey].count += 1;
+            
+            // Also track total for daily total series
             napMinutesByDay[dayKey] = (napMinutesByDay[dayKey] || 0) + sleepMinutes;
           } else if (activityType === 'NIGHT_SLEEP') {
+            // Group night sleep by the "night" period: 12:00 PM (noon) day 1 to 11:59 AM day 2
+            // Sleep starting at or after 12:00 PM (noon) belongs to that day's night
+            // Sleep starting before 12:00 PM (noon) belongs to previous day's night
             const startHour = startTime.getHours();
             let nightDate = new Date(startTime);
+            
             if (startHour < 12) {
-              // Early morning belongs to previous night's period (12PM day 1 -> 11:59AM day 2)
+              // Sleep starting before noon (12:00 AM - 11:59 AM) belongs to previous day's night
+              // e.g., sleep at 2 AM on Jan 2 belongs to the night of Jan 1
               nightDate.setDate(nightDate.getDate() - 1);
             }
+            // Sleep starting at or after noon (12:00 PM - 11:59 PM) belongs to that day's night
+            // e.g., sleep at 8 PM on Jan 1 belongs to the night of Jan 1
             const nightKey = nightDate.toISOString().split('T')[0];
 
             if (!nightSleepByNight[nightKey]) {
@@ -632,6 +590,15 @@ const StatsTab: React.FC<StatsTabProps> = ({
       }
     });
 
+    // Calculate daily average nap duration (average duration per day, not per nap)
+    const avgNapDurationSeries = Object.entries(napDataByDay)
+      .map(([date, data]) => ({
+        date,
+        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value: data.count > 0 ? Math.round(data.totalMinutes / data.count) : 0,
+      }))
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+
     const dailyNapTotalSeries = Object.entries(napMinutesByDay)
       .map(([date, total]) => ({
         date,
@@ -640,15 +607,22 @@ const StatsTab: React.FC<StatsTabProps> = ({
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
 
+    // Calculate average night sleep duration per night period
+    // Each night period (12PM day 1 to 11:59AM day 2) may have multiple sleep sessions
+    // We calculate the average duration per session for that night
     const nightSleepSeries: { date: string; label: string; value: number }[] = [];
     const nightWakingsSeries: { date: string; label: string; value: number }[] = [];
 
     Object.entries(nightSleepByNight).forEach(([nightKey, data]) => {
       const label = new Date(nightKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      
+      // Calculate average duration per sleep session for this night period
+      const avgDuration = data.sessions > 0 ? Math.round(data.totalMinutes / data.sessions) : 0;
+      
       nightSleepSeries.push({
         date: nightKey,
         label,
-        value: data.totalMinutes,
+        value: avgDuration,
       });
       nightWakingsSeries.push({
         date: nightKey,
@@ -660,11 +634,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
     nightSleepSeries.sort((a, b) => (a.date < b.date ? -1 : 1));
     nightWakingsSeries.sort((a, b) => (a.date < b.date ? -1 : 1));
 
-    // Sort nap instances by date for a cleaner line
-    napInstances.sort((a, b) => (a.date < b.date ? -1 : 1));
-
     return {
-      avgNapDuration: napInstances,
+      avgNapDuration: avgNapDurationSeries,
       dailyNapTotal: dailyNapTotalSeries,
       nightSleep: nightSleepSeries,
       nightWakings: nightWakingsSeries,
@@ -749,11 +720,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
       .sort((a, b) => a.ageMonths - b.ageMonths);
   }, [temperatureMeasurements, selectedBaby, babyCurrentAgeMonths]);
 
-  const currentSleepSeries =
-    sleepChartMetric && sleepChartSeries[sleepChartMetric]
-      ? sleepChartSeries[sleepChartMetric]
-      : [];
-
   // Loading state
   if (isLoading) {
     return (
@@ -775,406 +741,34 @@ const StatsTab: React.FC<StatsTabProps> = ({
     );
   }
 
-  // Format amounts for display
-  const formatAmounts = (amounts: Record<string, number>): string => {
-    return Object.entries(amounts)
-      .map(([unit, amount]) => `${amount.toFixed(1)} ${unit}`)
-      .join(', ');
-  };
-
   return (
     <div className="space-y-4">
       <Accordion type="multiple" defaultValue={['sleep', 'feeding', 'diaper', 'pumping', 'baths', 'temperature']}>
         {/* Sleep Section */}
-        <AccordionItem value="sleep">
-          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-            <Moon className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-sleep")} />
-            <span>Sleep Statistics</span>
-          </AccordionTrigger>
-          <AccordionContent className={styles.accordionContent}>
-            <div className={styles.statsGrid}>
-              <Card
-                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
-                onClick={() => {
-                  setSleepChartMetric('avgNapDuration');
-                  setSleepChartModalOpen(true);
-                }}
-              >
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {formatMinutes(stats.sleep.avgNapMinutes)}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Nap Duration</div>
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
-                onClick={() => {
-                  setSleepChartMetric('dailyNapTotal');
-                  setSleepChartModalOpen(true);
-                }}
-              >
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {formatMinutes(stats.sleep.avgDailyNapMinutes)}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Daily Nap Time</div>
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
-                onClick={() => {
-                  setSleepChartMetric('nightSleep');
-                  setSleepChartModalOpen(true);
-                }}
-              >
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {formatMinutes(stats.sleep.avgNightSleepMinutes)}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Night Sleep</div>
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
-                onClick={() => {
-                  setSleepChartMetric('nightWakings');
-                  setSleepChartModalOpen(true);
-                }}
-              >
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.sleep.avgNightWakings}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Night Wakings</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Nap Locations */}
-            {stats.sleep.napLocations.length > 0 && (
-              <div className="mt-4">
-                <button
-                  type="button"
-                  className={cn(styles.sectionTitle, "reports-section-title text-left w-full")}
-                  onClick={() => {
-                    setSleepLocationsType('nap');
-                    setSleepLocationsModalOpen(true);
-                  }}
-                >
-                  <MapPin className={styles.sectionTitleIcon} />
-                  Popular Nap Locations
-                </button>
-                <div className={styles.locationList}>
-                  {stats.sleep.napLocations.slice(0, 5).map((loc) => (
-                    <div key={loc.location} className={cn(styles.locationItem, "reports-location-item")}>
-                      <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
-                      <span className={cn(styles.locationCount, "reports-location-count")}>
-                        {loc.count}x ({formatMinutes(loc.totalMinutes)})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Night Sleep Locations */}
-            {stats.sleep.nightLocations.length > 0 && (
-              <div className="mt-4">
-                <button
-                  type="button"
-                  className={cn(styles.sectionTitle, "reports-section-title text-left w-full")}
-                  onClick={() => {
-                    setSleepLocationsType('night');
-                    setSleepLocationsModalOpen(true);
-                  }}
-                >
-                  <MapPin className={styles.sectionTitleIcon} />
-                  Popular Night Sleep Locations
-                </button>
-                <div className={styles.locationList}>
-                  {stats.sleep.nightLocations.slice(0, 5).map((loc) => (
-                    <div key={loc.location} className={cn(styles.locationItem, "reports-location-item")}>
-                      <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
-                      <span className={cn(styles.locationCount, "reports-location-count")}>
-                        {loc.count}x ({formatMinutes(loc.totalMinutes)})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
+        <SleepStatsSection
+          stats={stats.sleep}
+          sleepChartSeries={sleepChartSeries}
+          dateRange={dateRange}
+        />
 
         {/* Feeding Section */}
-        <AccordionItem value="feeding">
-          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-            <Icon iconNode={bottleBaby} className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-feed")} />
-            <span>Feeding Statistics</span>
-          </AccordionTrigger>
-          <AccordionContent className={styles.accordionContent}>
-            <div className={styles.statsGrid}>
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.feeding.bottleFeeds.count}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Bottle Feeds</div>
-                  {stats.feeding.bottleFeeds.avgByType.length > 0 && (
-                    <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                      {stats.feeding.bottleFeeds.avgByType.map((bt, idx) => (
-                        <span key={bt.type}>
-                          {bt.type}: {bt.avgAmount.toFixed(1)} {bt.unit} avg
-                          {idx < stats.feeding.bottleFeeds.avgByType.length - 1 ? ', ' : ''}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.feeding.breastFeeds.count}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Breast Feeds</div>
-                  {(stats.feeding.breastFeeds.leftCount > 0 || stats.feeding.breastFeeds.rightCount > 0) && (
-                    <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                      L: {formatMinutes(stats.feeding.breastFeeds.avgLeftMinutes)} avg, R: {formatMinutes(stats.feeding.breastFeeds.avgRightMinutes)} avg
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.feeding.solidsFeeds.count}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Solids</div>
-                  {stats.feeding.solidsFeeds.avgByFood.length > 0 && (
-                    <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                      {stats.feeding.solidsFeeds.avgByFood.slice(0, 3).map((sf, idx) => (
-                        <span key={sf.food}>
-                          {sf.food}: {sf.avgAmount.toFixed(1)} {sf.unit} avg
-                          {idx < Math.min(stats.feeding.solidsFeeds.avgByFood.length, 3) - 1 ? ', ' : ''}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+        <FeedingStatsSection stats={stats.feeding} />
 
         {/* Diaper Section */}
-        <AccordionItem value="diaper">
-          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-            <Icon iconNode={diaper} className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-diaper-wet")} />
-            <span>Diaper Statistics</span>
-          </AccordionTrigger>
-          <AccordionContent className={styles.accordionContent}>
-            <div className={styles.statsGrid}>
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.diaper.wetCount}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Wet Diapers</div>
-                  <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                    {stats.diaper.avgWetPerDay}/day avg
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.diaper.poopCount}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Poopy Diapers</div>
-                  <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                    {stats.diaper.avgPoopPerDay}/day avg
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+        <DiaperStatsSection stats={stats.diaper} />
 
         {/* Pumping Section */}
-        <AccordionItem value="pumping">
-          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-            <LampWallDown className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
-            <span>Pumping Statistics</span>
-          </AccordionTrigger>
-          <AccordionContent className={styles.accordionContent}>
-            <div className={styles.statsGrid}>
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.pump.pumpsPerDay.toFixed(1)}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Pumps per Day</div>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {formatMinutes(stats.pump.avgDurationMinutes)}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Pump Duration</div>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    Left: {stats.pump.avgLeftAmount.toFixed(1)} {stats.pump.unit}
-                  </div>
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    Right: {stats.pump.avgRightAmount.toFixed(1)} {stats.pump.unit}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Amount per Side</div>
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+        <PumpingStatsSection stats={stats.pump} />
 
         {/* Baths Section */}
-        <AccordionItem value="baths">
-          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-            <Bath className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-bath")} />
-            <span>Bath Statistics</span>
-          </AccordionTrigger>
-          <AccordionContent className={styles.accordionContent}>
-            <div className={styles.statsGrid}>
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.bath.totalBaths}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Total Baths</div>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.bath.bathsPerWeek.toFixed(1)}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Baths per Week</div>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.bath.soapShampooBathsPerWeek.toFixed(1)}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Soap/Shampoo Baths per Week</div>
-                </CardContent>
-              </Card>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+        <BathStatsSection stats={stats.bath} />
 
         {/* Temperature Section */}
-        <AccordionItem value="temperature">
-          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-            <Thermometer className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-measurement")} />
-            <span>Temperature Measurements</span>
-          </AccordionTrigger>
-          <AccordionContent className={styles.accordionContent}>
-            {temperatureData.length === 0 ? (
-              <div className={cn(styles.emptyContainer, "reports-empty-container")}>
-                <p className={cn(styles.emptyText, "reports-empty-text")}>
-                  No temperature measurements in the selected date range.
-                </p>
-              </div>
-            ) : (
-              (() => {
-                const rawUnit = temperatureData[0]?.unit || '';
-                const upperUnit = rawUnit.toString().toUpperCase();
-                const isFahrenheit = upperUnit.includes('F');
-                const isCelsius = upperUnit.includes('C');
-
-                // Hard-set domains for realistic ranges
-                const domain: [number, number] = isCelsius
-                  ? [32, 42]   // ~90–108°F in °C
-                  : [90, 108]; // default / Fahrenheit
-
-                return (
-                  <div className={cn(growthChartStyles.chartWrapper, "growth-chart-wrapper")}>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart
-                        data={temperatureData}
-                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
-                        <XAxis
-                          dataKey="ageMonths"
-                          type="number"
-                          domain={[0, babyCurrentAgeMonths]}
-                          label={{ value: 'Age (months)', position: 'insideBottom', offset: -5 }}
-                          tickFormatter={(value) => value.toString()}
-                          className="growth-chart-axis"
-                        />
-                        <YAxis
-                          type="number"
-                          domain={domain}
-                          allowDataOverflow={true}
-                          label={{ value: rawUnit || '', angle: -90, position: 'insideLeft' }}
-                          className="growth-chart-axis"
-                        />
-                        <RechartsTooltip content={<TemperatureTooltip />} />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#f97316"
-                          strokeWidth={2}
-                          dot={{ r: 4, fill: "#f97316" }}
-                          activeDot={{ r: 6, fill: "#ea580c" }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                );
-              })()
-            )}
-          </AccordionContent>
-        </AccordionItem>
+        <TemperatureStatsSection
+          temperatureData={temperatureData}
+          babyCurrentAgeMonths={babyCurrentAgeMonths}
+        />
       </Accordion>
-
-      {/* Sleep line chart modal */}
-      <SleepChartModal
-        open={sleepChartModalOpen}
-        onOpenChange={(open) => {
-          setSleepChartModalOpen(open);
-          if (!open) {
-            setSleepChartMetric(null);
-          }
-        }}
-        metric={sleepChartMetric}
-        data={currentSleepSeries}
-        dateRange={dateRange}
-      />
-
-      {/* Sleep locations bar chart modal */}
-      <SleepLocationsChartModal
-        open={sleepLocationsModalOpen}
-        onOpenChange={setSleepLocationsModalOpen}
-        type={sleepLocationsType}
-        locations={sleepLocationsType === 'nap' ? stats.sleep.napLocations : stats.sleep.nightLocations}
-      />
     </div>
   );
 };
