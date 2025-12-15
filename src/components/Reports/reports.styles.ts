@@ -86,7 +86,7 @@ export const styles = {
 // Tab styles (extending form-page tab styles)
 export const tabStyles = {
   // Tab container
-  tabContainer: "flex flex-row border-b border-gray-200 mb-4 overflow-x-auto scrollbar-hide -webkit-overflow-scrolling-touch",
+  tabContainer: "flex flex-row border-b border-gray-200 overflow-x-auto scrollbar-hide -webkit-overflow-scrolling-touch",
 
   // Individual tab button
   tabButton: "flex items-center gap-2 py-3 px-4 mx-1 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-0 rounded-t-lg border-b-2 border-transparent whitespace-nowrap focus:border-b-teal-500",
