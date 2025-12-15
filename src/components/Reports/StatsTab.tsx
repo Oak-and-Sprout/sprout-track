@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   Moon,
   Sun,
@@ -13,7 +13,8 @@ import {
   LampWallDown,
   MapPin,
   Loader2,
-  Icon
+  Icon,
+  Thermometer,
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { cn } from '@/src/lib/utils';
@@ -25,6 +26,17 @@ import {
   AccordionTrigger,
 } from '@/src/components/ui/accordion';
 import { styles } from './reports.styles';
+import { growthChartStyles } from './growth-chart.styles';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from 'recharts';
+import { useBaby } from '@/app/context/baby';
 import {
   StatsTabProps,
   ActivityType,
@@ -35,7 +47,49 @@ import {
   LocationStat,
   MedicineStat,
   CombinedStats,
+  MeasurementActivity,
 } from './reports.types';
+
+// Helper to calculate age in months from birth date (copied from GrowthChart)
+const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {
+  const birth = new Date(birthDate);
+  const measurement = new Date(measurementDate);
+
+  const years = measurement.getFullYear() - birth.getFullYear();
+  const months = measurement.getMonth() - birth.getMonth();
+  const days = measurement.getDate() - birth.getDate();
+
+  let totalMonths = years * 12 + months;
+  if (days < 0) {
+    totalMonths -= 1;
+  }
+
+  // Add fractional month based on day of month
+  const daysInMonth = new Date(measurement.getFullYear(), measurement.getMonth() + 1, 0).getDate();
+  const dayFraction = (days >= 0 ? days : daysInMonth + days) / daysInMonth;
+
+  return Math.max(0, totalMonths + dayFraction);
+};
+
+// Temperature chart tooltip
+const TemperatureTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const point = payload[0]?.payload as { value: number; unit: string };
+    if (!point) return null;
+
+    return (
+      <div className={cn(growthChartStyles.tooltip, 'growth-chart-tooltip')}>
+        <p className={cn(growthChartStyles.tooltipLabel, 'growth-chart-tooltip-label')}>
+          Age: {typeof label === 'number' ? label.toFixed(1) : label} months
+        </p>
+        <p className={cn(growthChartStyles.tooltipMeasurement, 'growth-chart-tooltip-measurement')}>
+          Temp: {point.value.toFixed(1)} {point.unit}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 /**
  * StatsTab Component
@@ -48,6 +102,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
   dateRange,
   isLoading
 }) => {
+  const { selectedBaby } = useBaby();
+  const [temperatureMeasurements, setTemperatureMeasurements] = useState<MeasurementActivity[]>([]);
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
     if (minutes === 0) return '0m';
@@ -85,12 +141,22 @@ const StatsTab: React.FC<StatsTabProps> = ({
           daysInRange: 1,
         },
         other: {
-          bathCount: 0,
-          pumpCount: 0,
           noteCount: 0,
           milestoneCount: 0,
           measurementCount: 0,
           medicines: [],
+        },
+        pump: {
+          pumpsPerDay: 0,
+          avgDurationMinutes: 0,
+          avgLeftAmount: 0,
+          avgRightAmount: 0,
+          unit: 'oz',
+        },
+        bath: {
+          totalBaths: 0,
+          bathsPerWeek: 0,
+          soapShampooBathsPerWeek: 0,
         },
       };
     }
@@ -135,11 +201,17 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
     // Other tracking
     let bathCount = 0;
+    let soapShampooBathCount = 0;
     let pumpCount = 0;
     let noteCount = 0;
     let milestoneCount = 0;
     let measurementCount = 0;
     const medicineMap: Record<string, { count: number; total: number; unit: string }> = {};
+    let totalPumpDurationMinutes = 0;
+    let totalLeftPumpAmount = 0;
+    let totalRightPumpAmount = 0;
+    let pumpSessions = 0;
+    let pumpUnit: string | null = null;
 
     activities.forEach((activity) => {
       // Sleep activities
@@ -282,11 +354,40 @@ const StatsTab: React.FC<StatsTabProps> = ({
       // Bath activities
       if ('soapUsed' in activity) {
         bathCount++;
+        const bathActivity = activity as any;
+        if (bathActivity.soapUsed || bathActivity.shampooUsed) {
+          soapShampooBathCount++;
+        }
       }
 
       // Pump activities
       if ('leftAmount' in activity || 'rightAmount' in activity) {
         pumpCount++;
+        const pumpActivity = activity as any;
+        pumpSessions++;
+
+        if (pumpActivity.startTime && pumpActivity.endTime) {
+          const start = new Date(pumpActivity.startTime);
+          const end = new Date(pumpActivity.endTime);
+          const diffMs = end.getTime() - start.getTime();
+          if (diffMs > 0) {
+            totalPumpDurationMinutes += Math.floor(diffMs / (1000 * 60));
+          }
+        } else if (pumpActivity.duration) {
+          totalPumpDurationMinutes += Math.floor(pumpActivity.duration / 60);
+        }
+
+        if (typeof pumpActivity.leftAmount === 'number') {
+          totalLeftPumpAmount += pumpActivity.leftAmount;
+        }
+
+        if (typeof pumpActivity.rightAmount === 'number') {
+          totalRightPumpAmount += pumpActivity.rightAmount;
+        }
+
+        if (!pumpUnit && pumpActivity.unitAbbr) {
+          pumpUnit = pumpActivity.unitAbbr;
+        }
       }
 
       // Note activities
@@ -392,6 +493,16 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const avgWetPerDay = daysInRange > 0 ? Math.round((wetCount / daysInRange) * 10) / 10 : 0;
     const avgPoopPerDay = daysInRange > 0 ? Math.round((poopCount / daysInRange) * 10) / 10 : 0;
 
+    // Bath stats
+    const bathsPerWeek = daysInRange > 0 ? Math.round(((bathCount / daysInRange) * 7) * 10) / 10 : 0;
+    const soapShampooBathsPerWeek = daysInRange > 0 ? Math.round(((soapShampooBathCount / daysInRange) * 7) * 10) / 10 : 0;
+
+    // Pumping stats
+    const pumpsPerDay = daysInRange > 0 ? Math.round((pumpCount / daysInRange) * 10) / 10 : 0;
+    const avgPumpDurationMinutes = pumpSessions > 0 ? Math.round(totalPumpDurationMinutes / pumpSessions) : 0;
+    const avgLeftPumpAmount = pumpSessions > 0 ? totalLeftPumpAmount / pumpSessions : 0;
+    const avgRightPumpAmount = pumpSessions > 0 ? totalRightPumpAmount / pumpSessions : 0;
+
     return {
       sleep: {
         totalSleepMinutes,
@@ -424,15 +535,103 @@ const StatsTab: React.FC<StatsTabProps> = ({
         daysInRange,
       },
       other: {
-        bathCount,
-        pumpCount,
         noteCount,
         milestoneCount,
         measurementCount,
         medicines,
       },
+      pump: {
+        pumpsPerDay,
+        avgDurationMinutes: avgPumpDurationMinutes,
+        avgLeftAmount: avgLeftPumpAmount,
+        avgRightAmount: avgRightPumpAmount,
+        unit: pumpUnit || 'oz',
+      },
+      bath: {
+        totalBaths: bathCount,
+        bathsPerWeek,
+        soapShampooBathsPerWeek,
+      },
     };
   }, [activities, dateRange]);
+
+  // Baby current age in months for chart ranges (birth to current age + 1 month, clamped)
+  const babyCurrentAgeMonths = useMemo((): number => {
+    if (!selectedBaby?.birthDate) return 12; // default to 12 months if no birthdate
+
+    const now = new Date();
+    const birth = new Date(selectedBaby.birthDate);
+
+    const years = now.getFullYear() - birth.getFullYear();
+    const months = now.getMonth() - birth.getMonth();
+    const days = now.getDate() - birth.getDate();
+
+    let totalMonths = years * 12 + months;
+    if (days < 0) {
+      totalMonths -= 1;
+    }
+
+    const ageWithBuffer = Math.ceil(totalMonths + 1);
+
+    return Math.max(3, Math.min(36, ageWithBuffer));
+  }, [selectedBaby]);
+
+  // Fetch all temperature measurements for the baby (ignores date range filter)
+  useEffect(() => {
+    const fetchTemperatures = async () => {
+      if (!selectedBaby) {
+        setTemperatureMeasurements([]);
+        return;
+      }
+
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch(
+          `/api/measurement-log?babyId=${selectedBaby.id}&type=TEMPERATURE`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authToken ? `Bearer ${authToken}` : '',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setTemperatureMeasurements((data.data || []) as MeasurementActivity[]);
+          } else {
+            setTemperatureMeasurements([]);
+          }
+        } else {
+          setTemperatureMeasurements([]);
+        }
+      } catch {
+        setTemperatureMeasurements([]);
+      }
+    };
+
+    fetchTemperatures();
+  }, [selectedBaby]);
+
+  // Temperature measurements for chart
+  const temperatureData = useMemo(() => {
+    if (!selectedBaby?.birthDate) return [];
+
+    const birthStr = selectedBaby.birthDate!.toString();
+
+    return temperatureMeasurements
+      .map((m) => {
+        const ageMonths = calculateAgeInMonths(birthStr, m.date);
+        return {
+          ageMonths,
+          value: m.value,
+          unit: m.unit,
+        };
+      })
+      .filter((point) => point.ageMonths >= 0 && point.ageMonths <= babyCurrentAgeMonths)
+      .sort((a, b) => a.ageMonths - b.ageMonths);
+  }, [temperatureMeasurements, selectedBaby, babyCurrentAgeMonths]);
 
   // Loading state
   if (isLoading) {
@@ -464,7 +663,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <Accordion type="multiple" defaultValue={['sleep', 'feeding', 'diaper', 'other']}>
+      <Accordion type="multiple" defaultValue={['sleep', 'feeding', 'diaper', 'pumping', 'baths', 'temperature']}>
         {/* Sleep Section */}
         <AccordionItem value="sleep">
           <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
@@ -475,7 +674,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
             <div className={styles.statsGrid}>
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Sun className={cn(styles.statCardIcon, "text-amber-500")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {formatMinutes(stats.sleep.avgNapMinutes)}
                   </div>
@@ -485,7 +683,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Moon className={cn(styles.statCardIcon, "text-indigo-500")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {formatMinutes(stats.sleep.avgNightSleepMinutes)}
                   </div>
@@ -495,7 +692,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Moon className={cn(styles.statCardIcon, "text-purple-500")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {stats.sleep.avgNightWakings}
                   </div>
@@ -556,7 +752,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
             <div className={styles.statsGrid}>
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Icon iconNode={bottleBaby} className={cn(styles.statCardIcon, "text-blue-400")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {stats.feeding.bottleFeeds.count}
                   </div>
@@ -576,7 +771,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Utensils className={cn(styles.statCardIcon, "text-pink-400")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {stats.feeding.breastFeeds.count}
                   </div>
@@ -591,7 +785,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Utensils className={cn(styles.statCardIcon, "text-orange-400")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {stats.feeding.solidsFeeds.count}
                   </div>
@@ -622,7 +815,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
             <div className={styles.statsGrid}>
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Icon iconNode={diaper} className={cn(styles.statCardIcon, "text-teal-500")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {stats.diaper.wetCount}
                   </div>
@@ -635,7 +827,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Icon iconNode={diaper} className={cn(styles.statCardIcon, "text-amber-600")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                     {stats.diaper.poopCount}
                   </div>
@@ -649,83 +840,147 @@ const StatsTab: React.FC<StatsTabProps> = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Other Activities Section */}
-        <AccordionItem value="other">
+        {/* Pumping Section */}
+        <AccordionItem value="pumping">
           <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-            <Bath className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-bath")} />
-            <span>Other Activities</span>
+            <LampWallDown className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
+            <span>Pumping Statistics</span>
           </AccordionTrigger>
           <AccordionContent className={styles.accordionContent}>
             <div className={styles.statsGrid}>
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Bath className={cn(styles.statCardIcon, "text-orange-400")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.other.bathCount}
+                    {stats.pump.pumpsPerDay.toFixed(1)}
                   </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Baths</div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Pumps per Day</div>
                 </CardContent>
               </Card>
 
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <LampWallDown className={cn(styles.statCardIcon, "text-purple-400")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.other.pumpCount}
+                    {formatMinutes(stats.pump.avgDurationMinutes)}
                   </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Pump Sessions</div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Pump Duration</div>
                 </CardContent>
               </Card>
 
               <Card className={cn(styles.statCard, "reports-stat-card")}>
                 <CardContent className="p-4">
-                  <Edit className={cn(styles.statCardIcon, "text-yellow-400")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.other.noteCount}
+                    Left: {stats.pump.avgLeftAmount.toFixed(1)} {stats.pump.unit}
                   </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Notes</div>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <Trophy className={cn(styles.statCardIcon, "text-blue-500")} />
                   <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.other.milestoneCount}
+                    Right: {stats.pump.avgRightAmount.toFixed(1)} {stats.pump.unit}
                   </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Milestones</div>
-                </CardContent>
-              </Card>
-
-              <Card className={cn(styles.statCard, "reports-stat-card")}>
-                <CardContent className="p-4">
-                  <Ruler className={cn(styles.statCardIcon, "text-red-400")} />
-                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                    {stats.other.measurementCount}
-                  </div>
-                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Measurements</div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Amount per Side</div>
                 </CardContent>
               </Card>
             </div>
+          </AccordionContent>
+        </AccordionItem>
 
-            {/* Medicine breakdown */}
-            {stats.other.medicines.length > 0 && (
-              <div className="mt-4">
-                <h4 className={cn(styles.sectionTitle, "reports-section-title")}>
-                  <PillBottle className={styles.sectionTitleIcon} />
-                  Medicine
-                </h4>
-                <div className={styles.medicineList}>
-                  {stats.other.medicines.map((med) => (
-                    <div key={med.name} className={cn(styles.medicineItem, "reports-medicine-item")}>
-                      <span className={cn(styles.medicineName, "reports-medicine-name")}>{med.name}</span>
-                      <span className={cn(styles.medicineDetails, "reports-medicine-details")}>
-                        {med.count}x ({med.totalAmount.toFixed(1)} {med.unit})
-                      </span>
-                    </div>
-                  ))}
-                </div>
+        {/* Baths Section */}
+        <AccordionItem value="baths">
+          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
+            <Bath className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-bath")} />
+            <span>Bath Statistics</span>
+          </AccordionTrigger>
+          <AccordionContent className={styles.accordionContent}>
+            <div className={styles.statsGrid}>
+              <Card className={cn(styles.statCard, "reports-stat-card")}>
+                <CardContent className="p-4">
+                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                    {stats.bath.totalBaths}
+                  </div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Total Baths</div>
+                </CardContent>
+              </Card>
+
+              <Card className={cn(styles.statCard, "reports-stat-card")}>
+                <CardContent className="p-4">
+                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                    {stats.bath.bathsPerWeek.toFixed(1)}
+                  </div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Baths per Week</div>
+                </CardContent>
+              </Card>
+
+              <Card className={cn(styles.statCard, "reports-stat-card")}>
+                <CardContent className="p-4">
+                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                    {stats.bath.soapShampooBathsPerWeek.toFixed(1)}
+                  </div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Soap/Shampoo Baths per Week</div>
+                </CardContent>
+              </Card>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Temperature Section */}
+        <AccordionItem value="temperature">
+          <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
+            <Thermometer className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-measurement")} />
+            <span>Temperature Measurements</span>
+          </AccordionTrigger>
+          <AccordionContent className={styles.accordionContent}>
+            {temperatureData.length === 0 ? (
+              <div className={cn(styles.emptyContainer, "reports-empty-container")}>
+                <p className={cn(styles.emptyText, "reports-empty-text")}>
+                  No temperature measurements in the selected date range.
+                </p>
               </div>
+            ) : (
+              (() => {
+                const rawUnit = temperatureData[0]?.unit || '';
+                const upperUnit = rawUnit.toString().toUpperCase();
+                const isFahrenheit = upperUnit.includes('F');
+                const isCelsius = upperUnit.includes('C');
+
+                // Hard-set domains for realistic ranges
+                const domain: [number, number] = isCelsius
+                  ? [32, 42]   // ~90–108°F in °C
+                  : [90, 108]; // default / Fahrenheit
+
+                return (
+                  <div className={cn(growthChartStyles.chartWrapper, "growth-chart-wrapper")}>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart
+                        data={temperatureData}
+                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
+                        <XAxis
+                          dataKey="ageMonths"
+                          type="number"
+                          domain={[0, babyCurrentAgeMonths]}
+                          label={{ value: 'Age (months)', position: 'insideBottom', offset: -5 }}
+                          tickFormatter={(value) => value.toString()}
+                          className="growth-chart-axis"
+                        />
+                        <YAxis
+                          type="number"
+                          domain={domain}
+                          allowDataOverflow={true}
+                          label={{ value: rawUnit || '', angle: -90, position: 'insideLeft' }}
+                          className="growth-chart-axis"
+                        />
+                        <RechartsTooltip content={<TemperatureTooltip />} />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#f97316"
+                          strokeWidth={2}
+                          dot={{ r: 4, fill: "#f97316" }}
+                          activeDot={{ r: 6, fill: "#ea580c" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()
             )}
           </AccordionContent>
         </AccordionItem>

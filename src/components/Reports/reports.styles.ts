@@ -58,7 +58,7 @@ export const styles = {
 
   // Location list
   locationList: "space-y-2",
-  locationItem: "flex items-center justify-between py-2 px-3 rounded-lg bg-white border border-gray-100",
+  locationItem: "flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 border border-gray-100",
   locationName: "text-sm font-medium text-gray-700",
   locationCount: "text-sm text-gray-500",
 

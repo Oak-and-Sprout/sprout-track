@@ -267,10 +267,24 @@ export interface DiaperStats {
   daysInRange: number;
 }
 
+// Pumping stats
+export interface PumpStats {
+  pumpsPerDay: number;
+  avgDurationMinutes: number;
+  avgLeftAmount: number;
+  avgRightAmount: number;
+  unit: string;
+}
+
+// Bath stats
+export interface BathStats {
+  totalBaths: number;
+  bathsPerWeek: number;
+  soapShampooBathsPerWeek: number;
+}
+
 // Other activities stats
 export interface OtherStats {
-  bathCount: number;
-  pumpCount: number;
   noteCount: number;
   milestoneCount: number;
   measurementCount: number;
@@ -283,4 +297,6 @@ export interface CombinedStats {
   feeding: FeedingStats;
   diaper: DiaperStats;
   other: OtherStats;
+  pump: PumpStats;
+  bath: BathStats;
 }
