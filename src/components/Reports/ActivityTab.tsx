@@ -8,6 +8,48 @@ import { styles, activityChartStyles } from './reports.styles';
 import { ActivityTabProps, ActivityType } from './reports.types';
 import { getActivityDetails, getActivityTime } from '@/src/components/Timeline/utils';
 
+// Activity type order for consistent lane stacking:
+// Sleep, Feeds, Pumps, Diapers, Bath, Medicine, Measurement, Milestone, Notes
+const getActivityTypeOrder = (activity: ActivityType): number => {
+  // Sleep
+  if ('duration' in activity && 'startTime' in activity && !('leftAmount' in activity)) {
+    return 0;
+  }
+  // Feed
+  if ('amount' in activity && 'type' in activity) {
+    return 1;
+  }
+  // Pump
+  if ('leftAmount' in activity || 'rightAmount' in activity) {
+    return 2;
+  }
+  // Diaper
+  if ('condition' in activity) {
+    return 3;
+  }
+  // Bath
+  if ('soapUsed' in activity) {
+    return 4;
+  }
+  // Medicine
+  if ('doseAmount' in activity && 'medicineId' in activity) {
+    return 5;
+  }
+  // Measurement
+  if ('value' in activity && 'unit' in activity) {
+    return 6;
+  }
+  // Milestone
+  if ('title' in activity && 'category' in activity) {
+    return 7;
+  }
+  // Note
+  if ('content' in activity) {
+    return 8;
+  }
+  return 9; // default
+};
+
 // Color mapping for activity types - matches TimelineV2 colors
 const getActivityColor = (activity: ActivityType): string => {
   // Medicine
@@ -58,6 +100,7 @@ interface NormalizedActivity {
   endHour: number; // 0-24
   color: string;
   lane: number; // horizontal lane for stacking overlapping activities
+  typeOrder: number; // for consistent stacking order
   isOvernightContinuation?: boolean;
 }
 
@@ -75,28 +118,31 @@ const BAR_GAP = 3; // pixels between bars
 const MIN_COLUMN_WIDTH = 75; // minimum column width (50% wider)
 const MIN_BAR_HEIGHT_PERCENT = 0.8; // Minimum height for visibility
 
-// Assign lanes to activities based on overlap (greedy algorithm)
+// Assign lanes to activities based on type order first, then overlap
 const assignLanes = (activities: Omit<NormalizedActivity, 'lane'>[]): { activities: NormalizedActivity[]; maxLanes: number } => {
   if (activities.length === 0) return { activities: [], maxLanes: 0 };
 
-  // Sort by start time
-  const sorted = [...activities].sort((a, b) => a.startHour - b.startHour);
+  // Sort by type order first (for consistent left-to-right ordering), then by start time
+  const sorted = [...activities].sort((a, b) => {
+    if (a.typeOrder !== b.typeOrder) {
+      return a.typeOrder - b.typeOrder;
+    }
+    return a.startHour - b.startHour;
+  });
 
-  // Track which activities are in each lane (by their end times)
-  const lanes: number[][] = []; // lanes[laneIndex] = array of end times for activities in that lane
+  // Track which activities are in each lane (by their end times and type)
+  const lanes: { endTimes: number[]; typeOrder: number }[] = [];
 
   const result: NormalizedActivity[] = sorted.map(act => {
     // Find the first lane where this activity doesn't overlap
     let assignedLane = -1;
     
     for (let laneIdx = 0; laneIdx < lanes.length; laneIdx++) {
-      const laneEndTimes = lanes[laneIdx];
+      const lane = lanes[laneIdx];
       // Check if this activity overlaps with any activity in this lane
       let hasOverlap = false;
       
-      // We only need to check if our start is before any end in this lane
-      // Since activities are sorted by start, we can check against all ends
-      for (const endTime of laneEndTimes) {
+      for (const endTime of lane.endTimes) {
         if (act.startHour < endTime) {
           hasOverlap = true;
           break;
@@ -112,16 +158,24 @@ const assignLanes = (activities: Omit<NormalizedActivity, 'lane'>[]): { activiti
     // If no free lane found, create a new one
     if (assignedLane === -1) {
       assignedLane = lanes.length;
-      lanes.push([]);
+      lanes.push({ endTimes: [], typeOrder: act.typeOrder });
     }
 
     // Add this activity's end time to the lane
-    lanes[assignedLane].push(act.endHour);
+    lanes[assignedLane].endTimes.push(act.endHour);
 
     return { ...act, lane: assignedLane };
   });
 
   return { activities: result, maxLanes: lanes.length };
+};
+
+// Format hour for chart labels (6a, 7a, 12p, 1p, etc.)
+const formatHourLabel = (hour: number): string => {
+  if (hour === 0 || hour === 24) return '12a';
+  if (hour === 12) return '12p';
+  if (hour < 12) return `${hour}a`;
+  return `${hour - 12}p`;
 };
 
 const ActivityTab: React.FC<ActivityTabProps> = ({
@@ -180,6 +234,8 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
       const base = new Date(timeString);
       if (Number.isNaN(base.getTime())) return;
 
+      const typeOrder = getActivityTypeOrder(activity);
+
       // Check if this is a sleep/pump activity with duration that might span midnight
       if ('duration' in activity && 'startTime' in activity) {
         const start = activity.startTime ? new Date(activity.startTime) : base;
@@ -201,6 +257,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
               startHour: getHours(start),
               endHour: 24, // midnight
               color,
+              typeOrder,
             });
           }
 
@@ -213,6 +270,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
               startHour: 0, // midnight
               endHour: getHours(end),
               color,
+              typeOrder,
               isOvernightContinuation: true,
             });
           }
@@ -234,6 +292,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
               startHour,
               endHour,
               color,
+              typeOrder,
             });
           }
         }
@@ -252,6 +311,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
           startHour,
           endHour,
           color: getActivityColor(activity),
+          typeOrder,
         });
       }
     });
@@ -265,8 +325,6 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
         // Day must be within the selected date range
         const dayStart = new Date(day.date);
         dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(day.date);
-        dayEnd.setHours(23, 59, 59, 999);
         
         const rangeStart = new Date(dateRange.from!);
         rangeStart.setHours(0, 0, 0, 0);
@@ -278,7 +336,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
       .sort((a, b) => b.date.getTime() - a.date.getTime());
 
     return days.map(day => {
-      // Assign lanes based on overlapping time ranges
+      // Assign lanes based on type order and overlapping time ranges
       const { activities: activitiesWithLanes, maxLanes } = assignLanes(day.items);
 
       return {
@@ -324,7 +382,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
     return `${displayHour}:${mins.toString().padStart(2, '0')} ${period}`;
   }, []);
 
-  // Generate hour grid lines only (no 30-minute lines)
+  // Generate hour grid lines (every hour from 0-24)
   const hourLines = useMemo(() => {
     const lines: number[] = [];
     for (let h = 0; h <= 24; h++) {
@@ -370,13 +428,14 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
     <div 
       ref={containerRef}
       className={cn(activityChartStyles.container, "activity-chart-container")}
+      style={{ height: '100%' }}
     >
       <div 
         className={cn(activityChartStyles.scrollArea, "activity-chart-scroll")}
         style={{ 
           overflow: 'auto', 
-          maxHeight: 'calc(100vh - 300px)',
-          minHeight: 400,
+          height: 'calc(100vh - 240px)',
+          minHeight: 500,
         }}
       >
         <div className={cn(activityChartStyles.daysRow, "activity-chart-days-row")}>
@@ -402,27 +461,45 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
                   className={cn(activityChartStyles.dayChartWrapper, "activity-chart-day-wrapper")}
                   style={{ height: CHART_HEIGHT }}
                 >
-                  {/* Hour grid lines only (2px) */}
-                  <div className="absolute inset-0 flex flex-col pointer-events-none">
+                  {/* Hour grid lines with labels */}
+                  <div className="absolute inset-0 pointer-events-none">
                     {hourLines.map((hour) => {
                       // Position from top: 0 at hour 24, 100% at hour 0
                       const topPercent = ((24 - hour) / 24) * 100;
+                      // Only show labels for certain hours to avoid clutter
+                      const showLabel = hour % 3 === 0 || hour === 0 || hour === 24;
+                      
                       return (
-                        <div
-                          key={hour}
-                          className="absolute left-0 right-0 activity-chart-grid-hour"
-                          style={{
-                            top: `${topPercent}%`,
-                            height: 2,
-                            backgroundColor: '#d1d5db',
-                          }}
-                        />
+                        <div key={hour}>
+                          {/* Grid line */}
+                          <div
+                            className="absolute left-0 right-0 activity-chart-grid-hour"
+                            style={{
+                              top: `${topPercent}%`,
+                              height: 1,
+                              backgroundColor: '#d1d5db',
+                            }}
+                          />
+                          {/* Hour label */}
+                          {showLabel && (
+                            <span
+                              className="absolute text-[9px] text-gray-400 activity-chart-hour-label"
+                              style={{
+                                top: `${topPercent}%`,
+                                left: 2,
+                                transform: 'translateY(-50%)',
+                              }}
+                            >
+                              {formatHourLabel(hour)}
+                            </span>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
 
-                  {/* Activity bars - dynamically stacked based on overlap */}
-                  <div className="absolute inset-0 flex justify-center">
+                  {/* Activity bars - stacked by type order then overlap */}
+                  <div className="absolute inset-0 flex justify-center" style={{ paddingLeft: 20 }}>
                     <div 
                       className="relative h-full"
                       style={{ width: day.maxLanes * (BAR_WIDTH + BAR_GAP) }}

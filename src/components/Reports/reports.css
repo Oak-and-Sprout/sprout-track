@@ -470,3 +470,7 @@ html.dark .activity-chart-day-wrapper {
   background-color: #1f2937 !important; /* gray-800 */
   border-color: #4b5563 !important; /* gray-600 */
 }
+
+html.dark .activity-chart-hour-label {
+  color: #6b7280 !important; /* gray-500 */
+}
