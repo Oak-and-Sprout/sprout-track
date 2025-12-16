@@ -6,6 +6,7 @@ import { cn } from '@/src/lib/utils';
 import { Accordion } from '@/src/components/ui/accordion';
 import { styles } from './reports.styles';
 import { useBaby } from '@/app/context/baby';
+import { useTimezone } from '@/app/context/timezone';
 import {
   StatsTabProps,
   ActivityType,
@@ -54,7 +55,45 @@ const StatsTab: React.FC<StatsTabProps> = ({
   isLoading
 }) => {
   const { selectedBaby } = useBaby();
+  const { toLocalDate } = useTimezone();
   const [temperatureMeasurements, setTemperatureMeasurements] = useState<MeasurementActivity[]>([]);
+
+  // Helper function to get the night period date key for a sleep entry
+  // Night period for Day X = 12:00 PM Day X-1 to 11:59 AM Day X
+  // This means sleep starting at 8 PM on Jan 1 belongs to the night of Jan 1 (displayed as Jan 2's night sleep)
+  // And sleep starting at 2 AM on Jan 2 also belongs to the night of Jan 1
+  const getNightPeriodDateKey = (startTimeIso: string): string => {
+    const localDate = toLocalDate(startTimeIso);
+    if (!localDate) return '';
+
+    const hour = localDate.getHours();
+    const nightDate = new Date(localDate);
+
+    if (hour < 12) {
+      // Before noon: belongs to previous day's night period
+      // e.g., sleep at 2 AM on Jan 2 belongs to the night of Jan 1
+      nightDate.setDate(nightDate.getDate() - 1);
+    }
+    // At/after noon: belongs to that day's night period
+    // e.g., sleep at 8 PM on Jan 1 belongs to the night of Jan 1
+
+    // Return date key in YYYY-MM-DD format
+    const year = nightDate.getFullYear();
+    const month = String(nightDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nightDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper function to get the calendar day key for a time (used for naps)
+  const getCalendarDayKey = (timeIso: string): string => {
+    const localDate = toLocalDate(timeIso);
+    if (!localDate) return '';
+
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
     if (minutes === 0) return '0m';
@@ -165,6 +204,28 @@ const StatsTab: React.FC<StatsTabProps> = ({
     let pumpSessions = 0;
     let pumpUnit: string | null = null;
 
+    // Generate list of valid night period keys for the selected date range
+    // For date range 7/13-7/16, valid night keys are: 7/12, 7/13, 7/14, 7/15
+    // (7/12's night = 7/12 12PM to 7/13 11:59AM, which is displayed as 7/13's night sleep)
+    const validNightKeys = new Set<string>();
+    const validNapDayKeys = new Set<string>();
+    const tempDate = new Date(startDate);
+    while (tempDate <= endDate) {
+      // For night sleep: the night KEY is the day before what's displayed
+      // E.g., if user selects 7/13, they want night sleep from 7/12 12PM to 7/13 11:59AM
+      // This would be stored with nightKey = "7/12" but displayed as "7/13's night"
+      const prevDate = new Date(tempDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const nightKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
+      validNightKeys.add(nightKey);
+
+      // For naps: use the actual calendar day
+      const napKey = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, '0')}-${String(tempDate.getDate()).padStart(2, '0')}`;
+      validNapDayKeys.add(napKey);
+
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+
     activities.forEach((activity) => {
       // Sleep activities
       if ('duration' in activity && 'startTime' in activity && 'type' in activity) {
@@ -175,51 +236,44 @@ const StatsTab: React.FC<StatsTabProps> = ({
           const endTime = sleepActivity.endTime ? new Date(sleepActivity.endTime) : null;
 
           if (endTime) {
-            // Calculate overlap with date range
-            const overlapStart = Math.max(startTime.getTime(), startDate.getTime());
-            const overlapEnd = Math.min(endTime.getTime(), endDate.getTime());
+            // Calculate full sleep duration
+            const fullSleepMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+            const location = sleepActivity.location || 'Unknown';
 
-            if (overlapEnd > overlapStart) {
-              const sleepMinutes = Math.floor((overlapEnd - overlapStart) / (1000 * 60));
-              totalSleepMinutes += sleepMinutes;
+            // Use activity type to distinguish naps from night sleep
+            const isNightSleepType = activityType === 'NIGHT_SLEEP';
+            const isNapType = activityType === 'NAP';
 
-              const location = sleepActivity.location || 'Unknown';
+            if (isNightSleepType) {
+              // Get the night period key using timezone-aware helper
+              const nightKey = getNightPeriodDateKey(sleepActivity.startTime);
 
-              // Use activity type to distinguish naps from night sleep
-              const isNightSleepType = activityType === 'NIGHT_SLEEP';
-              const isNapType = activityType === 'NAP';
+              // Only include if this night period is within our selected date range
+              if (nightKey && validNightKeys.has(nightKey)) {
+                totalSleepMinutes += fullSleepMinutes;
 
-              if (isNightSleepType) {
                 // Track night location
                 if (!nightLocationMap[location]) {
                   nightLocationMap[location] = { count: 0, totalMinutes: 0 };
                 }
                 nightLocationMap[location].count++;
-                nightLocationMap[location].totalMinutes += sleepMinutes;
-
-                // Group night sleep by the "night" period: 12:00 PM (noon) day 1 to 11:59 AM day 2
-                // This groups all evening/night/morning sleep together
-                const startHour = startTime.getHours();
-                let nightDate = new Date(startTime);
-                
-                if (startHour < 12) {
-                  // Sleep starting before noon (12:00 AM - 11:59 AM) belongs to previous day's night
-                  // e.g., sleep at 2 AM on Jan 2 belongs to the night of Jan 1
-                  nightDate.setDate(nightDate.getDate() - 1);
-                }
-                // Sleep starting at or after noon (12:00 PM - 11:59 PM) belongs to that day's night
-                // e.g., sleep at 8 PM on Jan 1 belongs to the night of Jan 1
-                const nightKey = nightDate.toISOString().split('T')[0];
+                nightLocationMap[location].totalMinutes += fullSleepMinutes;
 
                 // Group night sleep by the "night" period (12PM day 1 to 11:59AM day 2)
                 if (!nightSleepByNight[nightKey]) {
                   nightSleepByNight[nightKey] = { totalMinutes: 0, sessions: 0 };
                 }
-                nightSleepByNight[nightKey].totalMinutes += sleepMinutes;
+                nightSleepByNight[nightKey].totalMinutes += fullSleepMinutes;
                 nightSleepByNight[nightKey].sessions++;
-              } else if (isNapType) {
-                // This is a nap - track separately for nap statistics
-                totalNapMinutes += sleepMinutes;
+              }
+            } else if (isNapType) {
+              // Get the calendar day key using timezone-aware helper
+              const napDayKey = getCalendarDayKey(sleepActivity.startTime);
+
+              // Only include if this nap day is within our selected date range
+              if (napDayKey && validNapDayKeys.has(napDayKey)) {
+                totalSleepMinutes += fullSleepMinutes;
+                totalNapMinutes += fullSleepMinutes;
                 napCount++;
 
                 // Track nap location
@@ -227,7 +281,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
                   napLocationMap[location] = { count: 0, totalMinutes: 0 };
                 }
                 napLocationMap[location].count++;
-                napLocationMap[location].totalMinutes += sleepMinutes;
+                napLocationMap[location].totalMinutes += fullSleepMinutes;
               }
             }
           }
@@ -515,7 +569,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
         soapShampooBathsPerWeek,
       },
     };
-  }, [activities, dateRange]);
+  }, [activities, dateRange, getNightPeriodDateKey, getCalendarDayKey]);
 
   // Sleep chart data for modals (per-day / per-night series)
   const sleepChartSeries = useMemo(() => {
@@ -533,6 +587,24 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const endDate = new Date(dateRange.to);
     endDate.setHours(23, 59, 59, 999);
 
+    // Generate list of valid night period keys for the selected date range
+    const validNightKeys = new Set<string>();
+    const validNapDayKeys = new Set<string>();
+    const tempDate = new Date(startDate);
+    while (tempDate <= endDate) {
+      // For night sleep: the night KEY is the day before what's displayed
+      const prevDate = new Date(tempDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const nightKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
+      validNightKeys.add(nightKey);
+
+      // For naps: use the actual calendar day
+      const napKey = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, '0')}-${String(tempDate.getDate()).padStart(2, '0')}`;
+      validNapDayKeys.add(napKey);
+
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+
     const napDataByDay: Record<string, { totalMinutes: number; count: number }> = {};
     const napMinutesByDay: Record<string, number> = {};
     const nightSleepByNight: Record<string, { totalMinutes: number; sessions: number }> = {};
@@ -547,44 +619,37 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
           if (!endTime) return;
 
-          const overlapStart = Math.max(startTime.getTime(), startDate.getTime());
-          const overlapEnd = Math.min(endTime.getTime(), endDate.getTime());
-          if (overlapEnd <= overlapStart) return;
-
-          const sleepMinutes = Math.floor((overlapEnd - overlapStart) / (1000 * 60));
-          const dayKey = startTime.toISOString().split('T')[0];
+          // Calculate full sleep duration
+          const sleepMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
 
           if (activityType === 'NAP') {
-            // Track nap data for daily average calculation
-            if (!napDataByDay[dayKey]) {
-              napDataByDay[dayKey] = { totalMinutes: 0, count: 0 };
-            }
-            napDataByDay[dayKey].totalMinutes += sleepMinutes;
-            napDataByDay[dayKey].count += 1;
-            
-            // Also track total for daily total series
-            napMinutesByDay[dayKey] = (napMinutesByDay[dayKey] || 0) + sleepMinutes;
-          } else if (activityType === 'NIGHT_SLEEP') {
-            // Group night sleep by the "night" period: 12:00 PM (noon) day 1 to 11:59 AM day 2
-            // Sleep starting at or after 12:00 PM (noon) belongs to that day's night
-            // Sleep starting before 12:00 PM (noon) belongs to previous day's night
-            const startHour = startTime.getHours();
-            let nightDate = new Date(startTime);
-            
-            if (startHour < 12) {
-              // Sleep starting before noon (12:00 AM - 11:59 AM) belongs to previous day's night
-              // e.g., sleep at 2 AM on Jan 2 belongs to the night of Jan 1
-              nightDate.setDate(nightDate.getDate() - 1);
-            }
-            // Sleep starting at or after noon (12:00 PM - 11:59 PM) belongs to that day's night
-            // e.g., sleep at 8 PM on Jan 1 belongs to the night of Jan 1
-            const nightKey = nightDate.toISOString().split('T')[0];
+            // Get the calendar day key using timezone-aware helper
+            const dayKey = getCalendarDayKey(sleepActivity.startTime);
 
-            if (!nightSleepByNight[nightKey]) {
-              nightSleepByNight[nightKey] = { totalMinutes: 0, sessions: 0 };
+            // Only include if this nap day is within our selected date range
+            if (dayKey && validNapDayKeys.has(dayKey)) {
+              // Track nap data for daily average calculation
+              if (!napDataByDay[dayKey]) {
+                napDataByDay[dayKey] = { totalMinutes: 0, count: 0 };
+              }
+              napDataByDay[dayKey].totalMinutes += sleepMinutes;
+              napDataByDay[dayKey].count += 1;
+
+              // Also track total for daily total series
+              napMinutesByDay[dayKey] = (napMinutesByDay[dayKey] || 0) + sleepMinutes;
             }
-            nightSleepByNight[nightKey].totalMinutes += sleepMinutes;
-            nightSleepByNight[nightKey].sessions++;
+          } else if (activityType === 'NIGHT_SLEEP') {
+            // Get the night period key using timezone-aware helper
+            const nightKey = getNightPeriodDateKey(sleepActivity.startTime);
+
+            // Only include if this night period is within our selected date range
+            if (nightKey && validNightKeys.has(nightKey)) {
+              if (!nightSleepByNight[nightKey]) {
+                nightSleepByNight[nightKey] = { totalMinutes: 0, sessions: 0 };
+              }
+              nightSleepByNight[nightKey].totalMinutes += sleepMinutes;
+              nightSleepByNight[nightKey].sessions++;
+            }
           }
         }
       }
@@ -594,7 +659,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const avgNapDurationSeries = Object.entries(napDataByDay)
       .map(([date, data]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: data.count > 0 ? Math.round(data.totalMinutes / data.count) : 0,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -602,27 +667,28 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const dailyNapTotalSeries = Object.entries(napMinutesByDay)
       .map(([date, total]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: total,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
 
-    // Calculate average night sleep duration per night period
+    // Calculate total night sleep duration per night period
     // Each night period (12PM day 1 to 11:59AM day 2) may have multiple sleep sessions
-    // We calculate the average duration per session for that night
+    // The label should be for the NEXT day (the day the user selected)
     const nightSleepSeries: { date: string; label: string; value: number }[] = [];
     const nightWakingsSeries: { date: string; label: string; value: number }[] = [];
 
     Object.entries(nightSleepByNight).forEach(([nightKey, data]) => {
-      const label = new Date(nightKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      
-      // Calculate average duration per sleep session for this night period
-      const avgDuration = data.sessions > 0 ? Math.round(data.totalMinutes / data.sessions) : 0;
-      
+      // The nightKey is the evening date (e.g., 7/12), but we display it as the morning date (7/13)
+      const displayDate = new Date(nightKey + 'T12:00:00');
+      displayDate.setDate(displayDate.getDate() + 1);
+      const label = displayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      // For night sleep, show total duration (not average per session)
       nightSleepSeries.push({
         date: nightKey,
         label,
-        value: avgDuration,
+        value: data.totalMinutes,
       });
       nightWakingsSeries.push({
         date: nightKey,
@@ -640,7 +706,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
       nightSleep: nightSleepSeries,
       nightWakings: nightWakingsSeries,
     };
-  }, [activities, dateRange]);
+  }, [activities, dateRange, getNightPeriodDateKey, getCalendarDayKey]);
 
   // Baby current age in months for chart ranges (birth to current age + 1 month, clamped)
   const babyCurrentAgeMonths = useMemo((): number => {

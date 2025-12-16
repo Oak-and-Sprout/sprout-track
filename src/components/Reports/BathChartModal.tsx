@@ -341,11 +341,11 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name: string) => {
+                      formatter={(value: any, name?: string) => {
                         if (name === 'soap') return [`${value}`, 'Soap Only'];
                         if (name === 'shampoo') return [`${value}`, 'Shampoo Only'];
                         if (name === 'both') return [`${value}`, 'Both'];
-                        return [`${value}`, name];
+                        return [`${value}`, name || ''];
                       }}
                       labelFormatter={(label: any) => `Week: ${label}`}
                     />

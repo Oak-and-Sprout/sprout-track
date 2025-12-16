@@ -184,7 +184,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip
-                  formatter={(value: any, name: string) => [`${value}`, name]}
+                  formatter={(value: any, name?: string) => [`${value}`, name || '']}
                   labelFormatter={(label: any) => `Date: ${label}`}
                 />
                 <Legend />

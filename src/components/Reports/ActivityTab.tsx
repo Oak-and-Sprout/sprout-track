@@ -6,7 +6,25 @@ import { Settings } from '@prisma/client';
 import { cn } from '@/src/lib/utils';
 import { styles, activityChartStyles } from './reports.styles';
 import { ActivityTabProps, ActivityType } from './reports.types';
-import { getActivityDetails, getActivityTime } from '@/src/components/Timeline/utils';
+import { getActivityDetails } from '@/src/components/Timeline/utils';
+import { ActivityType as TimelineActivityType } from '@/src/components/Timeline/types';
+
+// Local helper to get activity time that works with reports ActivityType
+const getActivityTimeLocal = (activity: ActivityType): string => {
+  if ('time' in activity && activity.time) {
+    return activity.time;
+  }
+  if ('startTime' in activity && activity.startTime) {
+    if ('duration' in activity && 'endTime' in activity && activity.endTime) {
+      return String(activity.endTime);
+    }
+    return String(activity.startTime);
+  }
+  if ('date' in activity && activity.date) {
+    return String(activity.date);
+  }
+  return new Date().toISOString();
+};
 
 // Activity type order for consistent lane stacking:
 // Sleep, Feeds, Pumps, Diapers, Bath, Medicine, Measurement, Milestone, Notes
@@ -230,7 +248,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
     const getHours = (d: Date) => d.getHours() + d.getMinutes() / 60;
 
     activities.forEach((activity) => {
-      const timeString = getActivityTime(activity);
+      const timeString = getActivityTimeLocal(activity);
       const base = new Date(timeString);
       if (Number.isNaN(base.getTime())) return;
 
@@ -562,7 +580,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
           }}
         >
           {(() => {
-            const details = getActivityDetails(hoveredActivity.activity, settings);
+            const details = getActivityDetails(hoveredActivity.activity as unknown as TimelineActivityType, settings);
             return (
               <>
                 <div className={cn(activityChartStyles.tooltipTitle, "activity-chart-tooltip-title")}>

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { SleepType, SleepQuality, FeedType, BreastSide, DiaperType, MeasurementType, MilestoneCategory } from '@prisma/client';
 
 /**
  * Types for the Reports component
@@ -8,68 +9,89 @@ import { ReactNode } from 'react';
 export interface SleepActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   startTime: string;
   endTime: string | null;
   duration: number | null;
-  type: 'NAP' | 'NIGHT_SLEEP';
+  type: SleepType;
   location: string | null;
-  quality: string | null;
+  quality: SleepQuality | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface FeedActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   time: string;
-  type: 'BOTTLE' | 'BREAST' | 'SOLIDS';
+  type: FeedType;
   amount: number | null;
   unitAbbr: string | null;
-  side: 'LEFT' | 'RIGHT' | null;
+  side: BreastSide | null;
   food: string | null;
   feedDuration: number | null;
   notes: string | null;
   bottleType: string | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface DiaperActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   time: string;
-  type: 'WET' | 'DIRTY' | 'BOTH';
+  type: DiaperType;
   condition: string | null;
   color: string | null;
   blowout: boolean;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface NoteActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   time: string;
   content: string;
   category: string | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface BathActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   time: string;
   soapUsed: boolean;
   shampooUsed: boolean;
   notes: string | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface PumpActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   startTime: string;
   endTime: string | null;
   duration: number | null;
@@ -80,36 +102,48 @@ export interface PumpActivity {
   notes: string | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface MilestoneActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   date: string;
   title: string;
   description: string | null;
-  category: string;
+  category: MilestoneCategory;
   ageInDays: number | null;
   photo: string | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface MeasurementActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   date: string;
-  type: 'HEIGHT' | 'WEIGHT' | 'HEAD_CIRCUMFERENCE' | 'TEMPERATURE';
+  type: MeasurementType;
   value: number;
   unit: string;
   notes: string | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface MedicineLogActivity {
   id: string;
   babyId: string;
+  familyId: string | null;
   time: string;
   medicineId: string;
   doseAmount: number;
@@ -117,6 +151,9 @@ export interface MedicineLogActivity {
   notes: string | null;
   caretakerId: string | null;
   caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
   medicine?: {
     id: string;
     name: string;

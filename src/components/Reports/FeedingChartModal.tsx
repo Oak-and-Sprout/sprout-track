@@ -315,11 +315,11 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name: string) => {
+                      formatter={(value: any, name?: string) => {
                         if (name === 'count') {
                           return [`${value}`, 'Feeds'];
                         }
-                        return [`${value.toFixed(1)}`, name];
+                        return [`${value.toFixed(1)}`, name || ''];
                       }}
                       labelFormatter={(label: any) => `Date: ${label}`}
                     />
@@ -388,7 +388,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name: string) => {
+                      formatter={(value: any, name?: string) => {
                         if (name === 'count' || name === 'Feed Count') {
                           const countValue = typeof value === 'number' ? Math.round(value) : parseInt(value, 10);
                           return [countValue.toString(), 'Feeds'];
@@ -399,7 +399,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                         if (name === 'rightAvg' || name === 'Right Avg') {
                           return [formatMinutes(value as number), 'Right Avg'];
                         }
-                        return [formatMinutes(value as number), name];
+                        return [formatMinutes(value as number), name || ''];
                       }}
                       labelFormatter={(label: any) => `Date: ${label}`}
                     />
@@ -472,11 +472,11 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name: string) => {
+                      formatter={(value: any, name?: string) => {
                         if (name === 'count') {
                           return [`${value}`, 'Feeds'];
                         }
-                        return [`${value.toFixed(1)}`, name];
+                        return [`${value.toFixed(1)}`, name || ''];
                       }}
                       labelFormatter={(label: any) => `Date: ${label}`}
                     />

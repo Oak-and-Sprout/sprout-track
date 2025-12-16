@@ -340,7 +340,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name: string) => {
+                      formatter={(value: any, name?: string) => {
                         if (name === 'leftTotal') {
                           return [`${value.toFixed(1)}`, 'Left Total'];
                         }
@@ -353,7 +353,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                         if (name === 'rightAvg') {
                           return [`${value.toFixed(1)}`, 'Right Avg'];
                         }
-                        return [`${value.toFixed(1)}`, name];
+                        return [`${value.toFixed(1)}`, name || ''];
                       }}
                       labelFormatter={(label: any) => `Date: ${label}`}
                     />
