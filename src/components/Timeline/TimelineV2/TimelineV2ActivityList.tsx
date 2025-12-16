@@ -108,7 +108,7 @@ const TimelineV2ActivityList = ({
     <>
       {/* Scrollable Content */}
       <div 
-        className="flex-1 overflow-y-auto relative bg-white timeline-activity-scroll-container" 
+        className="h-full overflow-y-auto relative bg-white timeline-activity-scroll-container" 
         ref={contentRef}
       >
         {/* Timeline View */}

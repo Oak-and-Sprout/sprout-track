@@ -359,6 +359,13 @@ export const SideNav: React.FC<SideNavProps> = ({
             onClick={onNavigate}
             className="side-nav-item"
           />
+          <SideNavItem
+            path="/reports"
+            label="Reports"
+            isActive={currentPath === '/reports'}
+            onClick={onNavigate}
+            className="side-nav-item"
+          />
         </nav>
 
         {/* Version display at bottom of nav items */}

@@ -5,13 +5,12 @@ import { Baby } from '@prisma/client';
 import FormPage, { FormPageFooter } from '@/src/components/ui/form-page';
 import { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
 import { Button } from '@/src/components/ui/button';
-import { Loader2, Bell, Users, BarChart3 } from 'lucide-react';
+import { Loader2, Bell, Users } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { styles } from './baby-quick-info.styles';
-import { Tab, BabyQuickInfoProps } from './baby-quick-info.types';
+import { BabyQuickInfoProps } from './baby-quick-info.types';
 import NotificationsTab from './NotificationsTab';
 import ContactsTab from './ContactsTab';
-import StatsTab from './StatsTab';
 import './baby-quick-info.css';
 
 /**
@@ -183,45 +182,6 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
             <ContactsTab
               contacts={contacts}
               selectedBaby={selectedBaby}
-            />
-          )}
-        </>
-      )
-    },
-    {
-      id: 'stats',
-      label: 'Quick Stats',
-      icon: BarChart3,
-      content: (
-        <>
-          {/* Loading state */}
-          {isLoading && (
-            <div className={cn(styles.loadingContainer, "baby-quick-info-loading-container")}>
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <p className={cn("mt-2 text-gray-600", "baby-quick-info-loading-text")}>Loading...</p>
-            </div>
-          )}
-          
-          {/* Error state */}
-          {error && (
-            <div className={cn(styles.errorContainer, "baby-quick-info-error-container")}>
-              <p className={cn("text-red-500", "baby-quick-info-error-text")}>{error}</p>
-              <Button 
-                variant="outline" 
-                onClick={fetchData} 
-                className="mt-2"
-              >
-                Retry
-              </Button>
-            </div>
-          )}
-          
-          {/* Tab content */}
-          {!isLoading && !error && selectedBaby && (
-            <StatsTab
-              activities={activities}
-              selectedBaby={selectedBaby}
-              calculateAge={calculateAge}
             />
           )}
         </>

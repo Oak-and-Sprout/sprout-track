@@ -12,7 +12,9 @@ import {
   LampWallDown,
   Trophy,
   Ruler,
-  Icon
+  Icon,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -24,16 +26,20 @@ import {
 import { Calendar as CalendarComponent } from '@/src/components/ui/calendar';
 import { FilterType } from '../types';
 import { ActivityType } from '../types';
+import TimelineV2Heatmap from './TimelineV2Heatmap';
 import './TimelineV2DailyStats.css';
 
 interface TimelineV2DailyStatsProps {
   activities: ActivityType[];
+  heatmapActivities: ActivityType[];
   date: Date;
   isLoading?: boolean;
   activeFilter: FilterType;
   onDateChange: (days: number) => void;
   onDateSelection: (date: Date) => void;
   onFilterChange: (filter: FilterType) => void;
+   isHeatmapVisible: boolean;
+   onHeatmapToggle: () => void;
 }
 
 interface StatTile {
@@ -49,12 +55,15 @@ interface StatTile {
 
 const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({ 
   activities, 
+  heatmapActivities,
   date, 
   isLoading = false,
   activeFilter,
   onDateChange,
   onDateSelection,
-  onFilterChange
+  onFilterChange,
+  isHeatmapVisible,
+  onHeatmapToggle
 }) => {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -564,19 +573,61 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           </div>
         </div>
 
-        {/* Daily Summary Title with Collapse Toggle */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex items-center gap-3 text-sm font-medium text-gray-600 mb-1 hover:text-gray-800 transition-colors"
-          aria-label={isCollapsed ? 'Expand daily summary' : 'Collapse daily summary'}
-        >
-          <span>Daily Summary</span>
-          {isCollapsed ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronUp className="h-4 w-4" />
-          )}
-        </button>
+        {/* Daily Summary Title with Collapse Toggle + Heatmap Toggle */}
+        <div className="flex items-center justify-between mb-1">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex items-center gap-3 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+            aria-label={isCollapsed ? 'Expand daily summary' : 'Collapse daily summary'}
+          >
+            <span>Daily Summary</span>
+            {isCollapsed ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
+          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Mobile toggle */}
+            <button
+              type="button"
+              className="text-xs inline-flex md:hidden items-center gap-1 text-teal-600 hover:text-teal-700"
+              onClick={onHeatmapToggle}
+            >
+              {isHeatmapVisible ? (
+                <>
+                  <EyeOff className="h-3 w-3" />
+                  <span>Hide heatmap</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3 w-3" />
+                  <span>Show heatmap</span>
+                </>
+              )}
+            </button>
+
+            {/* Desktop toggle */}
+            <button
+              type="button"
+              className="ml-2 text-xs hidden md:inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
+              onClick={onHeatmapToggle}
+            >
+              {isHeatmapVisible ? (
+                <>
+                  <EyeOff className="h-3 w-3" />
+                  <span>Hide heatmap</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3 w-3" />
+                  <span>Show heatmap</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* Stats Grid */}
         {!isCollapsed && (
@@ -626,6 +677,45 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             )}
           </>
         )}
+      </div>
+
+      {/* Mobile heatmap slide-out panel (right side, similar to FormPage) */}
+      <div className="fixed inset-0 z-40 md:hidden pointer-events-none">
+        {/* Overlay */}
+        <div
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+            isHeatmapVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={onHeatmapToggle}
+        />
+
+        {/* Slide-out panel */}
+        <div
+          className={`
+            absolute inset-y-0 right-0 w-1/2 max-w-xs bg-white shadow-xl
+            transform transition-transform duration-300
+            timeline-v2-heatmap-panel
+            ${isHeatmapVisible ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}
+          `}
+        >
+          <div className="flex justify-end px-3 pt-2 mb-2">
+            <button
+              type="button"
+              className="text-xs inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
+              onClick={onHeatmapToggle}
+            >
+              <EyeOff className="h-3 w-3" />
+              <span>Hide heatmap</span>
+            </button>
+          </div>
+          <div className="h-full px-2 py-2">
+            <TimelineV2Heatmap
+              activities={heatmapActivities}
+              selectedDate={date}
+              isVisible={isHeatmapVisible}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,488 @@
+/* Dark mode overrides for Reports component */
+
+/* Main container */
+html.dark .reports-container {
+  background-color: #111827 !important; /* gray-900 */
+}
+
+/* Header */
+html.dark .reports-header {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-header-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Date range picker */
+html.dark .reports-date-range-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-date-range-button {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-date-range-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-date-range-icon {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Tab navigation */
+html.dark .reports-tab-container {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-tab-button {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reports-tab-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .reports-tab-button-active {
+  background-color: rgba(20, 184, 166, 0.1) !important; /* teal-500/10 */
+  color: #5eead4 !important; /* teal-300 */
+  border-color: #5eead4 !important; /* teal-300 */
+}
+
+/* Loading state */
+html.dark .reports-loading-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Error state */
+html.dark .reports-error-text {
+  color: #ef4444 !important; /* red-500 */
+}
+
+/* Empty state */
+html.dark .reports-empty-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Stat cards */
+html.dark .reports-stat-card {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .reports-stat-card-value {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .reports-stat-card-label {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reports-stat-card-sublabel {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Accordion sections */
+html.dark .reports-accordion-trigger {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-accordion-trigger:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-accordion-trigger-icon {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-section-title {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Location list */
+html.dark .reports-location-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-location-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-location-count {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Medicine list */
+html.dark .reports-medicine-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-medicine-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-medicine-details {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Placeholder content */
+html.dark .reports-placeholder-icon {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .reports-placeholder-title {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reports-placeholder-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* No baby selected state */
+html.dark .reports-no-baby-icon {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .reports-no-baby-text {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Icon colors for stats */
+html.dark .reports-icon-sleep {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-icon-feed {
+  color: #7dd3fc !important; /* sky-300 */
+}
+
+html.dark .reports-icon-diaper-wet {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .reports-icon-diaper-poop {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .reports-icon-bath {
+  color: #fb923c !important; /* orange-400 */
+}
+
+html.dark .reports-icon-pump {
+  color: #c084fc !important; /* purple-400 */
+}
+
+html.dark .reports-icon-note {
+  color: #fef08a !important; /* yellow-200 */
+}
+
+html.dark .reports-icon-medicine {
+  color: #4ade80 !important; /* green-400 */
+}
+
+html.dark .reports-icon-milestone {
+  color: #60a5fa !important; /* blue-400 */
+}
+
+html.dark .reports-icon-measurement {
+  color: #f87171 !important; /* red-400 */
+}
+
+/* Milestones tab */
+html.dark .reports-age-header {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-age-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-milestone-count {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-milestone-card {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-milestone-icon-bg {
+  background-color: rgba(251, 191, 36, 0.2) !important; /* amber with low opacity */
+}
+
+html.dark .reports-milestone-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-milestone-description {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-milestone-date {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+html.dark .reports-milestone-category {
+  background-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Growth Chart styles */
+html.dark .growth-chart-container {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-button-group {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-button {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .growth-chart-button-active {
+  background-color: rgba(20, 184, 166, 0.15) !important; /* teal-500/15 */
+  border-color: #14b8a6 !important; /* teal-500 */
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .growth-chart-button-active:hover {
+  background-color: rgba(20, 184, 166, 0.25) !important; /* teal-500/25 */
+}
+
+html.dark .growth-chart-zoom-controls {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-zoom-button {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-zoom-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .growth-chart-zoom-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-wrapper {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Chart elements */
+html.dark .growth-chart-grid line {
+  stroke: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-axis text {
+  fill: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-axis line,
+html.dark .growth-chart-axis path {
+  stroke: #4b5563 !important; /* gray-600 */
+}
+
+/* Recharts specific dark mode */
+html.dark .growth-chart-wrapper .recharts-cartesian-grid-horizontal line,
+html.dark .growth-chart-wrapper .recharts-cartesian-grid-vertical line {
+  stroke: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-wrapper .recharts-cartesian-axis-tick-value {
+  fill: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-wrapper .recharts-cartesian-axis-line {
+  stroke: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .growth-chart-wrapper .recharts-label {
+  fill: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-wrapper .recharts-legend-item-text {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-wrapper .recharts-default-legend {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Tooltip */
+html.dark .growth-chart-tooltip {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .growth-chart-tooltip-label {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .growth-chart-tooltip-measurement {
+  color: #fb923c !important; /* orange-400 */
+}
+
+html.dark .growth-chart-tooltip-percentiles {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Loading state */
+html.dark .growth-chart-loading-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Error state */
+html.dark .growth-chart-error-text {
+  color: #ef4444 !important; /* red-500 */
+}
+
+/* Empty state */
+html.dark .growth-chart-empty-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Legend info */
+html.dark .growth-chart-legend-info {
+  background-color: transparent !important;
+}
+
+html.dark .growth-chart-legend-text {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-legend-subtext {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* No data message */
+html.dark .growth-chart-no-data {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Tooltip percentile */
+html.dark .growth-chart-tooltip-percentile {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+/* Measurements list */
+html.dark .growth-chart-measurements-list {
+  background-color: #111827 !important; /* gray-900 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-measurements-title {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .growth-chart-measurement-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .growth-chart-measurement-value {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .growth-chart-measurement-percentile {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .growth-chart-measurement-age {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .growth-chart-measurement-date {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* Activity chart - dark mode */
+html.dark .activity-chart-container {
+  background-color: transparent !important;
+}
+
+html.dark .activity-chart-scroll {
+  scrollbar-color: #4b5563 transparent;
+}
+
+html.dark .activity-chart-day-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .activity-chart-day-wrapper {
+  background-color: #020617 !important; /* slate-950 */
+}
+
+html.dark .activity-chart-tooltip {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .activity-chart-tooltip-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .activity-chart-tooltip-body {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .activity-chart-grid-hour {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .activity-chart-grid-half {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .activity-chart-event {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .activity-chart-day-header {
+  background-color: #111827 !important; /* gray-900 */
+}
+
+html.dark .activity-chart-day-wrapper {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .activity-chart-hour-label {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* Heatmap dark mode */
+html.dark .heatmap-legend {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .heatmap-legend span {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .heatmap-slot {
+}

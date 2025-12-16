@@ -127,31 +127,39 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     // Convert date strings to UTC for database queries
     const startDateUTC = effectiveStartDate ? toUTC(effectiveStartDate) : undefined;
     const endDateUTC = effectiveEndDate ? toUTC(effectiveEndDate) : undefined;
-    
+
+    // For sleep queries, extend the start date back by 12 hours to capture
+    // evening sleep entries that belong to the first day's "night period"
+    // Night period for Day X = 12:00 PM Day X-1 to 11:59 AM Day X
+    let sleepStartDateUTC = startDateUTC;
+    if (startDateUTC) {
+      sleepStartDateUTC = new Date(startDateUTC.getTime() - (12 * 60 * 60 * 1000));
+    }
+
     // Get recent activities from each type with caretaker information
     const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, milestoneLogs, measurementLogs, medicineLogs] = await Promise.all([
       prisma.sleepLog.findMany({
         where: {
           babyId,
-          ...(startDateUTC && endDateUTC ? {
+          ...(sleepStartDateUTC && endDateUTC ? {
             OR: [
-              // Sleep logs that start within the date range
+              // Sleep logs that start within the extended date range
               {
                 startTime: {
-                  gte: startDateUTC,
+                  gte: sleepStartDateUTC,
                   lte: endDateUTC
                 }
               },
-              // Sleep logs that end within the date range
+              // Sleep logs that end within the extended date range
               {
                 endTime: {
-                  gte: startDateUTC,
+                  gte: sleepStartDateUTC,
                   lte: endDateUTC
                 }
               },
-              // Sleep logs that span the date range
+              // Sleep logs that span the extended date range
               {
-                startTime: { lte: startDateUTC },
+                startTime: { lte: sleepStartDateUTC },
                 endTime: { gte: endDateUTC }
               }
             ]

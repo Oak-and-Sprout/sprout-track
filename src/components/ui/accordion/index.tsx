@@ -125,16 +125,17 @@ const AccordionItem = React.forwardRef<HTMLDivElement, AccordionItemProps>(
   ({ className, value, children, ...props }, ref) => {
     const { theme } = useTheme();
     const context = React.useContext(AccordionContext);
-    
+
     // Check if this item is expanded
     const isExpanded = context.type === "multiple"
       ? context.value && context.value.split(',').includes(value)
       : context.value === value;
-    
+
     return (
       <div
         ref={ref}
         data-state={isExpanded ? "open" : "closed"}
+        data-value={value}
         className={cn(
           accordionStyles.item,
           className,
@@ -221,29 +222,36 @@ AccordionTrigger.displayName = "AccordionTrigger";
 
 /**
  * AccordionContent component
- * 
+ *
  * The expandable content section of an AccordionItem.
  */
 const AccordionContent = React.forwardRef<HTMLDivElement, AccordionContentProps>(
   ({ className, children, ...props }, ref) => {
     const { theme } = useTheme();
-    
-    // Find the parent AccordionItem to determine if expanded
-    const [isExpanded, setIsExpanded] = React.useState(false);
-    const contentRef = React.useCallback((node: HTMLDivElement | null) => {
-      if (node) {
-        // Find the parent AccordionItem
-        let parent = node.parentElement;
-        while (parent && !parent.hasAttribute('data-state')) {
+    const context = React.useContext(AccordionContext);
+    const [itemValue, setItemValue] = React.useState<string>('');
+    const contentNodeRef = React.useRef<HTMLDivElement | null>(null);
+
+    // Find the parent AccordionItem's value on mount
+    React.useEffect(() => {
+      if (contentNodeRef.current) {
+        let parent = contentNodeRef.current.parentElement;
+        while (parent && !parent.hasAttribute('data-value')) {
           parent = parent.parentElement;
         }
-        
         if (parent) {
-          setIsExpanded(parent.getAttribute('data-state') === 'open');
+          setItemValue(parent.getAttribute('data-value') || '');
         }
       }
-      
-      // Forward the ref
+    }, []);
+
+    // Determine if expanded based on context
+    const isExpanded = context.type === "multiple"
+      ? context.value && context.value.split(',').includes(itemValue)
+      : context.value === itemValue;
+
+    const setRef = React.useCallback((node: HTMLDivElement | null) => {
+      contentNodeRef.current = node;
       if (ref) {
         if (typeof ref === 'function') {
           ref(node);
@@ -252,10 +260,10 @@ const AccordionContent = React.forwardRef<HTMLDivElement, AccordionContentProps>
         }
       }
     }, [ref]);
-    
+
     return (
       <div
-        ref={contentRef}
+        ref={setRef}
         className={cn(
           accordionStyles.content,
           !isExpanded && accordionStyles.contentClosed,

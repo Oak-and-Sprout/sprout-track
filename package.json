@@ -1,6 +1,6 @@
 {
   "name": "baby-tracker",
-  "version": "0.96.94",
+  "version": "0.97.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@lucide/lab": "^0.1.2",
-    "@prisma/client": "^6.3.1",
+    "@prisma/client": "^6.19.1",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-hover-card": "^1.1.6",
@@ -44,6 +44,7 @@
     "prisma": "^6.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "recharts": "^3.6.0",
     "stripe": "^19.2.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7"

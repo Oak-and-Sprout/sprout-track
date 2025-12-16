@@ -12,6 +12,7 @@ import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import { ActivityType, FilterType, TimelineProps } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
+import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
 import { PumpLogResponse } from '@/app/api/types';
@@ -22,8 +23,10 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
   
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
+  const [heatmapActivities, setHeatmapActivities] = useState<ActivityType[]>([]);
   
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
   const [isFetchAnimated, setIsFetchAnimated] = useState<boolean>(true);
@@ -90,6 +93,51 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
+  const fetchHeatmapActivitiesForWindow = async (babyId: string, date: Date) => {
+    try {
+      // Start 29 days before the selected date (inclusive), at start of day
+      const startOfWindow = new Date(date);
+      startOfWindow.setHours(0, 0, 0, 0);
+      startOfWindow.setDate(startOfWindow.getDate() - 29);
+      const startDateISO = startOfWindow.toISOString();
+
+      // End at end of selected date
+      const endOfWindow = new Date(date);
+      endOfWindow.setHours(23, 59, 59, 999);
+      const endDateISO = endOfWindow.toISOString();
+
+      const timestamp = new Date().getTime();
+
+      let url = `/api/timeline?babyId=${babyId}&startDate=${encodeURIComponent(startDateISO)}&endDate=${encodeURIComponent(endDateISO)}&_t=${timestamp}`;
+
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Expires': '0',
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setHeatmapActivities(data.data);
+        } else {
+          setHeatmapActivities([]);
+        }
+      } else {
+        console.error('Failed to fetch heatmap activities:', await response.text());
+        setHeatmapActivities([]);
+      }
+    } catch (error) {
+      console.error('Error fetching heatmap activities for window:', error);
+      setHeatmapActivities([]);
+    }
+  };
+
   const handleFormSuccess = () => {
     setEditModalType(null);
     setSelectedActivity(null);
@@ -144,8 +192,10 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   useEffect(() => {
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
+      fetchHeatmapActivitiesForWindow(babyId, selectedDate);
     } else {
       setDateFilteredActivities(activities);
+      setHeatmapActivities(activities);
     }
   }, [activities, selectedDate, babyId]);
 
@@ -261,23 +311,41 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
       {/* Daily Stats with Integrated Date Navigation */}
       <TimelineV2DailyStats
         activities={dateFilteredActivities}
+        heatmapActivities={heatmapActivities}
         date={selectedDate}
         isLoading={isLoadingActivities}
         activeFilter={activeFilter}
         onDateChange={handleDateChange}
         onDateSelection={handleDateSelection}
         onFilterChange={handleFilterChange}
+        isHeatmapVisible={isHeatmapVisible}
+        onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
       />
 
-      {/* Activity List */}
-      <TimelineV2ActivityList
-        activities={sortedActivities}
-        settings={settings}
-        isLoading={isLoadingActivities}
-        isAnimated={isFetchAnimated}
-        selectedDate={selectedDate}
-        onActivitySelect={(activity) => setSelectedActivity(activity)}
-      />
+      {/* Activity List + Right-side Heatmap */}
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <TimelineV2ActivityList
+            activities={sortedActivities}
+            settings={settings}
+            isLoading={isLoadingActivities}
+            isAnimated={isFetchAnimated}
+            selectedDate={selectedDate}
+            onActivitySelect={(activity) => setSelectedActivity(activity)}
+          />
+        </div>
+
+        {/* Right-side stacked heatmap - desktop/tablet */}
+        {isHeatmapVisible && (
+          <div className="hidden md:flex w-40 lg:w-56 border-l border-gray-200 bg-white relative timeline-v2-heatmap-panel overflow-hidden">
+            <TimelineV2Heatmap
+              activities={heatmapActivities}
+              selectedDate={selectedDate}
+              isVisible={isHeatmapVisible}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Activity Details */}
       <TimelineActivityDetails

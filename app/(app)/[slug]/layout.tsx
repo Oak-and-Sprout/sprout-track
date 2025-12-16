@@ -316,20 +316,22 @@ function AppContent({ children }: { children: React.ReactNode }) {
     const authToken = localStorage.getItem('authToken');
     const unlockTime = localStorage.getItem('unlockTime');
     
-    // Check if user is authenticated via account
+    // Check if user is authenticated via account or is a system admin
     let isAccountAuth = false;
+    let isSysAdmin = false;
     if (authToken) {
       try {
         const payload = authToken.split('.')[1];
         const decodedPayload = JSON.parse(atob(payload));
         isAccountAuth = decodedPayload.isAccountAuth || false;
+        isSysAdmin = decodedPayload.isSysAdmin || false;
       } catch (error) {
         // Ignore parsing errors
       }
     }
-    
-    const isAuthenticated = authToken && (isAccountAuth || unlockTime);
-    
+
+    const isAuthenticated = authToken && (isAccountAuth || isSysAdmin || unlockTime);
+
     // Only fetch data if authenticated or not on root slug page
     // Root slug page handles its own data fetching for login
     if (!isRootSlugPage || isAuthenticated) {
@@ -363,20 +365,22 @@ function AppContent({ children }: { children: React.ReactNode }) {
     const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
     const authToken = localStorage.getItem('authToken');
     const unlockTime = localStorage.getItem('unlockTime');
-    
+
     let isAccountAuth = false;
+    let isSysAdmin = false;
     if (authToken) {
       try {
         const payload = authToken.split('.')[1];
         const decodedPayload = JSON.parse(atob(payload));
         isAccountAuth = decodedPayload.isAccountAuth || false;
+        isSysAdmin = decodedPayload.isSysAdmin || false;
       } catch (error) {
         // Ignore parsing errors
       }
     }
-    
-    const isAuthenticated = authToken && (isAccountAuth || unlockTime);
-    
+
+    const isAuthenticated = authToken && (isAccountAuth || isSysAdmin || unlockTime);
+
     if (family?.id && (!isRootSlugPage || isAuthenticated)) {
       fetchData();
     }
@@ -427,22 +431,24 @@ function AppContent({ children }: { children: React.ReactNode }) {
       
       const authToken = localStorage.getItem('authToken');
       const unlockTime = localStorage.getItem('unlockTime');
-      
-      // Check if user is authenticated via account
+
+      // Check if user is authenticated via account or is a system admin
       let isAccountAuth = false;
+      let isSysAdmin = false;
       if (authToken) {
         try {
           const payload = authToken.split('.')[1];
           const decodedPayload = JSON.parse(atob(payload));
           isAccountAuth = decodedPayload.isAccountAuth || false;
+          isSysAdmin = decodedPayload.isSysAdmin || false;
         } catch (error) {
           console.error('Error parsing JWT token for account auth check:', error);
         }
       }
-      
-      // Account holders don't need unlockTime, PIN-based users do
+
+      // Account holders and system admins don't need unlockTime, PIN-based users do
       // If not authenticated and on a sub-route, redirect to root slug page
-      if (!authToken || (!isAccountAuth && !unlockTime)) {
+      if (!authToken || (!isAccountAuth && !isSysAdmin && !unlockTime)) {
         // If we're on a sub-route, redirect to root slug page to show login
         if (familySlug && pathname && pathname.startsWith(`/${familySlug}/`)) {
           router.push(`/${familySlug}`);
@@ -576,21 +582,23 @@ function AppContent({ children }: { children: React.ReactNode }) {
     const checkUnlockStatus = () => {
       const authToken = localStorage.getItem('authToken');
       const unlockTime = localStorage.getItem('unlockTime');
-      
-      // Check if user is authenticated via account
+
+      // Check if user is authenticated via account or is a system admin
       let isAccountAuth = false;
+      let isSysAdmin = false;
       if (authToken) {
         try {
           const payload = authToken.split('.')[1];
           const decodedPayload = JSON.parse(atob(payload));
           isAccountAuth = decodedPayload.isAccountAuth || false;
+          isSysAdmin = decodedPayload.isSysAdmin || false;
         } catch (error) {
           console.error('Error parsing JWT token for unlock status:', error);
         }
       }
-      
-      // Account holders are automatically unlocked, PIN-based users need unlockTime
-      const newUnlockState = !!(authToken && (isAccountAuth || unlockTime));
+
+      // Account holders and system admins are automatically unlocked, PIN-based users need unlockTime
+      const newUnlockState = !!(authToken && (isAccountAuth || isSysAdmin || unlockTime));
       setIsUnlocked(newUnlockState);
       
       // Extract user information from JWT token
