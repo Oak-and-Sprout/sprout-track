@@ -17,8 +17,9 @@ Added a reports page that includes:
 
 - Added the heatmap to the timeline which pulls data from the previous 30 days
 
-#### Other Fixes
+#### Other Fixes and QoL
 
+- Hid sleep, feed, and diaper status bubbles if time exceeds 24 hours
 - Fixed night mode styles in date range calendar
 - Fixed sysadmin context in new streamlined family slug pages
 
