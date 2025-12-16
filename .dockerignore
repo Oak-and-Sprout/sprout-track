@@ -52,5 +52,8 @@ scripts/service.sh
 scripts/setup-service.sh
 scripts/update.sh
 
-# Documentation
+# Documentation (ignore all except CSV files needed for seeding)
 documentation/
+!documentation/wtageinf.csv
+!documentation/hcageinf.csv
+!documentation/lenageinf.csv
