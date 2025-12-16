@@ -79,6 +79,13 @@ export function ActivityTileGroup({
     return Math.floor((end - start) / (1000 * 60));
   };
   
+  // Helper function to check if duration exceeds 24 hours (1440 minutes)
+  const exceeds24Hours = (startTime: Date | undefined): boolean => {
+    if (!startTime) return false;
+    const durationMinutes = calculateDurationMinutes(startTime.toISOString(), new Date().toISOString());
+    return durationMinutes >= 1440; // 24 hours = 1440 minutes
+  };
+  
   if (!selectedBaby?.id) return null;
 
   // Define all activity types
@@ -408,14 +415,16 @@ export function ActivityTileGroup({
           />
           {selectedBaby?.id && (
             sleepingBabies.has(selectedBaby.id) ? (
-              <StatusBubble
-                status="sleeping"
-                className="overflow-visible z-40"
-                durationInMinutes={0} // Fallback value
-                startTime={sleepStartTime[selectedBaby.id]?.toISOString()}
-              />
+              !exceeds24Hours(sleepStartTime[selectedBaby.id]) && (
+                <StatusBubble
+                  status="sleeping"
+                  className="overflow-visible z-40"
+                  durationInMinutes={0} // Fallback value
+                  startTime={sleepStartTime[selectedBaby.id]?.toISOString()}
+                />
+              )
             ) : (
-              !sleepStartTime[selectedBaby.id] && lastSleepEndTime[selectedBaby.id] && (
+              !sleepStartTime[selectedBaby.id] && lastSleepEndTime[selectedBaby.id] && !exceeds24Hours(lastSleepEndTime[selectedBaby.id]) && (
                 <StatusBubble
                   status="awake"
                   className="overflow-visible z-40"
@@ -457,7 +466,7 @@ export function ActivityTileGroup({
                 onFeedClick();
               }}
             />
-            {selectedBaby?.id && lastFeedTime[selectedBaby.id] && (
+            {selectedBaby?.id && lastFeedTime[selectedBaby.id] && !exceeds24Hours(lastFeedTime[selectedBaby.id]) && (
               <StatusBubble
                 status="feed"
                 className="overflow-visible z-40"
@@ -493,7 +502,7 @@ export function ActivityTileGroup({
                 onDiaperClick();
               }}
             />
-            {selectedBaby?.id && lastDiaperTime[selectedBaby.id] && (
+            {selectedBaby?.id && lastDiaperTime[selectedBaby.id] && !exceeds24Hours(lastDiaperTime[selectedBaby.id]) && (
               <StatusBubble
                 status="diaper"
                 className="overflow-visible z-40"
