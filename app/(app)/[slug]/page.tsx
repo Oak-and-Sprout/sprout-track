@@ -80,21 +80,23 @@ function FamilySlugPageContent() {
   useEffect(() => {
     // Don't check auth until slug is validated
     if (!slugValidated) return;
-    
+
     setIsCheckingAuth(true);
-    
+
     const checkAuth = () => {
       const authToken = localStorage.getItem('authToken');
       const unlockTime = localStorage.getItem('unlockTime');
-      
-      // Check if user is authenticated via account
+
+      // Check if user is authenticated via account or is a system admin
       let isAccountAuth = false;
+      let isSysAdmin = false;
       if (authToken) {
         try {
           const payload = authToken.split('.')[1];
           const decodedPayload = JSON.parse(atob(payload));
           isAccountAuth = decodedPayload.isAccountAuth || false;
-          
+          isSysAdmin = decodedPayload.isSysAdmin || false;
+
           // Check if token has expired
           if (decodedPayload.exp && decodedPayload.exp * 1000 < Date.now()) {
             // Token expired, clear it
@@ -116,23 +118,26 @@ function FamilySlugPageContent() {
           return;
         }
       }
-      
-      // Account holders don't need unlockTime, PIN-based users do
-      if (authToken && (isAccountAuth || unlockTime)) {
+
+      // Account holders and system admins don't need unlockTime, PIN-based users do
+      if (authToken && (isAccountAuth || isSysAdmin || unlockTime)) {
         setIsAuthenticated(true);
         // Redirect authenticated users to log-entry (one-time redirect)
-        if (!hasRedirectedRef.current) {
+        if (!hasRedirectedRef.current && familySlug) {
           hasRedirectedRef.current = true;
-          router.push(`/${familySlug}/log-entry`);
+          const targetUrl = `/${familySlug}/log-entry`;
+          console.log('Redirecting authenticated user to log-entry:', targetUrl);
+          // Use window.location for a hard navigation to ensure it works
+          window.location.href = targetUrl;
         }
       } else {
         setIsAuthenticated(false);
         hasRedirectedRef.current = false; // Reset if not authenticated
       }
-      
+
       setIsCheckingAuth(false);
     };
-    
+
     // Only check once when slug is validated, not continuously
     checkAuth();
   }, [slugValidated]); // Only depend on slugValidated to prevent loops
@@ -141,7 +146,22 @@ function FamilySlugPageContent() {
   useEffect(() => {
     // Only check after slug is validated and family context has finished loading
     if (!slugValidated || familyLoading) return;
-    
+
+    // Don't redirect system admins - they can access any family
+    const authToken = localStorage.getItem('authToken');
+    if (authToken) {
+      try {
+        const payload = authToken.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        if (decodedPayload.isSysAdmin) {
+          // System admins can access any family, don't redirect
+          return;
+        }
+      } catch (error) {
+        // Ignore parsing errors
+      }
+    }
+
     if (family && family.isActive === false) {
       // Family exists but is inactive - redirect to root
       router.push('/');
