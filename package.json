@@ -1,6 +1,6 @@
 {
   "name": "baby-tracker",
-  "version": "0.96.94",
+  "version": "0.97.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -1,11 +1,33 @@
 # Sprout Track Changelog
 
+## v0.97.0 - The Reports Update
+
+### Changes
+
+#### The Reports Page
+
+Added a reports page that includes:
+- Stats - with nested graphs for sleep, feeding, diapers and more!: Click on any Stats tile :)
+- Milestones - See all milestones grouped by month
+- Growth Trends - Based on CDC data and intelligently scaled to your babies age
+- Activities - See patterns, spot trends, or find anomalies within your desired date range
+- Heatmap - See when your child is most likely to fall asleep, wake up, nap, feed, or need a diaper change... or just confirm your own feelings about it
+
+#### The Timeline
+
+- Added the heatmap to the timeline which pulls data from the previous 30 days
+
+#### Other Fixes
+
+- Fixed night mode styles in date range calendar
+- Fixed sysadmin context in new streamlined family slug pages
+
 ## v0.96.94 - PWA Update to Streamline Login
+
+### Changes
 
 - Removed /login and streamlined family slug to facilitate clean PWA usage
 - Cleaned up the login page night mode theme
-
-### Changes
 
 ## v0.96.77 - December 2025 Rollup
 
