@@ -22,6 +22,7 @@ interface BreastFeedFormProps {
   validationError?: string; // Optional validation error message
   notes?: string;
   onNotesChange?: (notes: string) => void;
+  getCurrentDurations?: React.MutableRefObject<(() => { left: number; right: number }) | null>;
 }
 
 // Extract hours, minutes, seconds from total seconds
@@ -58,6 +59,7 @@ export default function BreastFeedForm({
   isEditing = false, // Default to false
   notes = '',
   onNotesChange,
+  getCurrentDurations,
 }: BreastFeedFormProps) {
   const [isEditingLeft, setIsEditingLeft] = useState(false);
   const [isEditingRight, setIsEditingRight] = useState(false);
@@ -91,13 +93,43 @@ export default function BreastFeedForm({
       setLeftBaseDuration(leftDuration);
     }
   }, [leftDuration, leftStartTime]);
-  
+
   useEffect(() => {
     if (!rightStartTime) {
       setDisplayRightDuration(rightDuration);
       setRightBaseDuration(rightDuration);
     }
   }, [rightDuration, rightStartTime]);
+
+  // Expose getCurrentDurations function to parent via ref
+  // This allows parent to get accurate durations synchronously before form submission
+  useEffect(() => {
+    if (getCurrentDurations) {
+      getCurrentDurations.current = () => {
+        const now = Date.now();
+        let left = leftDuration;
+        let right = rightDuration;
+
+        // If timer is running, calculate accurate duration from timestamps
+        if (isTimerRunning) {
+          if (leftStartTime && activeBreast === 'LEFT') {
+            const elapsedSeconds = Math.floor((now - leftStartTime) / 1000);
+            left = leftBaseDuration + elapsedSeconds;
+          }
+          if (rightStartTime && activeBreast === 'RIGHT') {
+            const elapsedSeconds = Math.floor((now - rightStartTime) / 1000);
+            right = rightBaseDuration + elapsedSeconds;
+          }
+        } else {
+          // Use display durations when timer is not running
+          left = displayLeftDuration;
+          right = displayRightDuration;
+        }
+
+        return { left, right };
+      };
+    }
+  }, [getCurrentDurations, isTimerRunning, leftStartTime, rightStartTime, activeBreast, leftBaseDuration, rightBaseDuration, leftDuration, rightDuration, displayLeftDuration, displayRightDuration]);
   
   // Update local state when durations change
   useEffect(() => {

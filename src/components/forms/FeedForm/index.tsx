@@ -362,8 +362,26 @@ export default function FeedForm({
       return;
     }
 
+    // Get accurate durations from BreastFeedForm before validation and stopping timer
+    // This ensures we capture the correct elapsed time even if app was backgrounded
+    let accurateLeftDuration = formData.leftDuration;
+    let accurateRightDuration = formData.rightDuration;
+
+    if (formData.type === 'BREAST' && getCurrentDurationsRef.current) {
+      const durations = getCurrentDurationsRef.current();
+      accurateLeftDuration = durations.left;
+      accurateRightDuration = durations.right;
+
+      // Update formData with accurate durations
+      setFormData(prev => ({
+        ...prev,
+        leftDuration: accurateLeftDuration,
+        rightDuration: accurateRightDuration
+      }));
+    }
+
     // For breast feeding, at least one side must have a duration
-    if (formData.type === 'BREAST' && formData.leftDuration === 0 && formData.rightDuration === 0) {
+    if (formData.type === 'BREAST' && accurateLeftDuration === 0 && accurateRightDuration === 0) {
       setValidationError('Please enter a duration for at least one breast side');
       return;
     }
@@ -379,7 +397,7 @@ export default function FeedForm({
       setValidationError('Please enter a valid amount for solids feeding');
       return;
     }
-    
+
     // Stop timer if it's running
     if (isTimerRunning) {
       stopTimer();
@@ -390,15 +408,16 @@ export default function FeedForm({
     try {
       if (formData.type === 'BREAST' && !activity) {
         // For new breast feeding entries, create entries for both sides if they have durations
-        if (formData.leftDuration > 0 && formData.rightDuration > 0) {
+        // Use accurate durations captured above
+        if (accurateLeftDuration > 0 && accurateRightDuration > 0) {
           // Create entries for both sides
-          await createBreastFeedingEntries();
-        } else if (formData.leftDuration > 0) {
+          await createBreastFeedingEntries(accurateLeftDuration, accurateRightDuration);
+        } else if (accurateLeftDuration > 0) {
           // Create only left side entry
-          await createSingleFeedEntry('LEFT');
-        } else if (formData.rightDuration > 0) {
+          await createSingleFeedEntry('LEFT', accurateLeftDuration);
+        } else if (accurateRightDuration > 0) {
           // Create only right side entry
-          await createSingleFeedEntry('RIGHT');
+          await createSingleFeedEntry('RIGHT', accurateRightDuration);
         }
       } else {
         // For editing or non-breast feeding entries, use the single entry method
@@ -437,30 +456,33 @@ export default function FeedForm({
   };
 
   // Helper function to create entries for both breast sides
-  const createBreastFeedingEntries = async () => {
+  const createBreastFeedingEntries = async (leftDur?: number, rightDur?: number) => {
+    const leftDuration = leftDur ?? formData.leftDuration;
+    const rightDuration = rightDur ?? formData.rightDuration;
+
     // Create left side entry
-    if (formData.leftDuration > 0) {
-      await createSingleFeedEntry('LEFT');
+    if (leftDuration > 0) {
+      await createSingleFeedEntry('LEFT', leftDuration);
     }
-    
+
     // Create right side entry
-    if (formData.rightDuration > 0) {
-      await createSingleFeedEntry('RIGHT');
+    if (rightDuration > 0) {
+      await createSingleFeedEntry('RIGHT', rightDuration);
     }
   };
 
   // Helper function to create a single feed entry
-  const createSingleFeedEntry = async (breastSide?: BreastSide) => {
+  const createSingleFeedEntry = async (breastSide?: BreastSide, durationOverride?: number) => {
     // For breast feeding, use the provided side or the form data side
     const side = formData.type === 'BREAST' ? (breastSide || formData.side) : undefined;
-    
+
     // Calculate start and end times for breastfeeding based on feedDuration
     let startTime, endTime, duration;
     if (formData.type === 'BREAST') {
-      // Use the appropriate duration based on the side
-      duration = side === 'LEFT' ? formData.leftDuration : 
-                 side === 'RIGHT' ? formData.rightDuration : 
-                 formData.feedDuration;
+      // Use the override duration if provided, otherwise use the appropriate duration based on the side
+      duration = durationOverride ?? (side === 'LEFT' ? formData.leftDuration :
+                 side === 'RIGHT' ? formData.rightDuration :
+                 formData.feedDuration);
       
       if (duration > 0) {
         endTime = new Date(selectedDateTime);
@@ -552,6 +574,9 @@ export default function FeedForm({
   // Timer functionality
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Ref to get current accurate durations from BreastFeedForm
+  const getCurrentDurationsRef = useRef<(() => { left: number; right: number }) | null>(null);
   
   const startTimer = (breast: 'LEFT' | 'RIGHT') => {
     if (!isTimerRunning) {
@@ -779,6 +804,7 @@ export default function FeedForm({
                 isEditing={!!activity} // Pass true if editing an existing record
                 notes={formData.notes}
                 onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
+                getCurrentDurations={getCurrentDurationsRef}
               />
             )}
             
