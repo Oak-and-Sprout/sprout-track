@@ -1,5 +1,11 @@
 # Sprout Track Changelog
 
+## v0.97.1 - Timeline sleep hotfix
+
+### Changes
+
+- Fixed timeline erroneously displaying sleep records from previous and next days (logic used for reporting)
+
 ## v0.97.0 - The Reports Update
 
 ### Changes
