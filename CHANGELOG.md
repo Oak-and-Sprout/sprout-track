@@ -1,5 +1,11 @@
 # Sprout Track Changelog
 
+## v0.97.2 - Breastfeed timer hotfix
+
+### Changes
+
+- Fixed a bug where the timer duration was not properly saved by the display timer correctly when a user did not hit pause before saving
+
 ## v0.97.1 - Timeline sleep hotfix
 
 ### Changes
