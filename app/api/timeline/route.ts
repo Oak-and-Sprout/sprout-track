@@ -128,11 +128,14 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const startDateUTC = effectiveStartDate ? toUTC(effectiveStartDate) : undefined;
     const endDateUTC = effectiveEndDate ? toUTC(effectiveEndDate) : undefined;
 
-    // For sleep queries, extend the start date back by 12 hours to capture
+    // Optional: extend sleep query date range for statistics (Reports)
+    // When extendSleepRange=true, extend the start date back by 12 hours to capture
     // evening sleep entries that belong to the first day's "night period"
     // Night period for Day X = 12:00 PM Day X-1 to 11:59 AM Day X
+    // Default is false (Timeline behavior) - only show sleep that starts or ends on the selected day
+    const extendSleepRange = searchParams.get('extendSleepRange') === 'true';
     let sleepStartDateUTC = startDateUTC;
-    if (startDateUTC) {
+    if (startDateUTC && extendSleepRange) {
       sleepStartDateUTC = new Date(startDateUTC.getTime() - (12 * 60 * 60 * 1000));
     }
 
@@ -141,25 +144,25 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       prisma.sleepLog.findMany({
         where: {
           babyId,
-          ...(sleepStartDateUTC && endDateUTC ? {
+          ...(startDateUTC && endDateUTC ? {
             OR: [
-              // Sleep logs that start within the extended date range
+              // Sleep logs that start within the date range
               {
                 startTime: {
                   gte: sleepStartDateUTC,
                   lte: endDateUTC
                 }
               },
-              // Sleep logs that end within the extended date range
+              // Sleep logs that end within the date range
               {
                 endTime: {
-                  gte: sleepStartDateUTC,
+                  gte: startDateUTC,
                   lte: endDateUTC
                 }
               },
-              // Sleep logs that span the extended date range
+              // Sleep logs that span the date range
               {
-                startTime: { lte: sleepStartDateUTC },
+                startTime: { lte: startDateUTC },
                 endTime: { gte: endDateUTC }
               }
             ]

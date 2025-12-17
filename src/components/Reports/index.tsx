@@ -68,7 +68,8 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
         // Add timestamp to prevent caching
         const timestamp = new Date().getTime();
 
-        const url = `/api/timeline?babyId=${selectedBaby.id}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&_t=${timestamp}`;
+        // extendSleepRange=true extends the sleep query back 12 hours for proper night sleep statistics
+        const url = `/api/timeline?babyId=${selectedBaby.id}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&extendSleepRange=true&_t=${timestamp}`;
 
         // Get auth token from localStorage
         const authToken = localStorage.getItem('authToken');
