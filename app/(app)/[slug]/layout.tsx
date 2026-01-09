@@ -5,6 +5,7 @@ import { useRouter, usePathname, useParams } from 'next/navigation';
 import { BabyProvider, useBaby } from '../../context/baby';
 import { TimezoneProvider } from '../../context/timezone';
 import { DeploymentProvider, useDeployment } from '../../context/deployment';
+import { LocalizationProvider } from '@/src/context/localization';
 import { ThemeProvider } from '@/src/context/theme';
 import { FamilyProvider, useFamily } from '@/src/context/family';
 import { ToastProvider } from '@/src/components/ui/toast';
@@ -909,18 +910,20 @@ export default function AppLayout({
 
   return (
     <DeploymentProvider>
-      <FamilyProvider onLogout={handleLogout}>
-        <BabyProvider>
-          <TimezoneProvider>
-            <ThemeProvider>
-              <ToastProvider>
-                <DynamicTitle />
-                <AppContent>{children}</AppContent>
-              </ToastProvider>
-            </ThemeProvider>
-          </TimezoneProvider>
-        </BabyProvider>
-      </FamilyProvider>
+      <LocalizationProvider>
+        <FamilyProvider onLogout={handleLogout}>
+          <BabyProvider>
+            <TimezoneProvider>
+              <ThemeProvider>
+                <ToastProvider>
+                  <DynamicTitle />
+                  <AppContent>{children}</AppContent>
+                </ToastProvider>
+              </ThemeProvider>
+            </TimezoneProvider>
+          </BabyProvider>
+        </FamilyProvider>
+      </LocalizationProvider>
     </DeploymentProvider>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { LocalizationProvider } from '@/src/context/localization';
 import { TimezoneProvider } from '../context/timezone';
 import { ThemeProvider } from '@/src/context/theme';
 import { DeploymentProvider } from '../context/deployment';
@@ -187,13 +188,15 @@ export default function AppLayout({
 }) {
   return (
     <DeploymentProvider>
-      <TimezoneProvider>
-        <ThemeProvider>
-          <ToastProvider>
-            <AppContent>{children}</AppContent>
-          </ToastProvider>
-        </ThemeProvider>
-      </TimezoneProvider>
+      <LocalizationProvider>
+        <TimezoneProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <AppContent>{children}</AppContent>
+            </ToastProvider>
+          </ThemeProvider>
+        </TimezoneProvider>
+      </LocalizationProvider>
     </DeploymentProvider>
   );
 }
