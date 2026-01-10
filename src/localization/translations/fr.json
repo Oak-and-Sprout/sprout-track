@@ -3,6 +3,7 @@
   "Log Entry": "Entrée de Journal",
   "Calendar": "Calendrier",
   "Full Log": "Journal Complet",
+  "Reports": "Rapports",
   "Settings": "Paramètres",
   "Logout": "Déconnexion",
   "Save": "Enregistrer",
@@ -22,5 +23,10 @@
   "Notes": "Notes",
   "Security Check": "Vérification de Sécurité",
   "Enter Pin": "Entrez le PIN",
-  "Login": "Connexion"
+  "Login": "Connexion",
+  "Send Feedback": "Envoyer des Commentaires",
+  "Trial Version": "Version d'Essai",
+  "Ending": "Se termine",
+  "Buy Now": "Acheter Maintenant",
+  "Select language": "Sélectionner la langue"
 }

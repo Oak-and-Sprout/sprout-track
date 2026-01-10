@@ -3,6 +3,7 @@
   "Log Entry": "Entrada de Registro",
   "Calendar": "Calendario",
   "Full Log": "Registro Completo",
+  "Reports": "Informes",
   "Settings": "Configuración",
   "Logout": "Cerrar Sesión",
   "Save": "Guardar",
@@ -22,5 +23,10 @@
   "Notes": "Notas",
   "Security Check": "Verificación de Seguridad",
   "Enter Pin": "Ingrese el PIN",
-  "Login": "Iniciar Sesión"
+  "Login": "Iniciar Sesión",
+  "Send Feedback": "Enviar Comentarios",
+  "Trial Version": "Versión de Prueba",
+  "Ending": "Finaliza",
+  "Buy Now": "Comprar Ahora",
+  "Select language": "Seleccionar idioma"
 }

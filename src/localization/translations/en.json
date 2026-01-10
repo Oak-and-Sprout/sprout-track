@@ -3,6 +3,7 @@
   "Log Entry": "Log Entry",
   "Calendar": "Calendar",
   "Full Log": "Full Log",
+  "Reports": "Reports",
   "Settings": "Settings",
   "Logout": "Logout",
   "Save": "Save",
@@ -22,5 +23,10 @@
   "Notes": "Notes",
   "Security Check": "Security Check",
   "Enter Pin": "Enter Pin",
-  "Login": "Login"
+  "Login": "Login",
+  "Send Feedback": "Send Feedback",
+  "Trial Version": "Trial Version",
+  "Ending": "Ending",
+  "Buy Now": "Buy Now",
+  "Select language": "Select language"
 }
