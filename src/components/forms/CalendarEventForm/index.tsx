@@ -23,6 +23,8 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
+
 import './calendar-event-form.css';
 
 /**
@@ -42,6 +44,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
   contacts,
   isLoading = false,
 }) => {
+  const { t } = useLocalization();
   const { showToast } = useToast();
   
   // Helper function to get initial form data
@@ -421,12 +424,12 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
           <div className="space-y-6 pb-24">
             {/* Event details section */}
             <div className={styles.section}>
-              <Label className="text-lg font-semibold">Event Details</Label>
+              <Label className="text-lg font-semibold">{t('Event Details')}</Label>
               
               {/* Title */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="title">
-                  Title
+                  {t('Title')}
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Input
@@ -449,7 +452,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Event type */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="type">
-                  Event Type
+                  {t('Event Type')}
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <DropdownMenu>
@@ -495,7 +498,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   }
                 />
                 <Label htmlFor="allDay">
-                  All day event
+                  {t('All day event')}
                 </Label>
               </div>
 
@@ -504,7 +507,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 {/* Start Date/Time - Full width */}
                 <div className={styles.fieldGroup}>
                   <Label htmlFor="startTime">
-                    Start Time
+                    {t('Start Time')}
                     <span className="text-red-500 ml-1">*</span>
                   </Label>
                   <div className="grid w-full">
@@ -527,7 +530,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 {/* End Date/Time - Full width */}
                 <div className={styles.fieldGroup}>
                   <Label htmlFor="endTime">
-                    End Time
+                    {t('End Time')}
                   </Label>
                   <div className="grid w-full">
                     <DateTimePicker
@@ -550,7 +553,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Location */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="location">
-                  Location
+                  {t('Location')}
                 </Label>
                 <div className="relative">
                   <Input
@@ -569,7 +572,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Description */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="description">
-                  Description
+                  {t('Description')}
                 </Label>
                 <Textarea
                   id="description"
@@ -584,7 +587,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Color */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="color">
-                  Color
+                  {t('Color')}
                 </Label>
                 <div className="flex items-center space-x-2">
                   <div 
@@ -602,7 +605,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     />
                   </div>
                   <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                    Custom color for this event
+                    {t('Custom color for this event')}
                   </span>
                 </div>
               </div>
@@ -694,13 +697,13 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
             
             {/* People section */}
             <div className={styles.section}>
-              <Label className="text-lg font-semibold">People</Label>
+              <Label className="text-lg font-semibold">{t('People')}</Label>
               
               {/* Babies - Only show if there's more than one active baby */}
               {babies.filter(baby => baby.inactive !== true).length > 1 ? (
                 <div className={styles.fieldGroup}>
                   <Label>
-                    Babies
+                    {t('Babies')}
                   </Label>
                   <div className="space-y-2">
                     {babies.map(baby => (
@@ -726,7 +729,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     
                     {babies.length === 0 && (
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        No babies available
+                        {t('No babies available')}
                       </div>
                     )}
                   </div>
@@ -760,7 +763,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Caretakers */}
               <div className={styles.fieldGroup}>
                 <Label>
-                  Caretakers
+                  {t('Caretakers')}
                 </Label>
                 <div className="space-y-2">
                   {caretakers.map(caretaker => (
@@ -778,7 +781,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   
                   {caretakers.length === 0 && (
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      No caretakers available
+                      {t('No caretakers available')}
                     </div>
                   )}
                 </div>
@@ -787,7 +790,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Contacts */}
               <div className={styles.fieldGroup}>
                 <Label>
-                  Contacts
+                  {t('Contacts')}
                 </Label>
                 <ContactSelector
                   contacts={localContacts}
@@ -894,7 +897,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   disabled={isLoading}
                 >
                   <Trash2 className="h-4 w-4 mr-1.5" />
-                  Delete
+                  {t('Delete')}
                 </Button>
               )}
             </div>
@@ -906,7 +909,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 onClick={handleClose}
                 disabled={isLoading}
               >
-                Cancel
+                {t('Cancel')}
               </Button>
               
               <Button 
@@ -916,7 +919,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    Saving...
+                    {t('Saving...')}
                   </>
                 ) : (
                   'Save Event'

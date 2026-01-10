@@ -11,6 +11,7 @@ import { cn } from '@/src/lib/utils';
 import './backup-restore.css';
 import { backupRestoreStyles } from './backup-restore.styles';
 import { BackupRestoreProps, BackupRestoreState } from './backup-restore.types';
+import { useLocalization } from '@/src/context/localization';
 
 export const BackupRestore: React.FC<BackupRestoreProps> = ({
   isLoading = false,
@@ -26,6 +27,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
   initialSetup = false
 }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const adminResetDetectedRef = useRef<boolean>(false);
 
@@ -315,7 +317,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
             disabled={isLoading || isSaving || state.isRestoring || state.isMigrating}
           >
             <Download className={backupRestoreStyles.icon} />
-            Backup Database
+            {t('Backup Database')}
           </Button>
         )}
         <Button

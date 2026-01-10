@@ -14,6 +14,7 @@ import { SleepStats, DateRange, ActivityType } from './reports.types';
 import SleepChartModal, { SleepChartMetric, SleepChartDataPoint } from './SleepChartModal';
 import SleepLocationsChartModal from './SleepLocationsChartModal';
 import SleepLocationChartModal from './SleepLocationChartModal';
+import { useLocalization } from '@/src/context/localization';
 
 interface SleepStatsSectionProps {
   stats: SleepStats;
@@ -28,7 +29,8 @@ interface SleepStatsSectionProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {
+const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -65,7 +67,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
       <AccordionItem value="sleep">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
           <Moon className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-sleep")} />
-          <span>Sleep Statistics</span>
+          <span>{t('Sleep Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>
           <div className={styles.statsGrid}>
@@ -80,7 +82,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {formatMinutes(stats.avgNapMinutes)}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Nap Duration</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Nap Duration')}</div>
               </CardContent>
             </Card>
 
@@ -95,7 +97,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {formatMinutes(stats.avgDailyNapMinutes)}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Daily Nap Time</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Daily Nap Time')}</div>
               </CardContent>
             </Card>
 
@@ -110,7 +112,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {formatMinutes(stats.avgNightSleepMinutes)}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Night Sleep</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Night Sleep')}</div>
               </CardContent>
             </Card>
 
@@ -125,7 +127,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.avgNightWakings}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Night Wakings</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Night Wakings')}</div>
               </CardContent>
             </Card>
           </div>
@@ -142,7 +144,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                 }}
               >
                 <MapPin className={styles.sectionTitleIcon} />
-                Popular Nap Locations
+                {t('Popular Nap Locations')}
               </button>
               <div className={styles.locationList}>
                 {stats.napLocations.slice(0, 5).map((loc) => (
@@ -157,7 +159,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                   >
                     <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
-                      {loc.count}x ({formatMinutes(loc.totalMinutes)})
+                      {loc.count}{t('x (')}{formatMinutes(loc.totalMinutes)})
                     </span>
                   </button>
                 ))}
@@ -177,7 +179,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                 }}
               >
                 <MapPin className={styles.sectionTitleIcon} />
-                Popular Night Sleep Locations
+                {t('Popular Night Sleep Locations')}
               </button>
               <div className={styles.locationList}>
                 {stats.nightLocations.slice(0, 5).map((loc) => (
@@ -192,7 +194,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                   >
                     <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
-                      {loc.count}x ({formatMinutes(loc.totalMinutes)})
+                      {loc.count}{t('x (')}{formatMinutes(loc.totalMinutes)})
                     </span>
                   </button>
                 ))}

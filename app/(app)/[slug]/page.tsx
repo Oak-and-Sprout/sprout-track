@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import LoginSecurity from '@/src/components/LoginSecurity';
 import { useTheme } from '@/src/context/theme';
 import { useFamily } from '@/src/context/family';
+import { useLocalization } from '@/src/context/localization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { FamilyResponse } from '@/app/api/types';
 
@@ -13,6 +14,7 @@ function FamilySlugPageContent() {
   const params = useParams();
   const { theme } = useTheme();
   const { family, loading: familyLoading } = useFamily();
+  const { t } = useLocalization();
   const [families, setFamilies] = useState<FamilyResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [slugValidated, setSlugValidated] = useState(false);
@@ -193,7 +195,7 @@ function FamilySlugPageContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-gray-500">
-            {!slugValidated ? 'Validating family...' : 'Checking authentication...'}
+            {!slugValidated ? t('Validating family...') : t('Checking authentication...')}
           </p>
         </div>
       </div>
@@ -207,7 +209,7 @@ function FamilySlugPageContent() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-gray-500">{t('Loading')}...</p>
         </div>
       </div>
     );
@@ -218,14 +220,14 @@ function FamilySlugPageContent() {
     <div className="flex flex-col items-center">
       {families.length > 1 && (
         <div className="w-full max-w-md mx-auto mb-4 p-4">
-          <label className="block text-sm font-medium mb-2">Select Family</label>
+          <label className="block text-sm font-medium mb-2">{t('Select Family')}</label>
           <Select
             value={familySlug || ''}
             onValueChange={handleFamilyChange}
             disabled={loading}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a family" />
+              <SelectValue placeholder={t('Select a family')} />
             </SelectTrigger>
             <SelectContent>
               {families.map((f) => (
@@ -248,12 +250,14 @@ function FamilySlugPageContent() {
 }
 
 export default function FamilySlugPage() {
+  const { t } = useLocalization();
+  
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p>Loading...</p>
+          <p>{t('Loading')}...</p>
         </div>
       </div>
     }>

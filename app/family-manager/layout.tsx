@@ -7,6 +7,7 @@ import { TimezoneProvider } from '../context/timezone';
 import { ThemeProvider } from '@/src/context/theme';
 import { DeploymentProvider } from '../context/deployment';
 import { ToastProvider } from '@/src/components/ui/toast';
+import { useLocalization } from '@/src/context/localization';
 import Image from 'next/image';
 import '../globals.css';
 import './layout.css';
@@ -23,6 +24,7 @@ const fontSans = FontSans({
 });
 
 function AppContent({ children }: { children: React.ReactNode }) {
+  const { t } = useLocalization();
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
@@ -136,10 +138,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 />
                 <div className="flex flex-col">
                   <h1 className="text-white text-lg font-bold">
-                    Family Management
+                    {t('Family Management')}
                   </h1>
                   <p className="text-white/80 text-xs">
-                    View and manage all families in Sprout Track
+                    {t('View and manage all families in Sprout Track')}
                   </p>
                 </div>
               </div>
@@ -163,7 +165,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             aria-label="Logout from family manager"
           >
             <LogOut className="family-manager-logout-icon" />
-            Logout
+            {t('Logout')}
           </button>
         </footer>
       </div>

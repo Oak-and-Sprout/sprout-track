@@ -8,6 +8,7 @@ import { DeploymentProvider, useDeployment } from '../../context/deployment';
 import { LocalizationProvider } from '@/src/context/localization';
 import { ThemeProvider } from '@/src/context/theme';
 import { FamilyProvider, useFamily } from '@/src/context/family';
+import { useLocalization } from '@/src/context/localization';
 import { ToastProvider } from '@/src/components/ui/toast';
 import Image from 'next/image';
 import '../../globals.css';
@@ -53,6 +54,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const { family } = useFamily();
   const { selectedBaby, setSelectedBaby, sleepingBabies } = useBaby();
   const { isSaasMode } = useDeployment();
+  const { t } = useLocalization();
   const [mounted, setMounted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [quickStatsOpen, setQuickStatsOpen] = useState(false);
@@ -728,10 +730,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
                       )}
                       <span className="text-white text-sm font-medium">
                         {family?.name || familyName} - {pathname?.includes('/log-entry')
-                          ? 'Log Entry'
+                          ? t('Log Entry')
                           : pathname?.includes('/calendar')
-                          ? 'Calendar'
-                          : 'Full Log'}
+                          ? t('Calendar')
+                          : t('Full Log')}
                       </span>
                     </div>
                   </div>

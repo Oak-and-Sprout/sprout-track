@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 export type DiaperChartMetric = 'wet' | 'poopy';
 
@@ -39,6 +40,8 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
   activities,
   dateRange,
 }) => {
+  const { t } = useLocalization();
+  
   // Calculate daily diaper counts
   const chartData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || !metric) {
@@ -95,7 +98,7 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
         {chartData.length === 0 ? (
           <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
             <p className={cn(styles.emptyText, 'reports-empty-text')}>
-              No {metric === 'wet' ? 'wet' : 'poopy'} diaper data available for the selected date range.
+              {t('No')} {metric === 'wet' ? 'wet' : 'poopy'} {t('diaper data available for the selected date range.')}
             </p>
           </div>
         ) : (

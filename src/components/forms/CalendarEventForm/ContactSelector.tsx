@@ -5,6 +5,7 @@ import { Check, X, Plus, Phone, Mail, Edit, User } from 'lucide-react';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import ContactForm from '@/src/components/forms/ContactForm';
+import { useLocalization } from '@/src/context/localization';
 
 interface ContactSelectorProps {
   contacts: Contact[];
@@ -29,6 +30,8 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   onEditContact,
   onDeleteContact,
 }) => {
+
+  const { t } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [showContactForm, setShowContactForm] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | undefined>(undefined);
@@ -49,7 +52,8 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   );
   
   // Toggle contact selection
-  const toggleContact = (contactId: string) => {
+  const toggleContact = (contactId: string) => {  
+
     if (selectedContactIds.includes(contactId)) {
       onContactsChange(selectedContactIds.filter(id => id !== contactId));
     } else {
@@ -271,7 +275,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
             size="sm"
           >
             <Plus className="h-4 w-4 mr-1.5" />
-            Add New Contact
+            {t('Add New Contact')}
           </Button>
         </div>
       )}

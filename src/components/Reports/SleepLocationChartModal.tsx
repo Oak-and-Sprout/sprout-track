@@ -16,6 +16,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange, LocationStat } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 interface SleepLocationChartModalProps {
   open: boolean;
@@ -57,6 +58,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
   activities,
   dateRange,
 }) => {
+  const { t } = useLocalization();
   // Calculate daily counts by location
   const chartData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || !locations.length) {
@@ -158,7 +160,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
         {chartData.length === 0 ? (
           <div className={cn(styles.emptyContainer, "reports-empty-container")}>
             <p className={cn(styles.emptyText, "reports-empty-text")}>
-              No sleep location data available for the selected date range.
+              {t('No sleep location data available for the selected date range.')}
             </p>
           </div>
         ) : (

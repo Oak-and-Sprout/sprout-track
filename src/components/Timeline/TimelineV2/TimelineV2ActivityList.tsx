@@ -5,6 +5,8 @@ import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityT
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/src/context/theme';
 import { Label } from '@/src/components/ui/label';
+import { useLocalization } from '@/src/context/localization';
+
 import '../timeline-activity-list.css';
 
 const TimelineV2ActivityList = ({
@@ -15,6 +17,10 @@ const TimelineV2ActivityList = ({
   selectedDate,
   onActivitySelect,
 }: TimelineActivityListProps) => {
+  
+
+  const { t } = useLocalization();  
+
   const { theme } = useTheme();
   
   const contentRef = useRef<HTMLDivElement>(null);
@@ -415,9 +421,9 @@ const TimelineV2ActivityList = ({
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
                   <BabyIcon className="h-8 w-8 text-indigo-600" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">No activities recorded</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">{t('No activities recorded')}</h3>
                 <p className="text-sm text-gray-500 timeline-empty-description">
-                  Activities will appear here once you start tracking
+                  {t('Activities will appear here once you start tracking')}
                 </p>
               </div>
             </div>
@@ -430,7 +436,7 @@ const TimelineV2ActivityList = ({
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
                 <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">Loading activities...</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">{t('Loading activities...')}</h3>
             </div>
           </div>
         )}

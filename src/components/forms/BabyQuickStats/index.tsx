@@ -21,6 +21,7 @@ import CardVisual from '@/src/components/reporting/CardVisual';
 import { Clock, Moon, Sun, Utensils, Droplet, Loader2 } from 'lucide-react';
 import { diaper } from '@lucide/lab';
 import { useFamily } from '@/src/context/family';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * BabyQuickStats Component
@@ -130,7 +131,8 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   }, [selectedBaby, family?.id]);
 
   // Helper function to format minutes into hours and minutes
-  const formatMinutes = (minutes: number): string => {
+  const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
@@ -459,7 +461,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               {/* Time period selectors */}
               <div className={timePeriodSelectorContainer()}>
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>Main Period:</Label>
+                  <Label className={timePeriodSelectorLabel()}>{t('Main Period:')}</Label>
                   <div className={timePeriodButtonGroup()}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
@@ -475,7 +477,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                 </div>
                 
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>Compare Period:</Label>
+                  <Label className={timePeriodSelectorLabel()}>{t('Compare Period:')}</Label>
                   <div className={timePeriodButtonGroup()}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
@@ -495,16 +497,16 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" />
-                  <p className="text-gray-600">Loading statistics...</p>
+                  <p className="text-gray-600">{t('Loading statistics...')}</p>
                 </div>
               ) : error ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <p className="text-red-500 mb-2">{error}</p>
-                  <p className="text-gray-600">Unable to load statistics. Please try again later.</p>
+                  <p className="text-gray-600">{t('Unable to load statistics. Please try again later.')}</p>
                 </div>
               ) : activities.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <p className="text-gray-600">No activities found for the selected time period.</p>
+                  <p className="text-gray-600">{t('No activities found for the selected time period.')}</p>
                 </div>
               ) : (
                 <div className={statsCardsGrid()}>
@@ -568,7 +570,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
             </>
           ) : (
             <p className={placeholderText()}>
-              No baby selected. Please select a baby to view their stats.
+              {t('No baby selected. Please select a baby to view their stats.')}
             </p>
           )}
         </div>
@@ -577,7 +579,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
       <FormPageFooter>
         <div className={closeButtonContainer()}>
           <Button onClick={onClose} variant="outline">
-            Close
+            {t('Close')}
           </Button>
         </div>
       </FormPageFooter>

@@ -8,6 +8,8 @@ import {
 import { TimelineActivityDetailsProps } from './types';
 import { getActivityDetails, formatTime } from './utils';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
+
 import './timeline-activity-details.css';
 
 const TimelineActivityDetails = ({
@@ -18,6 +20,10 @@ const TimelineActivityDetails = ({
   onDelete,
   onEdit,
 }: TimelineActivityDetailsProps) => {
+  
+
+  const { t } = useLocalization();  
+
   const { theme } = useTheme();
   
   if (!activity) return null;
@@ -106,21 +112,21 @@ const TimelineActivityDetails = ({
               onClick={handleDelete}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('Delete')}
             </Button>
             <Button
               variant="outline"
               onClick={handleEdit}
             >
               <Pencil className="h-4 w-4 mr-2" />
-              Edit
+              {t('Edit')}
             </Button>
           </div>
           <Button
             variant="outline"
             onClick={onClose}
           >
-            Close
+            {t('Close')}
           </Button>
         </div>
       </FormPageFooter>

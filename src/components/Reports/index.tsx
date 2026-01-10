@@ -18,6 +18,8 @@ import MilestonesTab from './MilestonesTab';
 import GrowthTrendsTab from './GrowthTrendsTab';
 import ActivityTab from './ActivityTab';
 import HeatmapsTab from './HeatmapsTab';
+import { useLocalization } from '@/src/context/localization';
+
 import './reports.css';
 
 /**
@@ -27,6 +29,8 @@ import './reports.css';
  * growth trends, activity breakdowns, and heatmaps.
  */
 const Reports: React.FC<ReportsProps> = ({ className }) => {
+
+  const { t } = useLocalization();
   const { selectedBaby } = useBaby();
 
   // Tab state
@@ -110,7 +114,8 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
   }, [selectedBaby, dateRange]);
 
   // Handle date range change from calendar
-  const handleRangeChange = (from: Date | null, to: Date | null) => {
+  const handleRangeChange = (from: Date | null, to: Date | null) => {  
+
     if (from) {
       from.setHours(0, 0, 0, 0);
     }
@@ -169,7 +174,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
         <div className={cn(styles.noBabyContainer, "reports-no-baby-container")}>
           <BabyIcon className={cn(styles.noBabyIcon, "reports-no-baby-icon")} />
           <p className={cn(styles.noBabyText, "reports-no-baby-text")}>
-            Please select a baby to view reports
+            {t('Please select a baby to view reports')}
           </p>
         </div>
       </div>
@@ -181,11 +186,11 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
       {/* Header with date range picker */}
       <div className={cn(styles.header, "reports-header")}>
         <h1 className={cn(styles.headerTitle, "reports-header-title")}>
-          {selectedBaby.firstName}&apos;s Reports
+          {selectedBaby.firstName}{t('\'s Reports')}
         </h1>
 
         <div className={cn(styles.dateRangeContainer, "reports-date-range-container")}>
-          <span className={cn(styles.dateRangeLabel, "reports-date-range-label")}>Date Range:</span>
+          <span className={cn(styles.dateRangeLabel, "reports-date-range-label")}>{t('Date Range:')}</span>
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -250,7 +255,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
               setDateRange({ ...dateRange });
             }}
           >
-            Retry
+            {t('Retry')}
           </Button>
         </div>
       )}

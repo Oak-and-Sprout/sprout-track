@@ -13,6 +13,7 @@ import {
 import { useBaby } from '@/app/context/baby';
 import { styles } from './reports.styles';
 import { MilestonesTabProps, MilestoneActivity } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 interface MilestonesByAge {
   ageInMonths: number;
@@ -75,7 +76,8 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
   }, [selectedBaby]);
 
   // Calculate age in months at the time of milestone
-  const calculateAgeInMonths = (milestoneDate: string): number => {
+  const calculateAgeInMonths = (milestoneDate: string): number => {  const { t } = useLocalization();
+
     if (!selectedBaby?.birthDate) return 0;
 
     const birthDate = new Date(selectedBaby.birthDate);
@@ -156,7 +158,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
     return (
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-        <p className={cn(styles.loadingText, "reports-loading-text")}>Loading milestones...</p>
+        <p className={cn(styles.loadingText, "reports-loading-text")}>{t('Loading milestones...')}</p>
       </div>
     );
   }
@@ -176,10 +178,10 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
         <Trophy className="h-12 w-12 text-gray-300 mb-4" />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
-          No milestones recorded yet.
+          {t('No milestones recorded yet.')}
         </p>
         <p className={cn(styles.emptyText, "reports-empty-text text-sm mt-2")}>
-          Record milestones to track your baby&apos;s development.
+          {t('Record milestones to track your baby\'s development.')}
         </p>
       </div>
     );

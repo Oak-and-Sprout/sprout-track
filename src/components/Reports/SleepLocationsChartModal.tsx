@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { LocationStat } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 interface SleepLocationsChartModalProps {
   open: boolean;
@@ -24,7 +25,8 @@ interface SleepLocationsChartModalProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {
+const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -67,7 +69,7 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
         {locations.length === 0 ? (
           <div className={cn(styles.emptyContainer, "reports-empty-container")}>
             <p className={cn(styles.emptyText, "reports-empty-text")}>
-              No sleep location data available for the selected date range.
+              {t('No sleep location data available for the selected date range.')}
             </p>
           </div>
         ) : (

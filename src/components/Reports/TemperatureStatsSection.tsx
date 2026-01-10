@@ -20,6 +20,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { MeasurementActivity } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 interface TemperatureStatsSectionProps {
   temperatureData: Array<{ ageMonths: number; value: number; unit: string }>;
@@ -27,7 +28,8 @@ interface TemperatureStatsSectionProps {
 }
 
 // Temperature chart tooltip
-const TemperatureTooltip = ({ active, payload, label }: any) => {
+const TemperatureTooltip = ({ active, payload, label }: any) => {  
+
   if (active && payload && payload.length) {
     const point = payload[0]?.payload as { value: number; unit: string };
     if (!point) return null;
@@ -35,10 +37,10 @@ const TemperatureTooltip = ({ active, payload, label }: any) => {
     return (
       <div className={cn(growthChartStyles.tooltip, 'growth-chart-tooltip')}>
         <p className={cn(growthChartStyles.tooltipLabel, 'growth-chart-tooltip-label')}>
-          Age: {typeof label === 'number' ? label.toFixed(1) : label} months
+          {t('Age:')} {typeof label === 'number' ? label.toFixed(1) : label} months
         </p>
         <p className={cn(growthChartStyles.tooltipMeasurement, 'growth-chart-tooltip-measurement')}>
-          Temp: {point.value.toFixed(1)} {point.unit}
+          {t('Temp:')} {point.value.toFixed(1)} {point.unit}
         </p>
       </div>
     );
@@ -55,17 +57,19 @@ const TemperatureStatsSection: React.FC<TemperatureStatsSectionProps> = ({
   temperatureData,
   babyCurrentAgeMonths,
 }) => {
+
+  const { t } = useLocalization();
   return (
     <AccordionItem value="temperature">
       <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
         <Thermometer className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-measurement")} />
-        <span>Temperature Measurements</span>
+        <span>{t('Temperature Measurements')}</span>
       </AccordionTrigger>
       <AccordionContent className={styles.accordionContent}>
         {temperatureData.length === 0 ? (
           <div className={cn(styles.emptyContainer, "reports-empty-container")}>
             <p className={cn(styles.emptyText, "reports-empty-text")}>
-              No temperature measurements in the selected date range.
+              {t('No temperature measurements in the selected date range.')}
             </p>
           </div>
         ) : (

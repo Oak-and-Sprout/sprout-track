@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LoginSecurity from '@/src/components/LoginSecurity';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
@@ -16,6 +17,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [families, setFamilies] = useState<FamilyResponse[]>([]);
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,12 +71,12 @@ function LoginPageContent() {
     e.preventDefault();
     
     if (!tokenPassword.trim()) {
-      setTokenError('Password is required');
+      setTokenError(t('Password is required'));
       return;
     }
 
     if (!setupToken) {
-      setTokenError('Setup token not found');
+      setTokenError(t('Setup token not found'));
       return;
     }
 
@@ -103,12 +105,12 @@ function LoginPageContent() {
         // Redirect to setup page with token
         router.push(`/setup/${setupToken}`);
       } else {
-        setTokenError(data.error || 'Invalid password');
+        setTokenError(data.error || t('Invalid password'));
         setTokenPassword('');
       }
     } catch (error) {
       console.error('Token authentication error:', error);
-      setTokenError('Authentication failed. Please try again.');
+      setTokenError(t('Authentication failed. Please try again.'));
       setTokenPassword('');
     } finally {
       setTokenLoading(false);
@@ -180,23 +182,23 @@ function LoginPageContent() {
       <div className="flex flex-col items-center">
         <div className="w-full max-w-md mx-auto mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
           <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">
-            Family Setup Invitation
+            {t('Family Setup Invitation')}
           </h2>
           <p className="text-blue-700 dark:text-blue-300">
-            Please enter the password provided with this setup invitation to continue.
+            {t('Please enter the password provided with this setup invitation to continue.')}
           </p>
         </div>
         
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
-              Setup Authentication
+              {t('Setup Authentication')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleTokenAuth} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="tokenPassword">Setup Password</Label>
+                <Label htmlFor="tokenPassword">{t('Setup Password')}</Label>
                 <div className="relative">
                   <Input
                     id="tokenPassword"
@@ -206,7 +208,7 @@ function LoginPageContent() {
                       setTokenPassword(e.target.value);
                       setTokenError('');
                     }}
-                    placeholder="Enter setup password"
+                    placeholder={t('Enter setup password')}
                     disabled={tokenLoading}
                     autoFocus
                   />
@@ -241,10 +243,10 @@ function LoginPageContent() {
                 {tokenLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Authenticating...
+                    {t('Authenticating...')}
                   </>
                 ) : (
-                  'Continue to Setup'
+                  t('Continue to Setup')
                 )}
               </Button>
             </form>
@@ -260,10 +262,10 @@ function LoginPageContent() {
       {isSetupFlow && (
         <div className="w-full max-w-md mx-auto mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
           <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">
-            Initial Setup Required
+            {t('Initial Setup Required')}
           </h2>
           <p className="text-blue-700 dark:text-blue-300">
-            Please authenticate with the system PIN to complete the initial setup.
+            {t('Please authenticate with the system PIN to complete the initial setup.')}
           </p>
         </div>
       )}
@@ -283,7 +285,7 @@ export default function LoginPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading...</p>
+          <p>{t('Loading')}...</p>
         </div>
       </div>
     }>

@@ -7,6 +7,7 @@ import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * ContactForm Component
@@ -23,6 +24,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
   isLoading: externalIsLoading = false,
 }) => {
   const { showToast } = useToast();
+  const { t } = useLocalization();
+  
   // Local loading state
   const [isLoading, setIsLoading] = useState(externalIsLoading);
   
@@ -349,7 +352,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
           <div className="space-y-6">
             {/* Contact details section */}
             <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>Contact Details</h3>
+              <h3 className={styles.sectionTitle}>{t('Contact Details')}</h3>
               
               {/* Name */}
               <div className={styles.fieldGroup}>
@@ -386,7 +389,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="role" 
                   className="form-label"
                 >
-                  Role
+                  {t('Role')}
                   <span className={styles.fieldRequired}>*</span>
                 </label>
                 <div className="relative">
@@ -415,7 +418,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="phone" 
                   className="form-label"
                 >
-                  Phone Number
+                  {t('Phone Number')}
                 </label>
                 <div className="relative">
                   <Input
@@ -443,7 +446,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="email" 
                   className="form-label"
                 >
-                  Email Address
+                  {t('Email Address')}
                 </label>
                 <div className="relative">
                   <Input
@@ -479,7 +482,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 disabled={isLoading}
               >
                 <Trash2 className="h-4 w-4 mr-1.5" />
-                Delete
+                {t('Delete')}
               </Button>
             )}
             
@@ -491,7 +494,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 onClick={onClose}
                 disabled={isLoading}
               >
-                Cancel
+                {t('Cancel')}
               </Button>
               
               <Button 
@@ -502,7 +505,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    Saving...
+                    {t('Saving...')}
                   </>
                 ) : (
                   'Save Contact'

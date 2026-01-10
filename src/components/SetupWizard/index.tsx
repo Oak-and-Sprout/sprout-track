@@ -10,6 +10,8 @@ import FamilySetupStage from './FamilySetupStage';
 import SecuritySetupStage from './SecuritySetupStage';
 import BabySetupStage from './BabySetupStage';
 import { Gender } from '@prisma/client';
+import { useLocalization } from '@/src/context/localization';
+
 import './setup-wizard.css';
 
 /**
@@ -24,6 +26,8 @@ import './setup-wizard.css';
  * ```
  */
 const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSetup = false }) => {
+  const { t } = useLocalization();
+  
   const [stage, setStage] = useState(1);
   const [loading, setLoading] = useState(false);
   
@@ -548,7 +552,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             height={128}
             className={cn(styles.stageImage, "setup-wizard-stage-image")}
           />
-          <h1 className={cn(styles.title, "setup-wizard-title")}>Sprout Track</h1>
+          <h1 className={cn(styles.title, "setup-wizard-title")}>{t('Sprout Track')}</h1>
           <div className={cn(styles.progressBar, "setup-wizard-progress-bar")}>
             <div 
               className={cn(styles.progressIndicator, "setup-wizard-progress-indicator")}
@@ -556,7 +560,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             ></div>
           </div>
           <p className={cn(styles.stepIndicator, "setup-wizard-step-indicator")}>
-            Step {stage} of 3
+            {t('Step')} {stage} {t('of 3')}
           </p>
         </div>
 

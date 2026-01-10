@@ -5,6 +5,8 @@ import { Label } from '@/src/components/ui/label';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Play, Pause, Clock } from 'lucide-react';
 import TimerInput from './TimerInput';
+import { useLocalization } from '@/src/context/localization';
+
 import './feed-form.css';
 
 interface BreastFeedFormProps {
@@ -26,7 +28,8 @@ interface BreastFeedFormProps {
 }
 
 // Extract hours, minutes, seconds from total seconds
-const extractTimeComponents = (totalSeconds: number) => {
+const extractTimeComponents = (totalSeconds: number) => {  
+
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
@@ -61,6 +64,8 @@ export default function BreastFeedForm({
   onNotesChange,
   getCurrentDurations,
 }: BreastFeedFormProps) {
+
+  const { t } = useLocalization();
   const [isEditingLeft, setIsEditingLeft] = useState(false);
   const [isEditingRight, setIsEditingRight] = useState(false);
   
@@ -267,7 +272,7 @@ export default function BreastFeedForm({
   if (isEditing) {
     return (
       <div className="feed-form-container">
-        <Label className="form-label">Duration - {side === 'LEFT' ? 'Left' : 'Right'} Side</Label>
+        <Label className="form-label">{t('Duration -')} {side === 'LEFT' ? 'Left' : 'Right'} {t('Side')}</Label>
         <div className="flex flex-col items-center space-y-4 py-4">
           {side === 'LEFT' ? (
             <TimerInput
@@ -326,7 +331,7 @@ export default function BreastFeedForm({
   // When creating new entries, show both sides
   return (
     <div className="feed-form-container">
-      <Label className="form-label">Duration</Label>
+      <Label className="form-label">{t('Duration')}</Label>
       <div className="flex justify-center gap-2 py-4">
         {/* Left Side */}
         <div className={`flex flex-col items-center space-y-4 p-1 flex-1 max-w-xs rounded-lg transition-all duration-300 ${
@@ -334,7 +339,7 @@ export default function BreastFeedForm({
             ? 'bg-green-50 border-2 border-green-200 shadow-md timer-active-side' 
             : 'bg-transparent'
         }`}>
-          <Label className="text-lg font-semibold text-gray-700 timer-label">Left Side</Label>
+          <Label className="text-lg font-semibold text-gray-700 timer-label">{t('Left Side')}</Label>
           <TimerInput
             hours={leftHours}
             minutes={leftMinutes}
@@ -381,7 +386,7 @@ export default function BreastFeedForm({
             ? 'bg-green-50 border-2 border-green-200 shadow-md timer-active-side' 
             : 'bg-transparent'
         }`}>
-          <Label className="text-lg font-semibold text-gray-700 timer-label">Right Side</Label>
+          <Label className="text-lg font-semibold text-gray-700 timer-label">{t('Right Side')}</Label>
           <TimerInput
             hours={rightHours}
             minutes={rightMinutes}
@@ -419,7 +424,7 @@ export default function BreastFeedForm({
       </div>
       {onNotesChange && (
         <div className="mt-6">
-          <label className="form-label">Notes</label>
+          <label className="form-label">{t('Notes')}</label>
           <Textarea
             id="notes"
             name="notes"

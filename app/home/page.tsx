@@ -10,10 +10,13 @@ import { useTheme } from '@/src/context/theme';
 import { Github, Users, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
 import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
 import TermsOfUseModal from '@/src/components/modals/terms-of-use';
+import { useLocalization } from '@/src/context/localization';
+
 import './home.css';
 
 const home = () => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [currentActivity, setCurrentActivity] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -216,7 +219,7 @@ const home = () => {
                 alt="Sprout Track Logo" 
                 className="saas-logo-image"
               />
-              <span className="saas-logo-text">Sprout Track</span>
+              <span className="saas-logo-text">{t('Sprout Track')}</span>
             </div>
             <div className="flex items-center gap-2">
               <AccountButton 
@@ -252,17 +255,16 @@ const home = () => {
         <div className="saas-hero-content">
           <div className="saas-hero-text">
             <h1 className="saas-hero-title">
-              Easily track your baby's{' '}
+              {t('Easily track your baby\'s')}{' '}
               <span className={`saas-hero-animated-word ${isAnimating ? 'animating' : ''}`}>
                 {activities[currentActivity]}
               </span>
             </h1>
             <p className="saas-hero-description">
-              The complete baby tracking solution built by parents for parents. Monitor sleep, feeding, 
-              diapers, milestones, and more with our intuitive, family-friendly platform.
+              {t('The complete baby tracking solution built by parents for parents. Monitor sleep, feeding, diapers, milestones, and more with our intuitive, family-friendly platform.')}
             </p>
             <p className="saas-hero-description">
-              <b>Simple to use.  Privacy-focused.  Accessible anywhere.</b>
+              <b>{t('Simple to use. Privacy-focused. Accessible anywhere.')}</b>
             </p>
             {/* <div className="saas-hero-actions">
               <Button size="lg" className="saas-hero-cta">
@@ -293,7 +295,7 @@ const home = () => {
                   border: 'none'
                 }}
               >
-                Your browser does not support the video tag.
+                {t('Your browser does not support the video tag.')}
               </video>
             </div>
           </div>
@@ -308,9 +310,9 @@ const home = () => {
       {/* Demo Section */}
       <section id="demo" className="saas-cta">
         <div className="saas-cta-content">
-          <h2 className="saas-cta-title">Don't take our word for it - try it yourself!</h2>
+          <h2 className="saas-cta-title">{t('Don\'t take our word for it - try it yourself!')}</h2>
           <p className="saas-cta-description">
-            Experience Sprout Track with our live demo environment based on realistic data.
+            {t('Experience Sprout Track with our live demo environment based on realistic data.')}
           </p>
           <div className="saas-cta-actions">
             <div className="max-w-md mx-auto space-y-4">
@@ -320,20 +322,20 @@ const home = () => {
                 asChild
               >
                 <a href="/demo">
-                  Try the Live Demo
+                  {t('Try the Live Demo')}
                 </a>
               </Button>
               <div className="saas-demo-details">
                 <p className="saas-demo-details-title">
-                  Demo Access Details:
+                  {t('Demo Access Details:')}
                 </p>
                 <div className="saas-demo-details-grid">
                   <div>
-                    <span className="saas-demo-label">Login ID:</span>
+                    <span className="saas-demo-label">{t('Login ID:')}</span>
                     <span className="saas-demo-value">01</span>
                   </div>
                   <div>
-                    <span className="saas-demo-label">PIN:</span>
+                    <span className="saas-demo-label">{t('PIN:')}</span>
                     <span className="saas-demo-value">111111</span>
                   </div>
                 </div>
@@ -350,23 +352,23 @@ const home = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <h3 className="saas-feature-title">
-                Manage Your Care Team
+                {t('Manage Your Care Team')}
               </h3>
               <p className="saas-feature-description">
-                Add multiple caretakers to your family account. Parents, grandparents, babysitters, and daycare providers can all contribute to tracking your baby's activities with secure, individual access.
+                {t('Add multiple caretakers to your family account. Parents, grandparents, babysitters, and daycare providers can all contribute to tracking your baby\'s activities with secure, individual access.')}
               </p>
               <ul className="saas-feature-list">
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-teal-500 rounded-full mr-3"></span>
-                  Easy ID and Pin access for each caretaker (no account required)
+                  {t('Easy ID and Pin access for each caretaker (no account required)')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-teal-500 rounded-full mr-3"></span>
-                  Everything accessible from your unique family web address
+                  {t('Everything accessible from your unique family web address')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-teal-500 rounded-full mr-3"></span>
-                  Real-time sync across all devices
+                  {t('Real-time sync across all devices')}
                 </li>
               </ul>
             </div>
@@ -397,7 +399,7 @@ const home = () => {
                       transition: 'opacity 400ms ease-in-out'
                     }}
                   >
-                    Your browser does not support the video tag.
+                    {t('Your browser does not support the video tag.')}
                   </video>
                 </div>
               </div>
@@ -430,30 +432,30 @@ const home = () => {
                       objectFit: 'cover'
                     }}
                   >
-                    Your browser does not support the video tag.
+                    {t('Your browser does not support the video tag.')}
                   </video>
                 </div>
               </div>
             </div>
             <div>
               <h3 className="saas-feature-title">
-                Track Important Baby Info
+                {t('Track Important Baby Info')}
               </h3>
               <p className="saas-feature-description">
-                Instantly see your baby's latest events, check family contacts, and view trends for the past month—like average feedings, diapers, wake windows, sleep windows, and more—all in one place.
+                {t('Instantly see your baby\'s latest events, check family contacts, and view trends for the past month—like average feedings, diapers, wake windows, sleep windows, and more—all in one place.')}
               </p>
               <ul className="saas-feature-list">
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  View the most recent important activities at a glance
+                  {t('View the most recent important activities at a glance')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Quickly view emergency contacts
+                  {t('Quickly view emergency contacts')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Spot trends and changes in your baby's daily routines
+                  {t('Spot trends and changes in your baby\'s daily routines')}
                 </li>
               </ul>
             </div>
@@ -467,23 +469,23 @@ const home = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <h3 className="saas-feature-title">
-                Daily Activity Overview
+                {t('Daily Activity Overview')}
               </h3>
               <p className="saas-feature-description">
-                Get a complete picture of your baby's day with intuitive daily summaries. See feeding times, diaper changes, sleep periods, and activities at a glance.
+                {t('Get a complete picture of your baby\'s day with intuitive daily summaries. See feeding times, diaper changes, sleep periods, and activities at a glance.')}
               </p>
               <ul className="saas-feature-list">
                 <li className="saas-feature-list-item">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Timeline view of daily activities
+                  {t('Timeline view of daily activities')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Quick stats and totals for the day
+                  {t('Quick stats and totals for the day')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Filter for specific activities
+                  {t('Filter for specific activities')}
                 </li>
               </ul>
             </div>
@@ -507,7 +509,7 @@ const home = () => {
                       objectFit: 'cover'
                     }}
                   >
-                    Your browser does not support the video tag.
+                    {t('Your browser does not support the video tag.')}
                   </video>
                 </div>
               </div>
@@ -540,30 +542,30 @@ const home = () => {
                       objectFit: 'cover'
                     }}
                   >
-                    Your browser does not support the video tag.
+                    {t('Your browser does not support the video tag.')}
                   </video>
                 </div>
               </div>
             </div>
             <div>
               <h3 className="saas-feature-title">
-                Schedule & Plan Ahead
+                {t('Schedule & Plan Ahead')}
               </h3>
               <p className="saas-feature-description">
-                Keep track of appointments, caretaker schedules, and important events with our integrated calendar. Keep everyone in the loop!
+                {t('Keep track of appointments, caretaker schedules, and important events with our integrated calendar. Keep everyone in the loop!')}
               </p>
               <ul className="saas-feature-list">
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Help coordinate schedules between caretakers
+                  {t('Help coordinate schedules between caretakers')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Keep track of appoitnments
+                  {t('Keep track of appoitnments')}
                 </li>
                 <li className="saas-feature-list-item">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  Add custom events and reminders
+                  {t('Add custom events and reminders')}
                 </li>
               </ul>
             </div>
@@ -576,18 +578,18 @@ const home = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Pricing made easy
+              {t('Pricing made easy')}
             </h2>
             <p className="text-xl text-teal-100 mb-8">
-              $2 subscription, or $12 for life
+              {t('$2 subscription, or $12 for life')}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             {/* Monthly Plan */}
             <div className="saas-pricing-card saas-pricing-card-on-gradient">
               <div className="mb-4">
-                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">Monthly</h3>
-                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">Perfect for trying out Sprout Track</p>
+                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">{t('Monthly')}</h3>
+                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">{t('Perfect for trying out Sprout Track')}</p>
               </div>
               <div className="mb-6">
                 <span className="saas-pricing-card-price saas-pricing-card-price-on-gradient">$2</span>
@@ -596,62 +598,62 @@ const home = () => {
               <ul className="saas-pricing-card-features">
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Unlimited babies and caretakers</span>
+                  <span>{t('Unlimited babies and caretakers')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Track all activities</span>
+                  <span>{t('Track all activities')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Calendar and reminders</span>
+                  <span>{t('Calendar and reminders')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Medicine tracking</span>
+                  <span>{t('Medicine tracking')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Data export</span>
+                  <span>{t('Data export')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Mobile-friendly interface</span>
+                  <span>{t('Mobile-friendly interface')}</span>
                 </li>
               </ul>
             </div>
 
             {/* Lifetime Plan */}
             <div className="saas-pricing-card saas-pricing-card-highlighted saas-pricing-card-on-gradient">
-              <div className="saas-pricing-card-badge saas-pricing-card-badge-on-gradient">BEST VALUE</div>
+              <div className="saas-pricing-card-badge saas-pricing-card-badge-on-gradient">{t('BEST VALUE')}</div>
               <div className="mb-4">
-                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">Lifetime</h3>
-                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">One-time payment, lifetime access</p>
+                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">{t('Lifetime')}</h3>
+                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">{t('One-time payment, lifetime access')}</p>
               </div>
               <div className="mb-6">
                 <span className="saas-pricing-card-price saas-pricing-card-price-on-gradient">$12</span>
-                <span className="saas-pricing-card-interval saas-pricing-card-interval-on-gradient"> for life</span>
+                <span className="saas-pricing-card-interval saas-pricing-card-interval-on-gradient"> {t('for life')}</span>
               </div>
               <ul className="saas-pricing-card-features">
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Everything in Monthly</span>
+                  <span>{t('Everything in Monthly')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Lifetime updates</span>
+                  <span>{t('Lifetime updates')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>No recurring payments</span>
+                  <span>{t('No recurring payments')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Priority support forever</span>
+                  <span>{t('Priority support forever')}</span>
                 </li>
                 <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
                   <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>Best long-term value</span>
+                  <span>{t('Best long-term value')}</span>
                 </li>
               </ul>
             </div>
@@ -663,10 +665,10 @@ const home = () => {
       <section className="saas-feature-section saas-feature-section-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="saas-feature-title mb-6">
-            Start Tracking Today
+            {t('Start Tracking Today')}
           </h2>
           <p className="saas-feature-description text-lg mb-8 max-w-2xl mx-auto">
-            Ready to make tracking diaper changes and late-night feedings a breeze? Try Sprout Track free for 14 days — sleep not included!
+            {t('Ready to make tracking diaper changes and late-night feedings a breeze? Try Sprout Track free for 14 days — sleep not included!')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button
@@ -677,11 +679,11 @@ const home = () => {
                 setShowAccountModal(true);
               }}
             >
-              Click Here to Get Started
+              {t('Click Here to Get Started')}
             </Button>
           </div>
           <p className="saas-feature-description text-sm mt-6 max-w-lg mx-auto">
-            No credit card or commitment required.
+            {t('No credit card or commitment required.')}
           </p>
         </div>
       </section>
@@ -697,10 +699,10 @@ const home = () => {
                 alt="Sprout Track Logo" 
                 className="saas-logo-image"
               />
-              <span className="saas-logo-text">Sprout Track</span>
+              <span className="saas-logo-text">{t('Sprout Track')}</span>
             </div>
             <p className="saas-footer-description">
-              Sprouting into something amazing.
+              {t('Sprouting into something amazing.')}
             </p>
           </div>
           <div className="saas-footer-demo">
@@ -710,18 +712,18 @@ const home = () => {
               asChild
             >
               <a href="/demo">
-                Try the Demo
+                {t('Try the Demo')}
               </a>
             </Button>
             <div className="space-y-1">
               <p className="saas-footer-description text-sm">
-                <strong>Demo Access:</strong>
+                <strong>{t('Demo Access:')}</strong>
               </p>
               <p className="saas-footer-description text-sm">
-                Login ID: 01
+                {t('Login ID: 01')}
               </p>
               <p className="saas-footer-description text-sm">
-                PIN: 111111
+                {t('PIN: 111111')}
               </p>
             </div>
           </div>
@@ -729,25 +731,25 @@ const home = () => {
       <div className="saas-footer-bottom relative flex flex-col sm:flex-row items-center justify-center gap-4">
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <p className="saas-footer-copyright">
-            © 2025 Oak and Sprout. All rights reserved.
+            {t('© 2025 Oak and Sprout. All rights reserved.')}
           </p>
           <div className="flex items-center gap-4 text-sm">
             <button
               onClick={() => setShowPrivacyPolicy(true)}
               className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors cursor-pointer underline-offset-4 hover:underline"
             >
-              Privacy Policy
+              {t('Privacy Policy')}
             </button>
             <button
               onClick={() => setShowTermsOfUse(true)}
               className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors cursor-pointer underline-offset-4 hover:underline"
             >
-              Terms of Use
+              {t('Terms of Use')}
             </button>
           </div>
         </div>
         <div className="flex items-center gap-2 saas-footer-copyright">
-        <p>Follow on</p>
+        <p>{t('Follow on')}</p>
         <Button variant="outline" size="sm" asChild className="p-2">
             <a 
               href="https://github.com/Oak-and-Sprout/sprout-track" 

@@ -9,6 +9,8 @@ import {
 import { FullLogActivityDetailsProps } from './full-log-timeline.types';
 import { getActivityDetails, formatTime } from '@/src/components/Timeline/utils';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
+
 import './full-log-timeline.css';
 
 /**
@@ -25,6 +27,7 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
   onEdit,
 }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   
   if (!activity) return null;
 
@@ -98,21 +101,21 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
               onClick={() => onDelete(activity)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('Delete')}
             </Button>
             <Button
               variant="outline"
               onClick={handleEdit}
             >
               <Pencil className="h-4 w-4 mr-2" />
-              Edit
+              {t('Edit')}
             </Button>
           </div>
           <Button
             variant="outline"
             onClick={onClose}
           >
-            Close
+            {t('Close')}
           </Button>
         </div>
       </FormPageFooter>

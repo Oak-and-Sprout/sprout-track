@@ -11,6 +11,8 @@ import { cn } from '@/src/lib/utils';
 import { useTheme } from '@/src/context/theme';
 import { changelogModalStyles } from './changelog-modal.styles';
 import { ChangelogModalProps } from './changelog-modal.types';
+import { useLocalization } from '@/src/context/localization';
+
 import './changelog-modal.css';
 
 /**
@@ -23,6 +25,7 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
   onClose,
   version,
 }) => {
+  const { t } = useLocalization();
   const [changelogContent, setChangelogContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const { theme } = useTheme();
@@ -122,7 +125,7 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
   // This is a simple implementation that will be enhanced when a markdown renderer is installed
   const formatMarkdown = (content: string): React.ReactNode => {
     if (loading) {
-      return <div className="text-center py-8">Loading changelog...</div>;
+      return <div className="text-center py-8">{t('Loading changelog...')}</div>;
     }
 
     // Process the content to group list items
@@ -247,10 +250,10 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
       <DialogContent className={cn(changelogModalStyles.container, "changelog-modal-container")}>
         <DialogHeader className={changelogModalStyles.header}>
           <DialogTitle className={cn(changelogModalStyles.title, "changelog-modal-title")}>
-            Changelog
+            {t('Changelog')}
           </DialogTitle>
           <DialogDescription className={cn(changelogModalStyles.description, "changelog-modal-description")}>
-            View the history of changes and updates to the application
+            {t('View the history of changes and updates to the application')}
           </DialogDescription>
         </DialogHeader>
         
@@ -265,7 +268,7 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({
             onClick={onClose}
             className={cn(changelogModalStyles.closeButton, "changelog-modal-close-button")}
           >
-            Close
+            {t('Close')}
           </Button>
         </div>
       </DialogContent>

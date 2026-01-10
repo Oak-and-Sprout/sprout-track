@@ -19,6 +19,7 @@ import {
 } from '@/src/components/ui/select';
 import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
 import ContactSelector from './ContactSelector';
+import { useLocalization } from '@/src/context/localization';
 
 interface MedicineFormProps {
   isOpen: boolean;
@@ -43,6 +44,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
   contacts,
   onSave,
 }) => {
+
+  const { t } = useLocalization();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -65,7 +68,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
   const [doseTimeUnit, setDoseTimeUnit] = useState<'hours' | 'days'>('hours');
   
   // Helper function to parse doseMinTime from DD:HH:MM format
-  const parseDoseMinTime = (doseMinTime: string) => {
+  const parseDoseMinTime = (doseMinTime: string) => {  
+
     if (!doseMinTime) {
       setDoseTimeValue('');
       setDoseTimeUnit('hours');
@@ -415,7 +419,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
             {/* Medicine Name */}
             <div className={styles.formGroup}>
               <Label htmlFor="name">
-                Medicine Name
+                {t('Medicine Name')}
                 <span className="text-red-500 ml-1">*</span>
               </Label>
               <div className="relative">
@@ -441,7 +445,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className={styles.formGroup}>
                 <Label htmlFor="typicalDoseSize">
-                  Typical Dose Size
+                  {t('Typical Dose Size')}
                 </Label>
                 <Input
                   type="text"
@@ -462,7 +466,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
               
               <div className={styles.formGroup}>
                 <Label htmlFor="unitAbbr">
-                  Unit
+                  {t('Unit')}
                 </Label>
                 <Select
                   value={formData.unitAbbr}
@@ -491,7 +495,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
             {/* Minimum Time Between Doses */}
             <div className={styles.formGroup}>
               <Label htmlFor="doseMinTime">
-                Minimum Time Between Doses
+                {t('Minimum Time Between Doses')}
               </Label>
               <div className="space-y-3">
                 {/* Time Input and Unit Toggle */}
@@ -511,7 +515,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   {/* Unit Toggle */}
                   <div className="flex items-center space-x-2">
                     <Label htmlFor="dose-time-unit" className="text-sm font-medium">
-                      Hours
+                      {t('Hours')}
                     </Label>
                     <Switch
                       id="dose-time-unit"
@@ -520,7 +524,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                       variant="green"
                     />
                     <Label htmlFor="dose-time-unit" className="text-sm font-medium">
-                      Days
+                      {t('Days')}
                     </Label>
                   </div>
                 </div>
@@ -553,14 +557,14 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                 htmlFor="active-status"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Active Medicine
+                {t('Active Medicine')}
               </Label>
             </div>
             
             {/* Notes */}
             <div className={styles.formGroup}>
               <Label htmlFor="notes">
-                Notes
+                {t('Notes')}
               </Label>
               <div className="relative">
                 <Textarea
@@ -578,7 +582,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
             {/* Associated Contacts */}
             <div className={styles.formGroup}>
               <Label htmlFor="contacts">
-                Associated Contacts
+                {t('Associated Contacts')}
               </Label>
               <ContactSelector
                 contacts={localContacts}
@@ -601,7 +605,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
             onClick={onClose}
             disabled={isLoading}
           >
-            Cancel
+            {t('Cancel')}
           </Button>
           
           <Button 
@@ -612,7 +616,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                Saving...
+                {t('Saving...')}
               </>
             ) : (medicine ? 'Update' : 'Save')}
           </Button>

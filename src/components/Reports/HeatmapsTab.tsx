@@ -9,6 +9,8 @@ import { cn } from '@/src/lib/utils';
 import { styles } from './reports.styles';
 import { HeatmapsTabProps, ActivityType, SleepActivity, FeedActivity, DiaperActivity, PumpActivity } from './reports.types';
 import { getActivityTime } from '@/src/components/Timeline/utils';
+import { useLocalization } from '@/src/context/localization';
+
 import {
   TIME_SLOTS,
   SLOT_MINUTES,
@@ -39,7 +41,8 @@ const HEATMAP_CONFIGS: HeatmapConfig[] = [
 ];
 
 // Format hour for chart labels (6a, 7a, 12p, 1p, etc.)
-const formatHourLabel = (hour: number): string => {
+const formatHourLabel = (hour: number): string => {  const { t } = useLocalization();
+
   if (hour === 0 || hour === 24) return '12a';
   if (hour === 12) return '12p';
   if (hour < 12) return `${hour}a`;
@@ -80,7 +83,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
         <Grid3X3 className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
-          Select a date range to view heatmaps.
+          {t('Select a date range to view heatmaps.')}
         </p>
       </div>
     );
@@ -91,7 +94,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
         <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
         <p className={cn(styles.loadingText, "reports-loading-text")}>
-          Loading heatmap data...
+          {t('Loading heatmap data...')}
         </p>
       </div>
     );
@@ -102,7 +105,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
         <Grid3X3 className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
-          No activities recorded for this date range.
+          {t('No activities recorded for this date range.')}
         </p>
       </div>
     );
@@ -139,7 +142,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
                   </span>
                   {hasData && (
                     <div className="text-[9px] text-gray-400 mt-0.5">
-                      max: {data.maxCount}
+                      {t('max:')} {data.maxCount}
                     </div>
                   )}
                 </div>
@@ -216,7 +219,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
                   {!hasData && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-xs text-gray-400 text-center px-2">
-                        No data
+                        {t('No data')}
                       </span>
                     </div>
                   )}

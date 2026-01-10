@@ -24,6 +24,7 @@ import {
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface GiveMedicineFormProps {
   isOpen: boolean;
@@ -50,6 +51,8 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
   refreshData,
   activity,
 }) => {
+
+  const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -187,7 +190,8 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
     }
   }, [isOpen, activity]);
   
-  const handleDateTimeChange = (date: Date) => {
+  const handleDateTimeChange = (date: Date) => {  
+
     setSelectedDateTime(date);
     setFormData(prev => ({ ...prev, time: toUTCString(date) || date.toISOString() }));
     if (errors.time) setErrors(prev => ({ ...prev, time: '' }));
@@ -355,7 +359,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
           {isFetching ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <p className="mt-2 text-gray-600">Loading form data...</p>
+              <p className="mt-2 text-gray-600">{t('Loading form data...')}</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -367,7 +371,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               )}
               
               <div>
-                <Label htmlFor="medicine">Medicine</Label>
+                <Label htmlFor="medicine">{t('Medicine')}</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
@@ -376,7 +380,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Available Medicines</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('Available Medicines')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {medicines.map(med => (
                       <DropdownMenuItem key={med.id} onSelect={() => handleMedicineChange(med.id)}>
@@ -389,13 +393,13 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               </div>
 
               <div>
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">{t('Time')}</Label>
                 <DateTimePicker value={selectedDateTime} onChange={handleDateTimeChange} />
                 {errors.time && <p className="text-sm text-red-500 mt-1">{errors.time}</p>}
               </div>
 
               <div>
-                <Label htmlFor="dose">Dose</Label>
+                <Label htmlFor="dose">{t('Dose')}</Label>
                 <div className="flex items-center space-x-2">
                   <Input
                     id="doseAmount"
@@ -428,7 +432,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               </div>
 
               <div>
-                <Label htmlFor="notes">Notes (optional)</Label>
+                <Label htmlFor="notes">{t('Notes (optional)')}</Label>
                 <Textarea 
                   id="notes" 
                   name="notes" 
@@ -449,7 +453,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               onClick={onClose}
               disabled={isLoading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               type="submit"
@@ -458,7 +462,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('Saving...')}
                 </>
               ) : (
                 activity ? 'Update' : 'Save'

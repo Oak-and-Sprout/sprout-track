@@ -18,6 +18,7 @@ import { Badge } from '@/src/components/ui/badge';
 import { Switch } from '@/src/components/ui/switch';
 import { Label } from '@/src/components/ui/label';
 import MedicineForm from './MedicineForm';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * ManageMedicinesTab Component
@@ -28,7 +29,8 @@ import MedicineForm from './MedicineForm';
 const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) => {
   
   // Helper function to format doseMinTime from DD:HH:MM to user-friendly format
-  const formatDoseMinTimeDisplay = (doseMinTime: string): string => {
+  const formatDoseMinTimeDisplay = (doseMinTime: string): string => {  const { t } = useLocalization();
+
     if (!doseMinTime) return 'Not specified';
     
     const timeRegex = /^([0-9]{1,2}):([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
@@ -217,7 +219,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
       {isFetching && (
         <div className="flex flex-col items-center justify-center p-6">
           <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-          <p className="mt-2 text-gray-600">Loading medicines...</p>
+          <p className="mt-2 text-gray-600">{t('Loading medicines...')}</p>
         </div>
       )}
       
@@ -231,9 +233,9 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
       {!isFetching && !error && !showMedicineForm && (
         <>
           <div className={cn(styles.manageMedicinesHeader)}>
-            <h3 className={cn(styles.manageMedicinesTitle, "medicine-form-manage-medicines-title")}>Manage Medicines</h3>
+            <h3 className={cn(styles.manageMedicinesTitle, "medicine-form-manage-medicines-title")}>{t('Manage Medicines')}</h3>
             <div className={cn(styles.showInactiveContainer)}>
-              <Label htmlFor="show-inactive">Show Inactive</Label>
+              <Label htmlFor="show-inactive">{t('Show Inactive')}</Label>
               <Switch
                 id="show-inactive"
                 checked={showInactive}
@@ -254,7 +256,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
                   <div className={cn(styles.medicineListContent)}>
                     <p className={cn(styles.medicineListName, "medicine-form-medicine-list-name")}>{medicine.name}</p>
                     <p className={cn(styles.medicineListDose, "medicine-form-medicine-list-dose")}>
-                      Typical dose: {medicine.typicalDoseSize} {medicine.unitAbbr}
+                      {t('Typical dose:')} {medicine.typicalDoseSize} {medicine.unitAbbr}
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditMedicine(medicine); }}>
@@ -266,7 +268,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
                     <div className={cn(styles.medicineListDetailsContent)}>
                       <p className={cn(styles.medicineListDetailItem, "medicine-form-medicine-list-detail-item")}>
                         <Clock className={cn(styles.medicineListDetailIcon)} /> 
-                        Minimum time between doses: {formatDoseMinTimeDisplay(medicine.doseMinTime || '')}
+                        {t('Minimum time between doses:')} {formatDoseMinTimeDisplay(medicine.doseMinTime || '')}
                       </p>
                       {medicine.notes && <p className={cn(styles.medicineListNotes, "medicine-form-medicine-list-notes")}>{medicine.notes}</p>}
                       <div className={cn(styles.medicineListContactsContainer)}>
@@ -275,7 +277,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
                           {medicine.contacts.length > 0 ? (
                             medicine.contacts.map(c => <Badge key={c.contact.id} variant="secondary">{c.contact.name}</Badge>)
                           ) : (
-                            <span className={cn(styles.medicineListNoContacts, "medicine-form-medicine-list-no-contacts")}>No associated contacts</span>
+                            <span className={cn(styles.medicineListNoContacts, "medicine-form-medicine-list-no-contacts")}>{t('No associated contacts')}</span>
                           )}
                         </div>
                       </div>
@@ -287,7 +289,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
           </div>
           
           <Button className="w-full mt-4" onClick={handleAddMedicine}>
-            <Plus className="mr-2 h-4 w-4" /> Add New Medicine
+            <Plus className="mr-2 h-4 w-4" /> {t('Add New Medicine')}
           </Button>
         </>
       )}

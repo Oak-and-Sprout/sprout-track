@@ -5,6 +5,7 @@ import { FullLogActivityListProps } from './full-log-timeline.types';
 import { cn } from '@/src/lib/utils';
 import styles from './full-log-timeline.styles';
 import { getActivityIcon, getActivityStyle, getActivityDescription } from '@/src/components/Timeline/utils';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * FullLogActivityList Component
@@ -22,6 +23,8 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
   onPageChange,
   onItemsPerPageChange,
 }) => {
+  const { t } = useLocalization();
+  
   return (
     <>
       {/* Scrollable Content */}
@@ -62,10 +65,10 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
                   <BabyIcon className={cn(styles.emptyStateIconInner, "full-log-timeline-empty-state-icon-inner")} />
                 </div>
                 <h3 className={cn(styles.emptyStateTitle, "full-log-timeline-empty-state-title")}>
-                  No activities recorded
+                  {t('No activities recorded')}
                 </h3>
                 <p className={cn(styles.emptyStateDescription, "full-log-timeline-empty-state-description")}>
-                  Activities will appear here once you start tracking
+                  {t('Activities will appear here once you start tracking')}
                 </p>
               </div>
             </div>
@@ -79,7 +82,7 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
                   <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                 </div>
                 <h3 className={cn(styles.emptyStateTitle, "full-log-timeline-loading-text")}>
-                  Loading activities...
+                  {t('Loading activities...')}
                 </h3>
               </div>
             </div>
@@ -95,10 +98,10 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
             value={itemsPerPage}
             onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
           >
-            <option value="5">5 per page</option>
-            <option value="10">10 per page</option>
-            <option value="20">20 per page</option>
-            <option value="50">50 per page</option>
+            <option value="5">{t('5 per page')}</option>
+            <option value="10">{t('10 per page')}</option>
+            <option value="20">{t('20 per page')}</option>
+            <option value="50">{t('50 per page')}</option>
           </select>
           
           {totalPages > 1 && (
@@ -112,7 +115,7 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
                 {'<'}
               </Button>
               <span className={cn(styles.paginationText, "full-log-timeline-pagination-text")}>
-                Page {currentPage} of {totalPages}
+                {t('Page')} {currentPage} of {totalPages}
               </span>
               <Button
                 variant="outline"

@@ -19,6 +19,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 export type FeedingChartMetric = 'bottle' | 'breast' | 'solids';
 
@@ -31,7 +32,8 @@ interface FeedingChartModalProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {
+const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -283,7 +285,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             {bottleData.data.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No bottle feed data available for the selected date range.
+                  {t('No bottle feed data available for the selected date range.')}
                 </p>
               </div>
             ) : (
@@ -355,7 +357,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             {breastData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No breast feed data available for the selected date range.
+                  {t('No breast feed data available for the selected date range.')}
                 </p>
               </div>
             ) : (
@@ -440,7 +442,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             {solidsData.data.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No solids feed data available for the selected date range.
+                  {t('No solids feed data available for the selected date range.')}
                 </p>
               </div>
             ) : (

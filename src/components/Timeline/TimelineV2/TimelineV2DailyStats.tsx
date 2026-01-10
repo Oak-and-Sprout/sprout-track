@@ -27,6 +27,8 @@ import { Calendar as CalendarComponent } from '@/src/components/ui/calendar';
 import { FilterType } from '../types';
 import { ActivityType } from '../types';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
+import { useLocalization } from '@/src/context/localization';
+
 import './TimelineV2DailyStats.css';
 
 interface TimelineV2DailyStatsProps {
@@ -65,6 +67,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   isHeatmapVisible,
   onHeatmapToggle
 }) => {
+  const { t } = useLocalization();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -580,7 +583,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             className="flex items-center gap-3 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
             aria-label={isCollapsed ? 'Expand daily summary' : 'Collapse daily summary'}
           >
-            <span>Daily Summary</span>
+            <span>{t('Daily Summary')}</span>
             {isCollapsed ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
@@ -598,12 +601,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               {isHeatmapVisible ? (
                 <>
                   <EyeOff className="h-3 w-3" />
-                  <span>Hide heatmap</span>
+                  <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-3 w-3" />
-                  <span>Show heatmap</span>
+                  <span>{t('Show heatmap')}</span>
                 </>
               )}
             </button>
@@ -617,12 +620,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               {isHeatmapVisible ? (
                 <>
                   <EyeOff className="h-3 w-3" />
-                  <span>Hide heatmap</span>
+                  <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-3 w-3" />
-                  <span>Show heatmap</span>
+                  <span>{t('Show heatmap')}</span>
                 </>
               )}
             </button>
@@ -672,7 +675,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               </div>
             ) : (
               <div className="text-sm text-gray-500 text-center py-4">
-                No activities recorded for this day
+                {t('No activities recorded for this day')}
               </div>
             )}
           </>
@@ -705,7 +708,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               onClick={onHeatmapToggle}
             >
               <EyeOff className="h-3 w-3" />
-              <span>Hide heatmap</span>
+              <span>{t('Hide heatmap')}</span>
             </button>
           </div>
           <div className="h-full px-2 py-2">

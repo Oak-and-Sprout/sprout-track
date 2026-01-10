@@ -167,7 +167,40 @@ function getLineNumber(content, index) {
 }
 
 /**
+ * Check if a string is already wrapped in t() call
+ */
+function isAlreadyLocalized(content, text, startPos, endPos) {
+  // Get surrounding context to check if already in t() call
+  const beforeContext = content.substring(Math.max(0, startPos - 50), startPos);
+  const afterContext = content.substring(endPos, Math.min(content.length, endPos + 50));
+  
+  // Check if the text is already inside {t('...')} or {t("...")}
+  // Look for patterns like {t('Text')} or {t("Text")} around this position
+  const fullContext = beforeContext + text + afterContext;
+  
+  // Check if we're inside a t() call
+  // Pattern: {t('text')} or {t("text")}
+  const tCallPattern = /\{t\(['"]([^'"]*)['"]\)\}/g;
+  let match;
+  while ((match = tCallPattern.exec(fullContext)) !== null) {
+    const matchText = match[1];
+    // Check if our text is contained in this t() call
+    if (matchText.includes(text) || text.includes(matchText)) {
+      // Verify the match position overlaps with our text position
+      const matchStart = beforeContext.length + match.index - 2; // -2 for {t
+      const matchEnd = matchStart + match[0].length;
+      if (startPos >= matchStart && endPos <= matchEnd) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Extract strings from a file with line number tracking
+ * Only returns strings that are NOT already localized
  */
 function extractStrings(filePath, content) {
   const strings = new Set();
@@ -191,6 +224,12 @@ function extractStrings(filePath, content) {
       ) {
         const startPos = node.getStart(sourceFile);
         const endPos = node.getEnd();
+        
+        // Check if this string is already wrapped in t() call
+        if (isAlreadyLocalized(content, text, startPos, endPos)) {
+          return; // Skip already localized strings
+        }
+        
         const lcStart = sourceFile.getLineAndCharacterOfPosition(startPos);
         const lcEnd = sourceFile.getLineAndCharacterOfPosition(endPos);
         const context = getContextSnippet(lines, lcStart.line, lcEnd.line, 1);
@@ -626,6 +665,45 @@ async function main() {
     }
   } else {
     console.log('[DRY RUN] Dry run mode - files were not modified');
+  }
+
+  // Generate list of files that still need updates
+  const filesNeedingUpdates = Array.from(fileStrings.entries())
+    .filter(([filePath, strings]) => {
+      return strings && Array.isArray(strings) && strings.length > 0;
+    })
+    .map(([filePath, strings]) => {
+      const relativePath = path.relative(process.cwd(), filePath);
+      const count = Array.isArray(strings) ? strings.length : 0;
+      return { path: relativePath, absolutePath: filePath, count };
+    })
+    .sort((a, b) => a.path.localeCompare(b.path));
+
+  if (filesNeedingUpdates.length > 0) {
+    console.log('\n' + '='.repeat(80));
+    console.log('FILES STILL NEEDING LOCALIZATION UPDATES');
+    console.log('='.repeat(80));
+    console.log(`\nTotal: ${filesNeedingUpdates.length} file(s)\n`);
+    filesNeedingUpdates.forEach(({ path: filePath, count }) => {
+      console.log(`  - ${filePath} (${count} string${count !== 1 ? 's' : ''})`);
+    });
+    console.log('\n' + '='.repeat(80));
+    
+    // Write to a file for easy reference
+    const remainingFilesPath = path.join(__dirname, '../localization-remaining-files.txt');
+    const fileListContent = [
+      '# Files Still Needing Localization Updates',
+      `# Generated: ${new Date().toISOString()}`,
+      `# Total: ${filesNeedingUpdates.length} file(s)`,
+      '',
+      ...filesNeedingUpdates.map(({ path: filePath, count }) => {
+        return `${filePath} (${count} string${count !== 1 ? 's' : ''})`;
+      })
+    ].join('\n');
+    fs.writeFileSync(remainingFilesPath, fileListContent, 'utf8');
+    console.log(`\n[INFO] List of remaining files written to: ${path.relative(process.cwd(), remainingFilesPath)}`);
+  } else {
+    console.log('\n[SUCCESS] All files have been localized! No remaining files need updates.');
   }
 
   console.log('\nComplete!');

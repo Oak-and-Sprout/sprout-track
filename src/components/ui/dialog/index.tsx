@@ -4,6 +4,8 @@ import { X } from "lucide-react"
 import { cn } from "@/src/lib/utils"
 import { dialogStyles } from "./dialog.styles"
 import { useTheme } from "@/src/context/theme"
+import { useLocalization } from '@/src/context/localization';
+
 import "./dialog.css"
 import {
   DialogProps,
@@ -47,6 +49,7 @@ const DialogContent = React.forwardRef<
   DialogContentProps
 >(({ className, children, hideClose, ...props }, ref) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   
   return (
     <DialogPortal>
@@ -61,7 +64,7 @@ const DialogContent = React.forwardRef<
         {!hideClose && (
           <DialogPrimitive.Close className={cn(dialogStyles.closeButton, "dialog-close-button")}>
             <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t('Close')}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>

@@ -29,6 +29,7 @@ import {
 } from '@/src/components/ui/popover';
 import { Calendar } from '@/src/components/ui/calendar';
 import { cn } from '@/src/lib/utils';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * FullLogFilter Component
@@ -46,6 +47,8 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
   onDateRangeChange,
   onQuickFilter,
 }) => {
+  const { t } = useLocalization();
+  
   // State for popover open/close
   const [calendarOpen, setCalendarOpen] = useState(false);
   
@@ -135,7 +138,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             onClick={() => onQuickFilter(2)}
             className="h-7 px-2 text-white hover:bg-transparent hover:text-white/90"
           >
-            2 Days
+            {t('2 Days')}
           </Button>
           
           <Button
@@ -144,7 +147,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             onClick={() => onQuickFilter(7)}
             className="h-7 px-2 text-white hover:bg-transparent hover:text-white/90"
           >
-            7 Days
+            {t('7 Days')}
           </Button>
           
           <Button
@@ -153,7 +156,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             onClick={() => onQuickFilter(30)}
             className="h-7 px-2 text-white hover:bg-transparent hover:text-white/90"
           >
-            30 Days
+            {t('30 Days')}
           </Button>
         </div>
       </div>
@@ -166,7 +169,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             size="sm" 
             className="flex items-center gap-1 h-7 text-sm font-medium text-white hover:bg-transparent hover:text-white/90 p-0"
           >
-            Filters <ChevronDown className="h-4 w-4 ml-1" />
+            {t('Filters')} <ChevronDown className="h-4 w-4 ml-1" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">

@@ -13,6 +13,7 @@ import {
 import { styles } from './reports.styles';
 import { FeedingStats, ActivityType, DateRange } from './reports.types';
 import FeedingChartModal, { FeedingChartMetric } from './FeedingChartModal';
+import { useLocalization } from '@/src/context/localization';
 
 interface FeedingStatsSectionProps {
   stats: FeedingStats;
@@ -21,7 +22,8 @@ interface FeedingStatsSectionProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {
+const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -44,7 +46,7 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
       <AccordionItem value="feeding">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
           <Icon iconNode={bottleBaby} className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-feed")} />
-          <span>Feeding Statistics</span>
+          <span>{t('Feeding Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>
           <div className={styles.statsGrid}>
@@ -59,7 +61,7 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.bottleFeeds.count}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Bottle Feeds</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Bottle Feeds')}</div>
                 {stats.bottleFeeds.avgByType.length > 0 && (
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
                     {stats.bottleFeeds.avgByType.map((bt, idx) => (
@@ -84,10 +86,10 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.breastFeeds.count}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Breast Feeds</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Breast Feeds')}</div>
                 {(stats.breastFeeds.leftCount > 0 || stats.breastFeeds.rightCount > 0) && (
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                    L: {formatMinutes(stats.breastFeeds.avgLeftMinutes)} avg, R: {formatMinutes(stats.breastFeeds.avgRightMinutes)} avg
+                    {t('L:')} {formatMinutes(stats.breastFeeds.avgLeftMinutes)} {t('avg, R:')} {formatMinutes(stats.breastFeeds.avgRightMinutes)} avg
                   </div>
                 )}
               </CardContent>
@@ -104,7 +106,7 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.solidsFeeds.count}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Solids</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Solids')}</div>
                 {stats.solidsFeeds.avgByFood.length > 0 && (
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
                     {stats.solidsFeeds.avgByFood.slice(0, 3).map((sf, idx) => (

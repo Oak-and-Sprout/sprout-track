@@ -27,6 +27,7 @@ import {
   PopoverTrigger,
 } from '@/src/components/ui/popover';
 import { Calendar } from '@/src/components/ui/calendar';
+import { useLocalization } from '@/src/context/localization';
 
 const TimelineFilter = ({
   selectedDate,
@@ -35,6 +36,10 @@ const TimelineFilter = ({
   onDateSelection,
   onFilterChange,
 }: TimelineFilterProps) => {
+  
+
+  const { t } = useLocalization();  
+
   // State for popover open/close
   const [calendarOpen, setCalendarOpen] = useState(false);
   
@@ -113,7 +118,7 @@ const TimelineFilter = ({
             size="sm" 
             className="flex items-center gap-1 h-7 text-sm font-medium text-white hover:bg-transparent hover:text-white/90 p-0"
           >
-            Filters <ChevronDown className="h-4 w-4 ml-1" />
+            {t('Filters')} <ChevronDown className="h-4 w-4 ml-1" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">

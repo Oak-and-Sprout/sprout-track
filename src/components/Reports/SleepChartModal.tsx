@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { DateRange } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 export type SleepChartMetric = 'avgNapDuration' | 'dailyNapTotal' | 'nightSleep' | 'nightWakings';
 
@@ -33,7 +34,8 @@ interface SleepChartModalProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {
+const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -87,7 +89,7 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
         {data.length === 0 ? (
           <div className={cn(styles.emptyContainer, "reports-empty-container")}>
             <p className={cn(styles.emptyText, "reports-empty-text")}>
-              No sleep data available for the selected date range.
+              {t('No sleep data available for the selected date range.')}
             </p>
           </div>
         ) : (

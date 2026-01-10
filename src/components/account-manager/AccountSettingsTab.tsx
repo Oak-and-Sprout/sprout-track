@@ -7,6 +7,8 @@ import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import PaymentModal from './PaymentModal';
 import PaymentHistory from './PaymentHistory';
+import { useLocalization } from '@/src/context/localization';
+
 import {
   User,
   Mail,
@@ -37,6 +39,8 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   familyData,
   onDataRefresh,
 }) => {
+
+  const { t } = useLocalization();
   // Edit states
   const [editingAccount, setEditingAccount] = useState(false);
   const [editingFamily, setEditingFamily] = useState(false);
@@ -349,7 +353,8 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   };
 
   // Real-time password validation for visual feedback
-  const updatePasswordValidation = (password: string) => {
+  const updatePasswordValidation = (password: string) => {  
+
     setPasswordValidation({
       length: password.length >= 8,
       lowercase: /[a-z]/.test(password),
@@ -580,7 +585,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
       <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
         <div className="flex items-center justify-between mb-4">
           <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-            Account Information
+            {t('Account Information')}
           </h3>
           {!editingAccount && !changingPassword && (
             <div className="flex flex-col gap-2">
@@ -593,7 +598,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 }}
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                {t('Edit')}
               </Button>
             </div>
           )}
@@ -603,7 +608,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           <div className={cn(styles.formGroup, "account-manager-form-group")}>
             <div className={styles.formRow}>
               <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName">{t('First Name')}</Label>
                 <Input
                   id="firstName"
                   value={accountFormData.firstName}
@@ -612,7 +617,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 />
               </div>
               <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">{t('Last Name')}</Label>
                 <Input
                   id="lastName"
                   value={accountFormData.lastName}
@@ -622,7 +627,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               </div>
             </div>
             <div className={cn(styles.formField, "account-manager-form-field")}>
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">{t('Email Address')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -640,12 +645,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 {savingAccount ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t('Saving...')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save
+                    {t('Save')}
                   </>
                 )}
               </Button>
@@ -663,7 +668,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 disabled={savingAccount}
               >
                 <X className="h-4 w-4 mr-2" />
-                Cancel
+                {t('Cancel')}
               </Button>
             </div>
           </div>
@@ -671,12 +676,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           <div className={cn(styles.formGroup, "account-manager-form-group")}>
             {passwordStep === 'confirm' ? (
               <>
-                <h4 className="text-lg font-medium mb-3">Confirm Current Password</h4>
+                <h4 className="text-lg font-medium mb-3">{t('Confirm Current Password')}</h4>
                 <p className="text-sm text-gray-600 mb-4">
-                  Please enter your current password to confirm you want to change it.
+                  {t('Please enter your current password to confirm you want to change it.')}
                 </p>
                 <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Label htmlFor="currentPassword">{t('Current Password')}</Label>
                   <Input
                     id="currentPassword"
                     type="password"
@@ -695,7 +700,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     {changingPasswordLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Verifying...
+                        {t('Verifying...')}
                       </>
                     ) : (
                       <>
@@ -710,19 +715,19 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     disabled={changingPasswordLoading}
                   >
                     <X className="h-4 w-4 mr-2" />
-                    Cancel
+                    {t('Cancel')}
                   </Button>
                 </div>
               </>
             ) : (
               <>
-                <h4 className="text-lg font-medium mb-3">Set New Password</h4>
+                <h4 className="text-lg font-medium mb-3">{t('Set New Password')}</h4>
                 <p className="text-sm text-gray-600 mb-4">
-                  Enter your new password. It must meet all the requirements below.
+                  {t('Enter your new password. It must meet all the requirements below.')}
                 </p>
                 
                 <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword">{t('New Password')}</Label>
                   <Input
                     id="newPassword"
                     type="password"
@@ -738,7 +743,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </div>
 
                 <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword">{t('Confirm New Password')}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -751,37 +756,37 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
 
                 {/* Password Requirements */}
                 <div className="mt-3 space-y-2">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Password Requirements:</p>
+                  <p className="text-xs font-medium text-gray-700 mb-2">{t('Password Requirements:')}</p>
                   <div className="grid grid-cols-1 gap-1 text-xs">
                     <div className={`flex items-center gap-2 ${passwordValidation.length ? 'text-green-600' : 'text-gray-500'}`}>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.length ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
                         {passwordValidation.length && '✓'}
                       </span>
-                      At least 8 characters
+                      {t('At least 8 characters')}
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.lowercase ? 'text-green-600' : 'text-gray-500'}`}>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.lowercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
                         {passwordValidation.lowercase && '✓'}
                       </span>
-                      One lowercase letter (a-z)
+                      {t('One lowercase letter (a-z)')}
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.uppercase ? 'text-green-600' : 'text-gray-500'}`}>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.uppercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
                         {passwordValidation.uppercase && '✓'}
                       </span>
-                      One uppercase letter (A-Z)
+                      {t('One uppercase letter (A-Z)')}
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.number ? 'text-green-600' : 'text-gray-500'}`}>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.number ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
                         {passwordValidation.number && '✓'}
                       </span>
-                      One number (0-9)
+                      {t('One number (0-9)')}
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.special ? 'text-green-600' : 'text-gray-500'}`}>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.special ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
                         {passwordValidation.special && '✓'}
                       </span>
-                      One special character (!@#$%^&*)
+                      {t('One special character (!@#$%^&*)')}
                     </div>
                   </div>
                 </div>
@@ -794,12 +799,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     {changingPasswordLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Changing Password...
+                        {t('Changing Password...')}
                       </>
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        Change Password
+                        {t('Change Password')}
                       </>
                     )}
                   </Button>
@@ -809,7 +814,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     disabled={changingPasswordLoading}
                   >
                     <X className="h-4 w-4 mr-2" />
-                    Cancel
+                    {t('Cancel')}
                   </Button>
                 </div>
               </>
@@ -827,7 +832,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   <Mail className="h-4 w-4 text-gray-500" />
                   <Label>{accountStatus.email}</Label>
                   {!accountStatus.verified && (
-                    <span className="text-amber-600 text-sm">(Unverified)</span>
+                    <span className="text-amber-600 text-sm">{t('(Unverified)')}</span>
                   )}
                 </div>
               </div>
@@ -841,7 +846,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 className="self-start"
               >
                 <Key className="h-4 w-4 mr-2" />
-                Reset Password
+                {t('Reset Password')}
               </Button>
             </div>
           </div>
@@ -870,7 +875,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
       <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
         <div className="flex items-center justify-between mb-4">
           <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-            Account Status
+            {t('Account Status')}
           </h3>
         </div>
 
@@ -883,15 +888,14 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </div>
                 <div className="flex-1">
                   <h4 className="text-lg font-semibold text-purple-800 mb-2">
-                    Beta Participant
+                    {t('Beta Participant')}
                   </h4>
                   <p className="text-purple-700 mb-3">
-                    Thank you for being a beta participant and helping Sprout Track grow!
-                    You have full access to all features and functionality.
+                    {t('Thank you for being a beta participant and helping Sprout Track grow! You have full access to all features and functionality.')}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-purple-600">
                     <Shield className="h-4 w-4" />
-                    <span className="font-medium">Full Access</span>
+                    <span className="font-medium">{t('Full Access')}</span>
                   </div>
                 </div>
               </div>
@@ -905,14 +909,14 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   </div>
                   <div className="flex-1">
                     <h4 className="text-lg font-semibold text-blue-800 mb-2">
-                      No Family Created Yet
+                      {t('No Family Created Yet')}
                     </h4>
                     <p className="text-blue-700 mb-3">
-                      Get started by creating your family to begin tracking activities.
+                      {t('Get started by creating your family to begin tracking activities.')}
                     </p>
                     {accountStatus.trialEnds && (
                       <p className="text-sm text-blue-600 mb-3">
-                        You have a trial that expires on {new Date(accountStatus.trialEnds).toLocaleDateString()}.
+                        {t('You have a trial that expires on')} {new Date(accountStatus.trialEnds).toLocaleDateString()}.
                       </p>
                     )}
                   </div>
@@ -925,14 +929,14 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   className="flex-1"
                 >
                   <Home className="h-4 w-4 mr-2" />
-                  Create Family
+                  {t('Create Family')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowPaymentModal(true)}
                 >
                   <Crown className="h-4 w-4 mr-2" />
-                  Upgrade Plan
+                  {t('Upgrade Plan')}
                 </Button>
               </div>
             </div>
@@ -949,7 +953,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   "bg-yellow-500"
                 )} />
                 <Label className="font-medium capitalize">
-                  {accountStatus.accountStatus.replace('_', ' ')} Account
+                  {accountStatus.accountStatus.replace('_', ' ')} {t('Account')}
                 </Label>
               </div>
 
@@ -976,7 +980,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
                     <Label className="text-sm">
-                      Trial ends {new Date(accountStatus.trialEnds).toLocaleDateString()}
+                      {t('Trial ends')} {new Date(accountStatus.trialEnds).toLocaleDateString()}
                     </Label>
                   </div>
                   <Button
@@ -985,7 +989,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     className="mt-2"
                   >
                     <Crown className="h-4 w-4 mr-2" />
-                    Upgrade
+                    {t('Upgrade')}
                   </Button>
                 </>
               )}
@@ -994,7 +998,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <Label className="text-sm">
-                    Subscription ends {new Date(accountStatus.planExpires).toLocaleDateString()}
+                    {t('Subscription ends')} {new Date(accountStatus.planExpires).toLocaleDateString()}
                   </Label>
                 </div>
               )}
@@ -1034,7 +1038,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                       className="self-start"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
-                      Manage Subscription
+                      {t('Manage Subscription')}
                     </Button>
                   )}
                   {subscriptionStatus?.cancelAtPeriodEnd && (
@@ -1048,12 +1052,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                       {renewingSubscription ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Renewing...
+                          {t('Renewing...')}
                         </>
                       ) : (
                         <>
                           <Crown className="h-4 w-4 mr-2" />
-                          Renew Subscription
+                          {t('Renew Subscription')}
                         </>
                       )}
                     </Button>
@@ -1065,7 +1069,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     className="self-start"
                   >
                     <Receipt className="h-4 w-4 mr-2" />
-                    Payment History
+                    {t('Payment History')}
                   </Button>
                 </div>
               )}
@@ -1079,7 +1083,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              Family Information
+              {t('Family Information')}
             </h3>
             {!editingFamily && (
               <Button
@@ -1091,7 +1095,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 }}
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                {t('Edit')}
               </Button>
             )}
           </div>
@@ -1099,7 +1103,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           {editingFamily ? (
             <div className={cn(styles.formGroup, "account-manager-form-group")}>
               <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="familyName">Family Name</Label>
+                <Label htmlFor="familyName">{t('Family Name')}</Label>
                 <Input
                   id="familyName"
                   value={familyFormData.name}
@@ -1108,7 +1112,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 />
               </div>
               <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="familySlug">Family URL Slug</Label>
+                <Label htmlFor="familySlug">{t('Family URL Slug')}</Label>
                 <div className="relative">
                   <Input
                     id="familySlug"
@@ -1126,7 +1130,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   {checkingSlug && (
                     <div className="flex items-center gap-1 text-blue-600 text-sm">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      Checking availability...
+                      {t('Checking availability...')}
                     </div>
                   )}
                   {slugError && (
@@ -1138,12 +1142,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   {!checkingSlug && !slugError && familyFormData.slug && familyFormData.slug !== familyData?.slug && (
                     <div className="flex items-center gap-1 text-green-600 text-sm">
                       <span className="h-3 w-3 rounded-full bg-green-600"></span>
-                      URL is available
+                      {t('URL is available')}
                     </div>
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-1 account-manager-info-text">
-                  This is your family's unique URL identifier
+                  {t('This is your family\'s unique URL identifier')}
                 </p>
               </div>
               
@@ -1155,12 +1159,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   {savingFamily ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
+                      {t('Saving...')}
                     </>
                   ) : (
                     <>
                       <Save className="h-4 w-4 mr-2" />
-                      Save
+                      {t('Save')}
                     </>
                   )}
                 </Button>
@@ -1178,7 +1182,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   disabled={savingFamily}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Cancel
+                  {t('Cancel')}
                 </Button>
               </div>
             </div>
@@ -1220,13 +1224,13 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              Download Your Data
+              {t('Download Your Data')}
             </h3>
           </div>
           
           <div className={styles.formGroup}>
             <p className="text-sm text-gray-600 mb-4 account-manager-info-text">
-              Download a complete copy of your family's data including all activities, contacts, and settings.
+              {t('Download a complete copy of your family\'s data including all activities, contacts, and settings.')}
             </p>
             <Button
               onClick={handleDataDownload}
@@ -1235,12 +1239,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               {downloadingData ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Preparing Download...
+                  {t('Preparing Download...')}
                 </>
               ) : (
                 <>
                   <Download className="h-4 w-4 mr-2" />
-                  Download Data
+                  {t('Download Data')}
                 </>
               )}
             </Button>
@@ -1252,7 +1256,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
       <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
         <div className="flex items-center justify-between mb-4">
           <h3 className={cn(styles.sectionTitle, "account-manager-section-title text-red-700")}>
-            Close Account
+            {t('Close Account')}
           </h3>
         </div>
 
@@ -1265,10 +1269,10 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 </div>
               </div>
               <h4 className="text-xl font-semibold text-gray-800 mb-2">
-                Account Closed Successfully
+                {t('Account Closed Successfully')}
               </h4>
               <p className="text-gray-600 mb-4">
-                Your account has been closed and a confirmation email has been sent.
+                {t('Your account has been closed and a confirmation email has been sent.')}
               </p>
               
               <div className="bg-red-50 rounded-lg p-6 mb-4 max-w-md mx-auto">
@@ -1278,7 +1282,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   </div>
                 </div>
                 <p className="text-red-700 font-medium mb-3">
-                  Logging out in {logoutCountdown} second{logoutCountdown !== 1 ? 's' : ''}...
+                  {t('Logging out in')} {logoutCountdown} second{logoutCountdown !== 1 ? 's' : ''}...
                 </p>
                 <div className="w-full bg-red-200 rounded-full h-3">
                   <div 
@@ -1289,19 +1293,19 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               </div>
 
               <div className="text-sm text-gray-500">
-                <p>Thank you for using Sprout Track.</p>
-                <p>You will be redirected to the home page automatically.</p>
+                <p>{t('Thank you for using Sprout Track.')}</p>
+                <p>{t('You will be redirected to the home page automatically.')}</p>
               </div>
             </div>
           </div>
         ) : confirmingClosure ? (
           <div className={cn(styles.formGroup, "account-manager-form-group")}>
-            <h4 className="text-lg font-medium mb-3 text-red-700">Confirm Account Closure</h4>
+            <h4 className="text-lg font-medium mb-3 text-red-700">{t('Confirm Account Closure')}</h4>
             <p className="text-sm text-gray-600 mb-4">
-              Please enter your password to confirm you want to permanently close your account.
+              {t('Please enter your password to confirm you want to permanently close your account.')}
             </p>
             <div className={cn(styles.formField, "account-manager-form-field")}>
-              <Label htmlFor="closurePassword">Password</Label>
+              <Label htmlFor="closurePassword">{t('Password')}</Label>
               <Input
                 id="closurePassword"
                 type="password"
@@ -1326,7 +1330,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 ) : (
                   <>
                     <AlertTriangle className="h-4 w-4 mr-2" />
-                    Close Account
+                    {t('Close Account')}
                   </>
                 )}
               </Button>
@@ -1336,7 +1340,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 disabled={closurePasswordLoading || closingAccount}
               >
                 <X className="h-4 w-4 mr-2" />
-                Cancel
+                {t('Cancel')}
               </Button>
             </div>
 
@@ -1362,15 +1366,14 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           <div className={styles.formGroup}>
             <p className="text-sm text-gray-600 mb-4 account-manager-info-text">
               <AlertTriangle className="h-4 w-4 inline mr-1" />
-              Warning: Closing your account will permanently disable access to your {familyData ? "family" : "account"} data. 
-              This action cannot be undone. Please download your data first if you want to keep it.
+              {t('Warning: Closing your account will permanently disable access to your')} {familyData ? "family" : "account"} {t('data. This action cannot be undone. Please download your data first if you want to keep it.')}
             </p>
             <Button
               onClick={() => setConfirmingClosure(true)}
               variant="destructive"
             >
               <AlertTriangle className="h-4 w-4 mr-2" />
-              Close Account
+              {t('Close Account')}
             </Button>
           </div>
         )}

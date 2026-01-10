@@ -298,10 +298,10 @@ export const SideNav: React.FC<SideNavProps> = ({
                       className="text-left cursor-pointer hover:opacity-80 transition-opacity"
                       aria-label="Go to home page"
                     >
-                      <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
+                      <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>{t('Sprout Track')}</span>
                     </button>
                   ) : (
-                    <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
+                    <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>{t('Sprout Track')}</span>
                   )}
 
                   {/* Family name with share button */}

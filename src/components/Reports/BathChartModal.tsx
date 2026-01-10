@@ -18,6 +18,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 export type BathChartMetric = 'total' | 'avgPerWeek' | 'soapShampoo';
 
@@ -60,6 +61,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
   activities,
   dateRange,
 }) => {
+  const { t } = useLocalization();
   // Calculate daily bath counts
   const dailyData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'total') {
@@ -235,7 +237,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
             {dailyData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No bath data available for the selected date range.
+                  {t('No bath data available for the selected date range.')}
                 </p>
               </div>
             ) : (
@@ -279,7 +281,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
             {weeklyAvgData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No bath data available for the selected date range.
+                  {t('No bath data available for the selected date range.')}
                 </p>
               </div>
             ) : (
@@ -318,7 +320,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
             {soapShampooData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No soap/shampoo bath data available for the selected date range.
+                  {t('No soap/shampoo bath data available for the selected date range.')}
                 </p>
               </div>
             ) : (

@@ -18,6 +18,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 export type PumpingChartMetric = 'count' | 'duration' | 'amount';
 
@@ -30,7 +31,8 @@ interface PumpingChartModalProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {
+const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -221,7 +223,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             {countData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No pump data available for the selected date range.
+                  {t('No pump data available for the selected date range.')}
                 </p>
               </div>
             ) : (
@@ -265,7 +267,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             {durationData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No pump duration data available for the selected date range.
+                  {t('No pump duration data available for the selected date range.')}
                 </p>
               </div>
             ) : (
@@ -309,7 +311,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             {amountData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
                 <p className={cn(styles.emptyText, 'reports-empty-text')}>
-                  No pump amount data available for the selected date range.
+                  {t('No pump amount data available for the selected date range.')}
                 </p>
               </div>
             ) : (

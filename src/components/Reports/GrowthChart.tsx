@@ -14,6 +14,7 @@ import { Scale, Ruler, CircleDot, Loader2, ZoomIn, ZoomOut, RotateCcw } from 'lu
 import { cn } from '@/src/lib/utils';
 import { useBaby } from '@/app/context/baby';
 import { growthChartStyles } from './growth-chart.styles';
+import { useLocalization } from '@/src/context/localization';
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
@@ -80,7 +81,8 @@ interface GrowthChartProps {
 }
 
 // Helper to convert Gender enum to CDC sex number
-const genderToCdcSex = (gender: string | null | undefined): number => {
+const genderToCdcSex = (gender: string | null | undefined): number => {  const { t } = useLocalization();
+
   if (gender === 'MALE') return 1;
   if (gender === 'FEMALE') return 2;
   return 1; // Default to male if unknown
@@ -308,7 +310,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType }: an
     return (
       <div className={cn(growthChartStyles.tooltip, "growth-chart-tooltip")}>
         <p className={cn(growthChartStyles.tooltipLabel, "growth-chart-tooltip-label")}>
-          Age: {typeof label === 'number' ? label.toFixed(1) : label} months
+          {t('Age:')} {typeof label === 'number' ? label.toFixed(1) : label} months
         </p>
         {measurementPoint && measurementPoint.value !== null && measurementPoint.value !== undefined && (
           <div className={cn(growthChartStyles.tooltipPercentiles, "growth-chart-tooltip-percentiles")}>
@@ -796,7 +798,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       <div className={cn(growthChartStyles.emptyContainer, "growth-chart-empty", className)}>
         <Scale className="h-12 w-12 text-gray-300 mb-4" />
         <p className={cn(growthChartStyles.emptyText, "growth-chart-empty-text")}>
-          Select a baby to view growth charts.
+          {t('Select a baby to view growth charts.')}
         </p>
       </div>
     );
@@ -808,7 +810,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       <div className={cn(growthChartStyles.loadingContainer, "growth-chart-loading", className)}>
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
         <p className={cn(growthChartStyles.loadingText, "growth-chart-loading-text")}>
-          Loading growth chart data...
+          {t('Loading growth chart data...')}
         </p>
       </div>
     );
@@ -1006,7 +1008,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       {measurementsWithPercentiles.length > 0 && (
         <div className={cn(growthChartStyles.measurementsList, "growth-chart-measurements-list")}>
           <h4 className={cn(growthChartStyles.measurementsTitle, "growth-chart-measurements-title")}>
-            Recorded Measurements
+            {t('Recorded Measurements')}
           </h4>
           <div className={cn(growthChartStyles.measurementsGrid, "growth-chart-measurements-grid")}>
             {measurementsWithPercentiles.map((m, idx) => (
@@ -1015,7 +1017,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
                   {m.displayValue.toFixed(2)} {unitLabel}
                 </div>
                 <div className={cn(growthChartStyles.measurementPercentile, "growth-chart-measurement-percentile")}>
-                  {m.percentile.toFixed(1)}th percentile
+                  {m.percentile.toFixed(1)}{t('th percentile')}
                 </div>
                 <div className={cn(growthChartStyles.measurementAge, "growth-chart-measurement-age")}>
                   {m.ageMonths.toFixed(1)} months
@@ -1032,19 +1034,18 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       {/* Legend info */}
       <div className={cn(growthChartStyles.legendInfo, "growth-chart-legend-info")}>
         <p className={cn(growthChartStyles.legendText, "growth-chart-legend-text")}>
-          CDC Growth Chart for {selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls'} (Birth to {babyCurrentAgeMonths} months)
+          {t('CDC Growth Chart for')} {selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls'} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
         </p>
         <p className={cn(growthChartStyles.legendSubtext, "growth-chart-legend-subtext")}>
-          Percentile lines show how your baby compares to other children of the same age and sex.
-          The 50th percentile represents the median.
+          {t('Percentile lines show how your baby compares to other children of the same age and sex. The 50th percentile represents the median.')}
         </p>
       </div>
 
       {/* No measurements message */}
       {measurements.length === 0 && (
         <div className={cn(growthChartStyles.noDataMessage, "growth-chart-no-data")}>
-          <p>No {measurementType === 'head_circumference' ? 'head circumference' : measurementType} measurements recorded yet.</p>
-          <p className="text-sm mt-1">Add measurements to see how your baby is growing!</p>
+          <p>{t('No')} {measurementType === 'head_circumference' ? 'head circumference' : measurementType} {t('measurements recorded yet.')}</p>
+          <p className="text-sm mt-1">{t('Add measurements to see how your baby is growing!')}</p>
         </div>
       )}
     </div>

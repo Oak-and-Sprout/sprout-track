@@ -6,6 +6,8 @@ import { useTheme } from '@/src/context/theme';
 import { cn } from '@/src/lib/utils';
 import { themeToggleStyles } from './theme-toggle.styles';
 import { ThemeToggleProps } from './theme-toggle.types';
+import { useLocalization } from '@/src/context/localization';
+
 import './theme-toggle.css';
 
 /**
@@ -20,6 +22,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   ...props
 }) => {
   const { theme, toggleTheme, useSystemTheme, toggleUseSystemTheme } = useTheme();
+  const { t } = useLocalization();
   
   // Hydration state to prevent SSR/client mismatch
   const [isHydrated, setIsHydrated] = useState(false);
@@ -127,7 +130,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           </span>
           <span className="theme-info">
             <span className="current-theme">{getCurrentThemeLabel()}</span>
-            <span className="next-theme">Switch to {getNextTheme()}</span>
+            <span className="next-theme">{t('Switch to')} {getNextTheme()}</span>
           </span>
         </button>
       </div>
