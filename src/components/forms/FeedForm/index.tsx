@@ -354,13 +354,13 @@ export default function FeedForm({
 
     // Validate required fields
     if (!formData.type) {
-      setValidationError('Please select a feeding type');
+      setValidationError(t('Please select a feeding type'));
       return;
     }
     
     // Validate date time
     if (!selectedDateTime || isNaN(selectedDateTime.getTime())) {
-      setValidationError('Please select a valid date and time');
+      setValidationError(t('Please select a valid date and time'));
       return;
     }
 
@@ -384,19 +384,19 @@ export default function FeedForm({
 
     // For breast feeding, at least one side must have a duration
     if (formData.type === 'BREAST' && accurateLeftDuration === 0 && accurateRightDuration === 0) {
-      setValidationError('Please enter a duration for at least one breast side');
+      setValidationError(t('Please enter a duration for at least one breast side'));
       return;
     }
 
     // For bottle feeding, validate amount
     if (formData.type === 'BOTTLE' && (!formData.amount || parseFloat(formData.amount) <= 0)) {
-      setValidationError('Please enter a valid amount for bottle feeding');
+      setValidationError(t('Please enter a valid amount for bottle feeding'));
       return;
     }
 
     // For solids feeding, validate amount
     if (formData.type === 'SOLIDS' && (!formData.amount || parseFloat(formData.amount) <= 0)) {
-      setValidationError('Please enter a valid amount for solids feeding');
+      setValidationError(t('Please enter a valid amount for solids feeding'));
       return;
     }
 
@@ -689,8 +689,8 @@ export default function FeedForm({
     <FormPage
       isOpen={isOpen}
       onClose={handleClose}
-      title={activity ? 'Edit Feeding' : 'Log Feeding'}
-      description={activity ? 'Update what and when your baby ate' : 'Record what and when your baby ate'}
+      title={activity ? t('Edit Feeding') : t('Log Feeding')}
+      description={activity ? t('Update what and when your baby ate') : t('Record what and when your baby ate')}
     >
         <FormPageContent className="overflow-y-auto">
           <form onSubmit={handleSubmit} className="h-full flex flex-col">
@@ -709,13 +709,13 @@ export default function FeedForm({
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select feeding time..."
+                placeholder={t("Select feeding time...")}
               />
             </div>
             
             {/* Feed Type Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Type</label>
+              <label className="form-label">{t('Type')}</label>
               <div className="flex justify-between items-center gap-3 mt-2">
                   {/* Breast Feed Button */}
                   <button
@@ -855,7 +855,7 @@ export default function FeedForm({
               {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? 'Update' : 'Save'}
+              {activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

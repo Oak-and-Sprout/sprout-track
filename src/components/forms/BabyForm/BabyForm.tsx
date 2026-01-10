@@ -139,10 +139,10 @@ export default function BabyForm({
     <FormPage 
       isOpen={isOpen} 
       onClose={onClose}
-      title={isEditing ? 'Edit Baby' : 'Add New Baby'}
+      title={isEditing ? t('Edit Baby') : t('Add New Baby')}
       description={isEditing 
-        ? "Update your baby's information" 
-        : "Enter your baby's information to start tracking"
+        ? t("Update your baby's information") 
+        : t("Enter your baby's information to start tracking")
       }
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col overflow-hidden">
@@ -156,7 +156,7 @@ export default function BabyForm({
                   setFormData({ ...formData, firstName: e.target.value })
                 }
                 className="w-full"
-                placeholder="Enter first name"
+                placeholder={t("Enter first name")}
                 required
               />
             </div>
@@ -168,7 +168,7 @@ export default function BabyForm({
                   setFormData({ ...formData, lastName: e.target.value })
                 }
                 className="w-full"
-                placeholder="Enter last name"
+                placeholder={t("Enter last name")}
                 required
               />
             </div>
@@ -185,7 +185,7 @@ export default function BabyForm({
                   )}
                 >
                   <Calendar className="mr-2 h-4 w-4" />
-                  {formData.birthDate ? format(formData.birthDate, "PPP") : "Select date"}
+                  {formData.birthDate ? format(formData.birthDate, "PPP") : t("Select date")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 z-[100]" align="start">
@@ -208,7 +208,7 @@ export default function BabyForm({
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select gender" />
+                <SelectValue placeholder={t("Select gender")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="MALE">{t('Male')}</SelectItem>
@@ -276,7 +276,7 @@ export default function BabyForm({
               type="submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Save'}
+              {isSubmitting ? t('Saving...') : isEditing ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

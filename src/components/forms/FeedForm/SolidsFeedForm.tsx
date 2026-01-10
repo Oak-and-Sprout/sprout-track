@@ -95,7 +95,7 @@ export default function SolidsFeedForm({
           value={food}
           onChange={(e) => onFoodChange(e.target.value)}
           className="w-full"
-          placeholder="Enter food"
+          placeholder={t("Enter food")}
           disabled={loading}
         />
       </div>
@@ -104,7 +104,7 @@ export default function SolidsFeedForm({
         <Textarea
           id="notes"
           name="notes"
-          placeholder="Enter any notes about the feeding"
+          placeholder={t("Enter any notes about the feeding")}
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           rows={3}

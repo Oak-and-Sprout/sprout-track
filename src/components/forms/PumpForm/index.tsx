@@ -400,8 +400,8 @@ export default function PumpForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Pump' : 'New Pump'}
-      description={activity ? 'Update details about your pumping session' : 'Record details about your pumping session'}
+      title={activity ? t('Edit Pump') : t('New Pump')}
+      description={activity ? t('Update details about your pumping session') : t('Record details about your pumping session')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
@@ -413,7 +413,7 @@ export default function PumpForm({
                 value={selectedStartDateTime}
                 onChange={handleStartDateTimeChange}
                 disabled={loading}
-                placeholder="Select start time..."
+                placeholder={t("Select start time...")}
               />
             </div>
             
@@ -424,7 +424,7 @@ export default function PumpForm({
                 value={selectedEndDateTime}
                 onChange={handleEndDateTimeChange}
                 disabled={loading}
-                placeholder="Select end time..."
+                placeholder={t("Select end time...")}
               />
             </div>
             
@@ -473,7 +473,7 @@ export default function PumpForm({
                     name="leftAmount"
                     type="text"
                     inputMode="decimal"
-                    placeholder="0.0"
+                    placeholder={t("0.0")}
                     value={formData.leftAmount}
                     onChange={handleInputChange}
                     className="rounded-r-none text-center text-lg w-24"
@@ -515,7 +515,7 @@ export default function PumpForm({
                     name="rightAmount"
                     type="text"
                     inputMode="decimal"
-                    placeholder="0.0"
+                    placeholder={t("0.0")}
                     value={formData.rightAmount}
                     onChange={handleInputChange}
                     className="rounded-r-none text-center text-lg w-24"
@@ -546,8 +546,8 @@ export default function PumpForm({
                   name="totalAmount"
                   type="text"
                   inputMode="decimal"
-                  placeholder="0.0"
-                  value={formData.totalAmount}
+                    placeholder={t("0.0")}
+                    value={formData.totalAmount}
                   onChange={handleInputChange}
                   className="rounded-r-none text-lg"
                 />
@@ -563,7 +563,7 @@ export default function PumpForm({
               <Textarea
                 id="notes"
                 name="notes"
-                placeholder="Enter any notes about the pumping session"
+                placeholder={t("Enter any notes about the pumping session")}
                 value={formData.notes}
                 onChange={handleInputChange}
                 rows={3}
@@ -587,7 +587,7 @@ export default function PumpForm({
               onClick={handleSubmit} 
               disabled={loading}
             >
-              {loading ? 'Saving...' : (activity ? 'Update' : 'Save')}
+              {loading ? t('Saving...') : (activity ? t('Update') : t('Save'))}
             </Button>
           </div>
         </FormPageFooter>

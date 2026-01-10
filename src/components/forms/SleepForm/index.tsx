@@ -24,6 +24,7 @@ import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
 
+// Note: DEFAULT_LOCATIONS are displayed as-is but could be localized if needed
 const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
 
 interface SleepFormProps {
@@ -295,8 +296,8 @@ export default function SleepForm({
     if (isCustomLocation && !customLocationInput.trim()) {
       showToast({
         variant: 'error',
-        title: 'Error',
-        message: 'Please enter a custom location',
+        title: t('Error'),
+        message: t('Please enter a custom location'),
         duration: 5000,
       });
       return;
@@ -473,10 +474,10 @@ export default function SleepForm({
   };
 
   const isEditMode = !!activity;
-  const title = isEditMode ? 'Edit Sleep Record' : (isSleeping ? 'End Sleep Session' : 'Start Sleep Session');
+  const title = isEditMode ? t('Edit Sleep Record') : (isSleeping ? t('End Sleep Session') : t('Start Sleep Session'));
   const description = isEditMode 
-    ? 'Update sleep record details'
-    : (isSleeping ? 'Record when your baby woke up and how well they slept' : 'Record when your baby is going to sleep');
+    ? t('Update sleep record details')
+    : (isSleeping ? t('Record when your baby woke up and how well they slept') : t('Record when your baby is going to sleep'));
 
   return (
     <FormPage
@@ -496,7 +497,7 @@ export default function SleepForm({
                 onChange={handleStartDateTimeChange}
                 className="w-full"
                 disabled={(isSleeping && !isEditMode) || loading} // Only disabled when ending sleep and not editing
-                placeholder="Select start time..."
+                placeholder={t("Select start time...")}
               />
             </div>
             {(isSleeping || isEditMode) && (
@@ -507,14 +508,14 @@ export default function SleepForm({
                   onChange={handleEndDateTimeChange}
                   className="w-full"
                   disabled={loading}
-                  placeholder="Select end time..."
+                  placeholder={t("Select end time...")}
                 />
               </div>
             )}
           </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="form-label">Type</label>
+                <label className="form-label">{t('Type')}</label>
                 <Select
                   value={formData.type}
                   onValueChange={(value: SleepType) =>
@@ -523,7 +524,7 @@ export default function SleepForm({
                   disabled={(isSleeping && !isEditMode) || loading} // Only disabled when ending sleep and not editing
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NAP">{t('Nap')}</SelectItem>
@@ -548,7 +549,7 @@ export default function SleepForm({
                   disabled={(isSleeping && !isEditMode) || loading} // Only disabled when ending sleep and not editing
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select location" />
+                    <SelectValue placeholder={t("Select location")} />
                   </SelectTrigger>
                   <SelectContent>
                     {DEFAULT_LOCATIONS.map((location) => (
@@ -570,7 +571,7 @@ export default function SleepForm({
                       type="text"
                       value={customLocationInput}
                       onChange={(e) => setCustomLocationInput(e.target.value)}
-                      placeholder="Enter custom location"
+                      placeholder={t("Enter custom location")}
                       disabled={loading}
                       className="w-full"
                     />
@@ -589,7 +590,7 @@ export default function SleepForm({
                   disabled={loading}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="How well did they sleep?" />
+                    <SelectValue placeholder={t("How well did they sleep?")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="POOR">{t('Poor')}</SelectItem>
@@ -617,7 +618,7 @@ export default function SleepForm({
               onClick={handleSubmit}
               disabled={loading}
             >
-              {isEditMode ? 'Update Sleep' : (isSleeping ? 'End Sleep' : 'Start Sleep')}
+              {isEditMode ? t('Update Sleep') : (isSleeping ? t('End Sleep') : t('Start Sleep'))}
             </Button>
           </div>
         </FormPageFooter>

@@ -389,8 +389,8 @@ export default function NoteForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Note' : 'Add Note'}
-      description={activity ? 'Update your note about your baby' : 'Record a note about your baby'}
+      title={activity ? t('Edit Note') : t('Add Note')}
+      description={activity ? t('Update your note about your baby') : t('Record a note about your baby')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
@@ -402,7 +402,7 @@ export default function NoteForm({
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select note time..."
+                placeholder={t("Select note time...")}
               />
             </div>
             
@@ -419,7 +419,7 @@ export default function NoteForm({
                       onFocus={handleCategoryInputFocus}
                       onKeyDown={handleCategoryKeyDown}
                       className="w-full pr-10 note-form-dropdown-trigger"
-                      placeholder="Enter or select a category"
+                      placeholder={t("Enter or select a category")}
                       disabled={loading}
                     />
                     <ChevronDown 
@@ -481,7 +481,7 @@ export default function NoteForm({
                   setFormData({ ...formData, content: e.target.value })
                 }
                 className="w-full min-h-[150px]"
-                placeholder="Enter your note"
+                placeholder={t("Enter your note")}
                 required
                 disabled={loading}
               />
@@ -500,7 +500,7 @@ export default function NoteForm({
               {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? 'Update' : 'Save'}
+              {activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

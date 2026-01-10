@@ -109,7 +109,7 @@ export default function BottleFeedForm({
         <Textarea
           id="notes"
           name="notes"
-          placeholder="Enter any notes about the feeding"
+                    placeholder={t("Enter any notes about the feeding")}
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           rows={3}

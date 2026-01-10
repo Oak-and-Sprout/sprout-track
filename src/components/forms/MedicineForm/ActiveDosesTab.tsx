@@ -253,7 +253,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch active doses');
+        throw new Error(t('Failed to fetch active doses'));
       }
       
       const data = await response.json();
@@ -264,7 +264,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       setActiveDoses(processedDoses);
     } catch (error) {
       console.error('Error fetching active doses:', error);
-      setError('Failed to load active doses');
+      setError(t('Failed to load active doses'));
     } finally {
       setIsLoading(false);
     }
@@ -300,18 +300,18 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
   // Format time remaining for display
   const formatTimeRemaining = (minutes: number, isSafe: boolean): string => {
     // Only show "Safe to administer" if it's safe AND there's no time remaining
-    if (isSafe && minutes <= 0) return 'Safe to administer';
+    if (isSafe && minutes <= 0) return t('Safe to administer');
     
     const days = Math.floor(minutes / (24 * 60));
     const hours = Math.floor((minutes % (24 * 60)) / 60);
     const mins = Math.floor(minutes % 60);
     
     if (days > 0) {
-      return `${days}d ${hours}h ${mins}m remaining`;
+      return `${days}d ${hours}h ${mins}m ${t('remaining')}`;
     } else if (hours > 0) {
-      return `${hours}h ${mins}m remaining`;
+      return `${hours}h ${mins}m ${t('remaining')}`;
     }
-    return `${mins}m remaining`;
+    return `${mins}m ${t('remaining')}`;
   };
   
 

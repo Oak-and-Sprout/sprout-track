@@ -102,21 +102,21 @@ const ContactForm: React.FC<ContactFormProps> = ({
     
     // Required fields
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('Name is required');
     }
     
     if (!formData.role.trim()) {
-      newErrors.role = 'Role is required';
+      newErrors.role = t('Role is required');
     }
     
     // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('Please enter a valid email address');
     }
     
     // Phone validation (simple check for now)
     if (formData.phone && !/^[0-9+\-() ]{7,}$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+      newErrors.phone = t('Please enter a valid phone number');
     }
     
     setErrors(newErrors);
@@ -343,8 +343,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={contact ? 'Edit Contact' : 'Add Contact'}
-      description={contact ? 'Update contact details' : 'Add a new contact to your list'}
+      title={contact ? t('Edit Contact') : t('Add Contact')}
+      description={contact ? t('Update contact details') : t('Add a new contact to your list')}
       className="contact-form-container"
     >
       <div className="h-full flex flex-col">
@@ -360,7 +360,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="name" 
                   className="form-label"
                 >
-                  Name
+                  {t('Name')}
                   <span className={styles.fieldRequired}>*</span>
                 </label>
                 <div className="relative">
@@ -371,7 +371,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter contact name"
+                    placeholder={t("Enter contact name")}
                   />
                   <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -400,7 +400,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.role}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter contact role (e.g., Doctor, Family)"
+                    placeholder={t("Enter contact role (e.g., Doctor, Family)")}
                   />
                   <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -428,7 +428,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.phone || ''}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter phone number (optional)"
+                    placeholder={t("Enter phone number (optional)")}
                   />
                   <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -456,7 +456,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.email || ''}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter email address (optional)"
+                    placeholder={t("Enter email address (optional)")}
                   />
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -508,7 +508,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     {t('Saving...')}
                   </>
                 ) : (
-                  'Save Contact'
+                  t('Save Contact')
                 )}
               </Button>
             </div>

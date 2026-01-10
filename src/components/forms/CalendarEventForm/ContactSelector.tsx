@@ -141,7 +141,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
       <div className="relative">
         <Input
           type="text"
-          placeholder="Search contacts..."
+          placeholder={t("Search contacts...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full"
@@ -221,7 +221,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
         
         {filteredContacts.length === 0 && (
           <div className="contact-selector-empty-state p-2 text-sm text-gray-500 text-center">
-            {searchTerm ? 'No contacts found' : 'No contacts available'}
+            {searchTerm ? t('No contacts found') : t('No contacts available')}
           </div>
         )}
         

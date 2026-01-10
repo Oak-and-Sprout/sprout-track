@@ -410,8 +410,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={medicine ? `Edit ${medicine.name}` : 'Add New Medicine'}
-      description={medicine ? 'Update medicine details' : 'Add a new medicine to track'}
+      title={medicine ? t('Edit Medicine') : t('Add New Medicine')}
+      description={medicine ? t('Update medicine details') : t('Add a new medicine to track')}
     >
       <FormPageContent>
         <form id="medicine-form" onSubmit={handleSubmit}>
@@ -429,7 +429,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full pl-9"
-                  placeholder="Enter medicine name"
+                  placeholder={t("Enter medicine name")}
                 />
                 <PillBottle className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
@@ -454,7 +454,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   value={formData.typicalDoseSize || ''}
                   onChange={handleNumberChange}
                   onBlur={handleNumberBlur}
-                  placeholder="Enter typical dose (optional)"
+                  placeholder={t("Enter typical dose (optional)")}
                 />
                 {errors.typicalDoseSize && (
                   <div className="text-xs text-red-500 mt-1">
@@ -473,7 +473,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   onValueChange={handleUnitChange}
                 >
                   <SelectTrigger className={errors.unitAbbr ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select a unit" />
+                    <SelectValue placeholder={t("Select a unit")} />
                   </SelectTrigger>
                   <SelectContent>
                     {units.map((unit) => (
@@ -507,7 +507,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                       value={doseTimeValue}
                       onChange={handleDoseTimeValueChange}
                       className="w-full pl-9"
-                      placeholder="Enter time"
+                      placeholder={t("Enter time")}
                     />
                     <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                   </div>
@@ -532,8 +532,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                 {/* Helper Text */}
                 <div className="text-xs text-gray-500">
                   {doseTimeUnit === 'hours' 
-                    ? 'Enter the minimum time in hours (e.g., 6 for 6 hours, 0.5 for 30 minutes)'
-                    : 'Enter the minimum time in days (e.g., 1 for 1 day, 0.5 for 12 hours)'
+                    ? t('Enter the minimum time in hours (e.g., 6 for 6 hours, 0.5 for 30 minutes)')
+                    : t('Enter the minimum time in days (e.g., 1 for 1 day, 0.5 for 12 hours)')
                   }
                 </div>
               </div>
@@ -618,7 +618,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 {t('Saving...')}
               </>
-            ) : (medicine ? 'Update' : 'Save')}
+            ) : (medicine ? t('Update') : t('Save'))}
           </Button>
         </div>
       </FormPageFooter>

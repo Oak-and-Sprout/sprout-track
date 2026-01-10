@@ -112,13 +112,13 @@ export default function SettingsForm({
       const data = await response.json();
       
       if (data.success && data.data && data.data.id !== currentFamilyId) {
-        setSlugError('This slug is already taken');
+        setSlugError(t('This slug is already taken'));
       } else {
         setSlugError('');
       }
     } catch (error) {
       console.error('Error checking slug:', error);
-      setSlugError('Error checking slug availability');
+      setSlugError(t('Error checking slug availability'));
     } finally {
       setCheckingSlug(false);
     }
@@ -360,12 +360,12 @@ export default function SettingsForm({
   const handleFamilySave = async () => {
     // Don't save if there's a slug error
     if (slugError) {
-      alert('Please fix the slug error before saving');
+      alert(t('Please fix the slug error before saving'));
       return;
     }
 
     if (!familyEditData.name || !familyEditData.slug) {
-      alert('Family name and slug are required');
+      alert(t('Family name and slug are required'));
       return;
     }
 
@@ -482,8 +482,8 @@ export default function SettingsForm({
           onBabyStatusChange?.(); // Refresh parent's babies list when settings form closes
           onClose();
         }}
-        title="Settings"
-        description="Configure your preferences for the Baby Tracker app"
+        title={t("Settings")}
+        description={t("Configure your preferences for the Baby Tracker app")}
       >
         <FormPageContent>
           <div className="space-y-6">
@@ -499,7 +499,7 @@ export default function SettingsForm({
                       <Input
                         value={familyEditData.name || ''}
                         onChange={(e) => setFamilyEditData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter family name"
+                        placeholder={t("Enter family name")}
                         className="flex-1"
                         disabled={savingFamily}
                       />
@@ -511,7 +511,7 @@ export default function SettingsForm({
                         {savingFamily ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Save'
+                          t('Save')
                         )}
                       </Button>
                       <Button
@@ -543,7 +543,7 @@ export default function SettingsForm({
               </div>
               
               <div>
-                <Label className="form-label">Link/Slug</Label>
+                <Label className="form-label">{t('Link/Slug')}</Label>
                 <div className="flex gap-2">
                   {editingFamily ? (
                     <div className="flex-1 space-y-1">
@@ -551,7 +551,7 @@ export default function SettingsForm({
                         <Input
                           value={familyEditData.slug || ''}
                           onChange={(e) => setFamilyEditData(prev => ({ ...prev, slug: e.target.value }))}
-                          placeholder="Enter family slug"
+                          placeholder={t("Enter family slug")}
                           className={`w-full ${slugError ? 'border-red-500' : ''}`}
                           disabled={savingFamily}
                         />
@@ -609,8 +609,8 @@ export default function SettingsForm({
                 <div>
                   <p className="text-sm text-gray-500">
                     {localAuthType === 'CARETAKER'
-                      ? 'Use individual caretaker login IDs and PINs'
-                      : 'Use shared system PIN for all users'
+                    ? t('Use individual caretaker login IDs and PINs')
+                    : t('Use shared system PIN for all users')
                     }
                   </p>
                 </div>
@@ -659,7 +659,7 @@ export default function SettingsForm({
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a caretaker" />
+                          <SelectValue placeholder={t("Select a caretaker")} />
                         </SelectTrigger>
                         <SelectContent>
                           {caretakers.map((caretaker) => (
@@ -706,7 +706,7 @@ export default function SettingsForm({
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a baby" />
+                        <SelectValue placeholder={t("Select a baby")} />
                       </SelectTrigger>
                       <SelectContent>
                         {babies.map((baby) => (
@@ -756,7 +756,7 @@ export default function SettingsForm({
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a contact" />
+                        <SelectValue placeholder={t("Select a contact")} />
                       </SelectTrigger>
                       <SelectContent>
                         {contacts.map((contact) => (
@@ -840,7 +840,7 @@ export default function SettingsForm({
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -863,7 +863,7 @@ export default function SettingsForm({
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -886,7 +886,7 @@ export default function SettingsForm({
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -909,7 +909,7 @@ export default function SettingsForm({
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -932,7 +932,7 @@ export default function SettingsForm({
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units

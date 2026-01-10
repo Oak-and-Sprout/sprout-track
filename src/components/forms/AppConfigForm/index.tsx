@@ -126,7 +126,7 @@ export default function AppConfigForm({
       const data = await response.json();
       
       if (response.status === 401 || response.status === 403) {
-        setError('Authentication required. Please ensure you are logged in as a system administrator.');
+        setError(t('Authentication required. Please ensure you are logged in as a system administrator.'));
         return;
       }
       
@@ -161,7 +161,7 @@ export default function AppConfigForm({
       }
     } catch (error) {
       console.error('Error fetching app config:', error);
-      setError('Failed to fetch app configuration');
+        setError(t('Failed to fetch app configuration'));
     } finally {
       setLoading(false);
     }
@@ -234,7 +234,7 @@ export default function AppConfigForm({
 
   const handleNewPassword = () => {
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('Password must be at least 6 characters'));
       return;
     }
     setPasswordStep('confirm');
@@ -263,7 +263,7 @@ export default function AppConfigForm({
         const data = await response.json();
 
         if (response.status === 401 || response.status === 403) {
-          setError('Authentication required. Please ensure you are logged in as a system administrator.');
+          setError(t('Authentication required. Please ensure you are logged in as a system administrator.'));
           return;
         }
 
@@ -280,19 +280,19 @@ export default function AppConfigForm({
           setNewPassword('');
           setConfirmPassword('');
           setError(null);
-          setSuccess('Password changed successfully');
+          setSuccess(t('Password changed successfully'));
           scheduleAutoClose();
         } else {
-          setError(data.error || 'Failed to update password');
+          setError(data.error || t('Failed to update password'));
         }
       } catch (error) {
         console.error('Error updating password:', error);
-        setError('Failed to update password');
+          setError(t('Failed to update password'));
       } finally {
         setSaving(false);
       }
     } else {
-      setError('Passwords do not match');
+      setError(t('Passwords do not match'));
       setConfirmPassword('');
     }
   };
@@ -310,12 +310,12 @@ export default function AppConfigForm({
   // Validate form
   const validateForm = (): boolean => {
     if (!formData.adminPass.trim()) {
-      setError('Admin password is required');
+      setError(t('Admin password is required'));
       return false;
     }
 
     if (!formData.rootDomain.trim()) {
-      setError('Root domain is required');
+      setError(t('Root domain is required'));
       return false;
     }
 
@@ -360,21 +360,21 @@ export default function AppConfigForm({
       const data = await response.json();
 
       if (response.status === 401 || response.status === 403) {
-        setError('Authentication required. Please ensure you are logged in as a system administrator.');
+        setError(t('Authentication required. Please ensure you are logged in as a system administrator.'));
         return;
       }
 
       if (data.success) {
         setAppConfig(data.data.appConfig);
         setEmailConfig(data.data.emailConfig);
-        setSuccess('App configuration updated successfully');
+        setSuccess(t('App configuration updated successfully'));
         scheduleAutoClose();
       } else {
-        setError(data.error || 'Failed to update app configuration');
+        setError(data.error || t('Failed to update app configuration'));
       }
     } catch (error) {
       console.error('Error updating app config:', error);
-      setError('Failed to update app configuration');
+        setError(t('Failed to update app configuration'));
     } finally {
       setSaving(false);
     }
@@ -413,8 +413,8 @@ export default function AppConfigForm({
     <FormPage 
       isOpen={isOpen} 
       onClose={handleClose}
-      title="App Configuration"
-      description="Manage global application settings"
+      title={t("App Configuration")}
+      description={t("Manage global application settings")}
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col overflow-hidden">
         <FormPageContent className="space-y-6 overflow-y-auto flex-1 pb-24">
@@ -489,7 +489,7 @@ export default function AppConfigForm({
                                   setError(null);
                                   setSuccess(null);
                                 }}
-                                placeholder="Enter current password"
+                                placeholder={t("Enter current password")}
                                 autoComplete="current-password"
                               />
                               <Button 
@@ -518,7 +518,7 @@ export default function AppConfigForm({
                                   setError(null);
                                   setSuccess(null);
                                 }}
-                                placeholder="Enter new password"
+                                placeholder={t("Enter new password")}
                                 autoComplete="new-password"
                               />
                               <Button 
@@ -564,7 +564,7 @@ export default function AppConfigForm({
                                     {t('Updating...')}
                                   </>
                                 ) : (
-                                  'Update'
+                                  t('Update')
                                 )}
                               </Button>
                             </div>
@@ -628,7 +628,7 @@ export default function AppConfigForm({
                       name="adminEmail"
                       value={formData.adminEmail}
                       onChange={handleInputChange}
-                      placeholder="admin@example.com"
+                      placeholder={t("admin@example.com")}
                     />
                     <p className="text-xs text-gray-500">
                       {t('Email address used for admin replies to feedback submissions')}
@@ -684,7 +684,7 @@ export default function AppConfigForm({
                         name="sendGridApiKey"
                         value={emailFormData.sendGridApiKey}
                         onChange={handleEmailInputChange}
-                        placeholder="Enter SendGrid API Key"
+                        placeholder={t("Enter SendGrid API Key")}
                       />
                     </div>
                   )}
@@ -719,7 +719,7 @@ export default function AppConfigForm({
                           name="serverAddress"
                           value={emailFormData.serverAddress}
                           onChange={handleEmailInputChange}
-                          placeholder="smtp.example.com"
+                          placeholder={t("smtp.example.com")}
                         />
                       </div>
                       <div className="space-y-2">
@@ -732,7 +732,7 @@ export default function AppConfigForm({
                           name="port"
                           value={emailFormData.port}
                           onChange={handleEmailInputChange}
-                          placeholder="587"
+                          placeholder={t("587")}
                         />
                       </div>
                       <div className="space-y-2">

@@ -81,7 +81,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
   const tabs: FormPageTab[] = [
     {
       id: 'active-doses',
-      label: 'Doses',
+      label: t('Doses'),
       icon: Activity,
       content: (
         <ActiveDosesTab
@@ -94,7 +94,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
     },
     {
       id: 'manage-medicines',
-      label: 'Medicines',
+      label: t('Medicines'),
       icon: Settings,
       content: (
         <ManageMedicinesTab
@@ -109,7 +109,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
       <FormPage
         isOpen={isOpen}
         onClose={onClose}
-        title="Medicine Tracker"
+        title={t("Medicine Tracker")}
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}

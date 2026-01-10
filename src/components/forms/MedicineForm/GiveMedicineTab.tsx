@@ -146,7 +146,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
         else setError(unitsData.error || 'Failed to load units');
 
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+        setError(err instanceof Error ? err.message : t('An unknown error occurred.'));
       } finally {
         setIsFetching(false);
       }
@@ -249,7 +249,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${activity ? 'update' : 'save'} log`);
+        throw new Error(errorData.error || (activity ? t('Failed to update log') : t('Failed to save log')));
       }
       
       const result = await response.json();
@@ -264,11 +264,11 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
         // Then call onSuccess to close the form
         onSuccess?.();
       } else {
-        throw new Error(result.error || `Failed to ${activity ? 'update' : 'save'} log`);
+        throw new Error(result.error || (activity ? t('Failed to update log') : t('Failed to save log')));
       }
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      setError(err instanceof Error ? err.message : t('An unknown error occurred.'));
     } finally {
       setIsLoading(false);
       setIsSubmitting?.(false);
@@ -297,7 +297,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
-                    {selectedMedicine ? selectedMedicine.name : 'Select a medicine'}
+                    {selectedMedicine ? selectedMedicine.name : t('Select a medicine')}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -332,7 +332,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
                   onChange={handleNumberChange}
                   onBlur={handleNumberBlur}
                   className="flex-1"
-                  placeholder="Enter dose amount"
+                  placeholder={t("Enter dose amount")}
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

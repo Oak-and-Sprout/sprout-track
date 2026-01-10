@@ -266,8 +266,8 @@ export default function MilestoneForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Milestone' : 'Log Milestone'}
-      description={activity ? 'Update details about your baby\'s milestone' : 'Record a new milestone for your baby'}
+      title={activity ? t('Edit Milestone') : t('Log Milestone')}
+      description={activity ? t('Update details about your baby\'s milestone') : t('Record a new milestone for your baby')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
@@ -279,7 +279,7 @@ export default function MilestoneForm({
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select milestone time..."
+                placeholder={t("Select milestone time...")}
               />
             </div>
             
@@ -294,7 +294,7 @@ export default function MilestoneForm({
                 disabled={loading}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t("Select category")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="MOTOR">{t('Motor Skills')}</SelectItem>
@@ -329,7 +329,7 @@ export default function MilestoneForm({
                   setFormData({ ...formData, description: e.target.value })
                 }
                 className="w-full"
-                placeholder="Add any additional details about this milestone"
+                placeholder={t("Add any additional details about this milestone")}
                 disabled={loading}
               />
             </div>
@@ -347,7 +347,7 @@ export default function MilestoneForm({
               {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? 'Update' : 'Save'}
+              {activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

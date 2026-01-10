@@ -333,7 +333,7 @@ export default function MeasurementForm({
       // If no measurements, show error
       if (measurements.length === 0) {
         console.error('No measurements provided');
-        alert('Please enter at least one measurement value');
+        alert(t('Please enter at least one measurement value'));
         setLoading(false);
         return;
       }
@@ -509,8 +509,8 @@ export default function MeasurementForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Measurement' : 'Log Measurements'}
-      description={activity ? 'Update details about your baby\'s measurement' : 'Record new measurements for your baby'}
+      title={activity ? t('Edit Measurement') : t('Log Measurements')}
+      description={activity ? t('Update details about your baby\'s measurement') : t('Record new measurements for your baby')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
@@ -522,7 +522,7 @@ export default function MeasurementForm({
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select measurement time..."
+                placeholder={t("Select measurement time...")}
               />
             </div>
             
@@ -537,7 +537,7 @@ export default function MeasurementForm({
                   value={formData.height.value}
                   onChange={(e) => handleValueChange('height', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter height"
+                  placeholder={t("Enter height")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -576,7 +576,7 @@ export default function MeasurementForm({
                   value={formData.weight.value}
                   onChange={(e) => handleValueChange('weight', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter weight"
+                  placeholder={t("Enter weight")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -625,7 +625,7 @@ export default function MeasurementForm({
                   value={formData.headCircumference.value}
                   onChange={(e) => handleValueChange('headCircumference', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter head circumference"
+                  placeholder={t("Enter head circumference")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -664,7 +664,7 @@ export default function MeasurementForm({
                   value={formData.temperature.value}
                   onChange={(e) => handleValueChange('temperature', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter temperature"
+                  placeholder={t("Enter temperature")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -700,7 +700,7 @@ export default function MeasurementForm({
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 className="w-full"
-                placeholder="Add any additional notes about these measurements"
+                placeholder={t("Add any additional notes about these measurements")}
                 disabled={loading}
               />
             </div>
@@ -718,7 +718,7 @@ export default function MeasurementForm({
               {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? 'Update' : 'Save'}
+              {activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

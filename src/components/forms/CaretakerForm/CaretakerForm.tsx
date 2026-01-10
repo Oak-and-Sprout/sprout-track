@@ -85,9 +85,9 @@ export default function CaretakerForm({
   useEffect(() => {
     if (formData.loginId && formData.loginId.length === 2) {
       if (existingCaretakers.includes(formData.loginId)) {
-        setLoginIdError('This Login ID is already in use. Please choose a different one.');
+        setLoginIdError(t('This Login ID is already in use. Please choose a different one.'));
       } else if (formData.loginId === '00') {
-        setLoginIdError('Login ID "00" is reserved for system use. Please choose a different one.');
+        setLoginIdError(t('Login ID "00" is reserved for system use. Please choose a different one.'));
       } else {
         setLoginIdError('');
       }
@@ -165,15 +165,15 @@ export default function CaretakerForm({
 
   const validatePIN = () => {
     if (formData.securityPin.length < 6) {
-      setError('PIN must be at least 6 digits');
+      setError(t('PIN must be at least 6 digits'));
       return false;
     }
     if (formData.securityPin.length > 10) {
-      setError('PIN cannot be longer than 10 digits');
+      setError(t('PIN cannot be longer than 10 digits'));
       return false;
     }
     if (formData.securityPin !== confirmPin) {
-      setError('PINs do not match');
+      setError(t('PINs do not match'));
       return false;
     }
     return true;
@@ -185,17 +185,17 @@ export default function CaretakerForm({
 
     // Validate form
     if (!formData.loginId.trim()) {
-      setError('Login ID is required');
+      setError(t('Login ID is required'));
       return;
     }
 
     if (formData.loginId.length !== 2) {
-      setError('Login ID must be exactly 2 digits');
+      setError(t('Login ID must be exactly 2 digits'));
       return;
     }
 
     if (!/^\d{2}$/.test(formData.loginId)) {
-      setError('Login ID must contain only digits');
+      setError(t('Login ID must contain only digits'));
       return;
     }
 
@@ -206,7 +206,7 @@ export default function CaretakerForm({
     }
 
     if (!formData.name.trim()) {
-      setError('Name is required');
+      setError(t('Name is required'));
       return;
     }
 
@@ -316,10 +316,10 @@ export default function CaretakerForm({
     <FormPage 
       isOpen={isOpen} 
       onClose={onClose}
-      title={isEditing ? 'Edit Caretaker' : 'Add New Caretaker'}
+      title={isEditing ? t('Edit Caretaker') : t('Add New Caretaker')}
       description={isEditing 
-        ? "Update caretaker information" 
-        : "Enter caretaker information to add them to the system"
+        ? t("Update caretaker information") 
+        : t("Enter caretaker information to add them to the system")
       }
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col overflow-hidden">
@@ -336,7 +336,7 @@ export default function CaretakerForm({
                 }
               }}
               className={`w-full ${loginIdError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
-              placeholder="Enter 2-digit ID"
+              placeholder={t("Enter 2-digit ID")}
               maxLength={2}
               required
               autoComplete="off"
@@ -352,14 +352,14 @@ export default function CaretakerForm({
             )}
           </div>
           <div>
-            <label className="form-label">Name</label>
+            <label className="form-label">{t('Name')}</label>
             <Input
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
               className="w-full"
-              placeholder="Enter caretaker name"
+              placeholder={t("Enter caretaker name")}
               required
             />
           </div>
@@ -371,7 +371,7 @@ export default function CaretakerForm({
                 setFormData({ ...formData, type: e.target.value })
               }
               className="w-full"
-              placeholder="Parent, Grandparent, Nanny, etc."
+              placeholder={t("Parent, Grandparent, Nanny, etc.")}
             />
           </div>
           <div>
@@ -384,7 +384,7 @@ export default function CaretakerForm({
               disabled={isFirstCaretaker}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a role" />
+                <SelectValue placeholder={t("Select a role")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="USER">{t('Regular User')}</SelectItem>
@@ -432,7 +432,7 @@ export default function CaretakerForm({
                 }
               }}
               className="w-full"
-              placeholder="Enter 6-10 digit PIN"
+              placeholder={t("Enter 6-10 digit PIN")}
               minLength={6}
               maxLength={10}
               pattern="\d*"
@@ -452,7 +452,7 @@ export default function CaretakerForm({
                 }
               }}
               className="w-full"
-              placeholder="Confirm PIN"
+              placeholder={t("Confirm PIN")}
               minLength={6}
               maxLength={10}
               pattern="\d*"
@@ -481,10 +481,10 @@ export default function CaretakerForm({
               disabled={isSubmitting}
             >
               {isSubmitting 
-                ? 'Saving...' 
+                ? t('Saving...') 
                 : isEditing 
-                  ? 'Save Changes' 
-                  : 'Add Caretaker'
+                  ? t('Save Changes') 
+                  : t('Add Caretaker')
               }
             </Button>
           </div>

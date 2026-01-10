@@ -116,12 +116,12 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
           }
         } else {
           setActivities([]);
-          setError('Failed to fetch activities');
+            setError(t('Failed to fetch activities'));
         }
       } catch (err) {
         console.error('Error fetching activities:', err);
         setActivities([]);
-        setError('Error fetching activities');
+        setError(t('Error fetching activities'));
       } finally {
         setIsLoading(false);
       }
@@ -130,8 +130,10 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
     fetchActivities();
   }, [selectedBaby, family?.id]);
 
+  const { t } = useLocalization();
+  
   // Helper function to format minutes into hours and minutes
-  const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
+  const formatMinutes = (minutes: number): string => {
 
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -441,10 +443,10 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   // Format period label
   const formatPeriodLabel = (period: TimePeriod): string => {
     switch (period) {
-      case '2day': return '2 Days';
-      case '7day': return '7 Days';
-      case '14day': return '14 Days';
-      case '30day': return '30 Days';
+      case '2day': return t('2 Days');
+      case '7day': return t('7 Days');
+      case '14day': return t('14 Days');
+      case '30day': return t('30 Days');
     }
   };
 
@@ -452,7 +454,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={`${selectedBaby?.firstName}'s Quick Stats`}
+      title={selectedBaby ? `${selectedBaby.firstName}${t("'s Quick Stats")}` : t("Quick Stats")}
     >
       <FormPageContent>
         <div className={quickStatsContainer()}>
@@ -511,14 +513,14 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               ) : (
                 <div className={statsCardsGrid()}>
                   <CardVisual
-                    title="Avg Wake Window"
+                    title={t("Avg Wake Window")}
                     mainValue={formatMinutes(mainStats.avgWakeWindow)}
                     comparativeValue={formatMinutes(compareStats.avgWakeWindow)}
                     trend={mainStats.avgWakeWindow >= compareStats.avgWakeWindow ? 'positive' : 'negative'}
                   />
                   
                   <CardVisual
-                    title="Avg Nap Time"
+                    title={t("Avg Nap Time")}
                     mainValue={formatMinutes(mainStats.avgNapTime)}
                     comparativeValue={formatMinutes(compareStats.avgNapTime)}
                     trend={mainStats.avgNapTime >= compareStats.avgNapTime ? 'positive' : 'negative'}
@@ -532,21 +534,21 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                   />
                   
                   <CardVisual
-                    title="Avg Night Wakings"
+                    title={t("Avg Night Wakings")}
                     mainValue={mainStats.avgNightWakings.toFixed(1)}
                     comparativeValue={compareStats.avgNightWakings.toFixed(1)}
                     trend={mainStats.avgNightWakings <= compareStats.avgNightWakings ? 'positive' : 'negative'}
                   />
                   
                   <CardVisual
-                    title="Avg Feedings"
+                    title={t("Avg Feedings")}
                     mainValue={mainStats.avgFeedings.toFixed(1)}
                     comparativeValue={compareStats.avgFeedings.toFixed(1)}
                     trend="neutral"
                   />
                   
                   <CardVisual
-                    title="Avg Feed Amount"
+                    title={t("Avg Feed Amount")}
                     mainValue={mainStats.avgFeedAmount.toFixed(1) + ' oz'}
                     comparativeValue={compareStats.avgFeedAmount.toFixed(1) + ' oz'}
                     trend={mainStats.avgFeedAmount >= compareStats.avgFeedAmount ? 'positive' : 'negative'}
@@ -560,7 +562,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                   />
                   
                   <CardVisual
-                    title="Avg Poops"
+                    title={t("Avg Poops")}
                     mainValue={mainStats.avgPoops.toFixed(1)}
                     comparativeValue={compareStats.avgPoops.toFixed(1)}
                     trend="neutral"

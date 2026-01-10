@@ -188,11 +188,11 @@ export default function FamilyForm({
         setSlugError('');
         setSlugValidated(false); // Reset validation state for new slug
       } else {
-        setSlugError('Failed to generate unique URL');
+        setSlugError(t('Failed to generate unique URL'));
       }
     } catch (error) {
       console.error('Error generating slug:', error);
-      setSlugError('Error generating URL');
+      setSlugError(t('Error generating URL'));
     }
   };
 
@@ -228,19 +228,19 @@ export default function FamilyForm({
     // Basic slug validation
     const slugPattern = /^[a-z0-9-]+$/;
     if (!slugPattern.test(slug)) {
-      setSlugError('Slug can only contain lowercase letters, numbers, and hyphens');
+      setSlugError(t('Slug can only contain lowercase letters, numbers, and hyphens'));
       setSlugValidated(false);
       return;
     }
 
     if (slug.length < 3) {
-      setSlugError('Slug must be at least 3 characters long');
+      setSlugError(t('Slug must be at least 3 characters long'));
       setSlugValidated(false);
       return;
     }
 
     if (slug.length > 50) {
-      setSlugError('Slug must be less than 50 characters');
+      setSlugError(t('Slug must be less than 50 characters'));
       setSlugValidated(false);
       return;
     }
@@ -254,7 +254,7 @@ export default function FamilyForm({
       const data = await response.json();
       
       if (data.success && data.data) {
-        setSlugError('This URL is already taken');
+        setSlugError(t('This URL is already taken'));
         setSlugValidated(false);
       } else {
         setSlugError('');
@@ -262,7 +262,7 @@ export default function FamilyForm({
       }
     } catch (error) {
       console.error('Error checking slug:', error);
-      setSlugError('Error checking URL availability');
+      setSlugError(t('Error checking URL availability'));
       setSlugValidated(false);
     } finally {
       setCheckingSlug(false);
@@ -284,27 +284,27 @@ export default function FamilyForm({
   const addCaretaker = () => {
     // Validate caretaker
     if (newCaretaker.loginId.length !== 2) {
-      setError('Login ID must be exactly 2 digits');
+      setError(t('Login ID must be exactly 2 digits'));
       return;
     }
     
     if (!/^\d+$/.test(newCaretaker.loginId)) {
-      setError('Login ID must contain only digits');
+      setError(t('Login ID must contain only digits'));
       return;
     }
     
     if (newCaretaker.loginId === '00') {
-      setError('Login ID "00" is reserved for system use');
+      setError(t('Login ID "00" is reserved for system use'));
       return;
     }
     
     if (caretakers.some(c => c.loginId === newCaretaker.loginId)) {
-      setError('This Login ID is already taken');
+      setError(t('This Login ID is already taken'));
       return;
     }
     
     if (!newCaretaker.name.trim()) {
-      setError('Please enter caretaker name');
+      setError(t('Please enter caretaker name'));
       return;
     }
     
@@ -337,17 +337,17 @@ export default function FamilyForm({
     
     // Validate password
     if (!tokenPassword.trim()) {
-      setError('Please enter a setup password');
+      setError(t('Please enter a setup password'));
       return;
     }
     
     if (tokenPassword.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('Password must be at least 6 characters long'));
       return;
     }
     
     if (tokenPassword !== confirmTokenPassword) {
-      setError('Passwords do not match');
+      setError(t('Passwords do not match'));
       return;
     }
     
@@ -409,12 +409,12 @@ export default function FamilyForm({
     
     // Validate family data
     if (!familyName.trim()) {
-      setError('Please enter a family name');
+      setError(t('Please enter a family name'));
       return;
     }
 
     if (!familySlug.trim()) {
-      setError('Please enter a family URL');
+      setError(t('Please enter a family URL'));
       return;
     }
 
@@ -424,46 +424,46 @@ export default function FamilyForm({
     }
 
     if (slugError) {
-      setError('Please fix the URL error before proceeding');
+      setError(t('Please fix the URL error before proceeding'));
       return;
     }
 
     // Validate security setup
     if (useSystemPin) {
       if (systemPin.length < 6 || systemPin.length > 10) {
-        setError('PIN must be between 6 and 10 digits');
+        setError(t('PIN must be between 6 and 10 digits'));
         return;
       }
       
       if (systemPin !== confirmSystemPin) {
-        setError('PINs do not match');
+        setError(t('PINs do not match'));
         return;
       }
     } else {
       if (caretakers.length === 0) {
-        setError('Please add at least one caretaker');
+        setError(t('Please add at least one caretaker'));
         return;
       }
     }
 
     // Validate baby information
     if (!babyFirstName.trim()) {
-      setError('Please enter baby\'s first name');
+      setError(t('Please enter baby\'s first name'));
       return;
     }
     
     if (!babyLastName.trim()) {
-      setError('Please enter baby\'s last name');
+      setError(t('Please enter baby\'s last name'));
       return;
     }
     
     if (!babyBirthDate) {
-      setError('Please enter baby\'s birth date');
+      setError(t('Please enter baby\'s birth date'));
       return;
     }
     
     if (!babyGender) {
-      setError('Please select baby\'s gender');
+      setError(t('Please select baby\'s gender'));
       return;
     }
 
@@ -637,8 +637,8 @@ export default function FamilyForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Edit Family' : 'Add New Family'}
-      description={isEditing ? 'Edit family information' : 'Create a new family by choosing your preferred setup method'}
+      title={isEditing ? t('Edit Family') : t('Add New Family')}
+      description={isEditing ? t('Edit family information') : t('Create a new family by choosing your preferred setup method')}
     >
       <FormPageContent>
         <div className="space-y-6">
@@ -675,8 +675,8 @@ export default function FamilyForm({
               </div>
               <p className="text-sm text-gray-500 family-form-text-muted">
                 {setupMode === 'manual' 
-                  ? 'You will configure all family details, security, and add the first baby now.'
-                  : 'You will create a secure invitation link that the family can use to set up their own name, PIN, caretakers, and baby information.'
+                  ? t('You will configure all family details, security, and add the first baby now.')
+                  : t('You will create a secure invitation link that the family can use to set up their own name, PIN, caretakers, and baby information.')
                 }
               </p>
             </div>
@@ -703,7 +703,7 @@ export default function FamilyForm({
                     type="password"
                     value={tokenPassword}
                     onChange={(e) => setTokenPassword(e.target.value)}
-                    placeholder="Enter password for setup access"
+                    placeholder={t("Enter password for setup access")}
                     disabled={loading}
                     minLength={6}
                   />
@@ -717,7 +717,7 @@ export default function FamilyForm({
                     type="password"
                     value={confirmTokenPassword}
                     onChange={(e) => setConfirmTokenPassword(e.target.value)}
-                    placeholder="Confirm setup password"
+                    placeholder={t("Confirm setup password")}
                     disabled={loading}
                     minLength={6}
                   />
@@ -759,7 +759,7 @@ export default function FamilyForm({
                 <Input
                   value={familyName}
                   onChange={(e) => setFamilyName(e.target.value)}
-                  placeholder="Enter family name"
+                  placeholder={t("Enter family name")}
                   disabled={loading}
                 />
               </div>
@@ -771,7 +771,7 @@ export default function FamilyForm({
                     value={familySlug}
                     onChange={(e) => setFamilySlug(e.target.value.toLowerCase())}
                     onClick={handleSlugFieldClick}
-                    placeholder="family-url"
+                    placeholder={t("family-url")}
                     className={cn(
                       slugError ? 'border-red-500' : '',
                       checkingSlug ? 'border-blue-400' : '',
@@ -889,7 +889,7 @@ export default function FamilyForm({
                               setNewCaretaker({ ...newCaretaker, loginId: value });
                             }
                           }}
-                          placeholder="e.g., 01, 12, 99"
+                          placeholder={t("e.g., 01, 12, 99")}
                           disabled={loading}
                           maxLength={2}
                         />
@@ -907,7 +907,7 @@ export default function FamilyForm({
                           disabled={loading || caretakers.length === 0}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue placeholder={t("Select role")} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="ADMIN">{t('Admin')}</SelectItem>
@@ -917,13 +917,13 @@ export default function FamilyForm({
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Name</Label>
+                      <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Name')}</Label>
                       <Input
                         value={newCaretaker.name}
                         onChange={(e) => 
                           setNewCaretaker({ ...newCaretaker, name: e.target.value })
                         }
-                        placeholder="Full name"
+                        placeholder={t("Full name")}
                         disabled={loading}
                       />
                     </div>
@@ -935,7 +935,7 @@ export default function FamilyForm({
                           onChange={(e) => 
                             setNewCaretaker({ ...newCaretaker, type: e.target.value })
                           }
-                          placeholder="Parent, Nanny, etc."
+                          placeholder={t("Parent, Nanny, etc.")}
                           disabled={loading}
                         />
                       </div>
@@ -950,7 +950,7 @@ export default function FamilyForm({
                               setNewCaretaker({ ...newCaretaker, securityPin: value });
                             }
                           }}
-                          placeholder="PIN"
+                          placeholder={t("PIN")}
                           disabled={loading}
                           minLength={6}
                           maxLength={10}
@@ -1010,7 +1010,7 @@ export default function FamilyForm({
                   <Input
                     value={babyFirstName}
                     onChange={(e) => setBabyFirstName(e.target.value)}
-                    placeholder="First name"
+                    placeholder={t("First name")}
                     disabled={loading}
                   />
                 </div>
@@ -1019,7 +1019,7 @@ export default function FamilyForm({
                   <Input
                     value={babyLastName}
                     onChange={(e) => setBabyLastName(e.target.value)}
-                    placeholder="Last name"
+                    placeholder={t("Last name")}
                     disabled={loading}
                   />
                 </div>
@@ -1038,7 +1038,7 @@ export default function FamilyForm({
                       disabled={loading}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {babyBirthDate ? format(babyBirthDate, "PPP") : "Select date"}
+                      {babyBirthDate ? format(babyBirthDate, "PPP") : t("Select date")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-[200]" align="start">
@@ -1064,7 +1064,7 @@ export default function FamilyForm({
                   disabled={loading}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
+                    <SelectValue placeholder={t("Select gender")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="MALE">{t('Male')}</SelectItem>
@@ -1120,14 +1120,14 @@ export default function FamilyForm({
             onClick={handleGenerateToken} 
             disabled={loading || !tokenPassword || !confirmTokenPassword || tokenPassword !== confirmTokenPassword}
           >
-            {loading ? 'Generating...' : 'Generate Setup Invitation'}
+            {loading ? t('Generating...') : t('Generate Setup Invitation')}
           </Button>
         ) : (
           <Button 
             onClick={handleManualSave} 
             disabled={loading || !familyName || !familySlug || !!slugError}
           >
-            {loading ? 'Saving...' : 'Save Family'}
+            {loading ? t('Saving...') : t('Save Family')}
           </Button>
         )}
       </FormPageFooter>

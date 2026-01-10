@@ -244,8 +244,8 @@ export default function DiaperForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Diaper Change' : 'Log Diaper Change'}
-      description={activity ? 'Update details about your baby\'s diaper change' : 'Record details about your baby\'s diaper change'}
+      title={activity ? t('Edit Diaper Change') : t('Log Diaper Change')}
+      description={activity ? t('Update details about your baby\'s diaper change') : t('Record details about your baby\'s diaper change')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
@@ -257,13 +257,13 @@ export default function DiaperForm({
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select diaper change time..."
+                placeholder={t("Select diaper change time...")}
               />
             </div>
             
             {/* Type Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Type</label>
+              <label className="form-label">{t('Type')}</label>
               <Select
                 value={formData.type || ''}
                 onValueChange={(value: DiaperType) =>
@@ -272,7 +272,7 @@ export default function DiaperForm({
                 disabled={loading}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t("Select type")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="WET">{t('Wet')}</SelectItem>
@@ -291,7 +291,7 @@ export default function DiaperForm({
                   disabled={loading}
                 />
                 <label className="form-label text-sm">
-                  Blowout/Leakage
+                  {t('Blowout/Leakage')}
                 </label>
               </div>
             )}
@@ -308,7 +308,7 @@ export default function DiaperForm({
                     disabled={loading}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select condition" />
+                      <SelectValue placeholder={t("Select condition")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="NORMAL">{t('Normal')}</SelectItem>
@@ -328,7 +328,7 @@ export default function DiaperForm({
                     disabled={loading}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select color" />
+                      <SelectValue placeholder={t("Select color")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="YELLOW">{t('Yellow')}</SelectItem>
@@ -356,7 +356,7 @@ export default function DiaperForm({
               {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? 'Update' : 'Save'}
+              {activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

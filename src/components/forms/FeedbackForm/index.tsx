@@ -124,7 +124,7 @@ export default function FeedbackForm({
     
     // Validate required fields
     if (!formData.subject.trim() || !formData.message.trim()) {
-      alert('Please fill in both subject and message fields.');
+      alert(t('Please fill in both subject and message fields.'));
       return;
     }
     
@@ -167,7 +167,7 @@ export default function FeedbackForm({
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('An unexpected error occurred. Please try again.');
+      alert(t('An unexpected error occurred. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -221,7 +221,7 @@ export default function FeedbackForm({
               id="subject"
               name="subject"
               type="text"
-              placeholder="Brief description of your feedback"
+              placeholder={t("Brief description of your feedback")}
               value={formData.subject}
               onChange={handleInputChange}
               required
@@ -274,7 +274,7 @@ export default function FeedbackForm({
         disabled={loading || !formData.subject.trim() || !formData.message.trim()}
         variant="success"
       >
-        {loading ? 'Sending...' : 'Send Feedback'}
+        {loading ? t('Sending...') : t('Send Feedback')}
       </Button>
     </div>
   );
@@ -296,8 +296,8 @@ export default function FeedbackForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title="Send Feedback"
-      description="Help us improve by sharing your thoughts and suggestions"
+      title={t("Send Feedback")}
+      description={t("Help us improve by sharing your thoughts and suggestions")}
     >
       <FormPageContent>
         {formContent}

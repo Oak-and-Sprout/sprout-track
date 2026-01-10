@@ -238,7 +238,7 @@ export default function BathForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Bath' : 'New Bath'}
+      title={activity ? t('Edit Bath') : t('New Bath')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
@@ -250,7 +250,7 @@ export default function BathForm({
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select bath time..."
+                placeholder={t("Select bath time...")}
               />
             </div>
             
@@ -291,7 +291,7 @@ export default function BathForm({
               <Textarea
                 id="notes"
                 name="notes"
-                placeholder="Enter any notes about the bath"
+                placeholder={t("Enter any notes about the bath")}
                 value={formData.notes}
                 onChange={handleInputChange}
                 rows={3}
@@ -315,7 +315,7 @@ export default function BathForm({
               onClick={handleSubmit}
               disabled={loading}
             >
-              {loading ? 'Saving...' : activity ? 'Update' : 'Save'}
+              {loading ? t('Saving...') : activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

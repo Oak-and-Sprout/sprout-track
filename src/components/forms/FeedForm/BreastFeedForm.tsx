@@ -272,7 +272,7 @@ export default function BreastFeedForm({
   if (isEditing) {
     return (
       <div className="feed-form-container">
-        <Label className="form-label">{t('Duration -')} {side === 'LEFT' ? 'Left' : 'Right'} {t('Side')}</Label>
+                <Label className="form-label">{t('Duration -')} {side === 'LEFT' ? t('Left') : t('Right')} {t('Side')}</Label>
         <div className="flex flex-col items-center space-y-4 py-4">
           {side === 'LEFT' ? (
             <TimerInput
@@ -320,7 +320,7 @@ export default function BreastFeedForm({
               {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ? 
                 <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
               {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ? 
-                'Pause' : 'Start'}
+                t('Pause') : t('Start')}
             </Button>
           </div>
         </div>
@@ -370,7 +370,7 @@ export default function BreastFeedForm({
               className="w-full"
             >
               {isTimerRunning && activeBreast === 'LEFT' ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
-              {isTimerRunning && activeBreast === 'LEFT' ? 'Pause' : 'Start'}
+              {isTimerRunning && activeBreast === 'LEFT' ? t('Pause') : t('Start')}
             </Button>
           </div>
         </div>
@@ -417,7 +417,7 @@ export default function BreastFeedForm({
               className="w-full"
             >
               {isTimerRunning && activeBreast === 'RIGHT' ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
-              {isTimerRunning && activeBreast === 'RIGHT' ? 'Pause' : 'Start'}
+              {isTimerRunning && activeBreast === 'RIGHT' ? t('Pause') : t('Start')}
             </Button>
           </div>
         </div>
@@ -428,7 +428,7 @@ export default function BreastFeedForm({
           <Textarea
             id="notes"
             name="notes"
-            placeholder="Enter any notes about the feeding"
+            placeholder={t("Enter any notes about the feeding")}
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
             rows={3}

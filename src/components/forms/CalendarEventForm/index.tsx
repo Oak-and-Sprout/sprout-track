@@ -364,20 +364,20 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
     
     // Required fields
     if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = t('Title is required');
     }
     
     if (!formData.startTime) {
-      newErrors.startTime = 'Start time is required';
+      newErrors.startTime = t('Start time is required');
     }
     
     if (!formData.type) {
-      newErrors.type = 'Event type is required';
+      newErrors.type = t('Event type is required');
     }
     
     // Validate end time is after start time
     if (formData.startTime && formData.endTime && formData.endTime < formData.startTime) {
-      newErrors.endTime = 'End time must be after start time';
+      newErrors.endTime = t('End time must be after start time');
     }
     
     // Recurrence validation - commented out as functionality is not fully implemented yet
@@ -418,7 +418,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <FormPage isOpen={isOpen} onClose={handleClose} title={event ? 'Edit Event' : 'New Event'}>
+    <FormPage isOpen={isOpen} onClose={handleClose} title={event ? t('Edit Event') : t('New Event')}>
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <FormPageContent>
           <div className="space-y-6 pb-24">
@@ -439,7 +439,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   value={formData.title}
                   onChange={handleChange}
                   className="w-full"
-                  placeholder="Enter event title"
+                  placeholder={t("Enter event title")}
                 />
                 {errors.title && (
                   <div className={styles.fieldError}>
@@ -516,7 +516,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                       value={selectedStartDateTime}
                       onChange={handleStartDateTimeChange}
                       disabled={formData.allDay} // Disable if allDay is checked
-                      placeholder="Select start time..."
+                      placeholder={t("Select start time...")}
                     />
                   </div>
                   {errors.startTime && (
@@ -538,7 +538,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                       value={selectedEndDateTime}
                       onChange={handleEndDateTimeChange}
                       disabled={formData.allDay} // Disable if allDay is checked
-                      placeholder="Select end time..."
+                      placeholder={t("Select end time...")}
                     />
                   </div>
                   {errors.endTime && (
@@ -563,7 +563,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     value={formData.location || ''}
                     onChange={handleChange}
                     className="w-full pl-8"
-                    placeholder="Enter location (optional)"
+                    placeholder={t("Enter location (optional)")}
                   />
                   <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -580,7 +580,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   value={formData.description || ''}
                   onChange={handleChange}
                   className="w-full min-h-[100px]"
-                  placeholder="Enter event description (optional)"
+                  placeholder={t("Enter event description (optional)")}
                 />
               </div>
               
@@ -922,7 +922,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     {t('Saving...')}
                   </>
                 ) : (
-                  'Save Event'
+                  t('Save Event')
                 )}
               </Button>
             </div>
