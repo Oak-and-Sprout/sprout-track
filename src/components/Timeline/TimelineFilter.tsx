@@ -45,15 +45,15 @@ const TimelineFilter = ({
   
   // Define filter types and their icons
   const filterOptions = [
-    { type: 'sleep', icon: <Moon className="h-4 w-4" />, label: 'Sleep' },
-    { type: 'feed', icon: <Icon iconNode={bottleBaby} className="h-4 w-4" />, label: 'Feed' },
-    { type: 'diaper', icon: <Icon iconNode={diaper} className="h-4 w-4" />, label: 'Diaper' },
-    { type: 'bath', icon: <Bath className="h-4 w-4" />, label: 'Bath' },
-    { type: 'note', icon: <Edit className="h-4 w-4" />, label: 'Note' },
-    { type: 'pump', icon: <LampWallDown className="h-4 w-4" />, label: 'Pump' },
-    { type: 'milestone', icon: <Trophy className="h-4 w-4" />, label: 'Milestone' },
-    { type: 'measurement', icon: <Ruler className="h-4 w-4" />, label: 'Measurement' },
-    { type: 'medicine', icon: <PillBottle className="h-4 w-4" />, label: 'Medicine' },
+    { type: 'sleep', icon: <Moon className="h-4 w-4" />, label: t('Sleep') },
+    { type: 'feed', icon: <Icon iconNode={bottleBaby} className="h-4 w-4" />, label: t('Feed') },
+    { type: 'diaper', icon: <Icon iconNode={diaper} className="h-4 w-4" />, label: t('Diaper') },
+    { type: 'bath', icon: <Bath className="h-4 w-4" />, label: t('Bath') },
+    { type: 'note', icon: <Edit className="h-4 w-4" />, label: t('Note') },
+    { type: 'pump', icon: <LampWallDown className="h-4 w-4" />, label: t('Pump') },
+    { type: 'milestone', icon: <Trophy className="h-4 w-4" />, label: t('Milestone') },
+    { type: 'measurement', icon: <Ruler className="h-4 w-4" />, label: t('Measurement') },
+    { type: 'medicine', icon: <PillBottle className="h-4 w-4" />, label: t('Medicine') },
   ] as const;
 
 

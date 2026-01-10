@@ -31,7 +31,7 @@ const TimelineActivityDetails = ({
   // Special medicine details rendering
   let medicineDetails: { label: string; value: string }[] | null = null;
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    let medName = 'Medicine';
+    let medName = t('Medicine');
     if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
       medName = (activity.medicine as { name?: string }).name || medName;
     }
@@ -40,13 +40,13 @@ const TimelineActivityDetails = ({
     let notes = activity.notes ? activity.notes : '';
     if (notes.length > 50) notes = notes.substring(0, 50) + '...';
     medicineDetails = [
-      { label: 'Medicine', value: medName },
-      { label: 'Amount', value: dose },
-      { label: 'Time', value: medTime },
-      ...(notes ? [{ label: 'Notes', value: notes }] : [])
+      { label: t('Medicine'), value: medName },
+      { label: t('Amount'), value: dose },
+      { label: t('Time'), value: medTime },
+      ...(notes ? [{ label: t('Notes'), value: notes }] : [])
     ];
   }
-  const activityDetails = getActivityDetails(activity, settings);
+  const activityDetails = getActivityDetails(activity, settings, t);
   
   const handleEdit = () => {
     if (activity) {

@@ -365,12 +365,12 @@ export default function SleepForm({
             'Authorization': authToken ? `Bearer ${authToken}` : ''
           }
         });
-        if (!sleepResponse.ok) throw new Error('Failed to fetch sleep logs');
+        if (!sleepResponse.ok) throw new Error(t('Failed to fetch sleep logs'));
         const sleepData = await sleepResponse.json();
-        if (!sleepData.success) throw new Error('Failed to fetch sleep logs');
+        if (!sleepData.success) throw new Error(t('Failed to fetch sleep logs'));
         
         const currentSleep = sleepData.data.find((log: SleepLogResponse) => !log.endTime);
-        if (!currentSleep) throw new Error('No ongoing sleep record found');
+        if (!currentSleep) throw new Error(t('No ongoing sleep record found'));
 
         response = await fetch(`/api/sleep-log?id=${currentSleep.id}`, {
           method: 'PUT',
@@ -425,11 +425,11 @@ export default function SleepForm({
           if (errorData) {
             showToast({
               variant: 'error',
-              title: 'Error',
-              message: errorData.error || 'Failed to save sleep log',
+              title: t('Error'),
+              message: errorData.error || t('Failed to save sleep log'),
               duration: 5000,
             });
-            throw new Error(errorData.error || 'Failed to save sleep log');
+            throw new Error(errorData.error || t('Failed to save sleep log'));
           }
         }
         
@@ -437,11 +437,11 @@ export default function SleepForm({
         const errorData = await response.json();
         showToast({
           variant: 'error',
-          title: 'Error',
-          message: errorData.error || 'Failed to save sleep log',
+          title: t('Error'),
+          message: errorData.error || t('Failed to save sleep log'),
           duration: 5000,
         });
-        throw new Error(errorData.error || 'Failed to save sleep log');
+        throw new Error(errorData.error || t('Failed to save sleep log'));
       }
 
       onClose();

@@ -218,7 +218,7 @@ export default function DiaperForm({
         }
         
         // For other errors, throw as before
-        throw new Error('Failed to save diaper log');
+        throw new Error(t('Failed to save diaper log'));
       }
 
       onClose();

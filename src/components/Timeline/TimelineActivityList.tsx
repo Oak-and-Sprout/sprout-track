@@ -316,7 +316,7 @@ const TimelineActivityList = ({
                     <div className="space-y-4 pb-8">
                       {group.activities.map((activity, activityIndex) => {
                         const style = getActivityStyle(activity);
-                        const description = getActivityDescription(activity, settings);
+                        const description = getActivityDescription(activity, settings, t);
                         // Handle time display for sleep activities with start-end time format
                         const activityTime = new Date(getActivityTime(activity));
                         let timeStr: string;
@@ -454,7 +454,7 @@ const TimelineActivityList = ({
                                               } else if (activity.amount) {
                                                 duration = `${activity.amount} min`;
                                               }
-                                              return [side + ' side', duration].filter(Boolean).join(' • ');
+                                              return [side ? `${side} ${t('Side')}` : '', duration].filter(Boolean).join(' • ');
                                             } else if (activity.type === 'BOTTLE') {
                                               const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
                                               return `${activity.amount} ${unit}`;
@@ -475,7 +475,7 @@ const TimelineActivityList = ({
                                               details.push(activity.color.charAt(0) + activity.color.slice(1).toLowerCase());
                                             }
                                             if (activity.blowout) {
-                                              details.push('Blowout/Leakage');
+                                              details.push(t('Blowout/Leakage'));
                                             }
                                             return details.join(' • ');
                                           }
@@ -490,9 +490,9 @@ const TimelineActivityList = ({
                                           if ('soapUsed' in activity) {
                                             // Bath activity
                                             const details = [];
-                                            if (activity.soapUsed) details.push('Soap');
-                                            if (activity.shampooUsed) details.push('Shampoo');
-                                            if (details.length === 0) details.push('Water only');
+                                            if (activity.soapUsed) details.push(t('Soap Used'));
+                                            if (activity.shampooUsed) details.push(t('Shampoo Used'));
+                                            if (details.length === 0) details.push(t('Water only'));
                                             if (activity.notes) {
                                               const notes = activity.notes.length > 30 ? 
                                                 activity.notes.substring(0, 30) + '...' : 
@@ -548,7 +548,7 @@ const TimelineActivityList = ({
                                             return `${medName} - ${dose}`;
                                           }
                                           
-                                          return 'Activity logged';
+                                            return t('Activity logged');
                                         })()}
                                       </p>
                                     </div>

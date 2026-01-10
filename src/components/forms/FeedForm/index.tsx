@@ -549,11 +549,11 @@ export default function FeedForm({
         if (errorData) {
           showToast({
             variant: 'error',
-            title: 'Error',
-            message: errorData.error || 'Failed to save feed log',
+            title: t('Error'),
+            message: errorData.error || t('Failed to save feed log'),
             duration: 5000,
           });
-          throw new Error(errorData.error || 'Failed to save feed log');
+          throw new Error(errorData.error || t('Failed to save feed log'));
         }
       }
       
@@ -561,11 +561,11 @@ export default function FeedForm({
       const errorData = await response.json();
       showToast({
         variant: 'error',
-        title: 'Error',
-        message: errorData.error || 'Failed to save feed log',
+        title: t('Error'),
+        message: errorData.error || t('Failed to save feed log'),
         duration: 5000,
       });
-      throw new Error(errorData.error || 'Failed to save feed log');
+      throw new Error(errorData.error || t('Failed to save feed log'));
     }
 
     return response;

@@ -129,17 +129,17 @@ export const formatDuration = (minutes: number): string => {
   return `(${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')})`;
 };
 
-export const getActivityDetails = (activity: ActivityType, settings: Settings | null): ActivityDetails => {
+export const getActivityDetails = (activity: ActivityType, settings: Settings | null, t: (key: string) => string): ActivityDetails => {
   // Common details that should be added to all activity types if caretaker name exists
   const caretakerDetail = activity.caretakerName ? [
-    { label: 'Caretaker', value: activity.caretakerName }
+    { label: t('Caretaker'), value: activity.caretakerName }
   ] : [];
   
   if ('type' in activity) {
     if ('duration' in activity) {
       // For sleep activities, always show dates with times
-      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true) : 'unknown';
-      let endTime = 'ongoing';
+      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true) : t('unknown');
+      let endTime = t('ongoing');
       
       if (activity.endTime) {
         endTime = formatTime(activity.endTime, settings, true);
@@ -148,78 +148,78 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
       const formatSleepQuality = (quality: string) => {
         switch (quality) {
-          case 'POOR': return 'Poor';
-          case 'FAIR': return 'Fair';
-          case 'GOOD': return 'Good';
-          case 'EXCELLENT': return 'Excellent';
+          case 'POOR': return t('Poor');
+          case 'FAIR': return t('Fair');
+          case 'GOOD': return t('Good');
+          case 'EXCELLENT': return t('Excellent');
           default: return quality;
         }
       };
       const formatLocation = (location: string) => {
-        if (location === 'OTHER') return 'Other';
+        if (location === 'OTHER') return t('Other');
         
         return location;
       };
       const details = [
-        { label: 'Type', value: activity.type === 'NAP' ? 'Nap' : 'Night Sleep' },
-        { label: 'Start Time', value: startTime },
+        { label: t('Type'), value: activity.type === 'NAP' ? t('Nap') : t('Night Sleep') },
+        { label: t('Start Time'), value: startTime },
       ];
       
       // Only show end time and duration if sleep has ended
       if (activity.endTime) {
         // Format duration as hours and minutes
-        let durationValue = 'unknown';
+        let durationValue = t('unknown');
         if (activity.duration) {
           const hours = Math.floor(activity.duration / 60);
           const mins = activity.duration % 60;
-          durationValue = `${hours}h ${mins}m`;
+          durationValue = `${hours}h ${mins}${t('min')}`;
         }
         details.push(
-          { label: 'End Time', value: endTime },
-          { label: 'Duration', value: durationValue }
+          { label: t('End Time'), value: endTime },
+          { label: t('Duration'), value: durationValue }
         );
         // Only show quality if sleep has ended
         if (activity.quality) {
-          details.push({ label: 'Quality', value: formatSleepQuality(activity.quality) });
+          details.push({ label: t('Quality'), value: formatSleepQuality(activity.quality) });
         }
       }
       
       // Always show location if specified
       if (activity.location) {
-        details.push({ label: 'Location', value: formatLocation(activity.location) });
+        details.push({ label: t('Location'), value: formatLocation(activity.location) });
       }
 
       return {
-        title: 'Sleep Record',
+        title: t('Sleep Record'),
         details: [...details, ...caretakerDetail],
       };
     }
     if ('amount' in activity) {
       const formatFeedType = (type: string) => {
         switch (type) {
-          case 'BREAST': return 'Breast';
-          case 'BOTTLE': return 'Bottle';
-          case 'SOLIDS': return 'Solid Food';
+          case 'BREAST': return t('Breast');
+          case 'BOTTLE': return t('Bottle');
+          case 'SOLIDS': return t('Solid Food');
           default: return type;
         }
       };
       const formatBreastSide = (side: string) => {
         switch (side) {
-          case 'LEFT': return 'Left';
-          case 'RIGHT': return 'Right';
+          case 'LEFT': return t('Left');
+          case 'RIGHT': return t('Right');
           default: return side;
         }
       };
       const details = [
-        { label: 'Time', value: formatTime(activity.time, settings) },
-        { label: 'Type', value: formatFeedType(activity.type) },
+        { label: t('Time'), value: formatTime(activity.time, settings) },
+        { label: t('Type'), value: formatFeedType(activity.type) },
       ];
 
       // Show amount for bottle and solids - use unitAbbr instead of hardcoded units
       if (activity.amount && (activity.type === 'BOTTLE' || activity.type === 'SOLIDS')) {
         const unit = (activity as any).unitAbbr || (activity.type === 'BOTTLE' ? 'oz' : 'g');
         details.push({ 
-          label: 'Amount', 
+          label: t('Amount'), 
           value: `${activity.amount} ${unit}`
         });
       }
@@ -227,7 +227,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       // Show side for breast feeds
       if (activity.type === 'BREAST') {
         if (activity.side) {
-          details.push({ label: 'Side', value: formatBreastSide(activity.side) });
+          details.push({ label: t('Side'), value: formatBreastSide(activity.side) });
         }
         
         // Show duration from feedDuration (in seconds) or fall back to amount (in minutes)
@@ -235,118 +235,118 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
           const minutes = Math.floor(activity.feedDuration / 60);
           const seconds = activity.feedDuration % 60;
           details.push({ 
-            label: 'Duration', 
+            label: t('Duration'), 
             value: seconds > 0 ? 
-              `${minutes} min ${seconds} sec` : 
-              `${minutes} minutes` 
+              `${minutes} ${t('min')} ${seconds} ${t('sec')}` : 
+              `${minutes} ${t('minutes')}` 
           });
         } else if (activity.amount) {
-          details.push({ label: 'Duration', value: `${activity.amount} minutes` });
+          details.push({ label: t('Duration'), value: `${activity.amount} ${t('minutes')}` });
         }
       }
 
       // Show food for solids
       if (activity.type === 'SOLIDS' && activity.food) {
-        details.push({ label: 'Food', value: activity.food });
+        details.push({ label: t('Food'), value: activity.food });
       }
 
       // Show bottle type for bottle feeds
       if (activity.type === 'BOTTLE' && (activity as any).bottleType) {
         const bottleType = (activity as any).bottleType;
         details.push({ 
-          label: 'Bottle Type', 
+          label: t('Bottle Type'), 
           value: bottleType.replace('\\', '/') 
         });
       }
 
       // Show notes for all feed types if present
       if ((activity as any).notes) {
-        details.push({ label: 'Notes', value: (activity as any).notes });
+        details.push({ label: t('Notes'), value: (activity as any).notes });
       }
 
       return {
-        title: 'Feed Record',
+        title: t('Feed Record'),
         details: [...details, ...caretakerDetail],
       };
     }
     if ('condition' in activity) {
       const formatDiaperType = (type: string) => {
         switch (type) {
-          case 'WET': return 'Wet';
-          case 'DIRTY': return 'Dirty';
-          case 'BOTH': return 'Wet and Dirty';
+          case 'WET': return t('Wet');
+          case 'DIRTY': return t('Dirty');
+          case 'BOTH': return t('Wet and Dirty');
           default: return type;
         }
       };
       const formatDiaperCondition = (condition: string) => {
         switch (condition) {
-          case 'NORMAL': return 'Normal';
-          case 'LOOSE': return 'Loose';
-          case 'FIRM': return 'Firm';
-          case 'OTHER': return 'Other';
+          case 'NORMAL': return t('Normal');
+          case 'LOOSE': return t('Loose');
+          case 'FIRM': return t('Firm');
+          case 'OTHER': return t('Other');
           default: return condition;
         }
       };
       const formatDiaperColor = (color: string) => {
         switch (color) {
-          case 'YELLOW': return 'Yellow';
-          case 'BROWN': return 'Brown';
-          case 'GREEN': return 'Green';
-          case 'OTHER': return 'Other';
+          case 'YELLOW': return t('Yellow');
+          case 'BROWN': return t('Brown');
+          case 'GREEN': return t('Green');
+          case 'OTHER': return t('Other');
           default: return color;
         }
       };
       const details = [
-        { label: 'Time', value: formatTime(activity.time, settings) },
-        { label: 'Type', value: formatDiaperType(activity.type) },
+        { label: t('Time'), value: formatTime(activity.time, settings) },
+        { label: t('Type'), value: formatDiaperType(activity.type) },
       ];
 
       // Only show condition and color for DIRTY or BOTH types
       if (activity.type !== 'WET') {
         if (activity.condition) {
-          details.push({ label: 'Condition', value: formatDiaperCondition(activity.condition) });
+          details.push({ label: t('Condition'), value: formatDiaperCondition(activity.condition) });
         }
         if (activity.color) {
-          details.push({ label: 'Color', value: formatDiaperColor(activity.color) });
+          details.push({ label: t('Color'), value: formatDiaperColor(activity.color) });
         }
       }
 
       // Show blowout/leakage for all diaper types
       if (activity.blowout) {
-        details.push({ label: 'Blowout/Leakage', value: 'Yes' });
+        details.push({ label: t('Blowout/Leakage'), value: t('Yes') });
       }
 
       return {
-        title: 'Diaper Record',
+        title: t('Diaper Record'),
         details: [...details, ...caretakerDetail],
       };
     }
   }
   if ('content' in activity) {
     const noteDetails = [
-      { label: 'Time', value: formatTime(activity.time, settings) },
-      { label: 'Content', value: activity.content },
-      { label: 'Category', value: activity.category || 'Not specified' },
+      { label: t('Time'), value: formatTime(activity.time, settings) },
+      { label: t('Content'), value: activity.content },
+      { label: t('Category'), value: activity.category || t('Not specified') },
     ];
     
     return {
-      title: 'Note',
+      title: t('Note'),
       details: [...noteDetails, ...caretakerDetail],
     };
   }
   if ('soapUsed' in activity) {
     const bathDetails = [
-      { label: 'Time', value: formatTime(activity.time, settings) },
-      { label: 'Soap Used', value: activity.soapUsed ? 'Yes' : 'No' },
-      { label: 'Shampoo Used', value: activity.shampooUsed ? 'Yes' : 'No' },
+      { label: t('Time'), value: formatTime(activity.time, settings) },
+      { label: t('Soap Used'), value: activity.soapUsed ? t('Yes') : t('No') },
+      { label: t('Shampoo Used'), value: activity.shampooUsed ? t('Yes') : t('No') },
     ];
     
     if (activity.notes) {
-      bathDetails.push({ label: 'Notes', value: activity.notes });
+      bathDetails.push({ label: t('Notes'), value: activity.notes });
     }
     
     return {
-      title: 'Bath Record',
+      title: t('Bath Record'),
       details: [...bathDetails, ...caretakerDetail],
     };
   }
@@ -371,37 +371,37 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     if (isPumpActivity(activity)) {
       // Add start time
       if (activity.startTime) {
-        pumpDetails.push({ label: 'Start Time', value: formatTime(activity.startTime, settings) });
+        pumpDetails.push({ label: t('Start Time'), value: formatTime(activity.startTime, settings) });
       }
       
       // Add end time if available
       if (activity.endTime) {
-        pumpDetails.push({ label: 'End Time', value: formatTime(activity.endTime, settings) });
+        pumpDetails.push({ label: t('End Time'), value: formatTime(activity.endTime, settings) });
       }
       
       // Add left amount if available
       if (activity.leftAmount) {
-        pumpDetails.push({ label: 'Left Breast', value: `${activity.leftAmount} ${activity.unit || 'oz'}` });
+        pumpDetails.push({ label: t('Left Breast'), value: `${activity.leftAmount} ${activity.unit || 'oz'}` });
       }
       
       // Add right amount if available
       if (activity.rightAmount) {
-        pumpDetails.push({ label: 'Right Breast', value: `${activity.rightAmount} ${activity.unit || 'oz'}` });
+        pumpDetails.push({ label: t('Right Breast'), value: `${activity.rightAmount} ${activity.unit || 'oz'}` });
       }
       
       // Add total amount if available
       if (activity.totalAmount) {
-        pumpDetails.push({ label: 'Total Amount', value: `${activity.totalAmount} ${activity.unit || 'oz'}` });
+        pumpDetails.push({ label: t('Total Amount'), value: `${activity.totalAmount} ${activity.unit || 'oz'}` });
       }
       
       // Add notes if available
       if (activity.notes) {
-        pumpDetails.push({ label: 'Notes', value: activity.notes });
+        pumpDetails.push({ label: t('Notes'), value: activity.notes });
       }
     }
     
     return {
-      title: 'Breast Pumping Record',
+      title: t('Breast Pumping Record'),
       details: [...pumpDetails, ...caretakerDetail],
     };
   }
@@ -410,23 +410,23 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   if ('title' in activity && 'category' in activity) {
     const formatMilestoneCategory = (category: string) => {
       switch (category) {
-        case 'MOTOR': return 'Motor Skills';
-        case 'COGNITIVE': return 'Cognitive';
-        case 'SOCIAL': return 'Social';
-        case 'LANGUAGE': return 'Language';
-        case 'OTHER': return 'Other';
+        case 'MOTOR': return t('Motor Skills');
+        case 'COGNITIVE': return t('Cognitive');
+        case 'SOCIAL': return t('Social');
+        case 'LANGUAGE': return t('Language');
+        case 'OTHER': return t('Other');
         default: return category;
       }
     };
 
     const milestoneDetails = [
-      { label: 'Date', value: formatTime(activity.date, settings) },
-      { label: 'Title', value: activity.title },
-      { label: 'Category', value: formatMilestoneCategory(activity.category) },
+      { label: t('Date'), value: formatTime(activity.date, settings) },
+      { label: t('Title'), value: activity.title },
+      { label: t('Category'), value: formatMilestoneCategory(activity.category) },
     ];
 
     if (activity.description) {
-      milestoneDetails.push({ label: 'Description', value: activity.description });
+      milestoneDetails.push({ label: t('Description'), value: activity.description });
     }
 
     if (activity.ageInDays) {
@@ -445,11 +445,11 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         ageString += `${days} day${days !== 1 ? 's' : ''}`;
       }
       
-      milestoneDetails.push({ label: 'Age', value: ageString.trim() });
+      milestoneDetails.push({ label: t('Age'), value: ageString.trim() });
     }
 
     return {
-      title: 'Milestone',
+      title: t('Milestone'),
       details: [...milestoneDetails, ...caretakerDetail],
     };
   }
@@ -458,38 +458,38 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   if ('value' in activity && 'unit' in activity) {
     const formatMeasurementType = (type: string) => {
       switch (type) {
-        case 'HEIGHT': return 'Height';
-        case 'WEIGHT': return 'Weight';
-        case 'HEAD_CIRCUMFERENCE': return 'Head Circumference';
-        case 'TEMPERATURE': return 'Temperature';
-        case 'OTHER': return 'Other';
+        case 'HEIGHT': return t('Height');
+        case 'WEIGHT': return t('Weight');
+        case 'HEAD_CIRCUMFERENCE': return t('Head Circumference');
+        case 'TEMPERATURE': return t('Temperature');
+        case 'OTHER': return t('Other');
         default: return type;
       }
     };
 
     const measurementDetails = [
-      { label: 'Date', value: formatTime(activity.date, settings) },
-      { label: 'Type', value: formatMeasurementType(activity.type) },
-      { label: 'Value', value: `${activity.value} ${activity.unit}` },
+      { label: t('Date'), value: formatTime(activity.date, settings) },
+      { label: t('Type'), value: formatMeasurementType(activity.type) },
+      { label: t('Value'), value: `${activity.value} ${activity.unit}` },
     ];
 
     if (activity.notes) {
-      measurementDetails.push({ label: 'Notes', value: activity.notes });
+      measurementDetails.push({ label: t('Notes'), value: activity.notes });
     }
 
     return {
-      title: 'Measurement',
+      title: t('Measurement'),
       details: [...measurementDetails, ...caretakerDetail],
     };
   }
   
-  return { title: 'Activity', details: [...caretakerDetail] };
+  return { title: t('Activity'), details: [...caretakerDetail] };
 };
 
-export const getActivityDescription = (activity: ActivityType, settings: Settings | null): ActivityDescription => {
+export const getActivityDescription = (activity: ActivityType, settings: Settings | null, t: (key: string) => string): ActivityDescription => {
   if ('doseAmount' in activity && 'medicineId' in activity) {
     // Medicine log
-    let medName = 'Medicine';
+    let medName = t('Medicine');
     if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
       medName = (activity.medicine as { name?: string }).name || medName;
     }
@@ -504,14 +504,14 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
   }
   if ('type' in activity) {
     if ('duration' in activity) {
-      const startTimeFormatted = activity.startTime ? formatTime(activity.startTime, settings, true) : 'unknown';
-      const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true) : 'ongoing';
+      const startTimeFormatted = activity.startTime ? formatTime(activity.startTime, settings, true) : t('unknown');
+      const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true) : t('ongoing');
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
       
       // Format location
       let locationText = '';
       if (activity.location) {
-        const location = activity.location === 'OTHER' ? 'Other' : activity.location.split('_').map(word => 
+        const location = activity.location === 'OTHER' ? t('Other') : activity.location.split('_').map(word => 
           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
         ).join(' ');
         locationText = location;
@@ -520,7 +520,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       // Format quality
       let qualityText = '';
       if (activity.quality) {
-        qualityText = activity.quality.charAt(0) + activity.quality.slice(1).toLowerCase();
+        const qualityMap: Record<string, string> = {
+          'POOR': t('Poor'),
+          'FAIR': t('Fair'),
+          'GOOD': t('Good'),
+          'EXCELLENT': t('Excellent')
+        };
+        qualityText = qualityMap[activity.quality] || activity.quality.charAt(0) + activity.quality.slice(1).toLowerCase();
       }
       
       // Build details string
@@ -530,16 +536,16 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       const detailsSuffix = detailsParts.length > 0 ? ` (${detailsParts.join(', ')})` : '';
       
       return {
-        type: activity.type === 'NAP' ? 'Nap' : 'Night Sleep',
+        type: activity.type === 'NAP' ? t('Nap') : t('Night Sleep'),
         details: `${startTimeFormatted} - ${endTimeFormatted.split(' ').slice(-2).join(' ')}${duration}${detailsSuffix}`
       };
     }
     if ('amount' in activity) {
       const formatFeedType = (type: string) => {
         switch (type) {
-          case 'BREAST': return 'Breast';
-          case 'BOTTLE': return 'Bottle';
-          case 'SOLIDS': return 'Solid Food';
+          case 'BREAST': return t('Breast');
+          case 'BOTTLE': return t('Bottle');
+          case 'SOLIDS': return t('Solid Food');
           default: return type.split('_').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
           ).join(' ');
@@ -547,8 +553,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       };
       const formatBreastSide = (side: string) => {
         switch (side) {
-          case 'LEFT': return 'Left';
-          case 'RIGHT': return 'Right';
+          case 'LEFT': return t('Left');
+          case 'RIGHT': return t('Right');
           default: return side.split('_').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
           ).join(' ');
@@ -557,7 +563,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       
       let details = '';
       if (activity.type === 'BREAST') {
-        const side = activity.side ? `Side: ${formatBreastSide(activity.side)}` : '';
+        const side = activity.side ? `${t('Side')}: ${formatBreastSide(activity.side)}` : '';
         
         // Get duration from feedDuration (in seconds) or fall back to amount (in minutes)
         let duration = '';
@@ -565,17 +571,17 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
           const minutes = Math.floor(activity.feedDuration / 60);
           const seconds = activity.feedDuration % 60;
           duration = seconds > 0 ? 
-            `${minutes}m ${seconds}s` : 
-            `${minutes} min`;
+            `${minutes}${t('min')} ${seconds}${t('sec')}` : 
+            `${minutes} ${t('min')}`;
         } else if (activity.amount) {
-          duration = `${activity.amount} min`;
+          duration = `${activity.amount} ${t('min')}`;
         }
         
         details = [side, duration].filter(Boolean).join(', ');
       } else if (activity.type === 'BOTTLE') {
         // Use unitAbbr instead of hardcoded 'oz'
         const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
-        details = `${activity.amount || 'unknown'} ${unit}`;
+        details = `${activity.amount || t('unknown')} ${unit}`;
         
         // Add bottle type if available
         if ((activity as any).bottleType) {
@@ -585,7 +591,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       } else if (activity.type === 'SOLIDS') {
         // Use unitAbbr instead of hardcoded 'g'
         const unit = ((activity as any).unitAbbr || 'g').toLowerCase();
-        details = `${activity.amount || 'unknown'} ${unit}`;
+        details = `${activity.amount || t('unknown')} ${unit}`;
         if (activity.food) {
           details += ` of ${activity.food}`;
         }
@@ -607,9 +613,9 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     if ('condition' in activity) {
       const formatDiaperType = (type: string) => {
         switch (type) {
-          case 'WET': return 'Wet';
-          case 'DIRTY': return 'Dirty';
-          case 'BOTH': return 'Wet and Dirty';
+          case 'WET': return t('Wet');
+          case 'DIRTY': return t('Dirty');
+          case 'BOTH': return t('Wet and Dirty');
           default: return type.split('_').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
           ).join(' ');
@@ -617,10 +623,10 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       };
       const formatDiaperCondition = (condition: string) => {
         switch (condition) {
-          case 'NORMAL': return 'Normal';
-          case 'LOOSE': return 'Loose';
-          case 'FIRM': return 'Firm';
-          case 'OTHER': return 'Other';
+          case 'NORMAL': return t('Normal');
+          case 'LOOSE': return t('Loose');
+          case 'FIRM': return t('Firm');
+          case 'OTHER': return t('Other');
           default: return condition.split('_').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
           ).join(' ');
@@ -628,10 +634,10 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       };
       const formatDiaperColor = (color: string) => {
         switch (color) {
-          case 'YELLOW': return 'Yellow';
-          case 'BROWN': return 'Brown';
-          case 'GREEN': return 'Green';
-          case 'OTHER': return 'Other';
+          case 'YELLOW': return t('Yellow');
+          case 'BROWN': return t('Brown');
+          case 'GREEN': return t('Green');
+          case 'OTHER': return t('Other');
           default: return color.split('_').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
           ).join(' ');
@@ -649,7 +655,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       }
 
       // Add blowout information for all diaper types
-      const blowoutText = activity.blowout ? ' - Blowout/Leakage' : '';
+      const blowoutText = activity.blowout ? ` - ${t('Blowout/Leakage')}` : '';
 
       const time = formatTime(activity.time, settings, true);
       return {
@@ -662,7 +668,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     const time = formatTime(activity.time, settings, true);
     const truncatedContent = activity.content.length > 50 ? activity.content.substring(0, 50) + '...' : activity.content;
     return {
-      type: activity.category || 'Note',
+      type: activity.category || t('Note'),
       details: `${time} - ${truncatedContent}`
     };
   }
@@ -672,13 +678,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     
     // Determine bath details based on soap and shampoo usage
     if (!activity.soapUsed && !activity.shampooUsed) {
-      bathDetails = 'water only';
+      bathDetails = t('Water only');
     } else if (activity.soapUsed && activity.shampooUsed) {
-      bathDetails = 'with soap and shampoo';
+      bathDetails = t('with soap and shampoo');
     } else if (activity.soapUsed) {
-      bathDetails = 'with soap';
+      bathDetails = t('with soap');
     } else if (activity.shampooUsed) {
-      bathDetails = 'with shampoo';
+      bathDetails = t('with shampoo');
     }
     
     // Add notes if available, truncate if needed
@@ -689,7 +695,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     }
     
     return {
-      type: 'Bath',
+      type: t('Bath'),
       details: `${time} - ${bathDetails}${notesText}`
     };
   }
@@ -709,7 +715,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     };
     
     if (isPumpActivity(activity)) {
-      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true) : 'unknown';
+      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true) : t('unknown');
       let details = startTime;
       
       // Add duration if available
@@ -727,16 +733,16 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       
       // Always show left, right, and total amounts when available
       const amountDetails = [];
-      if (activity.leftAmount) amountDetails.push(`Left: ${activity.leftAmount} ${activity.unit || 'oz'}`);
-      if (activity.rightAmount) amountDetails.push(`Right: ${activity.rightAmount} ${activity.unit || 'oz'}`);
-      if (activity.totalAmount) amountDetails.push(`Total: ${activity.totalAmount} ${activity.unit || 'oz'}`);
+      if (activity.leftAmount) amountDetails.push(`${t('Left')}: ${activity.leftAmount} ${activity.unit || 'oz'}`);
+      if (activity.rightAmount) amountDetails.push(`${t('Right')}: ${activity.rightAmount} ${activity.unit || 'oz'}`);
+      if (activity.totalAmount) amountDetails.push(`${t('Total Amount')}: ${activity.totalAmount} ${activity.unit || 'oz'}`);
       
       if (amountDetails.length > 0) {
         details += ` - ${amountDetails.join(', ')}`;
       }
       
       return {
-        type: 'Breast Pumping',
+        type: t('Breast Pumping'),
         details
       };
     }
@@ -746,11 +752,11 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
   if ('title' in activity && 'category' in activity) {
     const formatMilestoneCategory = (category: string) => {
       switch (category) {
-        case 'MOTOR': return 'Motor';
-        case 'COGNITIVE': return 'Cognitive';
-        case 'SOCIAL': return 'Social';
-        case 'LANGUAGE': return 'Language';
-        case 'OTHER': return 'Other';
+        case 'MOTOR': return t('Motor Skills');
+        case 'COGNITIVE': return t('Cognitive');
+        case 'SOCIAL': return t('Social');
+        case 'LANGUAGE': return t('Language');
+        case 'OTHER': return t('Other');
         default: return category;
       }
     };
@@ -760,13 +766,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     
     // Format title with label
     const truncatedTitle = activity.title.length > 50 ? activity.title.substring(0, 50) + '...' : activity.title;
-    const titleText = `Title: ${truncatedTitle}`;
+    const titleText = `${t('Title')}: ${truncatedTitle}`;
     
     // Format description with label if available
     let descriptionText = '';
     if (activity.description) {
       const truncatedDescription = activity.description.length > 50 ? activity.description.substring(0, 50) + '...' : activity.description;
-      descriptionText = `, Details: ${truncatedDescription}`;
+      descriptionText = `, ${t('Description')}: ${truncatedDescription}`;
     }
     
     return {
@@ -779,11 +785,11 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
   if ('value' in activity && 'unit' in activity) {
     const formatMeasurementType = (type: string) => {
       switch (type) {
-        case 'HEIGHT': return 'Height';
-        case 'WEIGHT': return 'Weight';
-        case 'HEAD_CIRCUMFERENCE': return 'Head Circumference';
-        case 'TEMPERATURE': return 'Temperature';
-        case 'OTHER': return 'Other';
+        case 'HEIGHT': return t('Height');
+        case 'WEIGHT': return t('Weight');
+        case 'HEAD_CIRCUMFERENCE': return t('Head Circumference');
+        case 'TEMPERATURE': return t('Temperature');
+        case 'OTHER': return t('Other');
         default: return type;
       }
     };
@@ -797,8 +803,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
   }
   
   return {
-    type: 'Activity',
-    details: 'logged'
+    type: t('Activity'),
+    details: t('Activity logged')
   };
 };
 

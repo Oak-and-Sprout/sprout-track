@@ -149,7 +149,7 @@ const TimelineV2ActivityList = ({
                       <div className="space-y-0 pb-4">
                         {group.activities.map((activity, activityIndex) => {
                           const style = getActivityStyle(activity);
-                          const description = getActivityDescription(activity, settings);
+                          const description = getActivityDescription(activity, settings, t);
                           const activityTime = new Date(getActivityTime(activity));
                           let timeStr: string;
                           
@@ -273,7 +273,7 @@ const TimelineV2ActivityList = ({
                                       if (location) parts.push(location);
                                       if (duration) parts.push(duration);
                                       if (!('endTime' in activity)) parts.push('Still asleep');
-                                      return parts.length > 0 ? parts.join(' • ') : 'Sleep activity';
+                                      return parts.length > 0 ? parts.join(' • ') : t('Sleep');
                                     }
                                     
                                     if ('amount' in activity) {
@@ -287,7 +287,7 @@ const TimelineV2ActivityList = ({
                                         } else if (activity.amount) {
                                           duration = `${activity.amount} min`;
                                         }
-                                        const parts = [side + ' side', duration].filter(Boolean);
+                                        const parts = [side ? `${side} ${t('Side')}` : '', duration].filter(Boolean);
                                         if ((activity as any).notes) {
                                           const notes = (activity as any).notes;
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
@@ -337,7 +337,7 @@ const TimelineV2ActivityList = ({
                                       if (activity.blowout) {
                                         details.push('Blowout/Leakage');
                                       }
-                                      return details.length > 0 ? details.join(' • ') : 'Diaper change';
+                                      return details.length > 0 ? details.join(' • ') : t('Diaper');
                                     }
                                     
                                     if ('content' in activity) {
