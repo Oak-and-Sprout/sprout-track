@@ -86,10 +86,10 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
       .sort((a, b) => (a.date < b.date ? -1 : 1));
   }, [activities, dateRange, metric]);
 
-  const title = metric === 'wet' ? 'Wet Diapers Over Time' : 'Poopy Diapers Over Time';
+  const title = metric === 'wet' ? t('Wet Diapers Over Time') : t('Poopy Diapers Over Time');
   const description =
     dateRange.from && dateRange.to
-      ? `From ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+      ? `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
       : undefined;
 
   return (
@@ -108,19 +108,19 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
                 <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                 <XAxis
                   dataKey="label"
-                  label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
+                  label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
                   className="growth-chart-axis"
                 />
                 <YAxis
                   type="number"
                   domain={[0, 'auto']}
                   tickFormatter={(value) => value.toFixed(0)}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                  label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip
-                  formatter={(value: any) => [`${value}`, 'Diapers']}
-                  labelFormatter={(label: any) => `Date: ${label}`}
+                  formatter={(value: any) => [`${value}`, t('Diapers')]}
+                  labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
                 <Line
                   type="monotone"

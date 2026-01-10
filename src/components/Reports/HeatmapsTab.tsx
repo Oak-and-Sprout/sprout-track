@@ -41,8 +41,7 @@ const HEATMAP_CONFIGS: HeatmapConfig[] = [
 ];
 
 // Format hour for chart labels (6a, 7a, 12p, 1p, etc.)
-const formatHourLabel = (hour: number): string => {  const { t } = useLocalization();
-
+const formatHourLabel = (hour: number): string => {
   if (hour === 0 || hour === 24) return '12a';
   if (hour === 12) return '12p';
   if (hour < 12) return `${hour}a`;
@@ -60,6 +59,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
   dateRange,
   isLoading
 }) => {
+  const { t } = useLocalization();
   // Calculate heatmap data for each type
   const heatmapData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to) {

@@ -144,8 +144,10 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
     });
   }, [activities, locations, type, dateRange]);
 
-  const title = type === 'nap' ? 'Nap Locations by Day' : 'Night Sleep Locations by Day';
-  const description = `Daily count of ${type === 'nap' ? 'nap' : 'night sleep'} sessions by location for the selected date range.`;
+  const title = type === 'nap' ? t('Nap Locations by Day') : t('Night Sleep Locations by Day');
+  const description = type === 'nap' 
+    ? t('Daily count of nap sessions by location for the selected date range.')
+    : t('Daily count of night sleep sessions by location for the selected date range.');
 
   const colors = generateColors(locations.length);
 
@@ -182,12 +184,12 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                   type="number"
                   domain={[0, 'auto']}
                   tickFormatter={(value) => value.toFixed(0)}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                  label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip
                   formatter={(value: any, name?: string) => [`${value}`, name || '']}
-                  labelFormatter={(label: any) => `Date: ${label}`}
+                  labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
                 <Legend />
                 {locations.map((location, index) => (

@@ -9,7 +9,8 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { useState, useEffect, useRef } from 'react';
 import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
-import TermsOfUseModal from '@/src/components/modals/terms-of-use';import { useLocalization } from '@/src/context/localization';
+import TermsOfUseModal from '@/src/components/modals/terms-of-use';
+import { useLocalization } from '@/src/context/localization';
 
 import './account-modal.css';
 
@@ -28,6 +29,7 @@ export default function AccountModal({
   verificationToken,
   resetToken,
 }: AccountModalProps) {
+  const { t } = useLocalization();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot-password' | 'verify' | 'reset-password'>(initialMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);

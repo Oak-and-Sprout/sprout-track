@@ -32,8 +32,7 @@ interface FeedingChartModalProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
-
+const formatMinutes = (minutes: number): string => {
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -71,6 +70,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
   activities,
   dateRange,
 }) => {
+  const { t } = useLocalization();
   // Calculate bottle feed data
   const bottleData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'bottle') {
@@ -260,11 +260,11 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
   const getTitle = (): string => {
     switch (metric) {
       case 'bottle':
-        return 'Bottle Feeds Over Time';
+        return t('Bottle Feeds Over Time');
       case 'breast':
-        return 'Breast Feeds Over Time';
+        return t('Breast Feeds Over Time');
       case 'solids':
-        return 'Solids Feeds Over Time';
+        return t('Solids Feeds Over Time');
       default:
         return '';
     }
@@ -272,7 +272,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `From ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
   };
 
   if (!metric) return null;
@@ -305,7 +305,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       type="number"
                       domain={[0, 'auto']}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <YAxis
@@ -313,7 +313,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: 'Amount', angle: -90, position: 'insideRight' }}
+                      label={{ value: t('Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -323,7 +323,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                         }
                         return [`${value.toFixed(1)}`, name || ''];
                       }}
-                      labelFormatter={(label: any) => `Date: ${label}`}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Legend />
                     <Line
@@ -334,7 +334,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       strokeWidth={2}
                       dot={{ r: 4, fill: '#14b8a6' }}
                       activeDot={{ r: 6, fill: '#0f766e' }}
-                      name="Feed Count"
+                      name={t('Feed Count')}
                     />
                     {bottleData.bottleTypes.map((type, index) => (
                       <Bar
@@ -386,24 +386,24 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       type="number"
                       domain={[0, 'auto']}
                       tickFormatter={(value) => formatMinutes(value as number)}
-                      label={{ value: 'Avg Duration', angle: -90, position: 'insideRight' }}
+                      label={{ value: t('Avg Duration'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
                       formatter={(value: any, name?: string) => {
                         if (name === 'count' || name === 'Feed Count') {
                           const countValue = typeof value === 'number' ? Math.round(value) : parseInt(value, 10);
-                          return [countValue.toString(), 'Feeds'];
+                          return [countValue.toString(), t('Feeds')];
                         }
                         if (name === 'leftAvg' || name === 'Left Avg') {
-                          return [formatMinutes(value as number), 'Left Avg'];
+                          return [formatMinutes(value as number), t('Left Avg')];
                         }
                         if (name === 'rightAvg' || name === 'Right Avg') {
-                          return [formatMinutes(value as number), 'Right Avg'];
+                          return [formatMinutes(value as number), t('Right Avg')];
                         }
                         return [formatMinutes(value as number), name || ''];
                       }}
-                      labelFormatter={(label: any) => `Date: ${label}`}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Legend />
                     <Line
@@ -414,21 +414,21 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       strokeWidth={2}
                       dot={{ r: 4, fill: '#14b8a6' }}
                       activeDot={{ r: 6, fill: '#0f766e' }}
-                      name="Feed Count"
+                      name={t('Feed Count')}
                     />
                     <Bar
                       yAxisId="duration"
                       dataKey="leftAvg"
                       stackId="duration"
                       fill="#6366f1"
-                      name="Left Avg"
+                      name={t('Left Avg')}
                     />
                     <Bar
                       yAxisId="duration"
                       dataKey="rightAvg"
                       stackId="duration"
                       fill="#ec4899"
-                      name="Right Avg"
+                      name={t('Right Avg')}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -462,7 +462,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       type="number"
                       domain={[0, 'auto']}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <YAxis
@@ -470,7 +470,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: 'Amount', angle: -90, position: 'insideRight' }}
+                      label={{ value: t('Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -480,7 +480,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                         }
                         return [`${value.toFixed(1)}`, name || ''];
                       }}
-                      labelFormatter={(label: any) => `Date: ${label}`}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Legend />
                     <Line
@@ -491,7 +491,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       strokeWidth={2}
                       dot={{ r: 4, fill: '#14b8a6' }}
                       activeDot={{ r: 6, fill: '#0f766e' }}
-                      name="Feed Count"
+                      name={t('Feed Count')}
                     />
                     {solidsData.foodTypes.map((food, index) => (
                       <Bar

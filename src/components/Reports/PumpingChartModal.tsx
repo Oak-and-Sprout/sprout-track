@@ -31,8 +31,7 @@ interface PumpingChartModalProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
-
+const formatMinutes = (minutes: number): string => {
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -53,6 +52,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
   activities,
   dateRange,
 }) => {
+  const { t } = useLocalization();
   // Calculate pump count per day
   const countData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'count') {
@@ -198,11 +198,11 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
   const getTitle = (): string => {
     switch (metric) {
       case 'count':
-        return 'Pump Count Over Time';
+        return t('Pump Count Over Time');
       case 'duration':
-        return 'Average Pump Duration Over Time';
+        return t('Average Pump Duration Over Time');
       case 'amount':
-        return 'Pump Amounts Over Time';
+        return t('Pump Amounts Over Time');
       default:
         return '';
     }
@@ -210,7 +210,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `From ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
   };
 
   if (!metric) return null;
@@ -233,19 +233,19 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any) => [`${value}`, 'Pumps']}
-                      labelFormatter={(label: any) => `Date: ${label}`}
+                      formatter={(value: any) => [`${value}`, t('Pumps')]}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Line
                       type="monotone"
@@ -277,19 +277,19 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
                       tickFormatter={(value) => formatMinutes(value as number)}
-                      label={{ value: 'Duration', angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Duration'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any) => [formatMinutes(value as number), 'Avg Duration']}
-                      labelFormatter={(label: any) => `Date: ${label}`}
+                      formatter={(value: any) => [formatMinutes(value as number), t('Avg Duration')]}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Line
                       type="monotone"
@@ -357,7 +357,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                         }
                         return [`${value.toFixed(1)}`, name || ''];
                       }}
-                      labelFormatter={(label: any) => `Date: ${label}`}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Legend />
                     <Line

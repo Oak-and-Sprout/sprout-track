@@ -81,8 +81,7 @@ interface GrowthChartProps {
 }
 
 // Helper to convert Gender enum to CDC sex number
-const genderToCdcSex = (gender: string | null | undefined): number => {  const { t } = useLocalization();
-
+const genderToCdcSex = (gender: string | null | undefined): number => {
   if (gender === 'MALE') return 1;
   if (gender === 'FEMALE') return 2;
   return 1; // Default to male if unknown
@@ -390,6 +389,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType }: an
 };
 
 const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
+  const { t } = useLocalization();
   const { selectedBaby } = useBaby();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 

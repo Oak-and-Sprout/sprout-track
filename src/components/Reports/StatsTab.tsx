@@ -24,8 +24,7 @@ import TemperatureStatsSection from './TemperatureStatsSection';
 import { useLocalization } from '@/src/context/localization';
 
 // Helper to calculate age in months from birth date (copied from GrowthChart)
-const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {  const { t } = useLocalization();
-
+const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {
   const birth = new Date(birthDate);
   const measurement = new Date(measurementDate);
 
@@ -56,6 +55,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
   dateRange,
   isLoading
 }) => {
+  const { t } = useLocalization();
   const { selectedBaby } = useBaby();
   const { toLocalDate } = useTimezone();
   const [temperatureMeasurements, setTemperatureMeasurements] = useState<MeasurementActivity[]>([]);

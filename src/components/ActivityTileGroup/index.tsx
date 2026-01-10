@@ -4,6 +4,7 @@ import { StatusBubble } from "@/src/components/ui/status-bubble";
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActivitySettings } from '@/app/api/types';
 import { ArrowDownUp } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import './activity-tile-group.css';
 import {
   DropdownMenu,
@@ -71,6 +72,7 @@ export function ActivityTileGroup({
   }
 }: ActivityTileGroupProps) {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   
   // Helper function to calculate duration in minutes between two times
   const calculateDurationMinutes = (startTime: string, endTime: string): number => {
@@ -371,15 +373,15 @@ export function ActivityTileGroup({
 
   // Activity display names for the menu
   const activityDisplayNames: Record<ActivityType, string> = {
-    sleep: 'Sleep',
-    feed: 'Feed',
-    diaper: 'Diaper',
-    note: 'Note',
-    bath: 'Bath',
-    pump: 'Pump',
-    measurement: 'Measurement',
-    milestone: 'Milestone',
-    medicine: 'Medicine'
+    sleep: t('Sleep'),
+    feed: t('Feed'),
+    diaper: t('Diaper'),
+    note: t('Note'),
+    bath: t('Bath'),
+    pump: t('Pump'),
+    measurement: t('Measurement'),
+    milestone: t('Milestone'),
+    medicine: t('Medicine')
   };
 
   // Function to render activity tile based on type
@@ -405,7 +407,7 @@ export function ActivityTileGroup({
               updatedAt: new Date().toISOString(),
               deletedAt: null
             } as unknown as SleepLogResponse}
-            title={selectedBaby?.id && sleepingBabies.has(selectedBaby.id) ? 'End Sleep' : 'Sleep'}
+            title={selectedBaby?.id && sleepingBabies.has(selectedBaby.id) ? t('End Sleep') : t('Sleep')}
             variant="sleep"
             isButton={true}
             onClick={() => {
@@ -458,7 +460,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as FeedLogResponse}
-              title="Feed"
+              title={t('Feed')}
               variant="feed"
               isButton={true}
               onClick={() => {
@@ -494,7 +496,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as DiaperLogResponse}
-              title="Diaper"
+              title={t('Diaper')}
               variant="diaper"
               isButton={true}
               onClick={() => {
@@ -529,7 +531,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as NoteResponse}
-              title="Note"
+              title={t('Note')}
               variant="note"
               isButton={true}
               onClick={() => {
@@ -557,7 +559,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as BathLogResponse}
-              title="Bath"
+              title={t('Bath')}
               variant="bath"
               isButton={true}
               onClick={() => {
@@ -587,7 +589,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as PumpLogResponse}
-              title="Pump"
+              title={t('Pump')}
               variant="pump"
               isButton={true}
               onClick={() => {
@@ -614,7 +616,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               }as unknown as MeasurementResponse}
-              title="Measurement"
+              title={t('Measurement')}
               variant="measurement"
               isButton={true}
               onClick={() => {
@@ -640,7 +642,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as MilestoneResponse}
-              title="Milestone"
+              title={t('Milestone')}
               variant="milestone"
               isButton={true}
               onClick={() => {
@@ -675,7 +677,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as MedicineLogResponse}
-              title="Medicine"
+              title={t('Medicine')}
               variant="medicine"
               isButton={true}
               onClick={() => {
@@ -713,7 +715,7 @@ export function ActivityTileGroup({
                   updatedAt: new Date().toISOString(),
                   deletedAt: null
                 } as unknown as NoteResponse}
-                title="Configure"
+                title={t('Configure')}
                 variant="default"
                 isButton={true}
                 icon={<img src="/config-128.png" alt="Configure" width={48} height={48} className="object-contain" />}
@@ -911,8 +913,8 @@ export function ActivityTileGroup({
                     // Prevent dropdown from closing when starting drag
                     e.stopPropagation();
                   }}
-                  aria-label={`Drag to reorder ${activityDisplayNames[activity]}`}
-                  title="Drag to reorder"
+                  aria-label={`${t('Drag to reorder')} ${activityDisplayNames[activity]}`}
+                  title={t('Drag to reorder')}
                 >
                   <ArrowDownUp className="h-4 w-4 text-gray-500 icon-text" />
                 </button>

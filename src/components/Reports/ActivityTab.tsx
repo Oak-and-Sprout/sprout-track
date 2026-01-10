@@ -11,8 +11,7 @@ import { ActivityType as TimelineActivityType } from '@/src/components/Timeline/
 import { useLocalization } from '@/src/context/localization';
 
 // Local helper to get activity time that works with reports ActivityType
-const getActivityTimeLocal = (activity: ActivityType): string => {  const { t } = useLocalization();
-
+const getActivityTimeLocal = (activity: ActivityType): string => {
   if ('time' in activity && activity.time) {
     return activity.time;
   }
@@ -203,6 +202,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
   dateRange,
   isLoading
 }) => {
+  const { t } = useLocalization();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [hoveredActivity, setHoveredActivity] = useState<NormalizedActivity | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);

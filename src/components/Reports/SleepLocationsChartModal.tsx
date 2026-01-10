@@ -25,8 +25,7 @@ interface SleepLocationsChartModalProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
-
+const formatMinutes = (minutes: number): string => {
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -47,6 +46,7 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
   type,
   locations,
 }) => {
+  const { t } = useLocalization();
   const title = type === 'nap' ? 'Nap Locations' : 'Night Sleep Locations';
   const description =
     type === 'nap'

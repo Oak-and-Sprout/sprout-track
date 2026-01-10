@@ -28,6 +28,7 @@ interface MilestonesByAge {
  * Ignores the date range and shows all milestones for the selected baby.
  */
 const MilestonesTab: React.FC<MilestonesTabProps> = () => {
+  const { t } = useLocalization();
   const { selectedBaby } = useBaby();
   const [milestones, setMilestones] = useState<MilestoneActivity[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -76,8 +77,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
   }, [selectedBaby]);
 
   // Calculate age in months at the time of milestone
-  const calculateAgeInMonths = (milestoneDate: string): number => {  const { t } = useLocalization();
-
+  const calculateAgeInMonths = (milestoneDate: string): number => {
     if (!selectedBaby?.birthDate) return 0;
 
     const birthDate = new Date(selectedBaby.birthDate);

@@ -21,8 +21,7 @@ interface PumpingStatsSectionProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
-
+const formatMinutes = (minutes: number): string => {
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -37,6 +36,7 @@ const formatMinutes = (minutes: number): string => {  const { t } = useLocalizat
  * Displays pumping statistics including pumps per day, duration, and amounts.
  */
 const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activities, dateRange }) => {
+  const { t } = useLocalization();
   const [chartModalOpen, setChartModalOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<PumpingChartMetric | null>(null);
 

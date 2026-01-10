@@ -212,11 +212,11 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
   const getTitle = (): string => {
     switch (metric) {
       case 'total':
-        return 'Baths Over Time';
+        return t('Baths Over Time');
       case 'avgPerWeek':
-        return 'Average Baths per Week';
+        return t('Average Baths per Week');
       case 'soapShampoo':
-        return 'Soap/Shampoo Usage by Week';
+        return t('Soap/Shampoo Usage by Week');
       default:
         return '';
     }
@@ -224,7 +224,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `From ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
   };
 
   if (!metric) return null;
@@ -247,7 +247,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
@@ -258,8 +258,8 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any) => [`${value}`, 'Baths']}
-                      labelFormatter={(label: any) => `Date: ${label}`}
+                      formatter={(value: any) => [`${value}`, t('Baths')]}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Line
                       type="monotone"
@@ -300,12 +300,12 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                       type="number"
                       domain={[0, 'auto']}
                       tickFormatter={(value) => value.toFixed(1)}
-                      label={{ value: 'Avg Baths per Week', angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Avg Baths per Week'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any) => [`${value.toFixed(1)}`, 'Avg Baths']}
-                      labelFormatter={(label: any) => `Week: ${label}`}
+                      formatter={(value: any) => [`${value.toFixed(1)}`, t('Avg Baths')]}
+                      labelFormatter={(label: any) => `${t('Week:')} ${label}`}
                     />
                     <Bar dataKey="value" fill="#6366f1" />
                   </BarChart>
@@ -339,22 +339,22 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                       type="number"
                       domain={[0, 'auto']}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
                       formatter={(value: any, name?: string) => {
-                        if (name === 'soap') return [`${value}`, 'Soap Only'];
-                        if (name === 'shampoo') return [`${value}`, 'Shampoo Only'];
-                        if (name === 'both') return [`${value}`, 'Both'];
+                        if (name === 'soap') return [`${value}`, t('Soap Only')];
+                        if (name === 'shampoo') return [`${value}`, t('Shampoo Only')];
+                        if (name === 'both') return [`${value}`, t('Both')];
                         return [`${value}`, name || ''];
                       }}
-                      labelFormatter={(label: any) => `Week: ${label}`}
+                      labelFormatter={(label: any) => `${t('Week:')} ${label}`}
                     />
                     <Legend />
-                    <Bar dataKey="soap" stackId="baths" fill="#6366f1" name="Soap Only" />
-                    <Bar dataKey="shampoo" stackId="baths" fill="#14b8a6" name="Shampoo Only" />
-                    <Bar dataKey="both" stackId="baths" fill="#f59e0b" name="Both" />
+                    <Bar dataKey="soap" stackId="baths" fill="#6366f1" name={t('Soap Only')} />
+                    <Bar dataKey="shampoo" stackId="baths" fill="#14b8a6" name={t('Shampoo Only')} />
+                    <Bar dataKey="both" stackId="baths" fill="#f59e0b" name={t('Both')} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

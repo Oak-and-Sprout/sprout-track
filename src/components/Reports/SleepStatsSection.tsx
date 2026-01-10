@@ -29,8 +29,7 @@ interface SleepStatsSectionProps {
 }
 
 // Helper function to format minutes into hours and minutes
-const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
-
+const formatMinutes = (minutes: number): string => {
   if (minutes === 0) return '0m';
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -50,6 +49,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
   dateRange,
   activities,
 }) => {
+  const { t } = useLocalization();
   const [sleepChartModalOpen, setSleepChartModalOpen] = useState(false);
   const [sleepChartMetric, setSleepChartMetric] = useState<SleepChartMetric | null>(null);
   const [sleepLocationsModalOpen, setSleepLocationsModalOpen] = useState(false);
