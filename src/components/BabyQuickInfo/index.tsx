@@ -115,7 +115,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
   const tabs: FormPageTab[] = [
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: t('Notifications'),
       icon: Bell,
       content: (
         <>
@@ -154,7 +154,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
     },
     {
       id: 'contacts',
-      label: 'Contacts',
+      label: t('Contacts'),
       icon: Users,
       content: (
         <>
@@ -196,7 +196,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={selectedBaby ? `${selectedBaby.firstName}'s Information` : 'Baby Information'}
+      title={selectedBaby ? `${selectedBaby.firstName}${t("'s Information")}` : t('Baby Information')}
       tabs={tabs}
       defaultActiveTab="notifications"
     >

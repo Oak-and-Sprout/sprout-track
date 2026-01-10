@@ -71,7 +71,7 @@ export default function FeedbackPage({
   const tabs: FormPageTab[] = useMemo(() => [
     {
       id: 'messages',
-      label: 'Messages',
+      label: t('Messages'),
       icon: MessageSquare,
       content: (
         <FeedbackMessagesView 
@@ -83,7 +83,7 @@ export default function FeedbackPage({
     },
     {
       id: 'new',
-      label: 'New Feedback',
+      label: t('New Feedback'),
       icon: Plus,
       content: (
         <FeedbackForm
@@ -94,7 +94,7 @@ export default function FeedbackPage({
         />
       ),
     },
-  ], [formatDateTime, refreshTrigger, isOpen, handleNewFeedbackSuccess, handleFeedbackFormClose]);
+  ], [formatDateTime, refreshTrigger, isOpen, handleNewFeedbackSuccess, handleFeedbackFormClose, t]);
 
   // If showing new feedback form, switch to that tab
   React.useEffect(() => {
@@ -108,8 +108,8 @@ export default function FeedbackPage({
       <FormPage
         isOpen={isOpen}
         onClose={onClose}
-        title="Feedback"
-        description="View your messages and submit new feedback"
+        title={t("Feedback")}
+        description={t("View your messages and submit new feedback")}
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}

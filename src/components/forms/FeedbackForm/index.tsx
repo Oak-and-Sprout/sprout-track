@@ -238,7 +238,7 @@ export default function FeedbackForm({
             <Textarea
               id="message"
               name="message"
-              placeholder="Please share your detailed feedback, suggestions, or report any issues you've encountered..."
+              placeholder={t("Please share your detailed feedback, suggestions, or report any issues you've encountered...")}
               value={formData.message}
               onChange={handleInputChange}
               required
