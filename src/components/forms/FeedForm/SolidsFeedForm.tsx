@@ -3,6 +3,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
+import { useLocalization } from '@/src/context/localization';
 
 interface SolidsFeedFormProps {
   amount: string;
@@ -31,10 +32,11 @@ export default function SolidsFeedForm({
   onIncrement,
   onDecrement,
 }: SolidsFeedFormProps) {
+  const { t } = useLocalization();
   return (
     <>
       <div>
-        <label className="form-label mb-6">Amount ({unit})</label>
+        <label className="form-label mb-6">{t('Amount (')}{unit})</label>
         <div className="flex items-center justify-center mb-6">
           <Button
             type="button"
@@ -88,7 +90,7 @@ export default function SolidsFeedForm({
         </div>
       </div>
       <div className="mb-6">
-        <label className="form-label">Food</label>
+        <label className="form-label">{t('Food')}</label>
         <Input
           value={food}
           onChange={(e) => onFoodChange(e.target.value)}
@@ -98,7 +100,7 @@ export default function SolidsFeedForm({
         />
       </div>
       <div className="mb-6">
-        <label className="form-label">Notes</label>
+        <label className="form-label">{t('Notes')}</label>
         <Textarea
           id="notes"
           name="notes"

@@ -22,6 +22,7 @@ import {
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
 
@@ -46,6 +47,7 @@ export default function SleepForm({
   activity,
   onSuccess,
 }: SleepFormProps) {
+  const { t } = useLocalization();
   const { formatDate, calculateDurationMinutes, toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [startDateTime, setStartDateTime] = useState<Date>(() => {
@@ -488,7 +490,7 @@ export default function SleepForm({
           <div className="space-y-4">
           <div className="space-y-3">
             <div>
-              <Label>Start Time</Label>
+              <Label>{t('Start Time')}</Label>
               <DateTimePicker
                 value={startDateTime}
                 onChange={handleStartDateTimeChange}
@@ -499,7 +501,7 @@ export default function SleepForm({
             </div>
             {(isSleeping || isEditMode) && (
               <div>
-                <Label>End Time</Label>
+                <Label>{t('End Time')}</Label>
                 <DateTimePicker
                   value={endDateTime}
                   onChange={handleEndDateTimeChange}
@@ -524,13 +526,13 @@ export default function SleepForm({
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NAP">Nap</SelectItem>
-                    <SelectItem value="NIGHT_SLEEP">Night Sleep</SelectItem>
+                    <SelectItem value="NAP">{t('Nap')}</SelectItem>
+                    <SelectItem value="NIGHT_SLEEP">{t('Night Sleep')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="form-label">Location</label>
+                <label className="form-label">{t('Location')}</label>
                 <Select
                   value={formData.location}
                   onValueChange={(value: string) => {
@@ -554,7 +556,7 @@ export default function SleepForm({
                         {location}
                       </SelectItem>
                     ))}
-                    <SelectItem value="Custom">Custom</SelectItem>
+                    <SelectItem value="Custom">{t('Custom')}</SelectItem>
                     {customLocations.map((location) => (
                       <SelectItem key={location} value={location}>
                         {location}
@@ -578,7 +580,7 @@ export default function SleepForm({
             </div>
             {(isSleeping || (isEditMode && endDateTime)) && (
               <div>
-                <label className="form-label">Sleep Quality</label>
+                <label className="form-label">{t('Sleep Quality')}</label>
                 <Select
                   value={formData.quality}
                   onValueChange={(value: SleepQuality) =>
@@ -590,10 +592,10 @@ export default function SleepForm({
                     <SelectValue placeholder="How well did they sleep?" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="POOR">Poor</SelectItem>
-                    <SelectItem value="FAIR">Fair</SelectItem>
-                    <SelectItem value="GOOD">Good</SelectItem>
-                    <SelectItem value="EXCELLENT">Excellent</SelectItem>
+                    <SelectItem value="POOR">{t('Poor')}</SelectItem>
+                    <SelectItem value="FAIR">{t('Fair')}</SelectItem>
+                    <SelectItem value="GOOD">{t('Good')}</SelectItem>
+                    <SelectItem value="EXCELLENT">{t('Excellent')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -609,7 +611,7 @@ export default function SleepForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               onClick={handleSubmit}

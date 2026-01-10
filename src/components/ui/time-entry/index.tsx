@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/src/lib/utils';
 import { TimeEntryProps } from './time-entry.types';
-import { timeEntryStyles as styles } from './time-entry.styles';
+import { timeEntryStyles as styles } from './time-entry.styles';import { useLocalization } from '@/src/context/localization';
+
 import './time-entry.css';
 
 /**
@@ -543,7 +544,7 @@ export function TimeEntry({
             )}
             onClick={() => handlePeriodToggle(false)}
           >
-            AM
+            {t('AM')}
           </div>
           <div 
             className={cn(
@@ -554,7 +555,7 @@ export function TimeEntry({
             )}
             onClick={() => handlePeriodToggle(true)}
           >
-            PM
+            {t('PM')}
           </div>
         </div>
       </div>

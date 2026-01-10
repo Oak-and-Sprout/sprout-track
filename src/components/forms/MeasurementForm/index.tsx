@@ -15,6 +15,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface MeasurementFormProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ export default function MeasurementForm({
   activity,
   onSuccess,
 }: MeasurementFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
@@ -515,7 +517,7 @@ export default function MeasurementForm({
           <div className="space-y-4">
             {/* Date & Time - Full width on all screens */}
             <div>
-              <Label htmlFor="measurement-date">Date & Time</Label>
+              <Label htmlFor="measurement-date">{t('Date & Time')}</Label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -526,7 +528,7 @@ export default function MeasurementForm({
             
             {/* Height Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="height-value">Height</Label>
+              <Label htmlFor="height-value">{t('Height')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="height-value"
@@ -565,7 +567,7 @@ export default function MeasurementForm({
             
             {/* Weight Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="weight-value">Weight</Label>
+              <Label htmlFor="weight-value">{t('Weight')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="weight-value"
@@ -614,7 +616,7 @@ export default function MeasurementForm({
             
             {/* Head Circumference Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="head-value">Head Circumference</Label>
+              <Label htmlFor="head-value">{t('Head Circumference')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="head-value"
@@ -653,7 +655,7 @@ export default function MeasurementForm({
             
             {/* Temperature Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="temp-value">Temperature</Label>
+              <Label htmlFor="temp-value">{t('Temperature')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="temp-value"
@@ -674,7 +676,7 @@ export default function MeasurementForm({
                     disabled={loading}
                     className="px-2 py-1 h-9"
                   >
-                    °F
+                    {t('°F')}
                   </Button>
                   <Button
                     type="button"
@@ -684,7 +686,7 @@ export default function MeasurementForm({
                     disabled={loading}
                     className="px-2 py-1 h-9"
                   >
-                    °C
+                    {t('°C')}
                   </Button>
                 </div>
               </div>
@@ -692,7 +694,7 @@ export default function MeasurementForm({
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Label htmlFor="notes">{t('Notes (Optional)')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
@@ -713,7 +715,7 @@ export default function MeasurementForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
               {activity ? 'Update' : 'Save'}

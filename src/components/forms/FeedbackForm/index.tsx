@@ -9,7 +9,8 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { useTheme } from '@/src/context/theme';
+import { useTheme } from '@/src/context/theme';import { useLocalization } from '@/src/context/localization';
+
 import './feedback-form.css';
 
 interface FeedbackFormProps {
@@ -25,6 +26,7 @@ export default function FeedbackForm({
   onSuccess,
   embedded = false,
 }: FeedbackFormProps) {
+  const { t } = useLocalization();
   const { theme } = useTheme();
   const [formData, setFormData] = useState({
     subject: '',
@@ -184,10 +186,10 @@ export default function FeedbackForm({
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium feedback-success-toast-title">
-                Thank you for your feedback!
+                {t('Thank you for your feedback!')}
               </p>
               <p className="text-sm mt-1 feedback-success-toast-message">
-                We appreciate your input and will review your message.
+                {t('We appreciate your input and will review your message.')}
                 {submitterInfo.email && ' A confirmation email has been sent to you.'}
               </p>
             </div>
@@ -200,12 +202,12 @@ export default function FeedbackForm({
           {/* Submitter Info Display */}
           <div className="feedback-form-info">
             <div className="text-sm text-gray-600 feedback-form-submitter-info">
-              <p><strong>From:</strong> {submitterInfo.name}</p>
+              <p><strong>{t('From:')}</strong> {submitterInfo.name}</p>
               {submitterInfo.email && (
-                <p><strong>Email:</strong> {submitterInfo.email}</p>
+                <p><strong>{t('Email:')}</strong> {submitterInfo.email}</p>
               )}
               {family && (
-                <p><strong>Family:</strong> {family.name}</p>
+                <p><strong>{t('Family:')}</strong> {family.name}</p>
               )}
             </div>
           </div>
@@ -213,7 +215,7 @@ export default function FeedbackForm({
           {/* Subject */}
           <div className="space-y-2">
             <label htmlFor="subject" className="form-label">
-              Subject <span className="text-red-500">*</span>
+              {t('Subject')} <span className="text-red-500">*</span>
             </label>
             <Input
               id="subject"
@@ -231,7 +233,7 @@ export default function FeedbackForm({
           {/* Message */}
           <div className="space-y-2">
             <label htmlFor="message" className="form-label">
-              Message <span className="text-red-500">*</span>
+              {t('Message')} <span className="text-red-500">*</span>
             </label>
             <Textarea
               id="message"
@@ -249,8 +251,7 @@ export default function FeedbackForm({
           {/* Help Text */}
           <div className="feedback-form-help-text">
             <p className="text-sm text-gray-500">
-              Your feedback helps us improve the app. Please be as specific as possible 
-              about any issues or suggestions you have.
+              {t('Your feedback helps us improve the app. Please be as specific as possible about any issues or suggestions you have.')}
             </p>
           </div>
         </div>
@@ -266,7 +267,7 @@ export default function FeedbackForm({
         onClick={onClose}
         disabled={loading}
       >
-        Cancel
+        {t('Cancel')}
       </Button>
       <Button
         onClick={handleSubmit}

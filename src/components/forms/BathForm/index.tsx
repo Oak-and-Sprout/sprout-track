@@ -15,6 +15,7 @@ import {
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface BathFormProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export default function BathForm({
   activity,
   onSuccess,
 }: BathFormProps) {
+  const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
@@ -243,7 +245,7 @@ export default function BathForm({
           <div className="space-y-4">
             {/* Date/Time Input */}
             <div className="space-y-2">
-              <Label>Date & Time</Label>
+              <Label>{t('Date & Time')}</Label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -254,7 +256,7 @@ export default function BathForm({
             
             {/* Bath Options */}
             <div className="space-y-2">
-              <Label>Bath Options</Label>
+              <Label>{t('Bath Options')}</Label>
               <div className="flex flex-col space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -265,7 +267,7 @@ export default function BathForm({
                     }
                     variant="success"
                   />
-                  <Label htmlFor="soapUsed" className="cursor-pointer">Soap Used</Label>
+                  <Label htmlFor="soapUsed" className="cursor-pointer">{t('Soap Used')}</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -276,7 +278,7 @@ export default function BathForm({
                     }
                     variant="success"
                   />
-                  <Label htmlFor="shampooUsed" className="cursor-pointer">Shampoo Used</Label>
+                  <Label htmlFor="shampooUsed" className="cursor-pointer">{t('Shampoo Used')}</Label>
                 </div>
               </div>
             </div>
@@ -285,7 +287,7 @@ export default function BathForm({
             
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('Notes')}</Label>
               <Textarea
                 id="notes"
                 name="notes"
@@ -307,7 +309,7 @@ export default function BathForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               onClick={handleSubmit}

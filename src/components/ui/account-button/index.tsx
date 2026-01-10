@@ -13,6 +13,8 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import AccountModal from '@/src/components/modals/AccountModal';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
+import { useLocalization } from '@/src/context/localization';
+
 import './account-button.css';
 
 interface AccountStatus {
@@ -57,6 +59,7 @@ export function AccountButton({
   onAccountManagerOpen,
   onOpenAccountModal
 }: AccountButtonProps) {
+  const { t } = useLocalization();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -198,13 +201,13 @@ export function AccountButton({
       const data = await response.json();
       
       if (data.success) {
-        alert('Verification email sent! Please check your inbox.');
+        alert(t('Verification email sent! Please check your inbox.'));
       } else {
-        alert(data.error || 'Failed to send verification email.');
+        alert(data.error || t('Failed to send verification email.'));
       }
     } catch (error) {
       console.error('Resend verification error:', error);
-      alert('Network error. Please try again.');
+      alert(t('Network error. Please try again.'));
     }
   };
 
@@ -221,14 +224,14 @@ export function AccountButton({
   if (isLoggedIn && accountStatus) {
     // Determine button state and styling
     let buttonClass = variant === 'white' ? 'account-button-white' : 'account-button-logged-in';
-    let buttonText = `Hi, ${accountStatus.firstName}`;
+    let buttonText = `${t('Hi,')} ${accountStatus.firstName}`;
 
     if (!accountStatus.verified) {
       buttonClass = 'account-button-verification-needed';
-      buttonText = 'Verify Account';
+      buttonText = t('Verify Account');
     } else if (!accountStatus.hasFamily) {
       buttonClass = 'account-button-family-setup-needed';
-      buttonText = 'Setup Family';
+      buttonText = t('Setup Family');
     }
 
     return (
@@ -260,7 +263,7 @@ export function AccountButton({
                 <p className="text-sm font-medium leading-none">{accountStatus.firstName}</p>
                 {accountStatus.betaparticipant && (
                   <div className="beta-badge">
-                    <span className="beta-badge-text">✨ Beta User</span>
+                    <span className="beta-badge-text">{t('✨ Beta User')}</span>
                   </div>
                 )}
               </div>
@@ -269,17 +272,17 @@ export function AccountButton({
               </p>
               {accountStatus.betaparticipant && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 font-medium italic">
-                  Thank you for being a beta user! 🙏
+                  {t('Thank you for being a beta user! 🙏')}
                 </p>
               )}
               {!accountStatus.verified && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                  ⚠️ Email verification required
+                  {t('⚠️ Email verification required')}
                 </p>
               )}
               {accountStatus.verified && !accountStatus.hasFamily && (
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                  ✅ Ready to setup family
+                  {t('✅ Ready to setup family')}
                 </p>
               )}
             </div>
@@ -291,7 +294,7 @@ export function AccountButton({
             <>
               <DropdownMenuItem onClick={handleResendVerification}>
                 <Mail className="w-4 h-4 mr-2" />
-                Resend Verification Email
+                {t('Resend Verification Email')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
@@ -305,7 +308,7 @@ export function AccountButton({
                 className="family-setup-gradient focus:family-setup-gradient"
               >
                 <Users className="w-4 h-4 mr-2" />
-                Set up your family
+                {t('Set up your family')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
@@ -316,13 +319,13 @@ export function AccountButton({
             onAccountManagerOpen?.();
           }}>
             <Settings className="w-4 h-4 mr-2" />
-            Account Settings
+            {t('Account Settings')}
           </DropdownMenuItem>
           
           {/* Feedback option */}
           <DropdownMenuItem onClick={() => setShowFeedback(true)}>
             <MessageSquare className="w-4 h-4 mr-2" />
-            Send Feedback
+            {t('Send Feedback')}
           </DropdownMenuItem>
           
           {/* Family dashboard link for verified users with family */}
@@ -331,7 +334,7 @@ export function AccountButton({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleFamilyLink}>
                 <Home className="w-4 h-4 mr-2" />
-                Go to Family Dashboard
+                {t('Go to Family Dashboard')}
               </DropdownMenuItem>
             </>
           )}
@@ -339,7 +342,7 @@ export function AccountButton({
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
-            Log out
+            {t('Log out')}
           </DropdownMenuItem>
         </DropdownMenuContent>
         
@@ -360,7 +363,7 @@ export function AccountButton({
     : variant === 'white'
     ? 'account-button-white'
     : 'account-button-guest';
-  const displayLabel = label || 'Account';
+  const displayLabel = label || t('Account');
 
   return (
     <>

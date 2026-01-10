@@ -55,8 +55,7 @@ const StatsTicker: React.FC<StatsTickerProps> = ({ stats }) => {
   const tickerContent = (
     <>
       {stats.map((stat, index) => (
-        <div key={  const { t } = useLocalization();
-index} className={dailyStatsStyles.ticker.item}>
+        <div key={  const { t } = useLocalization(){t('; index} className=')}{dailyStatsStyles.ticker.item}>
           <div className={dailyStatsStyles.ticker.icon}>{stat.icon}</div>
           <span className={dailyStatsStyles.ticker.label}>{stat.label}: </span>
           <span className={dailyStatsStyles.ticker.value}>{stat.value}</span>

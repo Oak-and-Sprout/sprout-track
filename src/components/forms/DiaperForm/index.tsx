@@ -23,6 +23,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useParams } from 'next/navigation';
+import { useLocalization } from '@/src/context/localization';
 
 interface DiaperFormProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export default function DiaperForm({
   activity,
   onSuccess,
 }: DiaperFormProps) {
+  const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
   const params = useParams();
@@ -250,7 +252,7 @@ export default function DiaperForm({
           <div className="space-y-4">
             {/* Time Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Time</label>
+              <label className="form-label">{t('Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -273,9 +275,9 @@ export default function DiaperForm({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="WET">Wet</SelectItem>
-                  <SelectItem value="DIRTY">Dirty</SelectItem>
-                  <SelectItem value="BOTH">Wet and Dirty</SelectItem>
+                  <SelectItem value="WET">{t('Wet')}</SelectItem>
+                  <SelectItem value="DIRTY">{t('Dirty')}</SelectItem>
+                  <SelectItem value="BOTH">{t('Wet and Dirty')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -297,7 +299,7 @@ export default function DiaperForm({
             {formData.type && formData.type !== 'WET' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="form-label">Condition</label>
+                  <label className="form-label">{t('Condition')}</label>
                   <Select
                     value={formData.condition}
                     onValueChange={(value: string) =>
@@ -309,15 +311,15 @@ export default function DiaperForm({
                       <SelectValue placeholder="Select condition" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="NORMAL">Normal</SelectItem>
-                      <SelectItem value="LOOSE">Loose</SelectItem>
-                      <SelectItem value="FIRM">Firm</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
+                      <SelectItem value="NORMAL">{t('Normal')}</SelectItem>
+                      <SelectItem value="LOOSE">{t('Loose')}</SelectItem>
+                      <SelectItem value="FIRM">{t('Firm')}</SelectItem>
+                      <SelectItem value="OTHER">{t('Other')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="form-label">Color</label>
+                  <label className="form-label">{t('Color')}</label>
                   <Select
                     value={formData.color}
                     onValueChange={(value: string) =>
@@ -329,12 +331,12 @@ export default function DiaperForm({
                       <SelectValue placeholder="Select color" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="YELLOW">Yellow</SelectItem>
-                      <SelectItem value="BROWN">Brown</SelectItem>
-                      <SelectItem value="GREEN">Green</SelectItem>
-                      <SelectItem value="BLACK">Black</SelectItem>
-                      <SelectItem value="RED">Red</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
+                      <SelectItem value="YELLOW">{t('Yellow')}</SelectItem>
+                      <SelectItem value="BROWN">{t('Brown')}</SelectItem>
+                      <SelectItem value="GREEN">{t('Green')}</SelectItem>
+                      <SelectItem value="BLACK">{t('Black')}</SelectItem>
+                      <SelectItem value="RED">{t('Red')}</SelectItem>
+                      <SelectItem value="OTHER">{t('Other')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -351,7 +353,7 @@ export default function DiaperForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
               {activity ? 'Update' : 'Save'}

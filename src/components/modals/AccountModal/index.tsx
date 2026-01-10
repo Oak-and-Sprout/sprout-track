@@ -9,7 +9,8 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { useState, useEffect, useRef } from 'react';
 import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
-import TermsOfUseModal from '@/src/components/modals/terms-of-use';
+import TermsOfUseModal from '@/src/components/modals/terms-of-use';import { useLocalization } from '@/src/context/localization';
+
 import './account-modal.css';
 
 interface AccountModalProps {
@@ -639,10 +640,10 @@ export default function AccountModal({
                     <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    Verifying Your Account
+                    {t('Verifying Your Account')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Please wait while we verify your email address...
+                    {t('Please wait while we verify your email address...')}
                   </p>
                 </div>
               )}
@@ -655,7 +656,7 @@ export default function AccountModal({
                     </div>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    Verification Successful!
+                    {t('Verification Successful!')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     {verificationMessage}
@@ -663,7 +664,7 @@ export default function AccountModal({
                   
                   <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4 mb-4">
                     <p className="text-sm text-teal-700 dark:text-teal-300 mb-2">
-                      Switching to login in {verificationCountdown} seconds...
+                      {t('Switching to login in')} {verificationCountdown} {t('seconds...')}
                     </p>
                     <div className="w-full bg-teal-200 dark:bg-teal-800 rounded-full h-2">
                       <div 
@@ -680,7 +681,7 @@ export default function AccountModal({
                     }}
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                   >
-                    Continue to Login
+                    {t('Continue to Login')}
                   </Button>
                 </div>
               )}
@@ -693,7 +694,7 @@ export default function AccountModal({
                     </div>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    Verification Failed
+                    {t('Verification Failed')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     {verificationMessage}
@@ -709,13 +710,13 @@ export default function AccountModal({
                       variant="outline"
                       className="w-full"
                     >
-                      Try Again
+                      {t('Try Again')}
                     </Button>
                     <Button 
                       onClick={() => setMode('register')}
                       className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                     >
-                      Create New Account
+                      {t('Create New Account')}
                     </Button>
                   </div>
                 </div>
@@ -729,10 +730,10 @@ export default function AccountModal({
                     <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    Validating Reset Token
+                    {t('Validating Reset Token')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Please wait while we validate your password reset request...
+                    {t('Please wait while we validate your password reset request...')}
                   </p>
                 </div>
               )}
@@ -741,17 +742,17 @@ export default function AccountModal({
                 <div>
                   <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                      Set New Password
+                      {t('Set New Password')}
                     </h2>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Enter your new password for {userEmail}
+                      {t('Enter your new password for')} {userEmail}
                     </p>
                   </div>
 
                   <form onSubmit={handlePasswordResetSubmit} className="space-y-4">
                     {/* New Password */}
                     <div>
-                      <label className="account-modal-label">New Password</label>
+                      <label className="account-modal-label">{t('New Password')}</label>
                       <Input
                         ref={newPasswordInputRef}
                         type="password"
@@ -770,7 +771,7 @@ export default function AccountModal({
 
                     {/* Confirm Password */}
                     <div>
-                      <label className="account-modal-label">Confirm New Password</label>
+                      <label className="account-modal-label">{t('Confirm New Password')}</label>
                       <Input
                         type="password"
                         value={formData.confirmPassword}
@@ -784,37 +785,37 @@ export default function AccountModal({
 
                     {/* Password Requirements */}
                     <div className="mt-3 space-y-2">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Password Requirements:</p>
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Password Requirements:')}</p>
                       <div className="grid grid-cols-1 gap-1 text-xs">
                         <div className={`flex items-center gap-2 ${passwordValidation.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.length ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.length && '✓'}
                           </span>
-                          At least 8 characters
+                          {t('At least 8 characters')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.lowercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.lowercase && '✓'}
                           </span>
-                          One lowercase letter (a-z)
+                          {t('One lowercase letter (a-z)')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.uppercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.uppercase && '✓'}
                           </span>
-                          One uppercase letter (A-Z)
+                          {t('One uppercase letter (A-Z)')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.number ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.number && '✓'}
                           </span>
-                          One number (0-9)
+                          {t('One number (0-9)')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.special ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.special && '✓'}
                           </span>
-                          One special character (!@#$%^&*)
+                          {t('One special character (!@#$%^&*)')}
                         </div>
                       </div>
                     </div>
@@ -846,7 +847,7 @@ export default function AccountModal({
                     </div>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    Password Reset Successful!
+                    {t('Password Reset Successful!')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     {resetMessage}
@@ -854,13 +855,13 @@ export default function AccountModal({
                   
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 mb-4">
                     <p className="text-sm text-green-700 dark:text-green-300 mb-2">
-                      You can now log in with your new password! 🎉
+                      {t('You can now log in with your new password! 🎉')}
                     </p>
                   </div>
 
                   <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4 mb-4">
                     <p className="text-sm text-teal-700 dark:text-teal-300 mb-2">
-                      Redirecting to login in {resetCountdown} seconds...
+                      {t('Redirecting to login in')} {resetCountdown} {t('seconds...')}
                     </p>
                     <div className="w-full bg-teal-200 dark:bg-teal-800 rounded-full h-2">
                       <div 
@@ -877,7 +878,7 @@ export default function AccountModal({
                     }}
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                   >
-                    Go to Login
+                    {t('Go to Login')}
                   </Button>
                 </div>
               )}
@@ -899,7 +900,7 @@ export default function AccountModal({
                   <div className="space-y-2">
                     {resetState === 'invalid' && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Password reset links expire after 15 minutes for security.
+                        {t('Password reset links expire after 15 minutes for security.')}
                       </p>
                     )}
                     <Button 
@@ -907,13 +908,13 @@ export default function AccountModal({
                       variant="outline"
                       className="w-full"
                     >
-                      Try Again
+                      {t('Try Again')}
                     </Button>
                     <Button 
                       onClick={() => setMode('register')}
                       className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                     >
-                      Create New Account
+                      {t('Create New Account')}
                     </Button>
                   </div>
                 </div>
@@ -923,7 +924,7 @@ export default function AccountModal({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email */}
               <div>
-                <label className="account-modal-label">Email</label>
+                <label className="account-modal-label">{t('Email')}</label>
                 <Input
                   ref={emailInputRef}
                   type="email"
@@ -939,7 +940,7 @@ export default function AccountModal({
               {/* Password - Not shown in forgot password mode */}
               {mode !== 'forgot-password' && (
                 <div>
-                  <label className="account-modal-label">Password</label>
+                  <label className="account-modal-label">{t('Password')}</label>
                   <Input
                     type="password"
                     value={formData.password}
@@ -957,37 +958,37 @@ export default function AccountModal({
                   />
                   {mode === 'register' && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Password Requirements:</p>
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Password Requirements:')}</p>
                       <div className="grid grid-cols-1 gap-1 text-xs">
                         <div className={`flex items-center gap-2 ${passwordValidation.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.length ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.length && '✓'}
                           </span>
-                          At least 8 characters
+                          {t('At least 8 characters')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.lowercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.lowercase && '✓'}
                           </span>
-                          One lowercase letter (a-z)
+                          {t('One lowercase letter (a-z)')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.uppercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.uppercase && '✓'}
                           </span>
-                          One uppercase letter (A-Z)
+                          {t('One uppercase letter (A-Z)')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.number ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.number && '✓'}
                           </span>
-                          One number (0-9)
+                          {t('One number (0-9)')}
                         </div>
                         <div className={`flex items-center gap-2 ${passwordValidation.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.special ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                             {passwordValidation.special && '✓'}
                           </span>
-                          One special character (!@#$%^&*)
+                          {t('One special character (!@#$%^&*)')}
                         </div>
                       </div>
                     </div>
@@ -1000,7 +1001,7 @@ export default function AccountModal({
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="account-modal-label">First Name</label>
+                      <label className="account-modal-label">{t('First Name')}</label>
                       <Input
                         type="text"
                         value={formData.firstName}
@@ -1012,7 +1013,7 @@ export default function AccountModal({
                       />
                     </div>
                     <div>
-                      <label className="account-modal-label">Last Name</label>
+                      <label className="account-modal-label">{t('Last Name')}</label>
                       <Input
                         type="text"
                         value={formData.lastName}
@@ -1056,7 +1057,7 @@ export default function AccountModal({
                       className="account-modal-toggle-button text-sm"
                       disabled={isSubmitting}
                     >
-                      Forgot your password?
+                      {t('Forgot your password?')}
                     </button>
                   </div>
                 )}
@@ -1064,7 +1065,7 @@ export default function AccountModal({
                 {/* Privacy Policy and Terms of Use links for registration mode */}
                 {mode === 'register' && (
                   <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-                    <p className="mb-2">By creating an account, you agree to our</p>
+                    <p className="mb-2">{t('By creating an account, you agree to our')}</p>
                     <div className="flex items-center justify-center gap-4">
                       <button
                         type="button"
@@ -1072,7 +1073,7 @@ export default function AccountModal({
                         className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 transition-colors cursor-pointer underline-offset-4 hover:underline"
                         disabled={isSubmitting}
                       >
-                        Privacy Policy
+                        {t('Privacy Policy')}
                       </button>
                       <span className="text-gray-400">and</span>
                       <button
@@ -1081,7 +1082,7 @@ export default function AccountModal({
                         className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 transition-colors cursor-pointer underline-offset-4 hover:underline"
                         disabled={isSubmitting}
                       >
-                        Terms of Use
+                        {t('Terms of Use')}
                       </button>
                     </div>
                   </div>

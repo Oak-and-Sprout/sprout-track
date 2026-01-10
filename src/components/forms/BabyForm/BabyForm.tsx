@@ -24,6 +24,7 @@ import { cn } from '@/src/lib/utils';
 import { babyFormStyles } from './baby-form.styles';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface BabyFormProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export default function BabyForm({
   baby,
   onBabyChange,
 }: BabyFormProps) {
+  const { t } = useLocalization();
   const { showToast } = useToast();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,7 +149,7 @@ export default function BabyForm({
         <FormPageContent className={babyFormStyles.content}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">First Name</label>
+              <label className="form-label">{t('First Name')}</label>
               <Input
                 value={formData.firstName}
                 onChange={(e) =>
@@ -159,7 +161,7 @@ export default function BabyForm({
               />
             </div>
             <div>
-              <label className="form-label">Last Name</label>
+              <label className="form-label">{t('Last Name')}</label>
               <Input
                 value={formData.lastName}
                 onChange={(e) =>
@@ -172,7 +174,7 @@ export default function BabyForm({
             </div>
           </div>
           <div>
-            <label className="form-label">Birth Date</label>
+            <label className="form-label">{t('Birth Date')}</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -198,7 +200,7 @@ export default function BabyForm({
             </Popover>
           </div>
           <div>
-            <label className="form-label">Gender</label>
+            <label className="form-label">{t('Gender')}</label>
             <Select
               value={formData.gender}
               onValueChange={(value) =>
@@ -209,14 +211,14 @@ export default function BabyForm({
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MALE">Male</SelectItem>
-                <SelectItem value="FEMALE">Female</SelectItem>
+                <SelectItem value="MALE">{t('Male')}</SelectItem>
+                <SelectItem value="FEMALE">{t('Female')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Feed Warning Time (hh:mm)</label>
+              <label className="form-label">{t('Feed Warning Time (hh:mm)')}</label>
               <Input
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
@@ -230,7 +232,7 @@ export default function BabyForm({
               />
             </div>
             <div>
-              <label className="form-label">Diaper Warning Time (hh:mm)</label>
+              <label className="form-label">{t('Diaper Warning Time (hh:mm)')}</label>
               <Input
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
@@ -255,7 +257,7 @@ export default function BabyForm({
                     setFormData({ ...formData, inactive: e.target.checked })
                   }
                 />
-                <span className="ml-2">Mark as inactive</span>
+                <span className="ml-2">{t('Mark as inactive')}</span>
               </label>
             </div>
           )}
@@ -268,7 +270,7 @@ export default function BabyForm({
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               type="submit"

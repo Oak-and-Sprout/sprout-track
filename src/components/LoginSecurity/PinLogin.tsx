@@ -6,6 +6,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { ApiResponse } from '@/app/api/types';
+import { useLocalization } from '@/src/context/localization';
 
 interface PinLoginProps {
   onUnlock: (caretakerId?: string) => void;
@@ -14,7 +15,9 @@ interface PinLoginProps {
   onLockoutChange: (time: number | null) => void;
 }
 
-export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutChange }: PinLoginProps) {
+export default function PinLogin({
+ onUnlock, familySlug, lockoutTime, onLockoutChange }: PinLoginProps) {
+  const { t } = useLocalization();
   const router = useRouter();
   const [loginId, setLoginId] = useState<string>('');
   const [pin, setPin] = useState<string>('');
@@ -506,7 +509,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             onClick={resetToNormalMode}
             className="text-xs text-blue-500 hover:text-blue-700 mt-1"
           >
-            Back to normal login
+            {t('Back to normal login')}
           </button>
         )}
       </div>
@@ -515,7 +518,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
         {adminMode ? (
           /* Admin Password Section */
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Administrator Password</h2>
+            <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">{t('Administrator Password')}</h2>
             <div className="relative">
               <Input
                 type={showAdminPassword ? 'text' : 'password'}
@@ -550,7 +553,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             {authType === 'CARETAKER' ? (
               /* Combined ID and PIN section for CARETAKER auth */
               <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' || activeInput === 'loginId' ? 'login-field-active' : 'login-field-inactive'}`}>
-                <h2 className="text-gray-900 text-center login-card-title">Login ID & Security PIN</h2>
+                <h2 className="text-gray-900 text-center login-card-title">{t('Login ID & Security PIN')}</h2>
 
                 {/* Combined ID and PIN Display */}
                 <div className="flex items-center justify-center gap-4 my-2">
@@ -621,7 +624,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             ) : (
               /* PIN input section for SYSTEM auth */
               <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' ? 'login-field-active' : 'login-field-inactive'}`}>
-                <h2 className="text-gray-900 text-center login-card-title">Security PIN</h2>
+                <h2 className="text-gray-900 text-center login-card-title">{t('Security PIN')}</h2>
 
                 {/* PIN Display */}
                 <div
@@ -709,7 +712,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             onClick={handleGoButtonClick}
             disabled={false} // Never disable for secret click detection
           >
-            Go
+            {t('Go')}
           </Button>
         </div>
       )}
@@ -723,7 +726,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             onClick={handleAuthenticate}
             disabled={!!lockoutTime || !adminPassword.trim()}
           >
-            Login as Administrator
+            {t('Login as Administrator')}
           </Button>
         </div>
       )}

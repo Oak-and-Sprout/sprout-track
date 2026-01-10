@@ -9,7 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
-import { Button } from "@/src/components/ui/button";
+import { Button } from "@/src/components/ui/button";import { useLocalization } from '@/src/context/localization';
+
 import { 
   Loader2,
   CheckCircle,
@@ -54,20 +55,20 @@ export default function AccountView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Email</TableHead>
+          <TableHead>{t('Email')}</TableHead>
           <TableHead>Name</TableHead>
-          <TableHead>Created</TableHead>
-          <TableHead>Family</TableHead>
-          <TableHead>Verified</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t('Created')}</TableHead>
+          <TableHead>{t('Family')}</TableHead>
+          <TableHead>{t('Verified')}</TableHead>
+          <TableHead>{t('Status')}</TableHead>
+          <TableHead className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {paginatedData.length === 0 ? (
           <TableRow>
             <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-              No accounts found.
+              {t('No accounts found.')}
             </TableCell>
           </TableRow>
         ) : (
@@ -101,12 +102,12 @@ export default function AccountView({
                   {account.verified ? (
                     <>
                       <ShieldCheck className="h-3 w-3 mr-1" />
-                      Verified
+                      {t('Verified')}
                     </>
                   ) : (
                     <>
                       <Shield className="h-3 w-3 mr-1" />
-                      Unverified
+                      {t('Unverified')}
                     </>
                   )}
                 </span>

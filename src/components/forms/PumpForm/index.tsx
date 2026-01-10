@@ -24,6 +24,8 @@ import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { Plus, Minus } from 'lucide-react';
+import { useLocalization } from '@/src/context/localization';
+
 import './pump-form.css';
 
 
@@ -44,6 +46,7 @@ export default function PumpForm({
   activity,
   onSuccess,
 }: PumpFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -405,7 +408,7 @@ export default function PumpForm({
           <div className="space-y-4">
             {/* Start Time Input */}
             <div className="space-y-2">
-              <Label htmlFor="startTime">Start Time</Label>
+              <Label htmlFor="startTime">{t('Start Time')}</Label>
               <DateTimePicker
                 value={selectedStartDateTime}
                 onChange={handleStartDateTimeChange}
@@ -416,7 +419,7 @@ export default function PumpForm({
             
             {/* End Time Input */}
             <div className="space-y-2">
-              <Label htmlFor="endTime">End Time</Label>
+              <Label htmlFor="endTime">{t('End Time')}</Label>
               <DateTimePicker
                 value={selectedEndDateTime}
                 onChange={handleEndDateTimeChange}
@@ -427,7 +430,7 @@ export default function PumpForm({
             
             {/* Unit Selection with Buttons - Moved above amount inputs */}
             <div className="space-y-2">
-              <Label htmlFor="unitAbbr">Unit</Label>
+              <Label htmlFor="unitAbbr">{t('Unit')}</Label>
               <div className="flex space-x-2">
                 <Button
                   type="button"
@@ -452,7 +455,7 @@ export default function PumpForm({
             
             {/* Left Amount Input - Now on its own row */}
             <div className="space-y-2">
-              <Label htmlFor="leftAmount">Left Amount</Label>
+              <Label htmlFor="leftAmount">{t('Left Amount')}</Label>
               <div className="flex items-center">
                 <Button
                   type="button"
@@ -494,7 +497,7 @@ export default function PumpForm({
             
             {/* Right Amount Input - Now on its own row */}
             <div className="space-y-2">
-              <Label htmlFor="rightAmount">Right Amount</Label>
+              <Label htmlFor="rightAmount">{t('Right Amount')}</Label>
               <div className="flex items-center">
                 <Button
                   type="button"
@@ -536,7 +539,7 @@ export default function PumpForm({
             
             {/* Total Amount */}
             <div className="space-y-2">
-              <Label htmlFor="totalAmount">Total Amount</Label>
+              <Label htmlFor="totalAmount">{t('Total Amount')}</Label>
               <div className="flex">
                 <Input
                   id="totalAmount"
@@ -556,7 +559,7 @@ export default function PumpForm({
             
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('Notes')}</Label>
               <Textarea
                 id="notes"
                 name="notes"
@@ -578,7 +581,7 @@ export default function PumpForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               onClick={handleSubmit} 

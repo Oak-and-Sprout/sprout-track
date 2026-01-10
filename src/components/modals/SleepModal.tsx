@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from 'react';
 import { SleepType, SleepQuality } from '@prisma/client';
 import { SleepLogResponse } from '@/app/api/types';
+import { useLocalization } from '@/src/context/localization';
 
 interface SleepModalProps {
   open: boolean;
@@ -42,6 +43,7 @@ export default function SleepModal({
   activity,
   variant = 'default',
 }: SleepModalProps) {
+  const { t } = useLocalization();
   const [formData, setFormData] = useState({
     startTime: initialTime,
     endTime: '',
@@ -240,7 +242,7 @@ export default function SleepModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Start Time</label>
+              <label className="form-label">{t('Start Time')}</label>
               <Input
                 type="datetime-local"
                 value={formData.startTime}
@@ -255,7 +257,7 @@ export default function SleepModal({
             </div>
             {(isSleeping || isEditMode) && (
               <div>
-                <label className="form-label">End Time</label>
+                <label className="form-label">{t('End Time')}</label>
                 <Input
                   type="datetime-local"
                   value={formData.endTime || initialTime}
@@ -283,13 +285,13 @@ export default function SleepModal({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NAP">Nap</SelectItem>
-                  <SelectItem value="NIGHT_SLEEP">Night Sleep</SelectItem>
+                  <SelectItem value="NAP">{t('Nap')}</SelectItem>
+                  <SelectItem value="NIGHT_SLEEP">{t('Night Sleep')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="form-label">Location</label>
+              <label className="form-label">{t('Location')}</label>
               <Select
                 value={formData.location}
                 onValueChange={(value: string) =>
@@ -301,18 +303,18 @@ export default function SleepModal({
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Crib">Crib</SelectItem>
-                  <SelectItem value="Car Seat">Car Seat</SelectItem>
-                  <SelectItem value="Parents Room">Parents Room</SelectItem>
-                  <SelectItem value="Contact">Contact</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  <SelectItem value="Crib">{t('Crib')}</SelectItem>
+                  <SelectItem value="Car Seat">{t('Car Seat')}</SelectItem>
+                  <SelectItem value="Parents Room">{t('Parents Room')}</SelectItem>
+                  <SelectItem value="Contact">{t('Contact')}</SelectItem>
+                  <SelectItem value="Other">{t('Other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           {(isSleeping || (isEditMode && formData.endTime)) && (
             <div>
-              <label className="form-label">Sleep Quality</label>
+              <label className="form-label">{t('Sleep Quality')}</label>
               <Select
                 value={formData.quality}
                 onValueChange={(value: SleepQuality) =>
@@ -323,10 +325,10 @@ export default function SleepModal({
                   <SelectValue placeholder="How well did they sleep?" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="POOR">Poor</SelectItem>
-                  <SelectItem value="FAIR">Fair</SelectItem>
-                  <SelectItem value="GOOD">Good</SelectItem>
-                  <SelectItem value="EXCELLENT">Excellent</SelectItem>
+                  <SelectItem value="POOR">{t('Poor')}</SelectItem>
+                  <SelectItem value="FAIR">{t('Fair')}</SelectItem>
+                  <SelectItem value="GOOD">{t('Good')}</SelectItem>
+                  <SelectItem value="EXCELLENT">{t('Excellent')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -338,7 +340,7 @@ export default function SleepModal({
               onClick={onClose}
               className="hover:bg-slate-50"
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               type="submit"

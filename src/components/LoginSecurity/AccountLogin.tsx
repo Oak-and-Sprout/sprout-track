@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';
+import { Input } from '@/src/components/ui/input';import { useLocalization } from '@/src/context/localization';
+
 import '../modals/AccountModal/account-modal.css';
 
 interface AccountLoginProps {
@@ -13,7 +14,9 @@ interface AccountLoginProps {
 
 type LoginMode = 'login' | 'forgot-password';
 
-export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLoginProps) {
+export default function AccountLogin({
+ lockoutTime, onLockoutChange }: AccountLoginProps) {
+  const { t } = useLocalization();
   const router = useRouter();
   const [mode, setMode] = useState<LoginMode>('login');
   const [email, setEmail] = useState('');
@@ -195,9 +198,9 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
         <div className="w-full max-w-[320px] mx-auto">
           <div className="account-modal-success">
             <div className="account-modal-success-icon">✓</div>
-            <h3 className="account-modal-success-title">Email Sent!</h3>
+            <h3 className="account-modal-success-title">{t('Email Sent!')}</h3>
             <p className="account-modal-success-message">
-              If an account with that email exists, we've sent password reset instructions. Check your email and follow the link to reset your password.
+              {t('If an account with that email exists, we\'ve sent password reset instructions. Check your email and follow the link to reset your password.')}
             </p>
           </div>
         </div>
@@ -215,7 +218,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
           <form onSubmit={handleSubmit} className="w-full max-w-[320px] mx-auto space-y-4">
             {/* Email */}
             <div>
-              <label className="account-modal-label">Email</label>
+              <label className="account-modal-label">{t('Email')}</label>
               <Input
                 type="email"
                 value={email}
@@ -234,7 +237,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
             {/* Password - Not shown in forgot password mode */}
             {mode !== 'forgot-password' && (
               <div>
-                <label className="account-modal-label">Password</label>
+                <label className="account-modal-label">{t('Password')}</label>
                 <Input
                   type="password"
                   value={password}
@@ -279,7 +282,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
                   className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
                   disabled={isSubmitting}
                 >
-                  Forgot your password?
+                  {t('Forgot your password?')}
                 </button>
               </div>
             )}
@@ -296,7 +299,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
                   className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
                   disabled={isSubmitting}
                 >
-                  Back to login
+                  {t('Back to login')}
                 </button>
               </div>
             )}

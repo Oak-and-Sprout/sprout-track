@@ -7,10 +7,13 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Search, ChevronDown, Users, ArrowRight } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
-import { FamilyResponse } from '@/app/api/types';
+import { FamilyResponse } from '@/app/api/types';import { useLocalization } from '@/src/context/localization';
+
 import './family-select.css';
 
 export default function FamilySelectPage() {
+  const { t } = useLocalization();
+
   const router = useRouter();
   const { theme } = useTheme();
   const [families, setFamilies] = useState<FamilyResponse[]>([]);
@@ -215,7 +218,7 @@ export default function FamilySelectPage() {
               priority
             />
           </div>
-          <p className="text-gray-500 family-select-loading-text">Loading families...</p>
+          <p className="text-gray-500 family-select-loading-text">{t('Loading families...')}</p>
         </div>
       </div>
     );
@@ -225,9 +228,9 @@ export default function FamilySelectPage() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white family-select-container">
       <div className="w-full max-w-md mx-auto p-6">
         <div className="text-center mt-2 mb-4">
-          <h2 className="text-xl font-semibold family-select-title">Welcome to Sprout Track</h2>
+          <h2 className="text-xl font-semibold family-select-title">{t('Welcome to Sprout Track')}</h2>
           <p className="text-sm text-gray-500 family-select-description">
-            Choose your family to continue to login
+            {t('Choose your family to continue to login')}
           </p>
         </div>
         
@@ -248,7 +251,7 @@ export default function FamilySelectPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-center space-x-2 text-teal-600 mb-4">
                 <Users className="w-5 h-5 family-select-section-icon" />
-                <span className="text-lg font-semibold family-select-section-title">Family Selection</span>
+                <span className="text-lg font-semibold family-select-section-title">{t('Family Selection')}</span>
               </div>
               
               {/* Search Input */}
@@ -344,7 +347,7 @@ export default function FamilySelectPage() {
                     </div>
                   </div>
                   <div className="text-teal-600 family-select-selected-label">
-                    Selected
+                    {t('Selected')}
                   </div>
                 </div>
               </div>
@@ -359,7 +362,7 @@ export default function FamilySelectPage() {
               className="w-full h-12 text-base font-semibold bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="flex items-center justify-center space-x-2">
-                <span>Continue to Login</span>
+                <span>{t('Continue to Login')}</span>
                 <ArrowRight className="w-4 h-4" />
               </span>
             </Button>

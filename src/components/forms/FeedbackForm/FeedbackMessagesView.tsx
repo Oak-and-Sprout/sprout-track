@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Loader2, MessageSquare, Calendar, User, Reply } from 'lucide-react';
 import { FeedbackResponse } from '@/app/api/types';
-import FeedbackThreadModal from '@/src/components/familymanager/FeedbackThreadModal';
+import FeedbackThreadModal from '@/src/components/familymanager/FeedbackThreadModal';import { useLocalization } from '@/src/context/localization';
+
 import './feedback-messages-view.css';
 
 interface FeedbackMessagesViewProps {
@@ -14,7 +15,9 @@ interface FeedbackMessagesViewProps {
   isPageOpen?: boolean; // Whether the parent page is open
 }
 
-export default function FeedbackMessagesView({ formatDateTime, refreshTrigger, isPageOpen }: FeedbackMessagesViewProps) {
+export default function FeedbackMessagesView({
+ formatDateTime, refreshTrigger, isPageOpen }: FeedbackMessagesViewProps) {
+  const { t } = useLocalization();
   const [feedbackList, setFeedbackList] = useState<FeedbackResponse[]>([]);
   const [loading, setLoading] = useState(false); // Start as false, will be true when fetching
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackResponse | null>(null);
@@ -210,8 +213,8 @@ export default function FeedbackMessagesView({ formatDateTime, refreshTrigger, i
     return (
       <div className="text-center py-12">
         <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-        <p className="text-gray-500 feedback-messages-empty-text">No messages yet</p>
-        <p className="text-sm text-gray-400 mt-2">Your feedback and replies will appear here</p>
+        <p className="text-gray-500 feedback-messages-empty-text">{t('No messages yet')}</p>
+        <p className="text-sm text-gray-400 mt-2">{t('Your feedback and replies will appear here')}</p>
       </div>
     );
   }

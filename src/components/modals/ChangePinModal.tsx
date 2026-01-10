@@ -11,6 +11,7 @@ import {
 } from '@/src/components/ui/dialog';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
+import { useLocalization } from '@/src/context/localization';
 
 interface ChangePinModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function ChangePinModal({
   currentPin,
   onPinChange,
 }: ChangePinModalProps) {
+  const { t } = useLocalization();
   const [step, setStep] = useState<'verify' | 'new' | 'confirm'>('verify');
   const [verifyPin, setVerifyPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -136,7 +138,7 @@ export default function ChangePinModal({
         <div className="space-y-4">
           {step === 'verify' && (
             <div className="space-y-2">
-              <Label>Current PIN</Label>
+              <Label>{t('Current PIN')}</Label>
               <Input
                 type="password"
                 value={verifyPin}
@@ -156,7 +158,7 @@ export default function ChangePinModal({
 
           {step === 'new' && (
             <div className="space-y-2">
-              <Label>New PIN</Label>
+              <Label>{t('New PIN')}</Label>
               <Input
                 type="password"
                 value={newPin}
@@ -175,13 +177,13 @@ export default function ChangePinModal({
                 pattern="\d*"
                 disabled={hasCaretakers}
               />
-              <p className="text-sm text-gray-500">PIN must be between 6 and 10 digits</p>
+              <p className="text-sm text-gray-500">{t('PIN must be between 6 and 10 digits')}</p>
             </div>
           )}
 
           {step === 'confirm' && (
             <div className="space-y-2">
-              <Label>Confirm PIN</Label>
+              <Label>{t('Confirm PIN')}</Label>
               <Input
                 type="password"
                 value={confirmPin}
@@ -209,7 +211,7 @@ export default function ChangePinModal({
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleClose}>
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               onClick={() => {

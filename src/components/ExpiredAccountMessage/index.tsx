@@ -3,7 +3,8 @@
 import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { AlertTriangle, Crown } from 'lucide-react';
-import Image from 'next/image';
+import Image from 'next/image';import { useLocalization } from '@/src/context/localization';
+
 import './expired-account.css';
 
 interface ExpiredAccountMessageProps {
@@ -59,7 +60,7 @@ export default function ExpiredAccountMessage({
         {/* Family Name */}
         {familyName && (
           <p className="text-lg text-gray-700 mb-4 expired-account-family-name">
-            Access to <strong>{familyName}</strong> is currently suspended
+            {t('Access to')} <strong>{familyName}</strong> {t('is currently suspended')}
           </p>
         )}
 
@@ -78,8 +79,7 @@ export default function ExpiredAccountMessage({
 
         {/* Message */}
         <p className="text-gray-600 mb-6 expired-account-message">
-          To continue tracking your family's activities, please log in to your account
-          and {isTrialExpired ? 'upgrade to a full plan' : 'renew your subscription'}.
+          {t('To continue tracking your family\'s activities, please log in to your account and')} {isTrialExpired ? 'upgrade to a full plan' : 'renew your subscription'}.
         </p>
 
         {/* Action Button */}
@@ -94,7 +94,7 @@ export default function ExpiredAccountMessage({
 
         {/* Support Text */}
         <p className="text-xs text-gray-500 mt-4 expired-account-support">
-          Need help? Contact support for assistance with your account.
+          {t('Need help? Contact support for assistance with your account.')}
         </p>
       </div>
     </div>

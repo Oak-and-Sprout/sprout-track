@@ -22,6 +22,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface MilestoneFormProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export default function MilestoneForm({
   activity,
   onSuccess,
 }: MilestoneFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
@@ -272,7 +274,7 @@ export default function MilestoneForm({
           <div className="space-y-4">
             {/* Date & Time - Full width on all screens */}
             <div>
-              <label className="form-label">Date & Time</label>
+              <label className="form-label">{t('Date & Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -283,7 +285,7 @@ export default function MilestoneForm({
             
             {/* Category - Full width on all screens */}
             <div>
-              <label className="form-label">Category</label>
+              <label className="form-label">{t('Category')}</label>
               <Select
                 value={formData.category || ''}
                 onValueChange={(value: MilestoneCategory) =>
@@ -295,17 +297,17 @@ export default function MilestoneForm({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MOTOR">Motor Skills</SelectItem>
-                  <SelectItem value="COGNITIVE">Cognitive Development</SelectItem>
-                  <SelectItem value="SOCIAL">Social & Emotional</SelectItem>
-                  <SelectItem value="LANGUAGE">Language & Communication</SelectItem>
-                  <SelectItem value="CUSTOM">Custom</SelectItem>
+                  <SelectItem value="MOTOR">{t('Motor Skills')}</SelectItem>
+                  <SelectItem value="COGNITIVE">{t('Cognitive Development')}</SelectItem>
+                  <SelectItem value="SOCIAL">{t('Social & Emotional')}</SelectItem>
+                  <SelectItem value="LANGUAGE">{t('Language & Communication')}</SelectItem>
+                  <SelectItem value="CUSTOM">{t('Custom')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div>
-              <label className="form-label">Title</label>
+              <label className="form-label">{t('Title')}</label>
               <Input
                 type="text"
                 value={formData.title}
@@ -320,7 +322,7 @@ export default function MilestoneForm({
             </div>
 
             <div>
-              <label className="form-label">Description (Optional)</label>
+              <label className="form-label">{t('Description (Optional)')}</label>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
@@ -342,7 +344,7 @@ export default function MilestoneForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
               {activity ? 'Update' : 'Save'}

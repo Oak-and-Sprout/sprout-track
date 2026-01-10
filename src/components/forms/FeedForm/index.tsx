@@ -22,6 +22,7 @@ import './feed-form.css';
 import BreastFeedForm from './BreastFeedForm';
 import BottleFeedForm from './BottleFeedForm';
 import SolidsFeedForm from './SolidsFeedForm';
+import { useLocalization } from '@/src/context/localization';
 
 interface FeedFormProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export default function FeedForm({
   activity,
   onSuccess,
 }: FeedFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -702,7 +704,7 @@ export default function FeedForm({
 
             {/* Time Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Time</label>
+              <label className="form-label">{t('Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -729,7 +731,7 @@ export default function FeedForm({
                       alt="Breast Feed" 
                       className="w-16 h-16 object-contain" 
                     />
-                    <span className="text-xs font-medium mt-1">Breast</span>
+                    <span className="text-xs font-medium mt-1">{t('Breast')}</span>
                     {formData.type === 'BREAST' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
                         <Check className="h-3 w-3 text-white" />
@@ -751,7 +753,7 @@ export default function FeedForm({
                       alt="Bottle Feed" 
                       className="w-16 h-16 object-contain" 
                     />
-                    <span className="text-xs font-medium mt-1">Bottle</span>
+                    <span className="text-xs font-medium mt-1">{t('Bottle')}</span>
                     {formData.type === 'BOTTLE' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
                         <Check className="h-3 w-3 text-white" />
@@ -773,7 +775,7 @@ export default function FeedForm({
                       alt="Solids" 
                       className="w-16 h-16 object-contain" 
                     />
-                    <span className="text-xs font-medium mt-1">Solids</span>
+                    <span className="text-xs font-medium mt-1">{t('Solids')}</span>
                     {formData.type === 'SOLIDS' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
                         <Check className="h-3 w-3 text-white" />
@@ -850,7 +852,7 @@ export default function FeedForm({
               onClick={handleClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
               {activity ? 'Update' : 'Save'}

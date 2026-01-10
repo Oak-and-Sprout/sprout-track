@@ -1,5 +1,5 @@
 # Files Still Needing Localization Updates
-# Generated: 2026-01-10T16:40:33.484Z
+# Generated: 2026-01-10T16:44:02.588Z
 # Total: 51 file(s)
 
 app/(app)/[slug]/layout.tsx (1 string)

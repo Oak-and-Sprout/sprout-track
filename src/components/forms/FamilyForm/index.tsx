@@ -25,7 +25,8 @@ import { ShareButton } from '@/src/components/ui/share-button';
 import { format } from 'date-fns';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/components/ui/toast';
-import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';import { useLocalization } from '@/src/context/localization';
+
 import './FamilyForm.css';
 
 interface FamilyData {
@@ -55,13 +56,14 @@ interface CaretakerData {
   securityPin: string;
 }
 
-export default function FamilyForm({ 
+export default function FamilyForm({
   isOpen, 
   onClose,
   isEditing,
   family,
   onFamilyChange,
 }: FamilyFormProps) {
+  const { t } = useLocalization();
   const router = useRouter();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -643,7 +645,7 @@ export default function FamilyForm({
           {/* Setup Mode Selection (only for new families) */}
           {!isEditing && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">Setup Method</h3>
+              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">{t('Setup Method')}</h3>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <input
@@ -654,7 +656,7 @@ export default function FamilyForm({
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500"
                   />
                   <label htmlFor="manual" className="text-sm font-medium text-gray-700 family-form-radio-label">
-                    Add family manually (complete setup now)
+                    {t('Add family manually (complete setup now)')}
                   </label>
                 </div>
                 
@@ -667,7 +669,7 @@ export default function FamilyForm({
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500"
                   />
                   <label htmlFor="token" className="text-sm font-medium text-gray-700 family-form-radio-label">
-                    Generate setup invitation (let family complete their own setup)
+                    {t('Generate setup invitation (let family complete their own setup)')}
                   </label>
                 </div>
               </div>
@@ -683,20 +685,20 @@ export default function FamilyForm({
           {/* Token Mode - Simple Token Generation */}
           {!isEditing && setupMode === 'token' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">Generate Setup Invitation</h3>
+              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">{t('Generate Setup Invitation')}</h3>
               
               <p className="text-sm text-gray-600 family-form-text-secondary">
-                Create a setup invitation link that families can use to configure their own:
+                {t('Create a setup invitation link that families can use to configure their own:')}
               </p>
               <ul className="text-sm text-gray-600 family-form-text-secondary list-disc list-inside ml-4 space-y-1">
-                <li>Family name and URL</li>
-                <li>Security PIN or individual caretaker accounts</li>
-                <li>Baby information</li>
+                <li>{t('Family name and URL')}</li>
+                <li>{t('Security PIN or individual caretaker accounts')}</li>
+                <li>{t('Baby information')}</li>
               </ul>
 
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Setup Password</Label>
+                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Setup Password')}</Label>
                   <Input
                     type="password"
                     value={tokenPassword}
@@ -706,11 +708,11 @@ export default function FamilyForm({
                     minLength={6}
                   />
                   <p className="text-xs text-gray-500 family-form-text-muted mt-1">
-                    This password will be required to access the setup invitation
+                    {t('This password will be required to access the setup invitation')}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Confirm Password</Label>
+                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Confirm Password')}</Label>
                   <Input
                     type="password"
                     value={confirmTokenPassword}
@@ -724,9 +726,9 @@ export default function FamilyForm({
 
               {generatedToken && (
                 <div className="space-y-4 p-4 bg-green-50 family-form-success-bg border border-green-200 family-form-success-border rounded-lg">
-                  <h4 className="text-md font-semibold text-green-800 family-form-success-heading">Setup Invitation Generated!</h4>
+                  <h4 className="text-md font-semibold text-green-800 family-form-success-heading">{t('Setup Invitation Generated!')}</h4>
                   <p className="text-sm text-green-700 family-form-success-text">
-                    Share this link with the family to let them complete their setup:
+                    {t('Share this link with the family to let them complete their setup:')}
                   </p>
                   <div className="flex items-center gap-2">
                     <ShareButton
@@ -740,7 +742,7 @@ export default function FamilyForm({
                     />
                   </div>
                   <p className="text-xs text-green-600 family-form-success-text-muted">
-                    This setup link will expire in 7 days and can only be used once.
+                    {t('This setup link will expire in 7 days and can only be used once.')}
                   </p>
                 </div>
               )}
@@ -750,10 +752,10 @@ export default function FamilyForm({
           {/* Manual Mode - Family Information Section */}
           {!isEditing && setupMode === 'manual' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">Family Information</h3>
+              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">{t('Family Information')}</h3>
               
               <div>
-                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Family Name</Label>
+                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Family Name')}</Label>
                 <Input
                   value={familyName}
                   onChange={(e) => setFamilyName(e.target.value)}
@@ -763,7 +765,7 @@ export default function FamilyForm({
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Family URL</Label>
+                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Family URL')}</Label>
                 <div className="flex gap-2">
                   <Input
                     value={familySlug}
@@ -783,20 +785,20 @@ export default function FamilyForm({
                     onClick={generateSlug}
                     disabled={loading || checkingSlug}
                   >
-                    Generate
+                    {t('Generate')}
                   </Button>
                 </div>
                 {slugError && (
                   <p className="text-red-600 text-sm mt-1">{slugError}</p>
                 )}
                 {checkingSlug && (
-                  <p className="text-blue-600 text-sm mt-1">Checking availability...</p>
+                  <p className="text-blue-600 text-sm mt-1">{t('Checking availability...')}</p>
                 )}
                 {!slugError && familySlug && !checkingSlug && slugValidated && (
-                  <p className="text-green-600 text-sm mt-1">URL is available</p>
+                  <p className="text-green-600 text-sm mt-1">{t('URL is available')}</p>
                 )}
                 <p className="text-sm text-gray-500 family-form-text-muted mt-1">
-                  Your family will be accessible at: /{familySlug || 'your-family-url'}
+                  {t('Your family will be accessible at: /')}{familySlug || 'your-family-url'}
                 </p>
               </div>
             </div>
@@ -805,7 +807,7 @@ export default function FamilyForm({
           {/* Manual Mode - Security Setup */}
           {!isEditing && setupMode === 'manual' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">Security Setup</h3>
+              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">{t('Security Setup')}</h3>
               
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
@@ -817,7 +819,7 @@ export default function FamilyForm({
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500"
                   />
                   <label htmlFor="systemPin" className="text-sm font-medium text-gray-700 family-form-radio-label">
-                    Use system-wide PIN
+                    {t('Use system-wide PIN')}
                   </label>
                 </div>
                 
@@ -830,7 +832,7 @@ export default function FamilyForm({
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500"
                   />
                   <label htmlFor="caretakers" className="text-sm font-medium text-gray-700 family-form-radio-label">
-                    Add caretakers with individual PINs
+                    {t('Add caretakers with individual PINs')}
                   </label>
                 </div>
               </div>
@@ -838,7 +840,7 @@ export default function FamilyForm({
               {useSystemPin ? (
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">System PIN (6-10 digits)</Label>
+                    <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('System PIN (6-10 digits)')}</Label>
                     <Input
                       type="password"
                       value={systemPin}
@@ -855,7 +857,7 @@ export default function FamilyForm({
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Confirm PIN</Label>
+                    <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Confirm PIN')}</Label>
                     <Input
                       type="password"
                       value={confirmSystemPin}
@@ -875,10 +877,10 @@ export default function FamilyForm({
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-4 p-4 border border-gray-200 family-form-border rounded-lg">
-                    <h4 className="text-md font-semibold text-gray-800 family-form-heading">Add Caretaker</h4>
+                    <h4 className="text-md font-semibold text-gray-800 family-form-heading">{t('Add Caretaker')}</h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Login ID (2 digits)</Label>
+                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Login ID (2 digits)')}</Label>
                         <Input
                           value={newCaretaker.loginId}
                           onChange={(e) => {
@@ -893,7 +895,7 @@ export default function FamilyForm({
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Role</Label>
+                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Role')}</Label>
                         <Select
                           value={newCaretaker.role}
                           onValueChange={(value) => 
@@ -908,8 +910,8 @@ export default function FamilyForm({
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
-                            <SelectItem value="USER">User</SelectItem>
+                            <SelectItem value="ADMIN">{t('Admin')}</SelectItem>
+                            <SelectItem value="USER">{t('User')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -927,7 +929,7 @@ export default function FamilyForm({
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Type (Optional)</Label>
+                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Type (Optional)')}</Label>
                         <Input
                           value={newCaretaker.type}
                           onChange={(e) => 
@@ -938,7 +940,7 @@ export default function FamilyForm({
                         />
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">PIN (6-10 digits)</Label>
+                        <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('PIN (6-10 digits)')}</Label>
                         <Input
                           type="password"
                           value={newCaretaker.securityPin}
@@ -960,13 +962,13 @@ export default function FamilyForm({
                       disabled={loading}
                       className="w-full"
                     >
-                      Add Caretaker
+                      {t('Add Caretaker')}
                     </Button>
                       </div>
                   
                   {caretakers.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-md font-semibold text-gray-800 family-form-heading">Caretakers</h4>
+                      <h4 className="text-md font-semibold text-gray-800 family-form-heading">{t('Caretakers')}</h4>
                       <ul className="space-y-2">
                         {caretakers.map((caretaker, index) => (
                           <li 
@@ -985,7 +987,7 @@ export default function FamilyForm({
                               onClick={() => removeCaretaker(index)}
                               disabled={loading}
                             >
-                              Remove
+                              {t('Remove')}
                             </Button>
                           </li>
                         ))}
@@ -1000,11 +1002,11 @@ export default function FamilyForm({
           {/* Manual Mode - Baby Setup */}
           {!isEditing && setupMode === 'manual' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">Baby Information</h3>
+              <h3 className="text-lg font-semibold text-gray-800 family-form-heading">{t('Baby Information')}</h3>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">First Name</Label>
+                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('First Name')}</Label>
                   <Input
                     value={babyFirstName}
                     onChange={(e) => setBabyFirstName(e.target.value)}
@@ -1013,7 +1015,7 @@ export default function FamilyForm({
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Last Name</Label>
+                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Last Name')}</Label>
                   <Input
                     value={babyLastName}
                     onChange={(e) => setBabyLastName(e.target.value)}
@@ -1024,7 +1026,7 @@ export default function FamilyForm({
               </div>
               
               <div>
-                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Birth Date</Label>
+                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Birth Date')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1055,7 +1057,7 @@ export default function FamilyForm({
               </div>
               
               <div>
-                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Gender</Label>
+                <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Gender')}</Label>
                 <Select
                   value={babyGender}
                   onValueChange={(value) => setBabyGender(value as Gender)}
@@ -1065,15 +1067,15 @@ export default function FamilyForm({
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MALE">Male</SelectItem>
-                    <SelectItem value="FEMALE">Female</SelectItem>
+                    <SelectItem value="MALE">{t('Male')}</SelectItem>
+                    <SelectItem value="FEMALE">{t('Female')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Feed Warning Time</Label>
+                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Feed Warning Time')}</Label>
                   <Input
                     type="text"
                     pattern="[0-9]{2}:[0-9]{2}"
@@ -1082,10 +1084,10 @@ export default function FamilyForm({
                     placeholder="02:00"
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-500 family-form-text-muted mt-1">Format: hh:mm</p>
+                  <p className="text-xs text-gray-500 family-form-text-muted mt-1">{t('Format: hh:mm')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">Diaper Warning Time</Label>
+                  <Label className="text-sm font-medium text-gray-700 family-form-text mb-1">{t('Diaper Warning Time')}</Label>
                   <Input
                     type="text"
                     pattern="[0-9]{2}:[0-9]{2}"
@@ -1094,7 +1096,7 @@ export default function FamilyForm({
                     placeholder="03:00"
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-500 family-form-text-muted mt-1">Format: hh:mm</p>
+                  <p className="text-xs text-gray-500 family-form-text-muted mt-1">{t('Format: hh:mm')}</p>
                 </div>
               </div>
             </div>
@@ -1111,7 +1113,7 @@ export default function FamilyForm({
       
       <FormPageFooter>
         <Button variant="outline" onClick={onClose} disabled={loading}>
-          Cancel
+          {t('Cancel')}
         </Button>
         {!isEditing && setupMode === 'token' ? (
           <Button 

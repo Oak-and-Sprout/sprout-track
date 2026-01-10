@@ -3,6 +3,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
+import { useLocalization } from '@/src/context/localization';
 
 interface BottleFeedFormProps {
   amount: string;
@@ -31,11 +32,12 @@ export default function BottleFeedForm({
   onIncrement,
   onDecrement,
 }: BottleFeedFormProps) {
+  const { t } = useLocalization();
   const bottleTypes = ['Formula', 'Breast Milk', 'Formula\\Breast', 'Milk', 'Other'];
   
   return (
     <div>
-      <label className="form-label mb-2">Bottle Type</label>
+      <label className="form-label mb-2">{t('Bottle Type')}</label>
       <div className="flex flex-wrap gap-2 mb-6">
         {bottleTypes.map((type) => (
           <Button
@@ -50,7 +52,7 @@ export default function BottleFeedForm({
           </Button>
         ))}
       </div>
-      <label className="form-label mb-6">Amount ({unit === 'ML' ? 'ml' : 'oz'})</label>
+      <label className="form-label mb-6">{t('Amount (')}{unit === 'ML' ? 'ml' : 'oz'})</label>
       <div className="flex items-center justify-center mb-6">
         <Button
           type="button"
@@ -103,7 +105,7 @@ export default function BottleFeedForm({
         </Button>
       </div>
       <div className="mt-6">
-        <label className="form-label">Notes</label>
+        <label className="form-label">{t('Notes')}</label>
         <Textarea
           id="notes"
           name="notes"

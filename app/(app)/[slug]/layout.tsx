@@ -713,7 +713,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                       {/* Show caretaker name for PIN-based authentication */}
                       {!isAccountAuth && caretakerName && caretakerName !== 'system' && (
                         <span className="text-white text-xs opacity-80">
-                          Hi, {caretakerName}
+                          {t('Hi,')} {caretakerName}
                         </span>
                       )}
                       {/* Show AccountButton for account-based authentication */}

@@ -23,7 +23,8 @@ import { ChevronDown } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
-import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';import { useLocalization } from '@/src/context/localization';
+
 import './note-form.css';
 
 interface NoteFormProps {
@@ -43,6 +44,7 @@ export default function NoteForm({
   activity,
   onSuccess,
 }: NoteFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -395,7 +397,7 @@ export default function NoteForm({
           <div className="space-y-4">
             {/* Time Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Time</label>
+              <label className="form-label">{t('Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -406,7 +408,7 @@ export default function NoteForm({
             
             {/* Category Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Category</label>
+              <label className="form-label">{t('Category')}</label>
               <div className="relative">
                 <div className="relative w-full">
                   <div className="flex items-center w-full">
@@ -458,11 +460,11 @@ export default function NoteForm({
                       ) : (
                         formData.category.trim() !== '' ? (
                           <div className="px-3 py-2 text-sm text-gray-500 category-dropdown-no-match">
-                            No matching categories. Press Enter to create "{formData.category}".
+                            {t('No matching categories. Press Enter to create "')}{formData.category}".
                           </div>
                         ) : (
                           <div className="px-3 py-2 text-sm text-gray-500 category-dropdown-no-categories">
-                            No categories found
+                            {t('No categories found')}
                           </div>
                         )
                       )}
@@ -472,7 +474,7 @@ export default function NoteForm({
               </div>
             </div>
             <div>
-              <label className="form-label">Note</label>
+              <label className="form-label">{t('Note')}</label>
               <Textarea
                 value={formData.content}
                 onChange={(e) =>
@@ -495,7 +497,7 @@ export default function NoteForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
               {activity ? 'Update' : 'Save'}
