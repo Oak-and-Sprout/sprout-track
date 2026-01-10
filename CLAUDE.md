@@ -110,7 +110,7 @@ These rules capture the key development patterns from the Web to Mobile Developm
 - **Always use the localization system** for all user-facing text - never hardcode strings in components
 - Use the `useLocalization` hook to access translations: `const { t } = useLocalization()`
 - Translation keys match their English text exactly (e.g., `t('Log Entry')` displays "Log Entry" in English)
-- When adding new UI text, add the translation key to `/src/localization/translations.json` first
+- When adding new UI text, add the translation key to `/src/localization/translations/en.json` first
 - Translation keys use proper capitalization and spacing to match the English display text
 - Always provide English ("en") translations - other languages are optional but should be added when available
 - The localization context automatically handles language preference storage (database for authenticated users, localStorage for unauthenticated)

@@ -23,44 +23,45 @@ The localization system consists of several components:
 
 ## Translation File Structure
 
-The translation file (`translations.json`) uses a nested structure where each key represents a translation variable (in English), and the value is an object containing translations for each supported language:
+Translations are stored in **per-language JSON files** under `src/localization/translations/`.
+
+- `en.json`: English (also acts as the fallback)
+- `es.json`: Spanish
+- `fr.json`: French
+- Supported languages are configured in `src/localization/supported-languages.json`.
+
+Each file is a flat map of **translation key → translated string**. Translation keys match their English text exactly.
 
 ```json
 {
-  "welcome": {
-    "en": "Welcome",
-    "es": "Bienvenido",
-    "fr": "Bienvenue"
-  },
-  "logEntry": {
-    "en": "Log Entry",
-    "es": "Entrada de Registro",
-    "fr": "Entrée de Journal"
-  }
+  "Welcome": "Welcome",
+  "Log Entry": "Log Entry"
 }
 ```
 
 ### Key Naming Conventions
 
-- Use **camelCase** for multi-word keys (e.g., `logEntry`, `familyName`)
-- Use descriptive names that indicate the purpose (e.g., `enterPin` not `pin`)
-- Keep keys in English to maintain consistency
-- Group related keys with prefixes when appropriate (e.g., `saveButton`, `saveSuccess`)
+- Translation keys **match their English text exactly** (including capitalization and spacing).
+- Example: `t('Log Entry')` displays `"Log Entry"` in English.
 
 ## Adding New Translations
 
 To add a new translation:
 
-1. Open `/src/localization/translations.json`
+1. Open `/src/localization/translations/en.json` (and optionally `es.json` / `fr.json`)
 2. Add a new key with translations for all supported languages:
 
 ```json
 {
-  "myNewKey": {
-    "en": "English text",
-    "es": "Texto en español",
-    "fr": "Texte en français"
-  }
+  "English text": "English text"
+}
+```
+
+And in `es.json` / `fr.json`:
+
+```json
+{
+  "English text": "Texto en español"
 }
 ```
 
@@ -71,7 +72,7 @@ import { useLocalization } from '@/src/context/localization';
 
 function MyComponent() {
   const { t } = useLocalization();
-  return <div>{t('myNewKey')}</div>;
+  return <div>{t('English text')}</div>;
 }
 ```
 
@@ -80,16 +81,11 @@ function MyComponent() {
 To add support for a new language:
 
 1. Determine the ISO 639-1 language code (e.g., "de" for German, "it" for Italian)
-2. Add the language code to all translation objects in `translations.json`:
+2. Add a new language file in `src/localization/translations/` (e.g., `de.json`) and add keys/values there:
 
 ```json
 {
-  "welcome": {
-    "en": "Welcome",
-    "es": "Bienvenido",
-    "fr": "Bienvenue",
-    "de": "Willkommen"
-  }
+  "Welcome": "Willkommen"
 }
 ```
 
@@ -108,8 +104,8 @@ function MyComponent() {
   
   return (
     <div>
-      <h1>{t('welcome')}</h1>
-      <button>{t('save')}</button>
+      <h1>{t('Welcome')}</h1>
+      <button>{t('Save')}</button>
       <p>Current language: {language}</p>
     </div>
   );
@@ -148,10 +144,10 @@ function MyComponent() {
   const { t, isLoading } = useLocalization();
   
   if (isLoading) {
-    return <div>{t('loading')}...</div>;
+    return <div>{t('Loading')}...</div>;
   }
   
-  return <div>{t('welcome')}</div>;
+  return <div>{t('Welcome')}</div>;
 }
 ```
 
@@ -254,11 +250,12 @@ Updates the current user's language preference.
 
 ### Translation key not found
 
-**Symptom**: Component displays the translation key instead of translated text (e.g., "welcome" instead of "Welcome")
+**Symptom**: Component displays the English text (the key) instead of the translated text for the selected language.
 
 **Solution**: 
-- Check that the key exists in `translations.json`
+- Check that the key exists in `src/localization/translations/en.json`
 - Verify the key name matches exactly (case-sensitive)
+- Check that the selected language has a non-empty translation value for that key
 - Check browser console for warnings about missing keys
 
 ### Language preference not persisting

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import translations from '@/src/localization/translations.json';
+import enTranslations from '@/src/localization/translations/en.json';
+import supportedLanguagesJson from '@/src/localization/supported-languages.json';
 
 /**
  * Interface for the localization context
@@ -30,6 +31,10 @@ interface LocalizationContextType {
 
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
 
+const SUPPORTED_LANGUAGES = Array.isArray(supportedLanguagesJson)
+  ? supportedLanguagesJson
+  : ['en', 'es', 'fr'];
+
 /**
  * Provider component for localization context
  */
@@ -42,6 +47,38 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
   });
   
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [translations, setTranslations] = useState<Record<string, string>>(
+    enTranslations as Record<string, string>
+  );
+
+  const loadTranslationsForLanguage = useCallback(async (lang: string) => {
+    if (lang === 'en') {
+      setTranslations(enTranslations as Record<string, string>);
+      return;
+    }
+
+    // NOTE: keep these as explicit imports so Next can bundle them.
+    const loaders: Record<string, () => Promise<Record<string, string>>> = {
+      es: async () => (await import('@/src/localization/translations/es.json')).default as Record<string, string>,
+      fr: async () => (await import('@/src/localization/translations/fr.json')).default as Record<string, string>
+    };
+
+    const supported = SUPPORTED_LANGUAGES.includes(lang);
+    const loader = supported ? loaders[lang] : undefined;
+    if (!loader) {
+      // Unknown language: fallback to English
+      setTranslations(enTranslations as Record<string, string>);
+      return;
+    }
+
+    try {
+      const loaded = await loader();
+      setTranslations(loaded);
+    } catch (error) {
+      console.error('Error loading translations for language:', lang, error);
+      setTranslations(enTranslations as Record<string, string>);
+    }
+  }, []);
 
   /**
    * Fetch language preference from API for authenticated users
@@ -98,6 +135,11 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     fetchLanguageFromAPI();
   }, [fetchLanguageFromAPI]);
 
+  // Load translations when language changes (lazy-load non-English languages)
+  useEffect(() => {
+    loadTranslationsForLanguage(language);
+  }, [language, loadTranslationsForLanguage]);
+
   /**
    * Set language preference (updates both API and localStorage)
    */
@@ -143,23 +185,18 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
    * Translation function - returns translated string for the given key
    */
   const t = useCallback((key: string): string => {
-    // Type assertion for translations JSON
-    const translationsObj = translations as Record<string, Record<string, string>>;
-    
-    // Look up the key in translations
-    const translation = translationsObj[key];
-    if (!translation) {
-      // Key not found, return the key itself for development visibility
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(`Translation key not found: ${key}`);
-      }
-      return key;
-    }
+    // Look up the key in current language, fallback to English, then to key.
+    const current = translations[key];
+    if (current) return current;
 
-    // Get translation for current language, fallback to English
-    const translatedText = translation[language] || translation['en'] || key;
-    return translatedText;
-  }, [language]);
+    const fallback = (enTranslations as Record<string, string>)[key];
+    if (fallback) return fallback;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`Translation key not found: ${key}`);
+    }
+    return key;
+  }, [translations]);
 
   const value = useMemo(() => ({
     language,
