@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
-import { checkWritePermission } from '../utils/writeProtection';
 
 /**
  * Valid ISO 639-1 language codes (2-letter codes)
@@ -27,7 +26,16 @@ function isValidLanguageCode(lang: string): boolean {
  */
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
-    const { isAccountAuth, accountId, caretakerId } = authContext;
+    const { isAccountAuth, accountId, caretakerId, isSysAdmin } = authContext;
+
+    // System administrators use sessionStorage, so return default
+    // The client will handle reading from sessionStorage
+    if (isSysAdmin) {
+      return NextResponse.json<ApiResponse<{ language: string }>>({
+        success: true,
+        data: { language: 'en' }
+      });
+    }
 
     // If user is authenticated via account, fetch from Account table
     if (isAccountAuth && accountId) {
@@ -77,16 +85,13 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 /**
  * PUT /api/localization
  * Updates the current user's language preference
+ * 
+ * Note: Language preference changes are allowed regardless of subscription status
+ * (similar to read operations) to ensure users can always access the app in their preferred language
  */
 async function handlePut(req: NextRequest, authContext: AuthResult) {
-  // Check write permissions for expired accounts
-  const writeCheck = checkWritePermission(authContext);
-  if (!writeCheck.allowed) {
-    return writeCheck.response!;
-  }
-
   try {
-    const { isAccountAuth, accountId, caretakerId } = authContext;
+    const { isAccountAuth, accountId, caretakerId, isSysAdmin } = authContext;
     const body = await req.json();
     const { language } = body;
 
@@ -102,6 +107,15 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     }
 
     const normalizedLanguage = language.toLowerCase();
+
+    // System administrators use sessionStorage, so just return success
+    // The client will handle storing in sessionStorage
+    if (isSysAdmin) {
+      return NextResponse.json<ApiResponse<{ language: string }>>({
+        success: true,
+        data: { language: normalizedLanguage }
+      });
+    }
 
     // If user is authenticated via account, update Account table
     if (isAccountAuth && accountId) {

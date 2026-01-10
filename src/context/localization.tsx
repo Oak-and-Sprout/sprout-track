@@ -81,6 +81,24 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /**
+   * Check if user is system administrator from JWT token
+   */
+  const isSystemAdmin = useCallback((): boolean => {
+    if (typeof window === 'undefined') return false;
+    
+    try {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return false;
+      
+      const payload = authToken.split('.')[1];
+      const decodedPayload = JSON.parse(atob(payload));
+      return decodedPayload.isSysAdmin === true;
+    } catch (error) {
+      return false;
+    }
+  }, []);
+
+  /**
    * Fetch language preference from API for authenticated users
    */
   const fetchLanguageFromAPI = useCallback(async () => {
@@ -90,6 +108,18 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // Check if user is system admin - use sessionStorage
+      if (isSystemAdmin()) {
+        const sessionLanguage = sessionStorage.getItem('sysadmin_language');
+        if (sessionLanguage) {
+          setLanguageState(sessionLanguage);
+          // Also sync to localStorage as backup
+          localStorage.setItem('language', sessionLanguage);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       const authToken = localStorage.getItem('authToken');
       if (!authToken) {
         // Not authenticated, use localStorage
@@ -128,7 +158,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isSystemAdmin]);
 
   // Fetch language from API on mount
   useEffect(() => {
@@ -141,7 +171,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
   }, [language, loadTranslationsForLanguage]);
 
   /**
-   * Set language preference (updates both API and localStorage)
+   * Set language preference (updates both API and localStorage, or sessionStorage for system admins)
    */
   const setLanguage = useCallback(async (lang: string): Promise<void> => {
     // Validate language code (basic check for ISO 639-1 format)
@@ -154,7 +184,13 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
 
-    // Try to update via API if authenticated
+    // Check if user is system admin - use sessionStorage instead of API
+    if (typeof window !== 'undefined' && isSystemAdmin()) {
+      sessionStorage.setItem('sysadmin_language', lang);
+      return;
+    }
+
+    // Try to update via API if authenticated (for non-system admins)
     if (typeof window !== 'undefined') {
       try {
         const authToken = localStorage.getItem('authToken');
@@ -179,7 +215,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
         // State and localStorage already updated, so we continue
       }
     }
-  }, []);
+  }, [isSystemAdmin]);
 
   /**
    * Translation function - returns translated string for the given key
