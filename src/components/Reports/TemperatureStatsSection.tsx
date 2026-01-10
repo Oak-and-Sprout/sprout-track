@@ -29,6 +29,7 @@ interface TemperatureStatsSectionProps {
 
 // Temperature chart tooltip
 const TemperatureTooltip = ({ active, payload, label }: any) => {  
+  const { t } = useLocalization();
 
   if (active && payload && payload.length) {
     const point = payload[0]?.payload as { value: number; unit: string };

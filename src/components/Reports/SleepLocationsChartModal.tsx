@@ -47,11 +47,11 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
   locations,
 }) => {
   const { t } = useLocalization();
-  const title = type === 'nap' ? 'Nap Locations' : 'Night Sleep Locations';
+  const title = type === 'nap' ? t('Nap Locations') : t('Night Sleep Locations');
   const description =
     type === 'nap'
-      ? 'Total nap time by location for the selected date range.'
-      : 'Total night sleep time by location for the selected date range.';
+      ? t('Total nap time by location for the selected date range.')
+      : t('Total night sleep time by location for the selected date range.');
 
   const chartData = locations.map((loc) => ({
     name: loc.location,
@@ -95,8 +95,8 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip
-                  formatter={(value: any) => [formatMinutes(value as number), 'Total Sleep']}
-                  labelFormatter={(label: any) => `Location: ${label}`}
+                  formatter={(value: any) => [formatMinutes(value as number), t('Total Sleep')]}
+                  labelFormatter={(label: any) => `${t('Location:')} ${label}`}
                 />
                 <Bar dataKey="minutes" fill="#6366f1" />
               </BarChart>

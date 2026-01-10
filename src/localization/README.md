@@ -76,6 +76,29 @@ function MyComponent() {
 }
 ```
 
+## Maintaining Translation Files
+
+### Sorting Translation Files
+
+To keep translation files organized and easy to navigate, all translation files should be sorted alphabetically by their keys. A script is provided to automatically sort all translation files:
+
+```bash
+node scripts/sort-translation-files.js
+```
+
+This script will:
+- Sort all JSON files in `src/localization/translations/` alphabetically by key
+- Preserve all translation values
+- Only modify files if they need sorting (won't touch already-sorted files)
+- Use case-insensitive alphabetical ordering
+
+**When to run:**
+- After adding new translation keys manually
+- Before committing translation file changes
+- When translation files become disorganized
+
+**Note:** The script maintains proper JSON formatting with 2-space indentation and a trailing newline.
+
 ## Adding New Languages
 
 To add support for a new language:
