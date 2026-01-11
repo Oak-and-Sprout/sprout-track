@@ -29,6 +29,7 @@ import {
 } from '@/src/components/ui/popover';
 import { Calendar } from '@/src/components/ui/calendar';
 import { cn } from '@/src/lib/utils';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * FullLogFilter Component
@@ -46,20 +47,22 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
   onDateRangeChange,
   onQuickFilter,
 }) => {
+  const { t } = useLocalization();
+  
   // State for popover open/close
   const [calendarOpen, setCalendarOpen] = useState(false);
   
   // Define filter types and their icons
   const filterOptions = [
-    { type: 'sleep', icon: <Moon className="h-4 w-4" />, label: 'Sleep' },
-    { type: 'feed', icon: <Icon iconNode={bottleBaby} className="h-4 w-4" />, label: 'Feed' },
-    { type: 'diaper', icon: <Icon iconNode={diaper} className="h-4 w-4" />, label: 'Diaper' },
-    { type: 'bath', icon: <Bath className="h-4 w-4" />, label: 'Bath' },
-    { type: 'note', icon: <Edit className="h-4 w-4" />, label: 'Note' },
-    { type: 'pump', icon: <LampWallDown className="h-4 w-4" />, label: 'Pump' },
-    { type: 'milestone', icon: <Trophy className="h-4 w-4" />, label: 'Milestone' },
-    { type: 'measurement', icon: <Ruler className="h-4 w-4" />, label: 'Measurement' },
-    { type: 'medicine', icon: <PillBottle className="h-4 w-4" />, label: 'Medicine' },
+    { type: 'sleep', icon: <Moon className="h-4 w-4" />, labelKey: 'Sleep' },
+    { type: 'feed', icon: <Icon iconNode={bottleBaby} className="h-4 w-4" />, labelKey: 'Feed' },
+    { type: 'diaper', icon: <Icon iconNode={diaper} className="h-4 w-4" />, labelKey: 'Diaper' },
+    { type: 'bath', icon: <Bath className="h-4 w-4" />, labelKey: 'Bath' },
+    { type: 'note', icon: <Edit className="h-4 w-4" />, labelKey: 'Note' },
+    { type: 'pump', icon: <LampWallDown className="h-4 w-4" />, labelKey: 'Pump' },
+    { type: 'milestone', icon: <Trophy className="h-4 w-4" />, labelKey: 'Milestone' },
+    { type: 'measurement', icon: <Ruler className="h-4 w-4" />, labelKey: 'Measurement' },
+    { type: 'medicine', icon: <PillBottle className="h-4 w-4" />, labelKey: 'Medicine' },
   ] as const;
 
   // Format date range for display
@@ -135,7 +138,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             onClick={() => onQuickFilter(2)}
             className="h-7 px-2 text-white hover:bg-transparent hover:text-white/90"
           >
-            2 Days
+            {t('2 Days')}
           </Button>
           
           <Button
@@ -144,7 +147,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             onClick={() => onQuickFilter(7)}
             className="h-7 px-2 text-white hover:bg-transparent hover:text-white/90"
           >
-            7 Days
+            {t('7 Days')}
           </Button>
           
           <Button
@@ -153,7 +156,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             onClick={() => onQuickFilter(30)}
             className="h-7 px-2 text-white hover:bg-transparent hover:text-white/90"
           >
-            30 Days
+            {t('30 Days')}
           </Button>
         </div>
       </div>
@@ -166,7 +169,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
             size="sm" 
             className="flex items-center gap-1 h-7 text-sm font-medium text-white hover:bg-transparent hover:text-white/90 p-0"
           >
-            Filters <ChevronDown className="h-4 w-4 ml-1" />
+            {t('Filters')} <ChevronDown className="h-4 w-4 ml-1" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
@@ -178,7 +181,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
               className="flex items-center gap-2"
             >
               <span className="flex items-center justify-center w-6">{option.icon}</span>
-              <span>{option.label}</span>
+              <span>{t(option.labelKey)}</span>
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuContent>

@@ -6,6 +6,8 @@ import { CheckCircle, Home, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Label } from '@/src/components/ui/label';
+import { useLocalization } from '@/src/context/localization';
+
 import '../account.css';
 
 /**
@@ -15,6 +17,8 @@ import '../account.css';
  * Separated to allow Suspense boundary wrapping.
  */
 function PaymentSuccessContent() {
+  const { t } = useLocalization();
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
@@ -119,10 +123,10 @@ function PaymentSuccessContent() {
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
-                Verifying Payment...
+                {t('Verifying Payment...')}
               </Label>
               <p className="text-lg text-gray-600 mb-6">
-                Please wait while we confirm your payment.
+                {t('Please wait while we confirm your payment.')}
               </p>
             </>
           ) : verificationError ? (
@@ -133,14 +137,13 @@ function PaymentSuccessContent() {
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
-                Payment Verification Issue
+                {t('Payment Verification Issue')}
               </Label>
               <p className="text-lg text-gray-600 mb-6">
                 {verificationError}
               </p>
               <p className="text-sm text-gray-500 mb-6">
-                Your payment was processed, but we encountered an issue activating your account.
-                Please contact support or try logging out and back in.
+                {t('Your payment was processed, but we encountered an issue activating your account. Please contact support or try logging out and back in.')}
               </p>
             </>
           ) : (
@@ -154,16 +157,16 @@ function PaymentSuccessContent() {
 
               {/* Success Message */}
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
-                Payment Successful!
+                {t('Payment Successful!')}
               </Label>
 
               <p className="text-lg text-gray-600 mb-6">
-                Thank you for your purchase. Your subscription has been activated.
+                {t('Thank you for your purchase. Your subscription has been activated.')}
               </p>
 
               {sessionId && (
                 <p className="text-sm text-gray-500 mb-6">
-                  Confirmation ID: {sessionId.substring(0, 20)}...
+                  {t('Confirmation ID:')} {sessionId.substring(0, 20)}...
                 </p>
               )}
             </>
@@ -179,7 +182,7 @@ function PaymentSuccessContent() {
                   </div>
                 </div>
                 <p className="text-teal-700 font-medium mb-3">
-                  Redirecting to home in {countdown} second{countdown !== 1 ? 's' : ''}...
+                  {t('Redirecting to home in')} {countdown} second{countdown !== 1 ? 's' : ''}...
                 </p>
                 <div className="w-full bg-teal-200 rounded-full h-3">
                   <div
@@ -195,7 +198,7 @@ function PaymentSuccessContent() {
                 className="w-full"
               >
                 <Home className="h-4 w-4 mr-2" />
-                Go to Home Now
+                {t('Go to Home Now')}
               </Button>
             </>
           )}
@@ -214,6 +217,8 @@ function PaymentSuccessContent() {
  * Wrapped in Suspense to handle useSearchParams() requirement.
  */
 export default function PaymentSuccessPage() {
+  const { t } = useLocalization();
+  
   return (
     <Suspense
       fallback={
@@ -226,7 +231,7 @@ export default function PaymentSuccessPage() {
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
-                Loading...
+                {t('Loading...')}
               </Label>
             </CardContent>
           </Card>

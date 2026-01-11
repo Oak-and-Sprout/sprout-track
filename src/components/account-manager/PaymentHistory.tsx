@@ -16,6 +16,8 @@ import {
   X,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/components/ui/dialog';
+import { useLocalization } from '@/src/context/localization';
+
 import './account-manager.css';
 
 /**
@@ -47,6 +49,8 @@ interface PaymentHistoryProps {
  * Shows transaction date, amount, status, description, and links to receipts/invoices.
  */
 const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
+  const { t } = useLocalization();
+  
   // State management
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -175,7 +179,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
       <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className={cn("text-2xl font-bold text-gray-900", "payment-history-title")}>
-            Payment History
+            {t('Payment History')}
           </DialogTitle>
         </DialogHeader>
 
@@ -184,7 +188,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
             <div className={cn("mb-4 p-4 bg-red-50 border border-red-200 rounded-lg", "payment-history-error")}>
               <div className={cn("flex items-center gap-2 text-red-700", "payment-history-error-text")}>
                 <AlertTriangle className="h-5 w-5" />
-                <span className="font-medium">Error</span>
+                <span className="font-medium">{t('Error')}</span>
               </div>
               <p className={cn("text-sm text-red-600 mt-1", "payment-history-error-description")}>{error}</p>
             </div>
@@ -197,8 +201,8 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
           ) : transactions.length === 0 ? (
             <div className={cn("flex flex-col items-center justify-center py-12 text-gray-500", "payment-history-empty")}>
               <Receipt className="h-12 w-12 mb-3" />
-              <p className="text-lg font-medium">No payment history</p>
-              <p className="text-sm">You haven't made any payments yet.</p>
+              <p className="text-lg font-medium">{t('No payment history')}</p>
+              <p className="text-sm">{t('You haven\'t made any payments yet.')}</p>
             </div>
           ) : (
             <>
@@ -206,10 +210,10 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="font-semibold">Date</TableHead>
-                      <TableHead className="font-semibold">Description</TableHead>
-                      <TableHead className="font-semibold">Amount</TableHead>
-                      <TableHead className="font-semibold">Status</TableHead>
+                      <TableHead className="font-semibold">{t('Date')}</TableHead>
+                      <TableHead className="font-semibold">{t('Description')}</TableHead>
+                      <TableHead className="font-semibold">{t('Amount')}</TableHead>
+                      <TableHead className="font-semibold">{t('Status')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -239,7 +243,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Loading...
+                        {t('Loading...')}
                       </>
                     ) : (
                       'Load More'
@@ -254,7 +258,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
         <div className={cn("flex justify-end pt-4 border-t", "payment-history-footer")}>
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
-            Close
+            {t('Close')}
           </Button>
         </div>
       </DialogContent>

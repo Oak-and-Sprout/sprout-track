@@ -27,6 +27,8 @@ import { Calendar as CalendarComponent } from '@/src/components/ui/calendar';
 import { FilterType } from '../types';
 import { ActivityType } from '../types';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
+import { useLocalization } from '@/src/context/localization';
+
 import './TimelineV2DailyStats.css';
 
 interface TimelineV2DailyStatsProps {
@@ -65,6 +67,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   isHeatmapVisible,
   onHeatmapToggle
 }) => {
+  const { t } = useLocalization();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -72,7 +75,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   const formatMinutes = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
+    return `${hours}h ${mins}${t('min')}`;
   };
 
   // Calculate stats and create dynamic tiles
@@ -195,7 +198,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
           // Get medicine name
-          let medicineName = 'Unknown';
+          let medicineName = t('unknown');
           if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
             medicineName = (activity.medicine as { name?: string }).name || medicineName;
           }
@@ -299,7 +302,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (awakeMinutes > 0) {
       tiles.push({
         filter: null,
-        label: 'Awake Time',
+        label: t('Awake Time'),
         value: formatMinutes(awakeMinutes),
         icon: <Sun className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -313,7 +316,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (totalSleepMinutes > 0) {
       tiles.push({
         filter: 'sleep',
-        label: 'Total Sleep',
+        label: t('Total Sleep'),
         value: formatMinutes(totalSleepMinutes),
         icon: <Moon className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -338,12 +341,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       // Format breast feed amounts separately for left and right
       const breastFeedParts: string[] = [];
       if (leftBreastFeedMinutes > 0 && rightBreastFeedMinutes > 0) {
-        breastFeedParts.push(`L: ${formatMinutes(leftBreastFeedMinutes)}`);
-        breastFeedParts.push(`R: ${formatMinutes(rightBreastFeedMinutes)}`);
+        breastFeedParts.push(`${t('L:')} ${formatMinutes(leftBreastFeedMinutes)}`);
+        breastFeedParts.push(`${t('R:')} ${formatMinutes(rightBreastFeedMinutes)}`);
       } else if (leftBreastFeedMinutes > 0) {
-        breastFeedParts.push(`Left: ${formatMinutes(leftBreastFeedMinutes)}`);
+        breastFeedParts.push(`${t('Left:')} ${formatMinutes(leftBreastFeedMinutes)}`);
       } else if (rightBreastFeedMinutes > 0) {
-        breastFeedParts.push(`Right: ${formatMinutes(rightBreastFeedMinutes)}`);
+        breastFeedParts.push(`${t('Right:')} ${formatMinutes(rightBreastFeedMinutes)}`);
       }
       const formattedBreastFeed = breastFeedParts.length > 0 ? breastFeedParts.join(', ') : '';
       
@@ -361,7 +364,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       
       const combinedLabel = labelParts.length > 0 
         ? labelParts.join(' • ')
-        : 'Feeds';
+        : t('Feeds');
       
       tiles.push({
         filter: 'feed',
@@ -379,7 +382,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (wetCount > 0) {
       tiles.push({
         filter: 'diaper',
-        label: 'Wet Diapers',
+        label: t('Wet Diapers'),
         value: wetCount.toString(),
         icon: <Icon iconNode={diaper} className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -393,7 +396,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (poopCount > 0) {
       tiles.push({
         filter: 'poop',
-        label: 'Poops',
+        label: t('Poops'),
         value: poopCount.toString(),
         icon: <Icon iconNode={diaper} className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -443,7 +446,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (noteCount > 0) {
       tiles.push({
         filter: 'note',
-        label: 'Notes',
+        label: t('Notes'),
         value: noteCount.toString(),
         icon: <Edit className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -457,7 +460,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (bathCount > 0) {
       tiles.push({
         filter: 'bath',
-        label: 'Baths',
+        label: t('Baths'),
         value: bathCount.toString(),
         icon: <Bath className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -471,7 +474,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (pumpCount > 0) {
       tiles.push({
         filter: 'pump',
-        label: 'Pump',
+        label: t('Pump'),
         value: pumpCount.toString(),
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -485,7 +488,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (milestoneCount > 0) {
       tiles.push({
         filter: 'milestone',
-        label: 'Milestones',
+        label: t('Milestones'),
         value: milestoneCount.toString(),
         icon: <Trophy className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -499,7 +502,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     if (measurementCount > 0) {
       tiles.push({
         filter: 'measurement',
-        label: 'Measurements',
+        label: t('Measurements'),
         value: measurementCount.toString(),
         icon: <Ruler className="h-full w-full" />,
         bgColor: 'bg-gray-50',
@@ -510,7 +513,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     }
 
     return tiles;
-  }, [activities, date]);
+  }, [activities, date, t]);
 
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { 
@@ -531,7 +534,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               size="icon"
               onClick={() => onDateChange(-1)}
               className="h-8 w-8 text-gray-700 hover:bg-gray-100"
-              aria-label="Previous day"
+              aria-label={t('Previous day')}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -566,7 +569,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               size="icon"
               onClick={() => onDateChange(1)}
               className="h-8 w-8 text-gray-700 hover:bg-gray-100"
-              aria-label="Next day"
+              aria-label={t('Next day')}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -578,9 +581,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="flex items-center gap-3 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
-            aria-label={isCollapsed ? 'Expand daily summary' : 'Collapse daily summary'}
+            aria-label={isCollapsed ? t('Expand daily summary') : t('Collapse daily summary')}
           >
-            <span>Daily Summary</span>
+            <span>{t('Daily Summary')}</span>
             {isCollapsed ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
@@ -598,12 +601,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               {isHeatmapVisible ? (
                 <>
                   <EyeOff className="h-3 w-3" />
-                  <span>Hide heatmap</span>
+                  <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-3 w-3" />
-                  <span>Show heatmap</span>
+                  <span>{t('Show heatmap')}</span>
                 </>
               )}
             </button>
@@ -617,12 +620,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               {isHeatmapVisible ? (
                 <>
                   <EyeOff className="h-3 w-3" />
-                  <span>Hide heatmap</span>
+                  <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
                   <Eye className="h-3 w-3" />
-                  <span>Show heatmap</span>
+                  <span>{t('Show heatmap')}</span>
                 </>
               )}
             </button>
@@ -672,7 +675,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               </div>
             ) : (
               <div className="text-sm text-gray-500 text-center py-4">
-                No activities recorded for this day
+                {t('No activities recorded for this day')}
               </div>
             )}
           </>
@@ -705,7 +708,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               onClick={onHeatmapToggle}
             >
               <EyeOff className="h-3 w-3" />
-              <span>Hide heatmap</span>
+              <span>{t('Hide heatmap')}</span>
             </button>
           </div>
           <div className="h-full px-2 py-2">

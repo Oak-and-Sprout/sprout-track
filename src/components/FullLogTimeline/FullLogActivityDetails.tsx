@@ -9,6 +9,8 @@ import {
 import { FullLogActivityDetailsProps } from './full-log-timeline.types';
 import { getActivityDetails, formatTime } from '@/src/components/Timeline/utils';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
+
 import './full-log-timeline.css';
 
 /**
@@ -25,13 +27,14 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
   onEdit,
 }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   
   if (!activity) return null;
 
   // Special medicine details rendering
   let medicineDetails: { label: string; value: string }[] | null = null;
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    let medName = 'Medicine';
+    let medName = t('Medicine');
     if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
       medName = (activity.medicine as { name?: string }).name || medName;
     }
@@ -40,13 +43,13 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
     let notes = activity.notes ? activity.notes : '';
     if (notes.length > 50) notes = notes.substring(0, 50) + '...';
     medicineDetails = [
-      { label: 'Medicine', value: medName },
-      { label: 'Amount', value: dose },
-      { label: 'Time', value: medTime },
-      ...(notes ? [{ label: 'Notes', value: notes }] : [])
+      { label: t('Medicine'), value: medName },
+      { label: t('Amount'), value: dose },
+      { label: t('Time'), value: medTime },
+      ...(notes ? [{ label: t('Notes'), value: notes }] : [])
     ];
   }
-  const activityDetails = getActivityDetails(activity, settings);
+  const activityDetails = getActivityDetails(activity, settings, t);
   
   const handleEdit = () => {
     if (activity) {
@@ -98,21 +101,21 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
               onClick={() => onDelete(activity)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('Delete')}
             </Button>
             <Button
               variant="outline"
               onClick={handleEdit}
             >
               <Pencil className="h-4 w-4 mr-2" />
-              Edit
+              {t('Edit')}
             </Button>
           </div>
           <Button
             variant="outline"
             onClick={onClose}
           >
-            Close
+            {t('Close')}
           </Button>
         </div>
       </FormPageFooter>

@@ -24,6 +24,7 @@ import { cn } from '@/src/lib/utils';
 import { babyFormStyles } from './baby-form.styles';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface BabyFormProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export default function BabyForm({
   baby,
   onBabyChange,
 }: BabyFormProps) {
+  const { t } = useLocalization();
   const { showToast } = useToast();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,42 +139,42 @@ export default function BabyForm({
     <FormPage 
       isOpen={isOpen} 
       onClose={onClose}
-      title={isEditing ? 'Edit Baby' : 'Add New Baby'}
+      title={isEditing ? t('Edit Baby') : t('Add New Baby')}
       description={isEditing 
-        ? "Update your baby's information" 
-        : "Enter your baby's information to start tracking"
+        ? t("Update your baby's information") 
+        : t("Enter your baby's information to start tracking")
       }
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col overflow-hidden">
         <FormPageContent className={babyFormStyles.content}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">First Name</label>
+              <label className="form-label">{t('First Name')}</label>
               <Input
                 value={formData.firstName}
                 onChange={(e) =>
                   setFormData({ ...formData, firstName: e.target.value })
                 }
                 className="w-full"
-                placeholder="Enter first name"
+                placeholder={t("Enter first name")}
                 required
               />
             </div>
             <div>
-              <label className="form-label">Last Name</label>
+              <label className="form-label">{t('Last Name')}</label>
               <Input
                 value={formData.lastName}
                 onChange={(e) =>
                   setFormData({ ...formData, lastName: e.target.value })
                 }
                 className="w-full"
-                placeholder="Enter last name"
+                placeholder={t("Enter last name")}
                 required
               />
             </div>
           </div>
           <div>
-            <label className="form-label">Birth Date</label>
+            <label className="form-label">{t('Birth Date')}</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -183,7 +185,7 @@ export default function BabyForm({
                   )}
                 >
                   <Calendar className="mr-2 h-4 w-4" />
-                  {formData.birthDate ? format(formData.birthDate, "PPP") : "Select date"}
+                  {formData.birthDate ? format(formData.birthDate, "PPP") : t("Select date")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 z-[100]" align="start">
@@ -198,7 +200,7 @@ export default function BabyForm({
             </Popover>
           </div>
           <div>
-            <label className="form-label">Gender</label>
+            <label className="form-label">{t('Gender')}</label>
             <Select
               value={formData.gender}
               onValueChange={(value) =>
@@ -206,17 +208,17 @@ export default function BabyForm({
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select gender" />
+                <SelectValue placeholder={t("Select gender")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MALE">Male</SelectItem>
-                <SelectItem value="FEMALE">Female</SelectItem>
+                <SelectItem value="MALE">{t('Male')}</SelectItem>
+                <SelectItem value="FEMALE">{t('Female')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Feed Warning Time (hh:mm)</label>
+              <label className="form-label">{t('Feed Warning Time (hh:mm)')}</label>
               <Input
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
@@ -230,7 +232,7 @@ export default function BabyForm({
               />
             </div>
             <div>
-              <label className="form-label">Diaper Warning Time (hh:mm)</label>
+              <label className="form-label">{t('Diaper Warning Time (hh:mm)')}</label>
               <Input
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
@@ -255,7 +257,7 @@ export default function BabyForm({
                     setFormData({ ...formData, inactive: e.target.checked })
                   }
                 />
-                <span className="ml-2">Mark as inactive</span>
+                <span className="ml-2">{t('Mark as inactive')}</span>
               </label>
             </div>
           )}
@@ -268,13 +270,13 @@ export default function BabyForm({
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Save'}
+              {isSubmitting ? t('Saving...') : isEditing ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

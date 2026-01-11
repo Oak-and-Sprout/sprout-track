@@ -20,6 +20,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * GiveMedicineTab Component
@@ -34,6 +35,8 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
   setIsSubmitting,
   activity,
 }) => {
+
+  const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
@@ -143,7 +146,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
         else setError(unitsData.error || 'Failed to load units');
 
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+        setError(err instanceof Error ? err.message : t('An unknown error occurred.'));
       } finally {
         setIsFetching(false);
       }
@@ -151,7 +154,8 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
     fetchData();
   }, [activity]);
   
-  const handleDateTimeChange = (date: Date) => {
+  const handleDateTimeChange = (date: Date) => {  
+
     setSelectedDateTime(date);
     setFormData(prev => ({ ...prev, time: toUTCString(date) || date.toISOString() }));
     if (errors.time) setErrors(prev => ({ ...prev, time: '' }));
@@ -245,7 +249,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${activity ? 'update' : 'save'} log`);
+        throw new Error(errorData.error || (activity ? t('Failed to update log') : t('Failed to save log')));
       }
       
       const result = await response.json();
@@ -260,11 +264,11 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
         // Then call onSuccess to close the form
         onSuccess?.();
       } else {
-        throw new Error(result.error || `Failed to ${activity ? 'update' : 'save'} log`);
+        throw new Error(result.error || (activity ? t('Failed to update log') : t('Failed to save log')));
       }
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      setError(err instanceof Error ? err.message : t('An unknown error occurred.'));
     } finally {
       setIsLoading(false);
       setIsSubmitting?.(false);
@@ -277,7 +281,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
         {isFetching ? (
           <div className={cn(styles.loadingContainer, "medicine-form-loading-container")}>
             <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-            <p className="mt-2 text-gray-600">Loading form data...</p>
+            <p className="mt-2 text-gray-600">{t('Loading form data...')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -289,16 +293,16 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
             )}
             
             <div className={cn(styles.formGroup, "medicine-form-group")}>
-              <Label>Medicine</Label>
+              <Label>{t('Medicine')}</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
-                    {selectedMedicine ? selectedMedicine.name : 'Select a medicine'}
+                    {selectedMedicine ? selectedMedicine.name : t('Select a medicine')}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
-                  <DropdownMenuLabel>Available Medicines</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('Available Medicines')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {medicines.map(med => (
                     <DropdownMenuItem key={med.id} onSelect={() => handleMedicineChange(med.id)}>
@@ -311,13 +315,13 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
             </div>
 
             <div className={cn(styles.formGroup, "medicine-form-group")}>
-              <Label>Time</Label>
+              <Label>{t('Time')}</Label>
               <DateTimePicker value={selectedDateTime} onChange={handleDateTimeChange} />
               {errors.time && <p className={cn(styles.formError, "medicine-form-error")}>{errors.time}</p>}
             </div>
 
             <div className={cn(styles.formGroup, "medicine-form-group")}>
-              <Label>Dose</Label>
+              <Label>{t('Dose')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="doseAmount"
@@ -328,7 +332,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
                   onChange={handleNumberChange}
                   onBlur={handleNumberBlur}
                   className="flex-1"
-                  placeholder="Enter dose amount"
+                  placeholder={t("Enter dose amount")}
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -350,7 +354,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
             </div>
 
             <div className={cn(styles.formGroup, "medicine-form-group")}>
-              <Label>Notes (optional)</Label>
+              <Label>{t('Notes (optional)')}</Label>
               <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} />
             </div>
           </div>

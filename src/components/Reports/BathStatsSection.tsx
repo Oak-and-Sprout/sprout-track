@@ -12,6 +12,7 @@ import {
 import { styles } from './reports.styles';
 import { BathStats, ActivityType, DateRange } from './reports.types';
 import BathChartModal, { BathChartMetric } from './BathChartModal';
+import { useLocalization } from '@/src/context/localization';
 
 interface BathStatsSectionProps {
   stats: BathStats;
@@ -25,6 +26,7 @@ interface BathStatsSectionProps {
  * Displays bath statistics including total baths and frequency.
  */
 const BathStatsSection: React.FC<BathStatsSectionProps> = ({ stats, activities, dateRange }) => {
+  const { t } = useLocalization();
   const [chartModalOpen, setChartModalOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<BathChartMetric | null>(null);
 
@@ -33,7 +35,7 @@ const BathStatsSection: React.FC<BathStatsSectionProps> = ({ stats, activities, 
       <AccordionItem value="baths">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
           <Bath className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-bath")} />
-          <span>Bath Statistics</span>
+          <span>{t('Bath Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>
           <div className={styles.statsGrid}>
@@ -48,7 +50,7 @@ const BathStatsSection: React.FC<BathStatsSectionProps> = ({ stats, activities, 
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.totalBaths}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Total Baths</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Total Baths')}</div>
               </CardContent>
             </Card>
 
@@ -63,7 +65,7 @@ const BathStatsSection: React.FC<BathStatsSectionProps> = ({ stats, activities, 
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.bathsPerWeek.toFixed(1)}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Baths per Week</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Baths per Week')}</div>
               </CardContent>
             </Card>
 
@@ -78,7 +80,7 @@ const BathStatsSection: React.FC<BathStatsSectionProps> = ({ stats, activities, 
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.soapShampooBathsPerWeek.toFixed(1)}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>Avg Soap/Shampoo Baths per Week</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Soap/Shampoo Baths per Week')}</div>
               </CardContent>
             </Card>
           </div>

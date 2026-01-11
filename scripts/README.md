@@ -360,3 +360,52 @@ For debugging, run with verbose output:
 set -x
 FAMILY_COUNT=3 DAYS_COUNT=14 CLEAR_DATA=true ./Scripts/generate-test-data.sh
 ```
+
+## sort-translation-files.js
+
+This script sorts all translation files alphabetically by their keys to maintain consistent organization.
+
+### Purpose
+
+Translation files can become disorganized when keys are added manually or through various processes. This script ensures all translation files are consistently sorted alphabetically by key, making them easier to navigate and maintain.
+
+### Running the Script
+
+```bash
+node scripts/sort-translation-files.js
+```
+
+### What It Does
+
+- Sorts all JSON files in `src/localization/translations/` alphabetically by key
+- Uses case-insensitive alphabetical ordering
+- Preserves all translation values
+- Only modifies files that need sorting (won't touch already-sorted files)
+- Maintains proper JSON formatting (2-space indentation, trailing newline)
+
+### Output
+
+The script provides feedback about each file:
+- `✓ Sorted: filename.json` - File was sorted
+- `- Already sorted: filename.json` - File was already in order
+
+### When to Use
+
+You should run this script:
+1. After manually adding new translation keys
+2. Before committing translation file changes
+3. When translation files become disorganized
+4. As part of a pre-commit hook (optional)
+
+### Example Output
+
+```
+Sorting translation files...
+
+✓ Sorted: en.json
+✓ Sorted: es.json
+✓ Sorted: fr.json
+
+3 file(s) sorted.
+All translation files are now alphabetically sorted by key.
+```

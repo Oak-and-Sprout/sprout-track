@@ -8,6 +8,7 @@ import { styles, activityChartStyles } from './reports.styles';
 import { ActivityTabProps, ActivityType } from './reports.types';
 import { getActivityDetails } from '@/src/components/Timeline/utils';
 import { ActivityType as TimelineActivityType } from '@/src/components/Timeline/types';
+import { useLocalization } from '@/src/context/localization';
 
 // Local helper to get activity time that works with reports ActivityType
 const getActivityTimeLocal = (activity: ActivityType): string => {
@@ -201,6 +202,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
   dateRange,
   isLoading
 }) => {
+  const { t } = useLocalization();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [hoveredActivity, setHoveredActivity] = useState<NormalizedActivity | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -414,7 +416,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
         <Activity className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
-          Select a date range to view activity charts.
+          {t('Select a date range to view activity charts.')}
         </p>
       </div>
     );
@@ -425,7 +427,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
         <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
         <p className={cn(styles.loadingText, "reports-loading-text")}>
-          Loading activity data...
+          {t('Loading activity data...')}
         </p>
       </div>
     );
@@ -436,7 +438,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
         <Activity className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
-          No activities recorded for this date range.
+          {t('No activities recorded for this date range.')}
         </p>
       </div>
     );
@@ -580,13 +582,13 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
           }}
         >
           {(() => {
-            const details = getActivityDetails(hoveredActivity.activity as unknown as TimelineActivityType, settings);
+            const details = getActivityDetails(hoveredActivity.activity as unknown as TimelineActivityType, settings, t);
             return (
               <>
                 <div className={cn(activityChartStyles.tooltipTitle, "activity-chart-tooltip-title")}>
                   {details.title}
                   {hoveredActivity.isOvernightContinuation && (
-                    <span className="text-xs font-normal ml-1">(continued)</span>
+                    <span className="text-xs font-normal ml-1">{t('(continued)')}</span>
                   )}
                 </div>
                 <div className="text-xs text-gray-500 mb-1">

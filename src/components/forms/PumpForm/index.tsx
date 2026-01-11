@@ -24,6 +24,8 @@ import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { Plus, Minus } from 'lucide-react';
+import { useLocalization } from '@/src/context/localization';
+
 import './pump-form.css';
 
 
@@ -44,6 +46,7 @@ export default function PumpForm({
   activity,
   onSuccess,
 }: PumpFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -397,37 +400,37 @@ export default function PumpForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Pump' : 'New Pump'}
-      description={activity ? 'Update details about your pumping session' : 'Record details about your pumping session'}
+      title={activity ? t('Edit Pump') : t('New Pump')}
+      description={activity ? t('Update details about your pumping session') : t('Record details about your pumping session')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* Start Time Input */}
             <div className="space-y-2">
-              <Label htmlFor="startTime">Start Time</Label>
+              <Label htmlFor="startTime">{t('Start Time')}</Label>
               <DateTimePicker
                 value={selectedStartDateTime}
                 onChange={handleStartDateTimeChange}
                 disabled={loading}
-                placeholder="Select start time..."
+                placeholder={t("Select start time...")}
               />
             </div>
             
             {/* End Time Input */}
             <div className="space-y-2">
-              <Label htmlFor="endTime">End Time</Label>
+              <Label htmlFor="endTime">{t('End Time')}</Label>
               <DateTimePicker
                 value={selectedEndDateTime}
                 onChange={handleEndDateTimeChange}
                 disabled={loading}
-                placeholder="Select end time..."
+                placeholder={t("Select end time...")}
               />
             </div>
             
             {/* Unit Selection with Buttons - Moved above amount inputs */}
             <div className="space-y-2">
-              <Label htmlFor="unitAbbr">Unit</Label>
+              <Label htmlFor="unitAbbr">{t('Unit')}</Label>
               <div className="flex space-x-2">
                 <Button
                   type="button"
@@ -452,7 +455,7 @@ export default function PumpForm({
             
             {/* Left Amount Input - Now on its own row */}
             <div className="space-y-2">
-              <Label htmlFor="leftAmount">Left Amount</Label>
+              <Label htmlFor="leftAmount">{t('Left Amount')}</Label>
               <div className="flex items-center">
                 <Button
                   type="button"
@@ -470,7 +473,7 @@ export default function PumpForm({
                     name="leftAmount"
                     type="text"
                     inputMode="decimal"
-                    placeholder="0.0"
+                    placeholder={t("0.0")}
                     value={formData.leftAmount}
                     onChange={handleInputChange}
                     className="rounded-r-none text-center text-lg w-24"
@@ -494,7 +497,7 @@ export default function PumpForm({
             
             {/* Right Amount Input - Now on its own row */}
             <div className="space-y-2">
-              <Label htmlFor="rightAmount">Right Amount</Label>
+              <Label htmlFor="rightAmount">{t('Right Amount')}</Label>
               <div className="flex items-center">
                 <Button
                   type="button"
@@ -512,7 +515,7 @@ export default function PumpForm({
                     name="rightAmount"
                     type="text"
                     inputMode="decimal"
-                    placeholder="0.0"
+                    placeholder={t("0.0")}
                     value={formData.rightAmount}
                     onChange={handleInputChange}
                     className="rounded-r-none text-center text-lg w-24"
@@ -536,15 +539,15 @@ export default function PumpForm({
             
             {/* Total Amount */}
             <div className="space-y-2">
-              <Label htmlFor="totalAmount">Total Amount</Label>
+              <Label htmlFor="totalAmount">{t('Total Amount')}</Label>
               <div className="flex">
                 <Input
                   id="totalAmount"
                   name="totalAmount"
                   type="text"
                   inputMode="decimal"
-                  placeholder="0.0"
-                  value={formData.totalAmount}
+                    placeholder={t("0.0")}
+                    value={formData.totalAmount}
                   onChange={handleInputChange}
                   className="rounded-r-none text-lg"
                 />
@@ -556,11 +559,11 @@ export default function PumpForm({
             
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('Notes')}</Label>
               <Textarea
                 id="notes"
                 name="notes"
-                placeholder="Enter any notes about the pumping session"
+                placeholder={t("Enter any notes about the pumping session")}
                 value={formData.notes}
                 onChange={handleInputChange}
                 rows={3}
@@ -578,13 +581,13 @@ export default function PumpForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               onClick={handleSubmit} 
               disabled={loading}
             >
-              {loading ? 'Saving...' : (activity ? 'Update' : 'Save')}
+              {loading ? t('Saving...') : (activity ? t('Update') : t('Save'))}
             </Button>
           </div>
         </FormPageFooter>

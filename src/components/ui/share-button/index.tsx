@@ -7,7 +7,9 @@ import { useTheme } from "@/src/context/theme"
 import { Share, Copy, Check } from 'lucide-react'
 
 import { shareButtonVariants } from "./share-button.styles"
-import { ShareButtonProps } from "./share-button.types"
+import { ShareButtonProps } from "./share-button.types";
+import { useLocalization } from '@/src/context/localization';
+
 import "./share-button.css"
 
 /**
@@ -41,6 +43,8 @@ const ShareButton = React.forwardRef<HTMLButtonElement, ShareButtonProps>(
     const [shareUrl, setShareUrl] = React.useState<string>('');
     const [supportsNativeShare, setSupportsNativeShare] = React.useState(false);
     const [showToast, setShowToast] = React.useState(false);
+
+    const { t } = useLocalization();
 
     // Helper function to show success toast (only when showText is false)
     const showSuccessToast = () => {
@@ -254,7 +258,7 @@ const ShareButton = React.forwardRef<HTMLButtonElement, ShareButtonProps>(
             )}
           >
             <Check className="h-4 w-4" />
-            <span className="text-sm font-medium">Family URL copied to clipboard!</span>
+            <span className="text-sm font-medium">{t('Family URL copied to clipboard!')}</span>
           </div>
         )}
       </>

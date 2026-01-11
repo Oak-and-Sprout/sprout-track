@@ -23,6 +23,8 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
+
 import './calendar-event-form.css';
 
 /**
@@ -42,6 +44,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
   contacts,
   isLoading = false,
 }) => {
+  const { t } = useLocalization();
   const { showToast } = useToast();
   
   // Helper function to get initial form data
@@ -361,20 +364,20 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
     
     // Required fields
     if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = t('Title is required');
     }
     
     if (!formData.startTime) {
-      newErrors.startTime = 'Start time is required';
+      newErrors.startTime = t('Start time is required');
     }
     
     if (!formData.type) {
-      newErrors.type = 'Event type is required';
+      newErrors.type = t('Event type is required');
     }
     
     // Validate end time is after start time
     if (formData.startTime && formData.endTime && formData.endTime < formData.startTime) {
-      newErrors.endTime = 'End time must be after start time';
+      newErrors.endTime = t('End time must be after start time');
     }
     
     // Recurrence validation - commented out as functionality is not fully implemented yet
@@ -415,18 +418,18 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <FormPage isOpen={isOpen} onClose={handleClose} title={event ? 'Edit Event' : 'New Event'}>
+    <FormPage isOpen={isOpen} onClose={handleClose} title={event ? t('Edit Event') : t('New Event')}>
       <form onSubmit={handleSubmit} className="flex flex-col h-full">
         <FormPageContent>
           <div className="space-y-6 pb-24">
             {/* Event details section */}
             <div className={styles.section}>
-              <Label className="text-lg font-semibold">Event Details</Label>
+              <Label className="text-lg font-semibold">{t('Event Details')}</Label>
               
               {/* Title */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="title">
-                  Title
+                  {t('Title')}
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <Input
@@ -436,7 +439,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   value={formData.title}
                   onChange={handleChange}
                   className="w-full"
-                  placeholder="Enter event title"
+                  placeholder={t("Enter event title")}
                 />
                 {errors.title && (
                   <div className={styles.fieldError}>
@@ -449,7 +452,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Event type */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="type">
-                  Event Type
+                  {t('Event Type')}
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <DropdownMenu>
@@ -495,7 +498,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   }
                 />
                 <Label htmlFor="allDay">
-                  All day event
+                  {t('All day event')}
                 </Label>
               </div>
 
@@ -504,7 +507,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 {/* Start Date/Time - Full width */}
                 <div className={styles.fieldGroup}>
                   <Label htmlFor="startTime">
-                    Start Time
+                    {t('Start Time')}
                     <span className="text-red-500 ml-1">*</span>
                   </Label>
                   <div className="grid w-full">
@@ -513,7 +516,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                       value={selectedStartDateTime}
                       onChange={handleStartDateTimeChange}
                       disabled={formData.allDay} // Disable if allDay is checked
-                      placeholder="Select start time..."
+                      placeholder={t("Select start time...")}
                     />
                   </div>
                   {errors.startTime && (
@@ -527,7 +530,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 {/* End Date/Time - Full width */}
                 <div className={styles.fieldGroup}>
                   <Label htmlFor="endTime">
-                    End Time
+                    {t('End Time')}
                   </Label>
                   <div className="grid w-full">
                     <DateTimePicker
@@ -535,7 +538,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                       value={selectedEndDateTime}
                       onChange={handleEndDateTimeChange}
                       disabled={formData.allDay} // Disable if allDay is checked
-                      placeholder="Select end time..."
+                      placeholder={t("Select end time...")}
                     />
                   </div>
                   {errors.endTime && (
@@ -550,7 +553,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Location */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="location">
-                  Location
+                  {t('Location')}
                 </Label>
                 <div className="relative">
                   <Input
@@ -560,7 +563,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     value={formData.location || ''}
                     onChange={handleChange}
                     className="w-full pl-8"
-                    placeholder="Enter location (optional)"
+                    placeholder={t("Enter location (optional)")}
                   />
                   <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -569,7 +572,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Description */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="description">
-                  Description
+                  {t('Description')}
                 </Label>
                 <Textarea
                   id="description"
@@ -577,14 +580,14 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   value={formData.description || ''}
                   onChange={handleChange}
                   className="w-full min-h-[100px]"
-                  placeholder="Enter event description (optional)"
+                  placeholder={t("Enter event description (optional)")}
                 />
               </div>
               
               {/* Color */}
               <div className={styles.fieldGroup}>
                 <Label htmlFor="color">
-                  Color
+                  {t('Color')}
                 </Label>
                 <div className="flex items-center space-x-2">
                   <div 
@@ -602,7 +605,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     />
                   </div>
                   <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                    Custom color for this event
+                    {t('Custom color for this event')}
                   </span>
                 </div>
               </div>
@@ -694,13 +697,13 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
             
             {/* People section */}
             <div className={styles.section}>
-              <Label className="text-lg font-semibold">People</Label>
+              <Label className="text-lg font-semibold">{t('People')}</Label>
               
               {/* Babies - Only show if there's more than one active baby */}
               {babies.filter(baby => baby.inactive !== true).length > 1 ? (
                 <div className={styles.fieldGroup}>
                   <Label>
-                    Babies
+                    {t('Babies')}
                   </Label>
                   <div className="space-y-2">
                     {babies.map(baby => (
@@ -726,7 +729,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     
                     {babies.length === 0 && (
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        No babies available
+                        {t('No babies available')}
                       </div>
                     )}
                   </div>
@@ -760,7 +763,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Caretakers */}
               <div className={styles.fieldGroup}>
                 <Label>
-                  Caretakers
+                  {t('Caretakers')}
                 </Label>
                 <div className="space-y-2">
                   {caretakers.map(caretaker => (
@@ -778,7 +781,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   
                   {caretakers.length === 0 && (
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      No caretakers available
+                      {t('No caretakers available')}
                     </div>
                   )}
                 </div>
@@ -787,7 +790,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               {/* Contacts */}
               <div className={styles.fieldGroup}>
                 <Label>
-                  Contacts
+                  {t('Contacts')}
                 </Label>
                 <ContactSelector
                   contacts={localContacts}
@@ -894,7 +897,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   disabled={isLoading}
                 >
                   <Trash2 className="h-4 w-4 mr-1.5" />
-                  Delete
+                  {t('Delete')}
                 </Button>
               )}
             </div>
@@ -906,7 +909,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 onClick={handleClose}
                 disabled={isLoading}
               >
-                Cancel
+                {t('Cancel')}
               </Button>
               
               <Button 
@@ -916,10 +919,10 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    Saving...
+                    {t('Saving...')}
                   </>
                 ) : (
-                  'Save Event'
+                  t('Save Event')
                 )}
               </Button>
             </div>

@@ -10,6 +10,7 @@ import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { useState, useEffect, useRef } from 'react';
 import { NoteResponse } from '@/app/api/types';
+import { useLocalization } from '@/src/context/localization';
 
 interface NoteModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ export default function NoteModal({
   activity,
   variant = 'default',
 }: NoteModalProps) {
+  const { t } = useLocalization();
   const [formData, setFormData] = useState({
     time: initialTime,
     content: '',
@@ -183,7 +185,7 @@ export default function NoteModal({
           <div className="grid grid-cols-1 gap-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="form-label">Time</label>
+                <label className="form-label">{t('Time')}</label>
                 <Input
                   type="datetime-local"
                   value={formData.time}
@@ -196,7 +198,7 @@ export default function NoteModal({
                 />
               </div>
               <div>
-                <label className="form-label">Category</label>
+                <label className="form-label">{t('Category')}</label>
                 <div className="relative">
                   <Input
                     ref={inputRef}
@@ -257,7 +259,7 @@ export default function NoteModal({
             </div>
 
             <div>
-              <label className="form-label">Note Content</label>
+              <label className="form-label">{t('Note Content')}</label>
               <Textarea
                 value={formData.content}
                 onChange={(e) =>
@@ -277,7 +279,7 @@ export default function NoteModal({
               onClick={onClose}
               className="hover:bg-slate-50"
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               type="submit"

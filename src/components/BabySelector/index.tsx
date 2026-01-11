@@ -20,6 +20,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * BabySelector Component
@@ -48,6 +49,8 @@ export const BabySelector: React.FC<BabySelectorProps> = ({
   calculateAge,
   onOpenQuickStats
 }) => {
+  const { t } = useLocalization();
+
   return (
     <div className={babySelectorContainer(selectedBaby?.gender)}>
       {/* Baby info section (clickable for quick stats) */}
@@ -57,7 +60,7 @@ export const BabySelector: React.FC<BabySelectorProps> = ({
       >
         <div className={babySelectorNameContainer()}>
           <span className={babySelectorName()}>
-            {selectedBaby ? selectedBaby.firstName : 'Select Baby'}
+            {selectedBaby ? selectedBaby.firstName : t('Select Baby')}
           </span>
           {selectedBaby && sleepingBabies.has(selectedBaby.id) && (
             <Moon className="h-3 w-3" />
@@ -100,7 +103,7 @@ export const BabySelector: React.FC<BabySelectorProps> = ({
                 className={babySelectorDropdownItem(baby.gender)}
               >
                 <div className="flex flex-col">
-                  <span>{baby.firstName}{baby.inactive ? ' (Inactive)' : ''}</span>
+                  <span>{baby.firstName}{baby.inactive ? ` ${t('(Inactive)')}` : ''}</span>
                   <span className="text-xs opacity-80">{calculateAge(baby.birthDate)}</span>
                 </div>
               </DropdownMenuRadioItem>

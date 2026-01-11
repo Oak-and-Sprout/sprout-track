@@ -10,6 +10,8 @@ import { styles } from './account-manager.styles';
 import { AccountManagerProps, AccountStatus, FamilyData } from './account-manager.types';
 import AccountSettingsTab from './AccountSettingsTab';
 import FamilyPeopleTab from './FamilyPeopleTab';
+import { useLocalization } from '@/src/context/localization';
+
 import './account-manager.css';
 
 /**
@@ -31,6 +33,8 @@ const AccountManager: React.FC<AccountManagerProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { t } = useLocalization();
+  
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -126,7 +130,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
           {isLoading && (
             <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>Loading...</p>
+              <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading...')}</p>
             </div>
           )}
           
@@ -135,7 +139,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
             <div className={cn(styles.errorContainer, "account-manager-error-container")}>
               <div className="flex items-center gap-2 text-red-600 mb-2">
                 <AlertTriangle className="h-5 w-5" />
-                <p className="font-medium">Error</p>
+                <p className="font-medium">{t('Error')}</p>
               </div>
               <p className={cn("text-red-500 mb-4", "account-manager-error-text")}>{error}</p>
               <Button 
@@ -143,7 +147,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
                 onClick={fetchData} 
                 className="mt-2"
               >
-                Retry
+                {t('Retry')}
               </Button>
             </div>
           )}
@@ -173,7 +177,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
           {isLoading && (
             <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>Loading...</p>
+              <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading...')}</p>
             </div>
           )}
           
@@ -182,7 +186,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
             <div className={cn(styles.errorContainer, "account-manager-error-container")}>
               <div className="flex items-center gap-2 text-red-600 mb-2">
                 <AlertTriangle className="h-5 w-5" />
-                <p className="font-medium">Error</p>
+                <p className="font-medium">{t('Error')}</p>
               </div>
               <p className={cn("text-red-500 mb-4", "account-manager-error-text")}>{error}</p>
               <Button 
@@ -190,7 +194,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
                 onClick={fetchData} 
                 className="mt-2"
               >
-                Retry
+                {t('Retry')}
               </Button>
             </div>
           )}
@@ -219,7 +223,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
       <FormPageFooter>
         <div className={cn(styles.footerContainer, "account-manager-footer-container")}>
           <Button onClick={onClose} variant="outline">
-            Close
+            {t('Close')}
           </Button>
         </div>
       </FormPageFooter>

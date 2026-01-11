@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useBaby } from '../../../context/baby';
 import { useTimezone } from '../../../context/timezone';
 import { useFamily } from '@/src/context/family';
+import { useLocalization } from '@/src/context/localization';
 import { useParams } from 'next/navigation';
 import { Calendar } from '@/src/components/Calendar';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
@@ -13,6 +14,7 @@ function CalendarPage() {
   const { selectedBaby, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
   const { userTimezone } = useTimezone();
   const { family } = useFamily();
+  const { t } = useLocalization();
   const params = useParams();
   const familySlug = params?.slug as string;
 
@@ -57,9 +59,9 @@ function CalendarPage() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center animate-pulse">
                 <BabyIcon className="h-8 w-8 text-indigo-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Loading...</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Loading')}...</h3>
               <p className="text-sm text-gray-500">
-                Checking your account status
+                {t('Checking your account status')}
               </p>
             </div>
           ) : isAccountAuth && accountStatus && !accountStatus.hasFamily ? (
@@ -67,15 +69,15 @@ function CalendarPage() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
                 <BabyIcon className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Family Setup Required</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Family Setup Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Welcome {accountStatus.firstName}! You need to set up your family before you can view calendar activities.
+                {t('Welcome')} {accountStatus.firstName}! {t('You need to set up your family before you can view calendar activities.')}
               </p>
               <button
                 onClick={() => window.location.href = '/account/family-setup'}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
-                Set up your family
+                {t('Set up your family')}
               </button>
             </div>
           ) : isAccountAuth && accountStatus && !accountStatus.verified ? (
@@ -83,18 +85,18 @@ function CalendarPage() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 flex items-center justify-center">
                 <BabyIcon className="h-8 w-8 text-yellow-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Email Verification Required</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Email Verification Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Welcome {accountStatus.firstName}! Please verify your email address to continue.
+                {t('Welcome')} {accountStatus.firstName}! {t('Please verify your email address to continue.')}
               </p>
               <p className="text-xs text-gray-400">
-                Check your inbox for a verification link, or click your account button to resend the email.
+                {t('Check your inbox for a verification link, or click your account button to resend the email.')}
               </p>
             </div>
           ) : (
             <NoBabySelected 
-              title="Choose a Baby"
-              description="Select a baby to view their calendar activities."
+              title={t('Choose a Baby')}
+              description={t('Select a baby to view their calendar activities.')}
             />
           )}
         </div>

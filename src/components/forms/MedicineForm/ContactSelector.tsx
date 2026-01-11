@@ -6,6 +6,7 @@ import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import ContactForm from '@/src/components/forms/ContactForm';
 import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
+import { useLocalization } from '@/src/context/localization';
 
 interface ContactSelectorProps {
   contacts: Contact[];
@@ -30,6 +31,8 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   onEditContact,
   onDeleteContact,
 }) => {
+
+  const { t } = useLocalization();
   const [searchTerm, setSearchTerm] = useState('');
   const [showContactForm, setShowContactForm] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | undefined>(undefined);
@@ -43,7 +46,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch contacts');
+        throw new Error(t('Failed to fetch contacts'));
       }
       
       const result = await response.json();
@@ -84,7 +87,8 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   );
   
   // Toggle contact selection
-  const toggleContact = (contactId: string) => {
+  const toggleContact = (contactId: string) => {  
+
     if (selectedContactIds.includes(contactId)) {
       onContactsChange(selectedContactIds.filter(id => id !== contactId));
     } else {
@@ -174,7 +178,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
       <div className="relative">
         <Input
           type="text"
-          placeholder="Search contacts..."
+          placeholder={t("Search contacts...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full"
@@ -242,7 +246,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
                       setShowContactForm(true);
                     }}
                     className="contact-selector-edit-button p-1 text-gray-400 hover:text-gray-600"
-                    aria-label={`Edit ${contact.name}`}
+                    aria-label={t('Edit') + ' ' + contact.name}
                   >
                     <Edit className="h-3.5 w-3.5" />
                   </button>
@@ -254,7 +258,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
         
         {filteredContacts.length === 0 && (
           <div className="contact-selector-empty-state p-2 text-sm text-gray-500 text-center">
-            {searchTerm ? 'No contacts found' : 'No contacts available'}
+            {searchTerm ? t('No contacts found') : t('No contacts available')}
           </div>
         )}
         
@@ -310,7 +314,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
             size="sm"
           >
             <Plus className="h-4 w-4 mr-1.5" />
-            Add New Contact
+            {t('Add New Contact')}
           </Button>
         </div>
       )}

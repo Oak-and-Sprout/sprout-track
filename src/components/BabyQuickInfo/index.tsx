@@ -11,6 +11,8 @@ import { styles } from './baby-quick-info.styles';
 import { BabyQuickInfoProps } from './baby-quick-info.types';
 import NotificationsTab from './NotificationsTab';
 import ContactsTab from './ContactsTab';
+import { useLocalization } from '@/src/context/localization';
+
 import './baby-quick-info.css';
 
 /**
@@ -35,6 +37,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
   selectedBaby,
   calculateAge
 }) => {
+  const { t } = useLocalization();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -112,7 +115,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
   const tabs: FormPageTab[] = [
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: t('Notifications'),
       icon: Bell,
       content: (
         <>
@@ -120,7 +123,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
           {isLoading && (
             <div className={cn(styles.loadingContainer, "baby-quick-info-loading-container")}>
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <p className={cn("mt-2 text-gray-600", "baby-quick-info-loading-text")}>Loading...</p>
+              <p className={cn("mt-2 text-gray-600", "baby-quick-info-loading-text")}>{t('Loading...')}</p>
             </div>
           )}
           
@@ -133,7 +136,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
                 onClick={fetchData} 
                 className="mt-2"
               >
-                Retry
+                {t('Retry')}
               </Button>
             </div>
           )}
@@ -151,7 +154,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
     },
     {
       id: 'contacts',
-      label: 'Contacts',
+      label: t('Contacts'),
       icon: Users,
       content: (
         <>
@@ -159,7 +162,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
           {isLoading && (
             <div className={cn(styles.loadingContainer, "baby-quick-info-loading-container")}>
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <p className={cn("mt-2 text-gray-600", "baby-quick-info-loading-text")}>Loading...</p>
+              <p className={cn("mt-2 text-gray-600", "baby-quick-info-loading-text")}>{t('Loading...')}</p>
             </div>
           )}
           
@@ -172,7 +175,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
                 onClick={fetchData} 
                 className="mt-2"
               >
-                Retry
+                {t('Retry')}
               </Button>
             </div>
           )}
@@ -193,14 +196,14 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={selectedBaby ? `${selectedBaby.firstName}'s Information` : 'Baby Information'}
+      title={selectedBaby ? `${selectedBaby.firstName}${t("'s Information")}` : t('Baby Information')}
       tabs={tabs}
       defaultActiveTab="notifications"
     >
       <FormPageFooter>
         <div className={cn(styles.footerContainer, "baby-quick-info-footer-container")}>
           <Button onClick={onClose} variant="outline">
-            Close
+            {t('Close')}
           </Button>
         </div>
       </FormPageFooter>

@@ -16,6 +16,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange, LocationStat } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 interface SleepLocationChartModalProps {
   open: boolean;
@@ -57,6 +58,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
   activities,
   dateRange,
 }) => {
+  const { t } = useLocalization();
   // Calculate daily counts by location
   const chartData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || !locations.length) {
@@ -142,8 +144,10 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
     });
   }, [activities, locations, type, dateRange]);
 
-  const title = type === 'nap' ? 'Nap Locations by Day' : 'Night Sleep Locations by Day';
-  const description = `Daily count of ${type === 'nap' ? 'nap' : 'night sleep'} sessions by location for the selected date range.`;
+  const title = type === 'nap' ? t('Nap Locations by Day') : t('Night Sleep Locations by Day');
+  const description = type === 'nap' 
+    ? t('Daily count of nap sessions by location for the selected date range.')
+    : t('Daily count of night sleep sessions by location for the selected date range.');
 
   const colors = generateColors(locations.length);
 
@@ -158,7 +162,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
         {chartData.length === 0 ? (
           <div className={cn(styles.emptyContainer, "reports-empty-container")}>
             <p className={cn(styles.emptyText, "reports-empty-text")}>
-              No sleep location data available for the selected date range.
+              {t('No sleep location data available for the selected date range.')}
             </p>
           </div>
         ) : (
@@ -180,12 +184,12 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                   type="number"
                   domain={[0, 'auto']}
                   tickFormatter={(value) => value.toFixed(0)}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                  label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip
                   formatter={(value: any, name?: string) => [`${value}`, name || '']}
-                  labelFormatter={(label: any) => `Date: ${label}`}
+                  labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
                 <Legend />
                 {locations.map((location, index) => (

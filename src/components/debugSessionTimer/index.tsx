@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Position, DebugSessionTimerProps } from './debug-session-timer.types';
+import { useLocalization } from '@/src/context/localization';
+
 import {
   debugTimerContainer,
   debugTimerHeader,
@@ -26,6 +28,8 @@ import {
  * ```
  */
 const DebugSessionTimer: React.FC<DebugSessionTimerProps> = () => {
+  const { t } = useLocalization();
+  
   // State for visibility and settings
   const [isVisible, setIsVisible] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
@@ -368,7 +372,7 @@ const DebugSessionTimer: React.FC<DebugSessionTimerProps> = () => {
         className={`${debugTimerHeader()} drag-handle`}
         style={{ cursor: 'grab' }}
       >
-        <div>Debug Session Timer</div>
+        <div>{t('Debug Session Timer')}</div>
         <button 
           className={debugTimerCloseButton()} 
           onClick={() => setIsVisible(false)}
@@ -379,21 +383,21 @@ const DebugSessionTimer: React.FC<DebugSessionTimerProps> = () => {
       </div>
       <div className={debugTimerContent()}>
         <div className={debugTimerRow()}>
-          <span className={debugTimerLabel()}>JWT Expires:</span>
+          <span className={debugTimerLabel()}>{t('JWT Expires:')}</span>
           <span className={debugTimerValue()}>{formatTimeRemaining(tokenExpiration)}</span>
         </div>
         <div className={debugTimerRow()}>
-          <span className={debugTimerLabel()}>Idle Time:</span>
+          <span className={debugTimerLabel()}>{t('Idle Time:')}</span>
           <span className={debugTimerValue()}>{formatIdleTime(idleTime)}</span>
         </div>
         <div className={debugTimerRow()}>
-          <span className={debugTimerLabel()}>Auth Life:</span>
+          <span className={debugTimerLabel()}>{t('Auth Life:')}</span>
           <span className={debugTimerValue()}>
             {authLifeSeconds ? `${Math.floor(authLifeSeconds / 3600)}h ${Math.floor((authLifeSeconds % 3600) / 60)}m` : 'Unknown'}
           </span>
         </div>
         <div className={debugTimerRow(true)}>
-          <span className={debugTimerLabel()}>Idle Timeout:</span>
+          <span className={debugTimerLabel()}>{t('Idle Timeout:')}</span>
           <span className={debugTimerValue()}>
             {idleTimeSeconds ? `${Math.floor(idleTimeSeconds / 3600)}h ${Math.floor((idleTimeSeconds % 3600) / 60)}m` : 'Unknown'}
           </span>

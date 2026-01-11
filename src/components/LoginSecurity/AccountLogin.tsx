@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
+import { useLocalization } from '@/src/context/localization';
+
 import '../modals/AccountModal/account-modal.css';
 
 interface AccountLoginProps {
@@ -13,7 +15,9 @@ interface AccountLoginProps {
 
 type LoginMode = 'login' | 'forgot-password';
 
-export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLoginProps) {
+export default function AccountLogin({
+ lockoutTime, onLockoutChange }: AccountLoginProps) {
+  const { t } = useLocalization();
   const router = useRouter();
   const [mode, setMode] = useState<LoginMode>('login');
   const [email, setEmail] = useState('');
@@ -33,7 +37,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
 
     // Validate email
     if (!validateEmail(email)) {
-      setError('Please enter a valid email address');
+      setError(t('Please enter a valid email address'));
       return;
     }
 
@@ -45,7 +49,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
 
     // Validate password for login mode
     if (!password) {
-      setError('Password is required');
+      setError(t('Password is required'));
       return;
     }
 
@@ -106,7 +110,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
           router.push('/setup');
         }
       } else {
-        setError(result.error || 'Login failed. Please try again.');
+        setError(result.error || t('Login failed. Please try again.'));
 
         // Check if we're now locked out
         const lockoutCheckResponse = await fetch('/api/auth/ip-lockout');
@@ -116,12 +120,13 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
           const remainingTime = lockoutCheckData.data.remainingTime || 300000;
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Network error. Please check your connection and try again.');
+      setError(t('Network error. Please check your connection and try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -133,12 +138,12 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
       setError('');
 
       if (!email.trim()) {
-        setError('Please enter your email address');
+        setError(t('Please enter your email address'));
         return;
       }
 
       if (!validateEmail(email)) {
-        setError('Please enter a valid email address');
+        setError(t('Please enter a valid email address'));
         return;
       }
 
@@ -166,11 +171,11 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
           setMode('login');
         }, 5000);
       } else {
-        setError(result.error || 'Failed to send reset email. Please try again.');
+        setError(result.error || t('Failed to send reset email. Please try again.'));
       }
     } catch (error) {
       console.error('Forgot password error:', error);
-      setError('Network error. Please check your connection and try again.');
+      setError(t('Network error. Please check your connection and try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -195,9 +200,9 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
         <div className="w-full max-w-[320px] mx-auto">
           <div className="account-modal-success">
             <div className="account-modal-success-icon">✓</div>
-            <h3 className="account-modal-success-title">Email Sent!</h3>
+            <h3 className="account-modal-success-title">{t('Email Sent!')}</h3>
             <p className="account-modal-success-message">
-              If an account with that email exists, we've sent password reset instructions. Check your email and follow the link to reset your password.
+              {t('If an account with that email exists, we\'ve sent password reset instructions. Check your email and follow the link to reset your password.')}
             </p>
           </div>
         </div>
@@ -206,8 +211,8 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
           <div className="text-center">
             <p className="text-sm text-gray-500 login-description account-modal-description">
               {mode === 'login'
-                ? 'Sign in to your account to access your family dashboard'
-                : 'Enter your email to receive a password reset link'
+                ? t('Sign in to your account to access your family dashboard')
+                : t('Enter your email to receive a password reset link')
               }
             </p>
           </div>
@@ -215,7 +220,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
           <form onSubmit={handleSubmit} className="w-full max-w-[320px] mx-auto space-y-4">
             {/* Email */}
             <div>
-              <label className="account-modal-label">Email</label>
+              <label className="account-modal-label">{t('Email')}</label>
               <Input
                 type="email"
                 value={email}
@@ -223,7 +228,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
                   setEmail(e.target.value);
                   setError('');
                 }}
-                placeholder="Enter your email"
+                placeholder={t('Enter your email')}
                 className="w-full"
                 required
                 disabled={isSubmitting || !!lockoutTime}
@@ -234,7 +239,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
             {/* Password - Not shown in forgot password mode */}
             {mode !== 'forgot-password' && (
               <div>
-                <label className="account-modal-label">Password</label>
+                <label className="account-modal-label">{t('Password')}</label>
                 <Input
                   type="password"
                   value={password}
@@ -242,7 +247,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
                     setPassword(e.target.value);
                     setError('');
                   }}
-                  placeholder="Enter your password"
+                  placeholder={t('Enter your password')}
                   className="w-full"
                   required
                   disabled={isSubmitting || !!lockoutTime}
@@ -265,8 +270,8 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
               disabled={isSubmitting || !!lockoutTime}
             >
               {isSubmitting
-                ? (mode === 'login' ? 'Signing in...' : 'Sending email...')
-                : (mode === 'login' ? 'Sign In' : 'Send Reset Email')
+                ? (mode === 'login' ? t('Signing in...') : t('Sending email...'))
+                : (mode === 'login' ? t('Sign In') : t('Send Reset Email'))
               }
             </Button>
 
@@ -279,7 +284,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
                   className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
                   disabled={isSubmitting}
                 >
-                  Forgot your password?
+                  {t('Forgot your password?')}
                 </button>
               </div>
             )}
@@ -296,7 +301,7 @@ export default function AccountLogin({ lockoutTime, onLockoutChange }: AccountLo
                   className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
                   disabled={isSubmitting}
                 >
-                  Back to login
+                  {t('Back to login')}
                 </button>
               </div>
             )}

@@ -29,6 +29,7 @@ import ContactForm from '@/src/components/forms/ContactForm';
 import ChangePinModal from '@/src/components/modals/ChangePinModal';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface FamilyData {
   id: string;
@@ -48,7 +49,7 @@ interface SettingsFormProps {
   familyId?: string;
 }
 
-export default function SettingsForm({ 
+export default function SettingsForm({
   isOpen, 
   onClose,
   onBabySelect,
@@ -56,6 +57,7 @@ export default function SettingsForm({
   selectedBabyId,
   familyId,
 }: SettingsFormProps) {
+  const { t } = useLocalization();
   const router = useRouter();
   const { showToast } = useToast();
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -110,13 +112,13 @@ export default function SettingsForm({
       const data = await response.json();
       
       if (data.success && data.data && data.data.id !== currentFamilyId) {
-        setSlugError('This slug is already taken');
+        setSlugError(t('This slug is already taken'));
       } else {
         setSlugError('');
       }
     } catch (error) {
       console.error('Error checking slug:', error);
-      setSlugError('Error checking slug availability');
+      setSlugError(t('Error checking slug availability'));
     } finally {
       setCheckingSlug(false);
     }
@@ -358,12 +360,12 @@ export default function SettingsForm({
   const handleFamilySave = async () => {
     // Don't save if there's a slug error
     if (slugError) {
-      alert('Please fix the slug error before saving');
+      alert(t('Please fix the slug error before saving'));
       return;
     }
 
     if (!familyEditData.name || !familyEditData.slug) {
-      alert('Family name and slug are required');
+      alert(t('Family name and slug are required'));
       return;
     }
 
@@ -480,24 +482,24 @@ export default function SettingsForm({
           onBabyStatusChange?.(); // Refresh parent's babies list when settings form closes
           onClose();
         }}
-        title="Settings"
-        description="Configure your preferences for the Baby Tracker app"
+        title={t("Settings")}
+        description={t("Configure your preferences for the Baby Tracker app")}
       >
         <FormPageContent>
           <div className="space-y-6">
             {/* Family Information Section */}
             <div className="space-y-4">
-              <h3 className="form-label mb-4">Family Information</h3>
+              <h3 className="form-label mb-4">{t('Family Information')}</h3>
               
               <div>
-                <Label className="form-label">Family Name</Label>
+                <Label className="form-label">{t('Family Name')}</Label>
                 <div className="flex gap-2">
                   {editingFamily ? (
                     <>
                       <Input
                         value={familyEditData.name || ''}
                         onChange={(e) => setFamilyEditData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter family name"
+                        placeholder={t("Enter family name")}
                         className="flex-1"
                         disabled={savingFamily}
                       />
@@ -509,7 +511,7 @@ export default function SettingsForm({
                         {savingFamily ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Save'
+                          t('Save')
                         )}
                       </Button>
                       <Button
@@ -517,7 +519,7 @@ export default function SettingsForm({
                         onClick={handleFamilyCancelEdit}
                         disabled={savingFamily}
                       >
-                        Cancel
+                        {t('Cancel')}
                       </Button>
                     </>
                   ) : (
@@ -533,7 +535,7 @@ export default function SettingsForm({
                         disabled={loading}
                       >
                         <Edit className="h-4 w-4 mr-2" />
-                        Edit
+                        {t('Edit')}
                       </Button>
                     </>
                   )}
@@ -541,7 +543,7 @@ export default function SettingsForm({
               </div>
               
               <div>
-                <Label className="form-label">Link/Slug</Label>
+                <Label className="form-label">{t('Link/Slug')}</Label>
                 <div className="flex gap-2">
                   {editingFamily ? (
                     <div className="flex-1 space-y-1">
@@ -549,7 +551,7 @@ export default function SettingsForm({
                         <Input
                           value={familyEditData.slug || ''}
                           onChange={(e) => setFamilyEditData(prev => ({ ...prev, slug: e.target.value }))}
-                          placeholder="Enter family slug"
+                          placeholder={t("Enter family slug")}
                           className={`w-full ${slugError ? 'border-red-500' : ''}`}
                           disabled={savingFamily}
                         />
@@ -585,30 +587,30 @@ export default function SettingsForm({
                   )}
                 </div>
                 {!editingFamily && (
-                  <p className="text-sm text-gray-500 mt-1">This is your family's unique URL identifier</p>
+                  <p className="text-sm text-gray-500 mt-1">{t('This is your family\'s unique URL identifier')}</p>
                 )}
               </div>
             </div>
 
             <div className="space-y-4 border-t border-slate-200 pt-6">
-              <h3 className="form-label mb-4">Authentication Settings</h3>
+              <h3 className="form-label mb-4">{t('Authentication Settings')}</h3>
 
               <div className="space-y-4">
               <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">System PIN</span>
+                  <span className="text-sm text-gray-500">{t('System PIN')}</span>
                   <Switch
                     checked={localAuthType === 'CARETAKER'}
                     onCheckedChange={(checked) => handleAuthTypeChange(checked ? 'CARETAKER' : 'SYSTEM')}
                     disabled={loading}
                     variant="green"
                   />
-                  <span className="text-sm text-gray-500">Caretaker IDs</span>
+                  <span className="text-sm text-gray-500">{t('Caretaker IDs')}</span>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">
                     {localAuthType === 'CARETAKER'
-                      ? 'Use individual caretaker login IDs and PINs'
-                      : 'Use shared system PIN for all users'
+                    ? t('Use individual caretaker login IDs and PINs')
+                    : t('Use shared system PIN for all users')
                     }
                   </p>
                 </div>
@@ -616,7 +618,7 @@ export default function SettingsForm({
               </div>
 
               <div>
-                <Label className="form-label">Security PIN</Label>
+                <Label className="form-label">{t('Security PIN')}</Label>
                 <div className="flex gap-2">
                   <Input
                     type="password"
@@ -629,21 +631,21 @@ export default function SettingsForm({
                     onClick={() => setShowChangePinModal(true)}
                     disabled={loading}
                   >
-                    Change PIN
+                    {t('Change PIN')}
                   </Button>
                 </div>
                 {localAuthType === 'CARETAKER' ? (
-                  <p className="text-sm text-red-500 mt-1">System PIN is disabled when using caretaker authentication.</p>
+                  <p className="text-sm text-red-500 mt-1">{t('System PIN is disabled when using caretaker authentication.')}</p>
                 ) : (
-                  <p className="text-sm text-gray-500 mt-1">PIN must be between 6 and 10 digits</p>
+                  <p className="text-sm text-gray-500 mt-1">{t('PIN must be between 6 and 10 digits')}</p>
                 )}
               </div>
 
               {/* Caretaker Management Section */}
               <div className="mb-4">
-                <Label className="form-label">Manage Caretakers</Label>
+                <Label className="form-label">{t('Manage Caretakers')}</Label>
                 {localAuthType === 'SYSTEM' && (
-                  <p className="text-sm text-red-500 mt-1">Caretaker logins are disabled in System PIN mode</p>
+                  <p className="text-sm text-red-500 mt-1">{t('Caretaker logins are disabled in System PIN mode')}</p>
                 )}
               </div>
                 <div className="space-y-4">
@@ -657,7 +659,7 @@ export default function SettingsForm({
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a caretaker" />
+                          <SelectValue placeholder={t("Select a caretaker")} />
                         </SelectTrigger>
                         <SelectContent>
                           {caretakers.map((caretaker) => (
@@ -677,7 +679,7 @@ export default function SettingsForm({
                       }}
                     >
                       <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      {t('Edit')}
                     </Button>
                     <Button variant="outline" onClick={() => {
                       setIsEditing(false);
@@ -685,14 +687,14 @@ export default function SettingsForm({
                       setShowCaretakerForm(true);
                     }}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Add
+                      {t('Add')}
                     </Button>
                   </div>
                 </div>
             </div>
 
             <div className="border-t border-slate-200 pt-6">
-              <h3 className="form-label mb-4">Manage Babies</h3>
+              <h3 className="form-label mb-4">{t('Manage Babies')}</h3>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2 w-full">
                   <div className="flex-1 min-w-[200px]">
@@ -704,7 +706,7 @@ export default function SettingsForm({
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a baby" />
+                        <SelectValue placeholder={t("Select a baby")} />
                       </SelectTrigger>
                       <SelectContent>
                         {babies.map((baby) => (
@@ -726,7 +728,7 @@ export default function SettingsForm({
                     }}
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    {t('Edit')}
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setIsEditing(false);
@@ -734,7 +736,7 @@ export default function SettingsForm({
                     setShowBabyForm(true);
                   }}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add
+                    {t('Add')}
                   </Button>
                 </div>
               </div>
@@ -742,7 +744,7 @@ export default function SettingsForm({
 
 
             <div className="border-t border-slate-200 pt-6">
-              <h3 className="form-label mb-4">Manage Contacts</h3>
+              <h3 className="form-label mb-4">{t('Manage Contacts')}</h3>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2 w-full">
                   <div className="flex-1 min-w-[200px]">
@@ -754,7 +756,7 @@ export default function SettingsForm({
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a contact" />
+                        <SelectValue placeholder={t("Select a contact")} />
                       </SelectTrigger>
                       <SelectContent>
                         {contacts.map((contact) => (
@@ -774,7 +776,7 @@ export default function SettingsForm({
                     }}
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    {t('Edit')}
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setIsEditing(false);
@@ -782,19 +784,19 @@ export default function SettingsForm({
                     setShowContactForm(true);
                   }}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add
+                    {t('Add')}
                   </Button>
                 </div>
               </div>
             </div>
 
             <div className="border-t border-slate-200 pt-6">
-              <h3 className="form-label mb-4">Debug Settings</h3>
+              <h3 className="form-label mb-4">{t('Debug Settings')}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="form-label">Enable Debug Session Timer</Label>
-                    <p className="text-sm text-gray-500">Shows JWT token expiration and user idle time</p>
+                    <Label className="form-label">{t('Enable Debug Session Timer')}</Label>
+                    <p className="text-sm text-gray-500">{t('Shows JWT token expiration and user idle time')}</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
@@ -809,8 +811,8 @@ export default function SettingsForm({
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="form-label">Enable Debug Timezone Tool</Label>
-                    <p className="text-sm text-gray-500">Shows timezone information and DST status</p>
+                    <Label className="form-label">{t('Enable Debug Timezone Tool')}</Label>
+                    <p className="text-sm text-gray-500">{t('Shows timezone information and DST status')}</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
@@ -826,19 +828,19 @@ export default function SettingsForm({
             </div>
 
             <div className="border-t border-slate-200 pt-6">
-              <h3 className="form-label mb-4">Default Units</h3>
+              <h3 className="form-label mb-4">{t('Default Units')}</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Bottle Feeding Unit */}
                   <div>
-                    <Label className="form-label">Bottle Feeding</Label>
+                    <Label className="form-label">{t('Bottle Feeding')}</Label>
                     <Select
                       value={settings?.defaultBottleUnit || 'OZ'}
                       onValueChange={(value) => handleSettingsChange({ defaultBottleUnit: value })}
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -854,14 +856,14 @@ export default function SettingsForm({
 
                   {/* Solid Feeding Unit */}
                   <div>
-                    <Label className="form-label">Solid Feeding</Label>
+                    <Label className="form-label">{t('Solid Feeding')}</Label>
                     <Select
                       value={settings?.defaultSolidsUnit || 'TBSP'}
                       onValueChange={(value) => handleSettingsChange({ defaultSolidsUnit: value })}
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -877,14 +879,14 @@ export default function SettingsForm({
 
                   {/* Height Unit */}
                   <div>
-                    <Label className="form-label">Height</Label>
+                    <Label className="form-label">{t('Height')}</Label>
                     <Select
                       value={settings?.defaultHeightUnit || 'IN'}
                       onValueChange={(value) => handleSettingsChange({ defaultHeightUnit: value })}
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -900,14 +902,14 @@ export default function SettingsForm({
 
                   {/* Weight Unit */}
                   <div>
-                    <Label className="form-label">Weight</Label>
+                    <Label className="form-label">{t('Weight')}</Label>
                     <Select
                       value={settings?.defaultWeightUnit || 'LB'}
                       onValueChange={(value) => handleSettingsChange({ defaultWeightUnit: value })}
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -923,14 +925,14 @@ export default function SettingsForm({
 
                   {/* Temperature Unit */}
                   <div>
-                    <Label className="form-label">Temperature</Label>
+                    <Label className="form-label">{t('Temperature')}</Label>
                     <Select
                       value={settings?.defaultTempUnit || 'F'}
                       onValueChange={(value) => handleSettingsChange({ defaultTempUnit: value })}
                       disabled={loading}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select unit" />
+                        <SelectValue placeholder={t("Select unit")} />
                       </SelectTrigger>
                       <SelectContent>
                         {units
@@ -950,7 +952,7 @@ export default function SettingsForm({
             {/* Only show System Administration section in self-hosted mode */}
             {deploymentConfig?.deploymentMode !== 'saas' && (
               <div className="border-t border-slate-200 pt-6">
-                <h3 className="form-label mb-4">System Administration</h3>
+                <h3 className="form-label mb-4">{t('System Administration')}</h3>
                 <div className="space-y-4">
                   <Button
                     variant="outline"
@@ -959,10 +961,10 @@ export default function SettingsForm({
                     disabled={loading}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Open Family Manager
+                    {t('Open Family Manager')}
                   </Button>
                   <p className="text-sm text-gray-500">
-                    Access system-wide family management and advanced settings
+                    {t('Access system-wide family management and advanced settings')}
                   </p>
                 </div>
               </div>
@@ -972,7 +974,7 @@ export default function SettingsForm({
         
         <FormPageFooter>
           <Button variant="outline" onClick={onClose}>
-            Close
+            {t('Close')}
           </Button>
         </FormPageFooter>
       </FormPage>

@@ -23,6 +23,7 @@ import {
 import BabyForm from '@/src/components/forms/BabyForm';
 import CaretakerForm from '@/src/components/forms/CaretakerForm';
 import ContactForm from '@/src/components/forms/ContactForm';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * FamilyPeopleTab Component
@@ -33,6 +34,8 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
   familyData,
   onDataRefresh,
 }) => {
+  const { t } = useLocalization();
+  
   // Data states
   const [babies, setBabies] = useState<BabyData[]>([]);
   const [caretakers, setCaretakers] = useState<CaretakerData[]>([]);
@@ -214,7 +217,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
     return (
       <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-        <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>Loading family people...</p>
+        <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading family people...')}</p>
       </div>
     );
   }
@@ -224,7 +227,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
       <div className={cn(styles.errorContainer, "account-manager-error-container")}>
         <div className="flex items-center gap-2 text-red-600 mb-2">
           <AlertTriangle className="h-5 w-5" />
-          <p className="font-medium">Error</p>
+          <p className="font-medium">{t('Error')}</p>
         </div>
         <p className={cn("text-red-500 mb-4", "account-manager-error-text")}>{error}</p>
         <Button 
@@ -232,7 +235,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           onClick={fetchFamilyPeople} 
           className="mt-2"
         >
-          Retry
+          {t('Retry')}
         </Button>
       </div>
     );
@@ -246,7 +249,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           <div className="flex items-center gap-2">
             <Baby className="h-5 w-5 text-teal-600" />
             <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              Babies
+              {t('Babies')}
             </h3>
           </div>
           <Button
@@ -255,7 +258,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
             onClick={handleAddBaby}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Baby
+            {t('Add Baby')}
           </Button>
         </div>
 
@@ -275,7 +278,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
                   <div className="flex items-center gap-2">
                     {baby.inactive && (
                       <span className={cn(styles.badge, styles.badgeInactive, "account-manager-badge-inactive")}>
-                        Inactive
+                        {t('Inactive')}
                       </span>
                     )}
                     {baby.gender && (
@@ -289,11 +292,11 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      <span>Feed: {baby.feedWarningTime}</span>
+                      <span>{t('Feed:')} {baby.feedWarningTime}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      <span>Diaper: {baby.diaperWarningTime}</span>
+                      <span>{t('Diaper:')} {baby.diaperWarningTime}</span>
                     </div>
                   </div>
                 </div>
@@ -304,7 +307,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
                     onClick={() => handleEditBaby(baby)}
                   >
                     <Edit className="h-3 w-3 mr-1" />
-                    Edit
+                    {t('Edit')}
                   </Button>
                 </div>
               </div>
@@ -313,8 +316,8 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
         ) : (
           <div className={cn(styles.emptyState, "account-manager-empty-state")}>
             <Baby className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p>No babies added yet</p>
-            <p className="text-sm">Add your first baby to start tracking</p>
+            <p>{t('No babies added yet')}</p>
+            <p className="text-sm">{t('Add your first baby to start tracking')}</p>
           </div>
         )}
       </div>
@@ -325,7 +328,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-blue-600" />
             <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              Caretakers
+              {t('Caretakers')}
             </h3>
           </div>
           <Button
@@ -334,7 +337,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
             onClick={handleAddCaretaker}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Caretaker
+            {t('Add Caretaker')}
           </Button>
         </div>
 
@@ -348,19 +351,19 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
                       {caretaker.name}
                     </h4>
                     <p className={cn(styles.cardSubtitle, "account-manager-card-subtitle")}>
-                      ID: {caretaker.loginId} {caretaker.type && `• ${caretaker.type}`}
+                      {t('ID:')} {caretaker.loginId} {caretaker.type && `• ${caretaker.type}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {caretaker.inactive ? (
                       <span className={cn(styles.badge, styles.badgeInactive, "account-manager-badge-inactive")}>
                         <UserX className="h-3 w-3 mr-1" />
-                        Inactive
+                        {t('Inactive')}
                       </span>
                     ) : (
                       <span className={cn(styles.badge, styles.badgeActive, "account-manager-badge-active")}>
                         <UserCheck className="h-3 w-3 mr-1" />
-                        Active
+                        {t('Active')}
                       </span>
                     )}
                     <span className={cn(styles.badge, styles.badgeRole, "account-manager-badge-role")}>
@@ -376,7 +379,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
                     onClick={() => handleEditCaretaker(caretaker)}
                   >
                     <Edit className="h-3 w-3 mr-1" />
-                    Edit
+                    {t('Edit')}
                   </Button>
                 </div>
               </div>
@@ -385,8 +388,8 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
         ) : (
           <div className={cn(styles.emptyState, "account-manager-empty-state")}>
             <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p>No caretakers added yet</p>
-            <p className="text-sm">Add caretakers to help manage your family</p>
+            <p>{t('No caretakers added yet')}</p>
+            <p className="text-sm">{t('Add caretakers to help manage your family')}</p>
           </div>
         )}
       </div>
@@ -397,7 +400,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           <div className="flex items-center gap-2">
             <Phone className="h-5 w-5 text-green-600" />
             <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              Contacts
+              {t('Contacts')}
             </h3>
           </div>
           <Button
@@ -406,7 +409,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
             onClick={handleAddContact}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Contact
+            {t('Add Contact')}
           </Button>
         </div>
 
@@ -463,7 +466,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
                     onClick={() => handleEditContact(contact)}
                   >
                     <Edit className="h-3 w-3 mr-1" />
-                    Edit
+                    {t('Edit')}
                   </Button>
                 </div>
               </div>
@@ -472,8 +475,8 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
         ) : (
           <div className={cn(styles.emptyState, "account-manager-empty-state")}>
             <Phone className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p>No contacts added yet</p>
-            <p className="text-sm">Add contacts like doctors, family members, or caregivers</p>
+            <p>{t('No contacts added yet')}</p>
+            <p className="text-sm">{t('Add contacts like doctors, family members, or caregivers')}</p>
           </div>
         )}
       </div>
@@ -503,6 +506,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           ...selectedCaretaker,
           type: selectedCaretaker.type || null,
           role: selectedCaretaker.role as any,
+          language: (selectedCaretaker as any).language || 'en',
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,

@@ -6,6 +6,7 @@ import { Repeat, AlertCircle } from 'lucide-react';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
+import { useLocalization } from '@/src/context/localization';
 
 interface RecurrenceSelectorProps {
   recurring: boolean;
@@ -35,8 +36,11 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
   onRecurrenceEndChange,
   error,
 }) => {
+
+  const { t } = useLocalization();
   // Format date for input
-  const formatDateForInput = (date?: Date) => {
+  const formatDateForInput = (date?: Date) => {  
+
     if (!date) return '';
     return date.toISOString().split('T')[0];
   };
@@ -62,7 +66,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
         />
         <label htmlFor="recurring" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
           <Repeat className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" />
-          Recurring event
+          {t('Recurring event')}
         </label>
       </div>
 
@@ -72,7 +76,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
           {/* Recurrence pattern */}
           <div className={styles.fieldGroup}>
             <label className="form-label">
-              Recurrence Pattern
+              {t('Recurrence Pattern')}
               <span className={styles.fieldRequired}>*</span>
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -102,7 +106,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
               htmlFor="recurrenceEnd" 
               className="form-label"
             >
-              Ends On
+              {t('Ends On')}
             </label>
             <Input
               type="date"
@@ -112,7 +116,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
               className="w-full"
             />
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Leave blank for an indefinite recurrence
+              {t('Leave blank for an indefinite recurrence')}
             </div>
             {error?.recurrenceEnd && (
               <div className={styles.fieldError}>

@@ -16,6 +16,7 @@ import { cn } from '@/src/lib/utils';
 import { styles } from './setup-wizard.styles';
 import { BabySetupStageProps } from './setup-wizard.types';
 import { Gender } from '@prisma/client';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * BabySetupStage Component
@@ -36,13 +37,15 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
   diaperWarningTime,
   setDiaperWarningTime
 }) => {
+  const { t } = useLocalization();
+  
   return (
     <div className={cn(styles.stageContainer, "setup-wizard-stage-container")}>
       <h2 className={cn(styles.stageTitle, "setup-wizard-stage-title")}>
-        Add Your Baby
+        {t('Add Your Baby')}
       </h2>
       <p className={cn(styles.stageDescription, "setup-wizard-stage-description")}>
-        Now let's add information about your little one.
+        {t('Now let\'s add information about your little one.')}
       </p>
       
       <div className={cn(styles.babyFormGrid, "setup-wizard-baby-form-grid")}>
@@ -51,7 +54,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
             className={cn(styles.formLabel, "setup-wizard-form-label")}
             htmlFor="babyFirstName"
           >
-            First Name
+            {t('First Name')}
           </label>
           <Input
             id="babyFirstName"
@@ -66,7 +69,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
             className={cn(styles.formLabel, "setup-wizard-form-label")}
             htmlFor="babyLastName"
           >
-            Last Name
+            {t('Last Name')}
           </label>
           <Input
             id="babyLastName"
@@ -83,7 +86,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
           className={cn(styles.formLabel, "setup-wizard-form-label")}
           htmlFor="babyBirthDate"
         >
-          Birth Date
+          {t('Birth Date')}
         </label>
         <Popover>
           <PopoverTrigger asChild>
@@ -118,7 +121,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
           className={cn(styles.formLabel, "setup-wizard-form-label")}
           htmlFor="babyGender"
         >
-          Gender
+          {t('Gender')}
         </label>
         <Select
           value={babyGender}
@@ -131,15 +134,15 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
             <SelectValue placeholder="Select gender" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="MALE">Male</SelectItem>
-            <SelectItem value="FEMALE">Female</SelectItem>
+            <SelectItem value="MALE">{t('Male')}</SelectItem>
+            <SelectItem value="FEMALE">{t('Female')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       
       <div className={cn(styles.formGroup, "setup-wizard-form-group", "mt-4")}>
         <p className={cn(styles.formHelperText, "setup-wizard-form-helper-text", "text-sm", "mb-2")}>
-          Set the time thresholds when counter bubbles will change from green to red, indicating when a new feeding or diaper change may be needed.
+          {t('Set the time thresholds when counter bubbles will change from green to red, indicating when a new feeding or diaper change may be needed.')}
         </p>
         
         <div className={cn(styles.babyFormGrid, "setup-wizard-baby-form-grid")}>
@@ -148,7 +151,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
               className={cn(styles.formLabel, "setup-wizard-form-label")}
               htmlFor="feedWarningTime"
             >
-              Feed Warning Time
+              {t('Feed Warning Time')}
             </label>
             <Input
               id="feedWarningTime"
@@ -160,7 +163,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
               className={cn(styles.formInput, "setup-wizard-form-input")}
             />
             <p className={cn(styles.formHelperText, "setup-wizard-form-helper-text")}>
-              Format: hh:mm
+              {t('Format: hh:mm')}
             </p>
           </div>
           <div className={cn(styles.formGroup, "setup-wizard-form-group")}>
@@ -168,7 +171,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
               className={cn(styles.formLabel, "setup-wizard-form-label")}
               htmlFor="diaperWarningTime"
             >
-              Diaper Warning Time
+              {t('Diaper Warning Time')}
             </label>
             <Input
               id="diaperWarningTime"
@@ -180,7 +183,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
               className={cn(styles.formInput, "setup-wizard-form-input")}
             />
             <p className={cn(styles.formHelperText, "setup-wizard-form-helper-text")}>
-              Format: hh:mm
+              {t('Format: hh:mm')}
             </p>
           </div>
         </div>

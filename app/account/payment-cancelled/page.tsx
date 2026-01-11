@@ -6,6 +6,8 @@ import { XCircle, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Label } from '@/src/components/ui/label';
+import { useLocalization } from '@/src/context/localization';
+
 import '../account.css';
 
 /**
@@ -15,6 +17,8 @@ import '../account.css';
  * Provides options to return to account or try again.
  */
 export default function PaymentCancelledPage() {
+  const { t } = useLocalization();
+
   const router = useRouter();
   const [countdown, setCountdown] = useState(10);
 
@@ -47,22 +51,21 @@ export default function PaymentCancelledPage() {
 
           {/* Cancel Message */}
           <Label className="text-3xl font-bold text-gray-900 mb-4 block">
-            Payment Cancelled
+            {t('Payment Cancelled')}
           </Label>
 
           <p className="text-lg text-gray-600 mb-6">
-            Your payment was cancelled. No charges were made to your account.
+            {t('Your payment was cancelled. No charges were made to your account.')}
           </p>
 
           <p className="text-gray-500 mb-8">
-            If you experienced any issues during checkout or have questions about our pricing,
-            please don't hesitate to reach out to our support team.
+            {t('If you experienced any issues during checkout or have questions about our pricing, please don\'t hesitate to reach out to our support team.')}
           </p>
 
           {/* Countdown */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-gray-700 font-medium">
-              Redirecting to your account in {countdown} second{countdown !== 1 ? 's' : ''}...
+              {t('Redirecting to your account in')} {countdown} {countdown !== 1 ? t('seconds') : t('second')}...
             </p>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
               <div
@@ -79,7 +82,7 @@ export default function PaymentCancelledPage() {
               className="w-full"
             >
               <Home className="h-4 w-4 mr-2" />
-              Return to Account
+              {t('Return to Account')}
             </Button>
 
             <Button
@@ -88,7 +91,7 @@ export default function PaymentCancelledPage() {
               className="w-full"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Go Back
+              {t('Go Back')}
             </Button>
           </div>
         </CardContent>

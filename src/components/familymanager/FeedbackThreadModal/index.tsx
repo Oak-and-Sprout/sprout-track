@@ -15,6 +15,8 @@ import {
   User,
 } from "lucide-react";
 import { FeedbackThreadModalProps } from "./feedback-thread-modal.types";
+import { useLocalization } from '@/src/context/localization';
+
 import "./feedback-thread-modal.css";
 
 /**
@@ -40,6 +42,7 @@ export default function FeedbackThreadModal({
   onReply,
   onRefresh,
 }: FeedbackThreadModalProps) {
+  const { t } = useLocalization();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyMessage, setReplyMessage] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
@@ -204,7 +207,7 @@ export default function FeedbackThreadModal({
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
-            Feedback Thread
+            {t('Feedback Thread')}
           </DialogTitle>
         </DialogHeader>
 
@@ -215,7 +218,7 @@ export default function FeedbackThreadModal({
               <div className="space-y-2 sm:space-y-3">
                 {/* Subject */}
                 <div>
-                  <div className="text-xs font-medium text-gray-500 mb-1">Subject</div>
+                  <div className="text-xs font-medium text-gray-500 mb-1">{t('Subject')}</div>
                   <div className="feedback-thread-subject-text text-sm sm:text-base font-semibold text-gray-900 break-words">
                     {feedback.subject}
                   </div>
@@ -256,7 +259,7 @@ export default function FeedbackThreadModal({
               <div className="flex items-center gap-2 px-1 sm:px-2">
                 <Reply className="h-3 w-3 sm:h-4 sm:w-4 feedback-thread-replies-icon text-gray-500 flex-shrink-0" />
                 <h3 className="text-xs sm:text-sm font-semibold feedback-thread-replies-header text-gray-700">
-                  Replies ({feedback.replies.length})
+                  {t('Replies (')}{feedback.replies.length})
                 </h3>
               </div>
               {feedback.replies.map((reply) => {
@@ -333,7 +336,7 @@ export default function FeedbackThreadModal({
               <CardContent className="p-3 sm:p-4">
                 <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs sm:text-sm font-medium feedback-thread-form-label text-gray-700">Reply</label>
+                    <label className="text-xs sm:text-sm font-medium feedback-thread-form-label text-gray-700">{t('Reply')}</label>
                     <Button
                       variant="outline"
                       size="sm"
@@ -343,7 +346,7 @@ export default function FeedbackThreadModal({
                       }}
                       className="text-xs sm:text-sm"
                     >
-                      Cancel
+                      {t('Cancel')}
                     </Button>
                   </div>
                   <Textarea
@@ -362,14 +365,14 @@ export default function FeedbackThreadModal({
                       {sendingReply ? (
                         <>
                           <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
-                          <span className="hidden sm:inline">Sending...</span>
-                          <span className="sm:hidden">Sending</span>
+                          <span className="hidden sm:inline">{t('Sending...')}</span>
+                          <span className="sm:hidden">{t('Sending')}</span>
                         </>
                       ) : (
                         <>
                           <Reply className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          <span className="hidden sm:inline">Send Reply</span>
-                          <span className="sm:hidden">Send</span>
+                          <span className="hidden sm:inline">{t('Send Reply')}</span>
+                          <span className="sm:hidden">{t('Send')}</span>
                         </>
                       )}
                     </Button>
@@ -384,7 +387,7 @@ export default function FeedbackThreadModal({
               className="w-full text-xs sm:text-sm"
             >
               <Reply className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              Reply
+              {t('Reply')}
             </Button>
           )}
         </div>
@@ -408,13 +411,13 @@ export default function FeedbackThreadModal({
               ) : (
                 <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               )}
-              <span className="hidden sm:inline">Mark as {feedback.viewed ? 'Unread' : 'Read'}</span>
+              <span className="hidden sm:inline">{t('Mark as')} {feedback.viewed ? 'Unread' : 'Read'}</span>
               <span className="sm:hidden">{feedback.viewed ? 'Unread' : 'Read'}</span>
             </Button>
           )}
           
           <Button onClick={handleClose} className="text-xs sm:text-sm flex-1 sm:flex-initial">
-            Close
+            {t('Close')}
           </Button>
         </div>
       </DialogContent>

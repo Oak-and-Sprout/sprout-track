@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { useState, useEffect } from 'react';
+import { useLocalization } from '@/src/context/localization';
 
 interface BabyModalProps {
   open: boolean;
@@ -40,6 +41,7 @@ export default function BabyModal({
   isEditing,
   baby,
 }: BabyModalProps) {
+  const { t } = useLocalization();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -117,7 +119,7 @@ export default function BabyModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">First Name</label>
+              <label className="form-label">{t('First Name')}</label>
               <Input
                 value={formData.firstName}
                 onChange={(e) =>
@@ -129,7 +131,7 @@ export default function BabyModal({
               />
             </div>
             <div>
-              <label className="form-label">Last Name</label>
+              <label className="form-label">{t('Last Name')}</label>
               <Input
                 value={formData.lastName}
                 onChange={(e) =>
@@ -142,7 +144,7 @@ export default function BabyModal({
             </div>
           </div>
           <div>
-            <label className="form-label">Birth Date</label>
+            <label className="form-label">{t('Birth Date')}</label>
             <Input
               type="date"
               value={formData.birthDate}
@@ -154,7 +156,7 @@ export default function BabyModal({
             />
           </div>
           <div>
-            <label className="form-label">Gender</label>
+            <label className="form-label">{t('Gender')}</label>
             <Select
               value={formData.gender}
               onValueChange={(value) =>
@@ -165,14 +167,14 @@ export default function BabyModal({
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MALE">Male</SelectItem>
-                <SelectItem value="FEMALE">Female</SelectItem>
+                <SelectItem value="MALE">{t('Male')}</SelectItem>
+                <SelectItem value="FEMALE">{t('Female')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Feed Warning Time (hh:mm)</label>
+              <label className="form-label">{t('Feed Warning Time (hh:mm)')}</label>
               <Input
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
@@ -186,7 +188,7 @@ export default function BabyModal({
               />
             </div>
             <div>
-              <label className="form-label">Diaper Warning Time (hh:mm)</label>
+              <label className="form-label">{t('Diaper Warning Time (hh:mm)')}</label>
               <Input
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
@@ -212,7 +214,7 @@ export default function BabyModal({
                 className="h-4 w-4 rounded border-gray-300"
               />
               <label htmlFor="inactive" className="text-sm text-gray-700">
-                Mark as Inactive
+                {t('Mark as Inactive')}
               </label>
             </div>
           )}
@@ -224,7 +226,7 @@ export default function BabyModal({
               className="hover:bg-slate-50"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               type="submit"

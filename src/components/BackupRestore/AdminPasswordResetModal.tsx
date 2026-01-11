@@ -4,6 +4,7 @@ import React from 'react';
 import { Modal, ModalContent, ModalFooter } from '@/src/components/ui/modal';
 import { Button } from '@/src/components/ui/button';
 import { AlertCircle, KeyRound } from 'lucide-react';
+import { useLocalization } from '@/src/context/localization';
 
 interface AdminPasswordResetModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function AdminPasswordResetModal({
   onOpenChange,
   onConfirm,
 }: AdminPasswordResetModalProps) {
+  const { t } = useLocalization();
   const handleConfirm = () => {
     onConfirm();
     onOpenChange(false);
@@ -46,28 +48,28 @@ export function AdminPasswordResetModal({
           {/* Message */}
           <div className="space-y-3 text-center">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Due to importing an older version of the database, the <strong>Family Manager admin password</strong> has been reset to the default password for security reasons.
+              {t('Due to importing an older version of the database, the')} <strong>{t('Family Manager admin password')}</strong> {t('has been reset to the default password for security reasons.')}
             </p>
 
             {/* Password Display */}
             <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
               <KeyRound className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Default Password: <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded font-mono text-blue-700 dark:text-blue-300">admin</code>
+                {t('Default Password:')} <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded font-mono text-blue-700 dark:text-blue-300">admin</code>
               </span>
             </div>
 
             {/* Security Recommendation */}
             <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                <strong className="text-gray-900 dark:text-gray-100">Security Recommendation:</strong>
+                <strong className="text-gray-900 dark:text-gray-100">{t('Security Recommendation:')}</strong>
                 <br />
-                Please change your admin password as soon as possible by logging into the Family Manager and updating it in the settings.
+                {t('Please change your admin password as soon as possible by logging into the Family Manager and updating it in the settings.')}
               </p>
             </div>
 
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              You can access the Family Manager at <code className="px-1 bg-gray-100 dark:bg-gray-800 rounded">/family-manager</code>
+              {t('You can access the Family Manager at')} <code className="px-1 bg-gray-100 dark:bg-gray-800 rounded">/family-manager</code>
             </p>
           </div>
         </div>
@@ -78,7 +80,7 @@ export function AdminPasswordResetModal({
           onClick={handleConfirm}
           className="w-full"
         >
-          I Understand
+          {t('I Understand')}
         </Button>
       </ModalFooter>
     </Modal>

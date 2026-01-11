@@ -6,6 +6,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { ApiResponse } from '@/app/api/types';
+import { useLocalization } from '@/src/context/localization';
 
 interface PinLoginProps {
   onUnlock: (caretakerId?: string) => void;
@@ -14,7 +15,9 @@ interface PinLoginProps {
   onLockoutChange: (time: number | null) => void;
 }
 
-export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutChange }: PinLoginProps) {
+export default function PinLogin({
+ onUnlock, familySlug, lockoutTime, onLockoutChange }: PinLoginProps) {
+  const { t } = useLocalization();
   const router = useRouter();
   const [loginId, setLoginId] = useState<string>('');
   const [pin, setPin] = useState<string>('');
@@ -39,16 +42,25 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
     const checkIpLockout = async () => {
       try {
         const response = await fetch('/api/auth/ip-lockout');
+        if (!response.ok) {
+          // If the response is not OK, just return silently - don't throw
+          return;
+        }
         const data = await response.json() as ApiResponse<{ locked: boolean; remainingTime: number }>;
 
         if (data.success && data.data && data.data.locked) {
           const remainingTime = data.data.remainingTime || 300000; // Default to 5 minutes if not provided
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       } catch (error) {
-        console.error('Error checking IP lockout:', error);
+        // Silently handle fetch errors - this is expected on login page if not authenticated
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error checking IP lockout:', error);
+        }
       }
     };
 
@@ -65,7 +77,14 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
           caretakerUrl += `?familySlug=${encodeURIComponent(familySlug)}`;
         }
 
-        const caretakerResponse = await fetch(caretakerUrl);
+        let caretakerResponse: Response;
+        try {
+          caretakerResponse = await fetch(caretakerUrl);
+        } catch (fetchError) {
+          // Network error - expected on login page, silently handle
+          return;
+        }
+
         if (caretakerResponse.ok) {
           const caretakerData = await caretakerResponse.json();
           if (caretakerData.success && caretakerData.data) {
@@ -90,7 +109,10 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
           }
         }
       } catch (error) {
-        console.error('Error checking auth settings:', error);
+        // Only log unexpected errors, not network/fetch failures
+        if (error instanceof Error && error.name !== 'TypeError') {
+          console.error('Error checking auth settings:', error);
+        }
       }
     };
 
@@ -250,7 +272,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
 
   const handleAdminAuthenticate = async () => {
     if (!adminPassword.trim()) {
-      setError('Admin password is required');
+      setError(t('Admin password is required'));
       return;
     }
 
@@ -263,7 +285,8 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
         const remainingTime = ipCheckData.data.remainingTime || 300000;
         const remainingMinutes = Math.ceil(remainingTime / 60000);
         onLockoutChange(Date.now() + remainingTime);
-        setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+        const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+        setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         return;
       }
 
@@ -290,7 +313,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
         // Call the onUnlock callback
         onUnlock('sysadmin');
       } else {
-        setError('Invalid admin password');
+        setError(t('Invalid admin password'));
         setAdminPassword('');
 
         // Check if we're now locked out
@@ -301,12 +324,13 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
           const remainingTime = lockoutCheckData.data.remainingTime || 300000;
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       }
     } catch (error) {
       console.error('Admin authentication error:', error);
-      setError('Authentication failed. Please try again.');
+      setError(t('Authentication failed. Please try again.'));
       setAdminPassword('');
     }
   };
@@ -320,14 +344,14 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
 
     // Don't attempt authentication if login ID is required but not complete (for CARETAKER auth type)
     if (authType === 'CARETAKER' && loginId.length !== 2) {
-      setError('Please enter a valid 2-character login ID first');
+      setError(t('Please enter a valid 2-character login ID first'));
       setActiveInput('loginId');
       return;
     }
 
     // Don't attempt authentication if PIN is too short
     if (pin.length < 6) {
-      setError('Please enter a PIN with at least 6 digits');
+      setError(t('Please enter a PIN with at least 6 digits'));
       setActiveInput('pin');
       return;
     }
@@ -341,7 +365,8 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
         const remainingTime = ipCheckData.data.remainingTime || 300000; // Default to 5 minutes if not provided
         const remainingMinutes = Math.ceil(remainingTime / 60000);
         onLockoutChange(Date.now() + remainingTime);
-        setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+        const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+        setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         return;
       }
 
@@ -382,7 +407,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
         onUnlock(data.data.id);
       } else {
         // Failed authentication attempt - the server will handle counting attempts
-        setError('Invalid credentials');
+        setError(t('Invalid credentials'));
         setPin('');
 
         // Check if we're now locked out
@@ -393,12 +418,13 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
           const remainingTime = lockoutCheckData.data.remainingTime || 300000; // Default to 5 minutes if not provided
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      setError('Authentication failed. Please try again.');
+      setError(t('Authentication failed. Please try again.'));
       setPin('');
     }
   };
@@ -495,10 +521,10 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
       <div className="text-center">
         <p id="pin-description" className="text-sm text-gray-500 login-description">
           {adminMode
-            ? 'Please enter the system administrator password'
+            ? t('Please enter the system administrator password')
             : (authType === 'SYSTEM'
-              ? 'Please enter your family security PIN'
-              : 'Please enter your login ID and security PIN')
+              ? t('Please enter your family security PIN')
+              : t('Please enter your login ID and security PIN'))
           }
         </p>
         {adminMode && (
@@ -506,7 +532,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             onClick={resetToNormalMode}
             className="text-xs text-blue-500 hover:text-blue-700 mt-1"
           >
-            Back to normal login
+            {t('Back to normal login')}
           </button>
         )}
       </div>
@@ -515,7 +541,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
         {adminMode ? (
           /* Admin Password Section */
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">Administrator Password</h2>
+            <h2 className="text-lg font-semibold text-gray-900 text-center login-card-title">{t('Administrator Password')}</h2>
             <div className="relative">
               <Input
                 type={showAdminPassword ? 'text' : 'password'}
@@ -525,7 +551,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
                   setError('');
                 }}
                 className="text-center text-lg font-semibold pr-10"
-                placeholder="Enter admin password"
+                placeholder={t('Enter admin password')}
                 disabled={!!lockoutTime}
                 autoFocus
               />
@@ -550,7 +576,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             {authType === 'CARETAKER' ? (
               /* Combined ID and PIN section for CARETAKER auth */
               <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' || activeInput === 'loginId' ? 'login-field-active' : 'login-field-inactive'}`}>
-                <h2 className="text-gray-900 text-center login-card-title">Login ID & Security PIN</h2>
+                <h2 className="text-gray-900 text-center login-card-title">{t('Login ID & Security PIN')}</h2>
 
                 {/* Combined ID and PIN Display */}
                 <div className="flex items-center justify-center gap-4 my-2">
@@ -621,7 +647,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             ) : (
               /* PIN input section for SYSTEM auth */
               <div className={`space-y-2 p-1 rounded-lg transition-all duration-200 ${activeInput === 'pin' ? 'login-field-active' : 'login-field-inactive'}`}>
-                <h2 className="text-gray-900 text-center login-card-title">Security PIN</h2>
+                <h2 className="text-gray-900 text-center login-card-title">{t('Security PIN')}</h2>
 
                 {/* PIN Display */}
                 <div
@@ -709,7 +735,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             onClick={handleGoButtonClick}
             disabled={false} // Never disable for secret click detection
           >
-            Go
+            {t('Go')}
           </Button>
         </div>
       )}
@@ -723,7 +749,7 @@ export default function PinLogin({ onUnlock, familySlug, lockoutTime, onLockoutC
             onClick={handleAuthenticate}
             disabled={!!lockoutTime || !adminPassword.trim()}
           >
-            Login as Administrator
+            {t('Login as Administrator')}
           </Button>
         </div>
       )}

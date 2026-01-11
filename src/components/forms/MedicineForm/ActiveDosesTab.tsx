@@ -32,6 +32,7 @@ interface ActiveDose {
 import { PillBottle, Clock, AlertCircle, Loader2, ChevronDown, Phone, Mail, Plus } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { useTimezone } from '@/app/context/timezone';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * ActiveDosesTab Component
@@ -40,6 +41,7 @@ import { useTimezone } from '@/app/context/timezone';
  * showing when the next dose is safe to administer.
  */
 const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, onGiveMedicine, refreshTrigger }) => {
+  const { t } = useLocalization();
   const { formatDate, calculateDurationMinutes } = useTimezone();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -251,7 +253,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch active doses');
+        throw new Error(t('Failed to fetch active doses'));
       }
       
       const data = await response.json();
@@ -262,7 +264,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       setActiveDoses(processedDoses);
     } catch (error) {
       console.error('Error fetching active doses:', error);
-      setError('Failed to load active doses');
+      setError(t('Failed to load active doses'));
     } finally {
       setIsLoading(false);
     }
@@ -298,18 +300,18 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
   // Format time remaining for display
   const formatTimeRemaining = (minutes: number, isSafe: boolean): string => {
     // Only show "Safe to administer" if it's safe AND there's no time remaining
-    if (isSafe && minutes <= 0) return 'Safe to administer';
+    if (isSafe && minutes <= 0) return t('Safe to administer');
     
     const days = Math.floor(minutes / (24 * 60));
     const hours = Math.floor((minutes % (24 * 60)) / 60);
     const mins = Math.floor(minutes % 60);
     
     if (days > 0) {
-      return `${days}d ${hours}h ${mins}m remaining`;
+      return `${days}d ${hours}h ${mins}m ${t('remaining')}`;
     } else if (hours > 0) {
-      return `${hours}h ${mins}m remaining`;
+      return `${hours}h ${mins}m ${t('remaining')}`;
     }
-    return `${mins}m remaining`;
+    return `${mins}m ${t('remaining')}`;
   };
   
 
@@ -324,7 +326,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
           disabled={!babyId}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Give Medicine
+          {t('Give Medicine')}
         </Button>
       </div>
       
@@ -332,7 +334,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       {isLoading && (
         <div className={cn(styles.loadingContainer, "medicine-form-loading-container")}>
           <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-          <p className="mt-2 text-gray-600">Loading active doses...</p>
+          <p className="mt-2 text-gray-600">{t('Loading active doses...')}</p>
         </div>
       )}
       
@@ -346,7 +348,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
             onClick={fetchActiveDoses} 
             className="mt-2"
           >
-            Retry
+            {t('Retry')}
           </Button>
         </div>
       )}
@@ -355,7 +357,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       {!isLoading && !error && activeDoses.length === 0 && (
         <div className={cn(styles.emptyState, "medicine-form-empty-state")}>
           <PillBottle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-          <p>No medicine doses in the last 60 days</p>
+          <p>{t('No medicine doses in the last 60 days')}</p>
         </div>
       )}
       
@@ -383,7 +385,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
               
               {dose.hasRecentDoses && (
                 <p className={cn(styles.doseTime, "medicine-form-dose-time")}>
-                  Last dose: {formatDate(dose.time)}
+                  {t('Last dose:')} {formatDate(dose.time)}
                 </p>
               )}
               
@@ -402,9 +404,9 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
               
               <div className={cn(styles.totalDose, "medicine-form-total-dose mt-2")}>
                 {dose.hasRecentDoses ? (
-                  <>Total in last 24h: {dose.totalIn24Hours} {dose.unitAbbr}</>
+                  <>{t('Total in last 24h:')} {dose.totalIn24Hours} {dose.unitAbbr}</>
                 ) : (
-                  <>Last Dose: {new Date(dose.time).toLocaleDateString('en-US', { 
+                  <>{t('Last Dose:')} {new Date(dose.time).toLocaleDateString('en-US', { 
                     month: 'long', 
                     day: 'numeric', 
                     hour: 'numeric', 
@@ -424,7 +426,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                     onClick={() => toggleContacts(dose.id)}
                   >
                     <span className="flex items-center gap-1">
-                      <span className="font-medium">Contact Information</span>
+                      <span className="font-medium">{t('Contact Information')}</span>
                       <span className="ml-1 rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-900 dark:text-teal-200">
                         {dose.contacts.length}
                       </span>

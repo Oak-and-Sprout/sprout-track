@@ -24,6 +24,7 @@ import {
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface GiveMedicineFormProps {
   isOpen: boolean;
@@ -50,6 +51,8 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
   refreshData,
   activity,
 }) => {
+
+  const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -187,7 +190,8 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
     }
   }, [isOpen, activity]);
   
-  const handleDateTimeChange = (date: Date) => {
+  const handleDateTimeChange = (date: Date) => {  
+
     setSelectedDateTime(date);
     setFormData(prev => ({ ...prev, time: toUTCString(date) || date.toISOString() }));
     if (errors.time) setErrors(prev => ({ ...prev, time: '' }));
@@ -234,7 +238,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
       setFormData(prev => ({ ...prev, [name]: numValue }));
     } else {
       // Invalid number - show error and reset
-      setErrors(prev => ({ ...prev, [name]: 'Please enter a valid number' }));
+      setErrors(prev => ({ ...prev, [name]: t('Please enter a valid number') }));
       setFormData(prev => ({ ...prev, [name]: 0 }));
     }
   };
@@ -246,10 +250,10 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
   
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.medicineId) newErrors.medicineId = 'Please select a medicine';
-    if (!formData.time) newErrors.time = 'Please select a time';
-    if (formData.doseAmount < 0) newErrors.doseAmount = 'Dose cannot be negative';
-    if (formData.doseAmount > 0 && !formData.unitAbbr) newErrors.unitAbbr = 'Please select a unit';
+    if (!formData.medicineId) newErrors.medicineId = t('Please select a medicine');
+    if (!formData.time) newErrors.time = t('Please select a time');
+    if (formData.doseAmount < 0) newErrors.doseAmount = t('Dose cannot be negative');
+    if (formData.doseAmount > 0 && !formData.unitAbbr) newErrors.unitAbbr = t('Please select a unit');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -347,15 +351,15 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Medicine Log' : 'Give Medicine'}
-      description={activity ? 'Update medicine administration details' : 'Record medicine administration'}
+      title={activity ? t('Edit Medicine Log') : t('Give Medicine')}
+      description={activity ? t('Update medicine administration details') : t('Record medicine administration')}
     >
       <form id="give-medicine-form" onSubmit={handleSubmit} className="h-full flex flex-col">
         <FormPageContent>
           {isFetching ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <p className="mt-2 text-gray-600">Loading form data...</p>
+              <p className="mt-2 text-gray-600">{t('Loading form data...')}</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -367,16 +371,16 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               )}
               
               <div>
-                <Label htmlFor="medicine">Medicine</Label>
+                <Label htmlFor="medicine">{t('Medicine')}</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
-                      {selectedMedicine ? selectedMedicine.name : 'Select a medicine'}
+                      {selectedMedicine ? selectedMedicine.name : t('Select a medicine')}
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Available Medicines</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('Available Medicines')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {medicines.map(med => (
                       <DropdownMenuItem key={med.id} onSelect={() => handleMedicineChange(med.id)}>
@@ -389,13 +393,13 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               </div>
 
               <div>
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">{t('Time')}</Label>
                 <DateTimePicker value={selectedDateTime} onChange={handleDateTimeChange} />
                 {errors.time && <p className="text-sm text-red-500 mt-1">{errors.time}</p>}
               </div>
 
               <div>
-                <Label htmlFor="dose">Dose</Label>
+                <Label htmlFor="dose">{t('Dose')}</Label>
                 <div className="flex items-center space-x-2">
                   <Input
                     id="doseAmount"
@@ -406,12 +410,12 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                     onChange={handleNumberChange}
                     onBlur={handleNumberBlur}
                     className="flex-1"
-                    placeholder="Enter dose amount"
+                    placeholder={t("Enter dose amount")}
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="min-w-[70px]">
-                        {formData.unitAbbr || 'Unit'}
+                        {formData.unitAbbr || t('Unit')}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
@@ -428,13 +432,13 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               </div>
 
               <div>
-                <Label htmlFor="notes">Notes (optional)</Label>
+                <Label htmlFor="notes">{t('Notes (optional)')}</Label>
                 <Textarea 
                   id="notes" 
                   name="notes" 
                   value={formData.notes} 
                   onChange={handleChange}
-                  placeholder="Enter any additional notes about this medicine administration"
+                  placeholder={t("Enter any additional notes about this medicine administration")}
                 />
               </div>
             </div>
@@ -449,7 +453,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               onClick={onClose}
               disabled={isLoading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               type="submit"
@@ -458,10 +462,10 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('Saving...')}
                 </>
               ) : (
-                activity ? 'Update' : 'Save'
+                activity ? t('Update') : t('Save')
               )}
             </Button>
           </div>

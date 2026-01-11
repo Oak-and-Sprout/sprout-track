@@ -7,6 +7,7 @@ import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * ContactForm Component
@@ -23,6 +24,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
   isLoading: externalIsLoading = false,
 }) => {
   const { showToast } = useToast();
+  const { t } = useLocalization();
+  
   // Local loading state
   const [isLoading, setIsLoading] = useState(externalIsLoading);
   
@@ -99,21 +102,21 @@ const ContactForm: React.FC<ContactFormProps> = ({
     
     // Required fields
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('Name is required');
     }
     
     if (!formData.role.trim()) {
-      newErrors.role = 'Role is required';
+      newErrors.role = t('Role is required');
     }
     
     // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('Please enter a valid email address');
     }
     
     // Phone validation (simple check for now)
     if (formData.phone && !/^[0-9+\-() ]{7,}$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+      newErrors.phone = t('Please enter a valid phone number');
     }
     
     setErrors(newErrors);
@@ -177,11 +180,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
           if (errorData) {
             showToast({
               variant: 'error',
-              title: 'Error',
-              message: errorData.error || 'Failed to save contact',
+              title: t('Error'),
+              message: errorData.error || t('Failed to save contact'),
               duration: 5000,
             });
-            throw new Error(errorData.error || 'Failed to save contact');
+            throw new Error(errorData.error || t('Failed to save contact'));
           }
         }
         
@@ -189,11 +192,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
         const errorData = await response.json();
         showToast({
           variant: 'error',
-          title: 'Error',
-          message: errorData.error || 'Failed to save contact',
+          title: t('Error'),
+          message: errorData.error || t('Failed to save contact'),
           duration: 5000,
         });
-        throw new Error(errorData.error || 'Failed to save contact');
+        throw new Error(errorData.error || t('Failed to save contact'));
       }
 
       const result = await response.json();
@@ -215,11 +218,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
       } else {
         showToast({
           variant: 'error',
-          title: 'Error',
-          message: result.error || 'Failed to save contact',
+          title: t('Error'),
+          message: result.error || t('Failed to save contact'),
           duration: 5000,
         });
-        throw new Error(result.error || 'Failed to save contact');
+        throw new Error(result.error || t('Failed to save contact'));
       }
     } catch (error) {
       console.error('Error saving contact:', error);
@@ -266,11 +269,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
           if (errorData) {
             showToast({
               variant: 'error',
-              title: 'Error',
-              message: errorData.error || 'Failed to delete contact',
+              title: t('Error'),
+              message: errorData.error || t('Failed to delete contact'),
               duration: 5000,
             });
-            throw new Error(errorData.error || 'Failed to delete contact');
+            throw new Error(errorData.error || t('Failed to delete contact'));
           }
         }
         
@@ -278,11 +281,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
         const errorData = await response.json();
         showToast({
           variant: 'error',
-          title: 'Error',
-          message: errorData.error || 'Failed to delete contact',
+          title: t('Error'),
+          message: errorData.error || t('Failed to delete contact'),
           duration: 5000,
         });
-        throw new Error(errorData.error || 'Failed to delete contact');
+        throw new Error(errorData.error || t('Failed to delete contact'));
       }
       
       // Handle 204 No Content response (successful deletion)
@@ -321,11 +324,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
         } else {
           showToast({
             variant: 'error',
-            title: 'Error',
-            message: result.error || 'Failed to delete contact',
+            title: t('Error'),
+            message: result.error || t('Failed to delete contact'),
             duration: 5000,
           });
-          throw new Error(result.error || 'Failed to delete contact');
+          throw new Error(result.error || t('Failed to delete contact'));
         }
       }
     } catch (error) {
@@ -340,8 +343,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={contact ? 'Edit Contact' : 'Add Contact'}
-      description={contact ? 'Update contact details' : 'Add a new contact to your list'}
+      title={contact ? t('Edit Contact') : t('Add Contact')}
+      description={contact ? t('Update contact details') : t('Add a new contact to your list')}
       className="contact-form-container"
     >
       <div className="h-full flex flex-col">
@@ -349,7 +352,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
           <div className="space-y-6">
             {/* Contact details section */}
             <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>Contact Details</h3>
+              <h3 className={styles.sectionTitle}>{t('Contact Details')}</h3>
               
               {/* Name */}
               <div className={styles.fieldGroup}>
@@ -357,7 +360,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="name" 
                   className="form-label"
                 >
-                  Name
+                  {t('Name')}
                   <span className={styles.fieldRequired}>*</span>
                 </label>
                 <div className="relative">
@@ -368,7 +371,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter contact name"
+                    placeholder={t("Enter contact name")}
                   />
                   <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -386,7 +389,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="role" 
                   className="form-label"
                 >
-                  Role
+                  {t('Role')}
                   <span className={styles.fieldRequired}>*</span>
                 </label>
                 <div className="relative">
@@ -397,7 +400,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.role}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter contact role (e.g., Doctor, Family)"
+                    placeholder={t("Enter contact role (e.g., Doctor, Family)")}
                   />
                   <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -415,7 +418,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="phone" 
                   className="form-label"
                 >
-                  Phone Number
+                  {t('Phone Number')}
                 </label>
                 <div className="relative">
                   <Input
@@ -425,7 +428,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.phone || ''}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter phone number (optional)"
+                    placeholder={t("Enter phone number (optional)")}
                   />
                   <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -443,7 +446,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                   htmlFor="email" 
                   className="form-label"
                 >
-                  Email Address
+                  {t('Email Address')}
                 </label>
                 <div className="relative">
                   <Input
@@ -453,7 +456,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     value={formData.email || ''}
                     onChange={handleChange}
                     className="w-full pl-9"
-                    placeholder="Enter email address (optional)"
+                    placeholder={t("Enter email address (optional)")}
                   />
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 </div>
@@ -479,7 +482,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 disabled={isLoading}
               >
                 <Trash2 className="h-4 w-4 mr-1.5" />
-                Delete
+                {t('Delete')}
               </Button>
             )}
             
@@ -491,7 +494,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 onClick={onClose}
                 disabled={isLoading}
               >
-                Cancel
+                {t('Cancel')}
               </Button>
               
               <Button 
@@ -502,10 +505,10 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    Saving...
+                    {t('Saving...')}
                   </>
                 ) : (
-                  'Save Contact'
+                  t('Save Contact')
                 )}
               </Button>
             </div>

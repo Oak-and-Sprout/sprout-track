@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import { EmailProviderType } from '@prisma/client';
+import { useLocalization } from '@/src/context/localization';
 
 interface AppConfigFormProps {
   isOpen: boolean;
@@ -49,10 +50,11 @@ interface EmailConfigData {
   updatedAt: string;
 }
 
-export default function AppConfigForm({ 
+export default function AppConfigForm({
   isOpen, 
   onClose 
 }: AppConfigFormProps) {
+  const { t } = useLocalization();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [appConfig, setAppConfig] = useState<AppConfigData | null>(null);
@@ -124,7 +126,7 @@ export default function AppConfigForm({
       const data = await response.json();
       
       if (response.status === 401 || response.status === 403) {
-        setError('Authentication required. Please ensure you are logged in as a system administrator.');
+        setError(t('Authentication required. Please ensure you are logged in as a system administrator.'));
         return;
       }
       
@@ -159,7 +161,7 @@ export default function AppConfigForm({
       }
     } catch (error) {
       console.error('Error fetching app config:', error);
-      setError('Failed to fetch app configuration');
+        setError(t('Failed to fetch app configuration'));
     } finally {
       setLoading(false);
     }
@@ -232,7 +234,7 @@ export default function AppConfigForm({
 
   const handleNewPassword = () => {
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('Password must be at least 6 characters'));
       return;
     }
     setPasswordStep('confirm');
@@ -261,7 +263,7 @@ export default function AppConfigForm({
         const data = await response.json();
 
         if (response.status === 401 || response.status === 403) {
-          setError('Authentication required. Please ensure you are logged in as a system administrator.');
+          setError(t('Authentication required. Please ensure you are logged in as a system administrator.'));
           return;
         }
 
@@ -278,19 +280,19 @@ export default function AppConfigForm({
           setNewPassword('');
           setConfirmPassword('');
           setError(null);
-          setSuccess('Password changed successfully');
+          setSuccess(t('Password changed successfully'));
           scheduleAutoClose();
         } else {
-          setError(data.error || 'Failed to update password');
+          setError(data.error || t('Failed to update password'));
         }
       } catch (error) {
         console.error('Error updating password:', error);
-        setError('Failed to update password');
+          setError(t('Failed to update password'));
       } finally {
         setSaving(false);
       }
     } else {
-      setError('Passwords do not match');
+      setError(t('Passwords do not match'));
       setConfirmPassword('');
     }
   };
@@ -308,12 +310,12 @@ export default function AppConfigForm({
   // Validate form
   const validateForm = (): boolean => {
     if (!formData.adminPass.trim()) {
-      setError('Admin password is required');
+      setError(t('Admin password is required'));
       return false;
     }
 
     if (!formData.rootDomain.trim()) {
-      setError('Root domain is required');
+      setError(t('Root domain is required'));
       return false;
     }
 
@@ -358,21 +360,21 @@ export default function AppConfigForm({
       const data = await response.json();
 
       if (response.status === 401 || response.status === 403) {
-        setError('Authentication required. Please ensure you are logged in as a system administrator.');
+        setError(t('Authentication required. Please ensure you are logged in as a system administrator.'));
         return;
       }
 
       if (data.success) {
         setAppConfig(data.data.appConfig);
         setEmailConfig(data.data.emailConfig);
-        setSuccess('App configuration updated successfully');
+        setSuccess(t('App configuration updated successfully'));
         scheduleAutoClose();
       } else {
-        setError(data.error || 'Failed to update app configuration');
+        setError(data.error || t('Failed to update app configuration'));
       }
     } catch (error) {
       console.error('Error updating app config:', error);
-      setError('Failed to update app configuration');
+        setError(t('Failed to update app configuration'));
     } finally {
       setSaving(false);
     }
@@ -411,15 +413,15 @@ export default function AppConfigForm({
     <FormPage 
       isOpen={isOpen} 
       onClose={handleClose}
-      title="App Configuration"
-      description="Manage global application settings"
+      title={t("App Configuration")}
+      description={t("Manage global application settings")}
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col overflow-hidden">
         <FormPageContent className="space-y-6 overflow-y-auto flex-1 pb-24">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-              <span className="ml-2 text-gray-600">Loading configuration...</span>
+              <span className="ml-2 text-gray-600">{t('Loading configuration...')}</span>
             </div>
           ) : (
             <>
@@ -428,7 +430,7 @@ export default function AppConfigForm({
                                  <div className="flex items-center space-x-2">
                    <Settings className="h-5 w-5 text-teal-600" />
                    <Label className="text-lg font-semibold">
-                     System Settings
+                     {t('System Settings')}
                    </Label>
                  </div>
 
@@ -436,7 +438,7 @@ export default function AppConfigForm({
                   {/* Password Change Section */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
-                      Admin Password
+                      {t('Admin Password')}
                     </Label>
                     
                     {!showPasswordChange ? (
@@ -453,14 +455,14 @@ export default function AppConfigForm({
                           onClick={() => setShowPasswordChange(true)}
                           disabled={loading}
                         >
-                          Change Password
+                          {t('Change Password')}
                         </Button>
                       </div>
                     ) : (
                       <div className="space-y-4 border border-gray-200 rounded-lg p-4">
                         <div className="flex justify-between items-center">
                           <Label className="text-sm font-medium">
-                            Change Admin Password
+                            {t('Change Admin Password')}
                           </Label>
                           <Button 
                             type="button" 
@@ -468,14 +470,14 @@ export default function AppConfigForm({
                             size="sm"
                             onClick={resetPasswordForm}
                           >
-                            Cancel
+                            {t('Cancel')}
                           </Button>
                         </div>
 
                         {passwordStep === 'verify' && (
                           <div className="space-y-2">
                             <Label htmlFor="verifyPassword" className="text-sm">
-                              Current Password
+                              {t('Current Password')}
                             </Label>
                             <div className="flex space-x-2">
                               <Input
@@ -487,7 +489,7 @@ export default function AppConfigForm({
                                   setError(null);
                                   setSuccess(null);
                                 }}
-                                placeholder="Enter current password"
+                                placeholder={t("Enter current password")}
                                 autoComplete="current-password"
                               />
                               <Button 
@@ -504,7 +506,7 @@ export default function AppConfigForm({
                         {passwordStep === 'new' && (
                           <div className="space-y-2">
                             <Label htmlFor="newPassword" className="text-sm">
-                              New Password
+                              {t('New Password')}
                             </Label>
                             <div className="flex space-x-2">
                               <Input
@@ -516,7 +518,7 @@ export default function AppConfigForm({
                                   setError(null);
                                   setSuccess(null);
                                 }}
-                                placeholder="Enter new password"
+                                placeholder={t("Enter new password")}
                                 autoComplete="new-password"
                               />
                               <Button 
@@ -528,7 +530,7 @@ export default function AppConfigForm({
                               </Button>
                             </div>
                             <p className="text-xs text-gray-500">
-                              Password must be at least 6 characters
+                              {t('Password must be at least 6 characters')}
                             </p>
                           </div>
                         )}
@@ -536,7 +538,7 @@ export default function AppConfigForm({
                         {passwordStep === 'confirm' && (
                           <div className="space-y-2">
                             <Label htmlFor="confirmNewPassword" className="text-sm">
-                              Confirm New Password
+                              {t('Confirm New Password')}
                             </Label>
                             <div className="flex space-x-2">
                               <Input
@@ -559,10 +561,10 @@ export default function AppConfigForm({
                                 {saving ? (
                                   <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Updating...
+                                    {t('Updating...')}
                                   </>
                                 ) : (
-                                  'Update'
+                                  t('Update')
                                 )}
                               </Button>
                             </div>
@@ -572,14 +574,14 @@ export default function AppConfigForm({
                     )}
                     
                     <p className="text-xs text-gray-500">
-                      This password is used for system-wide administrative access
+                      {t('This password is used for system-wide administrative access')}
                     </p>
                   </div>
 
                   {/* Root Domain */}
                   <div className="space-y-2">
                     <Label htmlFor="rootDomain" className="text-sm font-medium">
-                      Root Domain
+                      {t('Root Domain')}
                       <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <Input
@@ -592,7 +594,7 @@ export default function AppConfigForm({
                       required
                     />
                     <p className="text-xs text-gray-500">
-                      The primary domain for this application instance
+                      {t('The primary domain for this application instance')}
                     </p>
                   </div>
 
@@ -607,18 +609,18 @@ export default function AppConfigForm({
                         }
                       />
                       <Label htmlFor="enableHttps" className="text-sm font-medium cursor-pointer">
-                        Enable HTTPS
+                        {t('Enable HTTPS')}
                       </Label>
                     </div>
                     <p className="text-xs text-gray-500 ml-6">
-                      Enable secure HTTPS connections for the application
+                      {t('Enable secure HTTPS connections for the application')}
                     </p>
                   </div>
 
                   {/* Admin Email */}
                   <div className="space-y-2">
                     <Label htmlFor="adminEmail" className="text-sm font-medium">
-                      Admin Email
+                      {t('Admin Email')}
                     </Label>
                     <Input
                       type="email"
@@ -626,10 +628,10 @@ export default function AppConfigForm({
                       name="adminEmail"
                       value={formData.adminEmail}
                       onChange={handleInputChange}
-                      placeholder="admin@example.com"
+                      placeholder={t("admin@example.com")}
                     />
                     <p className="text-xs text-gray-500">
-                      Email address used for admin replies to feedback submissions
+                      {t('Email address used for admin replies to feedback submissions')}
                     </p>
                   </div>
                 </div>
@@ -640,14 +642,14 @@ export default function AppConfigForm({
                 <div className="flex items-center space-x-2">
                   <Mail className="h-5 w-5 text-teal-600" />
                   <Label className="text-lg font-semibold">
-                    Email Configuration
+                    {t('Email Configuration')}
                   </Label>
                 </div>
                 <div className="space-y-4">
                   {/* Email Provider Dropdown */}
                   <div className="space-y-2">
                     <Label htmlFor="providerType" className="text-sm font-medium">
-                      Email Provider
+                      {t('Email Provider')}
                     </Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -658,13 +660,13 @@ export default function AppConfigForm({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
                         <DropdownMenuItem onSelect={() => handleProviderChange('SENDGRID')}>
-                          SendGrid
+                          {t('SendGrid')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleProviderChange('SMTP2GO')}>
-                          SMTP2GO
+                          {t('SMTP2GO')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleProviderChange('MANUAL_SFTP')}>
-                          Manual SMTP
+                          {t('Manual SMTP')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -674,7 +676,7 @@ export default function AppConfigForm({
                   {emailFormData.providerType === 'SENDGRID' && (
                     <div className="space-y-2">
                       <Label htmlFor="sendGridApiKey" className="text-sm font-medium">
-                        SendGrid API Key
+                        {t('SendGrid API Key')}
                       </Label>
                       <Input
                         type="password"
@@ -682,7 +684,7 @@ export default function AppConfigForm({
                         name="sendGridApiKey"
                         value={emailFormData.sendGridApiKey}
                         onChange={handleEmailInputChange}
-                        placeholder="Enter SendGrid API Key"
+                        placeholder={t("Enter SendGrid API Key")}
                       />
                     </div>
                   )}
@@ -691,7 +693,7 @@ export default function AppConfigForm({
                   {emailFormData.providerType === 'SMTP2GO' && (
                     <div className="space-y-2">
                       <Label htmlFor="smtp2goApiKey" className="text-sm font-medium">
-                        SMTP2GO API Key
+                        {t('SMTP2GO API Key')}
                       </Label>
                       <Input
                         type="password"
@@ -709,7 +711,7 @@ export default function AppConfigForm({
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="serverAddress" className="text-sm font-medium">
-                          Server Address
+                          {t('Server Address')}
                         </Label>
                         <Input
                           type="text"
@@ -717,12 +719,12 @@ export default function AppConfigForm({
                           name="serverAddress"
                           value={emailFormData.serverAddress}
                           onChange={handleEmailInputChange}
-                          placeholder="smtp.example.com"
+                          placeholder={t("smtp.example.com")}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="port" className="text-sm font-medium">
-                          Port
+                          {t('Port')}
                         </Label>
                         <Input
                           type="number"
@@ -730,12 +732,12 @@ export default function AppConfigForm({
                           name="port"
                           value={emailFormData.port}
                           onChange={handleEmailInputChange}
-                          placeholder="587"
+                          placeholder={t("587")}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="username" className="text-sm font-medium">
-                          Username
+                          {t('Username')}
                         </Label>
                         <Input
                           type="text"
@@ -748,7 +750,7 @@ export default function AppConfigForm({
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="password" className="text-sm font-medium">
-                          Password
+                          {t('Password')}
                         </Label>
                         <Input
                           type="password"
@@ -766,7 +768,7 @@ export default function AppConfigForm({
                           onCheckedChange={(checked) => handleEmailCheckboxChange('enableTls', checked as boolean)}
                         />
                         <Label htmlFor="enableTls" className="text-sm font-medium cursor-pointer">
-                          Enable TLS
+                          {t('Enable TLS')}
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -776,7 +778,7 @@ export default function AppConfigForm({
                           onCheckedChange={(checked) => handleEmailCheckboxChange('allowSelfSignedCert', checked as boolean)}
                         />
                         <Label htmlFor="allowSelfSignedCert" className="text-sm font-medium cursor-pointer">
-                          Allow Self-Signed Cert
+                          {t('Allow Self-Signed Cert')}
                         </Label>
                       </div>
                     </div>
@@ -816,7 +818,7 @@ export default function AppConfigForm({
               {/* Last Updated Info */}
               {appConfig && (
                 <div className="text-xs text-gray-500 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  Last updated: {new Date(appConfig.updatedAt).toLocaleString()}
+                  {t('Last updated:')} {new Date(appConfig.updatedAt).toLocaleString()}
                 </div>
               )}
             </>
@@ -831,7 +833,7 @@ export default function AppConfigForm({
               onClick={handleClose}
               disabled={saving}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               type="submit"
@@ -841,12 +843,12 @@ export default function AppConfigForm({
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  {t('Saving...')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Save Configuration
+                  {t('Save Configuration')}
                 </>
               )}
             </Button>

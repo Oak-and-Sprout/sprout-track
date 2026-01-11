@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { FeedbackResponse } from '@/app/api/types';
 import FeedbackThreadModal from './FeedbackThreadModal';
+import { useLocalization } from '@/src/context/localization';
+
 import './FeedbackView/feedback-view.css';
 
 interface FeedbackViewProps {
@@ -55,6 +57,7 @@ export default function FeedbackView({
   formatDateTime,
   onRefresh,
 }: FeedbackViewProps) {
+  const { t } = useLocalization();
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -112,19 +115,19 @@ export default function FeedbackView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Subject</TableHead>
-          <TableHead>Submitter</TableHead>
-          <TableHead>Submitted</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Message Preview</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t('Subject')}</TableHead>
+          <TableHead>{t('Submitter')}</TableHead>
+          <TableHead>{t('Submitted')}</TableHead>
+          <TableHead>{t('Status')}</TableHead>
+          <TableHead>{t('Message Preview')}</TableHead>
+          <TableHead className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {paginatedData.length === 0 ? (
           <TableRow>
             <TableCell colSpan={6} className="text-center py-8 feedback-view-empty-text text-gray-500">
-              No feedback found.
+              {t('No feedback found.')}
             </TableCell>
           </TableRow>
         ) : (
@@ -187,7 +190,7 @@ export default function FeedbackView({
                   return (
                     <span className="feedback-view-status-read inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                       <Eye className="h-3 w-3 mr-1" />
-                      Read
+                      {t('Read')}
                     </span>
                   );
                 })()}

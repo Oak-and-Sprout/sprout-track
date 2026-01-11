@@ -2,6 +2,8 @@ import React from 'react';
 import { cn } from '@/src/lib/utils';
 import { CalendarEventProps } from './calendar-event.types';
 import { calendarEventStyles as styles } from './calendar-event.styles';
+import { useLocalization } from '@/src/context/localization';
+
 import { 
   Calendar, 
   Clock, 
@@ -23,6 +25,8 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   onClick,
   className,
 }) => {
+  const { t } = useLocalization();
+  
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -189,7 +193,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
               {/* Babies */}
               {event.babies.length > 0 && (
                 <div className={styles.peopleGroup}>
-                  <span className={styles.peopleLabel}>Babies:</span>
+                  <span className={styles.peopleLabel}>{t('Babies:')}</span>
                   <span className={styles.peopleList}>
                     {event.babies.map(baby => `${baby.firstName} ${baby.lastName}`).join(', ')}
                   </span>
@@ -199,7 +203,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
               {/* Caretakers */}
               {event.caretakers.length > 0 && (
                 <div className={styles.peopleGroup}>
-                  <span className={styles.peopleLabel}>Caretakers:</span>
+                  <span className={styles.peopleLabel}>{t('Caretakers:')}</span>
                   <span className={styles.peopleList}>
                     {event.caretakers.map(caretaker => caretaker.name).join(', ')}
                   </span>
@@ -209,7 +213,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
               {/* Contacts */}
               {event.contacts.length > 0 && (
                 <div className={styles.peopleGroup}>
-                  <span className={styles.peopleLabel}>Contacts:</span>
+                  <span className={styles.peopleLabel}>{t('Contacts:')}</span>
                   <span className={styles.peopleList}>
                     {event.contacts.map(contact => contact.name).join(', ')}
                   </span>
