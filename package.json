@@ -14,7 +14,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:studio:log": "prisma studio --schema=prisma/log-schema.prisma",
-    "prisma:seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts"
+    "prisma:seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
+    "setup:vapid": "ts-node scripts/setup-vapid-keys.ts"
   },
   "dependencies": {
     "@lucide/lab": "^0.1.2",
@@ -47,7 +48,8 @@
     "recharts": "^3.6.0",
     "stripe": "^19.2.0",
     "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "web-push": "^3.6.7"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -62,6 +64,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.20.1",
     "eslint-config-next": "^15.1.7",

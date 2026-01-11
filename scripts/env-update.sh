@@ -57,4 +57,17 @@ else
     echo "ENC_HASH already exists in .env file"
 fi
 
+# Check and generate VAPID keys for push notifications
+echo "Checking for VAPID keys in .env file..."
+if ! grep -q "^VAPID_PUBLIC_KEY=" "$ENV_FILE" || [ -z "$(grep -E "^VAPID_PUBLIC_KEY=" "$ENV_FILE" | cut -d '=' -f2)" ]; then
+    echo "VAPID keys not found or empty. Generating VAPID keys..."
+    if command -v ts-node &> /dev/null; then
+        ts-node "$(dirname "$(readlink -f "$0")")/setup-vapid-keys.ts"
+    else
+        echo "⚠️  ts-node not found. Please run 'npm run setup:vapid' manually to generate VAPID keys."
+    fi
+else
+    echo "VAPID keys already exist in .env file"
+fi
+
 echo "Environment configuration check completed." 

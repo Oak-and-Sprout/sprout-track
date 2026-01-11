@@ -95,6 +95,13 @@ enum RecurrencePattern {
   CUSTOM
 }
 
+// Enum for notification event types
+enum NotificationEventType {
+  ACTIVITY_CREATED
+  FEED_TIMER_EXPIRED
+  DIAPER_TIMER_EXPIRED
+}
+
 // Account model for email/password authentication
 model Account {
   id                   String    @id @default(cuid())
@@ -137,6 +144,7 @@ model Account {
 
   // Relations
   feedback Feedback[]
+  pushSubscriptions PushSubscription[]
 
   @@index([email])
   @@index([verified])
@@ -178,6 +186,7 @@ model Family {
   familyMembers  FamilyMember[]
   familySetups   FamilySetup[]
   feedback       Feedback[]
+  pushSubscriptions PushSubscription[]
 }
 
 // New model for family membership
@@ -224,6 +233,7 @@ model Baby {
   measurements Measurement[]
   events       BabyEvent[] // New relationship for calendar events
   medicineLogs MedicineLog[] // New relationship for medicine logs
+  notificationPreferences NotificationPreference[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -267,6 +277,7 @@ model Caretaker {
   familyMembers FamilyMember[]
   familySetups  FamilySetup[]
   feedback      Feedback[]
+  pushSubscriptions PushSubscription[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -1049,4 +1060,80 @@ model Feedback {
   @@index([caretakerId])
   @@index([deletedAt])
   @@index([parentId])
+}
+
+// Push notification subscription model
+model PushSubscription {
+  id            String   @id @default(cuid())
+  accountId     String?
+  caretakerId   String?
+  familyId      String
+  endpoint      String   @unique
+  p256dh        String
+  auth          String
+  deviceLabel   String?
+  userAgent     String?
+  failureCount  Int      @default(0)
+  lastFailureAt DateTime?
+  lastSuccessAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  account   Account?   @relation(fields: [accountId], references: [id])
+  caretaker Caretaker? @relation(fields: [caretakerId], references: [id])
+  family    Family     @relation(fields: [familyId], references: [id])
+  notificationPreferences NotificationPreference[]
+  notificationLogs        NotificationLog[]
+
+  @@index([accountId])
+  @@index([caretakerId])
+  @@index([familyId])
+  @@index([endpoint])
+  @@index([failureCount])
+}
+
+// Notification preferences per subscription and baby
+model NotificationPreference {
+  id                    String                @id @default(cuid())
+  subscriptionId        String
+  babyId                String
+  eventType             NotificationEventType
+  activityTypes         String? // JSON string array of activity types (null = all)
+  timerIntervalMinutes  Int? // Minutes between repeat notifications (null = once per expiration)
+  lastTimerNotifiedAt   DateTime?
+  enabled               Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  baby         Baby             @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, babyId, eventType])
+  @@index([subscriptionId])
+  @@index([babyId])
+  @@index([eventType])
+  @@index([enabled])
+}
+
+// Notification log for debugging and failure tracking
+model NotificationLog {
+  id            String                @id @default(cuid())
+  subscriptionId String
+  eventType     NotificationEventType
+  activityType  String? // Specific activity type (for ACTIVITY_CREATED)
+  babyId        String
+  success       Boolean
+  errorMessage  String?
+  httpStatus    Int?
+  payload       String? // JSON of notification content sent
+  createdAt     DateTime              @default(now())
+
+  // Relations
+  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([createdAt])
+  @@index([success])
 }
