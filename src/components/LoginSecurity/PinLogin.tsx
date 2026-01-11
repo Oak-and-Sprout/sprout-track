@@ -42,16 +42,25 @@ export default function PinLogin({
     const checkIpLockout = async () => {
       try {
         const response = await fetch('/api/auth/ip-lockout');
+        if (!response.ok) {
+          // If the response is not OK, just return silently - don't throw
+          return;
+        }
         const data = await response.json() as ApiResponse<{ locked: boolean; remainingTime: number }>;
 
         if (data.success && data.data && data.data.locked) {
           const remainingTime = data.data.remainingTime || 300000; // Default to 5 minutes if not provided
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       } catch (error) {
-        console.error('Error checking IP lockout:', error);
+        // Silently handle fetch errors - this is expected on login page if not authenticated
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error checking IP lockout:', error);
+        }
       }
     };
 
@@ -68,7 +77,14 @@ export default function PinLogin({
           caretakerUrl += `?familySlug=${encodeURIComponent(familySlug)}`;
         }
 
-        const caretakerResponse = await fetch(caretakerUrl);
+        let caretakerResponse: Response;
+        try {
+          caretakerResponse = await fetch(caretakerUrl);
+        } catch (fetchError) {
+          // Network error - expected on login page, silently handle
+          return;
+        }
+
         if (caretakerResponse.ok) {
           const caretakerData = await caretakerResponse.json();
           if (caretakerData.success && caretakerData.data) {
@@ -93,7 +109,10 @@ export default function PinLogin({
           }
         }
       } catch (error) {
-        console.error('Error checking auth settings:', error);
+        // Only log unexpected errors, not network/fetch failures
+        if (error instanceof Error && error.name !== 'TypeError') {
+          console.error('Error checking auth settings:', error);
+        }
       }
     };
 
@@ -253,7 +272,7 @@ export default function PinLogin({
 
   const handleAdminAuthenticate = async () => {
     if (!adminPassword.trim()) {
-      setError('Admin password is required');
+      setError(t('Admin password is required'));
       return;
     }
 
@@ -266,7 +285,8 @@ export default function PinLogin({
         const remainingTime = ipCheckData.data.remainingTime || 300000;
         const remainingMinutes = Math.ceil(remainingTime / 60000);
         onLockoutChange(Date.now() + remainingTime);
-        setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+        const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+        setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         return;
       }
 
@@ -293,7 +313,7 @@ export default function PinLogin({
         // Call the onUnlock callback
         onUnlock('sysadmin');
       } else {
-        setError('Invalid admin password');
+        setError(t('Invalid admin password'));
         setAdminPassword('');
 
         // Check if we're now locked out
@@ -304,12 +324,13 @@ export default function PinLogin({
           const remainingTime = lockoutCheckData.data.remainingTime || 300000;
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       }
     } catch (error) {
       console.error('Admin authentication error:', error);
-      setError('Authentication failed. Please try again.');
+      setError(t('Authentication failed. Please try again.'));
       setAdminPassword('');
     }
   };
@@ -323,14 +344,14 @@ export default function PinLogin({
 
     // Don't attempt authentication if login ID is required but not complete (for CARETAKER auth type)
     if (authType === 'CARETAKER' && loginId.length !== 2) {
-      setError('Please enter a valid 2-character login ID first');
+      setError(t('Please enter a valid 2-character login ID first'));
       setActiveInput('loginId');
       return;
     }
 
     // Don't attempt authentication if PIN is too short
     if (pin.length < 6) {
-      setError('Please enter a PIN with at least 6 digits');
+      setError(t('Please enter a PIN with at least 6 digits'));
       setActiveInput('pin');
       return;
     }
@@ -344,7 +365,8 @@ export default function PinLogin({
         const remainingTime = ipCheckData.data.remainingTime || 300000; // Default to 5 minutes if not provided
         const remainingMinutes = Math.ceil(remainingTime / 60000);
         onLockoutChange(Date.now() + remainingTime);
-        setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+        const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+        setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         return;
       }
 
@@ -385,7 +407,7 @@ export default function PinLogin({
         onUnlock(data.data.id);
       } else {
         // Failed authentication attempt - the server will handle counting attempts
-        setError('Invalid credentials');
+        setError(t('Invalid credentials'));
         setPin('');
 
         // Check if we're now locked out
@@ -396,12 +418,13 @@ export default function PinLogin({
           const remainingTime = lockoutCheckData.data.remainingTime || 300000; // Default to 5 minutes if not provided
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      setError('Authentication failed. Please try again.');
+      setError(t('Authentication failed. Please try again.'));
       setPin('');
     }
   };
@@ -498,10 +521,10 @@ export default function PinLogin({
       <div className="text-center">
         <p id="pin-description" className="text-sm text-gray-500 login-description">
           {adminMode
-            ? 'Please enter the system administrator password'
+            ? t('Please enter the system administrator password')
             : (authType === 'SYSTEM'
-              ? 'Please enter your family security PIN'
-              : 'Please enter your login ID and security PIN')
+              ? t('Please enter your family security PIN')
+              : t('Please enter your login ID and security PIN'))
           }
         </p>
         {adminMode && (
@@ -528,7 +551,7 @@ export default function PinLogin({
                   setError('');
                 }}
                 className="text-center text-lg font-semibold pr-10"
-                placeholder="Enter admin password"
+                placeholder={t('Enter admin password')}
                 disabled={!!lockoutTime}
                 autoFocus
               />

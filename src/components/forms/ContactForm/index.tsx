@@ -180,11 +180,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
           if (errorData) {
             showToast({
               variant: 'error',
-              title: 'Error',
-              message: errorData.error || 'Failed to save contact',
+              title: t('Error'),
+              message: errorData.error || t('Failed to save contact'),
               duration: 5000,
             });
-            throw new Error(errorData.error || 'Failed to save contact');
+            throw new Error(errorData.error || t('Failed to save contact'));
           }
         }
         
@@ -192,11 +192,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
         const errorData = await response.json();
         showToast({
           variant: 'error',
-          title: 'Error',
-          message: errorData.error || 'Failed to save contact',
+          title: t('Error'),
+          message: errorData.error || t('Failed to save contact'),
           duration: 5000,
         });
-        throw new Error(errorData.error || 'Failed to save contact');
+        throw new Error(errorData.error || t('Failed to save contact'));
       }
 
       const result = await response.json();
@@ -218,11 +218,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
       } else {
         showToast({
           variant: 'error',
-          title: 'Error',
-          message: result.error || 'Failed to save contact',
+          title: t('Error'),
+          message: result.error || t('Failed to save contact'),
           duration: 5000,
         });
-        throw new Error(result.error || 'Failed to save contact');
+        throw new Error(result.error || t('Failed to save contact'));
       }
     } catch (error) {
       console.error('Error saving contact:', error);
@@ -269,11 +269,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
           if (errorData) {
             showToast({
               variant: 'error',
-              title: 'Error',
-              message: errorData.error || 'Failed to delete contact',
+              title: t('Error'),
+              message: errorData.error || t('Failed to delete contact'),
               duration: 5000,
             });
-            throw new Error(errorData.error || 'Failed to delete contact');
+            throw new Error(errorData.error || t('Failed to delete contact'));
           }
         }
         
@@ -281,11 +281,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
         const errorData = await response.json();
         showToast({
           variant: 'error',
-          title: 'Error',
-          message: errorData.error || 'Failed to delete contact',
+          title: t('Error'),
+          message: errorData.error || t('Failed to delete contact'),
           duration: 5000,
         });
-        throw new Error(errorData.error || 'Failed to delete contact');
+        throw new Error(errorData.error || t('Failed to delete contact'));
       }
       
       // Handle 204 No Content response (successful deletion)
@@ -324,11 +324,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
         } else {
           showToast({
             variant: 'error',
-            title: 'Error',
-            message: result.error || 'Failed to delete contact',
+            title: t('Error'),
+            message: result.error || t('Failed to delete contact'),
             duration: 5000,
           });
-          throw new Error(result.error || 'Failed to delete contact');
+          throw new Error(result.error || t('Failed to delete contact'));
         }
       }
     } catch (error) {

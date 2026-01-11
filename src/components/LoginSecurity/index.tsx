@@ -5,7 +5,9 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/src/context/theme';
 import { useDeployment } from '@/app/context/deployment';
+import { useLocalization } from '@/src/context/localization';
 import { ShareButton } from '@/src/components/ui/share-button';
+import { LanguageSelector } from '@/src/components/ui/side-nav/language-selector';
 import PinLogin from './PinLogin';
 import AccountLogin from './AccountLogin';
 import './login-security.css';
@@ -21,6 +23,7 @@ type LoginMode = 'pin' | 'account';
 export default function LoginSecurity({ onUnlock, familySlug, familyName }: LoginSecurityProps) {
   const { theme } = useTheme();
   const { isSaasMode } = useDeployment();
+  const { t } = useLocalization();
   const router = useRouter();
   const [lockoutTime, setLockoutTime] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -210,6 +213,10 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
   // In soft expiration, we allow users to log in even if expired
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white login-container">
+      {/* Language Selector - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSelector />
+      </div>
       <div className="w-full max-w-md mx-auto p-6">
         <div className="text-center mt-2 mb-4">
           <div className="flex items-start justify-center gap-2 max-w-[240px] mx-auto">
@@ -234,7 +241,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
                 transition: 'opacity 0.15s ease-in'
               }}
             >
-              {isMounted && familyName ? familyName : 'Security Check'}
+              {isMounted && familyName ? familyName : t('Security Check')}
             </h2>
             {familySlug && familyName && loginMode === 'pin' && (
               <ShareButton
@@ -272,7 +279,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
                 onClick={toggleLoginMode}
                 className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors"
               >
-                {loginMode === 'pin' ? 'Switch to account login' : 'Switch to PIN login'}
+                {loginMode === 'pin' ? t('Switch to account login') : t('Switch to PIN login')}
               </button>
             </div>
           )}

@@ -209,7 +209,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
                       setShowContactForm(true);
                     }}
                     className="contact-selector-edit-button p-1 text-gray-400 hover:text-gray-600"
-                    aria-label={`Edit ${contact.name}`}
+                    aria-label={t('Edit') + ' ' + contact.name}
                   >
                     <Edit className="h-3.5 w-3.5" />
                   </button>

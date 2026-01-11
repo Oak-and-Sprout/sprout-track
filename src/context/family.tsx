@@ -79,14 +79,25 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
 
         // For system administrators, we need to load family by slug since they don't have a fixed familyId
         // For regular users, this also works as expected
-        const response = await fetch(`/api/family/by-slug/${slug}`, {
-          headers: authToken ? {
-            'Authorization': `Bearer ${authToken}`
-          } : {}
-        });
+        let response: Response;
+        try {
+          response = await fetch(`/api/family/by-slug/${slug}`, {
+            headers: authToken ? {
+              'Authorization': `Bearer ${authToken}`
+            } : {}
+          });
+        } catch (fetchError) {
+          // Network error or fetch failed - this is expected on login page
+          // Don't set error state, just stop loading
+          setLoading(false);
+          return;
+        }
         
         if (!response.ok) {
-          throw new Error('Failed to load family data');
+          // If response is not OK, don't throw - just stop loading
+          // This is expected when user is not authenticated
+          setLoading(false);
+          return;
         }
         
         const data = await response.json();
@@ -102,7 +113,11 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
           setError(data.error || 'Failed to load family data');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        // Only set error for unexpected errors, not for network/fetch failures
+        if (err instanceof Error && err.name !== 'TypeError') {
+          setError(err.message);
+        }
+        // For fetch errors, just stop loading silently
       } finally {
         setLoading(false);
       }

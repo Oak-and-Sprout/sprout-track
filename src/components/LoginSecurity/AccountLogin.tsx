@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';import { useLocalization } from '@/src/context/localization';
+import { Input } from '@/src/components/ui/input';
+import { useLocalization } from '@/src/context/localization';
 
 import '../modals/AccountModal/account-modal.css';
 
@@ -36,7 +37,7 @@ export default function AccountLogin({
 
     // Validate email
     if (!validateEmail(email)) {
-      setError('Please enter a valid email address');
+      setError(t('Please enter a valid email address'));
       return;
     }
 
@@ -48,7 +49,7 @@ export default function AccountLogin({
 
     // Validate password for login mode
     if (!password) {
-      setError('Password is required');
+      setError(t('Password is required'));
       return;
     }
 
@@ -109,7 +110,7 @@ export default function AccountLogin({
           router.push('/setup');
         }
       } else {
-        setError(result.error || 'Login failed. Please try again.');
+        setError(result.error || t('Login failed. Please try again.'));
 
         // Check if we're now locked out
         const lockoutCheckResponse = await fetch('/api/auth/ip-lockout');
@@ -119,12 +120,13 @@ export default function AccountLogin({
           const remainingTime = lockoutCheckData.data.remainingTime || 300000;
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           onLockoutChange(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minuteText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minuteText}.`);
         }
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Network error. Please check your connection and try again.');
+      setError(t('Network error. Please check your connection and try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -136,12 +138,12 @@ export default function AccountLogin({
       setError('');
 
       if (!email.trim()) {
-        setError('Please enter your email address');
+        setError(t('Please enter your email address'));
         return;
       }
 
       if (!validateEmail(email)) {
-        setError('Please enter a valid email address');
+        setError(t('Please enter a valid email address'));
         return;
       }
 
@@ -169,11 +171,11 @@ export default function AccountLogin({
           setMode('login');
         }, 5000);
       } else {
-        setError(result.error || 'Failed to send reset email. Please try again.');
+        setError(result.error || t('Failed to send reset email. Please try again.'));
       }
     } catch (error) {
       console.error('Forgot password error:', error);
-      setError('Network error. Please check your connection and try again.');
+      setError(t('Network error. Please check your connection and try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -209,8 +211,8 @@ export default function AccountLogin({
           <div className="text-center">
             <p className="text-sm text-gray-500 login-description account-modal-description">
               {mode === 'login'
-                ? 'Sign in to your account to access your family dashboard'
-                : 'Enter your email to receive a password reset link'
+                ? t('Sign in to your account to access your family dashboard')
+                : t('Enter your email to receive a password reset link')
               }
             </p>
           </div>
@@ -226,7 +228,7 @@ export default function AccountLogin({
                   setEmail(e.target.value);
                   setError('');
                 }}
-                placeholder="Enter your email"
+                placeholder={t('Enter your email')}
                 className="w-full"
                 required
                 disabled={isSubmitting || !!lockoutTime}
@@ -245,7 +247,7 @@ export default function AccountLogin({
                     setPassword(e.target.value);
                     setError('');
                   }}
-                  placeholder="Enter your password"
+                  placeholder={t('Enter your password')}
                   className="w-full"
                   required
                   disabled={isSubmitting || !!lockoutTime}
@@ -268,8 +270,8 @@ export default function AccountLogin({
               disabled={isSubmitting || !!lockoutTime}
             >
               {isSubmitting
-                ? (mode === 'login' ? 'Signing in...' : 'Sending email...')
-                : (mode === 'login' ? 'Sign In' : 'Send Reset Email')
+                ? (mode === 'login' ? t('Signing in...') : t('Sending email...'))
+                : (mode === 'login' ? t('Sign In') : t('Send Reset Email'))
               }
             </Button>
 

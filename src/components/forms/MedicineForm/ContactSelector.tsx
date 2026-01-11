@@ -46,7 +46,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch contacts');
+        throw new Error(t('Failed to fetch contacts'));
       }
       
       const result = await response.json();
@@ -178,7 +178,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
       <div className="relative">
         <Input
           type="text"
-          placeholder="Search contacts..."
+          placeholder={t("Search contacts...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full"
@@ -246,7 +246,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
                       setShowContactForm(true);
                     }}
                     className="contact-selector-edit-button p-1 text-gray-400 hover:text-gray-600"
-                    aria-label={`Edit ${contact.name}`}
+                    aria-label={t('Edit') + ' ' + contact.name}
                   >
                     <Edit className="h-3.5 w-3.5" />
                   </button>
@@ -258,7 +258,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
         
         {filteredContacts.length === 0 && (
           <div className="contact-selector-empty-state p-2 text-sm text-gray-500 text-center">
-            {searchTerm ? 'No contacts found' : 'No contacts available'}
+            {searchTerm ? t('No contacts found') : t('No contacts available')}
           </div>
         )}
         
