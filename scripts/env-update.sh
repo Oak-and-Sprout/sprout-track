@@ -45,6 +45,12 @@ if [ -z "$ENC_HASH_EXISTS" ]; then
     echo "COOKIE_SECURE=false" >> "$ENV_FILE"
     echo "# Encryption hash for local deployment data encryption" >> "$ENV_FILE"
     echo "ENC_HASH=\"$RANDOM_HASH\"" >> "$ENV_FILE"
+    echo "# VAPID keys for Web Push protocol (generated during setup)" >> "$ENV_FILE"
+    echo "VAPID_PUBLIC_KEY=" >> "$ENV_FILE"
+    echo "VAPID_PRIVATE_KEY=" >> "$ENV_FILE"
+    echo "VAPID_SUBJECT=mailto:notifications@<yourdomain.tld>" >> "$ENV_FILE"
+    echo "# Secret for securing the cron trigger endpoint" >> "$ENV_FILE"
+    echo "NOTIFICATION_CRON_SECRET=" >> "$ENV_FILE"
     
     echo "Environment variables and ENC_HASH generated and added to .env file"
 else
