@@ -11,6 +11,7 @@ import { Github, Users, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
 import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
 import TermsOfUseModal from '@/src/components/modals/terms-of-use';
 import { useLocalization } from '@/src/context/localization';
+import { LanguageSelector } from '@/src/components/ui/side-nav/language-selector';
 
 import './home.css';
 
@@ -43,7 +44,15 @@ const home = () => {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   
-  const activities = ['Sleep', 'Bottles', 'Diapers', 'Baths', 'Milestones', 'Medicine'];
+  // Localized activities array
+  const activities = [
+    t('Sleep'),
+    t('Bottle'),
+    t('Diapers'),
+    t('Baths'),
+    t('Milestones'),
+    t('Medicine')
+  ];
 
   // Animated tagline effect
   useEffect(() => {
@@ -55,7 +64,7 @@ const home = () => {
       }, 400); // Half of the transition duration
     }, 2000);
     return () => clearInterval(interval);
-  }, [activities.length]);
+  }, [activities.length, t]);
 
   // Caretaker video transition effect with different timing for each video and theme
   useEffect(() => {
@@ -244,6 +253,7 @@ const home = () => {
                 className="saas-account-btn"
                 onAccountManagerOpen={() => setShowAccountManager(true)}
               />
+              <LanguageSelector />
               <ThemeToggle variant="light" className="saas-theme-toggle" />
             </div>
           </div>
@@ -255,7 +265,8 @@ const home = () => {
         <div className="saas-hero-content">
           <div className="saas-hero-text">
             <h1 className="saas-hero-title">
-              {t('Easily track your baby\'s')}{' '}
+              <span>{t('Easily track your baby\'s')}</span>
+              <br />
               <span className={`saas-hero-animated-word ${isAnimating ? 'animating' : ''}`}>
                 {activities[currentActivity]}
               </span>
