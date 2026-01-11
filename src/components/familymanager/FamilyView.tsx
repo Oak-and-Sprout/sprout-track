@@ -71,6 +71,8 @@ export default function FamilyView({
   appConfig,
   formatDateTime,
 }: FamilyViewProps) {
+  const { t } = useLocalization();
+  
   return (
     <Table>
       <TableHeader>

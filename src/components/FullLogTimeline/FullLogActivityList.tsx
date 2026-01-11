@@ -33,7 +33,7 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
           {activities.length > 0 ? (
             activities.map((activity) => {
               const style = getActivityStyle(activity);
-              const description = getActivityDescription(activity, settings);
+              const description = getActivityDescription(activity, settings, t);
               return (
                 <div
                   key={activity.id}

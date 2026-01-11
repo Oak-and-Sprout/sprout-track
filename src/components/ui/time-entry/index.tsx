@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/src/lib/utils';
 import { TimeEntryProps } from './time-entry.types';
-import { timeEntryStyles as styles } from './time-entry.styles';import { useLocalization } from '@/src/context/localization';
+import { timeEntryStyles as styles } from './time-entry.styles';
+import { useLocalization } from '@/src/context/localization';
 
 import './time-entry.css';
 
@@ -27,6 +28,8 @@ export function TimeEntry({
   minTime,
   maxTime,
 }: TimeEntryProps) {
+  const { t } = useLocalization();
+  
   // Extract initial time values
   const getInitialValues = () => {
     // Ensure value is a valid Date object

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThemeProvider } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import SetupWizard from '@/src/components/SetupWizard';
 
 // TODO: Setup wizard implementation needed for future
@@ -54,6 +55,7 @@ export default function SetupPage() {
 
 export default function SetupPage() {
   const router = useRouter();
+  const { t } = useLocalization();
   const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);

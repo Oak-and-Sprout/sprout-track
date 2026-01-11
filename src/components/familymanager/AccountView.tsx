@@ -9,7 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
-import { Button } from "@/src/components/ui/button";import { useLocalization } from '@/src/context/localization';
+import { Button } from "@/src/components/ui/button";
+import { useLocalization } from '@/src/context/localization';
 
 import { 
   Loader2,
@@ -51,6 +52,8 @@ export default function AccountView({
   updatingAccountId,
   formatDateTime,
 }: AccountViewProps) {
+  const { t } = useLocalization();
+  
   return (
     <Table>
       <TableHeader>

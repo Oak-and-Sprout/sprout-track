@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useTheme } from '@/src/context/theme';import { useLocalization } from '@/src/context/localization';
+import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 
 import './account-expiration-banner.css';
 
@@ -25,6 +26,7 @@ interface AccountExpirationBannerProps {
 export default function AccountExpirationBanner({
  isAccountAuth }: AccountExpirationBannerProps) {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [jwtExpirationInfo, setJwtExpirationInfo] = useState<JWTExpirationInfo | null>(null);
   const [loading, setLoading] = useState(true);

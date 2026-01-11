@@ -28,6 +28,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
   selectedBaby,
   calculateAge
 }) => {
+  const { t } = useLocalization();
+  
   // State for time period selection
   const [mainPeriod, setMainPeriod] = useState<'2day' | '7day' | '14day' | '30day'>('7day');
   const [comparePeriod, setComparePeriod] = useState<'2day' | '7day' | '14day' | '30day'>('14day');
@@ -103,8 +105,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
   }, [selectedBaby]);
 
   // Helper function to format minutes into hours and minutes
-  const formatMinutes = (minutes: number): string => {  const { t } = useLocalization();
-
+  const formatMinutes = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;

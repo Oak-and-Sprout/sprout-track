@@ -1,7 +1,8 @@
 import React from 'react';
 import { cn } from '@/src/lib/utils';
 import { CalendarEventProps } from './calendar-event.types';
-import { calendarEventStyles as styles } from './calendar-event.styles';import { useLocalization } from '@/src/context/localization';
+import { calendarEventStyles as styles } from './calendar-event.styles';
+import { useLocalization } from '@/src/context/localization';
 
 import { 
   Calendar, 
@@ -24,9 +25,10 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   onClick,
   className,
 }) => {
+  const { t } = useLocalization();
+  
   // Format date for display
-  const formatDate = (dateString: string) => {  const { t } = useLocalization();
-
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       weekday: 'long',

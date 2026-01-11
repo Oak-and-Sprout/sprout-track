@@ -24,6 +24,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
   open,
   onClose,
 }) => {
+  const { t } = useLocalization();
   const [privacyPolicyContent, setPrivacyPolicyContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const { theme } = useTheme();
@@ -52,7 +53,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
   }, [open]);
 
   // Helper function to format text content with bold and italic
-  const formatTextContent = (text: string): React.ReactNode => {  const { t } = useLocalization();
+  const formatTextContent = (text: string): React.ReactNode => {
 
     if (!text) return text;
     

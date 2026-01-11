@@ -315,6 +315,7 @@ TablePagination.displayName = "TablePagination";
 const TablePageSize = React.forwardRef<HTMLDivElement, TablePageSizeProps>(
   ({ pageSize, pageSizeOptions = [5, 10, 20, 50, 100], onPageSizeChange, className, disabled, ...props }, ref) => {
     const { theme } = useTheme();
+    const { t } = useLocalization();
     
     return (
       <div

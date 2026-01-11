@@ -3,7 +3,8 @@
 import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { AlertTriangle, Crown } from 'lucide-react';
-import Image from 'next/image';import { useLocalization } from '@/src/context/localization';
+import Image from 'next/image';
+import { useLocalization } from '@/src/context/localization';
 
 import './expired-account.css';
 
@@ -20,6 +21,7 @@ export default function ExpiredAccountMessage({
   isTrialExpired = false,
   expirationDate
 }: ExpiredAccountMessageProps) {
+  const { t } = useLocalization();
 
   const handleUpgradeClick = () => {
     // Navigate to home page with login modal

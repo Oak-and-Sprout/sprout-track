@@ -33,8 +33,7 @@ interface FeedbackViewProps {
 }
 
 // Helper function to count unread messages from non-admin users
-const countUnreadUserMessages = (feedback: FeedbackResponse): number => {  const { t } = useLocalization();
-
+const countUnreadUserMessages = (feedback: FeedbackResponse): number => {
   if (!feedback.replies || feedback.replies.length === 0) {
     return feedback.viewed ? 0 : 1; // Original message counts if unread
   }
@@ -58,6 +57,7 @@ export default function FeedbackView({
   formatDateTime,
   onRefresh,
 }: FeedbackViewProps) {
+  const { t } = useLocalization();
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 

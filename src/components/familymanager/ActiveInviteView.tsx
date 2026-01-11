@@ -57,6 +57,8 @@ export default function ActiveInviteView({
   appConfig,
   formatDateTime,
 }: ActiveInviteViewProps) {
+  const { t } = useLocalization();
+  
   return (
     <Table>
       <TableHeader>

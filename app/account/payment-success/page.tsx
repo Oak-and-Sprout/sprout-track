@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Home, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
-import { Label } from '@/src/components/ui/label';import { useLocalization } from '@/src/context/localization';
+import { Label } from '@/src/components/ui/label';
+import { useLocalization } from '@/src/context/localization';
 
 import '../account.css';
 
@@ -15,7 +16,8 @@ import '../account.css';
  * Handles the payment verification and countdown logic.
  * Separated to allow Suspense boundary wrapping.
  */
-function PaymentSuccessContent() {  const { t } = useLocalization();
+function PaymentSuccessContent() {
+  const { t } = useLocalization();
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -215,6 +217,8 @@ function PaymentSuccessContent() {  const { t } = useLocalization();
  * Wrapped in Suspense to handle useSearchParams() requirement.
  */
 export default function PaymentSuccessPage() {
+  const { t } = useLocalization();
+  
   return (
     <Suspense
       fallback={

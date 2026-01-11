@@ -36,6 +36,8 @@ export default function BetaSubscriberView({
   deletingSubscriberId,
   formatDateTime,
 }: BetaSubscriberViewProps) {
+  const { t } = useLocalization();
+  
   return (
     <Table>
       <TableHeader>

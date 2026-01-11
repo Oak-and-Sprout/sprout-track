@@ -10,7 +10,8 @@ import {
 } from '@/src/components/ui/popover';
 import { cn } from '@/src/lib/utils';
 import CalendarDayView from '@/src/components/CalendarDayView';
-import { CalendarProps, CalendarState } from './calendar.types';import { useLocalization } from '@/src/context/localization';
+import { CalendarProps, CalendarState } from './calendar.types';
+import { useLocalization } from '@/src/context/localization';
 
 import './calendar.css';
 
@@ -26,6 +27,7 @@ import './calendar.css';
  */
 export function Calendar({
  selectedBabyId, userTimezone, onDateSelect }: CalendarProps) {
+  const { t } = useLocalization();
   
   // Component state
   const [state, setState] = useState<CalendarState>({

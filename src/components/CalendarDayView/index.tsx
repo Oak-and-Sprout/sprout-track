@@ -14,7 +14,8 @@ import {
 import CalendarEventForm from '@/src/components/forms/CalendarEventForm';
 import { CalendarEventFormData } from '@/src/components/forms/CalendarEventForm/calendar-event-form.types';
 import { useToast } from '@/src/components/ui/toast';
-import { handleExpirationError } from '@/src/lib/expiration-error-handler';import { useLocalization } from '@/src/context/localization';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 import './calendar-day-view.css';
 
@@ -42,6 +43,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
   isOpen,
 }) => {
   const { showToast } = useToast();
+  const { t } = useLocalization();
   
   // State for event form
   const [showEventForm, setShowEventForm] = useState(false);
@@ -132,8 +134,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
       });
       
       // Sort events within each group by start time
-      const sortByTime = (a: any, b: any) => {  const { t } = useLocalization();
-
+      const sortByTime = (a: any, b: any) => {
         return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
       };
       

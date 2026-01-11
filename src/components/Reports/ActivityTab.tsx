@@ -582,7 +582,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
           }}
         >
           {(() => {
-            const details = getActivityDetails(hoveredActivity.activity as unknown as TimelineActivityType, settings);
+            const details = getActivityDetails(hoveredActivity.activity as unknown as TimelineActivityType, settings, t);
             return (
               <>
                 <div className={cn(activityChartStyles.tooltipTitle, "activity-chart-tooltip-title")}>

@@ -300,7 +300,7 @@ const getDisplayUnit = (type: GrowthMeasurementType, settings: Settings | null):
 };
 
 // Custom tooltip component
-const CustomTooltip = ({ active, payload, label, settings, measurementType }: any) => {
+const CustomTooltip = ({ active, payload, label, settings, measurementType, t }: any) => {
   if (active && payload && payload.length) {
     const measurementPoint = payload.find((p: any) => p.dataKey === 'measurement');
     const dataPoint = payload[0]?.payload as ChartDataPoint;
@@ -924,7 +924,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
                 label={{ value: unitLabel, angle: -90, position: 'insideLeft', offset: 18 }}
                 className="growth-chart-axis"
               />
-              <Tooltip content={<CustomTooltip settings={settings} measurementType={measurementType} />} />
+              <Tooltip content={<CustomTooltip settings={settings} measurementType={measurementType} t={t} />} />
 
               {/* Percentile lines - using gradient from light to dark */}
               <Line

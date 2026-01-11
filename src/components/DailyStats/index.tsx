@@ -31,6 +31,7 @@ import { useLocalization } from '@/src/context/localization';
 
 const StatsTicker: React.FC<StatsTickerProps> = ({ stats }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const tickerRef = useRef<HTMLDivElement>(null);
   const [animationDuration, setAnimationDuration] = useState(30); // seconds
   
@@ -55,7 +56,7 @@ const StatsTicker: React.FC<StatsTickerProps> = ({ stats }) => {
   const tickerContent = (
     <>
       {stats.map((stat, index) => (
-        <div key={  const { t } = useLocalization(){t('; index} className=')}{dailyStatsStyles.ticker.item}>
+        <div key={index} className={dailyStatsStyles.ticker.item}>
           <div className={dailyStatsStyles.ticker.icon}>{stat.icon}</div>
           <span className={dailyStatsStyles.ticker.label}>{stat.label}: </span>
           <span className={dailyStatsStyles.ticker.value}>{stat.value}</span>
@@ -103,6 +104,7 @@ const StatItem: React.FC<StatItemProps> = ({ icon, label, value }) => (
 
 export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoading = false }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Helper function to format minutes into hours and minutes

@@ -27,9 +27,10 @@ import { useLocalization } from '@/src/context/localization';
  * Uses an accordion-style list with expandable details and a form-page component for adding/editing
  */
 const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) => {
+  const { t } = useLocalization();
   
   // Helper function to format doseMinTime from DD:HH:MM to user-friendly format
-  const formatDoseMinTimeDisplay = (doseMinTime: string): string => {  const { t } = useLocalization();
+  const formatDoseMinTimeDisplay = (doseMinTime: string): string => {
 
     if (!doseMinTime) return t('Not specified');
     

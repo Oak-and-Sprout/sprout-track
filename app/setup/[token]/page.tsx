@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThemeProvider } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import SetupWizard from '@/src/components/SetupWizard';
 
 // TODO: Setup wizard implementation needed for future
@@ -65,6 +66,7 @@ type SetupPageWithTokenProps = {
 
 export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) {
   const router = useRouter();
+  const { t } = useLocalization();
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);

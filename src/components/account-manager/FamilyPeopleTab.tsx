@@ -34,6 +34,8 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
   familyData,
   onDataRefresh,
 }) => {
+  const { t } = useLocalization();
+  
   // Data states
   const [babies, setBabies] = useState<BabyData[]>([]);
   const [caretakers, setCaretakers] = useState<CaretakerData[]>([]);
@@ -120,8 +122,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
   };
 
   // Calculate age from birth date
-  const calculateAge = (birthDate: Date): string => {  const { t } = useLocalization();
-
+  const calculateAge = (birthDate: Date): string => {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - birthDate.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -505,6 +506,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           ...selectedCaretaker,
           type: selectedCaretaker.type || null,
           role: selectedCaretaker.role as any,
+          language: (selectedCaretaker as any).language || 'en',
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
