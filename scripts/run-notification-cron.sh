@@ -17,12 +17,15 @@ fi
 
 # Check if notifications are enabled
 if [ "$ENABLE_NOTIFICATIONS" != "true" ]; then
+  echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Notifications disabled, skipping" >&2
   exit 0  # Silently exit if notifications are disabled
 fi
 
+echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Starting notification check..."
+
 # Check if cron secret is set
 if [ -z "$NOTIFICATION_CRON_SECRET" ]; then
-  echo "$(date): ERROR: NOTIFICATION_CRON_SECRET is not set" >&2
+  echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] ERROR: NOTIFICATION_CRON_SECRET is not set" >&2
   exit 1
 fi
 
@@ -45,6 +48,8 @@ fi
 # Construct full endpoint URL
 ENDPOINT_URL="$API_URL/api/notifications/cron"
 
+echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Calling API endpoint: $ENDPOINT_URL"
+
 # Make the API call
 RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$ENDPOINT_URL" \
   -H "Content-Type: application/json" \
@@ -59,11 +64,13 @@ RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
 
 # Check if request was successful
 if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-  # Success - exit silently (cron will only log errors)
+  # Success - log to stdout for debugging
+  echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] ✓ Success (HTTP $HTTP_CODE)"
+  echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Response: $RESPONSE_BODY"
   exit 0
 else
   # Error - log to stderr
-  echo "$(date): ERROR: API call failed with HTTP $HTTP_CODE" >&2
-  echo "$(date): Response: $RESPONSE_BODY" >&2
+  echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] ✗ ERROR: API call failed with HTTP $HTTP_CODE" >&2
+  echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Response: $RESPONSE_BODY" >&2
   exit 1
 fi

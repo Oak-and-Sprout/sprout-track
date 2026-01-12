@@ -82,6 +82,7 @@ export default function NotificationSettings({
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('[NotificationSettings] Fetching notification data...');
       const authToken = localStorage.getItem('authToken');
       const headers: HeadersInit = authToken
         ? { Authorization: `Bearer ${authToken}` }
@@ -97,30 +98,46 @@ export default function NotificationSettings({
       if (subscriptionsResponse.ok) {
         const subsData = await subscriptionsResponse.json();
         if (subsData.success) {
-          setSubscriptions(subsData.data || []);
+          const subs = subsData.data || [];
+          setSubscriptions(subs);
+          console.log(`[NotificationSettings] Loaded ${subs.length} subscription(s)`);
         }
+      } else {
+        console.warn('[NotificationSettings] Failed to fetch subscriptions:', subscriptionsResponse.status);
       }
 
       if (preferencesResponse.ok) {
         const prefsData = await preferencesResponse.json();
         if (prefsData.success) {
-          setPreferences(prefsData.data || []);
+          const prefs = prefsData.data || [];
+          setPreferences(prefs);
+          console.log(`[NotificationSettings] Loaded ${prefs.length} preference(s)`);
         }
+      } else {
+        console.warn('[NotificationSettings] Failed to fetch preferences:', preferencesResponse.status);
       }
 
       setIsSubscribed(statusResponse.isSubscribed);
       setSubscriptionId(statusResponse.subscriptionId);
+      console.log('[NotificationSettings] Subscription status:', {
+        isSubscribed: statusResponse.isSubscribed,
+        subscriptionId: statusResponse.subscriptionId,
+      });
     } catch (error) {
-      console.error('Error fetching notification data:', error);
+      console.error('[NotificationSettings] Error fetching notification data:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('[NotificationSettings] Component mounted, parentLoading:', parentLoading);
     if (!parentLoading) {
       fetchData();
     }
+    return () => {
+      console.log('[NotificationSettings] Component unmounting');
+    };
   }, [parentLoading]);
 
   // Handle enabling notifications
@@ -201,6 +218,11 @@ export default function NotificationSettings({
   // Handle removing a device
   const handleRemoveDevice = async (subscription: PushSubscription) => {
     try {
+      console.log('[NotificationSettings] Removing device:', {
+        id: subscription.id,
+        deviceLabel: subscription.deviceLabel,
+        endpoint: subscription.endpoint?.substring(0, 50) + '...',
+      });
       const authToken = localStorage.getItem('authToken');
       const response = await fetch(
         `/api/notifications/subscriptions/${subscription.id}`,
@@ -217,9 +239,14 @@ export default function NotificationSettings({
         throw new Error(error.error || t('Failed to unsubscribe'));
       }
 
+      console.log('[NotificationSettings] Device removed from server successfully');
+
       // Also unsubscribe from browser
       if (subscription.endpoint) {
-        await unsubscribeFromPush(subscription.endpoint).catch(console.error);
+        console.log('[NotificationSettings] Unsubscribing from browser push...');
+        await unsubscribeFromPush(subscription.endpoint).catch((err) => {
+          console.warn('[NotificationSettings] Error unsubscribing from browser (non-critical):', err);
+        });
       }
 
       showToast({
@@ -231,7 +258,7 @@ export default function NotificationSettings({
 
       await fetchData();
     } catch (error: any) {
-      console.error('Error removing device:', error);
+      console.error('[NotificationSettings] Error removing device:', error);
       showToast({
         variant: 'error',
         title: t('Error'),
@@ -253,6 +280,12 @@ export default function NotificationSettings({
     }
   ) => {
     try {
+      console.log('[NotificationSettings] Updating preference:', {
+        subscriptionId,
+        babyId,
+        eventType,
+        updates,
+      });
       const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/notifications/preferences', {
         method: 'PUT',
@@ -273,9 +306,11 @@ export default function NotificationSettings({
         throw new Error(error.error || t('Failed to save preferences'));
       }
 
+      const responseData = await response.json();
+      console.log('[NotificationSettings] Preference updated successfully:', responseData);
       await fetchData();
     } catch (error: any) {
-      console.error('Error updating preference:', error);
+      console.error('[NotificationSettings] Error updating preference:', error);
       showToast({
         variant: 'error',
         title: t('Error'),

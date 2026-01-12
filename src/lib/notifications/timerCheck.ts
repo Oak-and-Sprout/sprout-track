@@ -187,11 +187,16 @@ async function sendTimerNotification(
 export async function checkTimerExpirations(): Promise<number> {
   // Check if notifications are enabled
   if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    console.log('[TimerCheck] Notifications disabled, skipping timer check');
     return 0; // No-op if disabled
   }
 
+  console.log('[TimerCheck] Starting timer expiration check...');
+  const startTime = Date.now();
+
   try {
     // Query all enabled timer-type notification preferences
+    console.log('[TimerCheck] Querying enabled timer preferences...');
     const timerPreferences = await prisma.notificationPreference.findMany({
       where: {
         eventType: {
@@ -224,8 +229,11 @@ export async function checkTimerExpirations(): Promise<number> {
     });
 
     if (timerPreferences.length === 0) {
+      console.log('[TimerCheck] No enabled timer preferences found');
       return 0;
     }
+
+    console.log(`[TimerCheck] Found ${timerPreferences.length} enabled timer preference(s)`);
 
     // Group preferences by baby and event type
     const babyEventMap = new Map<
@@ -252,9 +260,12 @@ export async function checkTimerExpirations(): Promise<number> {
     }
 
     let notificationsSent = 0;
+    console.log(`[TimerCheck] Processing ${babyEventMap.size} unique baby/baby-event combination(s)`);
 
-    // Process each baby
-    for (const [babyId, eventMap] of babyEventMap.entries()) {
+    // Process each baby - convert Map entries to array for ES5 compatibility
+    const babyEventEntries = Array.from(babyEventMap.entries());
+    for (const [babyId, eventMap] of babyEventEntries) {
+      console.log(`[TimerCheck] Processing baby ${babyId}...`);
       const baby = timerPreferences.find((p) => p.baby?.id === babyId)?.baby;
       if (!baby) {
         continue;
@@ -264,11 +275,16 @@ export async function checkTimerExpirations(): Promise<number> {
       if (eventMap.has(NotificationEventType.FEED_TIMER_EXPIRED)) {
         const feedPreferences = eventMap.get(NotificationEventType.FEED_TIMER_EXPIRED)!;
         const thresholdMinutes = parseWarningTime(baby.feedWarningTime);
+        console.log(`[TimerCheck] Checking feed timer for baby ${babyId} (threshold: ${thresholdMinutes} minutes)`);
         const lastFeedTime = await getLastActivityTime(babyId, 'feed');
 
         if (lastFeedTime && thresholdMinutes > 0) {
+          const timeSinceLastFeed = (Date.now() - lastFeedTime.getTime()) / (1000 * 60);
+          console.log(`[TimerCheck] Last feed: ${timeSinceLastFeed.toFixed(1)} minutes ago (threshold: ${thresholdMinutes} minutes)`);
+          
           for (const preference of feedPreferences) {
             if (!preference.subscription) {
+              console.warn(`[TimerCheck] Preference ${preference.id} has no subscription, skipping`);
               continue;
             }
 
@@ -279,8 +295,11 @@ export async function checkTimerExpirations(): Promise<number> {
               thresholdMinutes
             );
 
+            console.log(`[TimerCheck] Feed timer preference ${preference.id}: eligible=${eligible}, lastNotified=${preference.lastTimerNotifiedAt}, interval=${preference.timerIntervalMinutes}`);
+
             if (eligible) {
               try {
+                console.log(`[TimerCheck] Sending feed timer notification for preference ${preference.id}...`);
                 await sendTimerNotification(
                   {
                     id: preference.id,
@@ -299,14 +318,17 @@ export async function checkTimerExpirations(): Promise<number> {
                 });
 
                 notificationsSent++;
+                console.log(`[TimerCheck] Feed timer notification sent successfully (total: ${notificationsSent})`);
               } catch (error) {
                 console.error(
-                  `Error sending feed timer notification for preference ${preference.id}:`,
+                  `[TimerCheck] Error sending feed timer notification for preference ${preference.id}:`,
                   error
                 );
               }
             }
           }
+        } else {
+          console.log(`[TimerCheck] Feed timer check skipped: lastFeedTime=${lastFeedTime}, threshold=${thresholdMinutes}`);
         }
       }
 
@@ -314,11 +336,16 @@ export async function checkTimerExpirations(): Promise<number> {
       if (eventMap.has(NotificationEventType.DIAPER_TIMER_EXPIRED)) {
         const diaperPreferences = eventMap.get(NotificationEventType.DIAPER_TIMER_EXPIRED)!;
         const thresholdMinutes = parseWarningTime(baby.diaperWarningTime);
+        console.log(`[TimerCheck] Checking diaper timer for baby ${babyId} (threshold: ${thresholdMinutes} minutes)`);
         const lastDiaperTime = await getLastActivityTime(babyId, 'diaper');
 
         if (lastDiaperTime && thresholdMinutes > 0) {
+          const timeSinceLastDiaper = (Date.now() - lastDiaperTime.getTime()) / (1000 * 60);
+          console.log(`[TimerCheck] Last diaper: ${timeSinceLastDiaper.toFixed(1)} minutes ago (threshold: ${thresholdMinutes} minutes)`);
+          
           for (const preference of diaperPreferences) {
             if (!preference.subscription) {
+              console.warn(`[TimerCheck] Preference ${preference.id} has no subscription, skipping`);
               continue;
             }
 
@@ -329,8 +356,11 @@ export async function checkTimerExpirations(): Promise<number> {
               thresholdMinutes
             );
 
+            console.log(`[TimerCheck] Diaper timer preference ${preference.id}: eligible=${eligible}, lastNotified=${preference.lastTimerNotifiedAt}, interval=${preference.timerIntervalMinutes}`);
+
             if (eligible) {
               try {
+                console.log(`[TimerCheck] Sending diaper timer notification for preference ${preference.id}...`);
                 await sendTimerNotification(
                   {
                     id: preference.id,
@@ -349,21 +379,26 @@ export async function checkTimerExpirations(): Promise<number> {
                 });
 
                 notificationsSent++;
+                console.log(`[TimerCheck] Diaper timer notification sent successfully (total: ${notificationsSent})`);
               } catch (error) {
                 console.error(
-                  `Error sending diaper timer notification for preference ${preference.id}:`,
+                  `[TimerCheck] Error sending diaper timer notification for preference ${preference.id}:`,
                   error
                 );
               }
             }
           }
+        } else {
+          console.log(`[TimerCheck] Diaper timer check skipped: lastDiaperTime=${lastDiaperTime}, threshold=${thresholdMinutes}`);
         }
       }
     }
 
+    const duration = Date.now() - startTime;
+    console.log(`[TimerCheck] Timer check completed: ${notificationsSent} notification(s) sent in ${duration}ms`);
     return notificationsSent;
   } catch (error) {
-    console.error('Error in checkTimerExpirations:', error);
+    console.error('[TimerCheck] Error in checkTimerExpirations:', error);
     // Don't throw - this should never block cron execution
     return 0;
   }

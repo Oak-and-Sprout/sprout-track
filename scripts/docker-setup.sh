@@ -23,10 +23,19 @@ show_usage() {
     echo "  logs        View container logs"
     echo "  status      Check container status"
     echo "  clean       Remove containers, images, and volumes (caution: data loss)"
+    echo "  setup-notifications  Setup notification features (VAPID keys, cron)"
+    echo "  test-notifications   Test notification endpoint"
+    echo "  notification-logs    View notification cron logs"
+    echo "  notification-status  Check notification configuration status"
     echo "  help        Show this help message"
     echo ""
     echo "Environment Variables:"
     echo "  PORT        Port to expose the application (default: 3000)"
+    echo "  ENABLE_NOTIFICATIONS  Enable push notifications (default: false)"
+    echo "  NOTIFICATION_CRON_SECRET  Secret for cron endpoint"
+    echo "  APP_URL     Base URL for API calls"
+    echo ""
+    echo "See documentation/PushNotifications-README.md for full notification setup"
     echo ""
     echo "Examples:"
     echo "  $0 build    # Build the Docker image"
@@ -191,6 +200,96 @@ clean_resources() {
     fi
 }
 
+# Setup notification features
+setup_notifications() {
+    echo "Setting up notification features..."
+    
+    if [ "$ENABLE_NOTIFICATIONS" != "true" ]; then
+        echo "Error: ENABLE_NOTIFICATIONS is not set to 'true'"
+        echo "Set ENABLE_NOTIFICATIONS=true in your .env file or environment"
+        return 1
+    fi
+    
+    echo "Running notification setup inside container..."
+    docker-compose exec app npm run notification:cron:setup
+    
+    if [ $? -eq 0 ]; then
+        echo "✓ Notification setup completed"
+    else
+        echo "⚠ Warning: Notification setup may have failed"
+        return 1
+    fi
+}
+
+# Test notification endpoint
+test_notifications() {
+    echo "Testing notification cron endpoint..."
+    
+    if [ -z "$NOTIFICATION_CRON_SECRET" ]; then
+        echo "Error: NOTIFICATION_CRON_SECRET is not set"
+        echo "Set NOTIFICATION_CRON_SECRET in your .env file"
+        return 1
+    fi
+    
+    APP_URL="${APP_URL:-http://localhost:3000}"
+    echo "Testing endpoint: $APP_URL/api/notifications/cron"
+    
+    response=$(curl -s -w "\n%{http_code}" -X POST "$APP_URL/api/notifications/cron" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $NOTIFICATION_CRON_SECRET" \
+        --max-time 30)
+    
+    http_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | sed '$d')
+    
+    if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+        echo "✓ Test successful (HTTP $http_code)"
+        echo "Response: $body"
+    else
+        echo "✗ Test failed (HTTP $http_code)"
+        echo "Response: $body"
+        return 1
+    fi
+}
+
+# View notification logs
+view_notification_logs() {
+    echo "Viewing notification cron logs..."
+    
+    if [ -f "./logs/notification-cron.log" ]; then
+        tail -n 100 ./logs/notification-cron.log
+    else
+        echo "Log file not found: ./logs/notification-cron.log"
+        echo "Logs may be in the container. Try: docker-compose exec app cat /app/logs/notification-cron.log"
+    fi
+}
+
+# Check notification status
+check_notification_status() {
+    echo "Checking notification configuration status..."
+    echo ""
+    
+    echo "Environment Variables:"
+    echo "  ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-not set}"
+    echo "  NOTIFICATION_CRON_SECRET: ${NOTIFICATION_CRON_SECRET:+set (hidden)}${NOTIFICATION_CRON_SECRET:-not set}"
+    echo "  APP_URL: ${APP_URL:-not set}"
+    echo "  ROOT_DOMAIN: ${ROOT_DOMAIN:-not set}"
+    echo ""
+    
+    if docker-compose ps | grep -q "sprout-track.*Up"; then
+        echo "Container Status: Running"
+        echo ""
+        echo "Checking cron job..."
+        docker-compose exec app crontab -l 2>/dev/null | grep -q "notification-cron" && echo "  ✓ Cron job installed" || echo "  ✗ Cron job not found"
+        echo ""
+        echo "Checking cron daemon..."
+        docker-compose exec app pgrep crond > /dev/null 2>&1 && echo "  ✓ Cron daemon running" || echo "  ✗ Cron daemon not running"
+    else
+        echo "Container Status: Not running"
+        echo "Start the container first with: $0 start"
+    fi
+}
+
 # Main script logic
 check_docker
 
@@ -221,6 +320,18 @@ case "$1" in
         ;;
     clean)
         clean_resources
+        ;;
+    setup-notifications)
+        setup_notifications
+        ;;
+    test-notifications)
+        test_notifications
+        ;;
+    notification-logs)
+        view_notification_logs
+        ;;
+    notification-status)
+        check_notification_status
         ;;
     help|*)
         show_usage
