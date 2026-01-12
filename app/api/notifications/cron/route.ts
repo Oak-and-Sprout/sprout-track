@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '../../types';
+import { checkTimerExpirations } from '../../../../src/lib/notifications/timerCheck';
+import { runCleanup } from '../../../../src/lib/notifications/cleanup';
 
 /**
  * POST handler for cron-triggered notification checks
@@ -56,13 +58,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // TODO: Phase 8 - Implement timer check utility
-    // TODO: Phase 10 - Implement cleanup utility
-    // For now, return success with placeholder response
+    // Run timer check to detect expired timers and send notifications
+    let notificationsSent = 0;
+    try {
+      notificationsSent = await checkTimerExpirations();
+    } catch (error) {
+      console.error('Error in timer check:', error);
+      // Continue with cleanup even if timer check fails
+    }
+
+    // Run cleanup to remove failed subscriptions and old logs
+    let subscriptionsCleaned = 0;
+    let logsCleaned = 0;
+    try {
+      const cleanupResult = await runCleanup();
+      subscriptionsCleaned = cleanupResult.subscriptionsCleaned;
+      logsCleaned = cleanupResult.logsCleaned;
+    } catch (error) {
+      console.error('Error in cleanup:', error);
+      // Don't fail the entire request if cleanup fails
+    }
+
     const result = {
-      notificationsSent: 0,
-      subscriptionsCleaned: 0,
-      message: 'Timer check and cleanup utilities not yet implemented (Phases 8 & 10)',
+      notificationsSent,
+      subscriptionsCleaned,
+      logsCleaned,
     };
 
     return NextResponse.json<ApiResponse<typeof result>>({
