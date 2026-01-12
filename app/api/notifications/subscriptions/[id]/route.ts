@@ -11,6 +11,17 @@ async function handleDelete(
   req: NextRequest,
   authContext: AuthResult
 ) {
+  // Check if notifications are enabled
+  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: 'Push notifications are disabled',
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const { familyId } = authContext;
 

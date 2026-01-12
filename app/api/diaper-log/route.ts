@@ -4,6 +4,7 @@ import { ApiResponse, DiaperLogCreate, DiaperLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
+import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -47,6 +48,10 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       updatedAt: formatForResponse(diaperLog.updatedAt) || '',
       deletedAt: formatForResponse(diaperLog.deletedAt),
     };
+
+    // Notify subscribers about activity creation (non-blocking)
+    notifyActivityCreated(diaperLog.babyId, 'diaper', { type: body.type }).catch(console.error);
+    resetTimerNotificationState(diaperLog.babyId, 'diaper').catch(console.error);
 
     return NextResponse.json<ApiResponse<DiaperLogResponse>>({
       success: true,

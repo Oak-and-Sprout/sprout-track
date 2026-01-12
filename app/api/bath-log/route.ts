@@ -4,6 +4,7 @@ import { ApiResponse, BathLogCreate, BathLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
+import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -49,6 +50,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       updatedAt: formatForResponse(bathLog.updatedAt) || '',
       deletedAt: formatForResponse(bathLog.deletedAt),
     };
+
+    // Notify subscribers about activity creation (non-blocking)
+    notifyActivityCreated(bathLog.babyId, 'bath').catch(console.error);
 
     return NextResponse.json<ApiResponse<BathLogResponse>>({
       success: true,

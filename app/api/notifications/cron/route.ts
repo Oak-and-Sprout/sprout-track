@@ -7,6 +7,17 @@ import { ApiResponse } from '../../types';
  * This endpoint will be called by system cron to check for timer expirations
  */
 export async function POST(req: NextRequest) {
+  // Check if notifications are enabled
+  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: 'Push notifications are disabled',
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     // Verify secret header
     const authHeader = req.headers.get('Authorization');

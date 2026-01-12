@@ -30,6 +30,7 @@ import ChangePinModal from '@/src/components/modals/ChangePinModal';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import NotificationSettings from './NotificationSettings';
 
 interface FamilyData {
   id: string;
@@ -77,7 +78,7 @@ export default function SettingsForm({
   const [showChangePinModal, setShowChangePinModal] = useState(false);
   const [units, setUnits] = useState<Unit[]>([]);
   const [appConfig, setAppConfig] = useState<{ rootDomain: string; enableHttps: boolean } | null>(null);
-  const [deploymentConfig, setDeploymentConfig] = useState<{ deploymentMode: string; enableAccounts: boolean; allowAccountRegistration: boolean } | null>(null);
+  const [deploymentConfig, setDeploymentConfig] = useState<{ deploymentMode: string; enableAccounts: boolean; allowAccountRegistration: boolean; notificationsEnabled?: boolean } | null>(null);
 
   // Family editing state
   const [editingFamily, setEditingFamily] = useState(false);
@@ -948,6 +949,14 @@ export default function SettingsForm({
                 </div>
               </div>
             </div>
+
+            {/* Notification Settings - Only show if enabled */}
+            {deploymentConfig?.notificationsEnabled && (
+              <NotificationSettings
+                babies={babies}
+                loading={loading}
+              />
+            )}
 
             {/* Only show System Administration section in self-hosted mode */}
             {deploymentConfig?.deploymentMode !== 'saas' && (

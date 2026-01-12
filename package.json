@@ -15,7 +15,7 @@
     "prisma:studio": "prisma studio",
     "prisma:studio:log": "prisma studio --schema=prisma/log-schema.prisma",
     "prisma:seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
-    "setup:vapid": "ts-node scripts/setup-vapid-keys.ts"
+    "setup:vapid": "tsx scripts/setup-vapid-keys.ts"
   },
   "dependencies": {
     "@lucide/lab": "^0.1.2",

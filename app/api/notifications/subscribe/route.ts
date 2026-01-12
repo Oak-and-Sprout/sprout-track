@@ -8,8 +8,22 @@ import { withAuthContext, AuthResult } from '../../utils/auth';
  * Creates a new PushSubscription record linked to the authenticated user
  */
 async function handlePost(req: NextRequest, authContext: AuthResult) {
+  // Check if notifications are enabled
+  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    console.log('Push notifications disabled - ENABLE_NOTIFICATIONS is not true');
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: 'Push notifications are disabled',
+      },
+      { status: 503 }
+    );
+  }
+
   try {
+    console.log('Processing push subscription request...');
     const { familyId, accountId, caretakerId } = authContext;
+    console.log('Auth context:', { familyId, accountId: accountId || null, caretakerId: caretakerId || null });
 
     if (!familyId) {
       return NextResponse.json<ApiResponse<null>>(
@@ -24,7 +38,20 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     const body = await req.json();
     const { endpoint, keys, deviceLabel, userAgent } = body;
 
+    console.log('Subscription payload:', {
+      endpoint: endpoint?.substring(0, 50) + '...',
+      hasKeys: !!(keys?.p256dh && keys?.auth),
+      deviceLabel,
+      userAgent: userAgent?.substring(0, 50) + '...',
+    });
+
     if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
+      console.error('Missing required fields:', {
+        hasEndpoint: !!endpoint,
+        hasKeys: !!keys,
+        hasP256dh: !!keys?.p256dh,
+        hasAuth: !!keys?.auth,
+      });
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -35,9 +62,16 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     }
 
     // Check if subscription already exists for this endpoint
+    console.log('Checking for existing subscription...');
     const existing = await prisma.pushSubscription.findUnique({
       where: { endpoint },
     });
+    
+    if (existing) {
+      console.log('Existing subscription found, updating...', { id: existing.id });
+    } else {
+      console.log('No existing subscription, creating new...');
+    }
 
     if (existing) {
       // Update existing subscription
@@ -76,12 +110,15 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       },
     });
 
+    console.log('Push subscription created successfully:', { id: subscription.id, familyId });
+
     return NextResponse.json<ApiResponse<{ id: string }>>({
       success: true,
       data: { id: subscription.id },
     });
   } catch (error: any) {
     console.error('Error creating push subscription:', error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
@@ -97,6 +134,17 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
  * Removes subscription by endpoint
  */
 async function handleDelete(req: NextRequest, authContext: AuthResult) {
+  // Check if notifications are enabled
+  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: 'Push notifications are disabled',
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const { familyId } = authContext;
 

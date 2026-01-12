@@ -7,6 +7,17 @@ import { ApiResponse } from '../../types';
  * No authentication required - public key is safe to expose
  */
 export async function GET(req: NextRequest) {
+  // Check if notifications are enabled
+  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: 'Push notifications are disabled',
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const publicKey = process.env.VAPID_PUBLIC_KEY;
 

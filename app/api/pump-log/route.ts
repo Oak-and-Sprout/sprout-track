@@ -4,6 +4,7 @@ import { ApiResponse, PumpLogCreate, PumpLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse, calculateDurationMinutes } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
+import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -69,6 +70,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       updatedAt: formatForResponse(pumpLog.updatedAt) || '',
       deletedAt: formatForResponse(pumpLog.deletedAt),
     };
+
+    // Notify subscribers about activity creation (non-blocking)
+    notifyActivityCreated(pumpLog.babyId, 'pump').catch(console.error);
 
     return NextResponse.json<ApiResponse<PumpLogResponse>>({
       success: true,

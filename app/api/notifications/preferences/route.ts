@@ -9,6 +9,17 @@ import { NotificationEventType } from '@prisma/client';
  * Returns all preferences for the authenticated user's subscriptions
  */
 async function handleGet(req: NextRequest, authContext: AuthResult) {
+  // Check if notifications are enabled
+  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: 'Push notifications are disabled',
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const { familyId, accountId, caretakerId } = authContext;
 
@@ -79,6 +90,17 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
  * Creates or updates a NotificationPreference record
  */
 async function handlePut(req: NextRequest, authContext: AuthResult) {
+  // Check if notifications are enabled
+  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: 'Push notifications are disabled',
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const { familyId, accountId, caretakerId } = authContext;
 

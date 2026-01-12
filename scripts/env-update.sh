@@ -51,6 +51,8 @@ if [ -z "$ENC_HASH_EXISTS" ]; then
     echo "VAPID_SUBJECT=mailto:notifications@<yourdomain.tld>" >> "$ENV_FILE"
     echo "# Secret for securing the cron trigger endpoint" >> "$ENV_FILE"
     echo "NOTIFICATION_CRON_SECRET=" >> "$ENV_FILE"
+    echo "# Enable push notifications (true/false)" >> "$ENV_FILE"
+    echo "ENABLE_NOTIFICATIONS=false" >> "$ENV_FILE"
     
     echo "Environment variables and ENC_HASH generated and added to .env file"
 else
@@ -61,10 +63,11 @@ fi
 echo "Checking for VAPID keys in .env file..."
 if ! grep -q "^VAPID_PUBLIC_KEY=" "$ENV_FILE" || [ -z "$(grep -E "^VAPID_PUBLIC_KEY=" "$ENV_FILE" | cut -d '=' -f2)" ]; then
     echo "VAPID keys not found or empty. Generating VAPID keys..."
-    if command -v ts-node &> /dev/null; then
-        ts-node "$(dirname "$(readlink -f "$0")")/setup-vapid-keys.ts"
-    else
-        echo "⚠️  ts-node not found. Please run 'npm run setup:vapid' manually to generate VAPID keys."
+    # Change to project directory to run npm script
+    cd "$PROJECT_DIR" || exit 1
+    npm run setup:vapid
+    if [ $? -ne 0 ]; then
+        echo "Warning: Failed to generate VAPID keys. Please run 'npm run setup:vapid' manually."
     fi
 else
     echo "VAPID keys already exist in .env file"
