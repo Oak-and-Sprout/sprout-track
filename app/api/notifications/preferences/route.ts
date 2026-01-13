@@ -195,14 +195,72 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Parse activityTypes if provided (should be JSON string array)
+    // Validate and parse activityTypes if provided (should be JSON string array)
+    const VALID_ACTIVITY_TYPES = ['feed', 'diaper', 'sleep', 'bath', 'pump', 'medicine', 'note', 'milestone', 'measurement'];
     let activityTypesJson: string | null = null;
     if (activityTypes !== undefined && activityTypes !== null) {
+      let activityTypesArray: string[];
       if (Array.isArray(activityTypes)) {
-        activityTypesJson = JSON.stringify(activityTypes);
+        activityTypesArray = activityTypes;
       } else if (typeof activityTypes === 'string') {
-        // Already a JSON string
-        activityTypesJson = activityTypes;
+        // Parse JSON string
+        try {
+          activityTypesArray = JSON.parse(activityTypes);
+          if (!Array.isArray(activityTypesArray)) {
+            return NextResponse.json<ApiResponse<null>>(
+              {
+                success: false,
+                error: 'activityTypes must be an array',
+              },
+              { status: 400 }
+            );
+          }
+        } catch {
+          return NextResponse.json<ApiResponse<null>>(
+            {
+              success: false,
+              error: 'Invalid activityTypes JSON format',
+            },
+            { status: 400 }
+          );
+        }
+      } else {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: 'activityTypes must be an array or JSON string',
+          },
+          { status: 400 }
+        );
+      }
+
+      // Validate each activity type
+      for (const actType of activityTypesArray) {
+        if (typeof actType !== 'string' || !VALID_ACTIVITY_TYPES.includes(actType.toLowerCase())) {
+          return NextResponse.json<ApiResponse<null>>(
+            {
+              success: false,
+              error: `Invalid activity type: ${actType}. Valid types are: ${VALID_ACTIVITY_TYPES.join(', ')}`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      activityTypesJson = JSON.stringify(activityTypesArray.map(t => t.toLowerCase()));
+    }
+
+    // Validate timerIntervalMinutes if provided
+    const VALID_TIMER_INTERVALS = [null, 15, 30, 60, 120];
+    if (timerIntervalMinutes !== undefined && timerIntervalMinutes !== null) {
+      if (typeof timerIntervalMinutes !== 'number' || !VALID_TIMER_INTERVALS.includes(timerIntervalMinutes)) {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: `Invalid timerIntervalMinutes. Valid values are: ${VALID_TIMER_INTERVALS.filter(v => v !== null).join(', ')}, or null`,
+          },
+          { status: 400 }
+        );
       }
     }
 

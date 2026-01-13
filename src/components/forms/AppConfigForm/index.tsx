@@ -10,7 +10,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { Settings, Loader2, Save, X, Mail, ChevronDown } from 'lucide-react';
+import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import { BackupRestore } from '@/src/components/BackupRestore';
 import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 import {
@@ -50,6 +50,19 @@ interface EmailConfigData {
   updatedAt: string;
 }
 
+interface NotificationStatusData {
+  enabled: boolean;
+  vapidConfigured: boolean;
+  cronSecretConfigured: boolean;
+  lastCronRun: {
+    timestamp: string | null;
+    notificationsSent: number;
+    success: boolean;
+  } | null;
+  subscriptionCount: number;
+  failedSubscriptionCount: number;
+}
+
 export default function AppConfigForm({
   isOpen, 
   onClose 
@@ -59,6 +72,8 @@ export default function AppConfigForm({
   const [saving, setSaving] = useState(false);
   const [appConfig, setAppConfig] = useState<AppConfigData | null>(null);
   const [emailConfig, setEmailConfig] = useState<EmailConfigData | null>(null);
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatusData | null>(null);
+  const [notificationStatusLoading, setNotificationStatusLoading] = useState(false);
   const [formData, setFormData] = useState({
     adminPass: '',
     rootDomain: '',
@@ -167,10 +182,34 @@ export default function AppConfigForm({
     }
   };
 
+  // Fetch notification system status
+  const fetchNotificationStatus = async () => {
+    try {
+      setNotificationStatusLoading(true);
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/notifications/status', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setNotificationStatus(data.data);
+      }
+      // Don't show error if status fails - it's optional info
+    } catch (error) {
+      console.error('Error fetching notification status:', error);
+    } finally {
+      setNotificationStatusLoading(false);
+    }
+  };
+
   // Load data when form opens
   useEffect(() => {
     if (isOpen) {
       fetchAppConfig();
+      fetchNotificationStatus();
     }
   }, [isOpen]);
 
@@ -785,6 +824,136 @@ export default function AppConfigForm({
                   )}
                 </div>
               </div>
+
+              {/* Notification System Status Section */}
+              {notificationStatus && (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Bell className="h-5 w-5 text-teal-600" />
+                    <Label className="text-lg font-semibold">
+                      {t('Notification System Status')}
+                    </Label>
+                  </div>
+                  <div className="space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    {notificationStatusLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                        <span className="ml-2 text-sm text-gray-600">{t('Loading...')}</span>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Feature Enabled */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Feature Enabled')}</span>
+                          <div className="flex items-center">
+                            {notificationStatus.enabled ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                                <span className="text-sm text-green-600">{t('Enabled')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-500 mr-1" />
+                                <span className="text-sm text-red-600">{t('Disabled')}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* VAPID Keys */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('VAPID Keys')}</span>
+                          <div className="flex items-center">
+                            {notificationStatus.vapidConfigured ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                                <span className="text-sm text-green-600">{t('Configured')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-500 mr-1" />
+                                <span className="text-sm text-red-600">{t('Not Configured')}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Cron Secret */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Cron Secret')}</span>
+                          <div className="flex items-center">
+                            {notificationStatus.cronSecretConfigured ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                                <span className="text-sm text-green-600">{t('Configured')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-500 mr-1" />
+                                <span className="text-sm text-red-600">{t('Not Configured')}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Subscriptions */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Active Subscriptions')}</span>
+                          <div className="flex items-center">
+                            {notificationStatus.subscriptionCount > 0 ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                                <span className="text-sm text-green-600">
+                                  {notificationStatus.subscriptionCount}
+                                  {notificationStatus.failedSubscriptionCount > 0 && (
+                                    <span className="text-yellow-600 ml-1">
+                                      ({notificationStatus.failedSubscriptionCount} {t('with failures')})
+                                    </span>
+                                  )}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
+                                <span className="text-sm text-yellow-600">{t('None')}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Last Cron Run */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Last Cron Run')}</span>
+                          <div className="flex items-center">
+                            {notificationStatus.lastCronRun ? (
+                              <>
+                                {notificationStatus.lastCronRun.success ? (
+                                  <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                                ) : (
+                                  <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
+                                )}
+                                <span className={`text-sm ${notificationStatus.lastCronRun.success ? 'text-green-600' : 'text-yellow-600'}`}>
+                                  {new Date(notificationStatus.lastCronRun.timestamp!).toLocaleString()}
+                                  {notificationStatus.lastCronRun.notificationsSent > 0 && (
+                                    <span className="ml-1">
+                                      ({notificationStatus.lastCronRun.notificationsSent} {t('sent')})
+                                    </span>
+                                  )}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
+                                <span className="text-sm text-yellow-600">{t('Never')}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Database Management Section */}
               <BackupRestore

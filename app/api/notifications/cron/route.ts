@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { ApiResponse } from '../../types';
 import { checkTimerExpirations } from '../../../../src/lib/notifications/timerCheck';
 import { runCleanup } from '../../../../src/lib/notifications/cleanup';
@@ -48,7 +49,14 @@ export async function POST(req: NextRequest) {
 
     const providedSecret = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    if (providedSecret !== expectedSecret) {
+    // Use timing-safe comparison to prevent timing attacks
+    const expectedBuffer = Buffer.from(expectedSecret, 'utf8');
+    const providedBuffer = Buffer.from(providedSecret, 'utf8');
+    const isValidSecret =
+      expectedBuffer.length === providedBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, providedBuffer);
+
+    if (!isValidSecret) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,

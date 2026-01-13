@@ -88,10 +88,27 @@ export async function sendNotification(
       success: true,
       httpStatus: 200,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // web-push throws errors with statusCode property for HTTP errors
-    const httpStatus = error.statusCode || 500;
-    const errorMessage = error.message || 'Unknown error';
+    // WebPushError type from web-push library
+    interface WebPushError extends Error {
+      statusCode?: number;
+      body?: string;
+    }
+
+    const isWebPushError = (err: unknown): err is WebPushError => {
+      return err instanceof Error && 'statusCode' in err;
+    };
+
+    let httpStatus = 500;
+    let errorMessage = 'Unknown error';
+
+    if (isWebPushError(error)) {
+      httpStatus = error.statusCode || 500;
+      errorMessage = error.message || error.body || 'Unknown web-push error';
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
 
     return {
       success: false,

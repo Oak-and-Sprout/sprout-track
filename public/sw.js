@@ -41,11 +41,20 @@ self.addEventListener('notificationclick', (event) => {
     // Default: Focus or open the app
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        // If a window is already open, focus it
+        // If a window is already open on the same origin, focus it
+        // Use URL parsing to match any path on the same origin, not just '/'
+        const appOrigin = self.location.origin;
         for (let i = 0; i < clientList.length; i++) {
           const client = clientList[i];
-          if (client.url === '/' && 'focus' in client) {
-            return client.focus();
+          try {
+            const clientUrl = new URL(client.url);
+            // Focus any window from our app origin
+            if (clientUrl.origin === appOrigin && 'focus' in client) {
+              return client.focus();
+            }
+          } catch (e) {
+            // URL parsing failed, skip this client
+            console.warn('Failed to parse client URL:', client.url);
           }
         }
         // Otherwise, open a new window

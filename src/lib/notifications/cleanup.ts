@@ -134,9 +134,28 @@ export async function runCleanup(): Promise<CleanupResult> {
 
   try {
     // Get retention days from environment (default: 30)
-    const retentionDays = process.env.NOTIFICATION_LOG_RETENTION_DAYS
-      ? parseInt(process.env.NOTIFICATION_LOG_RETENTION_DAYS, 10)
-      : 30;
+    // With proper validation to handle invalid values
+    const DEFAULT_RETENTION_DAYS = 30;
+    const MIN_RETENTION_DAYS = 1;
+    const MAX_RETENTION_DAYS = 365;
+
+    let retentionDays = DEFAULT_RETENTION_DAYS;
+    const envValue = process.env.NOTIFICATION_LOG_RETENTION_DAYS;
+
+    if (envValue) {
+      const parsedValue = parseInt(envValue, 10);
+      if (isNaN(parsedValue)) {
+        console.warn(`[Cleanup] Invalid NOTIFICATION_LOG_RETENTION_DAYS value "${envValue}", using default: ${DEFAULT_RETENTION_DAYS}`);
+      } else if (parsedValue < MIN_RETENTION_DAYS) {
+        console.warn(`[Cleanup] NOTIFICATION_LOG_RETENTION_DAYS value ${parsedValue} is below minimum ${MIN_RETENTION_DAYS}, using minimum`);
+        retentionDays = MIN_RETENTION_DAYS;
+      } else if (parsedValue > MAX_RETENTION_DAYS) {
+        console.warn(`[Cleanup] NOTIFICATION_LOG_RETENTION_DAYS value ${parsedValue} exceeds maximum ${MAX_RETENTION_DAYS}, using maximum`);
+        retentionDays = MAX_RETENTION_DAYS;
+      } else {
+        retentionDays = parsedValue;
+      }
+    }
 
     console.log(`[Cleanup] Using log retention period: ${retentionDays} days`);
 

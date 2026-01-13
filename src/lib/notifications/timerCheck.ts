@@ -4,18 +4,31 @@ import {
   sendNotificationWithLogging,
   NotificationPayload,
 } from './push';
+import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 
 /**
  * Parse warning time string (format: "HH:mm") to total minutes
  * @param warningTime - Time string in "HH:mm" format (e.g., "03:00" = 3 hours)
- * @returns Total minutes
+ * @returns Total minutes, or -1 if invalid format (to distinguish from valid 0)
  */
 function parseWarningTime(warningTime: string): number {
-  const [hours, minutes] = warningTime.split(':').map(Number);
-  if (isNaN(hours) || isNaN(minutes)) {
-    console.error(`Invalid warning time format: ${warningTime}`);
-    return 0;
+  if (!warningTime || typeof warningTime !== 'string') {
+    console.error(`[TimerCheck] Invalid warning time: value is empty or not a string`);
+    return -1;
   }
+
+  const parts = warningTime.split(':');
+  if (parts.length !== 2) {
+    console.error(`[TimerCheck] Invalid warning time format "${warningTime}": expected "HH:mm" format`);
+    return -1;
+  }
+
+  const [hours, minutes] = parts.map(Number);
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0 || minutes > 59) {
+    console.error(`[TimerCheck] Invalid warning time values "${warningTime}": hours=${hours}, minutes=${minutes}`);
+    return -1;
+  }
+
   return hours * 60 + minutes;
 }
 
@@ -111,12 +124,40 @@ function isNotificationEligible(
 }
 
 /**
+ * Get user language preference from subscription
+ * @param accountId - Account ID (if subscription belongs to an account)
+ * @param caretakerId - Caretaker ID (if subscription belongs to a caretaker)
+ * @returns Language code (e.g., 'en', 'es', 'fr')
+ */
+async function getUserLanguage(
+  accountId: string | null,
+  caretakerId: string | null
+): Promise<string> {
+  if (accountId) {
+    const account = await prisma.account.findUnique({
+      where: { id: accountId },
+      select: { language: true },
+    });
+    return account?.language || DEFAULT_LANGUAGE;
+  }
+  if (caretakerId) {
+    const caretaker = await prisma.caretaker.findUnique({
+      where: { id: caretakerId },
+      select: { language: true },
+    });
+    return caretaker?.language || DEFAULT_LANGUAGE;
+  }
+  return DEFAULT_LANGUAGE;
+}
+
+/**
  * Send timer expiration notification
  * @param preference - Notification preference
  * @param baby - Baby information
  * @param eventType - Event type (FEED_TIMER_EXPIRED or DIAPER_TIMER_EXPIRED)
  * @param lastActivityTime - When the last activity occurred
  * @param thresholdMinutes - Threshold in minutes
+ * @param userLanguage - User's language preference
  */
 async function sendTimerNotification(
   preference: {
@@ -126,6 +167,8 @@ async function sendTimerNotification(
       endpoint: string;
       p256dh: string;
       auth: string;
+      accountId: string | null;
+      caretakerId: string | null;
     };
   },
   baby: {
@@ -140,23 +183,31 @@ async function sendTimerNotification(
   const babyName = `${baby.firstName} ${baby.lastName}`.trim();
   const now = new Date();
   const timeSinceActivity = (now.getTime() - lastActivityTime.getTime()) / (1000 * 60);
-  const hours = Math.floor(timeSinceActivity / 60);
-  const minutes = Math.floor(timeSinceActivity % 60);
 
-  let timeElapsed: string;
-  if (hours > 0) {
-    timeElapsed = `${hours} hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
-  } else {
-    timeElapsed = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-  }
+  // Get user's language preference
+  const userLanguage = await getUserLanguage(
+    preference.subscription.accountId,
+    preference.subscription.caretakerId
+  );
 
-  const eventTypeName =
-    eventType === NotificationEventType.FEED_TIMER_EXPIRED ? 'Feed' : 'Diaper';
-  const eventTypeLower = eventType === NotificationEventType.FEED_TIMER_EXPIRED ? 'feed' : 'diaper';
+  // Format time elapsed using localized strings
+  const timeElapsed = formatTimeElapsed(timeSinceActivity, userLanguage);
+
+  // Get localized title based on event type
+  const titleKey =
+    eventType === NotificationEventType.FEED_TIMER_EXPIRED
+      ? 'notification.timer.feed.title'
+      : 'notification.timer.diaper.title';
+  const activityType =
+    eventType === NotificationEventType.FEED_TIMER_EXPIRED ? 'feed' : 'diaper';
 
   const payload: NotificationPayload = {
-    title: `${eventTypeName} Timer Expired`,
-    body: `${babyName} hasn't had a ${eventTypeLower} in ${timeElapsed}`,
+    title: t(titleKey, userLanguage),
+    body: t('notification.timer.body', userLanguage, {
+      babyName,
+      activityType,
+      timeElapsed,
+    }),
     icon: '/sprout-128.png',
     badge: '/sprout-128.png',
     tag: `timer-${baby.id}-${eventType}`, // Same tag for deduplication
@@ -214,6 +265,8 @@ export async function checkTimerExpirations(): Promise<number> {
             endpoint: true,
             p256dh: true,
             auth: true,
+            accountId: true,
+            caretakerId: true,
           },
         },
         baby: {
@@ -278,7 +331,9 @@ export async function checkTimerExpirations(): Promise<number> {
         console.log(`[TimerCheck] Checking feed timer for baby ${babyId} (threshold: ${thresholdMinutes} minutes)`);
         const lastFeedTime = await getLastActivityTime(babyId, 'feed');
 
-        if (lastFeedTime && thresholdMinutes > 0) {
+        if (thresholdMinutes < 0) {
+          console.warn(`[TimerCheck] Feed timer check skipped for baby ${babyId}: invalid warning time configuration`);
+        } else if (lastFeedTime && thresholdMinutes > 0) {
           const timeSinceLastFeed = (Date.now() - lastFeedTime.getTime()) / (1000 * 60);
           console.log(`[TimerCheck] Last feed: ${timeSinceLastFeed.toFixed(1)} minutes ago (threshold: ${thresholdMinutes} minutes)`);
           
@@ -300,25 +355,38 @@ export async function checkTimerExpirations(): Promise<number> {
             if (eligible) {
               try {
                 console.log(`[TimerCheck] Sending feed timer notification for preference ${preference.id}...`);
-                await sendTimerNotification(
-                  {
-                    id: preference.id,
-                    subscription: preference.subscription,
-                  },
-                  baby,
-                  NotificationEventType.FEED_TIMER_EXPIRED,
-                  lastFeedTime,
-                  thresholdMinutes
-                );
 
-                // Update lastTimerNotifiedAt
+                // Update lastTimerNotifiedAt BEFORE sending to prevent duplicate notifications
+                // if the app crashes between send and update (race condition fix)
+                const previousNotifiedAt = preference.lastTimerNotifiedAt;
+                const newNotifiedAt = new Date();
                 await prisma.notificationPreference.update({
                   where: { id: preference.id },
-                  data: { lastTimerNotifiedAt: new Date() },
+                  data: { lastTimerNotifiedAt: newNotifiedAt },
                 });
 
-                notificationsSent++;
-                console.log(`[TimerCheck] Feed timer notification sent successfully (total: ${notificationsSent})`);
+                try {
+                  await sendTimerNotification(
+                    {
+                      id: preference.id,
+                      subscription: preference.subscription,
+                    },
+                    baby,
+                    NotificationEventType.FEED_TIMER_EXPIRED,
+                    lastFeedTime,
+                    thresholdMinutes
+                  );
+                  notificationsSent++;
+                  console.log(`[TimerCheck] Feed timer notification sent successfully (total: ${notificationsSent})`);
+                } catch (sendError) {
+                  // Rollback lastTimerNotifiedAt if send fails
+                  console.error(`[TimerCheck] Send failed, rolling back lastTimerNotifiedAt for preference ${preference.id}`);
+                  await prisma.notificationPreference.update({
+                    where: { id: preference.id },
+                    data: { lastTimerNotifiedAt: previousNotifiedAt },
+                  });
+                  throw sendError;
+                }
               } catch (error) {
                 console.error(
                   `[TimerCheck] Error sending feed timer notification for preference ${preference.id}:`,
@@ -339,7 +407,9 @@ export async function checkTimerExpirations(): Promise<number> {
         console.log(`[TimerCheck] Checking diaper timer for baby ${babyId} (threshold: ${thresholdMinutes} minutes)`);
         const lastDiaperTime = await getLastActivityTime(babyId, 'diaper');
 
-        if (lastDiaperTime && thresholdMinutes > 0) {
+        if (thresholdMinutes < 0) {
+          console.warn(`[TimerCheck] Diaper timer check skipped for baby ${babyId}: invalid warning time configuration`);
+        } else if (lastDiaperTime && thresholdMinutes > 0) {
           const timeSinceLastDiaper = (Date.now() - lastDiaperTime.getTime()) / (1000 * 60);
           console.log(`[TimerCheck] Last diaper: ${timeSinceLastDiaper.toFixed(1)} minutes ago (threshold: ${thresholdMinutes} minutes)`);
           
@@ -361,25 +431,38 @@ export async function checkTimerExpirations(): Promise<number> {
             if (eligible) {
               try {
                 console.log(`[TimerCheck] Sending diaper timer notification for preference ${preference.id}...`);
-                await sendTimerNotification(
-                  {
-                    id: preference.id,
-                    subscription: preference.subscription,
-                  },
-                  baby,
-                  NotificationEventType.DIAPER_TIMER_EXPIRED,
-                  lastDiaperTime,
-                  thresholdMinutes
-                );
 
-                // Update lastTimerNotifiedAt
+                // Update lastTimerNotifiedAt BEFORE sending to prevent duplicate notifications
+                // if the app crashes between send and update (race condition fix)
+                const previousNotifiedAt = preference.lastTimerNotifiedAt;
+                const newNotifiedAt = new Date();
                 await prisma.notificationPreference.update({
                   where: { id: preference.id },
-                  data: { lastTimerNotifiedAt: new Date() },
+                  data: { lastTimerNotifiedAt: newNotifiedAt },
                 });
 
-                notificationsSent++;
-                console.log(`[TimerCheck] Diaper timer notification sent successfully (total: ${notificationsSent})`);
+                try {
+                  await sendTimerNotification(
+                    {
+                      id: preference.id,
+                      subscription: preference.subscription,
+                    },
+                    baby,
+                    NotificationEventType.DIAPER_TIMER_EXPIRED,
+                    lastDiaperTime,
+                    thresholdMinutes
+                  );
+                  notificationsSent++;
+                  console.log(`[TimerCheck] Diaper timer notification sent successfully (total: ${notificationsSent})`);
+                } catch (sendError) {
+                  // Rollback lastTimerNotifiedAt if send fails
+                  console.error(`[TimerCheck] Send failed, rolling back lastTimerNotifiedAt for preference ${preference.id}`);
+                  await prisma.notificationPreference.update({
+                    where: { id: preference.id },
+                    data: { lastTimerNotifiedAt: previousNotifiedAt },
+                  });
+                  throw sendError;
+                }
               } catch (error) {
                 console.error(
                   `[TimerCheck] Error sending diaper timer notification for preference ${preference.id}:`,

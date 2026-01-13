@@ -3,8 +3,13 @@
  * Handles browser-side subscription operations
  */
 
-// Cache for VAPID public key
-let cachedVapidKey: string | null = null;
+// Cache for VAPID public key with TTL
+interface VapidCache {
+  key: string;
+  timestamp: number;
+}
+let vapidCache: VapidCache | null = null;
+const VAPID_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Check if browser supports push notifications
@@ -31,11 +36,13 @@ export async function requestNotificationPermission(): Promise<'granted' | 'deni
 
 /**
  * Get VAPID public key from server
+ * Uses TTL-based caching to handle VAPID key rotation
  */
 export async function getVapidPublicKey(): Promise<string> {
-  // Return cached key if available
-  if (cachedVapidKey) {
-    return cachedVapidKey;
+  // Return cached key if available and not expired
+  const now = Date.now();
+  if (vapidCache && (now - vapidCache.timestamp) < VAPID_CACHE_TTL_MS) {
+    return vapidCache.key;
   }
 
   const authToken = localStorage.getItem('authToken');
@@ -58,11 +65,25 @@ export async function getVapidPublicKey(): Promise<string> {
     throw new Error('Invalid VAPID key response');
   }
 
-  cachedVapidKey = data.data.publicKey;
-  if (!cachedVapidKey) {
+  const publicKey = data.data.publicKey;
+  if (!publicKey) {
     throw new Error('VAPID public key is empty');
   }
-  return cachedVapidKey;
+
+  // Cache the key with timestamp
+  vapidCache = {
+    key: publicKey,
+    timestamp: Date.now(),
+  };
+
+  return publicKey;
+}
+
+/**
+ * Clear the VAPID key cache (useful for forcing re-fetch)
+ */
+export function clearVapidCache(): void {
+  vapidCache = null;
 }
 
 /**
@@ -81,7 +102,10 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     });
     console.log('Service worker registration returned, state:', registration.installing?.state || registration.waiting?.state || registration.active?.state);
 
-    // Wait for the specific registration to be ready
+    // Timeout for service worker activation (30 seconds)
+    const SW_ACTIVATION_TIMEOUT_MS = 30000;
+
+    // Wait for the specific registration to be ready with timeout
     if (registration.installing) {
       console.log('Service worker is installing...');
       await new Promise<void>((resolve, reject) => {
@@ -90,12 +114,19 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
           resolve();
           return;
         }
-        
+
+        // Set up timeout
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Service worker activation timed out after 30 seconds'));
+        }, SW_ACTIVATION_TIMEOUT_MS);
+
         installingWorker.addEventListener('statechange', () => {
           console.log('Service worker state changed to:', installingWorker.state);
           if (installingWorker.state === 'activated') {
+            clearTimeout(timeoutId);
             resolve();
           } else if (installingWorker.state === 'redundant') {
+            clearTimeout(timeoutId);
             reject(new Error('Service worker installation failed'));
           }
         });
@@ -107,12 +138,19 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // Ensure we have an active service worker
+    // Ensure we have an active service worker with timeout
     if (registration.active) {
       console.log('Service worker is active');
     } else {
-      // Wait for any service worker to be ready as fallback
-      await navigator.serviceWorker.ready;
+      // Wait for any service worker to be ready as fallback with timeout
+      const readyPromise = navigator.serviceWorker.ready;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Service worker ready timed out after 30 seconds'));
+        }, SW_ACTIVATION_TIMEOUT_MS);
+      });
+
+      await Promise.race([readyPromise, timeoutPromise]);
       console.log('Service worker is ready (via navigator.serviceWorker.ready)');
     }
 
@@ -162,14 +200,64 @@ export async function subscribeToPush(
 
   try {
     console.log('Converting VAPID key...');
+    console.log('VAPID key raw:', publicKey);
+    console.log('VAPID key length:', publicKey.length);
     const applicationServerKey = urlBase64ToUint8Array(publicKey);
-    console.log('VAPID key converted, length:', applicationServerKey.byteLength);
-    
+    console.log('VAPID key converted, byte length:', applicationServerKey.byteLength);
+
+    // Check for existing subscription first
+    console.log('Checking for existing subscription...');
+    const existingSubscription = await registration.pushManager.getSubscription();
+    if (existingSubscription) {
+      console.log('Found existing subscription, unsubscribing first...');
+      await existingSubscription.unsubscribe();
+      console.log('Unsubscribed from existing subscription');
+    }
+
     console.log('Subscribing to push manager...');
-    const subscription = await registration.pushManager.subscribe({
+    console.log('Push manager state:', {
+      hasPermission: Notification.permission,
+      registrationActive: !!registration.active,
+      userAgent: navigator.userAgent,
+      isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+      isFirefox: navigator.userAgent.includes('Firefox'),
+      isChrome: navigator.userAgent.includes('Chrome'),
+    });
+
+    // Check if this is Safari (which has limited push support)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari) {
+      console.warn('Safari detected - push notifications may have limited support');
+    }
+
+    // Add timeout to prevent infinite hanging
+    const PUSH_SUBSCRIBE_TIMEOUT_MS = 30000;
+    console.log('Starting push subscription with 30s timeout...');
+
+    const subscribePromise = registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey,
+    }).then(sub => {
+      console.log('pushManager.subscribe() resolved successfully');
+      return sub;
+    }).catch(err => {
+      console.error('pushManager.subscribe() rejected:', err);
+      throw err;
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        console.error('Push subscription timeout reached after 30s');
+        // Provide browser-specific guidance
+        const isOpera = navigator.userAgent.includes('OPR');
+        const browserHint = isOpera
+          ? ' Opera may have connectivity issues with push services. Try using Chrome or Firefox instead.'
+          : ' Try using a different browser (Chrome or Firefox recommended).';
+        reject(new Error(`Push subscription timed out. The push service (FCM/APNs) may be unreachable.${browserHint}`));
+      }, PUSH_SUBSCRIBE_TIMEOUT_MS);
+    });
+
+    const subscription = await Promise.race([subscribePromise, timeoutPromise]);
     console.log('Push subscription successful, endpoint:', subscription.endpoint?.substring(0, 50) + '...');
 
     return subscription;
@@ -181,8 +269,8 @@ export async function subscribeToPush(
       code: error?.code,
       stack: error?.stack,
     });
-    
-    // Provide more specific error messages
+
+    // Provide more specific error messages based on different error types
     let errorMessage = 'Unknown error';
     if (error?.name === 'NotAllowedError') {
       errorMessage = 'Notification permission denied. Please allow notifications in your browser settings.';
@@ -190,11 +278,18 @@ export async function subscribeToPush(
       errorMessage = 'Push notifications are not supported in this browser.';
     } else if (error?.name === 'InvalidStateError') {
       errorMessage = 'Service worker is not in a valid state. Please try again.';
+    } else if (error?.name === 'AbortError') {
+      errorMessage = 'Push registration was aborted. The VAPID key may be invalid or the push service is unavailable.';
+    } else if (error?.message?.includes('timed out')) {
+      // Timeout error - pass through the detailed message
+      errorMessage = error.message;
+    } else if (error?.message?.includes('push service')) {
+      errorMessage = 'Push service error. This may be caused by invalid VAPID keys. Try regenerating VAPID keys with: npx ts-node scripts/setup-vapid-keys.ts';
     } else if (error?.message) {
       errorMessage = error.message;
     }
-    
-    throw new Error(`Failed to subscribe to push notifications: ${errorMessage}`);
+
+    throw new Error(`${errorMessage}`);
   }
 }
 
@@ -304,7 +399,14 @@ export async function unsubscribeFromPush(endpoint: string): Promise<void> {
 
   // Unsubscribe from PushManager
   try {
-    const registration = await navigator.serviceWorker.ready;
+    // Add timeout to prevent hanging
+    const SW_READY_TIMEOUT_MS = 5000;
+    const readyPromise = navigator.serviceWorker.ready;
+    const timeoutPromise = new Promise<ServiceWorkerRegistration>((_, reject) => {
+      setTimeout(() => reject(new Error('Service worker ready timeout')), SW_READY_TIMEOUT_MS);
+    });
+
+    const registration = await Promise.race([readyPromise, timeoutPromise]);
     const subscription = await registration.pushManager.getSubscription();
     if (subscription && subscription.endpoint === endpoint) {
       await subscription.unsubscribe();
@@ -324,7 +426,26 @@ export async function getCurrentSubscription(): Promise<PushSubscription | null>
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    // First check if there's a service worker registered at all
+    const existingRegistration = await navigator.serviceWorker.getRegistration('/');
+    if (!existingRegistration) {
+      // No service worker registered yet - that's fine, just return null
+      return null;
+    }
+
+    // If there's a registration, check for push subscription
+    if (existingRegistration.active) {
+      return await existingRegistration.pushManager.getSubscription();
+    }
+
+    // SW is registered but not active yet - wait briefly
+    const SW_READY_TIMEOUT_MS = 3000;
+    const readyPromise = navigator.serviceWorker.ready;
+    const timeoutPromise = new Promise<ServiceWorkerRegistration>((_, reject) => {
+      setTimeout(() => reject(new Error('Service worker ready timeout')), SW_READY_TIMEOUT_MS);
+    });
+
+    const registration = await Promise.race([readyPromise, timeoutPromise]);
     return await registration.pushManager.getSubscription();
   } catch (error) {
     console.error('Failed to get current subscription:', error);

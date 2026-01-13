@@ -4,6 +4,7 @@ import {
   sendNotificationWithLogging,
   NotificationPayload,
 } from './push';
+import { t, DEFAULT_LANGUAGE } from './i18n';
 
 /**
  * Activity type mapping for consistent naming
@@ -70,7 +71,7 @@ export async function notifyActivityCreated(
     const babyName = `${baby.firstName} ${baby.lastName}`.trim();
     const activityName = getActivityTypeName(activityType);
 
-    // Query matching NotificationPreference records
+    // Query matching NotificationPreference records with user language
     const preferences = await prisma.notificationPreference.findMany({
       where: {
         babyId,
@@ -84,6 +85,8 @@ export async function notifyActivityCreated(
             endpoint: true,
             p256dh: true,
             auth: true,
+            accountId: true,
+            caretakerId: true,
           },
         },
       },
@@ -113,9 +116,31 @@ export async function notifyActivityCreated(
         continue;
       }
 
+      // Get user's language preference
+      let userLanguage = DEFAULT_LANGUAGE;
+      if (preference.subscription.accountId) {
+        const account = await prisma.account.findUnique({
+          where: { id: preference.subscription.accountId },
+          select: { language: true },
+        });
+        userLanguage = account?.language || DEFAULT_LANGUAGE;
+      } else if (preference.subscription.caretakerId) {
+        const caretaker = await prisma.caretaker.findUnique({
+          where: { id: preference.subscription.caretakerId },
+          select: { language: true },
+        });
+        userLanguage = caretaker?.language || DEFAULT_LANGUAGE;
+      }
+
+      // Create localized notification payload
       const payload: NotificationPayload = {
-        title: `${activityName} logged for ${babyName}`,
-        body: `A new ${activityName.toLowerCase()} was logged`,
+        title: t('notification.activity.title', userLanguage, {
+          activityName,
+          babyName,
+        }),
+        body: t('notification.activity.body', userLanguage, {
+          activityName: activityName.toLowerCase(),
+        }),
         icon: '/sprout-128.png',
         badge: '/sprout-128.png',
         tag: `activity-${babyId}-${activityType}-${Date.now()}`, // Unique tag for each notification

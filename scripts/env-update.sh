@@ -73,4 +73,27 @@ else
     echo "VAPID keys already exist in .env file"
 fi
 
+# Check and generate NOTIFICATION_CRON_SECRET for push notification cron security
+echo "Checking for NOTIFICATION_CRON_SECRET in .env file..."
+CRON_SECRET_EXISTS=$(grep -E "^NOTIFICATION_CRON_SECRET=" "$ENV_FILE" | cut -d '=' -f2 | tr -d '"')
+
+if [ -z "$CRON_SECRET_EXISTS" ]; then
+    echo "NOTIFICATION_CRON_SECRET not found or empty. Generating secure cron secret..."
+    # Generate a secure random secret (64 characters hex = 32 bytes)
+    CRON_SECRET=$(openssl rand -hex 32)
+
+    # Check if the line exists but is empty
+    if grep -q "^NOTIFICATION_CRON_SECRET=" "$ENV_FILE"; then
+        # Update existing empty line
+        sed -i.bak "s/^NOTIFICATION_CRON_SECRET=.*/NOTIFICATION_CRON_SECRET=\"$CRON_SECRET\"/" "$ENV_FILE"
+        rm -f "$ENV_FILE.bak"
+    else
+        # Add new line
+        echo "NOTIFICATION_CRON_SECRET=\"$CRON_SECRET\"" >> "$ENV_FILE"
+    fi
+    echo "NOTIFICATION_CRON_SECRET generated and added to .env file"
+else
+    echo "NOTIFICATION_CRON_SECRET already exists in .env file"
+fi
+
 echo "Environment configuration check completed." 

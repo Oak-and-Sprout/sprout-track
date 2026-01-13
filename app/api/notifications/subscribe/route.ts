@@ -61,6 +61,54 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       );
     }
 
+    // Validate endpoint URL
+    try {
+      const endpointUrl = new URL(endpoint);
+      // Push endpoints must be HTTPS (except localhost for development)
+      if (endpointUrl.protocol !== 'https:' && endpointUrl.hostname !== 'localhost') {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: 'Push endpoint must use HTTPS',
+          },
+          { status: 400 }
+        );
+      }
+    } catch {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: 'Invalid endpoint URL format',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate endpoint length (reasonable limit to prevent abuse)
+    const MAX_ENDPOINT_LENGTH = 2048;
+    if (endpoint.length > MAX_ENDPOINT_LENGTH) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: `Endpoint URL exceeds maximum length of ${MAX_ENDPOINT_LENGTH} characters`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate keys are base64-encoded strings of reasonable length
+    const MAX_KEY_LENGTH = 512;
+    if (typeof keys.p256dh !== 'string' || keys.p256dh.length > MAX_KEY_LENGTH ||
+        typeof keys.auth !== 'string' || keys.auth.length > MAX_KEY_LENGTH) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: 'Invalid subscription key format',
+        },
+        { status: 400 }
+      );
+    }
+
     // Check if subscription already exists for this endpoint
     console.log('Checking for existing subscription...');
     const existing = await prisma.pushSubscription.findUnique({

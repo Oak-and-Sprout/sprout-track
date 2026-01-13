@@ -199,6 +199,50 @@ The `ENABLE_NOTIFICATIONS` environment variable acts as a master switch:
 - UI component is hidden when `notificationsEnabled === false`
 - Client-side functions check the flag before making API calls
 
+## Security Considerations
+
+### NOTIFICATION_CRON_SECRET
+
+The cron secret protects the timer check endpoint from unauthorized access.
+
+**Requirements:**
+- **Must be non-empty** for timer notifications to work
+- **Recommended length:** 32+ characters (64 hex characters = 32 bytes)
+- **Auto-generation:** The setup script (`env-update.sh`) automatically generates a secure secret using `openssl rand -hex 32`
+- **Timing-safe comparison:** The cron endpoint uses constant-time comparison to prevent timing attacks
+
+**Generation:**
+```bash
+# Automatically generated during setup
+./scripts/env-update.sh
+
+# Or generate manually
+openssl rand -hex 32
+```
+
+### VAPID Keys
+
+VAPID keys provide authentication and encryption for push notifications.
+
+**Security:**
+- **Private key:** Keep secret, never expose in client code
+- **Public key:** Safe to expose, used by browsers to encrypt messages
+- **Rotation:** If you rotate VAPID keys, all existing subscriptions become invalid and users must re-subscribe
+
+### Input Validation
+
+The notification system validates all inputs:
+- **Endpoints:** Must be valid HTTPS URLs (localhost exempt for development), max 2048 characters
+- **Activity types:** Validated against known enum values
+- **Timer intervals:** Must be one of: 15, 30, 60, 120 minutes (or null)
+- **Subscription keys:** Base64-encoded strings, max 512 characters
+
+### Rate Limiting
+
+Consider implementing rate limiting on notification endpoints to prevent abuse:
+- `/api/notifications/subscribe` - Limit subscription registrations
+- `/api/notifications/preferences` - Limit preference updates
+
 ## Docker Deployment
 
 ### Building with Notifications
@@ -311,6 +355,29 @@ Update notification preferences.
 Trigger timer check (protected by `NOTIFICATION_CRON_SECRET`).
 - **Auth:** `Authorization: Bearer <NOTIFICATION_CRON_SECRET>`
 - **Response:** `{ success: true, data: { notificationsSent: number, subscriptionsCleaned: number, logsCleaned: number } }`
+
+#### GET `/api/notifications/status`
+Get notification system status (admin only).
+- **Auth:** Required (sysadmin account)
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "enabled": true,
+      "vapidConfigured": true,
+      "cronSecretConfigured": true,
+      "lastCronRun": {
+        "timestamp": "2026-01-12T10:00:00.000Z",
+        "notificationsSent": 3,
+        "success": true
+      },
+      "subscriptionCount": 10,
+      "failedSubscriptionCount": 1
+    }
+  }
+  ```
+- **Note:** This endpoint is displayed in the App Configuration form for sysadmins
 
 ## Client-Side Usage
 
