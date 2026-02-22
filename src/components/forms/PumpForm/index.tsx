@@ -179,7 +179,27 @@ export default function PumpForm({
           notes: activity.notes || '',
         });
       } else {
-        // New entry mode - initialize from initialTime prop
+        // New entry mode - fetch default unit from settings
+        const fetchDefaultUnit = async () => {
+          try {
+            const authToken = localStorage.getItem('authToken');
+            const response = await fetch('/api/settings', {
+              headers: {
+                'Authorization': authToken ? `Bearer ${authToken}` : '',
+              },
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.success && data.data?.defaultBottleUnit) {
+              setFormData(prev => ({ ...prev, unitAbbr: data.data.defaultBottleUnit }));
+            }
+          } catch (error) {
+            console.error('Error fetching settings:', error);
+          }
+        };
+        fetchDefaultUnit();
+
+        // Initialize from initialTime prop
         try {
           const date = new Date(initialTime);
           if (!isNaN(date.getTime())) {
