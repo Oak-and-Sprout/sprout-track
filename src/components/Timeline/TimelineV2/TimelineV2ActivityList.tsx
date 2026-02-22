@@ -257,6 +257,20 @@ const TimelineV2ActivityList = ({
                                 </Label>
                                 <div className="text-xs text-gray-600 event-details">
                                   {(() => {
+
+                                    // Pumping before duration check as it also has duration
+                                    if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
+                                      const amounts = [];
+                                      const unit = ((activity as any).unit || 'oz').toLowerCase();
+                                      if ((activity as any).totalAmount) amounts.push(`${(activity as any).totalAmount} ${unit}`);
+                                      if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
+                                      if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);
+                                      if ('duration' in activity && activity.duration) {
+                                        amounts.push( `${activity.duration}m`);
+                                      }
+                                      return amounts.join(' • ');
+                                    }
+                                    
                                     if ('duration' in activity) {
                                       const location = ('location' in activity && activity.location && activity.location !== 'OTHER') ? 
                                         activity.location.split('_').map((word: string) => 
@@ -352,15 +366,6 @@ const TimelineV2ActivityList = ({
                                         details.push(notes);
                                       }
                                       return details.join(' • ');
-                                    }
-                                    
-                                    if ('leftAmount' in activity || 'rightAmount' in activity) {
-                                      const amounts = [];
-                                      const unit = ((activity as any).unit || 'oz').toLowerCase();
-                                      if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
-                                      if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);
-                                      if ((activity as any).totalAmount) amounts.push(`Total: ${(activity as any).totalAmount} ${unit}`);
-                                      return amounts.join(' • ');
                                     }
                                     
                                     if ('title' in activity && 'category' in activity) {
