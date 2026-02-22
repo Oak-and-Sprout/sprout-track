@@ -6,6 +6,8 @@ import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from "lucide-react";
+import { useLocalization } from '@/src/context/localization';
+
 import "./table.css";
 import {
   TableProps,
@@ -204,6 +206,7 @@ TableTabs.displayName = "TableTabs";
 const TablePagination = React.forwardRef<HTMLDivElement, TablePaginationProps>(
   ({ currentPage, totalPages, totalItems, pageSize, onPageChange, className, disabled, ...props }, ref) => {
     const { theme } = useTheme();
+    const { t } = useLocalization();
     
     const startItem = (currentPage - 1) * pageSize + 1;
     const endItem = Math.min(currentPage * pageSize, totalItems);
@@ -237,7 +240,7 @@ const TablePagination = React.forwardRef<HTMLDivElement, TablePaginationProps>(
         {...props}
       >
         <div className={cn(tableStyles.paginationInfo, "table-pagination-info-dark")}>
-          Showing {startItem} to {endItem} of {totalItems} entries
+          {t('Showing')} {startItem} to {endItem} of {totalItems} entries
         </div>
         
         <div className={tableStyles.paginationControls}>
@@ -312,6 +315,7 @@ TablePagination.displayName = "TablePagination";
 const TablePageSize = React.forwardRef<HTMLDivElement, TablePageSizeProps>(
   ({ pageSize, pageSizeOptions = [5, 10, 20, 50, 100], onPageSizeChange, className, disabled, ...props }, ref) => {
     const { theme } = useTheme();
+    const { t } = useLocalization();
     
     return (
       <div
@@ -320,7 +324,7 @@ const TablePageSize = React.forwardRef<HTMLDivElement, TablePageSizeProps>(
         {...props}
       >
         <span className={cn(tableStyles.pageSizeLabel, "table-pagesize-label-dark")}>
-          Show
+          {t('Show')}
         </span>
         <Select
           value={pageSize.toString()}

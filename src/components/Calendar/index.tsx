@@ -11,6 +11,8 @@ import {
 import { cn } from '@/src/lib/utils';
 import CalendarDayView from '@/src/components/CalendarDayView';
 import { CalendarProps, CalendarState } from './calendar.types';
+import { useLocalization } from '@/src/context/localization';
+
 import './calendar.css';
 
 /**
@@ -23,7 +25,9 @@ import './calendar.css';
  * @param userTimezone - The user's timezone for date calculations
  * @param onDateSelect - Optional callback when a date is selected
  */
-export function Calendar({ selectedBabyId, userTimezone, onDateSelect }: CalendarProps) {
+export function Calendar({
+ selectedBabyId, userTimezone, onDateSelect }: CalendarProps) {
+  const { t } = useLocalization();
   
   // Component state
   const [state, setState] = useState<CalendarState>({
@@ -467,7 +471,7 @@ export function Calendar({ selectedBabyId, userTimezone, onDateSelect }: Calenda
             onClick={goToCurrentMonth}
             className="text-xs text-white/80 hover:text-white hover:bg-teal-500/20 py-0 h-6"
           >
-            Today
+            {t('Today')}
           </Button>
         </div>
         

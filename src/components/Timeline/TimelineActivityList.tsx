@@ -6,6 +6,8 @@ import { ActivityType, TimelineActivityListProps, FilterType } from './types';
 import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime } from './utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
+
 import './timeline-activity-list.css';
 
 const TimelineActivityList = ({
@@ -23,6 +25,10 @@ const TimelineActivityList = ({
   onSwipeLeft,
   onSwipeRight,
 }: TimelineActivityListProps) => {
+  
+
+  const { t } = useLocalization();  
+
   // Extract activeFilter from props if available
   const activeFilter = (onSwipeLeft as any)?.activeFilter as FilterType | undefined;
   
@@ -310,7 +316,7 @@ const TimelineActivityList = ({
                     <div className="space-y-4 pb-8">
                       {group.activities.map((activity, activityIndex) => {
                         const style = getActivityStyle(activity);
-                        const description = getActivityDescription(activity, settings);
+                        const description = getActivityDescription(activity, settings, t);
                         // Handle time display for sleep activities with start-end time format
                         const activityTime = new Date(getActivityTime(activity));
                         let timeStr: string;
@@ -448,7 +454,7 @@ const TimelineActivityList = ({
                                               } else if (activity.amount) {
                                                 duration = `${activity.amount} min`;
                                               }
-                                              return [side + ' side', duration].filter(Boolean).join(' • ');
+                                              return [side ? `${side} ${t('Side')}` : '', duration].filter(Boolean).join(' • ');
                                             } else if (activity.type === 'BOTTLE') {
                                               const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
                                               return `${activity.amount} ${unit}`;
@@ -469,7 +475,7 @@ const TimelineActivityList = ({
                                               details.push(activity.color.charAt(0) + activity.color.slice(1).toLowerCase());
                                             }
                                             if (activity.blowout) {
-                                              details.push('Blowout/Leakage');
+                                              details.push(t('Blowout/Leakage'));
                                             }
                                             return details.join(' • ');
                                           }
@@ -484,9 +490,9 @@ const TimelineActivityList = ({
                                           if ('soapUsed' in activity) {
                                             // Bath activity
                                             const details = [];
-                                            if (activity.soapUsed) details.push('Soap');
-                                            if (activity.shampooUsed) details.push('Shampoo');
-                                            if (details.length === 0) details.push('Water only');
+                                            if (activity.soapUsed) details.push(t('Soap Used'));
+                                            if (activity.shampooUsed) details.push(t('Shampoo Used'));
+                                            if (details.length === 0) details.push(t('Water only'));
                                             if (activity.notes) {
                                               const notes = activity.notes.length > 30 ? 
                                                 activity.notes.substring(0, 30) + '...' : 
@@ -542,7 +548,7 @@ const TimelineActivityList = ({
                                             return `${medName} - ${dose}`;
                                           }
                                           
-                                          return 'Activity logged';
+                                            return t('Activity logged');
                                         })()}
                                       </p>
                                     </div>
@@ -564,9 +570,9 @@ const TimelineActivityList = ({
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
                   <BabyIcon className="h-8 w-8 text-indigo-600" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">No activities recorded</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">{t('No activities recorded')}</h3>
                 <p className="text-sm text-gray-500 timeline-empty-description">
-                  Activities will appear here once you start tracking
+                  {t('Activities will appear here once you start tracking')}
                 </p>
               </div>
             </div>
@@ -579,7 +585,7 @@ const TimelineActivityList = ({
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
                 <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">Loading activities...</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">{t('Loading activities...')}</h3>
             </div>
           </div>
         )}

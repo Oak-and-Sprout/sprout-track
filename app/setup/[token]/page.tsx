@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThemeProvider } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import SetupWizard from '@/src/components/SetupWizard';
 
 // TODO: Setup wizard implementation needed for future
@@ -19,6 +20,7 @@ FUTURE IMPLEMENTATION NOTES:
 Original logic (commented out for future reference):
 
 import SetupWizard from '@/src/components/SetupWizard';
+import { useLocalization } from '@/src/context/localization';
 
 type SetupPageWithTokenProps = {
   params: Promise<{
@@ -26,7 +28,8 @@ type SetupPageWithTokenProps = {
   }>;
 };
 
-export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) {
+export default function SetupPageWithToken({
+ params }: SetupPageWithTokenProps) {
   const router = useRouter();
   const { token } = await params;
 
@@ -63,6 +66,7 @@ type SetupPageWithTokenProps = {
 
 export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) {
   const router = useRouter();
+  const { t } = useLocalization();
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);
@@ -173,13 +177,13 @@ export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) 
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center max-w-md">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold text-red-900 mb-2">Setup Error</h2>
+              <h2 className="text-lg font-semibold text-red-900 mb-2">{t('Setup Error')}</h2>
               <p className="text-red-700 mb-4">{error}</p>
               <button
                 onClick={() => router.push('/')}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
-                Return Home
+                {t('Return Home')}
               </button>
             </div>
           </div>
@@ -194,7 +198,7 @@ export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) 
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p>Validating invitation...</p>
+            <p>{t('Validating invitation...')}</p>
           </div>
         </div>
       </ThemeProvider>

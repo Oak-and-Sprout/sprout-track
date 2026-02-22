@@ -17,6 +17,7 @@ import {
   UserX,
 } from "lucide-react";
 import { BetaSubscriberResponse } from '@/app/api/types';
+import { useLocalization } from '@/src/context/localization';
 
 interface BetaSubscriberViewProps {
   paginatedData: BetaSubscriberResponse[];
@@ -35,23 +36,25 @@ export default function BetaSubscriberView({
   deletingSubscriberId,
   formatDateTime,
 }: BetaSubscriberViewProps) {
+  const { t } = useLocalization();
+  
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Email</TableHead>
+          <TableHead>{t('Email')}</TableHead>
           <TableHead>Name</TableHead>
-          <TableHead>Signed Up</TableHead>
-          <TableHead>Source</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t('Signed Up')}</TableHead>
+          <TableHead>{t('Source')}</TableHead>
+          <TableHead>{t('Status')}</TableHead>
+          <TableHead className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {paginatedData.length === 0 ? (
           <TableRow>
             <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-              No data found.
+              {t('No data found.')}
             </TableCell>
           </TableRow>
         ) : (

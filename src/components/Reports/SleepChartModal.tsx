@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { DateRange } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 export type SleepChartMetric = 'avgNapDuration' | 'dailyNapTotal' | 'nightSleep' | 'nightWakings';
 
@@ -42,18 +43,18 @@ const formatMinutes = (minutes: number): string => {
   return `${hours}h ${mins}m`;
 };
 
-const getChartTitle = (metric: SleepChartMetric | null): string => {
+const getChartTitle = (metric: SleepChartMetric | null, t: (key: string) => string): string => {
   switch (metric) {
     case 'avgNapDuration':
-      return 'Nap Duration Over Time';
+      return t('Nap Duration Over Time');
     case 'dailyNapTotal':
-      return 'Daily Total Nap Time';
+      return t('Daily Total Nap Time');
     case 'nightSleep':
-      return 'Night Sleep Over Time';
+      return t('Night Sleep Over Time');
     case 'nightWakings':
-      return 'Night Wakings Over Time';
+      return t('Night Wakings Over Time');
     default:
-      return 'Sleep Trends';
+      return t('Sleep Trends');
   }
 };
 
@@ -70,10 +71,11 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
   data,
   dateRange,
 }) => {
-  const title = getChartTitle(metric);
+  const { t } = useLocalization();
+  const title = getChartTitle(metric, t);
   const description =
     dateRange.from && dateRange.to
-      ? `From ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+      ? `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
       : undefined;
 
   return (
@@ -87,7 +89,7 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
         {data.length === 0 ? (
           <div className={cn(styles.emptyContainer, "reports-empty-container")}>
             <p className={cn(styles.emptyText, "reports-empty-text")}>
-              No sleep data available for the selected date range.
+              {t('No sleep data available for the selected date range.')}
             </p>
           </div>
         ) : (
@@ -100,7 +102,7 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
                 <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                 <XAxis
                   dataKey="label"
-                  label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
+                  label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
                   className="growth-chart-axis"
                 />
                 <YAxis
@@ -114,10 +116,10 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
                 <RechartsTooltip
                   formatter={(value: any) =>
                     metric === 'nightWakings'
-                      ? [`${value}`, 'Wakings']
-                      : [formatMinutes(value as number), 'Sleep']
+                      ? [`${value}`, t('Wakings')]
+                      : [formatMinutes(value as number), t('Sleep')]
                   }
-                  labelFormatter={(label: any) => `Date: ${label}`}
+                  labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
                 <Line
                   type="monotone"

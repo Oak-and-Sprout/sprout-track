@@ -12,6 +12,7 @@ import SettingsModal from '@/src/components/modals/SettingsModal';
 import { useBaby } from '../../../context/baby';
 import { useTimezone } from '../../../context/timezone';
 import { useFamily } from '@/src/context/family';
+import { useLocalization } from '@/src/context/localization';
 import { ActivityType } from '@/src/components/ui/activity-tile';
 import { ActivityTileGroup } from '@/src/components/ActivityTileGroup';
 import SleepForm from '@/src/components/forms/SleepForm';
@@ -30,6 +31,7 @@ function HomeContent(): React.ReactElement {
   const { selectedBaby, sleepingBabies, setSleepingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
   const { userTimezone } = useTimezone();
   const { family } = useFamily();
+  const { t } = useLocalization();
   const params = useParams();
   const familySlug = params?.slug as string;
   
@@ -400,9 +402,9 @@ function HomeContent(): React.ReactElement {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center no-activities-icon-container">
                 <BabyIcon className="h-8 w-8 text-indigo-600 no-activities-icon" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1 no-activities-title">No activities recorded</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1 no-activities-title">{t('No activities recorded')}</h3>
               <p className="text-sm text-gray-500 no-activities-text">
-                Activities will appear here once you start tracking
+                {t('Activities will appear here once you start tracking')}
               </p>
             </div>
           )}
@@ -417,9 +419,9 @@ function HomeContent(): React.ReactElement {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center animate-pulse">
                 <BabyIcon className="h-8 w-8 text-indigo-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Loading...</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Loading')}...</h3>
               <p className="text-sm text-gray-500">
-                Checking your account status
+                {t('Checking your account status')}
               </p>
             </div>
           ) : isAccountAuth && accountStatus && !accountStatus.hasFamily ? (
@@ -427,15 +429,15 @@ function HomeContent(): React.ReactElement {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
                 <BabyIcon className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Family Setup Required</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Family Setup Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Welcome {accountStatus.firstName}! You need to set up your family before you can start tracking activities.
+                {t('Welcome')} {accountStatus.firstName}! {t('You need to set up your family before you can start tracking activities.')}
               </p>
               <button
                 onClick={() => window.location.href = '/account/family-setup'}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
-                Set up your family
+                {t('Set up your family')}
               </button>
             </div>
           ) : isAccountAuth && accountStatus && !accountStatus.verified ? (
@@ -443,12 +445,12 @@ function HomeContent(): React.ReactElement {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 flex items-center justify-center">
                 <BabyIcon className="h-8 w-8 text-yellow-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Email Verification Required</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Email Verification Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Welcome {accountStatus.firstName}! Please verify your email address to continue.
+                {t('Welcome')} {accountStatus.firstName}! {t('Please verify your email address to continue.')}
               </p>
               <p className="text-xs text-gray-400">
-                Check your inbox for a verification link, or click your account button to resend the email.
+                {t('Check your inbox for a verification link, or click your account button to resend the email.')}
               </p>
             </div>
           ) : (
@@ -624,8 +626,10 @@ function HomeContent(): React.ReactElement {
 }
 
 export default function Home() {
+  const { t } = useLocalization();
+  
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>{t('Loading')}...</div>}>
       <HomeContent />
     </Suspense>
   );

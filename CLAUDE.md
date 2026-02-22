@@ -105,6 +105,18 @@ These rules capture the key development patterns from the Web to Mobile Developm
 - Plan for cross-platform navigation patterns
 - Document any web-specific behavior that will need adaptation for mobile
 
+## Localization
+
+- **Always use the localization system** for all user-facing text - never hardcode strings in components
+- Use the `useLocalization` hook to access translations: `const { t } = useLocalization()`
+- Translation keys match their English text exactly (e.g., `t('Log Entry')` displays "Log Entry" in English)
+- When adding new UI text, add the translation key to `/src/localization/translations/en.json` first
+- Translation keys use proper capitalization and spacing to match the English display text
+- Always provide English ("en") translations - other languages are optional but should be added when available
+- The localization context automatically handles language preference storage (database for authenticated users, localStorage for unauthenticated)
+- Language preferences are stored at the Account or Caretaker level based on authentication type
+- See `/src/localization/README.md` for detailed documentation on adding translations and languages
+
 ## Code Modification Guidelines
 
 - Challenge yourself to write as few lines of code as possible

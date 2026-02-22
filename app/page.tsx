@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { FamilyResponse } from './api/types';
 import { ThemeProvider } from '@/src/context/theme';
 import ComingSoon from './home/page';
+import { useLocalization } from '@/src/context/localization';
 
 export default function HomePage() {
+  const { t } = useLocalization();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [families, setFamilies] = useState<FamilyResponse[]>([]);
@@ -120,7 +122,7 @@ export default function HomePage() {
 
   // Return loading state while checking deployment mode
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">{t('Loading...')}</div>;
   }
   
   // If SaaS mode, render the SaaS homepage directly

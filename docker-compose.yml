@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-false}
+        BUILD_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-false}
     image: sprout-track
     container_name: sprout-track
     restart: unless-stopped
@@ -11,8 +14,17 @@ services:
     volumes:
       - db-data:/db
       - env-data:/app/env
+      - ./logs:/app/logs
     environment:
       - NODE_ENV=production
+      - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS:-false}
+      - NOTIFICATION_CRON_SECRET=${NOTIFICATION_CRON_SECRET:-}
+      - NOTIFICATION_LOG_RETENTION_DAYS=${NOTIFICATION_LOG_RETENTION_DAYS:-30}
+      - APP_URL=${APP_URL:-}
+      - ROOT_DOMAIN=${ROOT_DOMAIN:-}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:notifications@sprouttrack.app}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s

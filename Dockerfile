@@ -1,8 +1,12 @@
 # Use Node.js LTS as the base image
 FROM node:22-alpine
 
-# Install tzdata package for timezone support and openssl for ENC_HASH generation
-RUN apk add --no-cache tzdata openssl
+# Build arguments for notification features
+ARG ENABLE_NOTIFICATIONS=false
+ARG BUILD_NOTIFICATIONS=false
+
+# Install tzdata package for timezone support, openssl for ENC_HASH generation, and dcron for notifications
+RUN apk add --no-cache tzdata openssl dcron
 
 # Set working directory
 WORKDIR /app
@@ -25,6 +29,16 @@ RUN npm run prisma:generate && \
 
 # Copy application files
 COPY . .
+
+# Conditionally set up notification files and directories if BUILD_NOTIFICATIONS is true
+RUN if [ "$BUILD_NOTIFICATIONS" = "true" ]; then \
+      echo "Notification features enabled - setting up notification infrastructure..." && \
+      mkdir -p /app/logs && \
+      chmod 755 /app/logs && \
+      echo "Notification logs directory created"; \
+    else \
+      echo "Notification features disabled - skipping notification setup"; \
+    fi
 
 # Create env directory and base .env file (ENC_HASH will be generated at container startup)
 RUN mkdir -p /app/env && \
@@ -51,6 +65,9 @@ RUN npm run build
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV TZ=UTC
+
+# Set notification environment variable from build arg
+ENV ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS}
 
 # Update database URLs to point to the volume
 ENV DATABASE_URL="file:/db/baby-tracker.db"

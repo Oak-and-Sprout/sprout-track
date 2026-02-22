@@ -11,6 +11,8 @@ import { cn } from '@/src/lib/utils';
 import { useTheme } from '@/src/context/theme';
 import { privacyPolicyModalStyles } from './privacy-policy.styles';
 import { PrivacyPolicyModalProps } from './privacy-policy.types';
+import { useLocalization } from '@/src/context/localization';
+
 import './privacy-policy.css';
 
 /**
@@ -22,6 +24,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
   open,
   onClose,
 }) => {
+  const { t } = useLocalization();
   const [privacyPolicyContent, setPrivacyPolicyContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const { theme } = useTheme();
@@ -51,6 +54,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
 
   // Helper function to format text content with bold and italic
   const formatTextContent = (text: string): React.ReactNode => {
+
     if (!text) return text;
     
     // Split text by markdown patterns and process each part
@@ -116,7 +120,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
   // Format the markdown content for display
   const formatMarkdown = (content: string): React.ReactNode => {
     if (loading) {
-      return <div className="text-center py-8">Loading privacy policy...</div>;
+      return <div className="text-center py-8">{t('Loading privacy policy...')}</div>;
     }
 
     // Process the content to group list items
@@ -231,10 +235,10 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
       <DialogContent className={cn(privacyPolicyModalStyles.container, "privacy-policy-modal-container")}>
         <DialogHeader className={privacyPolicyModalStyles.header}>
           <DialogTitle className={cn(privacyPolicyModalStyles.title, "privacy-policy-modal-title")}>
-            Privacy Policy
+            {t('Privacy Policy')}
           </DialogTitle>
           <DialogDescription className={cn(privacyPolicyModalStyles.description, "privacy-policy-modal-description")}>
-            View our privacy policy and data handling practices
+            {t('View our privacy policy and data handling practices')}
           </DialogDescription>
         </DialogHeader>
         
@@ -249,7 +253,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
             onClick={onClose}
             className={cn(privacyPolicyModalStyles.closeButton, "privacy-policy-modal-close-button")}
           >
-            Close
+            {t('Close')}
           </Button>
         </div>
       </DialogContent>

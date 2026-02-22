@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from 'react';
 import { FeedType, BreastSide } from '@prisma/client';
 import { FeedLogResponse } from '@/app/api/types';
+import { useLocalization } from '@/src/context/localization';
 
 interface FeedModalProps {
   open: boolean;
@@ -38,6 +39,7 @@ export default function FeedModal({
   activity,
   variant = 'default',
 }: FeedModalProps) {
+  const { t } = useLocalization();
   const [formData, setFormData] = useState({
     time: initialTime,
     type: '' as FeedType | '',
@@ -204,7 +206,7 @@ export default function FeedModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Time</label>
+              <label className="form-label">{t('Time')}</label>
               <Input
                 type="datetime-local"
                 value={formData.time}
@@ -228,9 +230,9 @@ export default function FeedModal({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="BREAST">Breast</SelectItem>
-                  <SelectItem value="BOTTLE">Bottle</SelectItem>
-                  <SelectItem value="SOLIDS">Solid Food</SelectItem>
+                  <SelectItem value="BREAST">{t('Breast')}</SelectItem>
+                  <SelectItem value="BOTTLE">{t('Bottle')}</SelectItem>
+                  <SelectItem value="SOLIDS">{t('Solid Food')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -238,7 +240,7 @@ export default function FeedModal({
 
           {formData.type === 'BREAST' && (
             <div>
-              <label className="form-label">Side</label>
+              <label className="form-label">{t('Side')}</label>
               <Select
                 value={formData.side}
                 onValueChange={(value: BreastSide) =>
@@ -249,8 +251,8 @@ export default function FeedModal({
                   <SelectValue placeholder="Select side" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="LEFT">Left</SelectItem>
-                  <SelectItem value="RIGHT">Right</SelectItem>
+                  <SelectItem value="LEFT">{t('Left')}</SelectItem>
+                  <SelectItem value="RIGHT">{t('Right')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -259,7 +261,7 @@ export default function FeedModal({
           {(formData.type === 'BOTTLE' || formData.type === 'SOLIDS') && (
             <div>
               <label className="form-label">
-                Amount {formData.type === 'SOLIDS' ? '(g)' : '(oz)'}
+                {t('Amount')} {formData.type === 'SOLIDS' ? '(g)' : '(oz)'}
               </label>
               <div className="grid grid-cols-[auto,1fr,auto] gap-2">
                 <Button
@@ -293,7 +295,7 @@ export default function FeedModal({
 
           {formData.type === 'SOLIDS' && (
             <div>
-              <label className="form-label">Food</label>
+              <label className="form-label">{t('Food')}</label>
               <Select
                 value={formData.food}
                 onValueChange={(value: string) =>
@@ -304,10 +306,10 @@ export default function FeedModal({
                   <SelectValue placeholder="Select food" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="BANANA">Banana</SelectItem>
-                  <SelectItem value="RICE_CEREAL">Rice Cereal</SelectItem>
-                  <SelectItem value="PUREE">Puree</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  <SelectItem value="BANANA">{t('Banana')}</SelectItem>
+                  <SelectItem value="RICE_CEREAL">{t('Rice Cereal')}</SelectItem>
+                  <SelectItem value="PUREE">{t('Puree')}</SelectItem>
+                  <SelectItem value="OTHER">{t('Other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -320,7 +322,7 @@ export default function FeedModal({
               onClick={onClose}
               className="hover:bg-slate-50"
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               type="submit"

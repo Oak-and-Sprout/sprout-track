@@ -8,6 +8,7 @@ import { styles } from './setup-wizard.styles';
 import { FamilySetupStageProps } from './setup-wizard.types';
 import { BackupRestore } from '@/src/components/BackupRestore';
 import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * FamilySetupStage Component
@@ -22,6 +23,8 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
   token,
   initialSetup = false
 }) => {
+
+  const { t } = useLocalization();
   const router = useRouter();
   const [slugError, setSlugError] = useState('');
   const [checkingSlug, setCheckingSlug] = useState(false);
@@ -115,7 +118,8 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
   };
 
   // Auto-generate slug from family name
-  const generateSlugFromName = (name: string) => {
+  const generateSlugFromName = (name: string) => {  
+
     return name
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
@@ -168,7 +172,7 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
           className={cn(styles.formLabel, "setup-wizard-form-label")}
           htmlFor="familyName"
         >
-          What is your family name?
+          {t('What is your family name?')}
         </label>
         <Input
           id="familyName"
@@ -184,7 +188,7 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
           className={cn(styles.formLabel, "setup-wizard-form-label")}
           htmlFor="familySlug"
         >
-          Family URL
+          {t('Family URL')}
         </label>
         <div className="space-y-2">
           <div className="flex gap-2">
@@ -220,7 +224,7 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
           
           {/* URL Preview */}
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Your family will be accessible at: <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">
+            {t('Your family will be accessible at:')} <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">
               /{familySlug || 'your-family-url'}
             </span>
           </div>
@@ -230,7 +234,7 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
             {checkingSlug && (
               <div className="flex items-center gap-1 text-blue-600 text-sm">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Checking availability...
+                {t('Checking availability...')}
               </div>
             )}
             {slugError && (
@@ -242,14 +246,14 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
             {!checkingSlug && !slugError && familySlug && (
               <div className="flex items-center gap-1 text-green-600 text-sm">
                 <span className="h-3 w-3 rounded-full bg-green-600"></span>
-                URL is available
+                {t('URL is available')}
               </div>
             )}
           </div>
         </div>
         
         <p className={cn(styles.formHelperText, "setup-wizard-form-helper-text")}>
-          This will be the unique web address for your family. It can only contain lowercase letters, numbers, and hyphens.
+          {t('This will be the unique web address for your family. It can only contain lowercase letters, numbers, and hyphens.')}
         </p>
       </div>
 

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
+
 import './account-expiration-banner.css';
 
 interface AccountStatus {
@@ -21,8 +23,10 @@ interface AccountExpirationBannerProps {
   isAccountAuth: boolean;
 }
 
-export default function AccountExpirationBanner({ isAccountAuth }: AccountExpirationBannerProps) {
+export default function AccountExpirationBanner({
+ isAccountAuth }: AccountExpirationBannerProps) {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [jwtExpirationInfo, setJwtExpirationInfo] = useState<JWTExpirationInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,11 +186,11 @@ export default function AccountExpirationBanner({ isAccountAuth }: AccountExpira
           <span>
             {userType === 'account' ? (
               <>
-                Your account does not have an active subscription or license. The app is read-only until you upgrade.
+                {t('Your account does not have an active subscription or license. The app is read-only until you upgrade.')}
               </>
             ) : (
               <>
-                The account owner's subscription has expired. Please contact them to upgrade. The app is read-only until they upgrade.
+                {t('The account owner\'s subscription has expired. Please contact them to upgrade. The app is read-only until they upgrade.')}
               </>
             )}
           </span>
@@ -196,7 +200,7 @@ export default function AccountExpirationBanner({ isAccountAuth }: AccountExpira
             onClick={handleUpgradeClick}
             className="account-expiration-banner-button"
           >
-            Upgrade Now
+            {t('Upgrade Now')}
           </button>
         )}
       </div>

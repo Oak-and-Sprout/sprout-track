@@ -21,6 +21,7 @@ import DiaperStatsSection from './DiaperStatsSection';
 import PumpingStatsSection from './PumpingStatsSection';
 import BathStatsSection from './BathStatsSection';
 import TemperatureStatsSection from './TemperatureStatsSection';
+import { useLocalization } from '@/src/context/localization';
 
 // Helper to calculate age in months from birth date (copied from GrowthChart)
 const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {
@@ -54,6 +55,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
   dateRange,
   isLoading
 }) => {
+  const { t } = useLocalization();
   const { selectedBaby } = useBaby();
   const { toLocalDate } = useTimezone();
   const [temperatureMeasurements, setTemperatureMeasurements] = useState<MeasurementActivity[]>([]);
@@ -803,7 +805,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
     return (
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-        <p className={cn(styles.loadingText, "reports-loading-text")}>Loading statistics...</p>
+        <p className={cn(styles.loadingText, "reports-loading-text")}>{t('Loading statistics...')}</p>
       </div>
     );
   }
@@ -813,7 +815,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
     return (
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
         <p className={cn(styles.emptyText, "reports-empty-text")}>
-          No activities found for the selected date range.
+          {t('No activities found for the selected date range.')}
         </p>
       </div>
     );

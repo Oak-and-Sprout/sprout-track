@@ -42,7 +42,8 @@ import FamilyForm from '@/src/components/forms/FamilyForm';
 import AppConfigForm from '@/src/components/forms/AppConfigForm';
 import { ShareButton } from '@/src/components/ui/share-button';
 import { BetaSubscriberResponse, FeedbackResponse } from '@/app/api/types';
-import { useDeployment } from '@/app/context/deployment';
+import { useDeployment } from '@/app/context/deployment';import { useLocalization } from '@/src/context/localization';
+
 import { 
   FamilyView, 
   ActiveInviteView, 
@@ -114,6 +115,8 @@ interface AccountData {
 }
 
 export default function FamilyManagerPage() {
+  const { t } = useLocalization();
+
   const router = useRouter();
   const { isSaasMode } = useDeployment();
   const [families, setFamilies] = useState<FamilyData[]>([]);
@@ -152,12 +155,12 @@ export default function FamilyManagerPage() {
     const baseTabs = [
         { 
             id: 'families', 
-            label: 'Families',
+            label: t('Families'),
             count: families.length 
         },
         { 
             id: 'invites', 
-            label: 'Active Invites',
+            label: t('Active Invites'),
             count: invites.filter(invite => !invite.isExpired && !invite.isUsed).length 
         },
     ];
@@ -167,24 +170,24 @@ export default function FamilyManagerPage() {
             ...baseTabs,
             {
               id: 'accounts',
-              label: 'Accounts',
+              label: t('Accounts'),
               count: accounts.length,
             },
             {
               id: 'beta',
-              label: 'Beta Subscribers',
+              label: t('Beta Subscribers'),
               count: betaSubscribers.length,
             },
             {
               id: 'feedback',
-              label: 'Feedback',
+              label: t('Feedback'),
               count: feedback.filter(item => !item.viewed).length,
             }
         ];
     }
 
     return baseTabs;
-  }, [families.length, invites, accounts.length, betaSubscribers.length, feedback, isSaasMode]);
+  }, [families.length, invites, accounts.length, betaSubscribers.length, feedback, isSaasMode, t]);
 
   // Helper function to count unread messages from non-admin users
   const countUnreadUserMessages = useCallback((feedback: FeedbackResponse): number => {
@@ -774,11 +777,11 @@ export default function FamilyManagerPage() {
       <div className="flex justify-between items-center mb-6">
         <Button onClick={handleAddFamily}>
           <Plus className="h-4 w-4 mr-2" />
-          Add New Family
+          {t('Add New Family')}
         </Button>
         <Button variant="outline" onClick={() => setShowAppConfigForm(true)}>
           <Settings className="h-4 w-4 mr-2" />
-          Settings
+          {t('Settings')}
         </Button>
       </div>
 
@@ -895,7 +898,7 @@ export default function FamilyManagerPage() {
       <Dialog open={caretakersDialogOpen} onOpenChange={setCaretakersDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Family Caretakers</DialogTitle>
+            <DialogTitle>{t('Family Caretakers')}</DialogTitle>
           </DialogHeader>
           <div className="mt-4">
             {loadingCaretakers ? (
@@ -906,11 +909,11 @@ export default function FamilyManagerPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Login ID</TableHead>
+                    <TableHead>{t('Login ID')}</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t('Role')}</TableHead>
+                    <TableHead>{t('Status')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -936,7 +939,7 @@ export default function FamilyManagerPage() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-center py-8 text-gray-500">No caretakers found for this family.</p>
+              <p className="text-center py-8 text-gray-500">{t('No caretakers found for this family.')}</p>
             )}
           </div>
         </DialogContent>

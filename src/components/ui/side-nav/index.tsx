@@ -3,6 +3,7 @@ import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
 import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2 } from 'lucide-react';
+import { LanguageSelector } from './language-selector';
 
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
@@ -23,6 +24,7 @@ import { Label } from '@/src/components/ui/label';
 import Image from 'next/image';
 import { useTheme } from '@/src/context/theme';
 import { useDeployment } from '@/app/context/deployment';
+import { useLocalization } from '@/src/context/localization';
 import { cn } from '@/src/lib/utils';
 import { sideNavStyles, triggerButtonVariants } from './side-nav.styles';
 import { SideNavProps, SideNavTriggerProps, SideNavItemProps } from './side-nav.types';
@@ -156,6 +158,7 @@ export const SideNav: React.FC<SideNavProps> = ({
 }) => {
   const { theme } = useTheme();
   const { isSaasMode } = useDeployment();
+  const { t } = useLocalization();
   const [isSystemDarkMode, setIsSystemDarkMode] = useState<boolean>(false);
   const [showChangelog, setShowChangelog] = useState<boolean>(false);
   const [showFeedback, setShowFeedback] = useState<boolean>(false);
@@ -295,10 +298,10 @@ export const SideNav: React.FC<SideNavProps> = ({
                       className="text-left cursor-pointer hover:opacity-80 transition-opacity"
                       aria-label="Go to home page"
                     >
-                      <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
+                      <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>{t('Sprout Track')}</span>
                     </button>
                   ) : (
-                    <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>Sprout Track</span>
+                    <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>{t('Sprout Track')}</span>
                   )}
 
                   {/* Family name with share button */}
@@ -340,28 +343,28 @@ export const SideNav: React.FC<SideNavProps> = ({
         <nav className={sideNavStyles.navItems}>
           <SideNavItem
             path="/log-entry"
-            label="Log Entry"
+            label={t('Log Entry')}
             isActive={currentPath === '/log-entry'}
             onClick={onNavigate}
             className="side-nav-item"
           />
           <SideNavItem
             path="/full-log"
-            label="Full Log"
+            label={t('Full Log')}
             isActive={currentPath === '/full-log'}
             onClick={onNavigate}
             className="side-nav-item"
           />
           <SideNavItem
             path="/calendar"
-            label="Calendar"
+            label={t('Calendar')}
             isActive={currentPath === '/calendar'}
             onClick={onNavigate}
             className="side-nav-item"
           />
           <SideNavItem
             path="/reports"
-            label="Reports"
+            label={t('Reports')}
             isActive={currentPath === '/reports'}
             onClick={onNavigate}
             className="side-nav-item"
@@ -370,13 +373,17 @@ export const SideNav: React.FC<SideNavProps> = ({
 
         {/* Version display at bottom of nav items */}
         <div className="w-full text-center mb-4">
-          <span 
-            className="text-xs text-gray-500 cursor-pointer hover:text-teal-600 transition-colors"
-            onClick={() => setShowChangelog(true)}
-            aria-label="View changelog"
-          >
-            v{packageInfo.version}
-          </span>
+          <div className="flex items-center justify-center gap-2">
+            <span 
+              className="text-xs text-gray-500 cursor-pointer hover:text-teal-600 transition-colors"
+              onClick={() => setShowChangelog(true)}
+              aria-label="View changelog"
+            >
+              v{packageInfo.version}
+            </span>
+            <span className="text-xs text-gray-400">•</span>
+            <LanguageSelector />
+          </div>
           
           {/* Feedback link - only shown in SaaS mode */}
           {isSaasMode && (
@@ -384,10 +391,10 @@ export const SideNav: React.FC<SideNavProps> = ({
               <button
                 className="flex items-center justify-center w-full text-xs text-gray-500 hover:text-emerald-600 transition-colors cursor-pointer"
                 onClick={() => setShowFeedback(true)}
-                aria-label="Provide feedback about the app"
+                aria-label={t('Send Feedback')}
               >
                 <MessageSquare className="h-3 w-3 mr-1" />
-                Send Feedback
+                {t('Send Feedback')}
               </button>
             </div>
           )}
@@ -404,11 +411,11 @@ export const SideNav: React.FC<SideNavProps> = ({
                   <div className={cn("bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2", "side-nav-trial-container")}>
                     <div className={cn("flex items-center justify-center text-amber-700", "side-nav-trial-header")}>
                       <Clock className="h-4 w-4 mr-1" />
-                      <span className="text-xs font-medium">Trial Version</span>
+                      <span className="text-xs font-medium">{t('Trial Version')}</span>
                     </div>
                     <div className="text-center">
                       <p className={cn("text-xs text-amber-600", "side-nav-trial-text")}>
-                        Ending: {new Date(accountStatus.trialEnds).toLocaleDateString('en-US', {
+                        {t('Ending')}: {new Date(accountStatus.trialEnds).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
@@ -421,7 +428,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                       onClick={() => setShowPaymentModal(true)}
                     >
                       <CreditCard className="h-3 w-3 mr-1" />
-                      Buy Now
+                      {t('Buy Now')}
                     </Button>
                   </div>
                 </div>
@@ -496,7 +503,7 @@ export const SideNav: React.FC<SideNavProps> = ({
           {isAdmin && (
             <FooterButton
               icon={<Settings />}
-              label="Settings"
+              label={t('Settings')}
               onClick={onSettingsClick}
             />
           )}
@@ -504,7 +511,7 @@ export const SideNav: React.FC<SideNavProps> = ({
           {/* Logout Button */}
           <FooterButton
             icon={<LogOut />}
-            label="Logout"
+            label={t('Logout')}
             onClick={onLogout}
           />
         </div>

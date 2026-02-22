@@ -3,6 +3,7 @@ import { Phone, Mail, MapPin } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { styles } from './baby-quick-info.styles';
 import { ContactsTabProps } from './baby-quick-info.types';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * ContactsTab Component
@@ -13,6 +14,8 @@ const ContactsTab: React.FC<ContactsTabProps> = ({
   contacts,
   selectedBaby
 }) => {
+  const { t } = useLocalization();
+  
   // Filter contacts that are associated with the baby
   // Since we don't have a direct relationship in the data model,
   // we'll display all contacts for now. In a real implementation,
@@ -21,7 +24,7 @@ const ContactsTab: React.FC<ContactsTabProps> = ({
   return (
     <div className={cn(styles.contactsContainer, "baby-quick-info-contacts-container")}>
       <h3 className={cn(styles.sectionTitle, "baby-quick-info-section-title")}>
-        {selectedBaby.firstName}'s Contacts
+        {selectedBaby.firstName}{t('\'s Contacts')}
       </h3>
       
       {contacts && contacts.length > 0 ? (
@@ -93,7 +96,7 @@ const ContactsTab: React.FC<ContactsTabProps> = ({
         </div>
       ) : (
         <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-          No contacts available. Contacts can be added in the Calendar Event form or Settings.
+          {t('No contacts available. Contacts can be added in the Calendar Event form or Settings.')}
         </div>
       )}
     </div>

@@ -15,6 +15,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 interface MeasurementFormProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ export default function MeasurementForm({
   activity,
   onSuccess,
 }: MeasurementFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
@@ -331,7 +333,7 @@ export default function MeasurementForm({
       // If no measurements, show error
       if (measurements.length === 0) {
         console.error('No measurements provided');
-        alert('Please enter at least one measurement value');
+        alert(t('Please enter at least one measurement value'));
         setLoading(false);
         return;
       }
@@ -507,26 +509,26 @@ export default function MeasurementForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? 'Edit Measurement' : 'Log Measurements'}
-      description={activity ? 'Update details about your baby\'s measurement' : 'Record new measurements for your baby'}
+      title={activity ? t('Edit Measurement') : t('Log Measurements')}
+      description={activity ? t('Update details about your baby\'s measurement') : t('Record new measurements for your baby')}
     >
         <FormPageContent>
           <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* Date & Time - Full width on all screens */}
             <div>
-              <Label htmlFor="measurement-date">Date & Time</Label>
+              <Label htmlFor="measurement-date">{t('Date & Time')}</Label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select measurement time..."
+                placeholder={t("Select measurement time...")}
               />
             </div>
             
             {/* Height Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="height-value">Height</Label>
+              <Label htmlFor="height-value">{t('Height')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="height-value"
@@ -535,7 +537,7 @@ export default function MeasurementForm({
                   value={formData.height.value}
                   onChange={(e) => handleValueChange('height', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter height"
+                  placeholder={t("Enter height")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -565,7 +567,7 @@ export default function MeasurementForm({
             
             {/* Weight Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="weight-value">Weight</Label>
+              <Label htmlFor="weight-value">{t('Weight')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="weight-value"
@@ -574,7 +576,7 @@ export default function MeasurementForm({
                   value={formData.weight.value}
                   onChange={(e) => handleValueChange('weight', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter weight"
+                  placeholder={t("Enter weight")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -614,7 +616,7 @@ export default function MeasurementForm({
             
             {/* Head Circumference Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="head-value">Head Circumference</Label>
+              <Label htmlFor="head-value">{t('Head Circumference')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="head-value"
@@ -623,7 +625,7 @@ export default function MeasurementForm({
                   value={formData.headCircumference.value}
                   onChange={(e) => handleValueChange('headCircumference', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter head circumference"
+                  placeholder={t("Enter head circumference")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -653,7 +655,7 @@ export default function MeasurementForm({
             
             {/* Temperature Measurement */}
             <div className="space-y-2">
-              <Label htmlFor="temp-value">Temperature</Label>
+              <Label htmlFor="temp-value">{t('Temperature')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
                   id="temp-value"
@@ -662,7 +664,7 @@ export default function MeasurementForm({
                   value={formData.temperature.value}
                   onChange={(e) => handleValueChange('temperature', e.target.value)}
                   className="flex-1"
-                  placeholder="Enter temperature"
+                  placeholder={t("Enter temperature")}
                   disabled={loading}
                 />
                 <div className="flex space-x-1">
@@ -674,7 +676,7 @@ export default function MeasurementForm({
                     disabled={loading}
                     className="px-2 py-1 h-9"
                   >
-                    °F
+                    {t('°F')}
                   </Button>
                   <Button
                     type="button"
@@ -684,7 +686,7 @@ export default function MeasurementForm({
                     disabled={loading}
                     className="px-2 py-1 h-9"
                   >
-                    °C
+                    {t('°C')}
                   </Button>
                 </div>
               </div>
@@ -692,13 +694,13 @@ export default function MeasurementForm({
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Label htmlFor="notes">{t('Notes (Optional)')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 className="w-full"
-                placeholder="Add any additional notes about these measurements"
+                placeholder={t("Add any additional notes about these measurements")}
                 disabled={loading}
               />
             </div>
@@ -713,10 +715,10 @@ export default function MeasurementForm({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? 'Update' : 'Save'}
+              {activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

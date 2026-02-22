@@ -21,11 +21,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { PaymentModalProps, PricingPlan, SubscriptionStatus } from './payment-modal.types';
+import { useLocalization } from '@/src/context/localization';
+
 import './account-manager.css';
 
 // Stripe is lazily initialized only when needed (prevents initialization in self-hosted mode)
 let stripePromise: Promise<Stripe | null> | null = null;
-
 const getStripe = () => {
   if (!stripePromise) {
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -52,6 +53,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   accountStatus,
   onPaymentSuccess,
 }) => {
+  const { t } = useLocalization();
+  
   // State management
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -233,7 +236,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
             <div className="flex-1">
               <h4 className={cn("text-lg font-semibold text-teal-800 mb-2", "payment-modal-subscription-title")}>
-                Active {accountStatus.planType === 'full' ? 'Lifetime' : 'Subscription'}
+                {t('Active')} {accountStatus.planType === 'full' ? 'Lifetime' : 'Subscription'}
               </h4>
 
               {accountStatus.planType === 'sub' && subscriptionStatus.currentPeriodEnd && (
@@ -250,7 +253,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     <div className={cn("flex items-center gap-2 text-teal-700", "payment-modal-subscription-info")}>
                       <CreditCard className="h-4 w-4" />
                       <span>
-                        {subscriptionStatus.paymentMethod.brand.toUpperCase()} ending in{' '}
+                        {subscriptionStatus.paymentMethod.brand.toUpperCase()} {t('ending in')}{' '}
                         {subscriptionStatus.paymentMethod.last4}
                       </span>
                     </div>
@@ -260,10 +263,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     <div className={cn("mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md", "payment-modal-cancelled-warning")}>
                       <div className={cn("flex items-center gap-2 text-amber-700", "payment-modal-cancelled-warning-text")}>
                         <AlertTriangle className="h-4 w-4" />
-                        <span className="font-medium">Subscription Cancelled</span>
+                        <span className="font-medium">{t('Subscription Cancelled')}</span>
                       </div>
                       <p className={cn("text-sm text-amber-600 mt-1", "payment-modal-cancelled-warning-description")}>
-                        You will have access until {new Date(subscriptionStatus.currentPeriodEnd).toLocaleDateString()}
+                        {t('You will have access until')} {new Date(subscriptionStatus.currentPeriodEnd).toLocaleDateString()}
                       </p>
                     </div>
                   )}
@@ -272,7 +275,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
               {accountStatus.planType === 'full' && (
                 <p className={cn("text-teal-700", "payment-modal-lifetime-text")}>
-                  You have lifetime access to all features. Thank you for your support!
+                  {t('You have lifetime access to all features. Thank you for your support!')}
                 </p>
               )}
             </div>
@@ -288,14 +291,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   <Crown className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <h5 className={cn("font-semibold text-purple-800 mb-1", "payment-modal-upgrade-title")}>Upgrade to Lifetime Access</h5>
+                  <h5 className={cn("font-semibold text-purple-800 mb-1", "payment-modal-upgrade-title")}>{t('Upgrade to Lifetime Access')}</h5>
                   <p className={cn("text-sm text-purple-700 mb-2", "payment-modal-upgrade-description")}>
-                    Get lifetime access for a one-time payment of $12. No more recurring charges!
+                    {t('Get lifetime access for a one-time payment of $12. No more recurring charges!')}
                   </p>
                   <ul className={cn("text-xs text-purple-600 space-y-1 mb-3", "payment-modal-upgrade-list")}>
-                    <li>• Your subscription will be automatically cancelled</li>
-                    <li>• You'll maintain access for the remainder of your current billing period</li>
-                    <li>• Lifetime access starts immediately after payment</li>
+                    <li>{t('• Your subscription will be automatically cancelled')}</li>
+                    <li>{t('• You\'ll maintain access for the remainder of your current billing period')}</li>
+                    <li>{t('• Lifetime access starts immediately after payment')}</li>
                   </ul>
                 </div>
               </div>
@@ -308,12 +311,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
+                    {t('Processing...')}
                   </>
                 ) : (
                   <>
                     <Crown className="h-4 w-4 mr-2" />
-                    Upgrade to Lifetime
+                    {t('Upgrade to Lifetime')}
                   </>
                 )}
               </Button>
@@ -331,7 +334,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   {cancelingSubscription ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Cancelling...
+                      {t('Cancelling...')}
                     </>
                   ) : (
                     'Cancel Subscription'
@@ -361,7 +364,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           >
             {plan.highlighted && (
               <div className="absolute top-0 right-0 bg-teal-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
-                BEST VALUE
+                {t('BEST VALUE')}
               </div>
             )}
 
@@ -397,12 +400,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
+                  {t('Processing...')}
                 </>
               ) : (
                 <>
                   <Crown className="h-4 w-4 mr-2" />
-                  Select Plan
+                  {t('Select Plan')}
                 </>
               )}
             </Button>
@@ -431,7 +434,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <div className={cn("mb-6 p-4 bg-red-50 border border-red-200 rounded-lg", "payment-modal-error")}>
               <div className={cn("flex items-center gap-2 text-red-700", "payment-modal-error-text")}>
                 <AlertTriangle className="h-5 w-5" />
-                <span className="font-medium">Error</span>
+                <span className="font-medium">{t('Error')}</span>
               </div>
               <p className={cn("text-sm text-red-600 mt-1", "payment-modal-error-description")}>{error}</p>
             </div>
@@ -447,7 +450,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         <div className={cn("flex justify-end pt-4 border-t border-gray-400", "payment-modal-footer")}>
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
-            Close
+            {t('Close')}
           </Button>
         </div>
       </DialogContent>

@@ -102,3 +102,21 @@ html.dark .side-nav-trial-header {
 html.dark .side-nav-trial-text {
   color: #fbbf24 !important; /* amber-400 */
 }
+
+/* Language selector */
+html.dark .side-nav-language-trigger {
+  color: #9ca3af; /* gray-400 */
+}
+
+html.dark .side-nav-language-trigger:hover {
+  color: #5eead4; /* teal-300 */
+}
+
+html.dark .side-nav-language-item {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .side-nav-language-item:hover {
+  background-color: #374151; /* gray-700 */
+  color: #9ca3af; /* gray-400 */
+}

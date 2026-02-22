@@ -17,6 +17,7 @@ import {
 import { CalendarProps, CalendarPage } from './calendar.types';
 import { MonthSelectorPage } from './MonthSelectorPage';
 import { YearSelectorPage } from './YearSelectorPage';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * Calendar component
@@ -72,6 +73,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
     initialFocus,
     ...props 
   }, ref) => {
+    const { t } = useLocalization();
+    
     // State for the currently displayed month
     const [month, setMonth] = React.useState(() => {
       return monthProp || (selected || rangeFrom || new Date());
@@ -432,12 +435,12 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
         {mode === "range" && (
           <div className="calendar-range-display px-3 pt-2 pb-4 text-sm text-gray-700 flex justify-between items-center">
             <div className="flex flex-col">
-              <span className="text-xs text-gray-500 font-medium">From</span>
+              <span className="text-xs text-gray-500 font-medium">{t('From')}</span>
               <span className="font-semibold">{formatDate(rangeFrom) || '—'}</span>
             </div>
             <div className="h-px w-4 bg-gray-300 mx-2"></div>
             <div className="flex flex-col">
-              <span className="text-xs text-gray-500 font-medium">To</span>
+              <span className="text-xs text-gray-500 font-medium">{t('To')}</span>
               <span className="font-semibold">{formatDate(rangeTo) || '—'}</span>
             </div>
           </div>

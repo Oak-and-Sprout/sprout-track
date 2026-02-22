@@ -19,6 +19,7 @@ import {
 import { caretakerFormStyles } from './caretaker-form.styles';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
 
 // Extended type to include the loginId field
 interface Caretaker extends PrismaCaretaker {
@@ -49,6 +50,7 @@ export default function CaretakerForm({
   caretaker,
   onCaretakerChange,
 }: CaretakerFormProps) {
+  const { t } = useLocalization();
   const { showToast } = useToast();
   const [formData, setFormData] = useState(defaultFormData);
   const [confirmPin, setConfirmPin] = useState('');
@@ -83,9 +85,9 @@ export default function CaretakerForm({
   useEffect(() => {
     if (formData.loginId && formData.loginId.length === 2) {
       if (existingCaretakers.includes(formData.loginId)) {
-        setLoginIdError('This Login ID is already in use. Please choose a different one.');
+        setLoginIdError(t('This Login ID is already in use. Please choose a different one.'));
       } else if (formData.loginId === '00') {
-        setLoginIdError('Login ID "00" is reserved for system use. Please choose a different one.');
+        setLoginIdError(t('Login ID "00" is reserved for system use. Please choose a different one.'));
       } else {
         setLoginIdError('');
       }
@@ -163,15 +165,15 @@ export default function CaretakerForm({
 
   const validatePIN = () => {
     if (formData.securityPin.length < 6) {
-      setError('PIN must be at least 6 digits');
+      setError(t('PIN must be at least 6 digits'));
       return false;
     }
     if (formData.securityPin.length > 10) {
-      setError('PIN cannot be longer than 10 digits');
+      setError(t('PIN cannot be longer than 10 digits'));
       return false;
     }
     if (formData.securityPin !== confirmPin) {
-      setError('PINs do not match');
+      setError(t('PINs do not match'));
       return false;
     }
     return true;
@@ -183,17 +185,17 @@ export default function CaretakerForm({
 
     // Validate form
     if (!formData.loginId.trim()) {
-      setError('Login ID is required');
+      setError(t('Login ID is required'));
       return;
     }
 
     if (formData.loginId.length !== 2) {
-      setError('Login ID must be exactly 2 digits');
+      setError(t('Login ID must be exactly 2 digits'));
       return;
     }
 
     if (!/^\d{2}$/.test(formData.loginId)) {
-      setError('Login ID must contain only digits');
+      setError(t('Login ID must contain only digits'));
       return;
     }
 
@@ -204,7 +206,7 @@ export default function CaretakerForm({
     }
 
     if (!formData.name.trim()) {
-      setError('Name is required');
+      setError(t('Name is required'));
       return;
     }
 
@@ -314,16 +316,16 @@ export default function CaretakerForm({
     <FormPage 
       isOpen={isOpen} 
       onClose={onClose}
-      title={isEditing ? 'Edit Caretaker' : 'Add New Caretaker'}
+      title={isEditing ? t('Edit Caretaker') : t('Add New Caretaker')}
       description={isEditing 
-        ? "Update caretaker information" 
-        : "Enter caretaker information to add them to the system"
+        ? t("Update caretaker information") 
+        : t("Enter caretaker information to add them to the system")
       }
     >
       <form onSubmit={handleSubmit} className="h-full flex flex-col overflow-hidden">
         <FormPageContent className={caretakerFormStyles.content}>
           <div>
-            <label className="form-label">Login ID</label>
+            <label className="form-label">{t('Login ID')}</label>
             <Input
               value={formData.loginId}
               onChange={(e) => {
@@ -334,7 +336,7 @@ export default function CaretakerForm({
                 }
               }}
               className={`w-full ${loginIdError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
-              placeholder="Enter 2-digit ID"
+              placeholder={t("Enter 2-digit ID")}
               maxLength={2}
               required
               autoComplete="off"
@@ -345,35 +347,35 @@ export default function CaretakerForm({
               <p className="text-xs text-red-500 mt-1">{loginIdError}</p>
             ) : (
               <p className="text-xs text-gray-500 mt-1">
-                Login ID must be exactly 2 digits (currently: {formData.loginId.length}/2)
+                {t('Login ID must be exactly 2 digits (currently:')} {formData.loginId.length}/2)
               </p>
             )}
           </div>
           <div>
-            <label className="form-label">Name</label>
+            <label className="form-label">{t('Name')}</label>
             <Input
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
               className="w-full"
-              placeholder="Enter caretaker name"
+              placeholder={t("Enter caretaker name")}
               required
             />
           </div>
           <div>
-            <label className="form-label">Type (Optional)</label>
+            <label className="form-label">{t('Type (Optional)')}</label>
             <Input
               value={formData.type}
               onChange={(e) =>
                 setFormData({ ...formData, type: e.target.value })
               }
               className="w-full"
-              placeholder="Parent, Grandparent, Nanny, etc."
+              placeholder={t("Parent, Grandparent, Nanny, etc.")}
             />
           </div>
           <div>
-            <label className="form-label">Role</label>
+            <label className="form-label">{t('Role')}</label>
             <Select
               value={formData.role}
               onValueChange={(value) =>
@@ -382,20 +384,20 @@ export default function CaretakerForm({
               disabled={isFirstCaretaker}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a role" />
+                <SelectValue placeholder={t("Select a role")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="USER">Regular User</SelectItem>
-                <SelectItem value="ADMIN">Administrator</SelectItem>
+                <SelectItem value="USER">{t('Regular User')}</SelectItem>
+                <SelectItem value="ADMIN">{t('Administrator')}</SelectItem>
               </SelectContent>
             </Select>
             {isFirstCaretaker ? (
               <p className="text-xs text-amber-600 mt-1">
-                The first caretaker must be an administrator to manage the system
+                {t('The first caretaker must be an administrator to manage the system')}
               </p>
             ) : (
               <p className="text-xs text-gray-500 mt-1">
-                Administrators have access to system settings and administrative functions
+                {t('Administrators have access to system settings and administrative functions')}
               </p>
             )}
           </div>
@@ -410,16 +412,16 @@ export default function CaretakerForm({
               disabled={isFirstCaretaker}
             />
             <label htmlFor="inactive" className="form-label mb-0">
-              Mark as inactive
+              {t('Mark as inactive')}
             </label>
           </div>
           {formData.inactive && (
             <p className="text-xs text-amber-600 mt-1">
-              Inactive caretakers cannot log in to the system
+              {t('Inactive caretakers cannot log in to the system')}
             </p>
           )}
           <div>
-            <label className="form-label">Security PIN</label>
+            <label className="form-label">{t('Security PIN')}</label>
             <Input
               type="password"
               value={formData.securityPin}
@@ -430,16 +432,16 @@ export default function CaretakerForm({
                 }
               }}
               className="w-full"
-              placeholder="Enter 6-10 digit PIN"
+              placeholder={t("Enter 6-10 digit PIN")}
               minLength={6}
               maxLength={10}
               pattern="\d*"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">PIN must be between 6 and 10 digits</p>
+            <p className="text-xs text-gray-500 mt-1">{t('PIN must be between 6 and 10 digits')}</p>
           </div>
           <div>
-            <label className="form-label">Confirm PIN</label>
+            <label className="form-label">{t('Confirm PIN')}</label>
             <Input
               type="password"
               value={confirmPin}
@@ -450,7 +452,7 @@ export default function CaretakerForm({
                 }
               }}
               className="w-full"
-              placeholder="Confirm PIN"
+              placeholder={t("Confirm PIN")}
               minLength={6}
               maxLength={10}
               pattern="\d*"
@@ -471,7 +473,7 @@ export default function CaretakerForm({
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button
               type="submit"
@@ -479,10 +481,10 @@ export default function CaretakerForm({
               disabled={isSubmitting}
             >
               {isSubmitting 
-                ? 'Saving...' 
+                ? t('Saving...') 
                 : isEditing 
-                  ? 'Save Changes' 
-                  : 'Add Caretaker'
+                  ? t('Save Changes') 
+                  : t('Add Caretaker')
               }
             </Button>
           </div>

@@ -24,6 +24,7 @@ import {
 import BabyModal from '@/src/components/modals/BabyModal';
 import ChangePinModal from '@/src/components/modals/ChangePinModal';
 
+import { useLocalization } from '@/src/context/localization';
 
 interface SettingsModalProps {
   open: boolean;
@@ -37,7 +38,7 @@ interface SettingsModalProps {
   variant?: 'settings' | 'default';
 }
 
-export default function SettingsModal({ 
+export default function SettingsModal({
   open, 
   onClose,
   onBabySelect,
@@ -45,6 +46,7 @@ export default function SettingsModal({
   selectedBabyId,
   variant = 'default'
 }: SettingsModalProps) {
+  const { t } = useLocalization();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [babies, setBabies] = useState<Baby[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,15 +189,15 @@ export default function SettingsModal({
       >
         <DialogContent className="dialog-content max-w-2xl w-full">
           <DialogHeader className="dialog-header">
-            <DialogTitle className="dialog-title text-slate-800">Settings</DialogTitle>
+            <DialogTitle className="dialog-title text-slate-800">{t('Settings')}</DialogTitle>
             <DialogDescription className="dialog-description">
-              Configure your preferences for the Baby Tracker app
+              {t('Configure your preferences for the Baby Tracker app')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 w-full max-w-lg mx-auto">
             <div className="space-y-4">
               <div>
-                <Label className="form-label">Family Name</Label>
+                <Label className="form-label">{t('Family Name')}</Label>
               <Input
                 disabled={loading}
                 value={settings?.familyName || ''}
@@ -206,7 +208,7 @@ export default function SettingsModal({
               </div>
               
               <div>
-                <Label className="form-label">Security PIN</Label>
+                <Label className="form-label">{t('Security PIN')}</Label>
                 <div className="flex gap-2">
                   <Input
                     type="password"
@@ -219,10 +221,10 @@ export default function SettingsModal({
                     onClick={() => setShowChangePinModal(true)}
                     disabled={loading}
                   >
-                    Change PIN
+                    {t('Change PIN')}
                   </Button>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">PIN must be between 6 and 10 digits</p>
+                <p className="text-sm text-gray-500 mt-1">{t('PIN must be between 6 and 10 digits')}</p>
               </div>
             </div>
             
@@ -235,7 +237,7 @@ export default function SettingsModal({
                   disabled={loading}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Backup Database
+                  {t('Backup Database')}
                 </Button>
                 <Button
                   variant="outline"
@@ -244,13 +246,13 @@ export default function SettingsModal({
                   disabled={loading || isRestoring}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Restore Database
+                  {t('Restore Database')}
                 </Button>
               </div>
             </div>
 
             <div className="border-t border-slate-200 pt-6">
-              <h3 className="form-label mb-4">Manage Babies</h3>
+              <h3 className="form-label mb-4">{t('Manage Babies')}</h3>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2 w-full">
                   <div className="flex-1 min-w-[200px]">
@@ -284,7 +286,7 @@ export default function SettingsModal({
                     }}
                   >
                     <Edit className="h-4 w-3 mr-2" />
-                    Edit
+                    {t('Edit')}
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setIsEditing(false);
@@ -292,7 +294,7 @@ export default function SettingsModal({
                     setShowBabyModal(true);
                   }}>
                     <Plus className="h-4 w-3 mr-2" />
-                    Add
+                    {t('Add')}
                   </Button>
                 </div>
               </div>

@@ -11,6 +11,8 @@ import { cn } from '@/src/lib/utils';
 import { useTheme } from '@/src/context/theme';
 import { termsOfUseModalStyles } from './terms-of-use.styles';
 import { TermsOfUseModalProps } from './terms-of-use.types';
+import { useLocalization } from '@/src/context/localization';
+
 import './terms-of-use.css';
 
 /**
@@ -22,6 +24,7 @@ export const TermsOfUseModal: React.FC<TermsOfUseModalProps> = ({
   open,
   onClose,
 }) => {
+  const { t } = useLocalization();
   const [termsOfUseContent, setTermsOfUseContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const { theme } = useTheme();
@@ -51,6 +54,7 @@ export const TermsOfUseModal: React.FC<TermsOfUseModalProps> = ({
 
   // Helper function to format text content with bold and italic
   const formatTextContent = (text: string): React.ReactNode => {
+
     if (!text) return text;
     
     // Split text by markdown patterns and process each part
@@ -116,7 +120,7 @@ export const TermsOfUseModal: React.FC<TermsOfUseModalProps> = ({
   // Format the markdown content for display
   const formatMarkdown = (content: string): React.ReactNode => {
     if (loading) {
-      return <div className="text-center py-8">Loading terms of use...</div>;
+      return <div className="text-center py-8">{t('Loading terms of use...')}</div>;
     }
 
     // Process the content to group list items
@@ -231,10 +235,10 @@ export const TermsOfUseModal: React.FC<TermsOfUseModalProps> = ({
       <DialogContent className={cn(termsOfUseModalStyles.container, "terms-of-use-modal-container")}>
         <DialogHeader className={termsOfUseModalStyles.header}>
           <DialogTitle className={cn(termsOfUseModalStyles.title, "terms-of-use-modal-title")}>
-            Terms of Use
+            {t('Terms of Use')}
           </DialogTitle>
           <DialogDescription className={cn(termsOfUseModalStyles.description, "terms-of-use-modal-description")}>
-            View our terms of use and service agreement
+            {t('View our terms of use and service agreement')}
           </DialogDescription>
         </DialogHeader>
         
@@ -249,7 +253,7 @@ export const TermsOfUseModal: React.FC<TermsOfUseModalProps> = ({
             onClick={onClose}
             className={cn(termsOfUseModalStyles.closeButton, "terms-of-use-modal-close-button")}
           >
-            Close
+            {t('Close')}
           </Button>
         </div>
       </DialogContent>

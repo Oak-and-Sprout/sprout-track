@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { useState, useEffect } from 'react';
+import { useLocalization } from '@/src/context/localization';
 
 interface CaretakerModalProps {
   open: boolean;
@@ -43,6 +44,7 @@ export default function CaretakerModal({
   isEditing,
   caretaker,
 }: CaretakerModalProps) {
+  const { t } = useLocalization();
   const [formData, setFormData] = useState(defaultFormData);
   const [confirmPin, setConfirmPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,7 +187,7 @@ export default function CaretakerModal({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="form-label">Login ID</label>
+            <label className="form-label">{t('Login ID')}</label>
             <Input
               value={formData.loginId}
               onChange={(e) => {
@@ -200,7 +202,7 @@ export default function CaretakerModal({
               autoComplete="off"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Login ID must be exactly 2 digits or characters (currently: {formData.loginId.length}/2)
+              {t('Login ID must be exactly 2 digits or characters (currently:')} {formData.loginId.length}/2)
             </p>
           </div>
           <div>
@@ -216,7 +218,7 @@ export default function CaretakerModal({
             />
           </div>
           <div>
-            <label className="form-label">Type (Optional)</label>
+            <label className="form-label">{t('Type (Optional)')}</label>
             <Input
               value={formData.type}
               onChange={(e) =>
@@ -227,7 +229,7 @@ export default function CaretakerModal({
             />
           </div>
           <div>
-            <label className="form-label">Role</label>
+            <label className="form-label">{t('Role')}</label>
             <Select
               value={formData.role}
               onValueChange={(value) =>
@@ -239,22 +241,22 @@ export default function CaretakerModal({
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="USER">Regular User</SelectItem>
-                <SelectItem value="ADMIN">Administrator</SelectItem>
+                <SelectItem value="USER">{t('Regular User')}</SelectItem>
+                <SelectItem value="ADMIN">{t('Administrator')}</SelectItem>
               </SelectContent>
             </Select>
             {isFirstCaretaker ? (
               <p className="text-xs text-amber-600 mt-1">
-                The first caretaker must be an administrator to manage the system
+                {t('The first caretaker must be an administrator to manage the system')}
               </p>
             ) : (
               <p className="text-xs text-gray-500 mt-1">
-                Administrators have access to system settings and administrative functions
+                {t('Administrators have access to system settings and administrative functions')}
               </p>
             )}
           </div>
           <div>
-            <label className="form-label">Security PIN</label>
+            <label className="form-label">{t('Security PIN')}</label>
             <Input
               type="password"
               value={formData.securityPin}
@@ -271,10 +273,10 @@ export default function CaretakerModal({
               pattern="\d*"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">PIN must be between 6 and 10 digits</p>
+            <p className="text-xs text-gray-500 mt-1">{t('PIN must be between 6 and 10 digits')}</p>
           </div>
           <div>
-            <label className="form-label">Confirm PIN</label>
+            <label className="form-label">{t('Confirm PIN')}</label>
             <Input
               type="password"
               value={confirmPin}
@@ -305,7 +307,7 @@ export default function CaretakerModal({
               className="hover:bg-slate-50"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               type="submit"

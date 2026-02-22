@@ -27,9 +27,11 @@ import { cn } from '@/src/lib/utils';
 import './daily-stats.css';
 import { dailyStatsStyles } from './daily-stats.styles';
 import { DailyStatsProps, StatItemProps, StatsTickerProps } from './daily-stats.types';
+import { useLocalization } from '@/src/context/localization';
 
 const StatsTicker: React.FC<StatsTickerProps> = ({ stats }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const tickerRef = useRef<HTMLDivElement>(null);
   const [animationDuration, setAnimationDuration] = useState(30); // seconds
   
@@ -102,6 +104,7 @@ const StatItem: React.FC<StatItemProps> = ({ icon, label, value }) => (
 
 export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoading = false }) => {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Helper function to format minutes into hours and minutes
@@ -444,7 +447,7 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
         className={cn(dailyStatsStyles.header, "cursor-pointer")}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className={dailyStatsStyles.title}>Daily Stats</h3>
+        <h3 className={dailyStatsStyles.title}>{t('Daily Stats')}</h3>
         
         {!isExpanded && !isLoading && activities.length > 0 && (
           <StatsTicker 
@@ -499,11 +502,11 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
         <div className={dailyStatsStyles.content}>
           {isLoading ? (
             <div className={dailyStatsStyles.empty}>
-              Loading daily statistics...
+              {t('Loading daily statistics...')}
             </div>
           ) : activities.length === 0 ? (
             <div className={dailyStatsStyles.empty}>
-              No activities recorded for this day
+              {t('No activities recorded for this day')}
             </div>
           ) : (
             <>

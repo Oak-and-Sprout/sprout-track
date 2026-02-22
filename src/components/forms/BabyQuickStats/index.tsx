@@ -21,6 +21,7 @@ import CardVisual from '@/src/components/reporting/CardVisual';
 import { Clock, Moon, Sun, Utensils, Droplet, Loader2 } from 'lucide-react';
 import { diaper } from '@lucide/lab';
 import { useFamily } from '@/src/context/family';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * BabyQuickStats Component
@@ -115,12 +116,12 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
           }
         } else {
           setActivities([]);
-          setError('Failed to fetch activities');
+            setError(t('Failed to fetch activities'));
         }
       } catch (err) {
         console.error('Error fetching activities:', err);
         setActivities([]);
-        setError('Error fetching activities');
+        setError(t('Error fetching activities'));
       } finally {
         setIsLoading(false);
       }
@@ -129,8 +130,11 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
     fetchActivities();
   }, [selectedBaby, family?.id]);
 
+  const { t } = useLocalization();
+  
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
+
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
@@ -439,10 +443,10 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   // Format period label
   const formatPeriodLabel = (period: TimePeriod): string => {
     switch (period) {
-      case '2day': return '2 Days';
-      case '7day': return '7 Days';
-      case '14day': return '14 Days';
-      case '30day': return '30 Days';
+      case '2day': return t('2 Days');
+      case '7day': return t('7 Days');
+      case '14day': return t('14 Days');
+      case '30day': return t('30 Days');
     }
   };
 
@@ -450,7 +454,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={`${selectedBaby?.firstName}'s Quick Stats`}
+      title={selectedBaby ? `${selectedBaby.firstName}${t("'s Quick Stats")}` : t("Quick Stats")}
     >
       <FormPageContent>
         <div className={quickStatsContainer()}>
@@ -459,7 +463,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               {/* Time period selectors */}
               <div className={timePeriodSelectorContainer()}>
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>Main Period:</Label>
+                  <Label className={timePeriodSelectorLabel()}>{t('Main Period:')}</Label>
                   <div className={timePeriodButtonGroup()}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
@@ -475,7 +479,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                 </div>
                 
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>Compare Period:</Label>
+                  <Label className={timePeriodSelectorLabel()}>{t('Compare Period:')}</Label>
                   <div className={timePeriodButtonGroup()}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
@@ -495,28 +499,28 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" />
-                  <p className="text-gray-600">Loading statistics...</p>
+                  <p className="text-gray-600">{t('Loading statistics...')}</p>
                 </div>
               ) : error ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <p className="text-red-500 mb-2">{error}</p>
-                  <p className="text-gray-600">Unable to load statistics. Please try again later.</p>
+                  <p className="text-gray-600">{t('Unable to load statistics. Please try again later.')}</p>
                 </div>
               ) : activities.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <p className="text-gray-600">No activities found for the selected time period.</p>
+                  <p className="text-gray-600">{t('No activities found for the selected time period.')}</p>
                 </div>
               ) : (
                 <div className={statsCardsGrid()}>
                   <CardVisual
-                    title="Avg Wake Window"
+                    title={t("Avg Wake Window")}
                     mainValue={formatMinutes(mainStats.avgWakeWindow)}
                     comparativeValue={formatMinutes(compareStats.avgWakeWindow)}
                     trend={mainStats.avgWakeWindow >= compareStats.avgWakeWindow ? 'positive' : 'negative'}
                   />
                   
                   <CardVisual
-                    title="Avg Nap Time"
+                    title={t("Avg Nap Time")}
                     mainValue={formatMinutes(mainStats.avgNapTime)}
                     comparativeValue={formatMinutes(compareStats.avgNapTime)}
                     trend={mainStats.avgNapTime >= compareStats.avgNapTime ? 'positive' : 'negative'}
@@ -530,21 +534,21 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                   />
                   
                   <CardVisual
-                    title="Avg Night Wakings"
+                    title={t("Avg Night Wakings")}
                     mainValue={mainStats.avgNightWakings.toFixed(1)}
                     comparativeValue={compareStats.avgNightWakings.toFixed(1)}
                     trend={mainStats.avgNightWakings <= compareStats.avgNightWakings ? 'positive' : 'negative'}
                   />
                   
                   <CardVisual
-                    title="Avg Feedings"
+                    title={t("Avg Feedings")}
                     mainValue={mainStats.avgFeedings.toFixed(1)}
                     comparativeValue={compareStats.avgFeedings.toFixed(1)}
                     trend="neutral"
                   />
                   
                   <CardVisual
-                    title="Avg Feed Amount"
+                    title={t("Avg Feed Amount")}
                     mainValue={mainStats.avgFeedAmount.toFixed(1) + ' oz'}
                     comparativeValue={compareStats.avgFeedAmount.toFixed(1) + ' oz'}
                     trend={mainStats.avgFeedAmount >= compareStats.avgFeedAmount ? 'positive' : 'negative'}
@@ -558,7 +562,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                   />
                   
                   <CardVisual
-                    title="Avg Poops"
+                    title={t("Avg Poops")}
                     mainValue={mainStats.avgPoops.toFixed(1)}
                     comparativeValue={compareStats.avgPoops.toFixed(1)}
                     trend="neutral"
@@ -568,7 +572,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
             </>
           ) : (
             <p className={placeholderText()}>
-              No baby selected. Please select a baby to view their stats.
+              {t('No baby selected. Please select a baby to view their stats.')}
             </p>
           )}
         </div>
@@ -577,7 +581,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
       <FormPageFooter>
         <div className={closeButtonContainer()}>
           <Button onClick={onClose} variant="outline">
-            Close
+            {t('Close')}
           </Button>
         </div>
       </FormPageFooter>

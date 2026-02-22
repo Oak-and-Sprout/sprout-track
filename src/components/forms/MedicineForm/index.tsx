@@ -9,6 +9,8 @@ import { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
 import ActiveDosesTab from './ActiveDosesTab';
 import ManageMedicinesTab from './ManageMedicinesTab';
 import GiveMedicineForm from '../GiveMedicineForm';
+import { useLocalization } from '@/src/context/localization';
+
 import './medicine-form.css';
 
 /**
@@ -37,6 +39,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
   onSuccess,
   activity,
 }) => {
+  const { t } = useLocalization();
   const [activeTab, setActiveTab] = useState<string>('active-doses');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [showGiveMedicineForm, setShowGiveMedicineForm] = useState(false);
@@ -78,7 +81,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
   const tabs: FormPageTab[] = [
     {
       id: 'active-doses',
-      label: 'Doses',
+      label: t('Doses'),
       icon: Activity,
       content: (
         <ActiveDosesTab
@@ -91,7 +94,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
     },
     {
       id: 'manage-medicines',
-      label: 'Medicines',
+      label: t('Medicines'),
       icon: Settings,
       content: (
         <ManageMedicinesTab
@@ -106,7 +109,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
       <FormPage
         isOpen={isOpen}
         onClose={onClose}
-        title="Medicine Tracker"
+        title={t("Medicine Tracker")}
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -118,7 +121,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
               variant="outline"
               onClick={onClose}
             >
-              Close
+              {t('Close')}
             </Button>
           </div>
         </FormPageFooter>

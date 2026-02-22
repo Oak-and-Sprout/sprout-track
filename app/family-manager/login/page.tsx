@@ -9,12 +9,14 @@ import { Label } from '@/src/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import { ApiResponse } from '@/app/api/types';
 import '../layout.css';
 
 export default function FamilyManagerLoginPage() {
   const router = useRouter();
   const { theme } = useTheme();
+  const { t } = useLocalization();
   const [adminPassword, setAdminPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,7 +57,8 @@ export default function FamilyManagerLoginPage() {
           const remainingTime = data.data.remainingTime || 300000;
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           setLockoutTime(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minutesText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minutesText}.`);
         }
       } catch (error) {
         console.error('Error checking IP lockout:', error);
@@ -87,7 +90,7 @@ export default function FamilyManagerLoginPage() {
     if (lockoutTime) return;
     
     if (!adminPassword.trim()) {
-      setError('Admin password is required');
+      setError(t('Admin password is required'));
       return;
     }
 
@@ -130,7 +133,7 @@ export default function FamilyManagerLoginPage() {
         // Redirect to family manager
         router.push('/family-manager');
       } else {
-        setError('Invalid admin password');
+        setError(t('Invalid admin password'));
         setAdminPassword('');
         
         // Check if we're now locked out
@@ -141,12 +144,13 @@ export default function FamilyManagerLoginPage() {
           const remainingTime = lockoutCheckData.data.remainingTime || 300000;
           const remainingMinutes = Math.ceil(remainingTime / 60000);
           setLockoutTime(Date.now() + remainingTime);
-          setError(`Too many failed attempts. Please try again in ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}.`);
+          const minutesText = remainingMinutes > 1 ? t('minutes') : t('minute');
+          setError(`${t('Too many failed attempts. Please try again in')} ${remainingMinutes} ${minutesText}.`);
         }
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      setError('Authentication failed. Please try again.');
+      setError(t('Authentication failed. Please try again.'));
       setAdminPassword('');
     } finally {
       setLoading(false);
@@ -179,16 +183,16 @@ export default function FamilyManagerLoginPage() {
             />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
-            Family Manager Login
+            {t('Family Manager Login')}
           </CardTitle>
           <p className="text-sm text-gray-600 family-manager-login-description">
-            Enter the system administrator password to access family management
+            {t('Enter the system administrator password to access family management')}
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminPassword">Administrator Password</Label>
+              <Label htmlFor="adminPassword">{t('Administrator Password')}</Label>
               <div className="relative mt-3">
                 <Input
                   id="adminPassword"
@@ -198,7 +202,7 @@ export default function FamilyManagerLoginPage() {
                     setAdminPassword(e.target.value);
                     setError('');
                   }}
-                  placeholder="Enter admin password"
+                  placeholder={t('Enter admin password')}
                   disabled={loading || !!lockoutTime}
                   autoFocus
                 />
@@ -234,10 +238,10 @@ export default function FamilyManagerLoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Authenticating...
+                  {t('Authenticating...')}
                 </>
               ) : (
-                'Login as Administrator'
+                t('Login as Administrator')
               )}
             </Button>
           </form>
@@ -252,7 +256,7 @@ export default function FamilyManagerLoginPage() {
               disabled={loading}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Go back to home
+              {t('Go back to home')}
             </Button>
           </div>
         </CardContent>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThemeProvider } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import SetupWizard from '@/src/components/SetupWizard';
 
 // TODO: Setup wizard implementation needed for future
@@ -19,8 +20,11 @@ FUTURE IMPLEMENTATION NOTES:
 Original logic (commented out for future reference):
 
 import SetupWizard from '@/src/components/SetupWizard';
+import { useLocalization } from '@/src/context/localization';
 
 export default function SetupPage() {
+  const { t } = useLocalization();
+
   const router = useRouter();
 
   const handleSetupComplete = (family: { id: string; name: string; slug: string }) => {
@@ -51,6 +55,7 @@ export default function SetupPage() {
 
 export default function SetupPage() {
   const router = useRouter();
+  const { t } = useLocalization();
   const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -163,7 +168,7 @@ export default function SetupPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Checking setup status...</p>
+          <p>{t('Checking setup status...')}</p>
         </div>
       </div>
     );

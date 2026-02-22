@@ -6,6 +6,7 @@ import { Icon } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { styles, eventTypeColors } from './baby-quick-info.styles';
 import { NotificationsTabProps } from './baby-quick-info.types';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * Get event type style class
@@ -46,6 +47,8 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
   upcomingEvents,
   selectedBaby
 }) => {
+  const { t } = useLocalization();
+  
   // Format relative time
   const formatRelativeTime = (dateString: string) => {
     if (!dateString) return '';
@@ -69,7 +72,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
     <div className={cn(styles.notificationsContainer, "baby-quick-info-notifications-container")}>
       {/* Last Activities Section */}
       <div className={cn(styles.sectionContainer, "baby-quick-info-section-container")}>
-        <h3 className={cn(styles.sectionTitle, "baby-quick-info-section-title")}>Last Activities</h3>
+        <h3 className={cn(styles.sectionTitle, "baby-quick-info-section-title")}>{t('Last Activities')}</h3>
         
         <div>
           {/* Last Poop */}
@@ -80,13 +83,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
-                  {selectedBaby.firstName}'s last poop was {formatRelativeTime(lastActivities.lastPoopDiaper.time)}
+                  {selectedBaby.firstName}{t('\'s last poop was')} {formatRelativeTime(lastActivities.lastPoopDiaper.time)}
                 </div>
               </div>
             </div>
           ) : (
             <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-              No poops recorded yet
+              {t('No poops recorded yet')}
             </div>
           )}
           
@@ -98,7 +101,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
-                  {selectedBaby.firstName}'s last bath was {formatRelativeTime(lastActivities.lastBath.time)}
+                  {selectedBaby.firstName}{t('\'s last bath was')} {formatRelativeTime(lastActivities.lastBath.time)}
                 </div>
                 <div className={cn(styles.activityTime, "baby-quick-info-activity-time")}>
                   {lastActivities.lastBath.soapUsed ? 'With soap' : 'Without soap'}
@@ -107,7 +110,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
             </div>
           ) : (
             <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-              No baths recorded yet
+              {t('No baths recorded yet')}
             </div>
           )}
           
@@ -119,7 +122,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
-                  {selectedBaby.firstName}'s height: <span className={cn(styles.relativeTime)}>{lastActivities.lastMeasurements.height.value} {lastActivities.lastMeasurements.height.unit}</span>
+                  {selectedBaby.firstName}{t('\'s height:')} <span className={cn(styles.relativeTime)}>{lastActivities.lastMeasurements.height.value} {lastActivities.lastMeasurements.height.unit}</span>
                 </div>
                 <div className={cn(styles.activityTime, "baby-quick-info-activity-time")}>
                   {formatRelativeTime(lastActivities.lastMeasurements.height.date)}
@@ -128,7 +131,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
             </div>
           ) : (
             <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-              No height measurements recorded yet
+              {t('No height measurements recorded yet')}
             </div>
           )}
           
@@ -140,7 +143,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
-                  {selectedBaby.firstName}'s weight: <span className={cn(styles.relativeTime)}>{lastActivities.lastMeasurements.weight.value} {lastActivities.lastMeasurements.weight.unit}</span>
+                  {selectedBaby.firstName}{t('\'s weight:')} <span className={cn(styles.relativeTime)}>{lastActivities.lastMeasurements.weight.value} {lastActivities.lastMeasurements.weight.unit}</span>
                 </div>
                 <div className={cn(styles.activityTime, "baby-quick-info-activity-time")}>
                   {formatRelativeTime(lastActivities.lastMeasurements.weight.date)}
@@ -149,7 +152,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
             </div>
           ) : (
             <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-              No weight measurements recorded yet
+              {t('No weight measurements recorded yet')}
             </div>
           )}
           
@@ -161,7 +164,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
-                  {selectedBaby.firstName}'s head circumference: <span className={cn(styles.relativeTime)}>{lastActivities.lastMeasurements.headCircumference.value} {lastActivities.lastMeasurements.headCircumference.unit}</span>
+                  {selectedBaby.firstName}{t('\'s head circumference:')} <span className={cn(styles.relativeTime)}>{lastActivities.lastMeasurements.headCircumference.value} {lastActivities.lastMeasurements.headCircumference.unit}</span>
                 </div>
                 <div className={cn(styles.activityTime, "baby-quick-info-activity-time")}>
                   {formatRelativeTime(lastActivities.lastMeasurements.headCircumference.date)}
@@ -170,7 +173,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
             </div>
           ) : (
             <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-              No head circumference measurements recorded yet
+              {t('No head circumference measurements recorded yet')}
             </div>
           )}
           
@@ -182,7 +185,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
-                  Last note said: <span>{lastActivities.lastNote.content.length > 100 
+                  {t('Last note said:')} <span>{lastActivities.lastNote.content.length > 100 
                     ? `${lastActivities.lastNote.content.substring(0, 100)}...` 
                     : lastActivities.lastNote.content}</span>
                 </div>
@@ -193,7 +196,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
             </div>
           ) : (
             <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-              No notes recorded yet
+              {t('No notes recorded yet')}
             </div>
           )}
         </div>
@@ -201,7 +204,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
       
       {/* Upcoming Events Section */}
       <div className={cn(styles.sectionContainer, "baby-quick-info-section-container")}>
-        <h3 className={cn(styles.sectionTitle, "baby-quick-info-section-title")}>Upcoming Events</h3>
+        <h3 className={cn(styles.sectionTitle, "baby-quick-info-section-title")}>{t('Upcoming Events')}</h3>
         
         <div className={cn(styles.eventsContainer, "baby-quick-info-events-container")}>
           {upcomingEvents && upcomingEvents.length > 0 ? (
@@ -232,7 +235,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
             ))
           ) : (
             <div className={cn(styles.emptyMessage, "baby-quick-info-empty-message")}>
-              No upcoming events
+              {t('No upcoming events')}
             </div>
           )}
         </div>

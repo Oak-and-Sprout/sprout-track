@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from 'react';
 import { DiaperType } from '@prisma/client';
 import { DiaperLogResponse } from '@/app/api/types';
+import { useLocalization } from '@/src/context/localization';
 
 interface DiaperModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ interface DiaperModalProps {
 }
 
 export default function DiaperModal({
+
   open,
   onClose,
   babyId,
@@ -38,6 +40,7 @@ export default function DiaperModal({
   activity,
   variant = 'default',
 }: DiaperModalProps) {
+  const { t } = useLocalization();
   const [formData, setFormData] = useState({
     time: initialTime,
     type: '' as DiaperType | '',
@@ -139,7 +142,7 @@ export default function DiaperModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Time</label>
+              <label className="form-label">{t('Time')}</label>
               <Input
                 type="datetime-local"
                 value={formData.time}
@@ -163,9 +166,9 @@ export default function DiaperModal({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="WET">Wet</SelectItem>
-                  <SelectItem value="DIRTY">Dirty</SelectItem>
-                  <SelectItem value="BOTH">Wet and Dirty</SelectItem>
+                  <SelectItem value="WET">{t('Wet')}</SelectItem>
+                  <SelectItem value="DIRTY">{t('Dirty')}</SelectItem>
+                  <SelectItem value="BOTH">{t('Wet and Dirty')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -174,7 +177,7 @@ export default function DiaperModal({
           {formData.type && formData.type !== 'WET' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="form-label">Condition</label>
+                <label className="form-label">{t('Condition')}</label>
               <Select
                 value={formData.condition}
                 onValueChange={(value: string) =>
@@ -185,15 +188,15 @@ export default function DiaperModal({
                   <SelectValue placeholder="Select condition" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NORMAL">Normal</SelectItem>
-                  <SelectItem value="LOOSE">Loose</SelectItem>
-                  <SelectItem value="FIRM">Firm</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  <SelectItem value="NORMAL">{t('Normal')}</SelectItem>
+                  <SelectItem value="LOOSE">{t('Loose')}</SelectItem>
+                  <SelectItem value="FIRM">{t('Firm')}</SelectItem>
+                  <SelectItem value="OTHER">{t('Other')}</SelectItem>
                 </SelectContent>
               </Select>
               </div>
               <div>
-                <label className="form-label">Color</label>
+                <label className="form-label">{t('Color')}</label>
               <Select
                 value={formData.color}
                 onValueChange={(value: string) =>
@@ -204,10 +207,10 @@ export default function DiaperModal({
                   <SelectValue placeholder="Select color" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="YELLOW">Yellow</SelectItem>
-                  <SelectItem value="BROWN">Brown</SelectItem>
-                  <SelectItem value="GREEN">Green</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  <SelectItem value="YELLOW">{t('Yellow')}</SelectItem>
+                  <SelectItem value="BROWN">{t('Brown')}</SelectItem>
+                  <SelectItem value="GREEN">{t('Green')}</SelectItem>
+                  <SelectItem value="OTHER">{t('Other')}</SelectItem>
                 </SelectContent>
               </Select>
               </div>
@@ -221,7 +224,7 @@ export default function DiaperModal({
               onClick={onClose}
               className="hover:bg-slate-50"
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button 
               type="submit"

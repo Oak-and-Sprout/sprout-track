@@ -5,6 +5,7 @@ import { FeedType } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
+import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -68,6 +69,10 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       updatedAt: formatForResponse(feedLog.updatedAt) || '',
       deletedAt: formatForResponse(feedLog.deletedAt),
     };
+
+    // Notify subscribers about activity creation (non-blocking)
+    notifyActivityCreated(feedLog.babyId, 'feed', { type: body.type }).catch(console.error);
+    resetTimerNotificationState(feedLog.babyId, 'feed').catch(console.error);
 
     return NextResponse.json<ApiResponse<FeedLogResponse>>({
       success: true,

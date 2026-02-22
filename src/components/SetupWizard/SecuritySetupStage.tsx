@@ -12,6 +12,7 @@ import { AlertCircle } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { styles } from './setup-wizard.styles';
 import { SecuritySetupStageProps } from './setup-wizard.types';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * SecuritySetupStage Component
@@ -32,6 +33,8 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
   addCaretaker,
   removeCaretaker
 }) => {
+  const { t } = useLocalization();
+  
   const [loginIdError, setLoginIdError] = useState('');
   const [isAccountAuth, setIsAccountAuth] = useState(false);
   const [accountName, setAccountName] = useState('');
@@ -141,13 +144,13 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
   return (
     <div className={cn(styles.stageContainer, "setup-wizard-stage-container")}>
       <h2 className={cn(styles.stageTitle, "setup-wizard-stage-title")}>
-        Security Setup
+        {t('Security Setup')}
       </h2>
       
       {isAccountAuth && !accountOwnerAdded && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
           <p className="text-blue-800 text-sm">
-            Choose a simple shared PIN or create personal login credentials with better tracking.
+            {t('Choose a simple shared PIN or create personal login credentials with better tracking.')}
           </p>
         </div>
       )}
@@ -223,7 +226,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
               className={cn(styles.formLabel, "setup-wizard-form-label")}
               htmlFor="confirmSystemPin"
             >
-              Confirm PIN
+              {t('Confirm PIN')}
             </label>
             <Input
               id="confirmSystemPin"
@@ -251,7 +254,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
             {isAccountAuth && !accountOwnerAdded && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                 <p className="text-green-800 text-sm">
-                  Create your personal login credentials. Choose a 2-digit ID and set your PIN.
+                  {t('Create your personal login credentials. Choose a 2-digit ID and set your PIN.')}
                 </p>
               </div>
             )}
@@ -296,7 +299,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                     className={cn(styles.formLabel, "setup-wizard-form-label")}
                     htmlFor="role"
                   >
-                    Role
+                    {t('Role')}
                   </label>
                   <Select
                     value={newCaretaker.role}
@@ -315,13 +318,13 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="USER">User</SelectItem>
+                      <SelectItem value="ADMIN">{t('Admin')}</SelectItem>
+                      <SelectItem value="USER">{t('User')}</SelectItem>
                     </SelectContent>
                   </Select>
                   {!isAccountAuth && caretakers.length === 0 && (
                     <p className={cn(styles.formWarningText, "setup-wizard-form-warning-text")}>
-                      First caretaker must be an admin
+                      {t('First caretaker must be an admin')}
                     </p>
                   )}
                 </div>
@@ -376,7 +379,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                     className={cn(styles.formLabel, "setup-wizard-form-label")}
                     htmlFor="type"
                   >
-                    Type (Optional)
+                    {t('Type (Optional)')}
                   </label>
                   <Input
                     id="type"
@@ -401,7 +404,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
           {caretakers.length > 0 && (
             <div className={cn(styles.formGroup, "setup-wizard-form-group")}>
               <h3 className={cn(styles.caretakerTitle, "setup-wizard-caretaker-title")}>
-                Caretakers
+                {t('Caretakers')}
               </h3>
               <ul className={cn(styles.caretakerList, "setup-wizard-caretaker-list")}>
                 {caretakers.map((caretaker, index) => (
@@ -422,7 +425,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                       size="sm"
                       onClick={() => removeCaretaker(index)}
                     >
-                      Remove
+                      {t('Remove')}
                     </Button>
                   </li>
                 ))}

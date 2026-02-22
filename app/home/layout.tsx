@@ -1,3 +1,4 @@
+import { LocalizationProvider } from '@/src/context/localization';
 import { ThemeProvider } from '@/src/context/theme';
 
 export default function SaaSLayout({
@@ -6,8 +7,10 @@ export default function SaaSLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider>
-      {children}
-    </ThemeProvider>
+    <LocalizationProvider>
+      <ThemeProvider>
+        {children}
+      </ThemeProvider>
+    </LocalizationProvider>
   );
 }

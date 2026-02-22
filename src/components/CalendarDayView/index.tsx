@@ -15,6 +15,8 @@ import CalendarEventForm from '@/src/components/forms/CalendarEventForm';
 import { CalendarEventFormData } from '@/src/components/forms/CalendarEventForm/calendar-event-form.types';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { useLocalization } from '@/src/context/localization';
+
 import './calendar-day-view.css';
 
 /**
@@ -41,6 +43,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
   isOpen,
 }) => {
   const { showToast } = useToast();
+  const { t } = useLocalization();
   
   // State for event form
   const [showEventForm, setShowEventForm] = useState(false);
@@ -333,7 +336,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
         <div className="flex flex-col items-center justify-center h-full text-center p-6">
           <CalendarClock className="h-12 w-12 text-gray-400 calendar-day-view-empty-icon mb-2" />
           <p className="text-gray-500 calendar-day-view-empty-text text-sm">
-            No events scheduled for this day
+            {t('No events scheduled for this day')}
           </p>
         </div>
       );
@@ -352,7 +355,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
                   styles.eventGroupTitle,
                   'calendar-day-view-group-title'
                 )}>
-                  Morning
+                  {t('Morning')}
                 </h3>
               </div>
               
@@ -377,7 +380,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
                   styles.eventGroupTitle,
                   'calendar-day-view-group-title'
                 )}>
-                  Afternoon
+                  {t('Afternoon')}
                 </h3>
               </div>
               
@@ -402,7 +405,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
                   styles.eventGroupTitle,
                   'calendar-day-view-group-title'
                 )}>
-                  Evening
+                  {t('Evening')}
                 </h3>
               </div>
               
@@ -444,11 +447,11 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
               onClick={handleClose}
               disabled={false}
             >
-              Close
+              {t('Close')}
             </Button>
             <Button onClick={handleAddEvent}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add Event
+              {t('Add Event')}
             </Button>
           </div>
         </FormPageFooter>

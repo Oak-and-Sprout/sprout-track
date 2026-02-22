@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { ShareButton } from '@/src/components/ui/share-button';
+import { useLocalization } from '@/src/context/localization';
 
 // Types for our family data
 interface FamilyData {
@@ -70,25 +71,27 @@ export default function FamilyView({
   appConfig,
   formatDateTime,
 }: FamilyViewProps) {
+  const { t } = useLocalization();
+  
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Family Name</TableHead>
+          <TableHead>{t('Family Name')}</TableHead>
           <TableHead>Link/Slug</TableHead>
-          <TableHead>Created</TableHead>
-          <TableHead>Updated</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Members</TableHead>
-          <TableHead>Babies</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t('Created')}</TableHead>
+          <TableHead>{t('Updated')}</TableHead>
+          <TableHead>{t('Status')}</TableHead>
+          <TableHead>{t('Members')}</TableHead>
+          <TableHead>{t('Babies')}</TableHead>
+          <TableHead className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {paginatedData.length === 0 ? (
           <TableRow>
             <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-              No families found.
+              {t('No families found.')}
             </TableCell>
           </TableRow>
         ) : (
@@ -141,7 +144,7 @@ export default function FamilyView({
                         checked={editingData.isActive !== undefined ? editingData.isActive : family.isActive}
                         onCheckedChange={(checked) => setEditingData(prev => ({ ...prev, isActive: !!checked }))}
                       />
-                      <label className="text-sm">Active</label>
+                      <label className="text-sm">{t('Active')}</label>
                     </div>
                   ) : (
                     <span

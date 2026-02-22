@@ -224,6 +224,8 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
   }, [dateFilteredActivities, activeFilter]);
 
   const handleDelete = async (activity: ActivityType) => {
+    // Note: confirm dialog is browser-native and cannot be localized easily
+    // Consider replacing with a custom modal in the future
     if (!confirm('Are you sure you want to delete this activity?')) return;
 
     const endpoint = getActivityEndpoint(activity);

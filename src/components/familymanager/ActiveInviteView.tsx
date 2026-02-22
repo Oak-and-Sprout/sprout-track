@@ -18,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { ShareButton } from '@/src/components/ui/share-button';
+import { useLocalization } from '@/src/context/localization';
 
 interface FamilySetupInvite {
   id: string;
@@ -56,24 +57,26 @@ export default function ActiveInviteView({
   appConfig,
   formatDateTime,
 }: ActiveInviteViewProps) {
+  const { t } = useLocalization();
+  
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Token</TableHead>
-          <TableHead>Created By</TableHead>
-          <TableHead>Created</TableHead>
-          <TableHead>Expires</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Family</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t('Token')}</TableHead>
+          <TableHead>{t('Created By')}</TableHead>
+          <TableHead>{t('Created')}</TableHead>
+          <TableHead>{t('Expires')}</TableHead>
+          <TableHead>{t('Status')}</TableHead>
+          <TableHead>{t('Family')}</TableHead>
+          <TableHead className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {paginatedData.length === 0 ? (
           <TableRow>
             <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-              No invites found.
+              {t('No invites found.')}
             </TableCell>
           </TableRow>
         ) : (
@@ -86,7 +89,7 @@ export default function ActiveInviteView({
                 {invite.creator ? (
                   <div>
                     <div className="font-medium">{invite.creator.name}</div>
-                    <div className="text-xs text-gray-500">ID: {invite.creator.loginId}</div>
+                    <div className="text-xs text-gray-500">{t('ID:')} {invite.creator.loginId}</div>
                   </div>
                 ) : (
                   'Unknown'
@@ -99,17 +102,17 @@ export default function ActiveInviteView({
                   {invite.isUsed ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       <CheckCircle className="h-3 w-3 mr-1" />
-                      Used
+                      {t('Used')}
                     </span>
                   ) : invite.isExpired ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                       <XCircle className="h-3 w-3 mr-1" />
-                      Expired
+                      {t('Expired')}
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       <Clock className="h-3 w-3 mr-1" />
-                      Active
+                      {t('Active')}
                     </span>
                   )}
                 </div>

@@ -72,6 +72,9 @@ export const sideNavStyles = {
   
   // Settings label
   settingsLabel: "text-sm",
+  
+  // Language selector trigger
+  languageTrigger: "text-xs text-gray-500 cursor-pointer hover:text-teal-600 transition-colors",
 };
 
 /**

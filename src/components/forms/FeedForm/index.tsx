@@ -22,6 +22,7 @@ import './feed-form.css';
 import BreastFeedForm from './BreastFeedForm';
 import BottleFeedForm from './BottleFeedForm';
 import SolidsFeedForm from './SolidsFeedForm';
+import { useLocalization } from '@/src/context/localization';
 
 interface FeedFormProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export default function FeedForm({
   activity,
   onSuccess,
 }: FeedFormProps) {
+  const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -352,13 +354,13 @@ export default function FeedForm({
 
     // Validate required fields
     if (!formData.type) {
-      setValidationError('Please select a feeding type');
+      setValidationError(t('Please select a feeding type'));
       return;
     }
     
     // Validate date time
     if (!selectedDateTime || isNaN(selectedDateTime.getTime())) {
-      setValidationError('Please select a valid date and time');
+      setValidationError(t('Please select a valid date and time'));
       return;
     }
 
@@ -382,19 +384,19 @@ export default function FeedForm({
 
     // For breast feeding, at least one side must have a duration
     if (formData.type === 'BREAST' && accurateLeftDuration === 0 && accurateRightDuration === 0) {
-      setValidationError('Please enter a duration for at least one breast side');
+      setValidationError(t('Please enter a duration for at least one breast side'));
       return;
     }
 
     // For bottle feeding, validate amount
     if (formData.type === 'BOTTLE' && (!formData.amount || parseFloat(formData.amount) <= 0)) {
-      setValidationError('Please enter a valid amount for bottle feeding');
+      setValidationError(t('Please enter a valid amount for bottle feeding'));
       return;
     }
 
     // For solids feeding, validate amount
     if (formData.type === 'SOLIDS' && (!formData.amount || parseFloat(formData.amount) <= 0)) {
-      setValidationError('Please enter a valid amount for solids feeding');
+      setValidationError(t('Please enter a valid amount for solids feeding'));
       return;
     }
 
@@ -547,11 +549,11 @@ export default function FeedForm({
         if (errorData) {
           showToast({
             variant: 'error',
-            title: 'Error',
-            message: errorData.error || 'Failed to save feed log',
+            title: t('Error'),
+            message: errorData.error || t('Failed to save feed log'),
             duration: 5000,
           });
-          throw new Error(errorData.error || 'Failed to save feed log');
+          throw new Error(errorData.error || t('Failed to save feed log'));
         }
       }
       
@@ -559,11 +561,11 @@ export default function FeedForm({
       const errorData = await response.json();
       showToast({
         variant: 'error',
-        title: 'Error',
-        message: errorData.error || 'Failed to save feed log',
+        title: t('Error'),
+        message: errorData.error || t('Failed to save feed log'),
         duration: 5000,
       });
-      throw new Error(errorData.error || 'Failed to save feed log');
+      throw new Error(errorData.error || t('Failed to save feed log'));
     }
 
     return response;
@@ -687,8 +689,8 @@ export default function FeedForm({
     <FormPage
       isOpen={isOpen}
       onClose={handleClose}
-      title={activity ? 'Edit Feeding' : 'Log Feeding'}
-      description={activity ? 'Update what and when your baby ate' : 'Record what and when your baby ate'}
+      title={activity ? t('Edit Feeding') : t('Log Feeding')}
+      description={activity ? t('Update what and when your baby ate') : t('Record what and when your baby ate')}
     >
         <FormPageContent className="overflow-y-auto">
           <form onSubmit={handleSubmit} className="h-full flex flex-col">
@@ -702,18 +704,18 @@ export default function FeedForm({
 
             {/* Time Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Time</label>
+              <label className="form-label">{t('Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
                 disabled={loading}
-                placeholder="Select feeding time..."
+                placeholder={t("Select feeding time...")}
               />
             </div>
             
             {/* Feed Type Selection - Full width on all screens */}
             <div>
-              <label className="form-label">Type</label>
+              <label className="form-label">{t('Type')}</label>
               <div className="flex justify-between items-center gap-3 mt-2">
                   {/* Breast Feed Button */}
                   <button
@@ -729,7 +731,7 @@ export default function FeedForm({
                       alt="Breast Feed" 
                       className="w-16 h-16 object-contain" 
                     />
-                    <span className="text-xs font-medium mt-1">Breast</span>
+                    <span className="text-xs font-medium mt-1">{t('Breast')}</span>
                     {formData.type === 'BREAST' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
                         <Check className="h-3 w-3 text-white" />
@@ -751,7 +753,7 @@ export default function FeedForm({
                       alt="Bottle Feed" 
                       className="w-16 h-16 object-contain" 
                     />
-                    <span className="text-xs font-medium mt-1">Bottle</span>
+                    <span className="text-xs font-medium mt-1">{t('Bottle')}</span>
                     {formData.type === 'BOTTLE' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
                         <Check className="h-3 w-3 text-white" />
@@ -773,7 +775,7 @@ export default function FeedForm({
                       alt="Solids" 
                       className="w-16 h-16 object-contain" 
                     />
-                    <span className="text-xs font-medium mt-1">Solids</span>
+                    <span className="text-xs font-medium mt-1">{t('Solids')}</span>
                     {formData.type === 'SOLIDS' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
                         <Check className="h-3 w-3 text-white" />
@@ -850,10 +852,10 @@ export default function FeedForm({
               onClick={handleClose}
               disabled={loading}
             >
-              Cancel
+              {t('Cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? 'Update' : 'Save'}
+              {activity ? t('Update') : t('Save')}
             </Button>
           </div>
         </FormPageFooter>

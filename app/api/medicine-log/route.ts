@@ -4,6 +4,7 @@ import { ApiResponse, MedicineLogCreate, MedicineLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
+import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
 
 /**
  * Handle POST request to create a new medicine log entry
@@ -55,6 +56,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       updatedAt: formatForResponse(medicineLog.updatedAt) || '',
       deletedAt: formatForResponse(medicineLog.deletedAt),
     };
+
+    // Notify subscribers about activity creation (non-blocking)
+    notifyActivityCreated(medicineLog.babyId, 'medicine', { medicineId: body.medicineId }).catch(console.error);
 
     return NextResponse.json<ApiResponse<MedicineLogResponse>>({
       success: true,

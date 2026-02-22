@@ -11,6 +11,7 @@ import { MessageSquare, Plus } from 'lucide-react';
 import FeedbackMessagesView from './FeedbackMessagesView';
 import FeedbackForm from './index';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 
 interface FeedbackPageProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export default function FeedbackPage({
   isOpen,
   onClose,
 }: FeedbackPageProps) {
+  const { t } = useLocalization();
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('messages');
   const [showNewFeedbackForm, setShowNewFeedbackForm] = useState(false);
@@ -69,7 +71,7 @@ export default function FeedbackPage({
   const tabs: FormPageTab[] = useMemo(() => [
     {
       id: 'messages',
-      label: 'Messages',
+      label: t('Messages'),
       icon: MessageSquare,
       content: (
         <FeedbackMessagesView 
@@ -81,7 +83,7 @@ export default function FeedbackPage({
     },
     {
       id: 'new',
-      label: 'New Feedback',
+      label: t('New Feedback'),
       icon: Plus,
       content: (
         <FeedbackForm
@@ -92,7 +94,7 @@ export default function FeedbackPage({
         />
       ),
     },
-  ], [formatDateTime, refreshTrigger, isOpen, handleNewFeedbackSuccess, handleFeedbackFormClose]);
+  ], [formatDateTime, refreshTrigger, isOpen, handleNewFeedbackSuccess, handleFeedbackFormClose, t]);
 
   // If showing new feedback form, switch to that tab
   React.useEffect(() => {
@@ -106,8 +108,8 @@ export default function FeedbackPage({
       <FormPage
         isOpen={isOpen}
         onClose={onClose}
-        title="Feedback"
-        description="View your messages and submit new feedback"
+        title={t("Feedback")}
+        description={t("View your messages and submit new feedback")}
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -119,7 +121,7 @@ export default function FeedbackPage({
                 onClick={onClose}
                 variant="outline"
               >
-                Close
+                {t('Close')}
               </Button>
             </div>
           </FormPageFooter>
@@ -134,7 +136,7 @@ export default function FeedbackPage({
                 }}
                 variant="outline"
               >
-                Cancel
+                {t('Cancel')}
               </Button>
             </div>
           </FormPageFooter>

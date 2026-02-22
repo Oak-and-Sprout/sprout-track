@@ -16,6 +16,7 @@ import { Icon } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
 import CardVisual from '@/src/components/reporting/CardVisual';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * StatsTab Component
@@ -27,6 +28,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
   selectedBaby,
   calculateAge
 }) => {
+  const { t } = useLocalization();
+  
   // State for time period selection
   const [mainPeriod, setMainPeriod] = useState<'2day' | '7day' | '14day' | '30day'>('7day');
   const [comparePeriod, setComparePeriod] = useState<'2day' | '7day' | '14day' | '30day'>('14day');
@@ -421,7 +424,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
       {/* Time period selectors */}
       <div className="space-y-2">
         <div>
-          <Label className="text-xs text-gray-500 dark:text-gray-400">Main Period:</Label>
+          <Label className="text-xs text-gray-500 dark:text-gray-400">{t('Main Period:')}</Label>
           <div className="flex space-x-1 overflow-x-auto">
             {(['2day', '7day', '14day', '30day'] as const).map((period) => (
               <Button
@@ -437,7 +440,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
         </div>
         
         <div>
-          <Label className="text-xs text-gray-500 dark:text-gray-400">Compare Period:</Label>
+          <Label className="text-xs text-gray-500 dark:text-gray-400">{t('Compare Period:')}</Label>
           <div className="flex space-x-1 overflow-x-auto">
             {(['2day', '7day', '14day', '30day'] as const).map((period) => (
               <Button
@@ -457,16 +460,16 @@ const StatsTab: React.FC<StatsTabProps> = ({
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" />
-          <p className="text-gray-600">Loading statistics...</p>
+          <p className="text-gray-600">{t('Loading statistics...')}</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-8">
           <p className="text-red-500 mb-2">{error}</p>
-          <p className="text-gray-600">Unable to load statistics. Please try again later.</p>
+          <p className="text-gray-600">{t('Unable to load statistics. Please try again later.')}</p>
         </div>
       ) : activities.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8">
-          <p className="text-gray-600">No activities found for the selected time period.</p>
+          <p className="text-gray-600">{t('No activities found for the selected time period.')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 mt-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

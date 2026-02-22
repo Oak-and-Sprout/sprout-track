@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { LocationStat } from './reports.types';
+import { useLocalization } from '@/src/context/localization';
 
 interface SleepLocationsChartModalProps {
   open: boolean;
@@ -45,11 +46,12 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
   type,
   locations,
 }) => {
-  const title = type === 'nap' ? 'Nap Locations' : 'Night Sleep Locations';
+  const { t } = useLocalization();
+  const title = type === 'nap' ? t('Nap Locations') : t('Night Sleep Locations');
   const description =
     type === 'nap'
-      ? 'Total nap time by location for the selected date range.'
-      : 'Total night sleep time by location for the selected date range.';
+      ? t('Total nap time by location for the selected date range.')
+      : t('Total night sleep time by location for the selected date range.');
 
   const chartData = locations.map((loc) => ({
     name: loc.location,
@@ -67,7 +69,7 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
         {locations.length === 0 ? (
           <div className={cn(styles.emptyContainer, "reports-empty-container")}>
             <p className={cn(styles.emptyText, "reports-empty-text")}>
-              No sleep location data available for the selected date range.
+              {t('No sleep location data available for the selected date range.')}
             </p>
           </div>
         ) : (
@@ -93,8 +95,8 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip
-                  formatter={(value: any) => [formatMinutes(value as number), 'Total Sleep']}
-                  labelFormatter={(label: any) => `Location: ${label}`}
+                  formatter={(value: any) => [formatMinutes(value as number), t('Total Sleep')]}
+                  labelFormatter={(label: any) => `${t('Location:')} ${label}`}
                 />
                 <Bar dataKey="minutes" fill="#6366f1" />
               </BarChart>
