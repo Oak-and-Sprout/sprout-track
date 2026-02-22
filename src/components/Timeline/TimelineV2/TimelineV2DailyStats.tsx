@@ -484,7 +484,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         .join(', ');
       tiles.push({
         filter: 'pump',
-        label: formattedPumpAmounts || 'Pump',
+        label: formattedPumpAmounts || t('Pump'),
         value: pumpCount.toString(),
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',
