@@ -375,7 +375,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
       }
 
       // Pump activities
-      if ('leftAmount' in activity || 'rightAmount' in activity) {
+      if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
         pumpCount++;
         const pumpActivity = activity as any;
         pumpSessions++;
@@ -393,10 +393,22 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
         if (typeof pumpActivity.leftAmount === 'number') {
           totalLeftPumpAmount += pumpActivity.leftAmount;
+        } else if (typeof pumpActivity.totalAmount === 'number') {
+          if(typeof pumpActivity.rightAmount === 'number') {
+            totalLeftPumpAmount += pumpActivity.totalAmount - pumpActivity.rightAmount;
+          } else {
+            totalLeftPumpAmount += pumpActivity.totalAmount / 2; // Assume half if right amount is unknown
+          }
         }
 
         if (typeof pumpActivity.rightAmount === 'number') {
           totalRightPumpAmount += pumpActivity.rightAmount;
+        } else if (typeof pumpActivity.totalAmount === 'number') {
+          if(typeof pumpActivity.leftAmount === 'number') {
+            totalRightPumpAmount += pumpActivity.totalAmount - pumpActivity.leftAmount;
+          } else{
+            totalRightPumpAmount += pumpActivity.totalAmount / 2; // Assume half if left amount is unknown
+          }
         }
 
         if (!pumpUnit && pumpActivity.unitAbbr) {

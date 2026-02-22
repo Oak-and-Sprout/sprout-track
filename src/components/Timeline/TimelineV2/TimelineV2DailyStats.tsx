@@ -99,6 +99,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let noteCount = 0;
     let bathCount = 0;
     let pumpCount = 0;
+    const pumpAmounts: Record<string, number> = {};
     let milestoneCount = 0;
     let measurementCount = 0;
     let awakeMinutes = 0;
@@ -246,6 +247,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
         if (time && time >= startOfDay && time <= endOfDay) {
           pumpCount++;
+          const total = (activity as any).totalAmount || 0;
+          if (total > 0) {
+            const unit = (activity as any).unitAbbr || 'oz';
+            if (!pumpAmounts[unit]) pumpAmounts[unit] = 0;
+            pumpAmounts[unit] += total;
+          }
         }
       }
       
@@ -472,9 +479,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
 
     // Pump tile
     if (pumpCount > 0) {
+      const formattedPumpAmounts = Object.entries(pumpAmounts)
+        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
+        .join(', ');
       tiles.push({
         filter: 'pump',
-        label: t('Pump'),
+        label: formattedPumpAmounts || 'Pump',
         value: pumpCount.toString(),
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',

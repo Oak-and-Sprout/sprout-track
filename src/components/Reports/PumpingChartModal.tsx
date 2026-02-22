@@ -67,7 +67,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     const countsByDay: Record<string, number> = {};
 
     activities.forEach((activity) => {
-      if ('leftAmount' in activity || 'rightAmount' in activity) {
+      if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
         const pumpActivity = activity as any;
         const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
         
@@ -101,7 +101,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     const durationsByDay: Record<string, { total: number; count: number }> = {};
 
     activities.forEach((activity) => {
-      if ('leftAmount' in activity || 'rightAmount' in activity) {
+      if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
         const pumpActivity = activity as any;
         const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
         
@@ -159,25 +159,42 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     }> = {};
 
     activities.forEach((activity) => {
-      if ('leftAmount' in activity || 'rightAmount' in activity) {
+      if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
         const pumpActivity = activity as any;
         const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
         
         if (pumpTime && pumpTime >= startDate && pumpTime <= endDate) {
           const dayKey = pumpTime.toISOString().split('T')[0];
           
-          if (!amountsByDay[dayKey]) {
-            amountsByDay[dayKey] = { leftTotal: 0, rightTotal: 0, leftCount: 0, rightCount: 0 };
+          const amounts = amountsByDay[dayKey] ??= { leftTotal: 0, rightTotal: 0, leftCount: 0, rightCount: 0 };
+          const leftAmount = typeof pumpActivity.leftAmount === 'number' ? pumpActivity.leftAmount : 0;
+          const rightAmount = typeof pumpActivity.rightAmount === 'number' ? pumpActivity.rightAmount : 0;
+          const totalAmount = typeof pumpActivity.totalAmount === 'number' ? pumpActivity.totalAmount : 0;
+
+          if (leftAmount > 0) {
+            amounts.leftTotal += leftAmount;
+            amounts.leftCount += 1;
+          } else if (totalAmount > 0) {
+            if(rightAmount > 0 && rightAmount < totalAmount) {
+              amounts.leftTotal += (totalAmount - rightAmount);
+              amounts.leftCount += 1;
+            } else if (rightAmount === 0) {
+              amounts.leftTotal += totalAmount;
+              amounts.leftCount += 1;
+            }
           }
 
-          if (typeof pumpActivity.leftAmount === 'number' && pumpActivity.leftAmount > 0) {
-            amountsByDay[dayKey].leftTotal += pumpActivity.leftAmount;
-            amountsByDay[dayKey].leftCount += 1;
-          }
-
-          if (typeof pumpActivity.rightAmount === 'number' && pumpActivity.rightAmount > 0) {
-            amountsByDay[dayKey].rightTotal += pumpActivity.rightAmount;
-            amountsByDay[dayKey].rightCount += 1;
+          if (rightAmount > 0) {
+            amounts.rightTotal += rightAmount;
+            amounts.rightCount += 1;
+          } else if (totalAmount > 0) {
+            if(leftAmount > 0 && leftAmount < totalAmount) {
+              amounts.rightTotal += (totalAmount - leftAmount);
+              amounts.rightCount += 1;
+            } else if (leftAmount === 0) {
+              amounts.rightTotal += totalAmount;
+              amounts.rightCount += 1;
+            }
           }
         }
       }
