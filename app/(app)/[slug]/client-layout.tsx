@@ -125,11 +125,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
     const ageInYears = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
     
     if (ageInMonths < 6) {
-      return `${ageInWeeks} weeks`;
+      return `${ageInWeeks} ${ageInWeeks === 1 ? t('week') : t('weeks')}`;
     } else if (ageInMonths < 24) {
-      return `${ageInMonths} months`;
+      return `${ageInMonths} ${ageInMonths === 1 ? t('month') : t('months')}`;
     } else {
-      return `${ageInYears} ${ageInYears === 1 ? 'year' : 'years'}`;
+      return `${ageInYears} ${ageInYears === 1 ? t('year') : t('years')}`;
     }
   };
 
