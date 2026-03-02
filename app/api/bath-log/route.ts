@@ -52,7 +52,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(bathLog.babyId, 'bath').catch(console.error);
+    notifyActivityCreated(bathLog.babyId, 'bath', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }).catch(console.error);
 
     return NextResponse.json<ApiResponse<BathLogResponse>>({
       success: true,

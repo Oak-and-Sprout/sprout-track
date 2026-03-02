@@ -28,6 +28,8 @@ import AccountManager from '@/src/components/account-manager';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
+import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
+import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
 
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
@@ -53,7 +55,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const { family } = useFamily();
   const { selectedBaby, setSelectedBaby, sleepingBabies } = useBaby();
-  const { isSaasMode } = useDeployment();
+  const { isSaasMode, notificationsEnabled } = useDeployment();
   const { t } = useLocalization();
   const [mounted, setMounted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -79,6 +81,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [showAccountManager, setShowAccountManager] = useState(false);
   const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showNotificationSplash, setShowNotificationSplash] = useState(false);
   const [paymentAccountStatus, setPaymentAccountStatus] = useState<any>(null);
   const familySlug = params?.slug as string;
 
@@ -580,6 +583,35 @@ function AppContent({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('openPaymentModal', handleOpenPayment);
   }, []);
 
+  // Check if we should show the notification splash modal
+  useEffect(() => {
+    if (!mounted || !isUnlocked || babies.length === 0 || !notificationsEnabled) return;
+
+    const checkNotificationSplash = async () => {
+      try {
+        // Check if already dismissed on this device
+        const dismissed = localStorage.getItem('notificationSplashDismissed');
+        if (dismissed) return;
+
+        // Check if browser supports push notifications
+        if (!checkPushSupport()) return;
+
+        // Check if already subscribed on this device
+        const status = await checkSubscriptionStatus();
+        if (status.isSubscribed && status.isRegisteredOnServer) return;
+
+        // All checks passed - show the modal
+        setShowNotificationSplash(true);
+      } catch (error) {
+        console.error('Error checking notification splash eligibility:', error);
+      }
+    };
+
+    // Small delay to avoid showing immediately on page load
+    const timeoutId = setTimeout(checkNotificationSplash, 1500);
+    return () => clearTimeout(timeoutId);
+  }, [mounted, isUnlocked, babies.length, notificationsEnabled]);
+
   // Check unlock status based on JWT token and extract user info
   useEffect(() => {
     const checkUnlockStatus = () => {
@@ -841,6 +873,13 @@ function AppContent({ children }: { children: React.ReactNode }) {
           }}
         />
       )}
+
+      {/* Notification Splash Modal */}
+      <NotificationSplashModal
+        open={showNotificationSplash}
+        onClose={() => setShowNotificationSplash(false)}
+        babies={babies}
+      />
     </>
   );
 }
