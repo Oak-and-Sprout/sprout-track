@@ -1,53 +1,5 @@
 # Sprout Track
 
-> **🚨 CRITICAL SECURITY UPDATE - IMMEDIATE ACTION REQUIRED**
->
-> **All users of Sprout Track must upgrade to version 0.96.30 immediately** due to a critical React Server Components vulnerability (CVE-2025-66478) that allows remote code execution. This vulnerability affects Next.js applications using React Server Components with the App Router.
->
-> **What you need to know:**
-> - **Affected versions**: All versions prior to 0.96.30
-> - **Fixed version**: Version 0.96.30 (includes Next.js 15.5.7 with security patches)
-> - **Severity**: Critical (CVSS 10.0) - Remote Code Execution vulnerability
-> - **Docker users**: A new patched image has been deployed to `sprouttrack/sprout-track:latest`
->
-> **Required actions:**
-> - **Docker users**: Follow the Docker upgrade steps below
-> - **Local installations**: Follow the manual upgrade steps below
-> - **All users**: Do not delay this update - your application is vulnerable until upgraded
->
-> **Docker Upgrade Instructions:**
->
-> 1. **Backup your database**: Navigate to `/family-manager` in your browser, log in, and download your database backup from the settings page.
->
-> 2. **Pull the latest patched image**: `docker pull sprouttrack/sprout-track:latest`
->
-> 3. **Restart your container**: Stop and start your container to use the new image (e.g., `docker-compose down` then `docker-compose up -d`).
->
-> 4. **Restore your database if prompted**: When the new container starts up existing data should automatically migrate if your previous version was after v.0.94.89. If you see the setup wizard use the import feature to restore your database backup file.
->
-> **Manual Upgrade Instructions for Local Installations:**
->
-> 1. **Backup your database and environment file**:
->    - Database: `db/baby-tracker.db`
->    - Log database (if used): `db/api-logs.db`
->    - Environment file: `.env`
->
-> 2. **Completely remove your existing project directory** and re-clone the repository from GitHub to get the latest code with security patches.
->
-> 3. **Follow the standard setup procedure** as described in the [Getting Started](#getting-started) section of this README.
->
-> 4. **Restore your backed-up database and `.env` file** to the new installation.
->
-> **Alternative**: You can use `./scripts/deployment.sh` which automates the backup and rebuild process (without deleting the directory).
->
-> For more details about the vulnerability, see: [Next.js Security Advisory CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478)
->
-> ---
-
-> **⚠️ IMPORTANT NOTICE - Version 0.94.89 Upgrade**
->
-> **Admin passwords will be automatically reset to default "admin" when upgrading from v0.94.24 or earlier.** In attempt to smooth over upgrades for self-hosters that use Docker the /family-manager admin password will be reset to defaults during the import process for new installations.  If you manually save/restore your database backup and envirnoment file before the  upgrade and do not use the import utility then you will not be affected. [Read full details here](documentation/admin-password-reset-notification.md).
-
 A Next.js application for tracking baby activities, milestones, and development.
 
 ## Screenshots
@@ -118,6 +70,7 @@ docker-compose up -d
   - [Admin Scripts](#admin-scripts)
   - [Updating the Application](#updating-the-application)
 - [Environment Variables](#environment-variables)
+- [Push Notifications](#push-notifications)
 
 ## Tech Stack
 
@@ -437,6 +390,12 @@ The application can be configured using environment variables in the `.env` file
 | `APP_VERSION` | Application version | `"0.9.0"` | `"1.0.0"` |
 | `COOKIE_SECURE` | Whether cookies require HTTPS connections | `"false"` | `"true"` |
 | `ENC_HASH` | Encryption hash for admin password security | Auto-generated | 64-character hex string |
+| `ENABLE_NOTIFICATIONS` | Enable push notification features | `"false"` | `"true"` |
+| `VAPID_PUBLIC_KEY` | VAPID public key for push subscriptions | - | Auto-generated |
+| `VAPID_PRIVATE_KEY` | VAPID private key for push encryption | - | Auto-generated |
+| `VAPID_SUBJECT` | VAPID subject (mailto: URI) | - | `"mailto:you@example.com"` |
+| `NOTIFICATION_CRON_SECRET` | Secret for securing the cron endpoint | - | Random hex string |
+| `NOTIFICATION_LOG_RETENTION_DAYS` | Days to retain notification logs | `"30"` | `"60"` |
 
 ### Automatic Environment Setup
 
@@ -455,3 +414,69 @@ The `./scripts/env-update.sh` script automatically manages environment variables
   - Set to `"false"` to allow cookies on non-HTTPS connections (development or initial setup)
   - Set to `"true"` when you have an SSL certificate in place (recommended for production)
   - When set to `"true"`, the application will only work over HTTPS connections
+
+## Push Notifications
+
+Sprout Track supports optional push notifications to alert caretakers when activities are logged and when feed/diaper timers expire. Notifications are per-baby, per-device and work on Chrome, Firefox, Edge, and Safari 16.4+.
+
+Push notifications are **disabled by default** and require HTTPS in production.
+
+### Quick Setup
+
+1. **Generate VAPID keys:**
+   ```bash
+   npm run setup:vapid
+   ```
+
+2. **Add to your `.env` file:**
+   ```bash
+   ENABLE_NOTIFICATIONS=true
+   VAPID_PUBLIC_KEY=<generated>
+   VAPID_PRIVATE_KEY=<generated>
+   VAPID_SUBJECT=mailto:you@example.com
+   NOTIFICATION_CRON_SECRET=<random-secret-string>
+   ```
+
+3. **Run database migrations** (if not already up to date):
+   ```bash
+   npm run prisma:migrate
+   ```
+
+4. **Enable in the UI:**
+   - Navigate to Settings > Push Notifications
+   - Click "Enable Notifications" and grant browser permission
+   - Configure per-baby notification preferences
+
+### Docker Setup
+
+To build with push notifications enabled:
+
+```bash
+docker build \
+  --build-arg ENABLE_NOTIFICATIONS=true \
+  --build-arg BUILD_NOTIFICATIONS=true \
+  -t sprout-track:with-notifications .
+```
+
+Or set the environment variables in your `docker-compose.yml`:
+
+```yaml
+environment:
+  - ENABLE_NOTIFICATIONS=true
+  - NOTIFICATION_CRON_SECRET=your-secret
+  - APP_URL=http://localhost:3000
+```
+
+When `ENABLE_NOTIFICATIONS=true`, the Docker container automatically sets up a cron job to check for timer expirations every minute.
+
+### Timer Notifications
+
+Timer-based notifications (e.g., "feed timer expired") require the cron job to be running. For local (non-Docker) setups:
+
+```bash
+npm run notification:cron:setup
+```
+
+### Full Documentation
+
+For detailed configuration, API reference, security considerations, and troubleshooting, see [documentation/PushNotifications-README.md](documentation/PushNotifications-README.md).

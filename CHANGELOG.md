@@ -1,5 +1,11 @@
 # Sprout Track Changelog
 
+## v0.98.0 - Push Notifications and Localization
+
+- Added push notification capability for hosted and SaaS versions.
+- Added localization support for Spanish and French (thank you WRobertson2, and ebihappy for assistance and feedback)
+- Applied bugfixes for pumping numbers and charts values that are represented (thank you tionkje)
+
 ## v0.97.2 - Breastfeed timer hotfix
 
 ### Changes

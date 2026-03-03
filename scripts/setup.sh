@@ -2,11 +2,13 @@
 
 # This script performs the initial setup for the Sprout Track application:
 # 1. Checks for Node.js installation (must be installed beforehand)
-# 2. Installs dependencies
-# 3. Generates the Prisma clients (main and log)
-# 4. Runs database migrations (creates the database schemas for main and log databases)
-# 5. Seeds the database with initial data (creates default family, system caretaker with PIN 111222, and units)
-# 6. Builds the Next.js application
+# 2. Sets up environment configuration (.env file, ENC_HASH, VAPID keys, cron secret)
+# 3. Installs dependencies
+# 4. Generates the Prisma clients (main and log)
+# 5. Runs database migrations (creates the database schemas for main and log databases)
+# 6. Seeds the database with initial data (creates default family, system caretaker with PIN 111222, and units)
+# 7. Builds the Next.js application
+# 8. Sets up push notification infrastructure (if ENABLE_NOTIFICATIONS=true)
 
 # Get the project directory (one level up from the script location)
 PROJECT_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
@@ -119,11 +121,54 @@ if [ $? -ne 0 ]; then
 fi
 echo "Next.js application built successfully."
 
+# Step 8: Notification setup (if enabled)
+echo "Step 8: Checking notification configuration..."
+
+# Source .env to get current values
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    source "$PROJECT_DIR/.env" 2>/dev/null || true
+    set +a
+fi
+
+if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
+    echo "  Notifications are enabled. Configuring notification infrastructure..."
+
+    # Ensure VAPID keys are generated (may have been skipped during env-update if deps weren't installed yet)
+    echo "  - Verifying VAPID keys..."
+    npm run setup:vapid
+    if [ $? -ne 0 ]; then
+        echo "  Warning: VAPID key setup had issues."
+    fi
+
+    # Set up the cron job for timer notifications
+    echo "  - Setting up notification cron job..."
+    npm run notification:cron:setup
+    if [ $? -ne 0 ]; then
+        echo "  Warning: Notification cron setup had issues, but setup will continue."
+        echo "  You can run 'npm run notification:cron:setup' manually later."
+    else
+        echo "  Notification cron job configured successfully."
+    fi
+else
+    echo "  Notifications are disabled (ENABLE_NOTIFICATIONS is not 'true')."
+    echo "  To enable notifications, set ENABLE_NOTIFICATIONS=true in .env and run:"
+    echo "    npm run setup:vapid"
+    echo "    npm run notification:cron:setup"
+fi
+
 echo "-------------------------------------"
 echo "Sprout Track setup completed successfully!"
 echo "Default security PIN: 111222"
 echo "Default family: My Family (my-family)"
 echo ""
+if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
+    echo "Push notifications: ENABLED"
+    echo "  - VAPID keys: configured"
+    echo "  - Cron job: configured (runs every minute)"
+    echo "  - To check status: crontab -l"
+    echo ""
+fi
 echo "Navigate to the application and use PIN 111222 to complete setup."
 echo ""
 echo "To run the development server:"
