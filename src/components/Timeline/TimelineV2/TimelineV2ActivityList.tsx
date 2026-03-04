@@ -268,6 +268,9 @@ const TimelineV2ActivityList = ({
                                     if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
                                       const amounts = [];
                                       const unit = ((activity as any).unit || 'oz').toLowerCase();
+                                      const storageType = (activity as any).storageType;
+                                      const storageLabel = storageType === 'STORED' ? 'Stored' : storageType === 'CONSUMED' ? 'Consumed' : '';
+                                      if (storageLabel) amounts.push(storageLabel);
                                       if ((activity as any).totalAmount) amounts.push(`${(activity as any).totalAmount} ${unit}`);
                                       if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
                                       if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);

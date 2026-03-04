@@ -363,6 +363,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       rightAmount?: number; 
       totalAmount?: number; 
       unit?: string;
+      storageType?: string;
       notes?: string;
     } => {
       return 'leftAmount' in act || 'rightAmount' in act;
@@ -377,6 +378,12 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       // Add end time if available
       if (activity.endTime) {
         pumpDetails.push({ label: t('End Time'), value: formatTime(activity.endTime, settings) });
+      }
+      
+      // Add storage type
+      if (activity.storageType) {
+        const storageTypeLabel = activity.storageType === 'STORED' ? t('Stored') : t('Consumed');
+        pumpDetails.push({ label: t('Storage Type'), value: storageTypeLabel });
       }
       
       // Add left amount if available

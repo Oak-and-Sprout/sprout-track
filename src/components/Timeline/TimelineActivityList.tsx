@@ -45,13 +45,23 @@ const TimelineActivityList = ({
         case 'feed':
           return 'amount' in activity;
         case 'diaper':
-          return 'condition' in activity;
+          return 'condition' in activity && 'type' in activity && 
+                 (activity.type === 'WET' || activity.type === 'BOTH');
+        case 'poop':
+          return 'condition' in activity && 'type' in activity && 
+                 (activity.type === 'DIRTY' || activity.type === 'BOTH');
         case 'note':
           return 'content' in activity;
         case 'bath':
           return 'soapUsed' in activity;
         case 'pump':
           return 'leftAmount' in activity || 'rightAmount' in activity;
+        case 'pump-stored':
+          return ('leftAmount' in activity || 'rightAmount' in activity) && 
+                 (activity as any).storageType === 'STORED';
+        case 'pump-consumed':
+          return ('leftAmount' in activity || 'rightAmount' in activity) && 
+                 (activity as any).storageType === 'CONSUMED';
         case 'milestone':
           return 'title' in activity && 'category' in activity;
         case 'measurement':
@@ -506,6 +516,9 @@ const TimelineActivityList = ({
                                             // Pump activity
                                             const amounts = [];
                                             const unit = ((activity as any).unit || 'oz').toLowerCase();
+                                            const storageType = (activity as any).storageType;
+                                            const storageLabel = storageType === 'STORED' ? t('Stored') : storageType === 'CONSUMED' ? t('Consumed') : '';
+                                            if (storageLabel) amounts.push(storageLabel);
                                             if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
                                             if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);
                                             if ((activity as any).totalAmount) amounts.push(`Total: ${(activity as any).totalAmount} ${unit}`);

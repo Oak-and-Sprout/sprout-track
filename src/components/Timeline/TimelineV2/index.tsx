@@ -261,6 +261,12 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
               return 'soapUsed' in activity;
             case 'pump':
               return 'leftAmount' in activity || 'rightAmount' in activity;
+            case 'pump-stored':
+              return ('leftAmount' in activity || 'rightAmount' in activity) && 
+                     (activity as any).storageType === 'STORED';
+            case 'pump-consumed':
+              return ('leftAmount' in activity || 'rightAmount' in activity) && 
+                     (activity as any).storageType === 'CONSUMED';
             case 'milestone':
               return 'title' in activity && 'category' in activity;
             case 'measurement':

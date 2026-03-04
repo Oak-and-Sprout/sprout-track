@@ -99,6 +99,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let noteCount = 0;
     let bathCount = 0;
     let pumpCount = 0;
+    let storedPumpCount = 0;
+    let consumedPumpCount = 0;
     const pumpAmounts: Record<string, number> = {};
     let milestoneCount = 0;
     let measurementCount = 0;
@@ -247,6 +249,15 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
         if (time && time >= startOfDay && time <= endOfDay) {
           pumpCount++;
+          
+          // Track stored vs consumed
+          const storageType = (activity as any).storageType;
+          if (storageType === 'STORED') {
+            storedPumpCount++;
+          } else if (storageType === 'CONSUMED') {
+            consumedPumpCount++;
+          }
+          
           const total = (activity as any).totalAmount || 0;
           if (total > 0) {
             const unit = (activity as any).unitAbbr || 'oz';
@@ -477,18 +488,29 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
-    // Pump tile
-    if (pumpCount > 0) {
-      const formattedPumpAmounts = Object.entries(pumpAmounts)
-        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
-        .join(', ');
+    // Stored pump tile
+    if (storedPumpCount > 0) {
       tiles.push({
-        filter: 'pump',
-        label: formattedPumpAmounts || 'Pump',
-        value: pumpCount.toString(),
+        filter: 'pump-stored',
+        label: t('Stored Pumps'),
+        value: storedPumpCount.toString(),
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches timeline
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Consumed pump tile
+    if (consumedPumpCount > 0) {
+      tiles.push({
+        filter: 'pump-consumed',
+        label: t('Consumed Pumps'),
+        value: consumedPumpCount.toString(),
+        icon: <LampWallDown className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#a78bfa]', // violet-400 - slightly different shade for consumed
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
