@@ -180,7 +180,7 @@ export default function PumpForm({
           rightAmount: activity.rightAmount?.toString() || '',
           totalAmount: activity.totalAmount?.toString() || '',
           unitAbbr: activity.unitAbbr || 'OZ',
-          storageType: (activity.storageType as 'STORED' | 'CONSUMED') || 'STORED',
+          storageType: activity.storageType ?? 'STORED',
           notes: activity.notes || '',
         });
       } else {
