@@ -317,6 +317,8 @@ export interface PumpStats {
   consumedTotalAmount: number;
   avgStoredAmountPerDay: number;
   avgConsumedAmountPerDay: number;
+  netStoredAmount: number;
+  avgNetStoredPerDay: number;
 }
 
 // Bath stats

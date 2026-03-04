@@ -148,6 +148,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
           consumedTotalAmount: 0,
           avgStoredAmountPerDay: 0,
           avgConsumedAmountPerDay: 0,
+          netStoredAmount: 0,
+          avgNetStoredPerDay: 0,
           unit: 'oz',
         },
         bath: {
@@ -601,6 +603,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
         consumedTotalAmount,
         avgStoredAmountPerDay,
         avgConsumedAmountPerDay,
+        netStoredAmount: storedTotalAmount - consumedTotalAmount,
+        avgNetStoredPerDay: daysInRange > 0 ? Math.round(((storedTotalAmount - consumedTotalAmount) / daysInRange) * 10) / 10 : 0,
       },
       bath: {
         totalBaths: bathCount,

@@ -88,6 +88,24 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
             <Card
               className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
               onClick={() => {
+                setChartMetric('net');
+                setChartModalOpen(true);
+              }}
+            >
+              <CardContent className="p-4">
+                <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                  {stats.netStoredAmount >= 0 ? '+' : ''}{stats.netStoredAmount.toFixed(1)} {stats.unit}
+                </div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Net Stored')}</div>
+                <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
+                  {stats.avgNetStoredPerDay >= 0 ? '+' : ''}{stats.avgNetStoredPerDay.toFixed(1)} {stats.unit}/day avg
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+              onClick={() => {
                 setChartMetric('duration');
                 setChartModalOpen(true);
               }}

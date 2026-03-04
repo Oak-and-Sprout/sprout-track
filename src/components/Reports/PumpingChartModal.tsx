@@ -20,7 +20,7 @@ import {
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
 
-export type PumpingChartMetric = 'count' | 'duration' | 'amount' | 'stored' | 'consumed';
+export type PumpingChartMetric = 'count' | 'duration' | 'amount' | 'stored' | 'consumed' | 'net';
 
 interface PumpingChartModalProps {
   open: boolean;
@@ -126,6 +126,52 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
         date,
         label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: amount,
+      }))
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+  }, [activities, dateRange, metric]);
+
+  // Calculate net stored amount per day (stored - consumed)
+  const netData = useMemo(() => {
+    if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'net') {
+      return [];
+    }
+
+    const startDate = new Date(dateRange.from);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(dateRange.to);
+    endDate.setHours(23, 59, 59, 999);
+
+    const storedByDay: Record<string, number> = {};
+    const consumedByDay: Record<string, number> = {};
+
+    activities.forEach((activity) => {
+      if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
+        const pumpActivity = activity as any;
+        const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
+        
+        if (pumpTime && pumpTime >= startDate && pumpTime <= endDate) {
+          const dayKey = pumpTime.toISOString().split('T')[0];
+          const sessionAmount = typeof pumpActivity.totalAmount === 'number' && pumpActivity.totalAmount > 0
+            ? pumpActivity.totalAmount
+            : (typeof pumpActivity.leftAmount === 'number' ? pumpActivity.leftAmount : 0) +
+              (typeof pumpActivity.rightAmount === 'number' ? pumpActivity.rightAmount : 0);
+          
+          if (pumpActivity.storageType === 'STORED') {
+            storedByDay[dayKey] = (storedByDay[dayKey] || 0) + sessionAmount;
+          } else if (pumpActivity.storageType === 'CONSUMED') {
+            consumedByDay[dayKey] = (consumedByDay[dayKey] || 0) + sessionAmount;
+          }
+        }
+      }
+    });
+
+    // Combine stored and consumed to calculate net
+    const allDays = new Set([...Object.keys(storedByDay), ...Object.keys(consumedByDay)]);
+    return Array.from(allDays)
+      .map((date) => ({
+        date,
+        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value: (storedByDay[date] || 0) - (consumedByDay[date] || 0),
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
   }, [activities, dateRange, metric]);
@@ -305,6 +351,8 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
         return t('Stored Pumps Over Time');
       case 'consumed':
         return t('Consumed Pumps Over Time');
+      case 'net':
+        return t('Net Stored Milk Over Time');
       default:
         return '';
     }
@@ -400,6 +448,49 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       strokeWidth={2}
                       dot={{ r: 4, fill: '#f59e0b' }}
                       activeDot={{ r: 6, fill: '#d97706' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </>
+        )}
+
+        {metric === 'net' && (
+          <>
+            {netData.length === 0 ? (
+              <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
+                <p className={cn(styles.emptyText, 'reports-empty-text')}>
+                  {t('No net stored milk data available for the selected date range.')}
+                </p>
+              </div>
+            ) : (
+              <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={netData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
+                    <XAxis
+                      dataKey="label"
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                      className="growth-chart-axis"
+                    />
+                    <YAxis
+                      type="number"
+                      tickFormatter={(value) => value.toFixed(1)}
+                      label={{ value: t('Net Amount'), angle: -90, position: 'insideLeft' }}
+                      className="growth-chart-axis"
+                    />
+                    <RechartsTooltip
+                      formatter={(value: any) => [`${value >= 0 ? '+' : ''}${value.toFixed(1)}`, t('Net Stored')]}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: '#10b981' }}
+                      activeDot={{ r: 6, fill: '#059669' }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
