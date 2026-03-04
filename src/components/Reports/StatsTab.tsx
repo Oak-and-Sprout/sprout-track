@@ -144,6 +144,10 @@ const StatsTab: React.FC<StatsTabProps> = ({
           avgDurationMinutes: 0,
           avgLeftAmount: 0,
           avgRightAmount: 0,
+          storedTotalAmount: 0,
+          consumedTotalAmount: 0,
+          avgStoredAmountPerDay: 0,
+          avgConsumedAmountPerDay: 0,
           unit: 'oz',
         },
         bath: {
@@ -196,6 +200,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
     let bathCount = 0;
     let soapShampooBathCount = 0;
     let pumpCount = 0;
+    let storedTotalAmount = 0;
+    let consumedTotalAmount = 0;
     let noteCount = 0;
     let milestoneCount = 0;
     let measurementCount = 0;
@@ -379,6 +385,19 @@ const StatsTab: React.FC<StatsTabProps> = ({
         pumpCount++;
         const pumpActivity = activity as any;
         pumpSessions++;
+        
+        // Calculate total amount for this pump session
+        const sessionAmount = typeof pumpActivity.totalAmount === 'number' && pumpActivity.totalAmount > 0
+          ? pumpActivity.totalAmount
+          : (typeof pumpActivity.leftAmount === 'number' ? pumpActivity.leftAmount : 0) +
+            (typeof pumpActivity.rightAmount === 'number' ? pumpActivity.rightAmount : 0);
+        
+        // Track stored vs consumed amounts
+        if (pumpActivity.storageType === 'STORED') {
+          storedTotalAmount += sessionAmount;
+        } else if (pumpActivity.storageType === 'CONSUMED') {
+          consumedTotalAmount += sessionAmount;
+        }
 
         if (pumpActivity.startTime && pumpActivity.endTime) {
           const start = new Date(pumpActivity.startTime);
@@ -531,6 +550,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const avgPumpDurationMinutes = pumpSessions > 0 ? Math.round(totalPumpDurationMinutes / pumpSessions) : 0;
     const avgLeftPumpAmount = pumpSessions > 0 ? totalLeftPumpAmount / pumpSessions : 0;
     const avgRightPumpAmount = pumpSessions > 0 ? totalRightPumpAmount / pumpSessions : 0;
+    const avgStoredAmountPerDay = daysInRange > 0 ? Math.round((storedTotalAmount / daysInRange) * 10) / 10 : 0;
+    const avgConsumedAmountPerDay = daysInRange > 0 ? Math.round((consumedTotalAmount / daysInRange) * 10) / 10 : 0;
 
     return {
       sleep: {
@@ -576,6 +597,10 @@ const StatsTab: React.FC<StatsTabProps> = ({
         avgLeftAmount: avgLeftPumpAmount,
         avgRightAmount: avgRightPumpAmount,
         unit: pumpUnit || 'oz',
+        storedTotalAmount,
+        consumedTotalAmount,
+        avgStoredAmountPerDay,
+        avgConsumedAmountPerDay,
       },
       bath: {
         totalBaths: bathCount,

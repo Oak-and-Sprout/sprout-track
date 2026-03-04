@@ -99,6 +99,7 @@ export interface PumpActivity {
   rightAmount: number | null;
   totalAmount: number | null;
   unitAbbr: string | null;
+  storageType: 'STORED' | 'CONSUMED';
   notes: string | null;
   caretakerId: string | null;
   caretakerName?: string;
@@ -312,6 +313,10 @@ export interface PumpStats {
   avgLeftAmount: number;
   avgRightAmount: number;
   unit: string;
+  storedTotalAmount: number;
+  consumedTotalAmount: number;
+  avgStoredAmountPerDay: number;
+  avgConsumedAmountPerDay: number;
 }
 
 // Bath stats
