@@ -45,11 +45,7 @@ const TimelineActivityList = ({
         case 'feed':
           return 'amount' in activity;
         case 'diaper':
-          return 'condition' in activity && 'type' in activity && 
-                 (activity.type === 'WET' || activity.type === 'BOTH');
-        case 'poop':
-          return 'condition' in activity && 'type' in activity && 
-                 (activity.type === 'DIRTY' || activity.type === 'BOTH');
+          return 'condition' in activity;
         case 'note':
           return 'content' in activity;
         case 'bath':
@@ -516,9 +512,6 @@ const TimelineActivityList = ({
                                             // Pump activity
                                             const amounts = [];
                                             const unit = ((activity as any).unit || 'oz').toLowerCase();
-                                            const storageType = (activity as any).storageType;
-                                            const storageLabel = storageType === 'STORED' ? t('Stored') : storageType === 'CONSUMED' ? t('Consumed') : '';
-                                            if (storageLabel) amounts.push(storageLabel);
                                             if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
                                             if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);
                                             if ((activity as any).totalAmount) amounts.push(`Total: ${(activity as any).totalAmount} ${unit}`);
