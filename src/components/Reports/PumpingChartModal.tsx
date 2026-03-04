@@ -167,13 +167,25 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
 
     // Combine stored and consumed to calculate net
     const allDays = new Set([...Object.keys(storedByDay), ...Object.keys(consumedByDay)]);
-    return Array.from(allDays)
+    const sortedData = Array.from(allDays)
       .map((date) => ({
         date,
         label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: (storedByDay[date] || 0) - (consumedByDay[date] || 0),
+        stored: storedByDay[date] || 0,
+        consumed: consumedByDay[date] || 0,
+        net: (storedByDay[date] || 0) - (consumedByDay[date] || 0),
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
+    
+    // Calculate cumulative net
+    let cumulativeNet = 0;
+    return sortedData.map((item) => {
+      cumulativeNet += item.net;
+      return {
+        ...item,
+        cumulative: cumulativeNet,
+      };
+    });
   }, [activities, dateRange, metric]);
   
   // Calculate pump count per day
@@ -466,7 +478,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
               </div>
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={350}>
                   <LineChart data={netData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
@@ -477,20 +489,66 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <YAxis
                       type="number"
                       tickFormatter={(value) => value.toFixed(1)}
-                      label={{ value: t('Net Amount'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Amount'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any) => [`${value >= 0 ? '+' : ''}${value.toFixed(1)}`, t('Net Stored')]}
+                      formatter={(value: any, name: any) => {
+                        const formattedValue = typeof value === 'number' ? value.toFixed(1) : value;
+                        if (name === 'stored') return [formattedValue, t('Stored')];
+                        if (name === 'consumed') return [formattedValue, t('Consumed')];
+                        if (name === 'net') return [`${value >= 0 ? '+' : ''}${formattedValue}`, t('Net')];
+                        if (name === 'cumulative') return [formattedValue, t('Cumulative')];
+                        return [formattedValue, name];
+                      }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
+                    />
+                    <Legend 
+                      verticalAlign="top" 
+                      height={36}
+                      formatter={(value) => {
+                        if (value === 'stored') return t('Stored');
+                        if (value === 'consumed') return t('Consumed');
+                        if (value === 'net') return t('Net');
+                        if (value === 'cumulative') return t('Cumulative');
+                        return value;
+                      }}
                     />
                     <Line
                       type="monotone"
-                      dataKey="value"
+                      dataKey="stored"
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: '#8b5cf6' }}
+                      activeDot={{ r: 5, fill: '#7c3aed' }}
+                      name="stored"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="consumed"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: '#f59e0b' }}
+                      activeDot={{ r: 5, fill: '#d97706' }}
+                      name="consumed"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="net"
                       stroke="#10b981"
                       strokeWidth={2}
-                      dot={{ r: 4, fill: '#10b981' }}
-                      activeDot={{ r: 6, fill: '#059669' }}
+                      dot={{ r: 3, fill: '#10b981' }}
+                      activeDot={{ r: 5, fill: '#059669' }}
+                      name="net"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="cumulative"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: '#3b82f6' }}
+                      activeDot={{ r: 5, fill: '#2563eb' }}
+                      name="cumulative"
                     />
                   </LineChart>
                 </ResponsiveContainer>
