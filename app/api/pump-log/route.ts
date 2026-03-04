@@ -55,6 +55,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         rightAmount: body.rightAmount,
         totalAmount,
         unitAbbr: body.unitAbbr,
+        storageType: body.storageType,
         notes: body.notes,
         caretakerId: caretakerId,
         familyId: userFamilyId,
@@ -167,6 +168,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     if (body.leftAmount !== undefined) data.leftAmount = body.leftAmount;
     if (body.rightAmount !== undefined) data.rightAmount = body.rightAmount;
     if (body.unitAbbr !== undefined) data.unitAbbr = body.unitAbbr;
+    if (body.storageType !== undefined) data.storageType = body.storageType;
     if (body.notes !== undefined) data.notes = body.notes;
     if (body.babyId !== undefined) data.babyId = body.babyId;
 

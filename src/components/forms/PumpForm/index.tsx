@@ -92,6 +92,7 @@ export default function PumpForm({
     rightAmount: '',
     totalAmount: '',
     unitAbbr: 'OZ', // Default unit
+    storageType: 'STORED' as 'STORED' | 'CONSUMED',
     notes: '',
   });
   const [loading, setLoading] = useState(false);
@@ -179,6 +180,7 @@ export default function PumpForm({
           rightAmount: activity.rightAmount?.toString() || '',
           totalAmount: activity.totalAmount?.toString() || '',
           unitAbbr: activity.unitAbbr || 'OZ',
+          storageType: (activity.storageType as 'STORED' | 'CONSUMED') || 'STORED',
           notes: activity.notes || '',
         });
       } else {
@@ -345,6 +347,7 @@ export default function PumpForm({
         rightAmount: formData.rightAmount ? parseFloat(formData.rightAmount) : undefined,
         totalAmount: formData.totalAmount ? parseFloat(formData.totalAmount) : undefined,
         unitAbbr: formData.unitAbbr || 'OZ',
+        storageType: formData.storageType,
         notes: formData.notes || undefined,
       };
       
@@ -575,6 +578,26 @@ export default function PumpForm({
                   {formData.unitAbbr}
                 </div>
               </div>
+            </div>
+            
+            {/* Storage Type */}
+            <div className="space-y-2">
+              <Label htmlFor="storageType">{t('Storage Type')}</Label>
+              <Select
+                value={formData.storageType}
+                onValueChange={(value: 'STORED' | 'CONSUMED') => 
+                  setFormData(prev => ({ ...prev, storageType: value }))
+                }
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("Select storage type...")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="STORED">{t('Stored')}</SelectItem>
+                  <SelectItem value="CONSUMED">{t('Consumed')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             {/* Notes */}

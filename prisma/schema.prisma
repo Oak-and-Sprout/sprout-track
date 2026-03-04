@@ -50,6 +50,11 @@ enum Mood {
   CRYING
 }
 
+enum StorageType {
+  STORED
+  CONSUMED
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -505,18 +510,19 @@ model Milestone {
 }
 
 model PumpLog {
-  id          String    @id @default(uuid())
+  id          String      @id @default(uuid())
   startTime   DateTime
   endTime     DateTime?
   duration    Int? // Duration in minutes
   leftAmount  Float? // Amount in specified unit
   rightAmount Float? // Amount in specified unit
   totalAmount Float? // Total amount pumped
-  unit        Unit?     @relation(fields: [unitAbbr], references: [unitAbbr])
+  unit        Unit?       @relation(fields: [unitAbbr], references: [unitAbbr])
   unitAbbr    String?
+  storageType StorageType @default(STORED)
   notes       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
 
   // Add family relation

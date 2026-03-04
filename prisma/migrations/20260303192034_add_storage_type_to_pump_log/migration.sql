@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "PumpLog" ADD COLUMN "storageType" TEXT NOT NULL DEFAULT 'STORED';
