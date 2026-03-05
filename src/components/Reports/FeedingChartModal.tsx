@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
 
 export type FeedingChartMetric = 'bottle' | 'breast' | 'solids';
 
@@ -71,6 +72,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { formatDateTime } = useTimezone();
   // Calculate bottle feed data
   const bottleData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'bottle') {
@@ -93,7 +95,12 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
 
         const feedActivity = activity as any;
         const feedTime = new Date(feedActivity.time);
-        const dayKey = feedTime.toISOString().split('T')[0];
+        const dayKey = feedTime.toLocaleDateString('en-CA').split('T')[0];
+        console.log(`feedTime: ${feedTime}`);
+        console.log(`toISOString: ${feedTime.toISOString()}`);
+        console.log(`toLocaleDateString: ${feedTime.toLocaleDateString('en-CA')}`);
+        console.log(`formatDateTime: ${formatDateTime(feedTime.toISOString())}`);
+        console.log(`dayKey: ${dayKey}`)
 
         if (feedTime >= startDate && feedTime <= endDate) {
           // Count feeds
@@ -120,9 +127,11 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
 
     // Combine line and bar data into single dataset
     const combinedData = sortedDays.map((dayKey) => {
+      console.log(`dayKey: ${dayKey}`);
+      console.log(`label: ${new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`);
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         count: countsByDay[dayKey] || 0,
       };
       bottleTypes.forEach((type) => {
@@ -130,7 +139,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
       });
       return dayData;
     });
-
+    console.log(`combinedData: ${combinedData}`);
     return { data: combinedData, bottleTypes, colors };
   }, [activities, dateRange, metric]);
 
