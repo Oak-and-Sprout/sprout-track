@@ -156,7 +156,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
 
         const feedActivity = activity as any;
         const feedTime = new Date(feedActivity.time);
-        const dayKey = feedTime.toISOString().split('T')[0];
+        const dayKey = feedTime.toLocaleDateString('en-CA').split('T')[0];
 
         if (feedTime >= startDate && feedTime <= endDate) {
           countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
@@ -185,7 +185,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const sortedDays = Object.keys(countsByDay).sort();
     return sortedDays.map((dayKey) => ({
       date: dayKey,
-      label: new Date(dayKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       count: countsByDay[dayKey] || 0,
       leftAvg: leftDurationByDay[dayKey]?.count > 0 
         ? leftDurationByDay[dayKey].total / leftDurationByDay[dayKey].count 
@@ -218,7 +218,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
 
         const feedActivity = activity as any;
         const feedTime = new Date(feedActivity.time);
-        const dayKey = feedTime.toISOString().split('T')[0];
+        const dayKey = feedTime.toLocaleDateString('en-CA').split('T')[0];
 
         if (feedTime >= startDate && feedTime <= endDate) {
           countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
@@ -245,7 +245,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const combinedData = sortedDays.map((dayKey) => {
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         count: countsByDay[dayKey] || 0,
       };
       foodTypes.forEach((food) => {

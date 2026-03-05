@@ -132,7 +132,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
     return sortedDays.map((dayKey) => {
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       };
 
       // Add count for each location

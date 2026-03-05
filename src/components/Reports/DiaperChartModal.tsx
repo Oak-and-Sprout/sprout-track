@@ -68,7 +68,7 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
         }
 
         const diaperTime = new Date(diaperActivity.time);
-        const dayKey = diaperTime.toISOString().split('T')[0];
+        const dayKey = diaperTime.toLocaleDateString('en-CA').split('T')[0];
 
         if (diaperTime >= startDate && diaperTime <= endDate) {
           countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
@@ -80,7 +80,7 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
     return Object.entries(countsByDay)
       .map(([date, count]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: count,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
