@@ -652,15 +652,18 @@ The `ENABLE_NOTIFICATIONS` environment variable acts as a master switch:
 - ✅ Completed in Phase 7
 
 ### Phase 12: Docker Integration
-- Update Dockerfile/entrypoint to run cron setup on start
-- Ensure cron service runs in Docker container
-- Handle cron in containerized environments
+- ✅ Updated `Dockerfile` with `ENABLE_NOTIFICATIONS` and `BUILD_NOTIFICATIONS` build args
+- ✅ Installed `dcron` in Docker image for cron support
+- ✅ Created notification logs directory when `BUILD_NOTIFICATIONS=true`
+- ✅ Updated `docker-startup.sh` to automatically set up VAPID keys, validate env vars, install cron job, and start cron daemon when `ENABLE_NOTIFICATIONS=true`
+- ✅ Updated `docker-compose.yml` with all notification environment variables and log volume mount
 
 ### Phase 13: Testing & Documentation
-- Comprehensive testing of timer notifications
-- Test cron job execution in various environments
-- Document Docker deployment with cron
-- Performance testing for large numbers of subscriptions
+- ✅ Created `documentation/PushNotifications-README.md` with full setup, API reference, and troubleshooting
+- ✅ Created `documentation/PushNotifications-Logging-Debugging.md` for logging and debugging guide
+- ✅ Created `scripts/docker-setup.sh` with notification management commands (`setup-notifications`, `test-notifications`, `notification-logs`, `notification-status`)
+- [ ] Comprehensive end-to-end testing of timer notifications across environments
+- [ ] Performance testing for large numbers of subscriptions
 
 ---
 

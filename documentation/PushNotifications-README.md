@@ -4,8 +4,6 @@
 
 The push notification system enables users to subscribe to push notifications for baby activity events (new records created) and timer expirations (feed/diaper thresholds exceeded). Subscriptions are per-baby, per-device, and available to Accounts, Caretakers, and family system logins.
 
-**Implementation Status:** Phases 0-13 Complete ✅
-
 **Key Features:**
 - Real-time notifications when activities are logged
 - Timer-based notifications for feed and diaper reminders
@@ -18,7 +16,7 @@ The push notification system enables users to subscribe to push notifications fo
 ### Prerequisites
 
 - Node.js 22+ and npm
-- Database (SQLite for local, PostgreSQL for production)
+- Database (SQLite)
 - Browser with push notification support (Chrome, Firefox, Edge, Safari 16.4+)
 - HTTPS in production (required for push notifications)
 

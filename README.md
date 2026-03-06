@@ -423,6 +423,8 @@ Push notifications are **disabled by default** and require HTTPS in production.
 
 ### Quick Setup
 
+> **Note:** If you used `./scripts/setup.sh` for initial setup, VAPID keys and `NOTIFICATION_CRON_SECRET` are automatically generated via `env-update.sh`. You only need to set `ENABLE_NOTIFICATIONS=true` and `VAPID_SUBJECT` in your `.env` file.
+
 1. **Generate VAPID keys:**
    ```bash
    npm run setup:vapid

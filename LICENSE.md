@@ -1,6 +1,6 @@
 # Sprout Track License
 
-Copyright © 2025 John Overton and Oak and Sprout
+Copyright © 2026 John Overton and Oak and Sprout
 
 ## License Terms
 
