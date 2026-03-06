@@ -107,10 +107,10 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
               // Sleep starting before noon belongs to previous day's night
               nightDate.setDate(nightDate.getDate() - 1);
             }
-            dayKey = nightDate.toISOString().split('T')[0];
+            dayKey = nightDate.toLocaleDateString('en-CA');
           } else {
             // For naps, use the start date
-            dayKey = startTime.toISOString().split('T')[0];
+            dayKey = startTime.toLocaleDateString('en-CA');
           }
 
           // Only count if the day key is within our date range

@@ -38,12 +38,12 @@ function getWeekKey(date: Date): string {
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
   const monday = new Date(d.setDate(diff));
-  return monday.toISOString().split('T')[0];
+  return monday.toLocaleDateString('en-CA');
 }
 
 // Helper function to format week label
 function formatWeekLabel(weekKey: string): string {
-  const date = new Date(weekKey);
+  const date = new Date(weekKey + 'T00:00:00');
   const endDate = new Date(date);
   endDate.setDate(endDate.getDate() + 6); // Sunday of the week
   return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
