@@ -19,8 +19,9 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { convertVolume } from '@/src/utils/unit-conversion';
 
-export type PumpingChartMetric = 'count' | 'duration' | 'amount';
+export type PumpingChartMetric = 'count' | 'duration' | 'amount' | 'inventory';
 
 interface PumpingChartModalProps {
   open: boolean;
@@ -28,6 +29,7 @@ interface PumpingChartModalProps {
   metric: PumpingChartMetric | null;
   activities: ActivityType[];
   dateRange: DateRange;
+  currentBalance?: { balance: number; unit: string } | null;
 }
 
 // Helper function to format minutes into hours and minutes
@@ -51,6 +53,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
   metric,
   activities,
   dateRange,
+  currentBalance,
 }) => {
   const { t } = useLocalization();
   // Calculate pump count per day
@@ -212,6 +215,98 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
       .sort((a, b) => (a.date < b.date ? -1 : 1));
   }, [activities, dateRange, metric]);
 
+  // Calculate inventory data: daily consumed (breast milk bottle feeds) and actual stored balance
+  const inventoryData = useMemo(() => {
+    if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'inventory' || !currentBalance) {
+      return [];
+    }
+
+    const startDate = new Date(dateRange.from);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(dateRange.to);
+    endDate.setHours(23, 59, 59, 999);
+
+    const targetUnit = 'OZ';
+
+    // Collect all inventory events with their dates and effects on balance
+    const eventsByDay: Record<string, { consumed: number; stored: number; adjusted: number }> = {};
+
+    activities.forEach((activity) => {
+      // Bottle feeds with breast milk = consumed
+      if ('type' in activity && 'time' in activity && 'bottleType' in activity) {
+        const feedActivity = activity as any;
+        if (feedActivity.type === 'BOTTLE') {
+          let bmConsumed = 0;
+          if (feedActivity.bottleType === 'Breast Milk' && feedActivity.amount) {
+            bmConsumed = convertVolume(feedActivity.amount, feedActivity.unitAbbr || 'OZ', targetUnit);
+          } else if (feedActivity.bottleType === 'Formula\\Breast' && feedActivity.breastMilkAmount) {
+            bmConsumed = convertVolume(feedActivity.breastMilkAmount, feedActivity.unitAbbr || 'OZ', targetUnit);
+          }
+          if (bmConsumed > 0) {
+            const feedTime = new Date(feedActivity.time);
+            if (feedTime >= startDate && feedTime <= endDate) {
+              const dayKey = feedTime.toISOString().split('T')[0];
+              if (!eventsByDay[dayKey]) eventsByDay[dayKey] = { consumed: 0, stored: 0, adjusted: 0 };
+              eventsByDay[dayKey].consumed += bmConsumed;
+            }
+          }
+        }
+      }
+
+      // Pump logs with pumpAction "STORED" = stored
+      if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
+        const pumpActivity = activity as any;
+        if (pumpActivity.pumpAction === 'STORED' && pumpActivity.totalAmount) {
+          const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
+          if (pumpTime && pumpTime >= startDate && pumpTime <= endDate) {
+            const dayKey = pumpTime.toISOString().split('T')[0];
+            if (!eventsByDay[dayKey]) eventsByDay[dayKey] = { consumed: 0, stored: 0, adjusted: 0 };
+            eventsByDay[dayKey].stored += convertVolume(pumpActivity.totalAmount, pumpActivity.unitAbbr || 'OZ', targetUnit);
+          }
+        }
+      }
+
+      // Breast milk adjustments
+      if ('reason' in activity && 'amount' in activity && !('doseAmount' in activity) && !('type' in activity)) {
+        const adjActivity = activity as any;
+        const adjTime = adjActivity.time ? new Date(adjActivity.time) : null;
+        if (adjTime && adjTime >= startDate && adjTime <= endDate) {
+          const dayKey = adjTime.toISOString().split('T')[0];
+          if (!eventsByDay[dayKey]) eventsByDay[dayKey] = { consumed: 0, stored: 0, adjusted: 0 };
+          eventsByDay[dayKey].adjusted += convertVolume(adjActivity.amount, adjActivity.unitAbbr || 'OZ', targetUnit);
+        }
+      }
+    });
+
+    // Calculate total net change across all days in the range
+    const sortedDays = Object.keys(eventsByDay).sort();
+    let totalNetInRange = 0;
+    for (const day of sortedDays) {
+      const d = eventsByDay[day];
+      totalNetInRange += d.stored + d.adjusted - d.consumed;
+    }
+
+    // Work backwards from current balance to find balance at start of range
+    let runningBalance = currentBalance.balance - totalNetInRange;
+
+    // Walk forward, only emitting data points for days with consumption
+    const result: { date: string; label: string; consumed: number; storedBalance: number }[] = [];
+    for (const date of sortedDays) {
+      const day = eventsByDay[date];
+      runningBalance += day.stored + day.adjusted - day.consumed;
+      if (day.consumed > 0) {
+        result.push({
+          date,
+          label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          consumed: Math.round(day.consumed * 100) / 100,
+          storedBalance: Math.round(runningBalance * 100) / 100,
+        });
+      }
+    }
+
+    return result;
+  }, [activities, dateRange, metric, currentBalance]);
+
   const getTitle = (): string => {
     switch (metric) {
       case 'count':
@@ -220,6 +315,8 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
         return t('Average Pump Duration Over Time');
       case 'amount':
         return t('Pump Amounts Over Time');
+      case 'inventory':
+        return t('Inventory');
       default:
         return '';
     }
@@ -347,7 +444,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       yAxisId="total"
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: 'Total Amount', angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Total Amount'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
                     <YAxis
@@ -355,22 +452,22 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: 'Avg Amount', angle: -90, position: 'insideRight' }}
+                      label={{ value: t('Avg Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
                       formatter={(value: any, name?: string) => {
                         if (name === 'leftTotal') {
-                          return [`${value.toFixed(1)}`, 'Left Total'];
+                          return [`${value.toFixed(1)}`, t('Left Total')];
                         }
                         if (name === 'rightTotal') {
-                          return [`${value.toFixed(1)}`, 'Right Total'];
+                          return [`${value.toFixed(1)}`, t('Right Total')];
                         }
                         if (name === 'leftAvg') {
-                          return [`${value.toFixed(1)}`, 'Left Avg'];
+                          return [`${value.toFixed(1)}`, t('Left Avg')];
                         }
                         if (name === 'rightAvg') {
-                          return [`${value.toFixed(1)}`, 'Right Avg'];
+                          return [`${value.toFixed(1)}`, t('Right Avg')];
                         }
                         return [`${value.toFixed(1)}`, name || ''];
                       }}
@@ -385,7 +482,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       strokeWidth={2}
                       dot={{ r: 4, fill: '#6366f1' }}
                       activeDot={{ r: 6, fill: '#4f46e5' }}
-                      name="Left Total"
+                      name={t('Left Total')}
                     />
                     <Line
                       yAxisId="total"
@@ -395,21 +492,92 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       strokeWidth={2}
                       dot={{ r: 4, fill: '#ec4899' }}
                       activeDot={{ r: 6, fill: '#db2777' }}
-                      name="Right Total"
+                      name={t('Right Total')}
                     />
                     <Bar
                       yAxisId="avg"
                       dataKey="leftAvg"
                       stackId="avg"
                       fill="#14b8a6"
-                      name="Left Avg"
+                      name={t('Left Avg')}
                     />
                     <Bar
                       yAxisId="avg"
                       dataKey="rightAvg"
                       stackId="avg"
                       fill="#f59e0b"
-                      name="Right Avg"
+                      name={t('Right Avg')}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </>
+        )}
+
+        {metric === 'inventory' && (
+          <>
+            {inventoryData.length === 0 ? (
+              <div className={cn(styles.emptyContainer, 'reports-empty-container')}>
+                <p className={cn(styles.emptyText, 'reports-empty-text')}>
+                  {t('No pump data available for the selected date range.')}
+                </p>
+              </div>
+            ) : (
+              <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <ComposedChart data={inventoryData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
+                    <XAxis
+                      dataKey="label"
+                      angle={-30}
+                      textAnchor="end"
+                      height={60}
+                      className="growth-chart-axis"
+                    />
+                    <YAxis
+                      yAxisId="consumed"
+                      type="number"
+                      domain={[0, 'auto']}
+                      label={{ value: t('Consumed'), angle: -90, position: 'insideLeft' }}
+                      className="growth-chart-axis"
+                    />
+                    <YAxis
+                      yAxisId="balance"
+                      orientation="right"
+                      type="number"
+                      domain={['auto', 'auto']}
+                      label={{ value: t('Stored Balance'), angle: -90, position: 'insideRight' }}
+                      className="growth-chart-axis"
+                    />
+                    <RechartsTooltip
+                      formatter={(value: any, name?: string) => {
+                        if (name === 'consumed') {
+                          return [`${value.toFixed(1)} oz`, t('Consumed')];
+                        }
+                        if (name === 'storedBalance') {
+                          return [`${value.toFixed(1)} oz`, t('Stored Balance')];
+                        }
+                        return [`${value.toFixed(1)}`, name || ''];
+                      }}
+                      labelFormatter={(label: any) => `${t('Date:')} ${label}`}
+                    />
+                    <Legend />
+                    <Bar
+                      yAxisId="consumed"
+                      dataKey="consumed"
+                      fill="#f59e0b"
+                      name={t('Consumed')}
+                    />
+                    <Line
+                      yAxisId="balance"
+                      type="monotone"
+                      dataKey="storedBalance"
+                      stroke="#14b8a6"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: '#14b8a6' }}
+                      activeDot={{ r: 6, fill: '#0f766e' }}
+                      name={t('Stored Balance')}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>

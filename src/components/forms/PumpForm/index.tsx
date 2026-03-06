@@ -24,7 +24,9 @@ import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { Plus, Minus } from 'lucide-react';
+import { Switch } from '@/src/components/ui/switch';
 import { useLocalization } from '@/src/context/localization';
+import { BreastMilkAdjustmentResponse } from '@/app/api/types';
 
 import './pump-form.css';
 
@@ -35,6 +37,7 @@ interface PumpFormProps {
   babyId: string | undefined;
   initialTime: string;
   activity?: PumpLogResponse;
+  adjustmentActivity?: BreastMilkAdjustmentResponse;
   onSuccess?: () => void;
 }
 
@@ -44,12 +47,24 @@ export default function PumpForm({
   babyId,
   initialTime,
   activity,
+  adjustmentActivity,
   onSuccess,
 }: PumpFormProps) {
   const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
+
+  // Adjustment mode state
+  const [isAdjustMode, setIsAdjustMode] = useState(false);
+  const [adjustAmount, setAdjustAmount] = useState('');
+  const [adjustUnit, setAdjustUnit] = useState('OZ');
+  const [adjustIsAdding, setAdjustIsAdding] = useState(true);
+  const [adjustReason, setAdjustReason] = useState('Initial Stock');
+  const [adjustNotes, setAdjustNotes] = useState('');
+
+  // Pump action state
+  const [pumpAction, setPumpAction] = useState<'STORED' | 'FED' | 'DISCARDED'>('STORED');
   const [selectedStartDateTime, setSelectedStartDateTime] = useState<Date>(() => {
     try {
       // Initialize with current time - 15 minutes as default (start time is in the past)
@@ -129,9 +144,25 @@ export default function PumpForm({
     setFormData(prev => ({ ...prev, endTime: formattedTime }));
   };
 
+  // Initialize adjustment mode when editing an adjustment
+  useEffect(() => {
+    if (isOpen && adjustmentActivity) {
+      setIsAdjustMode(true);
+      setAdjustAmount(Math.abs(adjustmentActivity.amount).toString());
+      setAdjustUnit(adjustmentActivity.unitAbbr || 'OZ');
+      setAdjustIsAdding(adjustmentActivity.amount >= 0);
+      setAdjustReason(adjustmentActivity.reason || 'Other');
+      setAdjustNotes(adjustmentActivity.notes || '');
+    } else if (isOpen && !adjustmentActivity) {
+      setIsAdjustMode(false);
+    }
+  }, [isOpen, adjustmentActivity]);
+
   useEffect(() => {
     if (isOpen && !isInitialized) {
       if (activity) {
+        // Set pump action from activity
+        setPumpAction((activity as any).pumpAction || 'STORED');
         // Editing mode - populate with activity data
         try {
           // Set the start date time
@@ -246,9 +277,25 @@ export default function PumpForm({
       // Mark as initialized
       setIsInitialized(true);
     } else if (!isOpen) {
-      // Reset initialization flag and stored time when form closes
+      // Reset all form state when form closes
       setIsInitialized(false);
       setInitializedTime(null);
+      setFormData({
+        startTime: '',
+        endTime: '',
+        leftAmount: '',
+        rightAmount: '',
+        totalAmount: '',
+        unitAbbr: 'OZ',
+        notes: '',
+      });
+      setPumpAction('STORED');
+      setAdjustAmount('');
+      setAdjustUnit('OZ');
+      setAdjustIsAdding(true);
+      setAdjustReason('Initial Stock');
+      setAdjustNotes('');
+      setIsAdjustMode(false);
     }
   }, [isOpen, activity, initialTime]);
 
@@ -310,6 +357,75 @@ export default function PumpForm({
     }
   };
 
+  const handleAdjustmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!babyId) {
+      console.error('No baby selected');
+      return;
+    }
+
+    const parsedAmount = parseFloat(adjustAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      showToast({ variant: 'error', title: 'Error', message: t('Please enter a valid amount'), duration: 5000 });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const finalAmount = adjustIsAdding ? parsedAmount : -parsedAmount;
+      const utcTime = toUTCString(new Date());
+
+      const payload = {
+        babyId,
+        time: utcTime,
+        amount: finalAmount,
+        unitAbbr: adjustUnit,
+        reason: adjustReason,
+        notes: adjustNotes || undefined,
+      };
+
+      const url = adjustmentActivity
+        ? `/api/breast-milk-adjustment?id=${adjustmentActivity.id}`
+        : '/api/breast-milk-adjustment';
+      const method = adjustmentActivity ? 'PUT' : 'POST';
+
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          const { isExpirationError } = await handleExpirationError(response, showToast, 'adjusting breast milk inventory');
+          if (isExpirationError) return;
+        }
+        const data = await response.json();
+        showToast({ variant: 'error', title: 'Error', message: data.error || 'Failed to save adjustment', duration: 5000 });
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        onClose();
+        if (onSuccess) onSuccess();
+      } else {
+        showToast({ variant: 'error', title: 'Error', message: data.error || 'Failed to save adjustment', duration: 5000 });
+      }
+    } catch (error) {
+      console.error('Error saving adjustment:', error);
+      showToast({ variant: 'error', title: 'Error', message: 'An unexpected error occurred.', duration: 5000 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -338,13 +454,14 @@ export default function PumpForm({
       
       const payload = {
         babyId,
-        startTime: utcStartTime, // Send the UTC ISO string instead of local time
+        startTime: utcStartTime,
         endTime: utcEndTime,
         duration,
         leftAmount: formData.leftAmount ? parseFloat(formData.leftAmount) : undefined,
         rightAmount: formData.rightAmount ? parseFloat(formData.rightAmount) : undefined,
         totalAmount: formData.totalAmount ? parseFloat(formData.totalAmount) : undefined,
         unitAbbr: formData.unitAbbr || 'OZ',
+        pumpAction,
         notes: formData.notes || undefined,
       };
       
@@ -416,198 +533,236 @@ export default function PumpForm({
     }
   };
 
+  const adjustReasons = ['Initial Stock', 'Expired', 'Spilled', 'Donated', 'Other'];
+
+  const incrementAdjustAmount = () => {
+    const current = parseFloat(adjustAmount || '0');
+    const step = adjustUnit === 'ML' ? 5 : 0.5;
+    setAdjustAmount((current + step).toFixed(1));
+  };
+
+  const decrementAdjustAmount = () => {
+    const current = parseFloat(adjustAmount || '0');
+    const step = adjustUnit === 'ML' ? 5 : 0.5;
+    if (current >= step) {
+      setAdjustAmount((current - step).toFixed(1));
+    }
+  };
+
+  // Determine titles based on mode
+  const getTitle = () => {
+    if (isAdjustMode) {
+      return adjustmentActivity ? t('Edit Adjustment') : t('Adjust Inventory');
+    }
+    return activity ? t('Edit Pump') : t('New Pump');
+  };
+
+  const getDescription = () => {
+    if (isAdjustMode) {
+      return t('Add or remove breast milk from your stored inventory');
+    }
+    return activity ? t('Update details about your pumping session') : t('Record details about your pumping session');
+  };
+
   return (
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? t('Edit Pump') : t('New Pump')}
-      description={activity ? t('Update details about your pumping session') : t('Record details about your pumping session')}
+      title={getTitle()}
+      description={getDescription()}
     >
         <FormPageContent>
-          <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            {/* Start Time Input */}
-            <div className="space-y-2">
-              <Label htmlFor="startTime">{t('Start Time')}</Label>
-              <DateTimePicker
-                value={selectedStartDateTime}
-                onChange={handleStartDateTimeChange}
+          {/* Mode Switch - only show when not editing */}
+          {!activity && !adjustmentActivity && (
+            <div className="flex items-center gap-3 px-1 py-3 mb-4">
+              <Label className="text-sm font-medium">{t('Pump Session')}</Label>
+              <Switch
+                checked={isAdjustMode}
+                onCheckedChange={setIsAdjustMode}
                 disabled={loading}
-                placeholder={t("Select start time...")}
               />
+              <Label className="text-sm font-medium">{t('Adjust Inventory')}</Label>
             </div>
-            
-            {/* End Time Input */}
-            <div className="space-y-2">
-              <Label htmlFor="endTime">{t('End Time')}</Label>
-              <DateTimePicker
-                value={selectedEndDateTime}
-                onChange={handleEndDateTimeChange}
-                disabled={loading}
-                placeholder={t("Select end time...")}
-              />
-            </div>
-            
-            {/* Unit Selection with Buttons - Moved above amount inputs */}
-            <div className="space-y-2">
-              <Label htmlFor="unitAbbr">{t('Unit')}</Label>
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant={formData.unitAbbr === 'OZ' ? 'default' : 'outline'}
-                  className="w-full unit-button"
-                  onClick={() => setFormData(prev => ({ ...prev, unitAbbr: 'OZ' }))}
-                  disabled={loading}
-                >
-                  oz
-                </Button>
-                <Button
-                  type="button"
-                  variant={formData.unitAbbr === 'ML' ? 'default' : 'outline'}
-                  className="w-full unit-button"
-                  onClick={() => setFormData(prev => ({ ...prev, unitAbbr: 'ML' }))}
-                  disabled={loading}
-                >
-                  ml
-                </Button>
-              </div>
-            </div>
-            
-            {/* Left Amount Input - Now on its own row */}
-            <div className="space-y-2">
-              <Label htmlFor="leftAmount">{t('Left Amount')}</Label>
-              <div className="flex items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => decrementAmount('leftAmount')}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button"
-                >
-                  <Minus className="h-4 w-4 text-white" />
-                </Button>
-                <div className="flex mx-2">
-                  <Input
-                    id="leftAmount"
-                    name="leftAmount"
-                    type="text"
-                    inputMode="decimal"
-                    placeholder={t("0.0")}
-                    value={formData.leftAmount}
-                    onChange={handleInputChange}
-                    className="rounded-r-none text-center text-lg w-24"
-                  />
-                  <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">
-                    {formData.unitAbbr}
+          )}
+
+          {isAdjustMode ? (
+            /* Adjustment Mode Form */
+            <form onSubmit={handleAdjustmentSubmit}>
+              <div className="space-y-4">
+                {/* Add/Remove Toggle */}
+                <div className="space-y-2">
+                  <Label>{t('Type')}</Label>
+                  <div className="flex space-x-2">
+                    <Button
+                      type="button"
+                      variant={adjustIsAdding ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={() => setAdjustIsAdding(true)}
+                      disabled={loading}
+                    >
+                      + {t('Add')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={!adjustIsAdding ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={() => setAdjustIsAdding(false)}
+                      disabled={loading}
+                    >
+                      - {t('Remove')}
+                    </Button>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => incrementAmount('leftAmount')}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button"
-                >
-                  <Plus className="h-4 w-4 text-white" />
-                </Button>
-              </div>
-            </div>
-            
-            {/* Right Amount Input - Now on its own row */}
-            <div className="space-y-2">
-              <Label htmlFor="rightAmount">{t('Right Amount')}</Label>
-              <div className="flex items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => decrementAmount('rightAmount')}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button"
-                >
-                  <Minus className="h-4 w-4 text-white" />
-                </Button>
-                <div className="flex mx-2">
-                  <Input
-                    id="rightAmount"
-                    name="rightAmount"
-                    type="text"
-                    inputMode="decimal"
-                    placeholder={t("0.0")}
-                    value={formData.rightAmount}
-                    onChange={handleInputChange}
-                    className="rounded-r-none text-center text-lg w-24"
-                  />
-                  <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">
-                    {formData.unitAbbr}
+
+                {/* Unit Selection */}
+                <div className="space-y-2">
+                  <Label>{t('Unit')}</Label>
+                  <div className="flex space-x-2">
+                    <Button type="button" variant={adjustUnit === 'OZ' ? 'default' : 'outline'} className="w-full" onClick={() => setAdjustUnit('OZ')} disabled={loading}>{t('oz')}</Button>
+                    <Button type="button" variant={adjustUnit === 'ML' ? 'default' : 'outline'} className="w-full" onClick={() => setAdjustUnit('ML')} disabled={loading}>{t('ml')}</Button>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => incrementAmount('rightAmount')}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button"
-                >
-                  <Plus className="h-4 w-4 text-white" />
-                </Button>
-              </div>
-            </div>
-            
-            {/* Total Amount */}
-            <div className="space-y-2">
-              <Label htmlFor="totalAmount">{t('Total Amount')}</Label>
-              <div className="flex">
-                <Input
-                  id="totalAmount"
-                  name="totalAmount"
-                  type="text"
-                  inputMode="decimal"
-                    placeholder={t("0.0")}
-                    value={formData.totalAmount}
-                  onChange={handleInputChange}
-                  className="rounded-r-none text-lg"
-                />
-                <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">
-                  {formData.unitAbbr}
+
+                {/* Amount */}
+                <div className="space-y-2">
+                  <Label>{t('Amount')}</Label>
+                  <div className="flex items-center">
+                    <Button type="button" variant="outline" size="icon" onClick={decrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
+                      <Minus className="h-4 w-4 text-white" />
+                    </Button>
+                    <div className="flex mx-2">
+                      <Input type="text" inputMode="decimal" placeholder={t("0.0")} value={adjustAmount} onChange={(e) => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setAdjustAmount(e.target.value); }} className="rounded-r-none text-center text-lg w-24" />
+                      <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{adjustUnit}</div>
+                    </div>
+                    <Button type="button" variant="outline" size="icon" onClick={incrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
+                      <Plus className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Reason */}
+                <div className="space-y-2">
+                  <Label>{t('Reason')}</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {adjustReasons.map((reason) => (
+                      <Button key={reason} type="button" variant={adjustReason === reason ? 'default' : 'outline'} className="flex-1 min-w-[80px]" onClick={() => setAdjustReason(reason)} disabled={loading}>
+                        {t(reason)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label>{t('Notes')}</Label>
+                  <Textarea placeholder={t("Enter any notes")} value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} rows={3} disabled={loading} />
                 </div>
               </div>
-            </div>
-            
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">{t('Notes')}</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                placeholder={t("Enter any notes about the pumping session")}
-                value={formData.notes}
-                onChange={handleInputChange}
-                rows={3}
-              />
-            </div>
-          </div>
-          </form>
+            </form>
+          ) : (
+            /* Pump Session Form */
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                {/* Start Time Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">{t('Start Time')}</Label>
+                  <DateTimePicker value={selectedStartDateTime} onChange={handleStartDateTimeChange} disabled={loading} placeholder={t("Select start time...")} />
+                </div>
+
+                {/* End Time Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="endTime">{t('End Time')}</Label>
+                  <DateTimePicker value={selectedEndDateTime} onChange={handleEndDateTimeChange} disabled={loading} placeholder={t("Select end time...")} />
+                </div>
+
+                {/* Unit Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="unitAbbr">{t('Unit')}</Label>
+                  <div className="flex space-x-2">
+                    <Button type="button" variant={formData.unitAbbr === 'OZ' ? 'default' : 'outline'} className="w-full unit-button" onClick={() => setFormData(prev => ({ ...prev, unitAbbr: 'OZ' }))} disabled={loading}>{t('oz')}</Button>
+                    <Button type="button" variant={formData.unitAbbr === 'ML' ? 'default' : 'outline'} className="w-full unit-button" onClick={() => setFormData(prev => ({ ...prev, unitAbbr: 'ML' }))} disabled={loading}>{t('ml')}</Button>
+                  </div>
+                </div>
+
+                {/* Left Amount Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="leftAmount">{t('Left Amount')}</Label>
+                  <div className="flex items-center">
+                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button">
+                      <Minus className="h-4 w-4 text-white" />
+                    </Button>
+                    <div className="flex mx-2">
+                      <Input id="leftAmount" name="leftAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={formData.leftAmount} onChange={handleInputChange} className="rounded-r-none text-center text-lg w-24" />
+                      <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{formData.unitAbbr}</div>
+                    </div>
+                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button">
+                      <Plus className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Right Amount Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="rightAmount">{t('Right Amount')}</Label>
+                  <div className="flex items-center">
+                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button">
+                      <Minus className="h-4 w-4 text-white" />
+                    </Button>
+                    <div className="flex mx-2">
+                      <Input id="rightAmount" name="rightAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={formData.rightAmount} onChange={handleInputChange} className="rounded-r-none text-center text-lg w-24" />
+                      <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{formData.unitAbbr}</div>
+                    </div>
+                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button">
+                      <Plus className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Total Amount */}
+                <div className="space-y-2">
+                  <Label htmlFor="totalAmount">{t('Total Amount')}</Label>
+                  <div className="flex">
+                    <Input id="totalAmount" name="totalAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={formData.totalAmount} onChange={handleInputChange} className="rounded-r-none text-lg" />
+                    <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{formData.unitAbbr}</div>
+                  </div>
+                </div>
+
+                {/* Pump Action Radio Buttons */}
+                <div className="space-y-2">
+                  <Label>{t('Action')}</Label>
+                  <div className="flex space-x-2">
+                    <Button type="button" variant={pumpAction === 'STORED' ? 'default' : 'outline'} className="flex-1" onClick={() => setPumpAction('STORED')} disabled={loading}>
+                      {t('Stored')}
+                    </Button>
+                    <Button type="button" variant={pumpAction === 'FED' ? 'default' : 'outline'} className="flex-1" onClick={() => setPumpAction('FED')} disabled={loading}>
+                      {t('Fed')}
+                    </Button>
+                    <Button type="button" variant={pumpAction === 'DISCARDED' ? 'default' : 'outline'} className="flex-1" onClick={() => setPumpAction('DISCARDED')} disabled={loading}>
+                      {t('Discarded')}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes">{t('Notes')}</Label>
+                  <Textarea id="notes" name="notes" placeholder={t("Enter any notes about the pumping session")} value={formData.notes} onChange={handleInputChange} rows={3} />
+                </div>
+              </div>
+            </form>
+          )}
         </FormPageContent>
-        
+
         <FormPageFooter>
           <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               {t('Cancel')}
             </Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={isAdjustMode ? handleAdjustmentSubmit : handleSubmit}
               disabled={loading}
             >
-              {loading ? t('Saving...') : (activity ? t('Update') : t('Save'))}
+              {loading ? t('Saving...') : ((activity || adjustmentActivity) ? t('Update') : t('Save'))}
             </Button>
           </div>
         </FormPageFooter>

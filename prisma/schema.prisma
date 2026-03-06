@@ -187,6 +187,7 @@ model Family {
   familySetups   FamilySetup[]
   feedback       Feedback[]
   pushSubscriptions PushSubscription[]
+  breastMilkAdjustments BreastMilkAdjustment[]
 }
 
 // New model for family membership
@@ -234,6 +235,7 @@ model Baby {
   events       BabyEvent[] // New relationship for calendar events
   medicineLogs MedicineLog[] // New relationship for medicine logs
   notificationPreferences NotificationPreference[]
+  breastMilkAdjustments BreastMilkAdjustment[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -278,6 +280,7 @@ model Caretaker {
   familySetups  FamilySetup[]
   feedback      Feedback[]
   pushSubscriptions PushSubscription[]
+  breastMilkAdjustments BreastMilkAdjustment[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -345,6 +348,7 @@ model FeedLog {
   food         String? // Description of solid foods
   notes        String? // Optional notes for any feed type
   bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
+  breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?
@@ -514,6 +518,7 @@ model PumpLog {
   totalAmount Float? // Total amount pumped
   unit        Unit?     @relation(fields: [unitAbbr], references: [unitAbbr])
   unitAbbr    String?
+  pumpAction  String    @default("STORED") // "STORED" | "FED" | "DISCARDED"
   notes       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -534,6 +539,34 @@ model PumpLog {
   @@index([babyId])
   @@index([caretakerId])
   @@index([unitAbbr])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+model BreastMilkAdjustment {
+  id          String    @id @default(uuid())
+  time        DateTime
+  amount      Float // Positive = add to inventory, negative = remove
+  unitAbbr    String?
+  reason      String? // "Initial Stock", "Expired", "Spilled", "Donated", "Other"
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String? // Nullable initially for migration
+
+  // Relationships
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([time])
+  @@index([babyId])
+  @@index([caretakerId])
   @@index([deletedAt])
   @@index([familyId])
 }

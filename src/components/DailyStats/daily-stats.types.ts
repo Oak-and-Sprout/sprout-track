@@ -6,12 +6,15 @@ import { ActivityType } from '../ui/activity-tile/activity-tile.types';
 export interface DailyStatsProps {
   /** List of activities to display statistics for */
   activities: ActivityType[];
-  
+
   /** Date for which to display statistics */
   date: Date;
-  
+
   /** Whether the component is in a loading state */
   isLoading?: boolean;
+
+  /** Optional breast milk balance to display (e.g., "12.5 oz") */
+  breastMilkBalance?: string;
 }
 
 /**

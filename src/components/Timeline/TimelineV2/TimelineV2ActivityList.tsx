@@ -22,6 +22,14 @@ const TimelineV2ActivityList = ({
   const { t } = useLocalization();  
 
   const { theme } = useTheme();
+
+  const translateNotes = (notes: string): string => {
+    if (notes === 'Auto-created from pump session') return t('Auto-created from pump session');
+    if (notes.startsWith('Auto-created from pump: ')) {
+      return `${t('Auto-created from pump:')} ${notes.slice('Auto-created from pump: '.length)}`;
+    }
+    return notes;
+  };
   
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -37,11 +45,11 @@ const TimelineV2ActivityList = ({
 
   const getTimeOfDayLabel = (timeOfDay: string): string => {
     switch (timeOfDay) {
-      case 'early-morning': return 'Early Morning';
-      case 'morning': return 'Morning';
-      case 'afternoon': return 'Afternoon';
-      case 'evening': return 'Evening';
-      case 'night': return 'Night';
+      case 'early-morning': return t('Early Morning');
+      case 'morning': return t('Morning');
+      case 'afternoon': return t('Afternoon');
+      case 'evening': return t('Evening');
+      case 'night': return t('Night');
       default: return timeOfDay;
     }
   };
@@ -222,7 +230,8 @@ const TimelineV2ActivityList = ({
                           // Determine activity type class for styling
                           // Check pump FIRST since it also has duration and startTime
                           let activityTypeClass = '';
-                          if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
+                          if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
+                          else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
                           else if ('duration' in activity && 'type' in activity) activityTypeClass = 'sleep';
                           else if ('amount' in activity) activityTypeClass = 'feed';
                           else if ('condition' in activity) activityTypeClass = 'diaper';
@@ -264,13 +273,22 @@ const TimelineV2ActivityList = ({
                                 <div className="text-xs text-gray-600 event-details">
                                   {(() => {
 
+                                    // Breast milk adjustment before pump
+                                    if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+                                      const amt = (activity as any).amount;
+                                      const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
+                                      const reason = (activity as any).reason || '';
+                                      const sign = amt >= 0 ? '+' : '';
+                                      return `${sign}${amt} ${unit}${reason ? ` (${t(reason)})` : ''}`;
+                                    }
+
                                     // Pumping before duration check as it also has duration
                                     if ('leftAmount' in activity || 'rightAmount' in activity || 'totalAmount' in activity) {
                                       const amounts = [];
                                       const unit = ((activity as any).unit || 'oz').toLowerCase();
                                       if ((activity as any).totalAmount) amounts.push(`${(activity as any).totalAmount} ${unit}`);
-                                      if ((activity as any).leftAmount) amounts.push(`L: ${(activity as any).leftAmount} ${unit}`);
-                                      if ((activity as any).rightAmount) amounts.push(`R: ${(activity as any).rightAmount} ${unit}`);
+                                      if ((activity as any).leftAmount) amounts.push(`${t('L:')} ${(activity as any).leftAmount} ${unit}`);
+                                      if ((activity as any).rightAmount) amounts.push(`${t('R:')} ${(activity as any).rightAmount} ${unit}`);
                                       if ('duration' in activity && activity.duration) {
                                         amounts.push( `${activity.duration}m`);
                                       }
@@ -286,7 +304,7 @@ const TimelineV2ActivityList = ({
                                       const parts = [];
                                       if (location) parts.push(location);
                                       if (duration) parts.push(duration);
-                                      if (!('endTime' in activity)) parts.push('Still asleep');
+                                      if (!('endTime' in activity)) parts.push(t('Still asleep'));
                                       return parts.length > 0 ? parts.join(' • ') : t('Sleep');
                                     }
                                     
@@ -297,13 +315,13 @@ const TimelineV2ActivityList = ({
                                         if (activity.feedDuration) {
                                           const minutes = Math.floor(activity.feedDuration / 60);
                                           const seconds = activity.feedDuration % 60;
-                                          duration = seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes} min`;
+                                          duration = seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes} ${t('min')}`;
                                         } else if (activity.amount) {
-                                          duration = `${activity.amount} min`;
+                                          duration = `${activity.amount} ${t('min')}`;
                                         }
                                         const parts = [side ? `${side} ${t('Side')}` : '', duration].filter(Boolean);
                                         if ((activity as any).notes) {
-                                          const notes = (activity as any).notes;
+                                          const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
                                           parts.push(truncatedNotes);
                                         }
@@ -313,11 +331,11 @@ const TimelineV2ActivityList = ({
                                         const parts = [];
                                         if ((activity as any).bottleType) {
                                           const bottleType = (activity as any).bottleType.replace('\\', '/');
-                                          parts.push(bottleType);
+                                          parts.push(t(bottleType));
                                         }
                                         parts.push(`${activity.amount} ${unit}`);
                                         if ((activity as any).notes) {
-                                          const notes = (activity as any).notes;
+                                          const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
                                           parts.push(truncatedNotes);
                                         }
@@ -327,12 +345,12 @@ const TimelineV2ActivityList = ({
                                         const food = activity.food ? activity.food : '';
                                         const parts = [];
                                         if (food) {
-                                          parts.push(`${activity.amount} ${unit} of ${food}`);
+                                          parts.push(`${activity.amount} ${unit} ${t('of')} ${food}`);
                                         } else {
                                           parts.push(`${activity.amount} ${unit}`);
                                         }
                                         if ((activity as any).notes) {
-                                          const notes = (activity as any).notes;
+                                          const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
                                           parts.push(truncatedNotes);
                                         }
@@ -349,7 +367,7 @@ const TimelineV2ActivityList = ({
                                         details.push(activity.color.charAt(0) + activity.color.slice(1).toLowerCase());
                                       }
                                       if (activity.blowout) {
-                                        details.push('Blowout/Leakage');
+                                        details.push(t('Blowout/Leakage'));
                                       }
                                       return details.length > 0 ? details.join(' • ') : t('Diaper');
                                     }
@@ -362,13 +380,14 @@ const TimelineV2ActivityList = ({
                                     
                                     if ('soapUsed' in activity) {
                                       const details = [];
-                                      if (activity.soapUsed) details.push('Soap');
-                                      if (activity.shampooUsed) details.push('Shampoo');
-                                      if (details.length === 0) details.push('Water only');
+                                      if (activity.soapUsed) details.push(t('Soap'));
+                                      if (activity.shampooUsed) details.push(t('Shampoo'));
+                                      if (details.length === 0) details.push(t('Water only'));
                                       if (activity.notes) {
-                                        const notes = activity.notes.length > 30 ? 
-                                          activity.notes.substring(0, 30) + '...' : 
-                                          activity.notes;
+                                        const translatedNotes = translateNotes(activity.notes);
+                                        const notes = translatedNotes.length > 30 ?
+                                          translatedNotes.substring(0, 30) + '...' :
+                                          translatedNotes;
                                         details.push(notes);
                                       }
                                       return details.join(' • ');
@@ -395,14 +414,14 @@ const TimelineV2ActivityList = ({
                                     if ('doseAmount' in activity && 'medicineId' in activity) {
                                       const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
                                       const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
-                                      let medName = 'Medicine';
+                                      let medName = t('Medicine');
                                       if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
                                         medName = (activity.medicine as { name?: string }).name || medName;
                                       }
                                       return `${medName} - ${dose}`;
                                     }
                                     
-                                    return 'Activity logged';
+                                    return t('Activity logged');
                                   })()}
                                 </div>
                               </div>

@@ -60,6 +60,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
     { type: 'bath', icon: <Bath className="h-4 w-4" />, labelKey: 'Bath' },
     { type: 'note', icon: <Edit className="h-4 w-4" />, labelKey: 'Note' },
     { type: 'pump', icon: <LampWallDown className="h-4 w-4" />, labelKey: 'Pump' },
+    { type: 'breast-milk-adjustment', icon: <LampWallDown className="h-4 w-4" />, labelKey: 'Milk Adjust' },
     { type: 'milestone', icon: <Trophy className="h-4 w-4" />, labelKey: 'Milestone' },
     { type: 'measurement', icon: <Ruler className="h-4 w-4" />, labelKey: 'Measurement' },
     { type: 'medicine', icon: <PillBottle className="h-4 w-4" />, labelKey: 'Medicine' },

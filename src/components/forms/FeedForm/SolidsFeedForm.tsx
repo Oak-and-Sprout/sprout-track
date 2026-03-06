@@ -53,7 +53,7 @@ export default function SolidsFeedForm({
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
             className="w-24 mx-3 text-center"
-            placeholder="Amount"
+            placeholder={t("Amount")}
             inputMode="decimal"
             disabled={loading}
           />
@@ -76,7 +76,7 @@ export default function SolidsFeedForm({
             onClick={() => onUnitChange('TBSP')}
             disabled={loading}
           >
-            tbsp
+            {t('tbsp')}
           </Button>
           <Button
             type="button"
@@ -85,7 +85,7 @@ export default function SolidsFeedForm({
             onClick={() => onUnitChange('G')}
             disabled={loading}
           >
-            g
+            {t('g')}
           </Button>
         </div>
       </div>

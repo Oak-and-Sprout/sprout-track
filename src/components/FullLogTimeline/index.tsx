@@ -16,7 +16,7 @@ import FullLogSearchBar from './FullLogSearchBar';
 import FullLogActivityList from './FullLogActivityList';
 import FullLogActivityDetails from './FullLogActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '@/src/components/Timeline/utils';
-import { PumpLogResponse, MedicineLogResponse } from '@/app/api/types';
+import { PumpLogResponse, MedicineLogResponse, BreastMilkAdjustmentResponse } from '@/app/api/types';
 import { cn } from '@/src/lib/utils';
 import styles from './full-log-timeline.styles';
 import './full-log-timeline.css';
@@ -37,7 +37,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement' | 'medicine' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -254,6 +254,8 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
               return 'soapUsed' in activity;
             case 'pump':
               return 'leftAmount' in activity || 'rightAmount' in activity;
+            case 'breast-milk-adjustment':
+              return 'reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity);
             case 'milestone':
               return 'title' in activity && 'category' in activity;
             case 'measurement':
@@ -264,10 +266,10 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
               return true;
           }
         });
-    
+
     // Then filter by search query
-    const searchFiltered = !searchQuery 
-      ? typeFiltered 
+    const searchFiltered = !searchQuery
+      ? typeFiltered
       : typeFiltered.filter(activity => matchesSearch(activity, searchQuery));
 
     const sorted = [...searchFiltered].sort((a, b) => {
@@ -299,6 +301,8 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
               return 'soapUsed' in activity;
             case 'pump':
               return 'leftAmount' in activity || 'rightAmount' in activity;
+            case 'breast-milk-adjustment':
+              return 'reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity);
             case 'milestone':
               return 'title' in activity && 'category' in activity;
             case 'measurement':
@@ -343,7 +347,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
   };
 
   // Handle activity editing
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement' | 'medicine') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -483,7 +487,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
             }}
           />
           <PumpForm
-            isOpen={editModalType === 'pump'}
+            isOpen={editModalType === 'pump' || editModalType === 'breast-milk-adjustment'}
             onClose={() => {
               setEditModalType(null);
               setSelectedActivity(null);
@@ -491,9 +495,14 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
             babyId={selectedActivity.babyId}
             initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
             activity={
-              ('leftAmount' in selectedActivity || 'rightAmount' in selectedActivity) ? 
-                (selectedActivity as unknown as PumpLogResponse) : 
+              ('leftAmount' in selectedActivity || 'rightAmount' in selectedActivity) ?
+                (selectedActivity as unknown as PumpLogResponse) :
                 undefined
+            }
+            adjustmentActivity={
+              editModalType === 'breast-milk-adjustment' && 'reason' in selectedActivity
+                ? (selectedActivity as unknown as BreastMilkAdjustmentResponse)
+                : undefined
             }
             onSuccess={() => {
               setEditModalType(null);

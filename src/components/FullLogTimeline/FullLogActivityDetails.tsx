@@ -39,7 +39,7 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
       medName = (activity.medicine as { name?: string }).name || medName;
     }
     const dose = activity.doseAmount ? `${activity.doseAmount} ${activity.unitAbbr || ''}`.trim() : '';
-    const medTime = activity.time ? formatTime(activity.time, settings, true) : '';
+    const medTime = activity.time ? formatTime(activity.time, settings, true, t) : '';
     let notes = activity.notes ? activity.notes : '';
     if (notes.length > 50) notes = notes.substring(0, 50) + '...';
     medicineDetails = [
@@ -53,8 +53,12 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
   
   const handleEdit = () => {
     if (activity) {
+      // Check for breast milk adjustment before pump
+      if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+        onEdit(activity, 'breast-milk-adjustment');
+      }
       // Check for pump activity first since it can also have duration
-      if ('leftAmount' in activity || 'rightAmount' in activity) {
+      else if ('leftAmount' in activity || 'rightAmount' in activity) {
         onEdit(activity, 'pump');
       }
       else if ('duration' in activity) onEdit(activity, 'sleep');

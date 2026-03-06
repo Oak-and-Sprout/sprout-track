@@ -99,6 +99,23 @@ export interface PumpActivity {
   rightAmount: number | null;
   totalAmount: number | null;
   unitAbbr: string | null;
+  pumpAction?: string | null;
+  notes: string | null;
+  caretakerId: string | null;
+  caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface BreastMilkAdjustmentActivity {
+  id: string;
+  babyId: string;
+  familyId: string | null;
+  time: string;
+  amount: number;
+  unitAbbr: string | null;
+  reason: string | null;
   notes: string | null;
   caretakerId: string | null;
   caretakerName?: string;
@@ -173,6 +190,7 @@ export type ActivityType =
   | NoteActivity
   | BathActivity
   | PumpActivity
+  | BreastMilkAdjustmentActivity
   | MilestoneActivity
   | MeasurementActivity
   | MedicineLogActivity;
@@ -326,6 +344,8 @@ export interface OtherStats {
   noteCount: number;
   milestoneCount: number;
   measurementCount: number;
+  breastMilkAdjustmentCount: number;
+  breastMilkAdjustmentNet: number;
   medicines: MedicineStat[];
 }
 
