@@ -75,7 +75,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
         const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
         
         if (pumpTime && pumpTime >= startDate && pumpTime <= endDate) {
-          const dayKey = pumpTime.toISOString().split('T')[0];
+          const dayKey = pumpTime.toLocaleDateString('en-CA').split('T')[0];
           countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
         }
       }
@@ -84,7 +84,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     return Object.entries(countsByDay)
       .map(([date, count]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: count,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -109,7 +109,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
         const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
         
         if (pumpTime && pumpTime >= startDate && pumpTime <= endDate) {
-          const dayKey = pumpTime.toISOString().split('T')[0];
+          const dayKey = pumpTime.toLocaleDateString('en-CA').split('T')[0];
           
           let durationMinutes = 0;
           if (pumpActivity.startTime && pumpActivity.endTime) {
@@ -137,7 +137,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     return Object.entries(durationsByDay)
       .map(([date, data]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: data.count > 0 ? data.total / data.count : 0,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -159,6 +159,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
       rightTotal: number;
       leftCount: number;
       rightCount: number;
+      dayTotal: number;
     }> = {};
 
     activities.forEach((activity) => {
@@ -167,22 +168,24 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
         const pumpTime = pumpActivity.startTime ? new Date(pumpActivity.startTime) : null;
         
         if (pumpTime && pumpTime >= startDate && pumpTime <= endDate) {
-          const dayKey = pumpTime.toISOString().split('T')[0];
+          const dayKey = pumpTime.toLocaleDateString('en-CA').split('T')[0];
           
-          const amounts = amountsByDay[dayKey] ??= { leftTotal: 0, rightTotal: 0, leftCount: 0, rightCount: 0 };
+          const amounts = amountsByDay[dayKey] ??= { leftTotal: 0, rightTotal: 0, leftCount: 0, rightCount: 0, dayTotal: 0 };
           const leftAmount = typeof pumpActivity.leftAmount === 'number' ? pumpActivity.leftAmount : 0;
           const rightAmount = typeof pumpActivity.rightAmount === 'number' ? pumpActivity.rightAmount : 0;
           const totalAmount = typeof pumpActivity.totalAmount === 'number' ? pumpActivity.totalAmount : 0;
+
+          amounts.dayTotal += totalAmount > 0 ? totalAmount : leftAmount + rightAmount;
 
           if (leftAmount > 0) {
             amounts.leftTotal += leftAmount;
             amounts.leftCount += 1;
           } else if (totalAmount > 0) {
-            if(rightAmount > 0 && rightAmount < totalAmount) {
+            if (rightAmount > 0 && rightAmount < totalAmount) {
               amounts.leftTotal += (totalAmount - rightAmount);
               amounts.leftCount += 1;
             } else if (rightAmount === 0) {
-              amounts.leftTotal += totalAmount;
+              amounts.leftTotal += totalAmount / 2;
               amounts.leftCount += 1;
             }
           }
@@ -191,11 +194,11 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             amounts.rightTotal += rightAmount;
             amounts.rightCount += 1;
           } else if (totalAmount > 0) {
-            if(leftAmount > 0 && leftAmount < totalAmount) {
+            if (leftAmount > 0 && leftAmount < totalAmount) {
               amounts.rightTotal += (totalAmount - leftAmount);
               amounts.rightCount += 1;
             } else if (leftAmount === 0) {
-              amounts.rightTotal += totalAmount;
+              amounts.rightTotal += totalAmount / 2;
               amounts.rightCount += 1;
             }
           }
@@ -206,7 +209,8 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     return Object.entries(amountsByDay)
       .map(([date, data]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        dayTotal: data.dayTotal,
         leftTotal: data.leftTotal,
         rightTotal: data.rightTotal,
         leftAvg: data.leftCount > 0 ? data.leftTotal / data.leftCount : 0,
@@ -457,6 +461,9 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     />
                     <RechartsTooltip
                       formatter={(value: any, name?: string) => {
+                        if (name === 'dayTotal') {
+                          return [`${value.toFixed(1)}`, 'Total'];
+                        }
                         if (name === 'leftTotal') {
                           return [`${value.toFixed(1)}`, t('Left Total')];
                         }
@@ -474,6 +481,16 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Legend />
+                    <Line
+                      yAxisId="total"
+                      type="monotone"
+                      dataKey="dayTotal"
+                      stroke="#14b8a6"
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: '#14b8a6' }}
+                      activeDot={{ r: 6, fill: '#0f766e' }}
+                      name="Total"
+                    />
                     <Line
                       yAxisId="total"
                       type="monotone"

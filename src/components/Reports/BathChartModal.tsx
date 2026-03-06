@@ -79,7 +79,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
       if ('soapUsed' in activity && 'time' in activity) {
         const bathActivity = activity as any;
         const bathTime = new Date(bathActivity.time);
-        const dayKey = bathTime.toISOString().split('T')[0];
+        const dayKey = bathTime.toLocaleDateString('en-CA').split('T')[0];
 
         if (bathTime >= startDate && bathTime <= endDate) {
           countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
@@ -90,7 +90,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
     return Object.entries(countsByDay)
       .map(([date, count]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: count,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
