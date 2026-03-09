@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 
 # Script to trigger notification cron check via API
 # This script is called by system cron every minute
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Load environment variables from .env file if it exists

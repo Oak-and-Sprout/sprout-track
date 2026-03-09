@@ -34,7 +34,11 @@ RUN if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then \
       echo "Notification features enabled - setting up notification infrastructure..." && \
       mkdir -p /app/logs && \
       chmod 755 /app/logs && \
-      echo "Notification logs directory created"; \
+      echo "Notification logs directory created" && \
+      # Fix line endings and permissions on cron script for Alpine
+      sed -i 's/\r$//' /app/scripts/run-notification-cron.sh && \
+      chmod +x /app/scripts/run-notification-cron.sh && \
+      echo "Notification cron script prepared"; \
     else \
       echo "Notification features disabled - skipping notification setup"; \
     fi
