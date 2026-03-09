@@ -4,6 +4,13 @@ on:
   release:
     types: [published]
 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to apply (e.g. 0.98.0). Leave blank to tag as "manual" only.'
+        required: false
+        default: ''
+
 env:
   REGISTRY: docker.io
   IMAGE_NAME: sprouttrack/sprout-track
@@ -53,10 +60,12 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            # Use the release tag as-is (e.g. v0.96.30 → 0.96.30)
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            # Always tag latest on a published release
+            # On release: use the semver tag (e.g. v0.96.30 → 0.96.30)
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'release' }}
+            # On manual dispatch with a version provided
+            type=raw,value=${{ inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
+            # Always tag latest
             type=raw,value=latest
 
       # ---------------------------------------------------
