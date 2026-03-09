@@ -68,7 +68,7 @@ export async function isNotificationsEnabled(): Promise<boolean> {
   const config = await getNotificationConfig();
   if (config) return config.enabled;
   // Fallback to env var during transition (before seed script runs)
-  return process.env.ENABLE_NOTIFICATIONS === 'true';
+  return false;
 }
 
 /**

@@ -203,7 +203,7 @@ async function seedNotificationConfig(): Promise<void> {
   const randomHex = crypto.randomBytes(4).toString('hex'); // 8 hex chars
   const defaultSubject = `mailto:notify_${randomHex}@sprout-track.com`;
 
-  const enabled = process.env.ENABLE_NOTIFICATIONS === 'true';
+  const enabled = false;
 
   // Generate VAPID keys directly — no .env middleman
   const vapidKeys = webPush.generateVAPIDKeys();

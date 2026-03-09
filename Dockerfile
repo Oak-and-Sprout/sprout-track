@@ -2,7 +2,7 @@
 FROM node:22-alpine
 
 # Build argument for notification features
-ARG ENABLE_NOTIFICATIONS=false
+ARG ENABLE_NOTIFICATIONS=true
 
 # Install tzdata package for timezone support, openssl for ENC_HASH generation, and dcron for notifications
 RUN apk add --no-cache tzdata openssl dcron
@@ -51,7 +51,7 @@ RUN mkdir -p /app/env && \
     echo "TZ=UTC" >> /app/env/.env && \
     echo "AUTH_LIFE=86400" >> /app/env/.env && \
     echo "IDLE_TIME=28800" >> /app/env/.env && \
-    echo "APP_VERSION=0.97.2" >> /app/env/.env && \
+    echo "APP_VERSION=0.98.0" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
     echo "Base .env file created (ENC_HASH will be generated at startup)" && \
     # Create symlink so Next.js can find the env file at build time and runtime
