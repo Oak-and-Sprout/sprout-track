@@ -11,7 +11,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 if [ -f "$PROJECT_DIR/.env" ]; then
   # Export variables from .env file (simple parsing, handles quoted values)
   set -a
-  source "$PROJECT_DIR/.env" 2>/dev/null || true
+  . "$PROJECT_DIR/.env" 2>/dev/null || true
   set +a
 fi
 

@@ -80,7 +80,7 @@ function addCronJob(crontab: string): string {
     console.warn(`Warning: Could not make ${cronScriptPath} executable:`, error);
   }
   
-  const cronLine = `${CRON_SCHEDULE} ${cronScriptPath} >> ${logPath} 2>&1`;
+  const cronLine = `${CRON_SCHEDULE} /bin/sh ${cronScriptPath} >> ${logPath} 2>&1`;
   
   // Add newline if crontab is not empty
   const separator = crontab.trim() ? '\n' : '';
@@ -119,17 +119,8 @@ function checkCronService(): boolean {
 function main(): void {
   console.log('Setting up notification cron job...');
   
-  // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
-    console.log('Notifications are disabled (ENABLE_NOTIFICATIONS !== "true"). Skipping cron setup.');
-    return;
-  }
-  
-  // Verify required environment variables
-  if (!process.env.NOTIFICATION_CRON_SECRET) {
-    console.error('Error: NOTIFICATION_CRON_SECRET is not set. Please set it in your .env file.');
-    process.exit(1);
-  }
+  // Note: NOTIFICATION_CRON_SECRET is auto-generated at container startup if missing.
+  // The cron script checks the DB-backed enabled flag via API before proceeding.
   
   // Verify cron script exists
   const cronScriptPath = getCronScriptPath();
