@@ -416,58 +416,7 @@ The `./scripts/env-update.sh` script automatically manages environment variables
 
 Sprout Track supports optional push notifications to alert caretakers when activities are logged and when feed/diaper timers expire. Notifications are per-baby, per-device and work on Chrome, Firefox, Edge, and Safari 16.4+.
 
-Push notifications are **disabled by default** and require HTTPS in production. VAPID keys, enable/disable, and other notification settings are managed in the database via the **App Configuration** admin UI.
-
-### Quick Setup
-
-1. **Set `ENABLE_NOTIFICATIONS=true` in `.env`** (enables notification infrastructure: cron daemon, log directories)
-
-2. **Run setup or database migrations:**
-   ```bash
-   ./scripts/setup.sh
-   # Or if already set up:
-   npm run prisma:migrate && npm run prisma:seed
-   ```
-   VAPID keys are automatically generated in the database during seeding.
-
-3. **Configure in admin UI:**
-   - Log in as a system administrator
-   - Navigate to App Configuration > Push Notifications
-   - Enable notifications and save
-
-4. **Enable per user:**
-   - Navigate to Settings > Push Notifications
-   - Click "Enable Notifications" and grant browser permission
-   - Configure per-baby notification preferences
-
-### Docker Setup
-
-Build with notifications enabled:
-
-```bash
-docker build \
-  --build-arg ENABLE_NOTIFICATIONS=true \
-  -t sprout-track:with-notifications .
-```
-
-Or in `docker-compose.yml`:
-
-```yaml
-environment:
-  - ENABLE_NOTIFICATIONS=true
-  - NOTIFICATION_CRON_SECRET=your-secret
-  - APP_URL=http://localhost:3000
-```
-
-When `ENABLE_NOTIFICATIONS=true`, the Docker container automatically sets up a cron job to check for timer expirations every minute. VAPID keys are generated in the database during seeding.
-
-### Timer Notifications
-
-Timer-based notifications (e.g., "feed timer expired") require the cron job to be running. For local (non-Docker) setups:
-
-```bash
-npm run notification:cron:setup
-```
+Push notifications are **disabled by default** and require HTTPS in production. To enable notifications, regenerate VAPID keys, and see status of the configuration go the settings panel in the /family-manager admin page.
 
 ### Full Documentation
 
