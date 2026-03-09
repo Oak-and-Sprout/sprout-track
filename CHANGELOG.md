@@ -2,7 +2,7 @@
 
 ## v0.98.0 - Push Notifications and Localization
 
-- Added push notification capability for hosted and SaaS versions.
+- Added push notification capability for hosted and SaaS versions.  Notifications can be enabled and managed in the family-manager page.
 - Added localization support for Spanish and French (thank you WRobertson2, and ebihappy for assistance and feedback)
 - Applied bugfixes for pumping numbers and charts values that are represented (thank you tionkje)
 - Added bugfix for some modals showing up blurry
