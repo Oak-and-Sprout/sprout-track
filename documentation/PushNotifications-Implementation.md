@@ -652,9 +652,9 @@ The `ENABLE_NOTIFICATIONS` environment variable acts as a master switch:
 - ✅ Completed in Phase 7
 
 ### Phase 12: Docker Integration
-- ✅ Updated `Dockerfile` with `ENABLE_NOTIFICATIONS` and `BUILD_NOTIFICATIONS` build args
+- ✅ Updated `Dockerfile` with `ENABLE_NOTIFICATIONS` build arg
 - ✅ Installed `dcron` in Docker image for cron support
-- ✅ Created notification logs directory when `BUILD_NOTIFICATIONS=true`
+- ✅ Created notification logs directory when `ENABLE_NOTIFICATIONS=true`
 - ✅ Updated `docker-startup.sh` to automatically set up VAPID keys, validate env vars, install cron job, and start cron daemon when `ENABLE_NOTIFICATIONS=true`
 - ✅ Updated `docker-compose.yml` with all notification environment variables and log volume mount
 

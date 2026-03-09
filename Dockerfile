@@ -1,9 +1,8 @@
 # Use Node.js LTS as the base image
 FROM node:22-alpine
 
-# Build arguments for notification features
+# Build argument for notification features
 ARG ENABLE_NOTIFICATIONS=false
-ARG BUILD_NOTIFICATIONS=false
 
 # Install tzdata package for timezone support, openssl for ENC_HASH generation, and dcron for notifications
 RUN apk add --no-cache tzdata openssl dcron
@@ -30,8 +29,8 @@ RUN npm run prisma:generate && \
 # Copy application files
 COPY . .
 
-# Conditionally set up notification files and directories if BUILD_NOTIFICATIONS is true
-RUN if [ "$BUILD_NOTIFICATIONS" = "true" ]; then \
+# Conditionally set up notification files and directories if ENABLE_NOTIFICATIONS is true
+RUN if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then \
       echo "Notification features enabled - setting up notification infrastructure..." && \
       mkdir -p /app/logs && \
       chmod 755 /app/logs && \

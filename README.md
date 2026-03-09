@@ -456,7 +456,6 @@ To build with push notifications enabled:
 ```bash
 docker build \
   --build-arg ENABLE_NOTIFICATIONS=true \
-  --build-arg BUILD_NOTIFICATIONS=true \
   -t sprout-track:with-notifications .
 ```
 

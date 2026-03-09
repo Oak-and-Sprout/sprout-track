@@ -118,7 +118,7 @@ The push notification system enables users to subscribe to push notifications fo
 
 2. **Build with notifications:**
    ```bash
-   docker build --build-arg ENABLE_NOTIFICATIONS=true --build-arg BUILD_NOTIFICATIONS=true -t sprout-track:with-notifications .
+   docker build --build-arg ENABLE_NOTIFICATIONS=true -t sprout-track:with-notifications .
    ```
 
 3. **Or use docker-compose:**
@@ -188,7 +188,6 @@ npm run notification:cron:run
 ### Build Arguments (Docker)
 
 - `ENABLE_NOTIFICATIONS` - Enable notification features (default: false)
-- `BUILD_NOTIFICATIONS` - Include notification code in build (default: false)
 
 ### Feature Flags
 
@@ -248,7 +247,6 @@ Consider implementing rate limiting on notification endpoints to prevent abuse:
 ```bash
 docker build \
   --build-arg ENABLE_NOTIFICATIONS=true \
-  --build-arg BUILD_NOTIFICATIONS=true \
   -t sprout-track:with-notifications .
 ```
 
