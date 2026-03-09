@@ -42,14 +42,11 @@ Try out Sprout Track at our live demo: **[https://www.sprout-track.com/demo](htt
 To deploy the latest version using Docker:
 
 #### For image pulls:
-x64:
+
 ```bash
-docker pull sprouttrack/sprout-track-x64:latest
+docker pull sprouttrack/sprout-track:latest
 ```
-arm:
-```bash
-docker pull sprouttrack/sprout-track-arm:latest
-```
+
 
 #### Build locally
 ```bash
