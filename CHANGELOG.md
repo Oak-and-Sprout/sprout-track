@@ -5,6 +5,8 @@
 - Added push notification capability for hosted and SaaS versions.
 - Added localization support for Spanish and French (thank you WRobertson2, and ebihappy for assistance and feedback)
 - Applied bugfixes for pumping numbers and charts values that are represented (thank you tionkje)
+- Added bugfix for some modals showing up blurry
+- Added bugfix for auth mode to be caretaker auth if user sets up additional caretakers during the setup wizard
 
 ## v0.97.2 - Breastfeed timer hotfix
 
