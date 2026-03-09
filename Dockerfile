@@ -5,7 +5,7 @@ FROM node:22-alpine
 ARG ENABLE_NOTIFICATIONS=true
 
 # Install tzdata package for timezone support, openssl for ENC_HASH generation, and dcron for notifications
-RUN apk add --no-cache tzdata openssl dcron
+RUN apk add --no-cache tzdata openssl dcron curl
 
 # Set working directory
 WORKDIR /app
