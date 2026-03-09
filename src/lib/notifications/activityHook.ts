@@ -5,6 +5,7 @@ import {
   NotificationPayload,
 } from './push';
 import { t, DEFAULT_LANGUAGE } from './i18n';
+import { isNotificationsEnabled } from './config';
 
 /**
  * Activity type mapping for consistent naming
@@ -63,7 +64,7 @@ export async function notifyActivityCreated(
   activityData?: any
 ): Promise<void> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return; // No-op if disabled
   }
 
@@ -205,7 +206,7 @@ export async function resetTimerNotificationState(
   activityType: string
 ): Promise<void> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return; // No-op if disabled
   }
 

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse } from '../types';
-import { AppConfig, EmailConfig } from '@prisma/client';
+import { AppConfig, EmailConfig, NotificationConfig } from '@prisma/client';
 import { encrypt, decrypt, isEncrypted } from '../utils/encryption';
 import { withSysAdminAuth } from '../utils/auth';
+import { clearNotificationConfigCache, resetWebPushState } from '../../../src/lib/notifications/config';
+import * as crypto from 'crypto';
 
 /**
  * GET handler for AppConfig
@@ -14,7 +16,8 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
   try {
     let appConfig = await prisma.appConfig.findFirst();
     let emailConfig = await prisma.emailConfig.findFirst();
-    
+    let notificationConfig = await prisma.notificationConfig.findFirst();
+
     if (!appConfig) {
       // Create default app config if none exists
       appConfig = await prisma.appConfig.create({
@@ -31,6 +34,17 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       emailConfig = await prisma.emailConfig.create({
         data: {
           providerType: 'SENDGRID',
+        },
+      });
+    }
+
+    if (!notificationConfig) {
+      // Create default notification config if none exists
+      const randomHex = crypto.randomBytes(4).toString('hex');
+      notificationConfig = await prisma.notificationConfig.create({
+        data: {
+          enabled: false,
+          vapidSubject: `mailto:notify_${randomHex}@sprout-track.com`,
         },
       });
     }
@@ -56,11 +70,19 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       password: emailConfig.password && isEncrypted(emailConfig.password) ? decrypt(emailConfig.password) : emailConfig.password,
     };
 
-    return NextResponse.json<ApiResponse<{ appConfig: any; emailConfig: any }>>({
+    const decryptedNotificationConfig = {
+      ...notificationConfig,
+      vapidPrivateKey: notificationConfig.vapidPrivateKey && isEncrypted(notificationConfig.vapidPrivateKey)
+        ? decrypt(notificationConfig.vapidPrivateKey)
+        : notificationConfig.vapidPrivateKey,
+    };
+
+    return NextResponse.json<ApiResponse<{ appConfig: any; emailConfig: any; notificationConfig: any }>>({
       success: true,
       data: {
         appConfig: decryptedAppConfig,
         emailConfig: decryptedEmailConfig,
+        notificationConfig: decryptedNotificationConfig,
       },
     });
   } catch (error) {
@@ -83,10 +105,11 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
 async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<any>>> {
   try {
     const body = await req.json();
-    const { appConfigData, emailConfigData } = body;
-    
+    const { appConfigData, emailConfigData, notificationConfigData } = body;
+
     let updatedAppConfig;
     let updatedEmailConfig;
+    let updatedNotificationConfig;
 
     // Update AppConfig
     if (appConfigData) {
@@ -126,6 +149,38 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       updatedEmailConfig = await prisma.emailConfig.update({ where: { id: existingEmailConfig.id }, data });
     }
 
+    // Update NotificationConfig
+    if (notificationConfigData) {
+      const existingNotificationConfig = await prisma.notificationConfig.findFirst();
+      if (!existingNotificationConfig) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Notification configuration not found.' }, { status: 404 });
+      }
+
+      const data: Partial<NotificationConfig> = {};
+      const allowedNotificationFields: (keyof NotificationConfig)[] = [
+        'enabled', 'vapidPublicKey', 'vapidPrivateKey', 'vapidSubject', 'logRetentionDays'
+      ];
+      const encryptedNotificationFields = ['vapidPrivateKey'];
+
+      for (const field of allowedNotificationFields) {
+        if (notificationConfigData[field] !== undefined) {
+          if (field === 'logRetentionDays') {
+            const days = parseInt(notificationConfigData[field], 10);
+            (data as any)[field] = Math.max(1, Math.min(365, isNaN(days) ? 30 : days));
+          } else if (encryptedNotificationFields.includes(field) && notificationConfigData[field]) {
+            (data as any)[field] = encrypt(notificationConfigData[field]);
+          } else {
+            (data as any)[field] = notificationConfigData[field];
+          }
+        }
+      }
+      updatedNotificationConfig = await prisma.notificationConfig.update({ where: { id: existingNotificationConfig.id }, data });
+
+      // Clear cached config so notification system picks up changes
+      clearNotificationConfigCache();
+      resetWebPushState();
+    }
+
     // Fetch updated configs to return decrypted data
     const finalAppConfig = await prisma.appConfig.findFirst();
     const finalEmailConfig = await prisma.emailConfig.findFirst();
@@ -151,11 +206,20 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       password: finalEmailConfig.password && isEncrypted(finalEmailConfig.password) ? decrypt(finalEmailConfig.password) : finalEmailConfig.password,
     } : null;
 
+    const finalNotificationConfig = await prisma.notificationConfig.findFirst();
+    const decryptedNotificationConfig = finalNotificationConfig ? {
+      ...finalNotificationConfig,
+      vapidPrivateKey: finalNotificationConfig.vapidPrivateKey && isEncrypted(finalNotificationConfig.vapidPrivateKey)
+        ? decrypt(finalNotificationConfig.vapidPrivateKey)
+        : finalNotificationConfig.vapidPrivateKey,
+    } : null;
+
     return NextResponse.json<ApiResponse<any>>({
       success: true,
       data: {
         appConfig: decryptedAppConfig,
-        emailConfig: decryptedEmailConfig
+        emailConfig: decryptedEmailConfig,
+        notificationConfig: decryptedNotificationConfig,
       },
     });
   } catch (error) {

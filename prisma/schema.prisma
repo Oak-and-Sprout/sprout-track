@@ -966,6 +966,17 @@ model EmailConfig {
   updatedAt           DateTime          @updatedAt
 }
 
+// Push notification configuration (managed via App Configuration UI)
+model NotificationConfig {
+  id               String   @id @default(cuid())
+  enabled          Boolean  @default(false)
+  vapidPublicKey   String?
+  vapidPrivateKey  String?  // Encrypted with AES-256-GCM
+  vapidSubject     String?  // Default generated at seed time: mailto:notify_<8-char-hex>@sprout-track.com
+  logRetentionDays Int      @default(30)
+  updatedAt        DateTime @updatedAt
+}
+
 // Demo family tracking for automated demo regeneration
 model DemoTracker {
   id             String    @id @default(cuid())

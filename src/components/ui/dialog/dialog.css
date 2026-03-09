@@ -4,7 +4,7 @@ html.dark .dialog-overlay {
 }
 
 html.dark .dialog-content {
-  background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity */
+  background-color: rgb(31, 41, 55) !important; /* gray-800 */
   border-color: #374151 !important; /* gray-700 */
 }
 

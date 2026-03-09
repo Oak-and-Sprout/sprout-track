@@ -390,18 +390,15 @@ The application can be configured using environment variables in the `.env` file
 | `APP_VERSION` | Application version | `"0.9.0"` | `"1.0.0"` |
 | `COOKIE_SECURE` | Whether cookies require HTTPS connections | `"false"` | `"true"` |
 | `ENC_HASH` | Encryption hash for admin password security | Auto-generated | 64-character hex string |
-| `ENABLE_NOTIFICATIONS` | Enable push notification features | `"false"` | `"true"` |
-| `VAPID_PUBLIC_KEY` | VAPID public key for push subscriptions | - | Auto-generated |
-| `VAPID_PRIVATE_KEY` | VAPID private key for push encryption | - | Auto-generated |
-| `VAPID_SUBJECT` | VAPID subject (mailto: URI) | - | `"mailto:you@example.com"` |
+| `ENABLE_NOTIFICATIONS` | Enable push notification infrastructure (cron, logs) | `"false"` | `"true"` |
 | `NOTIFICATION_CRON_SECRET` | Secret for securing the cron endpoint | - | Random hex string |
-| `NOTIFICATION_LOG_RETENTION_DAYS` | Days to retain notification logs | `"30"` | `"60"` |
 
 ### Automatic Environment Setup
 
 The `./scripts/env-update.sh` script automatically manages environment variables:
 - Creates `.env` file if it doesn't exist
 - Generates a secure `ENC_HASH` (64-character random hex) if missing
+- Generates a `NOTIFICATION_CRON_SECRET` if missing
 - Used during setup and deployment processes
 
 ### Important Notes:
@@ -419,39 +416,33 @@ The `./scripts/env-update.sh` script automatically manages environment variables
 
 Sprout Track supports optional push notifications to alert caretakers when activities are logged and when feed/diaper timers expire. Notifications are per-baby, per-device and work on Chrome, Firefox, Edge, and Safari 16.4+.
 
-Push notifications are **disabled by default** and require HTTPS in production.
+Push notifications are **disabled by default** and require HTTPS in production. VAPID keys, enable/disable, and other notification settings are managed in the database via the **App Configuration** admin UI.
 
 ### Quick Setup
 
-> **Note:** If you used `./scripts/setup.sh` for initial setup, VAPID keys and `NOTIFICATION_CRON_SECRET` are automatically generated via `env-update.sh`. You only need to set `ENABLE_NOTIFICATIONS=true` and `VAPID_SUBJECT` in your `.env` file.
+1. **Set `ENABLE_NOTIFICATIONS=true` in `.env`** (enables notification infrastructure: cron daemon, log directories)
 
-1. **Generate VAPID keys:**
+2. **Run setup or database migrations:**
    ```bash
-   npm run setup:vapid
+   ./scripts/setup.sh
+   # Or if already set up:
+   npm run prisma:migrate && npm run prisma:seed
    ```
+   VAPID keys are automatically generated in the database during seeding.
 
-2. **Add to your `.env` file:**
-   ```bash
-   ENABLE_NOTIFICATIONS=true
-   VAPID_PUBLIC_KEY=<generated>
-   VAPID_PRIVATE_KEY=<generated>
-   VAPID_SUBJECT=mailto:you@example.com
-   NOTIFICATION_CRON_SECRET=<random-secret-string>
-   ```
+3. **Configure in admin UI:**
+   - Log in as a system administrator
+   - Navigate to App Configuration > Push Notifications
+   - Enable notifications and save
 
-3. **Run database migrations** (if not already up to date):
-   ```bash
-   npm run prisma:migrate
-   ```
-
-4. **Enable in the UI:**
+4. **Enable per user:**
    - Navigate to Settings > Push Notifications
    - Click "Enable Notifications" and grant browser permission
    - Configure per-baby notification preferences
 
 ### Docker Setup
 
-To build with push notifications enabled:
+Build with notifications enabled:
 
 ```bash
 docker build \
@@ -459,7 +450,7 @@ docker build \
   -t sprout-track:with-notifications .
 ```
 
-Or set the environment variables in your `docker-compose.yml`:
+Or in `docker-compose.yml`:
 
 ```yaml
 environment:
@@ -468,7 +459,7 @@ environment:
   - APP_URL=http://localhost:3000
 ```
 
-When `ENABLE_NOTIFICATIONS=true`, the Docker container automatically sets up a cron job to check for timer expirations every minute.
+When `ENABLE_NOTIFICATIONS=true`, the Docker container automatically sets up a cron job to check for timer expirations every minute. VAPID keys are generated in the database during seeding.
 
 ### Timer Notifications
 

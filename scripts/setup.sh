@@ -132,14 +132,8 @@ if [ -f "$PROJECT_DIR/.env" ]; then
 fi
 
 if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
-    echo "  Notifications are enabled. Configuring notification infrastructure..."
-
-    # Ensure VAPID keys are generated (may have been skipped during env-update if deps weren't installed yet)
-    echo "  - Verifying VAPID keys..."
-    npm run setup:vapid
-    if [ $? -ne 0 ]; then
-        echo "  Warning: VAPID key setup had issues."
-    fi
+    echo "  Notification infrastructure is enabled."
+    echo "  VAPID keys are generated automatically in the database during seeding."
 
     # Set up the cron job for timer notifications
     echo "  - Setting up notification cron job..."
@@ -150,11 +144,13 @@ if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
     else
         echo "  Notification cron job configured successfully."
     fi
+
+    echo ""
+    echo "  Manage notification settings via App Configuration in the admin UI."
 else
-    echo "  Notifications are disabled (ENABLE_NOTIFICATIONS is not 'true')."
-    echo "  To enable notifications, set ENABLE_NOTIFICATIONS=true in .env and run:"
-    echo "    npm run setup:vapid"
-    echo "    npm run notification:cron:setup"
+    echo "  Notification infrastructure is disabled (ENABLE_NOTIFICATIONS is not 'true')."
+    echo "  To enable, set ENABLE_NOTIFICATIONS=true in .env and re-run setup."
+    echo "  Notification settings are managed via App Configuration in the admin UI."
 fi
 
 echo "-------------------------------------"
@@ -163,10 +159,10 @@ echo "Default security PIN: 111222"
 echo "Default family: My Family (my-family)"
 echo ""
 if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
-    echo "Push notifications: ENABLED"
-    echo "  - VAPID keys: configured"
+    echo "Push notifications: INFRASTRUCTURE ENABLED"
+    echo "  - VAPID keys: auto-generated in database"
     echo "  - Cron job: configured (runs every minute)"
-    echo "  - To check status: crontab -l"
+    echo "  - Settings: manage via App Configuration in admin UI"
     echo ""
 fi
 echo "Navigate to the application and use PIN 111222 to complete setup."

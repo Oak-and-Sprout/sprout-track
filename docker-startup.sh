@@ -63,23 +63,8 @@ if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
   echo "=== Notification Setup ==="
   echo "Notifications are enabled, setting up notification infrastructure..."
   
-  # Check and generate VAPID keys if missing
-  echo "Checking for VAPID keys..."
-  VAPID_PUBLIC_EXISTS=$(grep -E "^VAPID_PUBLIC_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
-  VAPID_PRIVATE_EXISTS=$(grep -E "^VAPID_PRIVATE_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
-  
-  if [ -z "$VAPID_PUBLIC_EXISTS" ] || [ -z "$VAPID_PRIVATE_EXISTS" ]; then
-    echo "VAPID keys not found. Generating new VAPID keypair..."
-    DATABASE_URL="file:/db/baby-tracker.db" npm run setup:vapid
-    if [ $? -eq 0 ]; then
-      echo "✓ VAPID keys generated successfully"
-    else
-      echo "⚠ Warning: VAPID key generation failed, but continuing..."
-    fi
-  else
-    echo "✓ VAPID keys already exist"
-  fi
-  
+  echo "VAPID keys are generated automatically in the database during seeding."
+
   # Validate required environment variables
   echo "Validating notification environment variables..."
   NOTIFICATION_CRON_SECRET_CHECK=$(grep -E "^NOTIFICATION_CRON_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
@@ -88,12 +73,6 @@ if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
     echo "  Timer notifications will not work without this secret"
   else
     echo "✓ NOTIFICATION_CRON_SECRET is set"
-  fi
-  
-  # Set default log retention if not specified
-  if ! grep -q "^NOTIFICATION_LOG_RETENTION_DAYS=" "$ENV_FILE" 2>/dev/null; then
-    echo "NOTIFICATION_LOG_RETENTION_DAYS=30" >> "$ENV_FILE"
-    echo "✓ Set default NOTIFICATION_LOG_RETENTION_DAYS=30"
   fi
   
   # Check APP_URL or ROOT_DOMAIN

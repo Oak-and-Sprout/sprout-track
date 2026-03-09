@@ -1,30 +1,31 @@
 import * as webPush from 'web-push';
 import prisma from '../../../app/api/db';
 import { NotificationEventType } from '@prisma/client';
+import { getDecryptedNotificationConfig, isWebPushInitialized, setWebPushInitialized } from './config';
 
 /**
- * Initialize web-push with VAPID credentials from environment variables
- * Should be called once at application startup
+ * Initialize web-push with VAPID credentials from database
+ * Should be called before sending any push notification
  */
-let isInitialized = false;
-
-export function initializeWebPush(): void {
-  if (isInitialized) {
+export async function initializeWebPush(): Promise<void> {
+  if (isWebPushInitialized()) {
     return;
   }
 
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || 'mailto:notifications@sprouttrack.app';
+  const config = await getDecryptedNotificationConfig();
+
+  const publicKey = config?.vapidPublicKey;
+  const privateKey = config?.vapidPrivateKey;
+  const subject = config?.vapidSubject || 'mailto:notifications@sprouttrack.app';
 
   if (!publicKey || !privateKey) {
     throw new Error(
-      'VAPID keys are not configured. Please run "npm run setup:vapid" to generate keys.'
+      'VAPID keys are not configured. Configure them in App Configuration.'
     );
   }
 
   webPush.setVapidDetails(subject, publicKey, privateKey);
-  isInitialized = true;
+  setWebPushInitialized(true);
 }
 
 /**
@@ -68,8 +69,8 @@ export async function sendNotification(
   payload: NotificationPayload,
   options?: webPush.RequestOptions
 ): Promise<SendNotificationResult> {
-  if (!isInitialized) {
-    initializeWebPush();
+  if (!isWebPushInitialized()) {
+    await initializeWebPush();
   }
 
   try {

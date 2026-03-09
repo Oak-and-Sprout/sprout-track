@@ -1,4 +1,5 @@
 import prisma from '../../../app/api/db';
+import { isNotificationsEnabled, getNotificationConfig } from './config';
 
 /**
  * Cleanup failed push subscriptions
@@ -7,7 +8,7 @@ import prisma from '../../../app/api/db';
  */
 export async function cleanupFailedSubscriptions(): Promise<number> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     console.log('[Cleanup] Notifications disabled, skipping subscription cleanup');
     return 0; // No-op if disabled
   }
@@ -60,7 +61,7 @@ export async function cleanupOldNotificationLogs(
   retentionDays: number = 30
 ): Promise<number> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     console.log('[Cleanup] Notifications disabled, skipping log cleanup');
     return 0; // No-op if disabled
   }
@@ -121,7 +122,7 @@ export interface CleanupResult {
  */
 export async function runCleanup(): Promise<CleanupResult> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     console.log('[Cleanup] Notifications disabled, skipping cleanup');
     return {
       subscriptionsCleaned: 0,
@@ -133,29 +134,12 @@ export async function runCleanup(): Promise<CleanupResult> {
   const startTime = Date.now();
 
   try {
-    // Get retention days from environment (default: 30)
-    // With proper validation to handle invalid values
-    const DEFAULT_RETENTION_DAYS = 30;
-    const MIN_RETENTION_DAYS = 1;
-    const MAX_RETENTION_DAYS = 365;
+    // Get retention days from DB config (with env var fallback)
+    const config = await getNotificationConfig();
+    let retentionDays = config?.logRetentionDays ?? 30;
 
-    let retentionDays = DEFAULT_RETENTION_DAYS;
-    const envValue = process.env.NOTIFICATION_LOG_RETENTION_DAYS;
-
-    if (envValue) {
-      const parsedValue = parseInt(envValue, 10);
-      if (isNaN(parsedValue)) {
-        console.warn(`[Cleanup] Invalid NOTIFICATION_LOG_RETENTION_DAYS value "${envValue}", using default: ${DEFAULT_RETENTION_DAYS}`);
-      } else if (parsedValue < MIN_RETENTION_DAYS) {
-        console.warn(`[Cleanup] NOTIFICATION_LOG_RETENTION_DAYS value ${parsedValue} is below minimum ${MIN_RETENTION_DAYS}, using minimum`);
-        retentionDays = MIN_RETENTION_DAYS;
-      } else if (parsedValue > MAX_RETENTION_DAYS) {
-        console.warn(`[Cleanup] NOTIFICATION_LOG_RETENTION_DAYS value ${parsedValue} exceeds maximum ${MAX_RETENTION_DAYS}, using maximum`);
-        retentionDays = MAX_RETENTION_DAYS;
-      } else {
-        retentionDays = parsedValue;
-      }
-    }
+    // Validate range
+    retentionDays = Math.max(1, Math.min(365, retentionDays));
 
     console.log(`[Cleanup] Using log retention period: ${retentionDays} days`);
 

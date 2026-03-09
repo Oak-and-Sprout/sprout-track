@@ -10,7 +10,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle, RefreshCw, Key } from 'lucide-react';
 import { BackupRestore } from '@/src/components/BackupRestore';
 import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 import {
@@ -47,6 +47,16 @@ interface EmailConfigData {
   password?: string;
   enableTls: boolean;
   allowSelfSignedCert: boolean;
+  updatedAt: string;
+}
+
+interface NotificationConfigData {
+  id: string;
+  enabled: boolean;
+  vapidPublicKey: string | null;
+  vapidPrivateKey: string | null;
+  vapidSubject: string | null;
+  logRetentionDays: number;
   updatedAt: string;
 }
 
@@ -91,6 +101,15 @@ export default function AppConfigForm({
     enableTls: true,
     allowSelfSignedCert: false,
   });
+  const [notificationConfig, setNotificationConfig] = useState<NotificationConfigData | null>(null);
+  const [notificationFormData, setNotificationFormData] = useState({
+    enabled: false,
+    vapidPublicKey: '',
+    vapidPrivateKey: '',
+    vapidSubject: '',
+    logRetentionDays: 30,
+  });
+  const [generatingVapid, setGeneratingVapid] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [passwordStep, setPasswordStep] = useState<'verify' | 'new' | 'confirm'>('verify');
   const [verifyPassword, setVerifyPassword] = useState('');
@@ -165,6 +184,14 @@ export default function AppConfigForm({
           password: data.data.emailConfig?.password || '',
           enableTls: data.data.emailConfig?.enableTls !== false,
           allowSelfSignedCert: data.data.emailConfig?.allowSelfSignedCert || false,
+        });
+        setNotificationConfig(data.data.notificationConfig);
+        setNotificationFormData({
+          enabled: data.data.notificationConfig?.enabled || false,
+          vapidPublicKey: data.data.notificationConfig?.vapidPublicKey || '',
+          vapidPrivateKey: data.data.notificationConfig?.vapidPrivateKey || '',
+          vapidSubject: data.data.notificationConfig?.vapidSubject || '',
+          logRetentionDays: data.data.notificationConfig?.logRetentionDays || 30,
         });
         setShowPasswordChange(false);
         setPasswordStep('verify');
@@ -258,6 +285,54 @@ export default function AppConfigForm({
   // Handle email provider change
   const handleProviderChange = (provider: EmailProviderType) => {
     setEmailFormData(prev => ({ ...prev, providerType: provider }));
+  };
+
+  // Handle notification input changes
+  const handleNotificationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setNotificationFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseInt(value, 10) : value,
+    }));
+    setError(null);
+    setSuccess(null);
+  };
+
+  // Handle notification checkbox changes
+  const handleNotificationCheckboxChange = (name: string, checked: boolean) => {
+    setNotificationFormData(prev => ({ ...prev, [name]: checked }));
+    setError(null);
+    setSuccess(null);
+  };
+
+  // Generate new VAPID keys
+  const handleGenerateVapidKeys = async () => {
+    try {
+      setGeneratingVapid(true);
+      setError(null);
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/notifications/generate-vapid', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setNotificationFormData(prev => ({
+          ...prev,
+          vapidPublicKey: data.data.publicKey,
+          vapidPrivateKey: data.data.privateKey,
+        }));
+        setSuccess(t('VAPID keys generated. Save configuration to apply. Warning: existing subscriptions will be invalidated.'));
+      } else {
+        setError(data.error || t('Failed to generate VAPID keys'));
+      }
+    } catch (error) {
+      console.error('Error generating VAPID keys:', error);
+      setError(t('Failed to generate VAPID keys'));
+    } finally {
+      setGeneratingVapid(false);
+    }
   };
 
   // Handle password step changes
@@ -379,6 +454,7 @@ export default function AppConfigForm({
     const payload = {
       appConfigData: formData,
       emailConfigData: emailFormData,
+      notificationConfigData: notificationFormData,
     };
 
     try {
@@ -406,6 +482,9 @@ export default function AppConfigForm({
       if (data.success) {
         setAppConfig(data.data.appConfig);
         setEmailConfig(data.data.emailConfig);
+        if (data.data.notificationConfig) {
+          setNotificationConfig(data.data.notificationConfig);
+        }
         setSuccess(t('App configuration updated successfully'));
         scheduleAutoClose();
       } else {
@@ -822,6 +901,141 @@ export default function AppConfigForm({
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Push Notifications Configuration Section */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Bell className="h-5 w-5 text-teal-600" />
+                  <Label className="text-lg font-semibold">
+                    {t('Push Notifications')}
+                  </Label>
+                </div>
+                <div className="space-y-4">
+                  {/* Enable Notifications */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notificationEnabled"
+                        checked={notificationFormData.enabled}
+                        onCheckedChange={(checked) =>
+                          handleNotificationCheckboxChange('enabled', checked as boolean)
+                        }
+                      />
+                      <Label htmlFor="notificationEnabled" className="text-sm font-medium cursor-pointer">
+                        {t('Enable Push Notifications')}
+                      </Label>
+                    </div>
+                    <p className="text-xs text-gray-500 ml-6">
+                      {t('Enable push notification features for activity alerts and timer reminders')}
+                    </p>
+                  </div>
+
+                  {/* VAPID Keys */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">
+                        {t('VAPID Keys')}
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateVapidKeys}
+                        disabled={generatingVapid}
+                      >
+                        {generatingVapid ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            {t('Generating...')}
+                          </>
+                        ) : (
+                          <>
+                            <Key className="h-3 w-3 mr-1" />
+                            {t('Generate New Keys')}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="vapidPublicKey" className="text-xs text-gray-500">
+                        {t('Public Key')}
+                      </Label>
+                      <Input
+                        type="text"
+                        id="vapidPublicKey"
+                        value={notificationFormData.vapidPublicKey}
+                        readOnly
+                        className="font-mono text-xs bg-gray-50 dark:bg-gray-800"
+                        placeholder={t('No public key configured')}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="vapidPrivateKey" className="text-xs text-gray-500">
+                        {t('Private Key')}
+                      </Label>
+                      <Input
+                        type="password"
+                        id="vapidPrivateKey"
+                        name="vapidPrivateKey"
+                        value={notificationFormData.vapidPrivateKey}
+                        onChange={handleNotificationInputChange}
+                        className="font-mono text-xs"
+                        placeholder={t('No private key configured')}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {t('Generating new keys will invalidate all existing push subscriptions. Users will need to re-subscribe.')}
+                    </p>
+                  </div>
+
+                  {/* VAPID Subject */}
+                  <div className="space-y-2">
+                    <Label htmlFor="vapidSubject" className="text-sm font-medium">
+                      {t('VAPID Subject (Email)')}
+                    </Label>
+                    <Input
+                      type="text"
+                      id="vapidSubject"
+                      name="vapidSubject"
+                      value={notificationFormData.vapidSubject}
+                      onChange={handleNotificationInputChange}
+                      placeholder="mailto:notifications@example.com"
+                    />
+                    <p className="text-xs text-gray-500">
+                      {t('Contact email for push notification service identification (mailto: format)')}
+                    </p>
+                  </div>
+
+                  {/* Log Retention Days */}
+                  <div className="space-y-2">
+                    <Label htmlFor="logRetentionDays" className="text-sm font-medium">
+                      {t('Log Retention Days')}
+                    </Label>
+                    <Input
+                      type="number"
+                      id="logRetentionDays"
+                      name="logRetentionDays"
+                      value={notificationFormData.logRetentionDays}
+                      onChange={handleNotificationInputChange}
+                      min={1}
+                      max={365}
+                    />
+                    <p className="text-xs text-gray-500">
+                      {t('Number of days to retain notification logs (1-365)')}
+                    </p>
+                  </div>
+
+                  {/* Cron Secret Info */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      {t('Cron Secret')}
+                    </Label>
+                    <p className="text-xs text-gray-500 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+                      {t('Managed via NOTIFICATION_CRON_SECRET environment variable. Server restart required if changed.')}
+                    </p>
+                  </div>
                 </div>
               </div>
 

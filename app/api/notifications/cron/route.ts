@@ -3,15 +3,16 @@ import crypto from 'crypto';
 import { ApiResponse } from '../../types';
 import { checkTimerExpirations } from '../../../../src/lib/notifications/timerCheck';
 import { runCleanup } from '../../../../src/lib/notifications/cleanup';
+import { isNotificationsEnabled } from '../../../../src/lib/notifications/config';
 
 /**
  * POST handler for cron-triggered notification checks
- * Protected by NOTIFICATION_CRON_SECRET header
+ * Protected by NOTIFICATION_CRON_SECRET header (stays in env var)
  * This endpoint will be called by system cron to check for timer expirations
  */
 export async function POST(req: NextRequest) {
-  // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  // Check if notifications are enabled (reads from DB)
+  if (!(await isNotificationsEnabled())) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,

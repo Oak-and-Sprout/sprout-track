@@ -1,6 +1,9 @@
 import prisma from './db';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
+import * as webPush from 'web-push';
+import { encrypt } from '../app/api/utils/encryption';
 
 type UnitData = {
   unitAbbr: string;
@@ -108,6 +111,9 @@ async function main() {
   // Handle units separately
   await updateUnits(unitData);
 
+  // Seed notification config from env vars (idempotent)
+  await seedNotificationConfig();
+
   // Seed CDC growth chart data
   await seedCdcGrowthChartData();
 
@@ -178,6 +184,47 @@ async function updateUnits(unitData: UnitData[]): Promise<void> {
   }
   
   console.log('Units update completed successfully.');
+}
+
+/**
+ * Seeds NotificationConfig from environment variables if no record exists.
+ * Idempotent — only creates on first run.
+ */
+async function seedNotificationConfig(): Promise<void> {
+  console.log('Checking for notification configuration...');
+
+  const existing = await prisma.notificationConfig.findFirst();
+  if (existing) {
+    console.log('Notification configuration already exists. Skipping.');
+    return;
+  }
+
+  // Generate a unique default VAPID subject for this instance
+  const randomHex = crypto.randomBytes(4).toString('hex'); // 8 hex chars
+  const defaultSubject = `mailto:notify_${randomHex}@sprout-track.com`;
+
+  const enabled = process.env.ENABLE_NOTIFICATIONS === 'true';
+
+  // Generate VAPID keys directly — no .env middleman
+  const vapidKeys = webPush.generateVAPIDKeys();
+
+  const data: any = {
+    enabled,
+    vapidPublicKey: vapidKeys.publicKey,
+    vapidSubject: defaultSubject,
+    logRetentionDays: 30,
+  };
+
+  // Encrypt private key
+  try {
+    data.vapidPrivateKey = encrypt(vapidKeys.privateKey);
+  } catch (error) {
+    console.warn('Warning: Could not encrypt VAPID private key (ENC_HASH may not be set). Storing as-is.');
+    data.vapidPrivateKey = vapidKeys.privateKey;
+  }
+
+  await prisma.notificationConfig.create({ data });
+  console.log(`Created notification configuration (enabled: ${enabled}, subject: ${defaultSubject})`);
 }
 
 /**

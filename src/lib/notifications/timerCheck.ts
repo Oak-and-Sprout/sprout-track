@@ -5,6 +5,7 @@ import {
   NotificationPayload,
 } from './push';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
+import { isNotificationsEnabled } from './config';
 
 /**
  * Parse warning time string (format: "HH:mm") to total minutes
@@ -237,7 +238,7 @@ async function sendTimerNotification(
  */
 export async function checkTimerExpirations(): Promise<number> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     console.log('[TimerCheck] Notifications disabled, skipping timer check');
     return 0; // No-op if disabled
   }

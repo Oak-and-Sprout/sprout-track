@@ -27,34 +27,36 @@ The push notification system enables users to subscribe to push notifications fo
    npm install
    ```
 
-2. **Generate VAPID keys:**
-   ```bash
-   npm run setup:vapid
-   ```
-
-3. **Configure environment variables:**
+2. **Configure environment variables:**
    Add to your `.env` file:
    ```bash
    ENABLE_NOTIFICATIONS=true
-   VAPID_PUBLIC_KEY=<generated>
-   VAPID_PRIVATE_KEY=<generated>
-   VAPID_SUBJECT=mailto:notifications@sprouttrack.app
    NOTIFICATION_CRON_SECRET=<random-secret-string>
-   NOTIFICATION_LOG_RETENTION_DAYS=30
    APP_URL=http://localhost:3000
    ```
+   Note: VAPID keys are auto-generated in the database during seeding. All notification settings are managed via the admin UI (App Configuration).
 
-4. **Run database migrations:**
+3. **Run database migrations and seed:**
    ```bash
    npm run prisma:migrate
+   npm run prisma:seed
    ```
+   VAPID keys are automatically generated in the database during seeding.
 
-5. **Start the application:**
+4. **Start the application:**
    ```bash
    npm run dev
    ```
 
-6. **Enable notifications in UI:**
+5. **Configure notifications in admin UI:**
+   - Log in as a system administrator
+   - Navigate to App Configuration
+   - Scroll to "Push Notifications" section
+   - VAPID keys should already be present from seeding (or use "Generate New Keys" to rotate)
+   - Enable notifications
+   - Save settings
+
+6. **Enable notifications per user:**
    - Navigate to Settings
    - Scroll to "Push Notifications" section
    - Click "Enable Notifications"
@@ -67,6 +69,7 @@ The push notification system enables users to subscribe to push notifications fo
 
 #### Backend Utilities
 - `src/lib/notifications/push.ts` - Core push notification sending with encryption
+- `src/lib/notifications/config.ts` - Database-backed notification config (cached singleton)
 - `src/lib/notifications/client.ts` - Client-side subscription manager
 - `src/lib/notifications/activityHook.ts` - Activity event hooks
 - `src/lib/notifications/timerCheck.ts` - Timer expiration detection and notification
@@ -79,15 +82,17 @@ The push notification system enables users to subscribe to push notifications fo
 - `app/api/notifications/subscriptions/route.ts` - List subscriptions
 - `app/api/notifications/subscriptions/[id]/route.ts` - Delete subscription
 - `app/api/notifications/cron/route.ts` - Cron trigger endpoint
+- `app/api/notifications/cron-enabled/route.ts` - Lightweight cron pre-check endpoint
+- `app/api/notifications/generate-vapid/route.ts` - VAPID key generation (sysadmin only)
 
 #### Frontend Components
 - `src/components/forms/SettingsForm/NotificationSettings.tsx` - Settings UI
 - `public/sw.js` - Service worker for receiving notifications
 
 #### Scripts
-- `scripts/setup-vapid-keys.ts` - VAPID key generation script
+- `scripts/setup-vapid-keys.ts` - Legacy VAPID key generation script (writes to .env; VAPID keys are now auto-generated in DB during seeding)
 - `scripts/setup-notification-cron.ts` - Cron job setup script
-- `scripts/run-notification-cron.sh` - Cron runner shell script
+- `scripts/run-notification-cron.sh` - Cron runner shell script (checks DB-backed enabled flag via API before proceeding)
 
 #### Documentation
 - `documentation/PushNotifications-README.md` - This file (main reference)
@@ -112,9 +117,8 @@ The push notification system enables users to subscribe to push notifications fo
    ENABLE_NOTIFICATIONS=true
    NOTIFICATION_CRON_SECRET=your-secret-here
    APP_URL=http://localhost:3000
-   VAPID_PUBLIC_KEY=your-public-key
-   VAPID_PRIVATE_KEY=your-private-key
    ```
+   VAPID keys are auto-generated in the database during seeding. All notification settings are managed via the admin UI.
 
 2. **Build with notifications:**
    ```bash
@@ -127,7 +131,12 @@ The push notification system enables users to subscribe to push notifications fo
    docker-compose up -d
    ```
 
-4. **Verify cron job:**
+4. **Configure via admin UI:**
+   - Log in as sysadmin and go to App Configuration
+   - VAPID keys should already be present from seeding (or use "Generate New Keys" to rotate)
+   - Enable notifications and save settings
+
+5. **Verify cron job:**
    ```bash
    ./scripts/docker-setup.sh notification-status
    ```
@@ -141,16 +150,10 @@ docker build -t sprout-track:standard .
 
 ### VAPID Key Generation
 
-VAPID keys are automatically generated during setup. To generate manually:
-
-```bash
-npm run setup:vapid
-```
-
-This will:
-- Check if VAPID keys exist in `.env`
-- Generate new keypair if missing
-- Update `.env` with the keys
+VAPID keys are auto-generated in the database during initial seeding (`npm run prisma:seed`). They can also be managed via the admin UI (App Configuration > Push Notifications):
+- Click "Generate New Keys" to rotate the VAPID keypair
+- Keys are stored encrypted in the database (AES-256-GCM)
+- **Warning:** Rotating VAPID keys invalidates all existing push subscriptions — users must re-subscribe
 
 ### Cron Job Setup
 
@@ -171,30 +174,37 @@ npm run notification:cron:run
 
 ## Configuration
 
+### Database-Managed Settings (Admin UI)
+
+Most notification settings are now stored in the `NotificationConfig` database table and managed via **App Configuration** in the admin UI:
+
+- **Enable Notifications** — Runtime on/off toggle
+- **VAPID Public Key** — Public key for push subscriptions
+- **VAPID Private Key** — Private key (stored encrypted with AES-256-GCM)
+- **VAPID Subject** — mailto: URI identifying the application (auto-generated as `mailto:notify_<random-hex>@sprout-track.com`)
+- **Log Retention Days** — Days to retain notification logs (default: 30, range: 1-365)
+
 ### Environment Variables
 
-#### Required (when notifications enabled)
-- `ENABLE_NOTIFICATIONS` - Master feature flag (true/false)
-- `VAPID_PUBLIC_KEY` - VAPID public key (auto-generated)
-- `VAPID_PRIVATE_KEY` - VAPID private key (auto-generated)
-- `VAPID_SUBJECT` - VAPID subject (mailto: URI)
-- `NOTIFICATION_CRON_SECRET` - Secret for securing cron endpoint
+#### Required
+- `ENABLE_NOTIFICATIONS` - Docker build arg for infrastructure (cron daemon, logs directory). Runtime on/off is managed in the database.
+- `NOTIFICATION_CRON_SECRET` - Secret for securing the cron endpoint. Stays in `.env` only. Server restart required if changed.
 
 #### Optional
-- `NOTIFICATION_LOG_RETENTION_DAYS` - Days to retain notification logs (default: 30)
 - `APP_URL` - Base URL for API calls (or use `ROOT_DOMAIN`)
 - `ROOT_DOMAIN` - Domain name (used to construct APP_URL if not set)
 
 ### Build Arguments (Docker)
 
-- `ENABLE_NOTIFICATIONS` - Enable notification features (default: false)
+- `ENABLE_NOTIFICATIONS` - Enable notification infrastructure in the container (cron daemon, log directories). Default: false.
 
 ### Feature Flags
 
-The `ENABLE_NOTIFICATIONS` environment variable acts as a master switch:
-- When `false`, all notification APIs return 503
-- UI component is hidden when `notificationsEnabled === false`
-- Client-side functions check the flag before making API calls
+The notification system uses a dual flag approach:
+- **Build-time:** `ENABLE_NOTIFICATIONS` env var / Docker build arg controls infrastructure (cron, logs)
+- **Runtime:** `NotificationConfig.enabled` in the database controls whether notification APIs are active
+- When disabled at runtime, all notification APIs return 503
+- The cron shell script checks the `/api/notifications/cron-enabled` endpoint before proceeding
 
 ## Security Considerations
 
@@ -347,10 +357,20 @@ Update notification preferences.
   ```
 - **Response:** `{ success: true, data: NotificationPreference }`
 
+#### GET `/api/notifications/cron-enabled`
+Lightweight pre-check for the cron shell script.
+- **Auth:** Not required (only returns a boolean)
+- **Response:** `{ enabled: true }` or `{ enabled: false }`
+
 #### POST `/api/notifications/cron`
 Trigger timer check (protected by `NOTIFICATION_CRON_SECRET`).
 - **Auth:** `Authorization: Bearer <NOTIFICATION_CRON_SECRET>`
 - **Response:** `{ success: true, data: { notificationsSent: number, subscriptionsCleaned: number, logsCleaned: number } }`
+
+#### POST `/api/notifications/generate-vapid`
+Generate a new VAPID keypair (does not auto-save).
+- **Auth:** Required (sysadmin account)
+- **Response:** `{ success: true, data: { publicKey: string, privateKey: string } }`
 
 #### GET `/api/notifications/status`
 Get notification system status (admin only).
@@ -449,9 +469,7 @@ The cleanup runs automatically, but you can trigger it manually by calling the c
 Notification logs older than the retention period (default: 30 days) are automatically deleted during cron execution.
 
 **Configure retention:**
-```bash
-NOTIFICATION_LOG_RETENTION_DAYS=60  # Keep logs for 60 days
-```
+Log retention days can be configured in the admin UI under App Configuration > Push Notifications (default: 30 days, range: 1-365).
 
 ### Manual Cleanup Procedures
 
@@ -503,9 +521,11 @@ For comprehensive debugging procedures, log locations, and troubleshooting guide
 ### Changes from Plan
 
 1. **Cron Setup:** Automated in Docker startup script instead of requiring manual setup
-2. **VAPID Key Generation:** Integrated into Docker startup for automatic generation
-3. **Logging Strategy:** Kept all console.log statements for testing (as requested)
-4. **Documentation Structure:** Split into main README and separate logging guide
+2. **VAPID Key Generation:** Auto-generated in the database during seeding (no env vars needed)
+3. **Database-Managed Config:** All notification settings (VAPID keys, enabled flag, log retention) are stored in the `NotificationConfig` DB table and managed via the admin UI, not env vars
+4. **Cron Pre-Check:** Shell script checks `/api/notifications/cron-enabled` endpoint before calling the cron API, respecting the DB-managed enabled flag
+5. **Logging Strategy:** Kept all console.log statements for testing (as requested)
+6. **Documentation Structure:** Split into main README and separate logging guide
 
 ### Testing Considerations
 

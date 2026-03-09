@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '../../types';
+import { isNotificationsEnabled, getNotificationConfig } from '../../../../src/lib/notifications/config';
 
 /**
  * GET handler for VAPID public key
@@ -8,7 +9,7 @@ import { ApiResponse } from '../../types';
  */
 export async function GET(req: NextRequest) {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
@@ -19,13 +20,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    const config = await getNotificationConfig();
+    const publicKey = config?.vapidPublicKey;
 
     if (!publicKey) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: 'VAPID keys are not configured. Please run setup to generate keys.',
+          error: 'VAPID keys are not configured. Configure them in App Configuration.',
         },
         { status: 500 }
       );

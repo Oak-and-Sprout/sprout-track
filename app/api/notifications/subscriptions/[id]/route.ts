@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../db';
 import { ApiResponse } from '../../../types';
 import { withAuthContext, AuthResult } from '../../../utils/auth';
+import { isNotificationsEnabled } from '../../../../../src/lib/notifications/config';
 
 /**
  * DELETE handler for removing a specific push subscription
@@ -12,7 +13,7 @@ async function handleDelete(
   authContext: AuthResult
 ) {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,

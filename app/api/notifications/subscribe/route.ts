@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../db';
 import { ApiResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
+import { isNotificationsEnabled } from '../../../../src/lib/notifications/config';
 
 /**
  * POST handler for subscribing to push notifications
@@ -9,8 +10,8 @@ import { withAuthContext, AuthResult } from '../../utils/auth';
  */
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
-    console.log('Push notifications disabled - ENABLE_NOTIFICATIONS is not true');
+  if (!(await isNotificationsEnabled())) {
+    console.log('Push notifications disabled');
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
@@ -183,7 +184,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
  */
 async function handleDelete(req: NextRequest, authContext: AuthResult) {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
