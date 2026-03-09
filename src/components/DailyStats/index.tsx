@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  Sun, 
-  Icon, 
-  Moon, 
-  Droplet, 
-  StickyNote, 
-  Utensils, 
-  Bath, 
-  Trophy, 
+import {
+  ChevronDown,
+  ChevronUp,
+  Sun,
+  Icon,
+  Moon,
+  Droplet,
+  StickyNote,
+  Utensils,
+  Bath,
+  Trophy,
   LampWallDown,
   Ruler,
   Scale,
@@ -102,7 +102,7 @@ const StatItem: React.FC<StatItemProps> = ({ icon, label, value }) => (
   </div>
 );
 
-export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoading = false }) => {
+export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoading = false, breastMilkBalance }) => {
   const { theme } = useTheme();
   const { t } = useLocalization();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -464,6 +464,7 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
               ...(bathCount !== '0' ? [{ icon: <Bath className="h-3 w-3 text-orange-500" />, label: "Baths", value: bathCount }] : []),
               ...(milestoneCount !== '0' ? [{ icon: <Trophy className="h-3 w-3 text-blue-500" />, label: "Milestones", value: milestoneCount }] : []),
               ...(pumpTotals !== 'None' ? [{ icon: <LampWallDown className="h-3 w-3 text-purple-500" />, label: "Pumped", value: pumpTotals }] : []),
+              ...(breastMilkBalance ? [{ icon: <LampWallDown className="h-3 w-3 text-purple-500" />, label: t('Breast Milk Stored'), value: breastMilkBalance }] : []),
               ...(medicineCounts.length > 0 ? medicineCounts.map(med => ({ 
                 icon: <PillBottle className="h-3 w-3 text-green-600" />, 
                 label: med.name, 
@@ -584,10 +585,17 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
                 />
               )}
               {pumpTotals !== 'None' && (
-                <StatItem 
-                  icon={<LampWallDown className="h-4 w-4 text-purple-500" />} 
-                  label="Pumped" 
-                  value={pumpTotals} 
+                <StatItem
+                  icon={<LampWallDown className="h-4 w-4 text-purple-500" />}
+                  label="Pumped"
+                  value={pumpTotals}
+                />
+              )}
+              {breastMilkBalance && (
+                <StatItem
+                  icon={<LampWallDown className="h-4 w-4 text-purple-500" />}
+                  label={t('Breast Milk Stored')}
+                  value={breastMilkBalance}
                 />
               )}
               {medicineCounts.length > 0 && medicineCounts.map((med, index) => (

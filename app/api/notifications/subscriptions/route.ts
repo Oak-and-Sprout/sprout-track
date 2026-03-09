@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../db';
 import { ApiResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
+import { isNotificationsEnabled } from '../../../../src/lib/notifications/config';
 
 /**
  * GET handler for listing push subscriptions
@@ -9,7 +10,7 @@ import { withAuthContext, AuthResult } from '../../utils/auth';
  */
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,

@@ -1,7 +1,7 @@
 import { Settings } from '@prisma/client';
-import { 
-  Moon, 
-  Icon, 
+import {
+  Moon,
+  Icon,
   Edit,
   Bath,
   LampWallDown,
@@ -24,6 +24,11 @@ export const getActivityIcon = (activity: ActivityType) => {
   if ('doseAmount' in activity && 'medicineId' in activity) {
     // Medicine log
     return <PillBottle className="h-4 w-4 text-white" />;
+  }
+  // Check for breast milk adjustment BEFORE pump (both have amount)
+  if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+    const amt = (activity as any).amount;
+    return <span className="text-sm font-bold text-white">{amt >= 0 ? '+' : '−'}</span>;
   }
   // Check for pump activities FIRST (before sleep) since they also have duration and startTime
   if ('leftAmount' in activity || 'rightAmount' in activity) {
@@ -86,7 +91,7 @@ export const getActivityTime = (activity: ActivityType): string => {
   return new Date().toLocaleString();
 };
 
-export const formatTime = (date: string, settings: Settings | null, includeDate: boolean = true) => {
+export const formatTime = (date: string, settings: Settings | null, includeDate: boolean = true, t?: (key: string) => string) => {
   if (!date) return 'Invalid Date';
 
   try {
@@ -108,10 +113,10 @@ export const formatTime = (date: string, settings: Settings | null, includeDate:
     const isToday = dateObj.toDateString() === today.toDateString();
     const isYesterday = dateObj.toDateString() === yesterday.toDateString();
 
-    const dateStr = isToday 
-      ? 'Today'
-      : isYesterday 
-      ? 'Yesterday'
+    const dateStr = isToday
+      ? (t ? t('Today') : 'Today')
+      : isYesterday
+      ? (t ? t('Yesterday') : 'Yesterday')
       : dateObj.toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -138,11 +143,11 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   if ('type' in activity) {
     if ('duration' in activity) {
       // For sleep activities, always show dates with times
-      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true) : t('unknown');
+      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true, t) : t('unknown');
       let endTime = t('ongoing');
       
       if (activity.endTime) {
-        endTime = formatTime(activity.endTime, settings, true);
+        endTime = formatTime(activity.endTime, settings, true, t);
       }
       
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
@@ -211,17 +216,25 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         }
       };
       const details = [
-        { label: t('Time'), value: formatTime(activity.time, settings) },
+        { label: t('Time'), value: formatTime(activity.time, settings, true, t) },
         { label: t('Type'), value: formatFeedType(activity.type) },
       ];
 
       // Show amount for bottle and solids - use unitAbbr instead of hardcoded units
       if (activity.amount && (activity.type === 'BOTTLE' || activity.type === 'SOLIDS')) {
         const unit = (activity as any).unitAbbr || (activity.type === 'BOTTLE' ? 'oz' : 'g');
-        details.push({ 
-          label: t('Amount'), 
-          value: `${activity.amount} ${unit}`
-        });
+        if ((activity as any).bottleType === 'Formula\\Breast' && (activity as any).breastMilkAmount != null) {
+          const bmAmt = (activity as any).breastMilkAmount;
+          const formulaAmt = Math.round((activity.amount - bmAmt) * 100) / 100;
+          details.push({ label: t('Breast Milk Amount'), value: `${bmAmt} ${unit}` });
+          details.push({ label: t('Formula Amount'), value: `${formulaAmt} ${unit}` });
+          details.push({ label: t('Total'), value: `${activity.amount} ${unit}` });
+        } else {
+          details.push({
+            label: t('Amount'),
+            value: `${activity.amount} ${unit}`
+          });
+        }
       }
 
       // Show side for breast feeds
@@ -297,7 +310,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         }
       };
       const details = [
-        { label: t('Time'), value: formatTime(activity.time, settings) },
+        { label: t('Time'), value: formatTime(activity.time, settings, true, t) },
         { label: t('Type'), value: formatDiaperType(activity.type) },
       ];
 
@@ -324,7 +337,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   }
   if ('content' in activity) {
     const noteDetails = [
-      { label: t('Time'), value: formatTime(activity.time, settings) },
+      { label: t('Time'), value: formatTime(activity.time, settings, true, t) },
       { label: t('Content'), value: activity.content },
       { label: t('Category'), value: activity.category || t('Not specified') },
     ];
@@ -336,7 +349,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   }
   if ('soapUsed' in activity) {
     const bathDetails = [
-      { label: t('Time'), value: formatTime(activity.time, settings) },
+      { label: t('Time'), value: formatTime(activity.time, settings, true, t) },
       { label: t('Soap Used'), value: activity.soapUsed ? t('Yes') : t('No') },
       { label: t('Shampoo Used'), value: activity.shampooUsed ? t('Yes') : t('No') },
     ];
@@ -351,55 +364,84 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     };
   }
   
+  // Breast milk adjustment
+  if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+    const adjDetails = [
+      { label: t('Time'), value: formatTime((activity as any).time, settings, true, t) },
+      { label: t('Amount'), value: `${(activity as any).amount > 0 ? '+' : ''}${(activity as any).amount} ${(activity as any).unitAbbr || 'oz'}` },
+    ];
+    if ((activity as any).reason) {
+      adjDetails.push({ label: t('Reason'), value: t((activity as any).reason) });
+    }
+    if ((activity as any).notes) {
+      adjDetails.push({ label: t('Notes'), value: (activity as any).notes });
+    }
+    return {
+      title: t('Breast Milk Adjustment'),
+      details: [...adjDetails, ...caretakerDetail],
+    };
+  }
+
   // Pump activity
   if ('leftAmount' in activity || 'rightAmount' in activity) {
     const pumpDetails = [];
-    
+
     // Type guard to ensure TypeScript knows this is a pump activity
-    const isPumpActivity = (act: any): act is { 
-      startTime?: string; 
-      endTime?: string | null; 
-      leftAmount?: number; 
-      rightAmount?: number; 
-      totalAmount?: number; 
+    const isPumpActivity = (act: any): act is {
+      startTime?: string;
+      endTime?: string | null;
+      leftAmount?: number;
+      rightAmount?: number;
+      totalAmount?: number;
       unit?: string;
+      pumpAction?: string;
       notes?: string;
     } => {
       return 'leftAmount' in act || 'rightAmount' in act;
     };
-    
+
     if (isPumpActivity(activity)) {
       // Add start time
       if (activity.startTime) {
-        pumpDetails.push({ label: t('Start Time'), value: formatTime(activity.startTime, settings) });
+        pumpDetails.push({ label: t('Start Time'), value: formatTime(activity.startTime, settings, true, t) });
       }
-      
+
       // Add end time if available
       if (activity.endTime) {
-        pumpDetails.push({ label: t('End Time'), value: formatTime(activity.endTime, settings) });
+        pumpDetails.push({ label: t('End Time'), value: formatTime(activity.endTime, settings, true, t) });
       }
-      
+
       // Add left amount if available
       if (activity.leftAmount) {
         pumpDetails.push({ label: t('Left Breast'), value: `${activity.leftAmount} ${activity.unit || 'oz'}` });
       }
-      
+
       // Add right amount if available
       if (activity.rightAmount) {
         pumpDetails.push({ label: t('Right Breast'), value: `${activity.rightAmount} ${activity.unit || 'oz'}` });
       }
-      
+
       // Add total amount if available
       if (activity.totalAmount) {
         pumpDetails.push({ label: t('Total Amount'), value: `${activity.totalAmount} ${activity.unit || 'oz'}` });
       }
-      
+
+      // Show pump action
+      if (activity.pumpAction) {
+        const actionLabels: Record<string, string> = {
+          'STORED': t('Stored'),
+          'FED': t('Fed'),
+          'DISCARDED': t('Discarded'),
+        };
+        pumpDetails.push({ label: t('Action'), value: actionLabels[activity.pumpAction] || activity.pumpAction });
+      }
+
       // Add notes if available
       if (activity.notes) {
         pumpDetails.push({ label: t('Notes'), value: activity.notes });
       }
     }
-    
+
     return {
       title: t('Breast Pumping Record'),
       details: [...pumpDetails, ...caretakerDetail],
@@ -420,7 +462,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     };
 
     const milestoneDetails = [
-      { label: t('Date'), value: formatTime(activity.date, settings) },
+      { label: t('Date'), value: formatTime(activity.date, settings, true, t) },
       { label: t('Title'), value: activity.title },
       { label: t('Category'), value: formatMilestoneCategory(activity.category) },
     ];
@@ -468,7 +510,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     };
 
     const measurementDetails = [
-      { label: t('Date'), value: formatTime(activity.date, settings) },
+      { label: t('Date'), value: formatTime(activity.date, settings, true, t) },
       { label: t('Type'), value: formatMeasurementType(activity.type) },
       { label: t('Value'), value: `${activity.value} ${activity.unit}` },
     ];
@@ -494,7 +536,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       medName = (activity.medicine as { name?: string }).name || medName;
     }
     const dose = activity.doseAmount ? `${activity.doseAmount} ${activity.unitAbbr || ''}`.trim() : '';
-    const medTime = formatTime(activity.time, settings, true);
+    const medTime = formatTime(activity.time, settings, true, t);
     let notes = activity.notes ? activity.notes : '';
     if (notes.length > 50) notes = notes.substring(0, 50) + '...';
     return {
@@ -504,8 +546,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
   }
   if ('type' in activity) {
     if ('duration' in activity) {
-      const startTimeFormatted = activity.startTime ? formatTime(activity.startTime, settings, true) : t('unknown');
-      const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true) : t('ongoing');
+      const startTimeFormatted = activity.startTime ? formatTime(activity.startTime, settings, true, t) : t('unknown');
+      const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true, t) : t('ongoing');
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
       
       // Format location
@@ -581,19 +623,28 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       } else if (activity.type === 'BOTTLE') {
         // Use unitAbbr instead of hardcoded 'oz'
         const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
-        details = `${activity.amount || t('unknown')} ${unit}`;
-        
-        // Add bottle type if available
-        if ((activity as any).bottleType) {
+
+        if ((activity as any).bottleType === 'Formula\\Breast' && (activity as any).breastMilkAmount != null) {
+          const bmAmt = (activity as any).breastMilkAmount;
+          const formulaAmt = Math.round((((activity as any).amount || 0) - bmAmt) * 100) / 100;
+          details = `${bmAmt} ${unit} ${t('BM')} + ${formulaAmt} ${unit} ${t('Formula')}`;
+        } else {
+          details = `${activity.amount || t('unknown')} ${unit}`;
+        }
+
+        // Add bottle type if available (skip for mixed since already shown above)
+        if ((activity as any).bottleType && (activity as any).bottleType !== 'Formula\\Breast') {
           const bottleType = (activity as any).bottleType.replace('\\', '/');
           details += ` (${bottleType})`;
+        } else if ((activity as any).bottleType === 'Formula\\Breast' && !(activity as any).breastMilkAmount) {
+          details += ` (${t('Formula/Breast')})`;
         }
       } else if (activity.type === 'SOLIDS') {
         // Use unitAbbr instead of hardcoded 'g'
         const unit = ((activity as any).unitAbbr || 'g').toLowerCase();
         details = `${activity.amount || t('unknown')} ${unit}`;
         if (activity.food) {
-          details += ` of ${activity.food}`;
+          details += ` ${t('of')} ${activity.food}`;
         }
       }
       
@@ -604,7 +655,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
         details = details ? `${details} - ${truncatedNotes}` : truncatedNotes;
       }
       
-      const time = formatTime(activity.time, settings, true);
+      const time = formatTime(activity.time, settings, true, t);
       return {
         type: formatFeedType(activity.type),
         details: `${details} - ${time}`
@@ -657,7 +708,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       // Add blowout information for all diaper types
       const blowoutText = activity.blowout ? ` - ${t('Blowout/Leakage')}` : '';
 
-      const time = formatTime(activity.time, settings, true);
+      const time = formatTime(activity.time, settings, true, t);
       return {
         type: formatDiaperType(activity.type),
         details: `${details}${time}${blowoutText}`
@@ -665,7 +716,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     }
   }
   if ('content' in activity) {
-    const time = formatTime(activity.time, settings, true);
+    const time = formatTime(activity.time, settings, true, t);
     const truncatedContent = activity.content.length > 50 ? activity.content.substring(0, 50) + '...' : activity.content;
     return {
       type: activity.category || t('Note'),
@@ -673,7 +724,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     };
   }
   if ('soapUsed' in activity) {
-    const time = formatTime(activity.time, settings, true);
+    const time = formatTime(activity.time, settings, true, t);
     let bathDetails = '';
     
     // Determine bath details based on soap and shampoo usage
@@ -700,29 +751,41 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     };
   }
   
+  // Breast milk adjustment description
+  if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+    const amt = (activity as any).amount;
+    const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
+    const reason = (activity as any).reason ? ` (${t((activity as any).reason)})` : '';
+    const time = formatTime((activity as any).time, settings, true, t);
+    return {
+      type: t('Breast Milk Adjustment'),
+      details: `${amt > 0 ? '+' : ''}${amt} ${unit}${reason} - ${time}`
+    };
+  }
+
   if ('leftAmount' in activity || 'rightAmount' in activity) {
     // Type guard to ensure TypeScript knows this is a pump activity
-    const isPumpActivity = (act: any): act is { 
-      startTime?: string; 
-      endTime?: string | null; 
-      leftAmount?: number; 
-      rightAmount?: number; 
-      totalAmount?: number; 
+    const isPumpActivity = (act: any): act is {
+      startTime?: string;
+      endTime?: string | null;
+      leftAmount?: number;
+      rightAmount?: number;
+      totalAmount?: number;
       unit?: string;
       duration?: number;
+      pumpAction?: string;
     } => {
       return 'leftAmount' in act || 'rightAmount' in act;
     };
-    
+
     if (isPumpActivity(activity)) {
-      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true) : t('unknown');
+      const startTime = activity.startTime ? formatTime(activity.startTime, settings, true, t) : t('unknown');
       let details = startTime;
-      
+
       // Add duration if available
       if (activity.duration) {
         details += ` ${formatDuration(activity.duration)}`;
       } else if (activity.startTime && activity.endTime) {
-        // Calculate duration if not explicitly provided
         const start = new Date(activity.startTime).getTime();
         const end = new Date(activity.endTime).getTime();
         const durationMinutes = Math.floor((end - start) / 60000);
@@ -730,17 +793,23 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
           details += ` ${formatDuration(durationMinutes)}`;
         }
       }
-      
+
       // Always show left, right, and total amounts when available
       const amountDetails = [];
       if (activity.leftAmount) amountDetails.push(`${t('Left')}: ${activity.leftAmount} ${activity.unit || 'oz'}`);
       if (activity.rightAmount) amountDetails.push(`${t('Right')}: ${activity.rightAmount} ${activity.unit || 'oz'}`);
       if (activity.totalAmount) amountDetails.push(`${t('Total Amount')}: ${activity.totalAmount} ${activity.unit || 'oz'}`);
-      
+
       if (amountDetails.length > 0) {
         details += ` - ${amountDetails.join(', ')}`;
       }
-      
+
+      // Add pump action label
+      if (activity.pumpAction && activity.pumpAction !== 'STORED') {
+        const actionLabels: Record<string, string> = { 'FED': t('Fed'), 'DISCARDED': t('Discarded') };
+        details += ` [${actionLabels[activity.pumpAction] || activity.pumpAction}]`;
+      }
+
       return {
         type: t('Breast Pumping'),
         details
@@ -761,7 +830,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       }
     };
     
-    const date = formatTime(activity.date, settings, true);
+    const date = formatTime(activity.date, settings, true, t);
     const category = formatMilestoneCategory(activity.category);
     
     // Format title with label
@@ -794,7 +863,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       }
     };
     
-    const date = formatTime(activity.date, settings, true);
+    const date = formatTime(activity.date, settings, true, t);
     
     return {
       type: formatMeasurementType(activity.type),
@@ -809,6 +878,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 };
 
 export const getActivityEndpoint = (activity: ActivityType): string => {
+  // Check for breast milk adjustment before pump
+  if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) return 'breast-milk-adjustment';
   // Check for pump activity first since it can also have duration
   if ('leftAmount' in activity || 'rightAmount' in activity) return 'pump-log';
   if ('duration' in activity) return 'sleep-log';
@@ -831,6 +902,13 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
     // Medicine log: pill bottle green
     return {
       bg: 'bg-[#43B755]',
+      textColor: 'text-white',
+    };
+  }
+  // Breast milk adjustment style
+  if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+    return {
+      bg: 'bg-gradient-to-r from-purple-200 to-purple-300',
       textColor: 'text-white',
     };
   }

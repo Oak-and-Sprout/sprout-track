@@ -15,13 +15,13 @@ import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
-import { PumpLogResponse } from '@/app/api/types';
+import { PumpLogResponse, BreastMilkAdjustmentResponse } from '@/app/api/types';
 
 const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
   
@@ -30,10 +30,35 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
   const [isFetchAnimated, setIsFetchAnimated] = useState<boolean>(true);
+  const [breastMilkBalance, setBreastMilkBalance] = useState<string | undefined>(undefined);
   const lastRefreshTimestamp = useRef<number>(Date.now());
   const wasIdle = useRef<boolean>(false);
 
   const babyId = useMemo(() => (activities.length > 0 ? activities[0].babyId : undefined), [activities]);
+
+  const fetchBreastMilkBalance = async (babyId: string) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=OZ`, {
+        headers: {
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          const balance = data.data.balance;
+          if (balance > 0) {
+            setBreastMilkBalance(`${balance} ${data.data.unit.toLowerCase()}`);
+          } else {
+            setBreastMilkBalance(undefined);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching breast milk balance:', error);
+    }
+  };
 
   const fetchActivitiesForDate = async (babyId: string, date: Date, isAnimated: boolean) => {
     setIsFetchAnimated(isAnimated);
@@ -144,6 +169,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
 
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
+      fetchBreastMilkBalance(babyId);
     }
 
     if (onActivityDeleted) {
@@ -193,6 +219,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
       fetchHeatmapActivitiesForWindow(babyId, selectedDate);
+      fetchBreastMilkBalance(babyId);
     } else {
       setDateFilteredActivities(activities);
       setHeatmapActivities(activities);
@@ -261,6 +288,8 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
               return 'soapUsed' in activity;
             case 'pump':
               return 'leftAmount' in activity || 'rightAmount' in activity;
+            case 'breast-milk-adjustment':
+              return 'reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity);
             case 'milestone':
               return 'title' in activity && 'category' in activity;
             case 'measurement':
@@ -301,7 +330,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -320,6 +349,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
         onFilterChange={handleFilterChange}
         isHeatmapVisible={isHeatmapVisible}
         onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
+        breastMilkBalance={breastMilkBalance}
       />
 
       {/* Activity List + Right-side Heatmap */}
@@ -403,7 +433,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             onSuccess={handleFormSuccess}
           />
           <PumpForm
-            isOpen={editModalType === 'pump'}
+            isOpen={editModalType === 'pump' || editModalType === 'breast-milk-adjustment'}
             onClose={() => {
               setEditModalType(null);
               setSelectedActivity(null);
@@ -411,9 +441,14 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             babyId={selectedActivity.babyId}
             initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
             activity={
-              ('leftAmount' in selectedActivity || 'rightAmount' in selectedActivity) ? 
-                (selectedActivity as unknown as PumpLogResponse) : 
+              ('leftAmount' in selectedActivity || 'rightAmount' in selectedActivity) ?
+                (selectedActivity as unknown as PumpLogResponse) :
                 undefined
+            }
+            adjustmentActivity={
+              editModalType === 'breast-milk-adjustment' && 'reason' in selectedActivity
+                ? (selectedActivity as unknown as BreastMilkAdjustmentResponse)
+                : undefined
             }
             onSuccess={handleFormSuccess}
           />

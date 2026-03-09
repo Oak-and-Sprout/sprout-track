@@ -45,6 +45,12 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       totalAmount = (body.leftAmount || 0) + (body.rightAmount || 0);
     }
     
+    // Validate pumpAction
+    const pumpAction = body.pumpAction || 'STORED';
+    if (!['STORED', 'FED', 'DISCARDED'].includes(pumpAction)) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid pump action. Must be STORED, FED, or DISCARDED.' }, { status: 400 });
+    }
+
     const pumpLog = await prisma.pumpLog.create({
       data: {
         babyId: body.babyId,
@@ -55,11 +61,33 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         rightAmount: body.rightAmount,
         totalAmount,
         unitAbbr: body.unitAbbr,
+        pumpAction,
         notes: body.notes,
         caretakerId: caretakerId,
         familyId: userFamilyId,
       },
     });
+
+    // If pump action is "FED", auto-create a bottle feed log
+    if (pumpAction === 'FED' && totalAmount) {
+      try {
+        await prisma.feedLog.create({
+          data: {
+            time: startTimeUTC,
+            type: 'BOTTLE',
+            amount: totalAmount,
+            unitAbbr: body.unitAbbr || 'OZ',
+            bottleType: 'Breast Milk',
+            notes: body.notes ? `Auto-created from pump: ${body.notes}` : 'Auto-created from pump session',
+            babyId: body.babyId,
+            caretakerId: caretakerId,
+            familyId: userFamilyId,
+          },
+        });
+      } catch (feedError) {
+        console.error('Error auto-creating feed log from pump:', feedError);
+      }
+    }
 
     // Format dates as ISO strings for response
     const response: PumpLogResponse = {
@@ -72,7 +100,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(pumpLog.babyId, 'pump').catch(console.error);
+    notifyActivityCreated(pumpLog.babyId, 'pump', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }).catch(console.error);
 
     return NextResponse.json<ApiResponse<PumpLogResponse>>({
       success: true,
@@ -169,6 +197,12 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     if (body.unitAbbr !== undefined) data.unitAbbr = body.unitAbbr;
     if (body.notes !== undefined) data.notes = body.notes;
     if (body.babyId !== undefined) data.babyId = body.babyId;
+    if (body.pumpAction !== undefined) {
+      if (!['STORED', 'FED', 'DISCARDED'].includes(body.pumpAction)) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid pump action. Must be STORED, FED, or DISCARDED.' }, { status: 400 });
+      }
+      data.pumpAction = body.pumpAction;
+    }
 
     const pumpLog = await prisma.pumpLog.update({
       where: { id },

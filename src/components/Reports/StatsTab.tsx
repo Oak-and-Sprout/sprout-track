@@ -137,6 +137,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
           noteCount: 0,
           milestoneCount: 0,
           measurementCount: 0,
+          breastMilkAdjustmentCount: 0,
+          breastMilkAdjustmentNet: 0,
           medicines: [],
         },
         pump: {
@@ -199,6 +201,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
     let noteCount = 0;
     let milestoneCount = 0;
     let measurementCount = 0;
+    let breastMilkAdjustmentCount = 0;
+    let breastMilkAdjustmentNet = 0;
     const medicineMap: Record<string, { count: number; total: number; unit: string }> = {};
     let totalPumpDurationMinutes = 0;
     let totalLeftPumpAmount = 0;
@@ -449,6 +453,12 @@ const StatsTab: React.FC<StatsTabProps> = ({
         medicineMap[medicineName].count++;
         medicineMap[medicineName].total += medActivity.doseAmount || 0;
       }
+
+      // Breast milk adjustment activities
+      if ('reason' in activity && 'amount' in activity && !('doseAmount' in activity) && !('type' in activity)) {
+        breastMilkAdjustmentCount++;
+        breastMilkAdjustmentNet += (activity as any).amount || 0;
+      }
     });
 
     // Calculate averages
@@ -568,6 +578,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
         noteCount,
         milestoneCount,
         measurementCount,
+        breastMilkAdjustmentCount,
+        breastMilkAdjustmentNet,
         medicines,
       },
       pump: {

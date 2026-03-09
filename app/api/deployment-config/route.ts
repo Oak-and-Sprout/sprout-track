@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '../types';
+import { isNotificationsEnabled } from '../../../src/lib/notifications/config';
 
 /**
  * GET handler for deployment configuration
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<an
       enableAccounts: process.env.ENABLE_ACCOUNTS === 'true',
       allowAccountRegistration: process.env.ALLOW_ACCOUNT_REGISTRATION === 'true',
       betaEnabled: process.env.BETA === '1',
-      notificationsEnabled: process.env.ENABLE_NOTIFICATIONS === 'true',
+      notificationsEnabled: await isNotificationsEnabled(),
     };
 
     return NextResponse.json<ApiResponse<typeof config>>({

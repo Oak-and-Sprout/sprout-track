@@ -48,6 +48,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       ...(body.endTime && { endTime: toUTC(body.endTime) }),
       ...(body.feedDuration !== undefined && { feedDuration: body.feedDuration }),
       ...(body.amount !== undefined && { amount: body.amount }),
+      ...(body.breastMilkAmount !== undefined && { breastMilkAmount: body.breastMilkAmount }),
       ...(body.unitAbbr && { unitAbbr: body.unitAbbr }),
       ...(body.side && { side: body.side }),
       ...(body.food && { food: body.food }),
@@ -71,7 +72,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(feedLog.babyId, 'feed', { type: body.type }).catch(console.error);
+    notifyActivityCreated(feedLog.babyId, 'feed', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { type: body.type }).catch(console.error);
     resetTimerNotificationState(feedLog.babyId, 'feed').catch(console.error);
 
     return NextResponse.json<ApiResponse<FeedLogResponse>>({
@@ -149,8 +150,9 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       // Handle notes and bottleType - convert empty strings to null
       notes: body.notes && body.notes.trim() ? body.notes : null,
       ...(body.bottleType && body.bottleType.trim() ? { bottleType: body.bottleType } : { bottleType: null }),
+      ...(body.breastMilkAmount !== undefined ? { breastMilkAmount: body.breastMilkAmount } : {}),
       ...Object.entries(body)
-        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'familyId'].includes(key))
+        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'breastMilkAmount', 'familyId'].includes(key))
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
     };
 

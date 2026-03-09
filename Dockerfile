@@ -1,12 +1,11 @@
 # Use Node.js LTS as the base image
 FROM node:22-alpine
 
-# Build arguments for notification features
-ARG ENABLE_NOTIFICATIONS=false
-ARG BUILD_NOTIFICATIONS=false
+# Build argument for notification features
+ARG ENABLE_NOTIFICATIONS=true
 
 # Install tzdata package for timezone support, openssl for ENC_HASH generation, and dcron for notifications
-RUN apk add --no-cache tzdata openssl dcron
+RUN apk add --no-cache tzdata openssl dcron curl
 
 # Set working directory
 WORKDIR /app
@@ -30,12 +29,16 @@ RUN npm run prisma:generate && \
 # Copy application files
 COPY . .
 
-# Conditionally set up notification files and directories if BUILD_NOTIFICATIONS is true
-RUN if [ "$BUILD_NOTIFICATIONS" = "true" ]; then \
+# Conditionally set up notification files and directories if ENABLE_NOTIFICATIONS is true
+RUN if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then \
       echo "Notification features enabled - setting up notification infrastructure..." && \
       mkdir -p /app/logs && \
       chmod 755 /app/logs && \
-      echo "Notification logs directory created"; \
+      echo "Notification logs directory created" && \
+      # Fix line endings and permissions on cron script for Alpine
+      sed -i 's/\r$//' /app/scripts/run-notification-cron.sh && \
+      chmod +x /app/scripts/run-notification-cron.sh && \
+      echo "Notification cron script prepared"; \
     else \
       echo "Notification features disabled - skipping notification setup"; \
     fi
@@ -52,7 +55,7 @@ RUN mkdir -p /app/env && \
     echo "TZ=UTC" >> /app/env/.env && \
     echo "AUTH_LIFE=86400" >> /app/env/.env && \
     echo "IDLE_TIME=28800" >> /app/env/.env && \
-    echo "APP_VERSION=0.97.2" >> /app/env/.env && \
+    echo "APP_VERSION=0.98.0" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
     echo "Base .env file created (ENC_HASH will be generated at startup)" && \
     # Create symlink so Next.js can find the env file at build time and runtime

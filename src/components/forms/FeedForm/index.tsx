@@ -69,6 +69,8 @@ export default function FeedForm({
     food: '',
     notes: '',
     bottleType: '',
+    breastMilkAmount: '',
+    formulaAmount: '',
     feedDuration: 0, // Duration in seconds for breastfeeding timer
     leftDuration: 0, // Duration in seconds for left breast
     rightDuration: 0, // Duration in seconds for right breast
@@ -97,10 +99,16 @@ export default function FeedForm({
       
       const data = await response.json();
       if (data.success && data.data?.amount) {
+        const lastBottleType = data.data.bottleType || '';
+        const lastBmAmount = data.data.breastMilkAmount;
         setFormData(prev => ({
           ...prev,
           amount: data.data.amount.toString(),
-          unit: data.data.unitAbbr || prev.unit
+          unit: data.data.unitAbbr || prev.unit,
+          ...(lastBottleType === 'Formula\\Breast' && lastBmAmount != null ? {
+            breastMilkAmount: lastBmAmount.toString(),
+            formulaAmount: (data.data.amount - lastBmAmount).toString(),
+          } : {}),
         }));
       }
     } catch (error) {
@@ -233,17 +241,23 @@ export default function FeedForm({
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const formattedTime = `${year}-${month}-${day}T${hours}:${minutes}`;
       
+      const activityBottleType = (activity as any).bottleType || '';
+      const activityBmAmount = (activity as any).breastMilkAmount;
       setFormData({
         time: formattedTime, // Add the time property
         type: activity.type,
         amount: activity.amount?.toString() || '',
-        unit: activity.unitAbbr || 
-          (activity.type === 'BOTTLE' ? defaultSettings.defaultBottleUnit : 
+        unit: activity.unitAbbr ||
+          (activity.type === 'BOTTLE' ? defaultSettings.defaultBottleUnit :
            activity.type === 'SOLIDS' ? defaultSettings.defaultSolidsUnit : ''),
         side: activity.side || '',
         food: activity.food || '',
         notes: (activity as any).notes || '',
-        bottleType: (activity as any).bottleType || '',
+        bottleType: activityBottleType,
+        breastMilkAmount: activityBottleType === 'Formula\\Breast' && activityBmAmount != null
+          ? activityBmAmount.toString() : '',
+        formulaAmount: activityBottleType === 'Formula\\Breast' && activityBmAmount != null && activity.amount != null
+          ? (activity.amount - activityBmAmount).toString() : '',
         feedDuration: feedDuration,
         leftDuration: activity.side === 'LEFT' ? feedDuration : 0,
         rightDuration: activity.side === 'RIGHT' ? feedDuration : 0,
@@ -345,6 +359,46 @@ export default function FeedForm({
     }
   };
 
+  const handleBreastMilkAmountChange = (newAmount: string) => {
+    if (newAmount === '' || /^\d*\.?\d*$/.test(newAmount)) {
+      setFormData(prev => ({ ...prev, breastMilkAmount: newAmount }));
+    }
+  };
+
+  const handleFormulaAmountChange = (newAmount: string) => {
+    if (newAmount === '' || /^\d*\.?\d*$/.test(newAmount)) {
+      setFormData(prev => ({ ...prev, formulaAmount: newAmount }));
+    }
+  };
+
+  const incrementBreastMilkAmount = () => {
+    const current = parseFloat(formData.breastMilkAmount || '0');
+    const step = formData.unit === 'ML' ? 5 : 0.5;
+    setFormData(prev => ({ ...prev, breastMilkAmount: (current + step).toFixed(formData.unit === 'ML' ? 0 : 1) }));
+  };
+
+  const decrementBreastMilkAmount = () => {
+    const current = parseFloat(formData.breastMilkAmount || '0');
+    const step = formData.unit === 'ML' ? 5 : 0.5;
+    if (current >= step) {
+      setFormData(prev => ({ ...prev, breastMilkAmount: (current - step).toFixed(formData.unit === 'ML' ? 0 : 1) }));
+    }
+  };
+
+  const incrementFormulaAmount = () => {
+    const current = parseFloat(formData.formulaAmount || '0');
+    const step = formData.unit === 'ML' ? 5 : 0.5;
+    setFormData(prev => ({ ...prev, formulaAmount: (current + step).toFixed(formData.unit === 'ML' ? 0 : 1) }));
+  };
+
+  const decrementFormulaAmount = () => {
+    const current = parseFloat(formData.formulaAmount || '0');
+    const step = formData.unit === 'ML' ? 5 : 0.5;
+    if (current >= step) {
+      setFormData(prev => ({ ...prev, formulaAmount: (current - step).toFixed(formData.unit === 'ML' ? 0 : 1) }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!babyId) return;
@@ -389,9 +443,18 @@ export default function FeedForm({
     }
 
     // For bottle feeding, validate amount
-    if (formData.type === 'BOTTLE' && (!formData.amount || parseFloat(formData.amount) <= 0)) {
-      setValidationError(t('Please enter a valid amount for bottle feeding'));
-      return;
+    if (formData.type === 'BOTTLE') {
+      if (formData.bottleType === 'Formula\\Breast') {
+        const bmAmt = parseFloat(formData.breastMilkAmount || '0');
+        const fAmt = parseFloat(formData.formulaAmount || '0');
+        if (bmAmt <= 0 || fAmt <= 0) {
+          setValidationError(t('Please enter valid amounts for both breast milk and formula'));
+          return;
+        }
+      } else if (!formData.amount || parseFloat(formData.amount) <= 0) {
+        setValidationError(t('Please enter a valid amount for bottle feeding'));
+        return;
+      }
     }
 
     // For solids feeding, validate amount
@@ -440,6 +503,8 @@ export default function FeedForm({
         food: '',
         notes: '',
         bottleType: '',
+        breastMilkAmount: '',
+        formulaAmount: '',
         feedDuration: 0,
         leftDuration: 0,
         rightDuration: 0,
@@ -510,9 +575,14 @@ export default function FeedForm({
         ...(endTime && { endTime: toUTCString(endTime) }),
         feedDuration: duration
       }),
-      ...((formData.type === 'BOTTLE' || formData.type === 'SOLIDS') && formData.amount && { 
-        amount: parseFloat(formData.amount),
-        unitAbbr: formData.unit // This should correctly send 'TBSP' or 'G'
+      ...((formData.type === 'BOTTLE' || formData.type === 'SOLIDS') && {
+        amount: formData.type === 'BOTTLE' && formData.bottleType === 'Formula\\Breast'
+          ? parseFloat(formData.breastMilkAmount || '0') + parseFloat(formData.formulaAmount || '0')
+          : parseFloat(formData.amount),
+        unitAbbr: formData.unit,
+      }),
+      ...(formData.type === 'BOTTLE' && formData.bottleType === 'Formula\\Breast' && {
+        breastMilkAmount: parseFloat(formData.breastMilkAmount || '0'),
       }),
       ...(formData.type === 'SOLIDS' && formData.food && { food: formData.food }),
       ...(formData.type === 'BOTTLE' && formData.bottleType && { bottleType: formData.bottleType }),
@@ -663,6 +733,8 @@ export default function FeedForm({
       food: '',
       notes: '',
       bottleType: '',
+      breastMilkAmount: '',
+      formulaAmount: '',
       feedDuration: 0,
       leftDuration: 0,
       rightDuration: 0,
@@ -819,10 +891,18 @@ export default function FeedForm({
                 loading={loading}
                 onAmountChange={handleAmountChange}
                 onUnitChange={(unit) => setFormData(prev => ({ ...prev, unit }))}
-                onBottleTypeChange={(bottleType) => setFormData(prev => ({ ...prev, bottleType }))}
+                onBottleTypeChange={(bottleType) => setFormData(prev => ({ ...prev, bottleType, breastMilkAmount: '', formulaAmount: '' }))}
                 onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
                 onIncrement={incrementAmount}
                 onDecrement={decrementAmount}
+                breastMilkAmount={formData.breastMilkAmount}
+                formulaAmount={formData.formulaAmount}
+                onBreastMilkAmountChange={handleBreastMilkAmountChange}
+                onFormulaAmountChange={handleFormulaAmountChange}
+                onBreastMilkIncrement={incrementBreastMilkAmount}
+                onBreastMilkDecrement={decrementBreastMilkAmount}
+                onFormulaIncrement={incrementFormulaAmount}
+                onFormulaDecrement={decrementFormulaAmount}
               />
             )}
             

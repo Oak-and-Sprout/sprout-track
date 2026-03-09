@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 
 # Script to trigger notification cron check via API
 # This script is called by system cron every minute
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Load environment variables from .env file if it exists
@@ -14,14 +14,6 @@ if [ -f "$PROJECT_DIR/.env" ]; then
   source "$PROJECT_DIR/.env" 2>/dev/null || true
   set +a
 fi
-
-# Check if notifications are enabled
-if [ "$ENABLE_NOTIFICATIONS" != "true" ]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Notifications disabled, skipping" >&2
-  exit 0  # Silently exit if notifications are disabled
-fi
-
-echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Starting notification check..."
 
 # Check if cron secret is set
 if [ -z "$NOTIFICATION_CRON_SECRET" ]; then
@@ -44,6 +36,15 @@ else
   # Default to localhost for development
   API_URL="http://localhost:3000"
 fi
+
+# Check if notifications are enabled via lightweight DB-backed endpoint
+ENABLED_RESPONSE=$(curl -s --max-time 5 "$API_URL/api/notifications/cron-enabled" 2>/dev/null)
+ENABLED=$(echo "$ENABLED_RESPONSE" | grep -o '"enabled":true')
+if [ -z "$ENABLED" ]; then
+  exit 0  # Silently exit — notifications disabled or app unreachable
+fi
+
+echo "$(date '+%Y-%m-%d %H:%M:%S'): [Cron] Starting notification check..."
 
 # Construct full endpoint URL
 ENDPOINT_URL="$API_URL/api/notifications/cron"

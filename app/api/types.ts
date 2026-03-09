@@ -1,4 +1,4 @@
-import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType } from '@prisma/client';
+import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment } from '@prisma/client';
 
 // Family types
 export interface Family {
@@ -115,6 +115,7 @@ export interface FeedLogCreate {
   feedDuration?: number; // Duration in seconds for feeding time
   notes?: string;
   bottleType?: string;
+  breastMilkAmount?: number;
 }
 
 // Diaper log types
@@ -242,7 +243,31 @@ export interface PumpLogCreate {
   rightAmount?: number;
   totalAmount?: number;
   unitAbbr?: string;
+  pumpAction?: string; // "STORED" | "FED" | "DISCARDED"
   notes?: string;
+}
+
+// Breast milk adjustment types
+export type BreastMilkAdjustmentResponse = Omit<BreastMilkAdjustment, 'time' | 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  time: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export interface BreastMilkAdjustmentCreate {
+  babyId: string;
+  time: string;
+  amount: number; // Positive = add, negative = remove
+  unitAbbr?: string;
+  reason?: string; // "Initial Stock", "Expired", "Spilled", "Donated", "Other"
+  notes?: string;
+}
+
+// Breast milk balance response
+export interface BreastMilkBalanceResponse {
+  balance: number;
+  unit: string;
 }
 
 // Milestone types

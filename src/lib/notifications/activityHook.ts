@@ -5,6 +5,7 @@ import {
   NotificationPayload,
 } from './push';
 import { t, DEFAULT_LANGUAGE } from './i18n';
+import { isNotificationsEnabled } from './config';
 
 /**
  * Activity type mapping for consistent naming
@@ -41,18 +42,29 @@ function getActivityTypeName(activityType: string): string {
 }
 
 /**
+ * Identity of the user who performed the action, used to exclude
+ * them from receiving a notification about their own activity.
+ */
+interface ActingUser {
+  accountId?: string | null;
+  caretakerId?: string | null;
+}
+
+/**
  * Notify subscribers when an activity is created
  * @param babyId - The baby ID for the activity
  * @param activityType - Type of activity (feed, diaper, sleep, etc.)
+ * @param actingUser - The user who performed the action (excluded from notifications)
  * @param activityData - Optional additional activity data
  */
 export async function notifyActivityCreated(
   babyId: string,
   activityType: string,
+  actingUser?: ActingUser,
   activityData?: any
 ): Promise<void> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return; // No-op if disabled
   }
 
@@ -110,8 +122,19 @@ export async function notifyActivityCreated(
       }
     });
 
+    // Exclude the acting user's subscriptions so they don't get notified about their own action
+    const filteredPreferences = actingUser
+      ? matchingPreferences.filter((pref) => {
+          const sub = pref.subscription;
+          if (!sub) return true;
+          if (actingUser.accountId && sub.accountId === actingUser.accountId) return false;
+          if (actingUser.caretakerId && sub.caretakerId === actingUser.caretakerId) return false;
+          return true;
+        })
+      : matchingPreferences;
+
     // Send notifications to all matching preferences
-    for (const preference of matchingPreferences) {
+    for (const preference of filteredPreferences) {
       if (!preference.subscription) {
         continue;
       }
@@ -183,7 +206,7 @@ export async function resetTimerNotificationState(
   activityType: string
 ): Promise<void> {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return; // No-op if disabled
   }
 

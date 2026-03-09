@@ -105,7 +105,10 @@ VAPID_SUBJECT="${subject}"
 }
 
 async function main() {
-  console.log('Checking for VAPID keys...\n');
+  console.log('NOTE: VAPID keys are now auto-generated in the database during seeding.');
+  console.log('Manage VAPID keys via App Configuration in the admin UI.');
+  console.log('This script writes to .env only and is kept for legacy/manual use.\n');
+  console.log('Checking for VAPID keys in .env...\n');
 
   const envContent = readEnvFile();
   const subject = getVapidSubject(envContent);

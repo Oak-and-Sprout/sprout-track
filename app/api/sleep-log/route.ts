@@ -58,7 +58,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(sleepLog.babyId, 'sleep', { type: body.type }).catch(console.error);
+    notifyActivityCreated(sleepLog.babyId, 'sleep', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { type: body.type }).catch(console.error);
 
     return NextResponse.json<ApiResponse<SleepLogResponse>>({
       success: true,

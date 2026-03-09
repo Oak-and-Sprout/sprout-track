@@ -38,12 +38,12 @@ function getWeekKey(date: Date): string {
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
   const monday = new Date(d.setDate(diff));
-  return monday.toISOString().split('T')[0];
+  return monday.toLocaleDateString('en-CA');
 }
 
 // Helper function to format week label
 function formatWeekLabel(weekKey: string): string {
-  const date = new Date(weekKey);
+  const date = new Date(weekKey + 'T00:00:00');
   const endDate = new Date(date);
   endDate.setDate(endDate.getDate() + 6); // Sunday of the week
   return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
@@ -79,7 +79,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
       if ('soapUsed' in activity && 'time' in activity) {
         const bathActivity = activity as any;
         const bathTime = new Date(bathActivity.time);
-        const dayKey = bathTime.toISOString().split('T')[0];
+        const dayKey = bathTime.toLocaleDateString('en-CA').split('T')[0];
 
         if (bathTime >= startDate && bathTime <= endDate) {
           countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
@@ -90,7 +90,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
     return Object.entries(countsByDay)
       .map(([date, count]) => ({
         date,
-        label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         value: count,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));

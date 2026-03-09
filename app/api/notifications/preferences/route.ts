@@ -3,6 +3,7 @@ import prisma from '../../db';
 import { ApiResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { NotificationEventType } from '@prisma/client';
+import { isNotificationsEnabled } from '../../../../src/lib/notifications/config';
 
 /**
  * GET handler for notification preferences
@@ -10,7 +11,7 @@ import { NotificationEventType } from '@prisma/client';
  */
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
@@ -91,7 +92,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
  */
 async function handlePut(req: NextRequest, authContext: AuthResult) {
   // Check if notifications are enabled
-  if (process.env.ENABLE_NOTIFICATIONS !== 'true') {
+  if (!(await isNotificationsEnabled())) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,

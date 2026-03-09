@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../db';
 import { ApiResponse } from '../../types';
 import { withSysAdminAuth } from '../../utils/auth';
+import { getNotificationConfig } from '../../../../src/lib/notifications/config';
 
 /**
  * Notification system status response interface
@@ -26,11 +27,10 @@ interface NotificationStatus {
  */
 async function handleGet(req: NextRequest) {
   try {
-    // Check notification system status
-    const enabled = process.env.ENABLE_NOTIFICATIONS === 'true';
-    const vapidConfigured = !!(
-      process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
-    );
+    // Check notification system status from DB
+    const config = await getNotificationConfig();
+    const enabled = config?.enabled ?? false;
+    const vapidConfigured = !!(config?.vapidPublicKey && config?.vapidPrivateKey);
     const cronSecretConfigured = !!process.env.NOTIFICATION_CRON_SECRET;
 
     // Get last cron run from notification logs

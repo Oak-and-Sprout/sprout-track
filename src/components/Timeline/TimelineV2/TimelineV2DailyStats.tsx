@@ -42,6 +42,7 @@ interface TimelineV2DailyStatsProps {
   onFilterChange: (filter: FilterType) => void;
    isHeatmapVisible: boolean;
    onHeatmapToggle: () => void;
+   breastMilkBalance?: string;
 }
 
 interface StatTile {
@@ -65,7 +66,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   onDateSelection,
   onFilterChange,
   isHeatmapVisible,
-  onHeatmapToggle
+  onHeatmapToggle,
+  breastMilkBalance
 }) => {
   const { t } = useLocalization();
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -484,11 +486,25 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         .join(', ');
       tiles.push({
         filter: 'pump',
-        label: formattedPumpAmounts || 'Pump',
+        label: formattedPumpAmounts || t('Pump'),
         value: pumpCount.toString(),
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches timeline
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Breast milk stored balance tile
+    if (breastMilkBalance) {
+      tiles.push({
+        filter: null,
+        label: t('Breast Milk Stored'),
+        value: breastMilkBalance,
+        icon: <LampWallDown className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#c084fc]', // purple-400 - matches pump
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });

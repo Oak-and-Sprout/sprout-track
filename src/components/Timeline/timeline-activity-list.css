@@ -195,13 +195,19 @@
   color: #ffffff !important; /* white - matches old timeline */
   stroke: #ffffff !important;
 }
-.event-icon.pump { 
+.event-icon.pump {
   background: linear-gradient(to right, #e9d5ff, #d8b4fe); /* purple gradient - matches old timeline */
 }
 .event-icon.pump svg,
 .event-icon.pump svg path {
   color: #ffffff !important; /* white - matches old timeline */
   stroke: #ffffff !important;
+}
+.event-icon.breast-milk-adjustment {
+  background: linear-gradient(to right, #e9d5ff, #d8b4fe); /* purple gradient - matches pump */
+}
+.event-icon.breast-milk-adjustment span {
+  color: #ffffff !important; /* white text for +/- */
 }
 .event-icon.milestone { 
   background: #4875EC; /* blue - matches old timeline */
@@ -470,6 +476,14 @@ html.dark .event-icon.pump svg,
 html.dark .event-icon.pump svg path {
   color: #ffffff !important;
   stroke: #ffffff !important;
+}
+
+html.dark .event-icon.breast-milk-adjustment {
+  background: linear-gradient(to right, #e9d5ff, #d8b4fe) !important; /* purple gradient - matches pump */
+}
+
+html.dark .event-icon.breast-milk-adjustment span {
+  color: #ffffff !important;
 }
 
 html.dark .event-icon.milestone {

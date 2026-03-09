@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LampWallDown } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Card, CardContent } from '@/src/components/ui/card';
@@ -13,6 +13,7 @@ import { styles } from './reports.styles';
 import { PumpStats, ActivityType, DateRange } from './reports.types';
 import PumpingChartModal, { PumpingChartMetric } from './PumpingChartModal';
 import { useLocalization } from '@/src/context/localization';
+import { useBaby } from '@/app/context/baby';
 
 interface PumpingStatsSectionProps {
   stats: PumpStats;
@@ -37,8 +38,40 @@ const formatMinutes = (minutes: number): string => {
  */
 const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activities, dateRange }) => {
   const { t } = useLocalization();
+  const { selectedBaby } = useBaby();
   const [chartModalOpen, setChartModalOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<PumpingChartMetric | null>(null);
+  const [currentBalance, setCurrentBalance] = useState<{ balance: number; unit: string } | null>(null);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!selectedBaby) {
+        setCurrentBalance(null);
+        return;
+      }
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch(
+          `/api/breast-milk-balance?babyId=${selectedBaby.id}&unit=${stats.unit}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authToken ? `Bearer ${authToken}` : '',
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCurrentBalance(data.data);
+          }
+        }
+      } catch {
+        // Silently fail - balance card just won't show
+      }
+    };
+    fetchBalance();
+  }, [selectedBaby, stats.unit]);
 
   return (
     <>
@@ -96,6 +129,23 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
                 <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Amount per Side')}</div>
               </CardContent>
             </Card>
+
+            {currentBalance && (
+              <Card
+                className={cn(styles.statCard, "reports-stat-card cursor-pointer")}
+                onClick={() => {
+                  setChartMetric('inventory');
+                  setChartModalOpen(true);
+                }}
+              >
+                <CardContent className="p-4">
+                  <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
+                    {currentBalance.balance.toFixed(1)} {currentBalance.unit.toLowerCase()}
+                  </div>
+                  <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Current Balance')}</div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -112,6 +162,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
         metric={chartMetric}
         activities={activities}
         dateRange={dateRange}
+        currentBalance={currentBalance}
       />
     </>
   );

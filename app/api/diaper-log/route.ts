@@ -50,7 +50,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(diaperLog.babyId, 'diaper', { type: body.type }).catch(console.error);
+    notifyActivityCreated(diaperLog.babyId, 'diaper', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { type: body.type }).catch(console.error);
     resetTimerNotificationState(diaperLog.babyId, 'diaper').catch(console.error);
 
     return NextResponse.json<ApiResponse<DiaperLogResponse>>({

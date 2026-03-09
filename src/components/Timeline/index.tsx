@@ -16,19 +16,20 @@ import TimelineFilter from './TimelineFilter';
 import TimelineActivityList from './TimelineActivityList';
 import TimelineActivityDetails from './TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from './utils';
-import { PumpLogResponse } from '@/app/api/types';
+import { PumpLogResponse, BreastMilkAdjustmentResponse } from '@/app/api/types';
 
 const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
   
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
   const [isFetchAnimated, setIsFetchAnimated] = useState<boolean>(true);
+  const [breastMilkBalance, setBreastMilkBalance] = useState<string | undefined>(undefined);
   const lastRefreshTimestamp = useRef<number>(Date.now());
   const wasIdle = useRef<boolean>(false);
 
@@ -92,12 +93,34 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
+  const fetchBreastMilkBalance = async (babyId: string) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=OZ`, {
+        headers: {
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.balance > 0) {
+          setBreastMilkBalance(`${data.data.balance} ${data.data.unit.toLowerCase()}`);
+        } else {
+          setBreastMilkBalance(undefined);
+        }
+      }
+    } catch (error) {
+      // Silently fail - balance is a nice-to-have
+    }
+  };
+
   const handleFormSuccess = () => {
     setEditModalType(null);
     setSelectedActivity(null);
 
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
+      fetchBreastMilkBalance(babyId);
     }
 
     if (onActivityDeleted) {
@@ -142,6 +165,7 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
   useEffect(() => {
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
+      fetchBreastMilkBalance(babyId);
     } else {
       setDateFilteredActivities(activities);
     }
@@ -205,6 +229,8 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
               return 'soapUsed' in activity;
             case 'pump':
               return 'leftAmount' in activity || 'rightAmount' in activity;
+            case 'breast-milk-adjustment':
+              return 'reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity);
             case 'milestone':
               return 'title' in activity && 'category' in activity;
             case 'measurement':
@@ -247,7 +273,7 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'milestone' | 'measurement') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -266,10 +292,11 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
       </CardHeader>
 
       {/* Daily Stats Banner */}
-      <DailyStats 
-        activities={dateFilteredActivities} 
-        date={selectedDate} 
-        isLoading={isLoadingActivities} 
+      <DailyStats
+        activities={dateFilteredActivities}
+        date={selectedDate}
+        isLoading={isLoadingActivities}
+        breastMilkBalance={breastMilkBalance}
       />
 
       {/* Activity List */}
@@ -340,7 +367,7 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
             onSuccess={handleFormSuccess}
           />
           <PumpForm
-            isOpen={editModalType === 'pump'}
+            isOpen={editModalType === 'pump' || editModalType === 'breast-milk-adjustment'}
             onClose={() => {
               setEditModalType(null);
               setSelectedActivity(null);
@@ -348,9 +375,14 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
             babyId={selectedActivity.babyId}
             initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
             activity={
-              ('leftAmount' in selectedActivity || 'rightAmount' in selectedActivity) ? 
-                (selectedActivity as unknown as PumpLogResponse) : 
+              ('leftAmount' in selectedActivity || 'rightAmount' in selectedActivity) ?
+                (selectedActivity as unknown as PumpLogResponse) :
                 undefined
+            }
+            adjustmentActivity={
+              editModalType === 'breast-milk-adjustment' && 'reason' in selectedActivity
+                ? (selectedActivity as unknown as BreastMilkAdjustmentResponse)
+                : undefined
             }
             onSuccess={handleFormSuccess}
           />

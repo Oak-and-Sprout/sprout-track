@@ -94,6 +94,34 @@ echo "Building the application..."
 npm run build
 BUILD_STATUS=$?
 
+# Re-verify notification setup (if enabled)
+echo "Checking notification configuration..."
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    source "$PROJECT_DIR/.env" 2>/dev/null || true
+    set +a
+fi
+
+if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
+    echo "  Notifications are enabled. Re-verifying notification infrastructure..."
+
+    # Ensure VAPID keys exist
+    echo "  - Verifying VAPID keys..."
+    npm run setup:vapid
+    if [ $? -ne 0 ]; then
+        echo "  Warning: VAPID key setup had issues."
+    fi
+
+    # Re-verify cron job (in case script path changed after update)
+    echo "  - Verifying notification cron job..."
+    npm run notification:cron:setup
+    if [ $? -ne 0 ]; then
+        echo "  Warning: Notification cron setup had issues."
+    fi
+else
+    echo "  Notifications are disabled. Skipping notification setup."
+fi
+
 # Start the service after update
 echo "Starting service after update..."
 "$SCRIPT_DIR/service.sh" start

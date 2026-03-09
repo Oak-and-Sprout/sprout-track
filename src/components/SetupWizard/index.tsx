@@ -180,13 +180,14 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             headers: getAuthHeaders(),
             body: JSON.stringify({
               securityPin: systemPin,
+              authType: 'SYSTEM',
             }),
           });
-          
+
           if (!settingsResponse.ok) {
             throw new Error('Failed to save security PIN to settings');
           }
-          
+
           // For non-token auth, update system caretaker if we have a caretaker ID
           const caretakerId = localStorage.getItem('caretakerId');
           if (caretakerId) {
@@ -237,12 +238,25 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
                 familyId: createdFamily?.id,
               }),
             });
-            
+
             if (!response.ok) {
               throw new Error(`Failed to save caretaker: ${caretaker.name}`);
             }
           }
-          
+
+          // Set auth type to CARETAKER since individual caretakers were created
+          const authTypeResponse = await fetch(`/api/settings?familyId=${createdFamily?.id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              authType: 'CARETAKER',
+            }),
+          });
+
+          if (!authTypeResponse.ok) {
+            console.warn('Failed to set auth type to CARETAKER (non-fatal)');
+          }
+
           setStage(3);
         } catch (error) {
           console.error('Error saving caretakers:', error);
@@ -306,13 +320,14 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
               headers: getAuthHeaders(),
               body: JSON.stringify({
                 securityPin: systemPin,
+                authType: 'SYSTEM',
               }),
             });
-            
+
             if (!settingsResponse.ok) {
               throw new Error('Failed to save security PIN to settings');
             }
-            
+
             // For account authentication, link to the system caretaker
             if (isAccountAuth()) {
               try {
@@ -374,6 +389,19 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
               }
             }
             
+            // Set auth type to CARETAKER since individual caretakers were created
+            const authTypeResponse = await fetch(`/api/settings?familyId=${createdFamily?.id}`, {
+              method: 'PUT',
+              headers: getAuthHeaders(),
+              body: JSON.stringify({
+                authType: 'CARETAKER',
+              }),
+            });
+
+            if (!authTypeResponse.ok) {
+              console.warn('Failed to set auth type to CARETAKER (non-fatal)');
+            }
+
             // Link the caretaker to the account
             if (isAccountAuth() && accountCaretakerId) {
               try {
