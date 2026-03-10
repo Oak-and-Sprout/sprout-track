@@ -358,8 +358,8 @@ export default function NotificationSettings({
     <div className="border-t border-slate-200 pt-6">
       <h3 className="form-label mb-4">{t('Push Notifications')}</h3>
 
-      {/* Enable Notifications Button */}
-      {!isSubscribed && (
+      {/* Enable Notifications Button - show when browser isn't subscribed OR no server subscriptions */}
+      {(!isSubscribed || subscriptions.length === 0) && (
         <div className="mb-6">
           <Button
             onClick={handleEnableNotifications}
@@ -427,9 +427,6 @@ export default function NotificationSettings({
         </div>
       )}
 
-      {subscriptions.length === 0 && isSubscribed && (
-        <p className="text-sm text-gray-500 mb-6">{t('No devices registered')}</p>
-      )}
 
       {/* Per-Baby Configuration */}
       {subscriptions.length > 0 && babies.length > 0 && (
