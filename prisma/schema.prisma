@@ -188,6 +188,7 @@ model Family {
   feedback       Feedback[]
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
+  activeBreastFeeds ActiveBreastFeed[]
 }
 
 // New model for family membership
@@ -236,6 +237,7 @@ model Baby {
   medicineLogs MedicineLog[] // New relationship for medicine logs
   notificationPreferences NotificationPreference[]
   breastMilkAdjustments BreastMilkAdjustment[]
+  activeBreastFeed ActiveBreastFeed?
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -281,6 +283,7 @@ model Caretaker {
   feedback      Feedback[]
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
+  activeBreastFeeds ActiveBreastFeed[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -1180,4 +1183,28 @@ model NotificationLog {
   @@index([subscriptionId])
   @@index([createdAt])
   @@index([success])
+}
+
+// Active breastfeeding session tracking (persistent across devices)
+model ActiveBreastFeed {
+  id                   String      @id @default(uuid())
+  activeSide           BreastSide  // Currently active side (LEFT or RIGHT)
+  isPaused             Boolean     @default(false)
+  leftDuration         Int         @default(0) // Accumulated seconds for left side
+  rightDuration        Int         @default(0) // Accumulated seconds for right side
+  currentSideStartTime DateTime? // When current side started timing (null when paused)
+  sessionStartTime     DateTime // When the overall session began
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  // Relationships
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String     @unique // Only one active session per baby
+  family      Family?    @relation(fields: [familyId], references: [id])
+  familyId    String?
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([babyId])
+  @@index([familyId])
 }

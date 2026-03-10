@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { FeedType, BreastSide } from '@prisma/client';
-import { FeedLogResponse } from '@/app/api/types';
+import { FeedLogResponse, ActiveBreastFeedResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
@@ -31,6 +31,9 @@ interface FeedFormProps {
   initialTime: string;
   activity?: FeedLogResponse;
   onSuccess?: () => void;
+  isFeeding?: boolean;
+  activeFeedData?: ActiveBreastFeedResponse | null;
+  onFeedToggle?: () => void;
 }
 
 export default function FeedForm({
@@ -40,6 +43,9 @@ export default function FeedForm({
   initialTime,
   activity,
   onSuccess,
+  isFeeding = false,
+  activeFeedData,
+  onFeedToggle,
 }: FeedFormProps) {
   const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
@@ -263,13 +269,35 @@ export default function FeedForm({
         rightDuration: activity.side === 'RIGHT' ? feedDuration : 0,
         activeBreast: ''
       });
+      } else if (isFeeding && activeFeedData) {
+        // End Feed mode - populate with active breastfeed data
+        const now = new Date();
+
+        // Calculate current elapsed time on active side
+        let currentElapsed = 0;
+        if (activeFeedData.currentSideStartTime && !activeFeedData.isPaused) {
+          currentElapsed = Math.floor((now.getTime() - new Date(activeFeedData.currentSideStartTime).getTime()) / 1000);
+        }
+
+        const leftDur = activeFeedData.leftDuration + (activeFeedData.activeSide === 'LEFT' ? currentElapsed : 0);
+        const rightDur = activeFeedData.rightDuration + (activeFeedData.activeSide === 'RIGHT' ? currentElapsed : 0);
+
+        setSelectedDateTime(now);
+        setFormData(prev => ({
+          ...prev,
+          type: 'BREAST',
+          side: activeFeedData.activeSide,
+          leftDuration: leftDur,
+          rightDuration: rightDur,
+          feedDuration: leftDur + rightDur,
+        }));
       } else {
         // New entry mode - initialize from initialTime prop
         try {
           const date = new Date(initialTime);
           if (!isNaN(date.getTime())) {
             setSelectedDateTime(date);
-            
+
             // Also update the time in formData
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -277,16 +305,16 @@ export default function FeedForm({
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             const formattedTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-            
+
             setFormData(prev => ({ ...prev, time: formattedTime }));
           }
         } catch (error) {
           console.error('Error parsing initialTime:', error);
         }
-        
+
         // Store the initial time used for new entry
         setInitializedTime(initialTime);
-        
+
         // Fetch the last feed type to pre-populate the form
         fetchLastFeedType();
       }
@@ -748,6 +776,70 @@ export default function FeedForm({
     onClose();
   };
 
+  // Start a persistent breastfeed session via API
+  const handleStartBreastfeed = async (side: 'LEFT' | 'RIGHT') => {
+    if (!babyId) return;
+    setLoading(true);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/active-breastfeed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+        },
+        body: JSON.stringify({ babyId, side }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        showToast({ variant: 'error', title: t('Error'), message: errorData.error || t('Failed to start breastfeed'), duration: 5000 });
+        return;
+      }
+
+      handleClose();
+      onFeedToggle?.();
+    } catch (error) {
+      console.error('Error starting breastfeed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // End a persistent breastfeed session via API
+  const handleEndBreastfeed = async () => {
+    if (!activeFeedData) return;
+    setLoading(true);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/active-breastfeed?id=${activeFeedData.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+        },
+        body: JSON.stringify({
+          leftDuration: formData.leftDuration,
+          rightDuration: formData.rightDuration,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        showToast({ variant: 'error', title: t('Error'), message: errorData.error || t('Failed to end breastfeed'), duration: 5000 });
+        return;
+      }
+
+      handleClose();
+      onFeedToggle?.();
+      onSuccess?.();
+    } catch (error) {
+      console.error('Error ending breastfeed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Clean up timer on unmount
   useEffect(() => {
     return () => {
@@ -761,8 +853,8 @@ export default function FeedForm({
     <FormPage
       isOpen={isOpen}
       onClose={handleClose}
-      title={activity ? t('Edit Feeding') : t('Log Feeding')}
-      description={activity ? t('Update what and when your baby ate') : t('Record what and when your baby ate')}
+      title={activity ? t('Edit Feeding') : (isFeeding ? t('End Breastfeed') : t('Log Feeding'))}
+      description={activity ? t('Update what and when your baby ate') : (isFeeding ? t('Review and end the breastfeeding session') : t('Record what and when your baby ate'))}
     >
         <FormPageContent className="overflow-y-auto">
           <form onSubmit={handleSubmit} className="h-full flex flex-col">
@@ -857,7 +949,72 @@ export default function FeedForm({
                 </div>
               </div>
             
-            {formData.type === 'BREAST' && (
+            {formData.type === 'BREAST' && isFeeding && activeFeedData && !activity && (
+              /* End Feed mode - show accumulated durations with edit capability */
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="text-sm font-medium text-green-800 mb-3">{t('Active Breastfeed Session')}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="form-label text-xs">{t('Left Duration (seconds)')}</label>
+                      <Input
+                        type="number"
+                        value={formData.leftDuration}
+                        onChange={(e) => setFormData(prev => ({ ...prev, leftDuration: parseInt(e.target.value) || 0 }))}
+                        disabled={loading}
+                        min={0}
+                      />
+                      <span className="text-xs text-gray-500 mt-1 block">
+                        {Math.floor(formData.leftDuration / 60)}m {formData.leftDuration % 60}s
+                      </span>
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">{t('Right Duration (seconds)')}</label>
+                      <Input
+                        type="number"
+                        value={formData.rightDuration}
+                        onChange={(e) => setFormData(prev => ({ ...prev, rightDuration: parseInt(e.target.value) || 0 }))}
+                        disabled={loading}
+                        min={0}
+                      />
+                      <span className="text-xs text-gray-500 mt-1 block">
+                        {Math.floor(formData.rightDuration / 60)}m {formData.rightDuration % 60}s
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {formData.type === 'BREAST' && !isFeeding && !activity && (
+              /* Start Feed mode - side selector + start button */
+              <div className="space-y-4">
+                <label className="form-label">{t('Select Side to Start')}</label>
+                <div className="flex gap-4 justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleStartBreastfeed('LEFT')}
+                    disabled={loading}
+                    className="flex-1 h-16 text-lg font-semibold"
+                  >
+                    {t('Left Side')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleStartBreastfeed('RIGHT')}
+                    disabled={loading}
+                    className="flex-1 h-16 text-lg font-semibold"
+                  >
+                    {t('Right Side')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {formData.type === 'BREAST' && activity && (
+              /* Edit existing breast feed record - keep existing timer UI */
               <BreastFeedForm
                 side={formData.side}
                 leftDuration={formData.leftDuration}
@@ -875,7 +1032,7 @@ export default function FeedForm({
                     setFormData(prev => ({ ...prev, rightDuration: seconds }));
                   }
                 }}
-                isEditing={!!activity} // Pass true if editing an existing record
+                isEditing={true}
                 notes={formData.notes}
                 onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
                 getCurrentDurations={getCurrentDurationsRef}
@@ -934,9 +1091,18 @@ export default function FeedForm({
             >
               {t('Cancel')}
             </Button>
-            <Button onClick={handleSubmit} disabled={loading}>
-              {activity ? t('Update') : t('Save')}
-            </Button>
+            {isFeeding && activeFeedData && !activity ? (
+              <Button onClick={handleEndBreastfeed} disabled={loading} className="bg-red-600 hover:bg-red-700">
+                {t('End Feed')}
+              </Button>
+            ) : formData.type === 'BREAST' && !isFeeding && !activity ? (
+              /* Start Feed mode - no save button needed, side buttons handle it */
+              null
+            ) : (
+              <Button onClick={handleSubmit} disabled={loading}>
+                {activity ? t('Update') : t('Save')}
+              </Button>
+            )}
           </div>
         </FormPageFooter>
     </FormPage>

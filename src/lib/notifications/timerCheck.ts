@@ -327,6 +327,11 @@ export async function checkTimerExpirations(): Promise<number> {
 
       // Check feed timer
       if (eventMap.has(NotificationEventType.FEED_TIMER_EXPIRED)) {
+        // Skip feed timer if baby has an active breastfeed session
+        const activeBreastFeed = await prisma.activeBreastFeed.findUnique({ where: { babyId } });
+        if (activeBreastFeed) {
+          console.log(`[TimerCheck] Feed timer check skipped for baby ${babyId}: active breastfeed session in progress`);
+        } else {
         const feedPreferences = eventMap.get(NotificationEventType.FEED_TIMER_EXPIRED)!;
         const thresholdMinutes = parseWarningTime(baby.feedWarningTime);
         console.log(`[TimerCheck] Checking feed timer for baby ${babyId} (threshold: ${thresholdMinutes} minutes)`);
@@ -399,6 +404,7 @@ export async function checkTimerExpirations(): Promise<number> {
         } else {
           console.log(`[TimerCheck] Feed timer check skipped: lastFeedTime=${lastFeedTime}, threshold=${thresholdMinutes}`);
         }
+        } // end active breastfeed else
       }
 
       // Check diaper timer

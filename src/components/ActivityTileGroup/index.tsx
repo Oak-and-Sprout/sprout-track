@@ -20,10 +20,12 @@ interface ActivityTileGroupProps {
     diaperWarningTime?: string | number;
   } | null;
   sleepingBabies: Set<string>;
+  feedingBabies?: Set<string>;
   sleepStartTime: Record<string, Date>;
   lastSleepEndTime: Record<string, Date>;
   lastFeedTime: Record<string, Date>;
   lastDiaperTime: Record<string, Date>;
+  feedStartTime?: Record<string, Date>;
   updateUnlockTimer: () => void;
   onSleepClick: () => void;
   onFeedClick: () => void;
@@ -48,10 +50,12 @@ type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'me
 export function ActivityTileGroup({
   selectedBaby,
   sleepingBabies,
+  feedingBabies,
   sleepStartTime,
   lastSleepEndTime,
   lastFeedTime,
   lastDiaperTime,
+  feedStartTime,
   updateUnlockTimer,
   onSleepClick,
   onFeedClick,
@@ -442,7 +446,8 @@ export function ActivityTileGroup({
           )}
           </div>
         );
-      case 'feed':
+      case 'feed': {
+        const isBabyFeeding = selectedBaby?.id && feedingBabies?.has(selectedBaby.id);
         return (
           <div key="feed" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
             <ActivityTile
@@ -460,7 +465,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as FeedLogResponse}
-              title={t('Feed')}
+              title={isBabyFeeding ? t('End Feed') : t('Feed')}
               variant="feed"
               isButton={true}
               onClick={() => {
@@ -468,18 +473,27 @@ export function ActivityTileGroup({
                 onFeedClick();
               }}
             />
-            {selectedBaby?.id && lastFeedTime[selectedBaby.id] && !exceeds24Hours(lastFeedTime[selectedBaby.id]) && (
+            {isBabyFeeding ? (
               <StatusBubble
-                status="feed"
+                status="feedActive"
                 className="overflow-visible z-40"
-                durationInMinutes={0} // Fallback value
-                startTime={lastFeedTime[selectedBaby.id].toISOString()}
-                warningTime={selectedBaby.feedWarningTime as string}
-                activityType="feed" // Explicitly specify this is for feed activities only
+                durationInMinutes={0}
               />
+            ) : (
+              selectedBaby?.id && lastFeedTime[selectedBaby.id] && !exceeds24Hours(lastFeedTime[selectedBaby.id]) && (
+                <StatusBubble
+                  status="feed"
+                  className="overflow-visible z-40"
+                  durationInMinutes={0}
+                  startTime={lastFeedTime[selectedBaby.id].toISOString()}
+                  warningTime={selectedBaby.feedWarningTime as string}
+                  activityType="feed"
+                />
+              )
             )}
           </div>
         );
+      }
       case 'diaper':
         return (
           <div key="diaper" className="relative w-[82px] h-24 flex-shrink-0 snap-center">

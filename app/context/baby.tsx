@@ -19,6 +19,8 @@ interface BabyContextType {
   setSelectedBaby: (baby: Baby | null) => void;
   sleepingBabies: Set<string>;
   setSleepingBabies: (babies: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
+  feedingBabies: Set<string>;
+  setFeedingBabies: (babies: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   accountStatus: AccountStatus | null;
   isAccountAuth: boolean;
   isCheckingAccountStatus: boolean;
@@ -29,6 +31,8 @@ const BabyContext = createContext<BabyContextType>({
   setSelectedBaby: () => {},
   sleepingBabies: new Set(),
   setSleepingBabies: () => {},
+  feedingBabies: new Set(),
+  setFeedingBabies: () => {},
   accountStatus: null,
   isAccountAuth: false,
   isCheckingAccountStatus: false,
@@ -43,6 +47,13 @@ export function BabyProvider({ children }: BabyProviderProps) {
   const [sleepingBabies, setSleepingBabies] = useState<Set<string>>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sleepingBabies');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    }
+    return new Set();
+  });
+  const [feedingBabies, setFeedingBabies] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('feedingBabies');
       return saved ? new Set(JSON.parse(saved)) : new Set();
     }
     return new Set();
@@ -231,11 +242,26 @@ export function BabyProvider({ children }: BabyProviderProps) {
       } else {
         setSleepingBabies(new Set());
       }
+
+      // Load family-specific feeding babies
+      const familyFeedingKey = getFamilySpecificKey('feedingBabies', family.id);
+      const savedFeeding = localStorage.getItem(familyFeedingKey);
+      if (savedFeeding) {
+        try {
+          setFeedingBabies(new Set(JSON.parse(savedFeeding)));
+        } catch (e) {
+          console.error('Error parsing saved feeding babies:', e);
+          setFeedingBabies(new Set());
+        }
+      } else {
+        setFeedingBabies(new Set());
+      }
     } else if (!family && currentFamily) {
       // No family context, clear everything
       setCurrentFamily(null);
       setSelectedBaby(null);
       setSleepingBabies(new Set());
+      setFeedingBabies(new Set());
     }
   }, [currentFamily]);
 
@@ -277,6 +303,14 @@ export function BabyProvider({ children }: BabyProviderProps) {
     }
   }, [sleepingBabies, currentFamily]);
 
+  // Persist feeding babies (family-specific)
+  useEffect(() => {
+    if (currentFamily?.id) {
+      const familyFeedingKey = getFamilySpecificKey('feedingBabies', currentFamily.id);
+      localStorage.setItem(familyFeedingKey, JSON.stringify(Array.from(feedingBabies)));
+    }
+  }, [feedingBabies, currentFamily]);
+
   // Update URL when selected baby changes
   useEffect(() => {
     if (selectedBaby) {
@@ -297,11 +331,13 @@ export function BabyProvider({ children }: BabyProviderProps) {
   };
 
   return (
-    <BabyContext.Provider value={{ 
-      selectedBaby, 
-      setSelectedBaby: setSelectedBabyWithValidation, 
-      sleepingBabies, 
+    <BabyContext.Provider value={{
+      selectedBaby,
+      setSelectedBaby: setSelectedBabyWithValidation,
+      sleepingBabies,
       setSleepingBabies,
+      feedingBabies,
+      setFeedingBabies,
       accountStatus,
       isAccountAuth,
       isCheckingAccountStatus
