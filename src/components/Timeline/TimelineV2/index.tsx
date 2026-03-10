@@ -39,7 +39,8 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const fetchBreastMilkBalance = async (babyId: string) => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=OZ`, {
+      const unit = settings?.defaultBottleUnit || 'OZ';
+      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=${unit}`, {
         headers: {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         }
@@ -219,12 +220,17 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
       fetchHeatmapActivitiesForWindow(babyId, selectedDate);
-      fetchBreastMilkBalance(babyId);
     } else {
       setDateFilteredActivities(activities);
       setHeatmapActivities(activities);
     }
   }, [activities, selectedDate, babyId]);
+
+  useEffect(() => {
+    if (babyId) {
+      fetchBreastMilkBalance(babyId);
+    }
+  }, [babyId, settings?.defaultBottleUnit]);
 
   useEffect(() => {
     if (!babyId) return;
@@ -350,6 +356,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
         isHeatmapVisible={isHeatmapVisible}
         onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
         breastMilkBalance={breastMilkBalance}
+        defaultBottleUnit={settings?.defaultBottleUnit}
       />
 
       {/* Activity List + Right-side Heatmap */}

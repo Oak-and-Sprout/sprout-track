@@ -96,7 +96,8 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
   const fetchBreastMilkBalance = async (babyId: string) => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=OZ`, {
+      const unit = settings?.defaultBottleUnit || 'OZ';
+      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=${unit}`, {
         headers: {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         }
@@ -165,11 +166,16 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
   useEffect(() => {
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
-      fetchBreastMilkBalance(babyId);
     } else {
       setDateFilteredActivities(activities);
     }
   }, [activities, selectedDate, babyId]);
+
+  useEffect(() => {
+    if (babyId) {
+      fetchBreastMilkBalance(babyId);
+    }
+  }, [babyId, settings?.defaultBottleUnit]);
 
   useEffect(() => {
     if (!babyId) return;

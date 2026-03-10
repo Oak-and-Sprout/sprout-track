@@ -28,6 +28,7 @@ import { FilterType } from '../types';
 import { ActivityType } from '../types';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import { useLocalization } from '@/src/context/localization';
+import { convertVolume } from '@/src/utils/unit-conversion';
 
 import './TimelineV2DailyStats.css';
 
@@ -43,6 +44,7 @@ interface TimelineV2DailyStatsProps {
    isHeatmapVisible: boolean;
    onHeatmapToggle: () => void;
    breastMilkBalance?: string;
+   defaultBottleUnit?: string;
 }
 
 interface StatTile {
@@ -67,7 +69,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   onFilterChange,
   isHeatmapVisible,
   onHeatmapToggle,
-  breastMilkBalance
+  breastMilkBalance,
+  defaultBottleUnit
 }) => {
   const { t } = useLocalization();
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -93,7 +96,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let dirtyCount = 0;
     let poopCount = 0;
     let totalFeedCount = 0;
-    const bottleFeedAmounts: Record<string, number> = {};
+    const preferredUnit = defaultBottleUnit || 'OZ';
+    let bottleFeedTotal = 0;
     let leftBreastFeedMinutes = 0;
     let rightBreastFeedMinutes = 0;
     const solidsAmounts: Record<string, number> = {};
@@ -101,7 +105,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let noteCount = 0;
     let bathCount = 0;
     let pumpCount = 0;
-    const pumpAmounts: Record<string, number> = {};
+    let pumpTotal = 0;
     let milestoneCount = 0;
     let measurementCount = 0;
     let awakeMinutes = 0;
@@ -131,12 +135,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         if (time >= startOfDay && time <= endOfDay) {
           if (activity.type === 'BOTTLE') {
             totalFeedCount++;
-            // Track bottle feed amounts by unit
-            const unit = activity.unitAbbr || 'oz';
-            if (!bottleFeedAmounts[unit]) {
-              bottleFeedAmounts[unit] = 0;
-            }
-            bottleFeedAmounts[unit] += activity.amount || 0;
+            const entryUnit = activity.unitAbbr || 'OZ';
+            const amount = activity.amount || 0;
+            bottleFeedTotal += convertVolume(amount, entryUnit, preferredUnit);
           } else if (activity.type === 'SOLIDS') {
             totalFeedCount++;
             // Track solids amounts by unit
@@ -251,9 +252,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           pumpCount++;
           const total = (activity as any).totalAmount || 0;
           if (total > 0) {
-            const unit = (activity as any).unitAbbr || 'oz';
-            if (!pumpAmounts[unit]) pumpAmounts[unit] = 0;
-            pumpAmounts[unit] += total;
+            const entryUnit = (activity as any).unitAbbr || 'OZ';
+            pumpTotal += convertVolume(total, entryUnit, preferredUnit);
           }
         }
       }
@@ -338,9 +338,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     // Combined feed tile (bottle, breast, and solids)
     if (totalFeedCount > 0) {
       // Format bottle feed amounts
-      const formattedBottleAmounts = Object.entries(bottleFeedAmounts)
-        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
-        .join(', ');
+      const formattedBottleAmounts = bottleFeedTotal > 0
+        ? `${Math.round(bottleFeedTotal * 100) / 100} ${preferredUnit.toLowerCase()}`
+        : '';
       
       // Format solids amounts
       const formattedSolidsAmounts = Object.entries(solidsAmounts)
@@ -481,9 +481,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
 
     // Pump tile
     if (pumpCount > 0) {
-      const formattedPumpAmounts = Object.entries(pumpAmounts)
-        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
-        .join(', ');
+      const formattedPumpAmounts = pumpTotal > 0
+        ? `${Math.round(pumpTotal * 100) / 100} ${preferredUnit.toLowerCase()}`
+        : '';
       tiles.push({
         filter: 'pump',
         label: formattedPumpAmounts || t('Pump'),
