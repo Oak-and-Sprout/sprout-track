@@ -48,6 +48,7 @@ interface SettingsFormProps {
   onBabyStatusChange?: () => void;
   selectedBabyId?: string;
   familyId?: string;
+  isAdmin?: boolean;
 }
 
 export default function SettingsForm({
@@ -57,6 +58,7 @@ export default function SettingsForm({
   onBabyStatusChange,
   selectedBabyId,
   familyId,
+  isAdmin = false,
 }: SettingsFormProps) {
   const { t } = useLocalization();
   const router = useRouter();
@@ -488,8 +490,8 @@ export default function SettingsForm({
       >
         <FormPageContent>
           <div className="space-y-6">
-            {/* Family Information Section */}
-            <div className="space-y-4">
+            {/* Family Information Section - Admin only */}
+            {isAdmin && <div className="space-y-4">
               <h3 className="form-label mb-4">{t('Family Information')}</h3>
               
               <div>
@@ -591,9 +593,10 @@ export default function SettingsForm({
                   <p className="text-sm text-gray-500 mt-1">{t('This is your family\'s unique URL identifier')}</p>
                 )}
               </div>
-            </div>
+            </div>}
 
-            <div className="space-y-4 border-t border-slate-200 pt-6">
+            {/* Authentication Settings + Manage Caretakers - Admin only */}
+            {isAdmin && <div className="space-y-4 border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">{t('Authentication Settings')}</h3>
 
               <div className="space-y-4">
@@ -692,9 +695,10 @@ export default function SettingsForm({
                     </Button>
                   </div>
                 </div>
-            </div>
+            </div>}
 
-            <div className="border-t border-slate-200 pt-6">
+            {/* Manage Babies - Admin only */}
+            {isAdmin && <div className="border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">{t('Manage Babies')}</h3>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2 w-full">
@@ -741,10 +745,10 @@ export default function SettingsForm({
                   </Button>
                 </div>
               </div>
-            </div>
+            </div>}
 
-
-            <div className="border-t border-slate-200 pt-6">
+            {/* Manage Contacts - Admin only */}
+            {isAdmin && <div className="border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">{t('Manage Contacts')}</h3>
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2 w-full">
@@ -789,9 +793,10 @@ export default function SettingsForm({
                   </Button>
                 </div>
               </div>
-            </div>
+            </div>}
 
-            <div className="border-t border-slate-200 pt-6">
+            {/* Debug Settings - Admin only */}
+            {isAdmin && <div className="border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">{t('Debug Settings')}</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -826,7 +831,7 @@ export default function SettingsForm({
                   </div>
                 </div>
               </div>
-            </div>
+            </div>}
 
             <div className="border-t border-slate-200 pt-6">
               <h3 className="form-label mb-4">{t('Default Units')}</h3>
@@ -958,8 +963,8 @@ export default function SettingsForm({
               />
             )}
 
-            {/* Only show System Administration section in self-hosted mode */}
-            {deploymentConfig?.deploymentMode !== 'saas' && (
+            {/* Only show System Administration section for admins in self-hosted mode */}
+            {isAdmin && deploymentConfig?.deploymentMode !== 'saas' && (
               <div className="border-t border-slate-200 pt-6">
                 <h3 className="form-label mb-4">{t('System Administration')}</h3>
                 <div className="space-y-4">

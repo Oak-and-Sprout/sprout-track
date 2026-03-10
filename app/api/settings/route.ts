@@ -98,11 +98,26 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     }
 
     const data: Partial<Settings> = {};
-    const allowedFields: (keyof Settings)[] = [
-      'familyName', 'securityPin', 'authType', 'defaultBottleUnit', 'defaultSolidsUnit',
+
+    // Fields any authenticated user can update
+    const userFields: (keyof Settings)[] = [
+      'defaultBottleUnit', 'defaultSolidsUnit',
       'defaultHeightUnit', 'defaultWeightUnit', 'defaultTempUnit',
-      'enableDebugTimer', 'enableDebugTimezone'
     ];
+
+    // Additional fields only admins can update
+    const adminOnlyFields: (keyof Settings)[] = [
+      'familyName', 'securityPin', 'authType',
+      'enableDebugTimer', 'enableDebugTimezone',
+    ];
+
+    const isAdmin = authContext.caretakerRole === 'ADMIN' ||
+                    authContext.caretakerRole === 'OWNER' ||
+                    authContext.isSysAdmin;
+
+    const allowedFields = isAdmin
+      ? [...userFields, ...adminOnlyFields]
+      : userFields;
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {

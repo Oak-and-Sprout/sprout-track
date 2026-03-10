@@ -840,6 +840,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         onBabyStatusChange={fetchData}
         selectedBabyId={selectedBaby?.id || ''}
         familyId={family?.id}
+        isAdmin={isAdmin}
       />
       
       {/* Baby Quick Info Form */}

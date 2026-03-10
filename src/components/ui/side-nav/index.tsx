@@ -499,14 +499,12 @@ export const SideNav: React.FC<SideNavProps> = ({
           {/* Theme Toggle Component */}
           <ThemeToggle className="mb-2" />
           
-          {/* Settings Button - only shown for admins */}
-          {isAdmin && (
-            <FooterButton
-              icon={<Settings />}
-              label={t('Settings')}
-              onClick={onSettingsClick}
-            />
-          )}
+          {/* Settings Button */}
+          <FooterButton
+            icon={<Settings />}
+            label={t('Settings')}
+            onClick={onSettingsClick}
+          />
           
           {/* Logout Button */}
           <FooterButton
