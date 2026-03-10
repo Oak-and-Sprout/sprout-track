@@ -952,8 +952,8 @@ export default function FeedForm({
             {formData.type === 'BREAST' && isFeeding && activeFeedData && !activity && (
               /* End Feed mode - show accumulated durations with edit capability */
               <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-sm font-medium text-green-800 mb-3">{t('Active Breastfeed Session')}</h3>
+                <div className="border rounded-lg p-4 active-breast-session">
+                  <h3 className="text-sm font-medium mb-3 active-breast-session-title">{t('Active Breastfeed Session')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="form-label text-xs">{t('Left Duration (seconds)')}</label>
@@ -964,7 +964,7 @@ export default function FeedForm({
                         disabled={loading}
                         min={0}
                       />
-                      <span className="text-xs text-gray-500 mt-1 block">
+                      <span className="text-xs mt-1 block active-breast-session-hint">
                         {Math.floor(formData.leftDuration / 60)}m {formData.leftDuration % 60}s
                       </span>
                     </div>
@@ -977,7 +977,7 @@ export default function FeedForm({
                         disabled={loading}
                         min={0}
                       />
-                      <span className="text-xs text-gray-500 mt-1 block">
+                      <span className="text-xs mt-1 block active-breast-session-hint">
                         {Math.floor(formData.rightDuration / 60)}m {formData.rightDuration % 60}s
                       </span>
                     </div>

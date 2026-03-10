@@ -335,8 +335,8 @@ export default function BreastFeedForm({
       <div className="flex justify-center gap-2 py-4">
         {/* Left Side */}
         <div className={`flex flex-col items-center space-y-4 p-1 flex-1 max-w-xs rounded-lg transition-all duration-300 ${
-          isTimerRunning && activeBreast === 'LEFT' 
-            ? 'bg-green-50 border-2 border-green-200 shadow-md timer-active-side' 
+          isTimerRunning && activeBreast === 'LEFT'
+            ? 'border-2 timer-active-side'
             : 'bg-transparent'
         }`}>
           <Label className="text-lg font-semibold text-gray-700 timer-label">{t('Left Side')}</Label>
@@ -377,13 +377,13 @@ export default function BreastFeedForm({
 
         {/* Vertical Divider */}
         <div className="flex items-center justify-center">
-          <div className="h-32 border-l border-gray-200"></div>
+          <div className="h-32 border-l border-gray-200 breast-feed-divider"></div>
         </div>
 
         {/* Right Side */}
         <div className={`flex flex-col items-center space-y-4 flex-1 max-w-xs p-1 rounded-lg transition-all duration-300 ${
-          isTimerRunning && activeBreast === 'RIGHT' 
-            ? 'bg-green-50 border-2 border-green-200 shadow-md timer-active-side' 
+          isTimerRunning && activeBreast === 'RIGHT'
+            ? 'border-2 timer-active-side'
             : 'bg-transparent'
         }`}>
           <Label className="text-lg font-semibold text-gray-700 timer-label">{t('Right Side')}</Label>

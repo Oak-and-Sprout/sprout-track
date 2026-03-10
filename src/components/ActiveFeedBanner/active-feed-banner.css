@@ -95,70 +95,74 @@
   background-color: #bbf7d0; /* green-200 */
 }
 
-/* Dark mode */
+/* Dark mode - uses !important to override Tailwind v4 CSS layer priority in Safari */
 html.dark .active-feed-banner {
-  background-color: #1f2937; /* gray-800 - matches ActivityTileGroup dark */
-  border-top-color: #374151; /* gray-700 */
+  background-color: #1f2937 !important; /* gray-800 - matches ActivityTileGroup dark */
+  border-top-color: #374151 !important; /* gray-700 */
 }
 
 html.dark .banner-inner-active {
-  background-color: rgba(22, 101, 52, 0.15); /* green-800/15 */
-  border-color: rgba(74, 222, 128, 0.2); /* green-400/20 */
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #5eead4 !important; /* teal-300 */
 }
 
 html.dark .banner-inner-paused {
-  background-color: rgba(161, 98, 7, 0.15); /* yellow-700/15 */
-  border-color: rgba(250, 204, 21, 0.2); /* yellow-400/20 */
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #facc15 !important; /* yellow-400 */
 }
 
 html.dark .banner-label {
-  color: #9ca3af; /* gray-400 */
+  color: #9ca3af !important; /* gray-400 */
 }
 
 html.dark .banner-timer {
-  color: #4ade80; /* green-400 */
+  color: #5eead4 !important; /* teal-300 */
 }
 
 html.dark .banner-subtimes {
-  color: #9ca3af; /* gray-400 */
+  color: #9ca3af !important; /* gray-400 */
 }
 
 html.dark .banner-paused-label {
-  color: #facc15; /* yellow-400 */
+  color: #facc15 !important; /* yellow-400 */
 }
 
 html.dark .banner-btn-switch {
-  background-color: #374151; /* gray-700 */
-  color: #e5e7eb; /* gray-200 */
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #e5e7eb !important; /* gray-200 */
 }
 
 html.dark .banner-btn-switch:hover {
-  background-color: #4b5563; /* gray-600 */
+  background-color: #4b5563 !important; /* gray-600 */
 }
 
 html.dark .banner-btn-pause {
-  background-color: rgba(251, 191, 36, 0.2); /* amber-400/20 */
-  color: #fbbf24; /* amber-400 */
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #fbbf24 !important; /* amber-400 */
 }
 
 html.dark .banner-btn-pause:hover {
-  background-color: rgba(251, 191, 36, 0.3);
+  background-color: #4b5563 !important; /* gray-600 */
 }
 
 html.dark .banner-btn-stop {
-  background-color: rgba(239, 68, 68, 0.2); /* red-500/20 */
-  color: #f87171; /* red-400 */
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #f87171 !important; /* red-400 */
 }
 
 html.dark .banner-btn-stop:hover {
-  background-color: rgba(239, 68, 68, 0.3);
+  background-color: #4b5563 !important; /* gray-600 */
 }
 
 html.dark .banner-btn-resume {
-  background-color: rgba(74, 222, 128, 0.2); /* green-400/20 */
-  color: #4ade80; /* green-400 */
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #5eead4 !important; /* teal-300 */
 }
 
 html.dark .banner-btn-resume:hover {
-  background-color: rgba(74, 222, 128, 0.3);
+  background-color: #4b5563 !important; /* gray-600 */
 }

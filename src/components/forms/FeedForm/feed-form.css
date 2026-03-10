@@ -1,88 +1,130 @@
 /* Dark mode overrides for FeedForm component */
+/* Uses !important to override Tailwind v4 CSS layer priority in Safari */
 
 /* Make type text lighter in dark mode */
 html.dark .feed-type-button {
-  color: #e5e7eb ; /* gray-200 */
+  color: #e5e7eb !important; /* gray-200 */
 }
 
 /* Make background transparent in dark mode when not selected */
 html.dark .feed-type-button:not(.feed-type-selected) {
-  background-color: transparent ;
+  background-color: transparent !important;
 }
 
 /* Hover state for feed type buttons in dark mode */
 html.dark .feed-type-button:not(.feed-type-selected):hover {
-  background-color: rgba(55, 65, 81, 0.5) ; /* gray-700 with opacity */
+  background-color: rgba(55, 65, 81, 0.5) !important; /* gray-700 with opacity */
 }
 
 /* Selected state for feed type buttons in dark mode */
 html.dark .feed-type-selected {
-  background-color: rgba(59, 130, 246, 0.2) ; /* blue-500 with opacity */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) ;
+  background-color: rgba(59, 130, 246, 0.2) !important; /* blue-500 with opacity */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
 
-/* Dark mode styles for timer active side highlighting - more subtle and transparent */
+/* Light mode styles for timer active side highlighting */
+.timer-active-side {
+  background-color: #f0fdf4; /* green-50 */
+  border-color: #bbf7d0; /* green-200 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode styles for timer active side highlighting - matches ActiveFeedBanner pattern */
 html.dark .timer-active-side {
-  background-color: rgba(255, 255, 255, 0.05) ; /* Very subtle white overlay */
-  border-color: rgba(255, 255, 255, 0.1) ; /* Subtle white border */
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #4b5563 !important; /* gray-600 */
+  box-shadow: none !important;
+}
+
+/* Vertical divider between left/right breast sides */
+html.dark .breast-feed-divider {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Active breastfeed session panel - light mode */
+.active-breast-session {
+  background-color: #f0fdf4; /* green-50 */
+  border-color: #bbf7d0; /* green-200 */
+}
+
+.active-breast-session-title {
+  color: #166534; /* green-800 */
+}
+
+.active-breast-session-hint {
+  color: #6b7280; /* gray-500 */
+}
+
+/* Active breastfeed session panel - dark mode */
+html.dark .active-breast-session {
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #5eead4 !important; /* teal-300 - matches banner */
+}
+
+html.dark .active-breast-session-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .active-breast-session-hint {
+  color: #9ca3af !important; /* gray-400 */
 }
 
 /* Dark mode styles for timer inputs - scoped to feed form only */
 html.dark .feed-form-container input[type="text"][inputMode="numeric"] {
-  color: #f3f4f6 ; /* gray-100 - lighter to match the app */
-  background-color: transparent ;
+  color: #f3f4f6 !important; /* gray-100 */
+  background-color: transparent !important;
 }
 
 html.dark .feed-form-container input[type="text"][inputMode="numeric"]:hover {
-  background-color: rgba(55, 65, 81, 0.3) ; /* More subtle gray-700 with lower opacity */
-  color: #f3f4f6 ; /* Maintain light text on hover */
+  background-color: rgba(55, 65, 81, 0.3) !important; /* gray-700 with lower opacity */
+  color: #f3f4f6 !important;
 }
 
 html.dark .feed-form-container input[type="text"][inputMode="numeric"]:focus {
-  background-color: rgba(55, 65, 81, 0.5) ;
-  color: #f3f4f6 ;
+  background-color: rgba(55, 65, 81, 0.5) !important;
+  color: #f3f4f6 !important;
 }
 
 /* Additional specific selectors for timer inputs within feed form */
 html.dark .feed-form-container input.timer-input {
-  color: #f3f4f6 ; /* gray-100 - lighter to match the app */
-  background-color: transparent ;
+  color: #f3f4f6 !important; /* gray-100 */
+  background-color: transparent !important;
 }
 
 html.dark .feed-form-container input.timer-input:hover {
-  background-color: rgba(55, 65, 81, 0.3) ; /* More subtle gray-700 with lower opacity */
-  color: #f3f4f6 ; /* Maintain light text on hover */
+  background-color: rgba(55, 65, 81, 0.3) !important; /* gray-700 with lower opacity */
+  color: #f3f4f6 !important;
 }
 
 html.dark .feed-form-container input.timer-input:focus {
-  background-color: rgba(55, 65, 81, 0.5) ;
-  color: #f3f4f6 ;
+  background-color: rgba(55, 65, 81, 0.5) !important;
+  color: #f3f4f6 !important;
 }
 
 /* Dark mode styles for timer labels - scoped to feed form, but exclude form-label */
 html.dark .feed-form-container .timer-label:not(.form-label) {
-  color: #f3f4f6 ; /* gray-100 - lighter to match the app */
+  color: #f3f4f6 !important; /* gray-100 */
 }
 
 /* Dark mode styles for timer separators - scoped to feed form */
 html.dark .feed-form-container .timer-separator {
-  color: #f3f4f6 ; /* gray-100 - lighter to match the app */
+  color: #f3f4f6 !important; /* gray-100 */
 }
 
 /* Override conflicting hover states within feed form only */
 html.dark .feed-form-container .hover\:bg-gray-50:hover {
-  background-color: rgba(55, 65, 81, 0.3) ;
+  background-color: rgba(55, 65, 81, 0.3) !important;
 }
 
 /* Override Tailwind text color classes within feed form only */
 html.dark .feed-form-container .text-2xl {
-  color: #f3f4f6 ;
+  color: #f3f4f6 !important;
 }
 
 html.dark .feed-form-container .font-medium {
-  color: #f3f4f6 ;
+  color: #f3f4f6 !important;
 }
 
 html.dark .feed-form-container .tracking-wider {
-  color: #f3f4f6 ;
+  color: #f3f4f6 !important;
 }
