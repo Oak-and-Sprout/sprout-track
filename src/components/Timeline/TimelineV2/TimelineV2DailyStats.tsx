@@ -721,7 +721,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         {/* Slide-out panel */}
         <div
           className={`
-            absolute inset-y-0 right-0 w-1/2 max-w-xs bg-white shadow-xl
+            absolute inset-y-0 right-0 w-24 bg-white shadow-xl
             transform transition-transform duration-300
             timeline-v2-heatmap-panel
             ${isHeatmapVisible ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}
@@ -734,10 +734,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               onClick={onHeatmapToggle}
             >
               <EyeOff className="h-3 w-3" />
-              <span>{t('Hide heatmap')}</span>
+              <span>{t('Hide')}</span>
             </button>
           </div>
-          <div className="h-full px-2 py-2">
+          <div className="h-full px-1 py-2">
             <TimelineV2Heatmap
               activities={heatmapActivities}
               selectedDate={date}

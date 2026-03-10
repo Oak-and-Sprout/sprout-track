@@ -374,7 +374,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
 
         {/* Right-side stacked heatmap - desktop/tablet */}
         {isHeatmapVisible && (
-          <div className="hidden md:flex w-40 lg:w-56 border-l border-gray-200 bg-white relative timeline-v2-heatmap-panel overflow-hidden">
+          <div className="hidden md:flex w-24 px-1 border-l border-gray-200 bg-white relative timeline-v2-heatmap-panel overflow-hidden">
             <TimelineV2Heatmap
               activities={heatmapActivities}
               selectedDate={selectedDate}
