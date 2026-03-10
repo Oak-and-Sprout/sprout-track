@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FeedType, BreastSide } from '@prisma/client';
 import { FeedLogResponse, ActiveBreastFeedResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -11,7 +11,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { Check } from 'lucide-react';
+import { Check, ArrowLeftRight, Pause, Play } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
@@ -34,6 +34,9 @@ interface FeedFormProps {
   isFeeding?: boolean;
   activeFeedData?: ActiveBreastFeedResponse | null;
   onFeedToggle?: () => void;
+  onSwitch?: () => void;
+  onPause?: () => void;
+  onResume?: (side: 'LEFT' | 'RIGHT') => void;
 }
 
 export default function FeedForm({
@@ -46,6 +49,9 @@ export default function FeedForm({
   isFeeding = false,
   activeFeedData,
   onFeedToggle,
+  onSwitch,
+  onPause,
+  onResume,
 }: FeedFormProps) {
   const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
@@ -90,6 +96,68 @@ export default function FeedForm({
     defaultBottleUnit: 'OZ',
     defaultSolidsUnit: 'TBSP',
   });
+
+  // Editing state for session duration inputs (null = not editing, use formatted value)
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [manualEntry, setManualEntry] = useState(false);
+
+  // Live timer for active breastfeed session
+  const [liveElapsed, setLiveElapsed] = useState(0);
+
+  const calculateLiveElapsed = useCallback(() => {
+    if (!activeFeedData || activeFeedData.isPaused || !activeFeedData.currentSideStartTime) {
+      return 0;
+    }
+    return Math.floor((Date.now() - new Date(activeFeedData.currentSideStartTime).getTime()) / 1000);
+  }, [activeFeedData]);
+
+  useEffect(() => {
+    if (!isFeeding || !activeFeedData || activeFeedData.isPaused) {
+      setLiveElapsed(0);
+      return;
+    }
+    setLiveElapsed(calculateLiveElapsed());
+    const interval = setInterval(() => {
+      setLiveElapsed(calculateLiveElapsed());
+    }, 1000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setLiveElapsed(calculateLiveElapsed());
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isFeeding, activeFeedData, calculateLiveElapsed]);
+
+  // Compute live durations from activeFeedData + elapsed
+  const liveLeftDuration = activeFeedData
+    ? activeFeedData.leftDuration + (activeFeedData.activeSide === 'LEFT' && !activeFeedData.isPaused ? liveElapsed : 0)
+    : formData.leftDuration;
+  const liveRightDuration = activeFeedData
+    ? activeFeedData.rightDuration + (activeFeedData.activeSide === 'RIGHT' && !activeFeedData.isPaused ? liveElapsed : 0)
+    : formData.rightDuration;
+
+  // Sync live durations to formData for submission
+  useEffect(() => {
+    if (isFeeding && activeFeedData) {
+      setFormData(prev => ({
+        ...prev,
+        leftDuration: liveLeftDuration,
+        rightDuration: liveRightDuration,
+        feedDuration: liveLeftDuration + liveRightDuration,
+      }));
+    }
+  }, [liveLeftDuration, liveRightDuration, isFeeding, activeFeedData]);
+
+  const formatDuration = (totalSeconds: number): string => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const fetchLastAmount = async (type: FeedType) => {
     if (!babyId) return;
@@ -771,7 +839,8 @@ export default function FeedForm({
     
     // Reset initialization flag
     setIsInitialized(false);
-    
+    setManualEntry(false);
+
     // Call the original onClose
     onClose();
   };
@@ -950,43 +1019,161 @@ export default function FeedForm({
               </div>
             
             {formData.type === 'BREAST' && isFeeding && activeFeedData && !activity && (
-              /* End Feed mode - show accumulated durations with edit capability */
+              /* End Feed mode - live timer with switch/pause controls */
               <div className="space-y-4">
                 <div className="border rounded-lg p-4 active-breast-session">
                   <h3 className="text-sm font-medium mb-3 active-breast-session-title">{t('Active Breastfeed Session')}</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="form-label text-xs">{t('Left Duration (seconds)')}</label>
-                      <Input
-                        type="number"
-                        value={formData.leftDuration}
-                        onChange={(e) => setFormData(prev => ({ ...prev, leftDuration: parseInt(e.target.value) || 0 }))}
-                        disabled={loading}
-                        min={0}
-                      />
-                      <span className="text-xs mt-1 block active-breast-session-hint">
-                        {Math.floor(formData.leftDuration / 60)}m {formData.leftDuration % 60}s
-                      </span>
+                    <div className={`text-center p-3 rounded-lg ${activeFeedData.activeSide === 'LEFT' && !activeFeedData.isPaused ? 'timer-active-side border-2' : ''}`}>
+                      <label className="form-label text-xs">{t('Left')}</label>
+                      {activeFeedData.isPaused ? (
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="w-12 text-center px-1 session-duration-input"
+                            value={editingField === 'leftMin' ? editingValue : Math.floor(formData.leftDuration / 60).toString().padStart(2, '0')}
+                            onFocus={() => {
+                              setEditingField('leftMin');
+                              setEditingValue('');
+                            }}
+                            onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                            onBlur={() => {
+                              const mins = parseInt(editingValue) || 0;
+                              const secs = formData.leftDuration % 60;
+                              setFormData(prev => ({ ...prev, leftDuration: (mins * 60) + secs }));
+                              setEditingField(null);
+                            }}
+                            disabled={loading}
+                          />
+                          <span className="text-lg font-mono active-breast-session-title">:</span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="w-12 text-center px-1 session-duration-input"
+                            value={editingField === 'leftSec' ? editingValue : (formData.leftDuration % 60).toString().padStart(2, '0')}
+                            onFocus={() => {
+                              setEditingField('leftSec');
+                              setEditingValue('');
+                            }}
+                            onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                            onBlur={() => {
+                              const secs = Math.min(parseInt(editingValue) || 0, 59);
+                              const mins = Math.floor(formData.leftDuration / 60);
+                              setFormData(prev => ({ ...prev, leftDuration: (mins * 60) + secs }));
+                              setEditingField(null);
+                            }}
+                            disabled={loading}
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-2xl font-mono font-bold mt-1 active-breast-session-title">
+                          {formatDuration(liveLeftDuration)}
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <label className="form-label text-xs">{t('Right Duration (seconds)')}</label>
-                      <Input
-                        type="number"
-                        value={formData.rightDuration}
-                        onChange={(e) => setFormData(prev => ({ ...prev, rightDuration: parseInt(e.target.value) || 0 }))}
-                        disabled={loading}
-                        min={0}
-                      />
-                      <span className="text-xs mt-1 block active-breast-session-hint">
-                        {Math.floor(formData.rightDuration / 60)}m {formData.rightDuration % 60}s
-                      </span>
+                    <div className={`text-center p-3 rounded-lg ${activeFeedData.activeSide === 'RIGHT' && !activeFeedData.isPaused ? 'timer-active-side border-2' : ''}`}>
+                      <label className="form-label text-xs">{t('Right')}</label>
+                      {activeFeedData.isPaused ? (
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="w-12 text-center px-1 session-duration-input"
+                            value={editingField === 'rightMin' ? editingValue : Math.floor(formData.rightDuration / 60).toString().padStart(2, '0')}
+                            onFocus={() => {
+                              setEditingField('rightMin');
+                              setEditingValue('');
+                            }}
+                            onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                            onBlur={() => {
+                              const mins = parseInt(editingValue) || 0;
+                              const secs = formData.rightDuration % 60;
+                              setFormData(prev => ({ ...prev, rightDuration: (mins * 60) + secs }));
+                              setEditingField(null);
+                            }}
+                            disabled={loading}
+                          />
+                          <span className="text-lg font-mono active-breast-session-title">:</span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="w-12 text-center px-1 session-duration-input"
+                            value={editingField === 'rightSec' ? editingValue : (formData.rightDuration % 60).toString().padStart(2, '0')}
+                            onFocus={() => {
+                              setEditingField('rightSec');
+                              setEditingValue('');
+                            }}
+                            onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                            onBlur={() => {
+                              const secs = Math.min(parseInt(editingValue) || 0, 59);
+                              const mins = Math.floor(formData.rightDuration / 60);
+                              setFormData(prev => ({ ...prev, rightDuration: (mins * 60) + secs }));
+                              setEditingField(null);
+                            }}
+                            disabled={loading}
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-2xl font-mono font-bold mt-1 active-breast-session-title">
+                          {formatDuration(liveRightDuration)}
+                        </div>
+                      )}
                     </div>
+                  </div>
+                  {/* Control buttons */}
+                  <div className="flex justify-center gap-3 mt-4">
+                    {!activeFeedData.isPaused ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={onSwitch}
+                          title={t('Switch Side')}
+                        >
+                          <ArrowLeftRight className="h-5 w-5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={onPause}
+                          title={t('Pause Feed')}
+                        >
+                          <Pause className="h-5 w-5" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onResume?.('LEFT')}
+                          title={t('Resume Left')}
+                        >
+                          <Play className="h-4 w-4 mr-0.5" />
+                          <span className="text-xs font-semibold">L</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onResume?.('RIGHT')}
+                          title={t('Resume Right')}
+                        >
+                          <Play className="h-4 w-4 mr-0.5" />
+                          <span className="text-xs font-semibold">R</span>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            {formData.type === 'BREAST' && !isFeeding && !activity && (
+            {formData.type === 'BREAST' && !isFeeding && !activity && !manualEntry && (
               /* Start Feed mode - side selector + start button */
               <div className="space-y-4">
                 <label className="form-label">{t('Select Side to Start')}</label>
@@ -1009,6 +1196,125 @@ export default function FeedForm({
                   >
                     {t('Right Side')}
                   </Button>
+                </div>
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setManualEntry(true)}
+                    disabled={loading}
+                  >
+                    {t('Manual Entry')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {formData.type === 'BREAST' && !isFeeding && !activity && manualEntry && (
+              /* Manual entry mode - editable MM:SS inputs for both sides */
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4 active-breast-session">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium active-breast-session-title">{t('Manual Entry')}</h3>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setManualEntry(false);
+                        setFormData(prev => ({ ...prev, leftDuration: 0, rightDuration: 0 }));
+                      }}
+                    >
+                      {t('Cancel')}
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 rounded-lg">
+                      <label className="form-label text-xs">{t('Left')}</label>
+                      <div className="flex items-center justify-center gap-1 mt-1">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="w-12 text-center px-1 session-duration-input"
+                          value={editingField === 'leftMin' ? editingValue : Math.floor(formData.leftDuration / 60).toString().padStart(2, '0')}
+                          onFocus={() => {
+                            setEditingField('leftMin');
+                            setEditingValue('');
+                          }}
+                          onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                          onBlur={() => {
+                            const mins = parseInt(editingValue) || 0;
+                            const secs = formData.leftDuration % 60;
+                            setFormData(prev => ({ ...prev, leftDuration: (mins * 60) + secs }));
+                            setEditingField(null);
+                          }}
+                          disabled={loading}
+                        />
+                        <span className="text-lg font-mono active-breast-session-title">:</span>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="w-12 text-center px-1 session-duration-input"
+                          value={editingField === 'leftSec' ? editingValue : (formData.leftDuration % 60).toString().padStart(2, '0')}
+                          onFocus={() => {
+                            setEditingField('leftSec');
+                            setEditingValue('');
+                          }}
+                          onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                          onBlur={() => {
+                            const secs = Math.min(parseInt(editingValue) || 0, 59);
+                            const mins = Math.floor(formData.leftDuration / 60);
+                            setFormData(prev => ({ ...prev, leftDuration: (mins * 60) + secs }));
+                            setEditingField(null);
+                          }}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg">
+                      <label className="form-label text-xs">{t('Right')}</label>
+                      <div className="flex items-center justify-center gap-1 mt-1">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="w-12 text-center px-1 session-duration-input"
+                          value={editingField === 'rightMin' ? editingValue : Math.floor(formData.rightDuration / 60).toString().padStart(2, '0')}
+                          onFocus={() => {
+                            setEditingField('rightMin');
+                            setEditingValue('');
+                          }}
+                          onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                          onBlur={() => {
+                            const mins = parseInt(editingValue) || 0;
+                            const secs = formData.rightDuration % 60;
+                            setFormData(prev => ({ ...prev, rightDuration: (mins * 60) + secs }));
+                            setEditingField(null);
+                          }}
+                          disabled={loading}
+                        />
+                        <span className="text-lg font-mono active-breast-session-title">:</span>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          className="w-12 text-center px-1 session-duration-input"
+                          value={editingField === 'rightSec' ? editingValue : (formData.rightDuration % 60).toString().padStart(2, '0')}
+                          onFocus={() => {
+                            setEditingField('rightSec');
+                            setEditingValue('');
+                          }}
+                          onChange={(e) => setEditingValue(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                          onBlur={() => {
+                            const secs = Math.min(parseInt(editingValue) || 0, 59);
+                            const mins = Math.floor(formData.rightDuration / 60);
+                            setFormData(prev => ({ ...prev, rightDuration: (mins * 60) + secs }));
+                            setEditingField(null);
+                          }}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1095,7 +1401,7 @@ export default function FeedForm({
               <Button onClick={handleEndBreastfeed} disabled={loading} className="bg-red-600 hover:bg-red-700">
                 {t('End Feed')}
               </Button>
-            ) : formData.type === 'BREAST' && !isFeeding && !activity ? (
+            ) : formData.type === 'BREAST' && !isFeeding && !activity && !manualEntry ? (
               /* Start Feed mode - no save button needed, side buttons handle it */
               null
             ) : (

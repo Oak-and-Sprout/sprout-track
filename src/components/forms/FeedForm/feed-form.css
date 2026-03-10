@@ -128,3 +128,11 @@ html.dark .feed-form-container .font-medium {
 html.dark .feed-form-container .tracking-wider {
   color: #f3f4f6 !important;
 }
+
+/* Session duration MM:SS inputs in active session panel */
+.session-duration-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  height: 2.5rem;
+}

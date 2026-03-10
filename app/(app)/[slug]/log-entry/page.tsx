@@ -492,7 +492,13 @@ function HomeContent(): React.ReactElement {
           feedStartTime={feedStartTime}
           updateUnlockTimer={updateUnlockTimer}
           onSleepClick={() => setShowSleepModal(true)}
-          onFeedClick={() => setShowFeedModal(true)}
+          onFeedClick={() => {
+            // Auto-pause the timer when opening the End Feed form
+            if (selectedBaby?.id && feedingBabies.has(selectedBaby.id) && activeFeedData && !activeFeedData.isPaused) {
+              handleFeedPause();
+            }
+            setShowFeedModal(true);
+          }}
           onDiaperClick={() => setShowDiaperModal(true)}
           onNoteClick={() => setShowNoteModal(true)}
           onBathClick={() => setShowBathModal(true)}
@@ -641,6 +647,9 @@ function HomeContent(): React.ReactElement {
             checkFeedStatus(selectedBaby.id);
           }
         }}
+        onSwitch={handleFeedSwitch}
+        onPause={handleFeedPause}
+        onResume={handleFeedResume}
         onSuccess={async () => {
           if (selectedBaby?.id) {
             await refreshActivities(selectedBaby.id);
