@@ -6,11 +6,11 @@ import { checkIpLockout, recordFailedAttempt, resetFailedAttempts } from '../uti
 import { decrypt, isEncrypted } from '../utils/encryption';
 import { randomUUID } from 'crypto';
 import { logApiCall, getClientInfo } from '../utils/api-logger';
+import { ACCESS_TOKEN_LIFE, createRefreshToken, setRefreshTokenCookie } from '../utils/auth';
 
 // Secret key for JWT signing - in production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
-// Token expiration time in seconds (default to 12 hours if not specified)
-const TOKEN_EXPIRATION = parseInt(process.env.AUTH_LIFE || '1800', 10);
+const TOKEN_EXPIRATION = ACCESS_TOKEN_LIFE;
 
 // Authentication endpoint for caretakers or system PIN
 export async function POST(req: NextRequest) {
@@ -116,6 +116,15 @@ export async function POST(req: NextRequest) {
               isSysAdmin: true,
             },
           });
+
+          // Set refresh token cookie for sysadmin
+          const sysadminRefreshToken = createRefreshToken({
+            userId: 'sysadmin',
+            authType: 'SYSADMIN',
+            familyId: null,
+            accountId: null,
+          });
+          setRefreshTokenCookie(response, sysadminRefreshToken);
 
           // Log successful admin authentication
           logApiCall({
@@ -327,6 +336,15 @@ export async function POST(req: NextRequest) {
           // Reset failed attempts on successful login
           resetFailedAttempts(ip);
 
+          // Set refresh token cookie for system caretaker
+          const systemRefreshToken = createRefreshToken({
+            userId: systemCaretaker.id,
+            authType: 'SYSTEM',
+            familyId: systemCaretaker.familyId,
+            accountId: null,
+          });
+          setRefreshTokenCookie(response, systemRefreshToken);
+
           // Log successful system caretaker authentication
           logApiCall({
             method: req.method,
@@ -492,6 +510,15 @@ export async function POST(req: NextRequest) {
 
         // Reset failed attempts on successful login
         resetFailedAttempts(ip);
+
+        // Set refresh token cookie for caretaker
+        const caretakerRefreshToken = createRefreshToken({
+          userId: caretaker.id,
+          authType: authType as 'CARETAKER' | 'SYSTEM',
+          familyId: caretaker.familyId,
+          accountId: null,
+        });
+        setRefreshTokenCookie(response, caretakerRefreshToken);
 
         // Log successful caretaker authentication
         logApiCall({

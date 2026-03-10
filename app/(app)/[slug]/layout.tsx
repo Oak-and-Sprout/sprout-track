@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { BabyProvider, useBaby } from '../../context/baby';
 import { TimezoneProvider } from '../../context/timezone';
@@ -84,6 +84,38 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [showNotificationSplash, setShowNotificationSplash] = useState(false);
   const [paymentAccountStatus, setPaymentAccountStatus] = useState<any>(null);
   const familySlug = params?.slug as string;
+  const isRefreshingRef = useRef(false);
+
+  // Refresh the access token using the HTTP-only refresh token cookie
+  const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+    if (isRefreshingRef.current) return false;
+    isRefreshingRef.current = true;
+
+    try {
+      const response = await fetch('/api/auth/refresh-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data?.token) {
+          localStorage.setItem('authToken', data.data.token);
+          // Reset unlock time for PIN-based users
+          if (localStorage.getItem('unlockTime')) {
+            localStorage.setItem('unlockTime', Date.now().toString());
+          }
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing access token:', error);
+      return false;
+    } finally {
+      isRefreshingRef.current = false;
+    }
+  }, []);
 
   // Function to calculate baby's age
   const calculateAge = (birthday: Date) => {
@@ -472,11 +504,28 @@ function AppContent({ children }: { children: React.ReactNode }) {
         // The payload is base64 encoded, so we need to decode it
         const decodedPayload = JSON.parse(atob(payload));
         
-        // Check if token has expired
-        if (decodedPayload.exp && decodedPayload.exp * 1000 < Date.now()) {
-          console.log('JWT token has expired, logging out...');
-          handleLogout();
-          return;
+        // Check if token has expired or is near expiry — attempt refresh
+        if (decodedPayload.exp) {
+          const expiresAt = decodedPayload.exp * 1000;
+          const now = Date.now();
+          // Calculate buffer: 10% of token lifetime or 2 minutes, whichever is smaller
+          const tokenLifetime = decodedPayload.iat ? (decodedPayload.exp - decodedPayload.iat) * 1000 : 1800000;
+          const refreshBuffer = Math.min(120000, tokenLifetime * 0.1);
+
+          if (expiresAt < now) {
+            // Token already expired — try refresh before logging out
+            console.log('JWT token has expired, attempting refresh...');
+            refreshAccessToken().then(success => {
+              if (!success) {
+                console.log('Refresh failed, logging out...');
+                handleLogout();
+              }
+            });
+            return;
+          } else if (expiresAt - now < refreshBuffer && !isRefreshingRef.current) {
+            // Token about to expire — proactively refresh
+            refreshAccessToken();
+          }
         }
         
         // Check if user's family slug matches the current URL slug
@@ -523,7 +572,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         clearInterval(authCheckInterval);
       };
     }
-  }, [mounted, router, handleLogout, familySlug, pathname]);
+  }, [mounted, router, handleLogout, refreshAccessToken, familySlug, pathname]);
 
 
   // Listen for payment modal requests from child components
