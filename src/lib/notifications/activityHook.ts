@@ -23,22 +23,18 @@ const ACTIVITY_TYPE_MAP: Record<string, string> = {
   MEDICINE: 'medicine',
   pump: 'pump',
   PUMP: 'pump',
+  note: 'note',
+  NOTE: 'note',
+  wake: 'wake',
+  WAKE: 'wake',
 };
 
 /**
- * Get activity type display name
+ * Get localized activity type display name
  */
-function getActivityTypeName(activityType: string): string {
+function getActivityTypeName(activityType: string, lang: string): string {
   const normalized = ACTIVITY_TYPE_MAP[activityType] || activityType.toLowerCase();
-  const names: Record<string, string> = {
-    feed: 'Feed',
-    diaper: 'Diaper',
-    sleep: 'Sleep',
-    bath: 'Bath',
-    medicine: 'Medicine',
-    pump: 'Pump',
-  };
-  return names[normalized] || normalized;
+  return t(`notification.activityType.${normalized}`, lang);
 }
 
 /**
@@ -48,6 +44,131 @@ function getActivityTypeName(activityType: string): string {
 interface ActingUser {
   accountId?: string | null;
   caretakerId?: string | null;
+}
+
+/**
+ * Resolve the display name of the acting user (caretaker or account)
+ */
+async function resolveActorName(actingUser?: ActingUser): Promise<string> {
+  if (!actingUser) return '';
+
+  if (actingUser.caretakerId) {
+    const caretaker = await prisma.caretaker.findUnique({
+      where: { id: actingUser.caretakerId },
+      select: { name: true },
+    });
+    if (caretaker?.name) return caretaker.name;
+  }
+
+  if (actingUser.accountId) {
+    const account = await prisma.account.findUnique({
+      where: { id: actingUser.accountId },
+      select: { firstName: true },
+    });
+    if (account?.firstName) return account.firstName;
+  }
+
+  return '';
+}
+
+/**
+ * Build an activity-specific notification body with actor attribution
+ */
+function buildNotificationBody(
+  normalizedType: string,
+  babyName: string,
+  actorName: string,
+  userLanguage: string,
+  activityData?: any
+): string {
+  const byActor = actorName
+    ? t('notification.by', userLanguage, { actorName })
+    : '';
+
+  switch (normalizedType) {
+    case 'feed': {
+      const feedType = activityData?.type;
+      if (feedType === 'BOTTLE' && activityData?.amount) {
+        return t('notification.feed.bottle.body', userLanguage, {
+          babyName, amount: activityData.amount,
+          unit: activityData.unitAbbr || 'oz', byActor,
+        });
+      }
+      if (feedType === 'BREAST' && activityData?.side) {
+        return t('notification.feed.breast.body', userLanguage, {
+          babyName, side: activityData.side.toLowerCase(), byActor,
+        });
+      }
+      if (feedType === 'SOLIDS' && activityData?.food) {
+        return t('notification.feed.solids.body', userLanguage, {
+          babyName, food: activityData.food, byActor,
+        });
+      }
+      return t('notification.feed.generic.body', userLanguage, {
+        babyName, byActor,
+      });
+    }
+    case 'diaper': {
+      const diaperType = activityData?.type;
+      if (diaperType && ['WET', 'DIRTY', 'BOTH'].includes(diaperType)) {
+        return t(`notification.diaper.${diaperType.toLowerCase()}.body`, userLanguage, {
+          babyName, byActor,
+        });
+      }
+      return t('notification.diaper.generic.body', userLanguage, {
+        babyName, byActor,
+      });
+    }
+    case 'sleep':
+      return t('notification.sleep.body', userLanguage, { babyName, byActor });
+    case 'wake': {
+      if (activityData?.duration) {
+        const hours = Math.floor(activityData.duration / 60);
+        const mins = Math.round(activityData.duration % 60);
+        const durationStr = hours > 0
+          ? `${hours}h ${mins}m`
+          : `${mins}m`;
+        return t('notification.wake.duration.body', userLanguage, {
+          babyName, duration: durationStr, byActor,
+        });
+      }
+      return t('notification.wake.body', userLanguage, { babyName, byActor });
+    }
+    case 'bath':
+      return t('notification.bath.body', userLanguage, { babyName, byActor });
+    case 'pump': {
+      if (activityData?.totalAmount) {
+        return t('notification.pump.amount.body', userLanguage, {
+          babyName, amount: activityData.totalAmount,
+          unit: activityData.unitAbbr || 'oz', byActor,
+        });
+      }
+      return t('notification.pump.body', userLanguage, { babyName, byActor });
+    }
+    case 'medicine': {
+      if (activityData?.medicineName) {
+        return t('notification.medicine.named.body', userLanguage, {
+          babyName, medicineName: activityData.medicineName, byActor,
+        });
+      }
+      return t('notification.medicine.body', userLanguage, { babyName, byActor });
+    }
+    case 'note': {
+      if (activityData?.content) {
+        const notePreview = activityData.content.length > 120
+          ? activityData.content.substring(0, 120) + '...'
+          : activityData.content;
+        return t('notification.note.body', userLanguage, {
+          babyName, byActor, notePreview,
+        });
+      }
+      return t('notification.note.notext.body', userLanguage, { babyName, byActor });
+    }
+    default:
+      return t('notification.activity.body', userLanguage, {
+        activityName: normalizedType, byActor,
+      });
+  }
 }
 
 /**
@@ -72,7 +193,7 @@ export async function notifyActivityCreated(
     // Get baby information for notification
     const baby = await prisma.baby.findUnique({
       where: { id: babyId },
-      select: { firstName: true, lastName: true },
+      select: { firstName: true },
     });
 
     if (!baby) {
@@ -80,8 +201,8 @@ export async function notifyActivityCreated(
       return;
     }
 
-    const babyName = `${baby.firstName} ${baby.lastName}`.trim();
-    const activityName = getActivityTypeName(activityType);
+    const babyName = baby.firstName;
+    const actorName = await resolveActorName(actingUser);
 
     // Query matching NotificationPreference records with user language
     const preferences = await prisma.notificationPreference.findMany({
@@ -156,14 +277,14 @@ export async function notifyActivityCreated(
       }
 
       // Create localized notification payload
+      const normalizedType = ACTIVITY_TYPE_MAP[activityType] || activityType.toLowerCase();
+      const activityName = getActivityTypeName(activityType, userLanguage);
       const payload: NotificationPayload = {
         title: t('notification.activity.title', userLanguage, {
           activityName,
           babyName,
         }),
-        body: t('notification.activity.body', userLanguage, {
-          activityName: activityName.toLowerCase(),
-        }),
+        body: buildNotificationBody(normalizedType, babyName, actorName, userLanguage, activityData),
         icon: '/sprout-128.png',
         badge: '/sprout-128.png',
         tag: `activity-${babyId}-${activityType}-${Date.now()}`, // Unique tag for each notification

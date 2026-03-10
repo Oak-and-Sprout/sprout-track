@@ -136,6 +136,11 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       },
     });
 
+    // Notify when baby wakes up (endTime set for the first time)
+    if (endTimeUTC && !existingSleepLog.endTime) {
+      notifyActivityCreated(sleepLog.babyId, 'wake', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { duration }).catch(console.error);
+    }
+
     // Format dates as ISO strings for response
     const response: SleepLogResponse = {
       ...sleepLog,

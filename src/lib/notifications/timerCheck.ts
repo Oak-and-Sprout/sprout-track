@@ -181,7 +181,7 @@ async function sendTimerNotification(
   lastActivityTime: Date,
   thresholdMinutes: number
 ): Promise<void> {
-  const babyName = `${baby.firstName} ${baby.lastName}`.trim();
+  const babyName = baby.firstName;
   const now = new Date();
   const timeSinceActivity = (now.getTime() - lastActivityTime.getTime()) / (1000 * 60);
 

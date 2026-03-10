@@ -58,7 +58,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(medicineLog.babyId, 'medicine', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { medicineId: body.medicineId }).catch(console.error);
+    notifyActivityCreated(medicineLog.babyId, 'medicine', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { medicineId: body.medicineId, medicineName: medicine?.name }).catch(console.error);
 
     return NextResponse.json<ApiResponse<MedicineLogResponse>>({
       success: true,
