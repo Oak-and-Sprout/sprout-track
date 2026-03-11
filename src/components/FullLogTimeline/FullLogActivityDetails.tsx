@@ -53,8 +53,12 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
   
   const handleEdit = () => {
     if (activity) {
+      // Check play activity before sleep since both have duration and type
+      if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
+        onEdit(activity, 'play');
+      }
       // Check for breast milk adjustment before pump
-      if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+      else if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
         onEdit(activity, 'breast-milk-adjustment');
       }
       // Check for pump activity first since it can also have duration

@@ -10,13 +10,14 @@ import PumpForm from '@/src/components/forms/PumpForm';
 import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
+import ActivityForm from '@/src/components/forms/ActivityForm';
 import { ActivityType, FilterType, FullLogTimelineProps } from './full-log-timeline.types';
 import FullLogFilter from './FullLogFilter';
 import FullLogSearchBar from './FullLogSearchBar';
 import FullLogActivityList from './FullLogActivityList';
 import FullLogActivityDetails from './FullLogActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '@/src/components/Timeline/utils';
-import { PumpLogResponse, MedicineLogResponse, BreastMilkAdjustmentResponse } from '@/app/api/types';
+import { PumpLogResponse, MedicineLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse } from '@/app/api/types';
 import { cn } from '@/src/lib/utils';
 import styles from './full-log-timeline.styles';
 import './full-log-timeline.css';
@@ -37,7 +38,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play' | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -227,11 +228,20 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       if (activity.doseAmount && activity.doseAmount.toString().includes(searchLower)) return true;
       if (activity.unitAbbr && activity.unitAbbr.toLowerCase().includes(searchLower)) return true;
       if (activity.notes && activity.notes.toLowerCase().includes(searchLower)) return true;
-      if (activity.medicine && activity.medicine.name && 
+      if (activity.medicine && activity.medicine.name &&
           activity.medicine.name.toLowerCase().includes(searchLower)) return true;
       return false;
     }
-    
+
+    // Play activity search
+    if ('activities' in activity && 'type' in activity) {
+      const act = activity as any;
+      if (act.type && act.type.toLowerCase().includes(searchLower)) return true;
+      if (act.activities && act.activities.toLowerCase().includes(searchLower)) return true;
+      if (act.location && act.location.toLowerCase().includes(searchLower)) return true;
+      return false;
+    }
+
     return false;
   }, []);
 
@@ -262,6 +272,8 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
               return 'value' in activity && 'unit' in activity;
             case 'medicine':
               return 'doseAmount' in activity && 'medicineId' in activity;
+            case 'play':
+              return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
             default:
               return true;
           }
@@ -347,7 +359,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
   };
 
   // Handle activity editing
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -419,7 +431,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
             onSleepToggle={() => {}}
             babyId={selectedActivity.babyId}
             initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
-            activity={'duration' in selectedActivity && 'type' in selectedActivity ? selectedActivity : undefined}
+            activity={'duration' in selectedActivity && 'type' in selectedActivity && !('activities' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={() => {
               setEditModalType(null);
               setSelectedActivity(null);
@@ -548,8 +560,24 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
             }}
             babyId={selectedActivity.babyId}
             initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
-            activity={'doseAmount' in selectedActivity && 'medicineId' in selectedActivity ? 
+            activity={'doseAmount' in selectedActivity && 'medicineId' in selectedActivity ?
               (selectedActivity as unknown as MedicineLogResponse) : undefined}
+            onSuccess={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+              onActivityDeleted?.();
+            }}
+          />
+          <ActivityForm
+            isOpen={editModalType === 'play'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
+            activity={'activities' in selectedActivity && 'type' in selectedActivity ?
+              (selectedActivity as unknown as PlayLogResponse) : undefined}
             onSuccess={() => {
               setEditModalType(null);
               setSelectedActivity(null);

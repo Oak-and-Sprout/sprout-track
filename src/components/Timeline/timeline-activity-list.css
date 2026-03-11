@@ -146,6 +146,9 @@
 .timeline-event.supplement::before {
   background: #43B755 !important; /* green - supplements */
 }
+.timeline-event.play::before {
+  background: #F3C4A2 !important; /* peach - play activity */
+}
 
 .event-icon {
   width: 2.25rem; /* 36px */
@@ -242,6 +245,14 @@
 .event-icon.supplement svg,
 .event-icon.supplement svg path {
   color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+.event-icon.play {
+  background: #F3C4A2; /* peach - play activity */
+}
+.event-icon.play svg,
+.event-icon.play svg path {
+  color: #ffffff !important; /* white on peach background */
   stroke: #ffffff !important;
 }
 
@@ -533,6 +544,16 @@ html.dark .event-icon.supplement {
 
 html.dark .event-icon.supplement svg,
 html.dark .event-icon.supplement svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.play {
+  background: #F3C4A2 !important; /* peach */
+}
+
+html.dark .event-icon.play svg,
+html.dark .event-icon.play svg path {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }

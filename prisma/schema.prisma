@@ -67,6 +67,7 @@ enum PlayType {
   TUMMY_TIME
   INDOOR_PLAY
   OUTDOOR_PLAY
+  WALK
   CUSTOM
 }
 

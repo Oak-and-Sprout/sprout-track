@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
-import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse } from '../types';
+import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
-  SleepLogResponse | FeedLogResponse | DiaperLogResponse | NoteResponse | BathLogResponse | PumpLogResponse | MilestoneResponse | MeasurementResponse | MedicineLogResponse | BreastMilkAdjustmentResponse
+  SleepLogResponse | FeedLogResponse | DiaperLogResponse | NoteResponse | BathLogResponse | PumpLogResponse | PlayLogResponse | MilestoneResponse | MeasurementResponse | MedicineLogResponse | BreastMilkAdjustmentResponse
 ) & {
   caretakerId?: string | null;
   caretakerName?: string;
@@ -140,7 +140,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     }
 
     // Get recent activities from each type with caretaker information
-    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments] = await Promise.all([
+    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, playLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments] = await Promise.all([
       prisma.sleepLog.findMany({
         where: {
           babyId,
@@ -248,6 +248,22 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
             }
           } : {}),
           familyId, // Filter by the verified family ID
+        },
+        include: {
+          caretaker: true
+        },
+        orderBy: { startTime: 'desc' }
+      }),
+      prisma.playLog.findMany({
+        where: {
+          babyId,
+          ...(startDateUTC && endDateUTC ? {
+            startTime: {
+              gte: startDateUTC,
+              lte: endDateUTC
+            }
+          } : {}),
+          familyId,
         },
         include: {
           caretaker: true
@@ -433,6 +449,22 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         };
       });
       
+    // Format play logs
+    const formattedPlayLogs: ActivityTypeWithCaretaker[] = playLogs
+      .map(log => {
+        const { caretaker, ...logWithoutCaretaker } = log;
+        return {
+          ...logWithoutCaretaker,
+          startTime: formatForResponse(log.startTime) || '',
+          endTime: formatForResponse(log.endTime) || null,
+          createdAt: formatForResponse(log.createdAt) || '',
+          updatedAt: formatForResponse(log.updatedAt) || '',
+          deletedAt: formatForResponse(log.deletedAt),
+          caretakerId: log.caretakerId,
+          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+        };
+      });
+
     // Format medicine logs
     const formattedMedicineLogs: ActivityTypeWithCaretaker[] = medicineLogs
       .map(log => {
@@ -513,6 +545,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       ...formattedNoteLogs,
       ...formattedBathLogs,
       ...formattedPumpLogs,
+      ...formattedPlayLogs,
       ...formattedMilestoneLogs,
       ...formattedMeasurementLogs,
       ...formattedMedicineLogs,

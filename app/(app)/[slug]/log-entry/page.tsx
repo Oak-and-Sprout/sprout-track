@@ -24,6 +24,7 @@ import PumpForm from '@/src/components/forms/PumpForm';
 import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MedicineForm from '@/src/components/forms/MedicineForm';
+import ActivityForm from '@/src/components/forms/ActivityForm';
 import { useParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
@@ -45,6 +46,7 @@ function HomeContent(): React.ReactElement {
   const [showMeasurementModal, setShowMeasurementModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showMedicineModal, setShowMedicineModal] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
   const [activities, setActivities] = useState<ActivityType[]>([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [localTime, setLocalTime] = useState<string>('');
@@ -506,6 +508,7 @@ function HomeContent(): React.ReactElement {
           onMeasurementClick={() => setShowMeasurementModal(true)}
           onMilestoneClick={() => setShowMilestoneModal(true)}
           onMedicineClick={() => setShowMedicineModal(true)}
+          onPlayClick={() => setShowActivityModal(true)}
         />
       )}
 
@@ -763,6 +766,21 @@ function HomeContent(): React.ReactElement {
         }}
       />
       
+      {/* Activity Form */}
+      <ActivityForm
+        isOpen={showActivityModal}
+        onClose={() => {
+          setShowActivityModal(false);
+        }}
+        babyId={selectedBaby?.id || ''}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            refreshActivities(selectedBaby.id);
+          }
+        }}
+      />
+
       {/* Settings Modal */}
       <SettingsModal
         open={showSettingsModal}

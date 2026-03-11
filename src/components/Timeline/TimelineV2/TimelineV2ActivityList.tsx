@@ -222,15 +222,17 @@ const TimelineV2ActivityList = ({
                             if (bgClass.includes('bg-[#4875EC]')) return '#4875EC'; // blue - matches old timeline
                             if (bgClass.includes('bg-[#EA6A5E]')) return '#EA6A5E'; // red - matches old timeline
                             if (bgClass.includes('bg-[#43B755]')) return '#43B755'; // green - matches old timeline
+                            if (bgClass.includes('bg-[#F3C4A2]')) return '#F3C4A2'; // peach - play activity
                             return '#9ca3af'; // default gray
                           };
                           
                           const activityColor = getActivityColor(style.bg);
                           
                           // Determine activity type class for styling
-                          // Check pump FIRST since it also has duration and startTime
+                          // Check play and pump FIRST since they also have duration and startTime
                           let activityTypeClass = '';
-                          if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
+                          if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) activityTypeClass = 'play';
+                          else if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
                           else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
                           else if ('duration' in activity && 'type' in activity) activityTypeClass = 'sleep';
                           else if ('amount' in activity) activityTypeClass = 'feed';
@@ -301,9 +303,17 @@ const TimelineV2ActivityList = ({
                                       return amounts.join(' • ');
                                     }
                                     
+                                    // Play activity - check before sleep/duration
+                                    if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
+                                      const parts = [];
+                                      if ((activity as any).duration) parts.push(`${(activity as any).duration} ${t('min')}`);
+                                      if ((activity as any).activities) parts.push((activity as any).activities);
+                                      return parts.length > 0 ? parts.join(' • ') : t('Activity');
+                                    }
+
                                     if ('duration' in activity) {
-                                      const location = ('location' in activity && activity.location && activity.location !== 'OTHER') ? 
-                                        activity.location.split('_').map((word: string) => 
+                                      const location = ('location' in activity && activity.location && activity.location !== 'OTHER') ?
+                                        activity.location.split('_').map((word: string) =>
                                           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                                         ).join(' ') : '';
                                       const duration = activity.duration ? `${Math.floor(activity.duration / 60)}h ${activity.duration % 60}m` : '';

@@ -15,7 +15,8 @@ import {
   Ruler,
   Icon,
   Eye,
-  EyeOff
+  EyeOff,
+  Baby
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -110,11 +111,27 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let pumpTotal = 0;
     let milestoneCount = 0;
     let measurementCount = 0;
+    let playCount = 0;
+    let totalPlayMinutes = 0;
     let awakeMinutes = 0;
 
+    const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
+
     activities.forEach(activity => {
+      // Play activities - check before sleep since both have duration, startTime, type
+      if ('activities' in activity && 'type' in activity && PLAY_TYPES.includes((activity as any).type)) {
+        const time = new Date((activity as any).startTime);
+        if (time >= startOfDay && time <= endOfDay) {
+          playCount++;
+          if ((activity as any).duration) {
+            totalPlayMinutes += (activity as any).duration;
+          }
+        }
+        return; // Skip further checks for this activity
+      }
+
       // Sleep activities (exclude pump activities which also have duration and startTime)
-      if ('duration' in activity && 'startTime' in activity && 
+      if ('duration' in activity && 'startTime' in activity &&
           'type' in activity && // Sleep activities have type (NAP or NIGHT_SLEEP)
           !('leftAmount' in activity || 'rightAmount' in activity)) { // Exclude pump activities
         const startTime = new Date(activity.startTime);
@@ -569,6 +586,21 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         icon: <Ruler className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#EA6A5E]', // red - matches timeline
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Play/Activity tile
+    if (playCount > 0) {
+      const playLabel = totalPlayMinutes > 0 ? formatMinutes(totalPlayMinutes) : t('Play Time');
+      tiles.push({
+        filter: 'play',
+        label: playLabel,
+        value: playCount.toString(),
+        icon: <Baby className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#F3C4A2]', // peach - matches play activity
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });

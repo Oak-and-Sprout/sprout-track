@@ -28,8 +28,8 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
     
     // Default settings to use if none are found
     const defaultSettings: ActivitySettings = {
-      order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'],
-      visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'],
+      order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine'],
+      visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine'],
       caretakerId: caretakerId || null,
     };
     
@@ -314,7 +314,7 @@ async function saveActivitySettings(req: NextRequest, authContext: AuthResult): 
     
     // Default activities list - keep in sync with the one in getActivitySettings
     const defaultActivities = [
-      'sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'
+      'sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine'
     ];
     
     // Check for any missing activities in the provided order

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityTile } from '@/src/components/ui/activity-tile';
 import { StatusBubble } from "@/src/components/ui/status-bubble";
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActivitySettings } from '@/app/api/types';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActivitySettings } from '@/app/api/types';
 import { ArrowDownUp } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
@@ -36,6 +36,7 @@ interface ActivityTileGroupProps {
   onMeasurementClick: () => void;
   onMilestoneClick: () => void;
   onMedicineClick: () => void;
+  onPlayClick?: () => void;
 }
 
 /**
@@ -45,7 +46,7 @@ interface ActivityTileGroupProps {
  * and displaying status bubbles with timing information.
  */
 // Activity type definition
-type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'measurement' | 'milestone' | 'medicine';
+type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine';
 
 export function ActivityTileGroup({
   selectedBaby,
@@ -73,7 +74,8 @@ export function ActivityTileGroup({
     if (medicineForm) {
       (medicineForm as HTMLElement).click();
     }
-  }
+  },
+  onPlayClick = () => {}
 }: ActivityTileGroupProps) {
   const { theme } = useTheme();
   const { t } = useLocalization();
@@ -95,7 +97,7 @@ export function ActivityTileGroup({
   if (!selectedBaby?.id) return null;
 
   // Define all activity types
-  const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'];
+  const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine'];
   
   // State for visible activities and their order
   const [visibleActivities, setVisibleActivities] = useState<Set<ActivityType>>(
@@ -243,7 +245,7 @@ export function ActivityTileGroup({
   // Function to set default settings
   const setDefaultSettings = () => {
     // Define all activity types
-    const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'];
+    const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine'];
     
     // Set default order and make all activities visible by default
     setActivityOrder([...allActivityTypes]);
@@ -261,8 +263,8 @@ export function ActivityTileGroup({
   };
   
   // Refs to store the original settings for comparison
-  const originalOrderRef = React.useRef<ActivityType[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine']);
-  const originalVisibleRef = React.useRef<string[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine']);
+  const originalOrderRef = React.useRef<ActivityType[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine']);
+  const originalVisibleRef = React.useRef<string[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine']);
   
   // Track if settings have been modified since loading
   const [settingsModified, setSettingsModified] = useState(false);
@@ -385,7 +387,8 @@ export function ActivityTileGroup({
     pump: t('Pump'),
     measurement: t('Measurement'),
     milestone: t('Milestone'),
-    medicine: t('Medicine')
+    medicine: t('Medicine'),
+    play: t('Activity')
   };
 
   // Function to render activity tile based on type
@@ -662,6 +665,35 @@ export function ActivityTileGroup({
               onClick={() => {
                 updateUnlockTimer();
                 onMilestoneClick();
+              }}
+            />
+          </div>
+        );
+      case 'play':
+        return (
+          <div key="play" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+            <ActivityTile
+              activity={{
+                id: 'play-button',
+                babyId: selectedBaby.id,
+                startTime: new Date().toISOString(),
+                endTime: null,
+                duration: null,
+                type: 'TUMMY_TIME',
+                location: null,
+                activities: null,
+                caretakerId: null,
+                familyId: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                deletedAt: null
+              } as unknown as PlayLogResponse}
+              title={t('Activity')}
+              variant="play"
+              isButton={true}
+              onClick={() => {
+                updateUnlockTimer();
+                onPlayClick();
               }}
             />
           </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Edit, Icon, LampWallDown, Trophy } from 'lucide-react';
+import { Moon, Edit, Icon, LampWallDown, Trophy, Baby, Activity } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { cn } from "@/src/lib/utils";
 import { activityTileStyles as styles } from './activity-tile.styles';
@@ -39,6 +39,14 @@ export function ActivityTileIcon({
       } else if ('condition' in activity) {
         icon = <Icon iconNode={diaper} className={cn(styles.icon.base, styles.icon.variants[variant])} />;
       }
+    } else if ('activities' in activity && 'startTime' in activity && 'type' in activity &&
+      ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
+      icon = (
+        <div className="relative" style={{ width: '4rem', height: '4rem' }}>
+          <Baby className="absolute top-0 left-0 h-8 w-8" style={{ color: '#F3C4A2' }} />
+          <Activity className="absolute bottom-0 right-0 h-8 w-8" style={{ color: '#F3C4A2' }} />
+        </div>
+      );
     } else if ('content' in activity) {
       icon = <Edit className={cn(styles.icon.base, styles.icon.variants[variant])} />;
     } else if ('leftAmount' in activity || 'rightAmount' in activity) {

@@ -9,19 +9,20 @@ import PumpForm from '@/src/components/forms/PumpForm';
 import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
+import ActivityForm from '@/src/components/forms/ActivityForm';
 import { ActivityType, FilterType, TimelineProps } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
-import { PumpLogResponse, BreastMilkAdjustmentResponse } from '@/app/api/types';
+import { PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse } from '@/app/api/types';
 
 const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
   
@@ -300,6 +301,8 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
               return 'title' in activity && 'category' in activity;
             case 'measurement':
               return 'value' in activity && 'unit' in activity;
+            case 'play':
+              return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
             default:
               return true;
           }
@@ -336,7 +339,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -402,7 +405,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'duration' in selectedActivity && 'type' in selectedActivity ? selectedActivity : undefined}
+            activity={'duration' in selectedActivity && 'type' in selectedActivity && !('activities' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
             isSleeping={false}
             onSleepToggle={() => {}}
@@ -498,6 +501,18 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
                 ? !!(selectedActivity.medicine as any).isSupplement
                 : false
             }
+          />
+          <ActivityForm
+            isOpen={editModalType === 'play'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
+            activity={'activities' in selectedActivity && 'type' in selectedActivity ?
+              (selectedActivity as unknown as PlayLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
           />
         </>
       )}

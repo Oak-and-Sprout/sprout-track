@@ -10,19 +10,20 @@ import PumpForm from '@/src/components/forms/PumpForm';
 import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
+import ActivityForm from '@/src/components/forms/ActivityForm';
 import DailyStats from '@/src/components/DailyStats';
 import { ActivityType, FilterType, TimelineProps } from './types';
 import TimelineFilter from './TimelineFilter';
 import TimelineActivityList from './TimelineActivityList';
 import TimelineActivityDetails from './TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from './utils';
-import { PumpLogResponse, BreastMilkAdjustmentResponse } from '@/app/api/types';
+import { PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse } from '@/app/api/types';
 
 const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
@@ -279,7 +280,7 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -335,7 +336,7 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'duration' in selectedActivity && 'type' in selectedActivity ? selectedActivity : undefined}
+            activity={'duration' in selectedActivity && 'type' in selectedActivity && !('activities' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
             isSleeping={false}
             onSleepToggle={() => {}}
@@ -431,6 +432,18 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
                 ? !!(selectedActivity.medicine as any).isSupplement
                 : false
             }
+          />
+          <ActivityForm
+            isOpen={editModalType === 'play'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
+            activity={'activities' in selectedActivity && 'type' in selectedActivity ?
+              (selectedActivity as unknown as PlayLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
           />
         </>
       )}
