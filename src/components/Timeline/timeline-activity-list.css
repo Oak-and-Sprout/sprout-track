@@ -140,8 +140,11 @@
 .timeline-event.measurement::before { 
   background: #EA6A5E !important; /* red - matches old timeline */
 }
-.timeline-event.medicine::before { 
+.timeline-event.medicine::before {
   background: #43B755 !important; /* green - matches old timeline */
+}
+.timeline-event.supplement::before {
+  background: #43B755 !important; /* green - supplements */
 }
 
 .event-icon {
@@ -231,6 +234,14 @@
 .event-icon.medicine svg,
 .event-icon.medicine svg path {
   color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.supplement {
+  background: #43B755; /* green - supplements */
+}
+.event-icon.supplement svg,
+.event-icon.supplement svg path {
+  color: #ffffff !important;
   stroke: #ffffff !important;
 }
 
@@ -512,6 +523,16 @@ html.dark .event-icon.medicine {
 
 html.dark .event-icon.medicine svg,
 html.dark .event-icon.medicine svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.supplement {
+  background: #43B755 !important; /* green */
+}
+
+html.dark .event-icon.supplement svg,
+html.dark .event-icon.supplement svg path {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }

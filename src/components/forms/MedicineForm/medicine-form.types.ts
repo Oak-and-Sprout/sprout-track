@@ -3,7 +3,7 @@ import { Medicine, MedicineLog } from '@prisma/client';
 /**
  * Tab types for the MedicineForm component
  */
-export type MedicineFormTab = 'active-doses' | 'manage-medicines';
+export type MedicineFormTab = 'active-doses' | 'manage-medicines' | 'supplements';
 
 /**
  * Props for the MedicineForm component
@@ -58,7 +58,12 @@ export interface ActiveDosesTabProps {
    * Function to open the Give Medicine form
    */
   onGiveMedicine?: () => void;
-  
+
+  /**
+   * Function to open the Give Supplement form
+   */
+  onGiveSupplement?: () => void;
+
   /**
    * Trigger value that changes when data should be refreshed
    */
@@ -111,6 +116,21 @@ export interface ManageMedicinesTabProps {
 }
 
 /**
+ * Props for the ManageSupplementsTab component
+ */
+export interface ManageSupplementsTabProps {
+  /**
+   * Function to refresh the supplements data
+   */
+  refreshData: () => void;
+
+  /**
+   * Function to open the Give Supplement form
+   */
+  onGiveSupplement?: () => void;
+}
+
+/**
  * Medicine data with related contact information
  */
 export interface MedicineWithContacts extends Medicine {
@@ -149,6 +169,7 @@ export interface MedicineFormData {
   doseMinTime?: string;
   notes?: string;
   active?: boolean;
+  isSupplement?: boolean;
   contactIds?: string[];
 }
 

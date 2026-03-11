@@ -90,7 +90,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
         const fetchOptions = { headers: { 'Authorization': `Bearer ${authToken}` } };
 
         // Fetch all medicines
-        const medicinesResponse = await fetch('/api/medicine', fetchOptions);
+        const medicinesResponse = await fetch('/api/medicine?isSupplement=false', fetchOptions);
         if (!medicinesResponse.ok) throw new Error(t('Failed to fetch medicines'));
         const medicinesData = await medicinesResponse.json();
         

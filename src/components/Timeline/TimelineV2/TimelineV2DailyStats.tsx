@@ -7,6 +7,7 @@ import {
   Moon,
   Sun,
   PillBottle,
+  Pill,
   Edit,
   Bath,
   LampWallDown,
@@ -102,6 +103,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let rightBreastFeedMinutes = 0;
     const solidsAmounts: Record<string, number> = {};
     const medicineStats: Record<string, { count: number, total: number, unit: string }> = {};
+    const supplementStats: Record<string, { count: number, total: number, unit: string }> = {};
     let noteCount = 0;
     let bathCount = 0;
     let pumpCount = 0;
@@ -197,29 +199,33 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
       }
       
-      // Medicine activities
+      // Medicine and supplement activities
       if ('doseAmount' in activity && 'medicineId' in activity) {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
-          // Get medicine name
+          // Determine if supplement
+          const isSupplement = 'medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && (activity.medicine as any).isSupplement;
+          const targetStats = isSupplement ? supplementStats : medicineStats;
+
+          // Get medicine/supplement name
           let medicineName = t('unknown');
           if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
             medicineName = (activity.medicine as { name?: string }).name || medicineName;
           }
-          
-          // Initialize medicine record if it doesn't exist
-          if (!medicineStats[medicineName]) {
-            medicineStats[medicineName] = { 
-              count: 0, 
-              total: 0, 
-              unit: activity.unitAbbr || '' 
+
+          // Initialize record if it doesn't exist
+          if (!targetStats[medicineName]) {
+            targetStats[medicineName] = {
+              count: 0,
+              total: 0,
+              unit: activity.unitAbbr || ''
             };
           }
-          
+
           // Increment count and add to total
-          medicineStats[medicineName].count += 1;
+          targetStats[medicineName].count += 1;
           if (activity.doseAmount && typeof activity.doseAmount === 'number') {
-            medicineStats[medicineName].total += activity.doseAmount;
+            targetStats[medicineName].total += activity.doseAmount;
           }
         }
       }
@@ -419,7 +425,6 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     const medicineEntries = Object.entries(medicineStats).filter(([_, stats]) => stats.count > 0);
     if (medicineEntries.length > 0) {
       if (medicineEntries.length === 1) {
-        // Single medicine: show "MedicineName: countx (totalAmount unit)"
         const [medicineName, stats] = medicineEntries[0];
         tiles.push({
           filter: 'medicine',
@@ -432,17 +437,48 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           bgActiveColor: 'bg-gray-100'
         });
       } else {
-        // Multiple medicines: show all in label "Med1: 2x (10mg), Med2: 1x (5mg)"
         const totalCount = medicineEntries.reduce((sum, [_, stats]) => sum + stats.count, 0);
         const label = medicineEntries
           .map(([name, stats]) => `${name}: ${stats.count}x (${stats.total}${stats.unit})`)
           .join(', ');
-        
         tiles.push({
           filter: 'medicine',
           label: label,
           value: totalCount.toString(),
           icon: <PillBottle className="h-full w-full" />,
+          bgColor: 'bg-gray-50',
+          iconColor: 'text-[#43B755]', // green - matches timeline
+          borderColor: 'border-gray-500',
+          bgActiveColor: 'bg-gray-100'
+        });
+      }
+    }
+
+    // Supplement tiles
+    const supplementEntries = Object.entries(supplementStats).filter(([_, stats]) => stats.count > 0);
+    if (supplementEntries.length > 0) {
+      if (supplementEntries.length === 1) {
+        const [supplementName, stats] = supplementEntries[0];
+        tiles.push({
+          filter: 'medicine',
+          label: `${supplementName}: ${stats.count}x (${stats.total}${stats.unit})`,
+          value: stats.count.toString(),
+          icon: <Pill className="h-full w-full" />,
+          bgColor: 'bg-gray-50',
+          iconColor: 'text-[#43B755]', // green - matches timeline
+          borderColor: 'border-gray-500',
+          bgActiveColor: 'bg-gray-100'
+        });
+      } else {
+        const totalCount = supplementEntries.reduce((sum, [_, stats]) => sum + stats.count, 0);
+        const label = supplementEntries
+          .map(([name, stats]) => `${name}: ${stats.count}x (${stats.total}${stats.unit})`)
+          .join(', ');
+        tiles.push({
+          filter: 'medicine',
+          label: label,
+          value: totalCount.toString(),
+          icon: <Pill className="h-full w-full" />,
           bgColor: 'bg-gray-50',
           iconColor: 'text-[#43B755]', // green - matches timeline
           borderColor: 'border-gray-500',

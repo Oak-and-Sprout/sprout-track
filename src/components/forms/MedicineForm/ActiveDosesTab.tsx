@@ -29,7 +29,7 @@ interface ActiveDose {
   hasRecentDoses: boolean; // Track if there are doses in the last 24 hours
   contacts?: Contact[]; // Add contacts to the ActiveDose interface
 }
-import { PillBottle, Clock, AlertCircle, Loader2, ChevronDown, Phone, Mail, Plus } from 'lucide-react';
+import { PillBottle, Pill, Clock, AlertCircle, Loader2, ChevronDown, Phone, Mail, Plus } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
@@ -40,12 +40,22 @@ import { useLocalization } from '@/src/context/localization';
  * Displays active medicine doses for a baby with countdown timers
  * showing when the next dose is safe to administer.
  */
-const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, onGiveMedicine, refreshTrigger }) => {
+// Supplement log entry for today's supplements display
+interface TodaySupplement {
+  id: string;
+  supplementName: string;
+  doseAmount: number;
+  unitAbbr?: string;
+  time: string;
+}
+
+const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, onGiveMedicine, onGiveSupplement, refreshTrigger }) => {
   const { t } = useLocalization();
   const { formatDate, calculateDurationMinutes } = useTimezone();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeDoses, setActiveDoses] = useState<ActiveDose[]>([]);
+  const [todaySupplements, setTodaySupplements] = useState<TodaySupplement[]>([]);
   const [expandedContacts, setExpandedContacts] = useState<Record<string, boolean>>({});
   
   // Toggle contact visibility for a specific dose
@@ -64,12 +74,18 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
     if (!logs || !Array.isArray(logs) || logs.length === 0) {
       return doses;
     }
-    
+
+    // Filter out supplement logs - only process medicines
+    const medicineOnlyLogs = logs.filter(log => !log.medicine?.isSupplement);
+    if (medicineOnlyLogs.length === 0) {
+      return doses;
+    }
+
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    
+
     // Group logs by medicine
-    const medicineGroups = logs.reduce((groups, log) => {
+    const medicineGroups = medicineOnlyLogs.reduce((groups, log) => {
       const key = log.medicine.id;
       if (!groups[key]) groups[key] = [];
       groups[key].push(log);
@@ -234,6 +250,40 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
     return doses;
   }, [calculateDurationMinutes]);
   
+  // Process today's supplement logs
+  const createTodaySupplements = useCallback((logs: MedicineLogWithDetails[] | null): TodaySupplement[] => {
+    if (!logs || !Array.isArray(logs) || logs.length === 0) return [];
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Filter to supplement logs from today
+    const supplementLogs = logs.filter(log =>
+      log.medicine?.isSupplement && new Date(log.time).getTime() >= startOfToday.getTime()
+    );
+
+    // Group by medicine, take most recent per supplement
+    const supplementGroups = supplementLogs.reduce((groups, log) => {
+      const key = log.medicine.id;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(log);
+      return groups;
+    }, {} as Record<string, MedicineLogWithDetails[]>);
+
+    return Object.values(supplementGroups).map((group) => {
+      // Sort by time, most recent first
+      group.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      const latest = group[0];
+      return {
+        id: latest.id,
+        supplementName: latest.medicine.name,
+        doseAmount: latest.doseAmount,
+        unitAbbr: latest.unitAbbr || latest.medicine.unitAbbr || undefined,
+        time: typeof latest.time === 'string' ? latest.time : new Date(latest.time).toISOString(),
+      };
+    });
+  }, []);
+
   // Fetch active doses data
   const fetchActiveDoses = useCallback(async () => {
     if (!babyId) return;
@@ -259,16 +309,19 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       const data = await response.json();
       // Check if data is in the expected format
       const logsData = data.data || data;
-      const processedDoses = createActiveDoses(Array.isArray(logsData) ? logsData : []);
-      
+      const allLogs = Array.isArray(logsData) ? logsData : [];
+      const processedDoses = createActiveDoses(allLogs);
+      const processedSupplements = createTodaySupplements(allLogs);
+
       setActiveDoses(processedDoses);
+      setTodaySupplements(processedSupplements);
     } catch (error) {
       console.error('Error fetching active doses:', error);
       setError(t('Failed to load active doses'));
     } finally {
       setIsLoading(false);
     }
-  }, [babyId, createActiveDoses]);
+  }, [babyId, createActiveDoses, createTodaySupplements]);
   
   // Set up interval to refresh countdown timers
   useEffect(() => {
@@ -318,15 +371,24 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
   
   return (
     <div className={cn(styles.tabContent, "medicine-form-tab-content")}>
-      {/* Give Medicine Button */}
-      <div className="mb-4">
-        <Button 
+      {/* Give Medicine / Give Supplement Buttons */}
+      <div className="mb-4 flex gap-2">
+        <Button
           onClick={onGiveMedicine}
-          className="w-full"
+          className="flex-1"
           disabled={!babyId}
         >
           <Plus className="h-4 w-4 mr-2" />
           {t('Give Medicine')}
+        </Button>
+        <Button
+          onClick={onGiveSupplement}
+          className="flex-1"
+          variant="outline"
+          disabled={!babyId}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          {t('Give Supplement')}
         </Button>
       </div>
       
@@ -353,132 +415,174 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
         </div>
       )}
       
-      {/* Empty state */}
-      {!isLoading && !error && activeDoses.length === 0 && (
-        <div className={cn(styles.emptyState, "medicine-form-empty-state")}>
-          <PillBottle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-          <p>{t('No medicine doses in the last 60 days')}</p>
-        </div>
-      )}
-      
-      {/* Active doses list */}
-      {!isLoading && !error && activeDoses.length > 0 && (
-        <div className={cn(styles.activeDosesContainer, "medicine-form-active-doses-container")}>
-          {activeDoses.map((dose) => (
-            <div key={dose.id} className={cn(
-              styles.doseCard, 
-              "medicine-form-dose-card"
-            )}>
-              <div className={cn(styles.doseHeader, "medicine-form-dose-header")}>
-                <div className="flex items-center">
-                  <div className={cn(styles.iconContainer, "medicine-form-icon-container")}>
-                    <PillBottle className="h-4 w-4" />
-                  </div>
-                  <h3 className={cn(styles.doseName, "medicine-form-dose-name ml-2")}>
-                    {dose.medicineName}
-                  </h3>
-                </div>
-                <span className={cn(styles.doseAmount, "medicine-form-dose-amount")}>
-                  {dose.doseAmount} {dose.unitAbbr}
-                </span>
+      {/* Active Doses & Today's Supplements Sections */}
+      {!isLoading && !error && (
+        <>
+          {/* Active Doses Section */}
+          <div>
+            <h3 className={cn(styles.manageMedicinesTitle, "medicine-form-manage-medicines-title mb-3")}>
+              {t('Active Doses')}
+            </h3>
+            {activeDoses.length === 0 ? (
+              <div className={cn(styles.emptyState, "medicine-form-empty-state")}>
+                <PillBottle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <p>{t('No medicine doses in the last 60 days')}</p>
               </div>
-              
-              {dose.hasRecentDoses && (
-                <p className={cn(styles.doseTime, "medicine-form-dose-time")}>
-                  {t('Last dose:')} {formatDate(dose.time)}
-                </p>
-              )}
-              
-              <div className={cn(styles.doseInfo, "medicine-form-dose-info mt-3")}>
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1 text-gray-500" />
-                  <span className={cn(
-                    dose.isSafe ? styles.countdownSafe : styles.countdownWarning,
-                    dose.isSafe ? "medicine-form-countdown-safe" : "medicine-form-countdown-warning"
+            ) : (
+              <div className={cn(styles.activeDosesContainer, "medicine-form-active-doses-container")}>
+                {activeDoses.map((dose) => (
+                  <div key={dose.id} className={cn(
+                    styles.doseCard,
+                    "medicine-form-dose-card"
                   )}>
-                    {formatTimeRemaining(dose.minutesRemaining || 0, dose.isSafe)}
-                  </span>
-                </div>
-                {/* Next dose time removed as it's redundant with the countdown */}
-              </div>
-              
-              <div className={cn(styles.totalDose, "medicine-form-total-dose mt-2")}>
-                {dose.hasRecentDoses ? (
-                  <>{t('Total in last 24h:')} {dose.totalIn24Hours} {dose.unitAbbr}</>
-                ) : (
-                  <>{t('Last Dose:')} {new Date(dose.time).toLocaleDateString('en-US', { 
-                    month: 'long', 
-                    day: 'numeric', 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    hour12: true 
-                  })} - {dose.doseAmount} {dose.unitAbbr}</>
-                )}
-              </div>
-              
-              {/* Contacts Section */}
-              {dose.contacts && dose.contacts.length > 0 && (
-                <div className="mt-3 border-t border-gray-100 pt-2 dark:border-gray-700">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-between py-2 px-0 text-sm font-medium text-gray-600 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400"
-                    onClick={() => toggleContacts(dose.id)}
-                  >
-                    <span className="flex items-center gap-1">
-                      <span className="font-medium">{t('Contact Information')}</span>
-                      <span className="ml-1 rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-900 dark:text-teal-200">
-                        {dose.contacts.length}
-                      </span>
-                    </span>
-                    <ChevronDown className={cn(
-                      "h-4 w-4 text-gray-500 transition-transform duration-200 dark:text-gray-400",
-                      expandedContacts[dose.id] && "rotate-180"
-                    )} />
-                  </Button>
-                  
-                  {/* Collapsible content */}
-                  {expandedContacts[dose.id] && (
-                    <div className="space-y-3 pt-1 pb-2">
-                      {dose.contacts.map(contact => (
-                        <div key={contact.id} className="rounded-md bg-gray-50 p-2 dark:bg-gray-800">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">{contact.name}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">{contact.role}</div>
-                          
-                          <div className="mt-1 flex flex-row gap-4 text-xs">
-                            {contact.phone && (
-                              <div className="flex items-center">
-                                <Phone className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" />
-                                <a 
-                                  href={`tel:${contact.phone.replace(/\D/g, '')}`}
-                                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-                                >
-                                  {contact.phone}
-                                </a>
-                              </div>
-                            )}
-                            
-                            {contact.email && (
-                              <div className="flex items-center">
-                                <Mail className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" />
-                                <a 
-                                  href={`mailto:${contact.email}`}
-                                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-                                >
-                                  {contact.email}
-                                </a>
-                              </div>
-                            )}
-                          </div>
+                    <div className={cn(styles.doseHeader, "medicine-form-dose-header")}>
+                      <div className="flex items-center">
+                        <div className={cn(styles.iconContainer, "medicine-form-icon-container")}>
+                          <PillBottle className="h-4 w-4" />
                         </div>
-                      ))}
+                        <h3 className={cn(styles.doseName, "medicine-form-dose-name ml-2")}>
+                          {dose.medicineName}
+                        </h3>
+                      </div>
+                      <span className={cn(styles.doseAmount, "medicine-form-dose-amount")}>
+                        {dose.doseAmount} {dose.unitAbbr}
+                      </span>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+
+                    {dose.hasRecentDoses && (
+                      <p className={cn(styles.doseTime, "medicine-form-dose-time")}>
+                        {t('Last dose:')} {formatDate(dose.time)}
+                      </p>
+                    )}
+
+                    <div className={cn(styles.doseInfo, "medicine-form-dose-info mt-3")}>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1 text-gray-500" />
+                        <span className={cn(
+                          dose.isSafe ? styles.countdownSafe : styles.countdownWarning,
+                          dose.isSafe ? "medicine-form-countdown-safe" : "medicine-form-countdown-warning"
+                        )}>
+                          {formatTimeRemaining(dose.minutesRemaining || 0, dose.isSafe)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={cn(styles.totalDose, "medicine-form-total-dose mt-2")}>
+                      {dose.hasRecentDoses ? (
+                        <>{t('Total in last 24h:')} {dose.totalIn24Hours} {dose.unitAbbr}</>
+                      ) : (
+                        <>{t('Last Dose:')} {new Date(dose.time).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })} - {dose.doseAmount} {dose.unitAbbr}</>
+                      )}
+                    </div>
+
+                    {/* Contacts Section */}
+                    {dose.contacts && dose.contacts.length > 0 && (
+                      <div className="mt-3 border-t border-gray-100 pt-2 dark:border-gray-700">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-between py-2 px-0 text-sm font-medium text-gray-600 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400"
+                          onClick={() => toggleContacts(dose.id)}
+                        >
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">{t('Contact Information')}</span>
+                            <span className="ml-1 rounded-full bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-900 dark:text-teal-200">
+                              {dose.contacts.length}
+                            </span>
+                          </span>
+                          <ChevronDown className={cn(
+                            "h-4 w-4 text-gray-500 transition-transform duration-200 dark:text-gray-400",
+                            expandedContacts[dose.id] && "rotate-180"
+                          )} />
+                        </Button>
+
+                        {expandedContacts[dose.id] && (
+                          <div className="space-y-3 pt-1 pb-2">
+                            {dose.contacts.map(contact => (
+                              <div key={contact.id} className="rounded-md bg-gray-50 p-2 dark:bg-gray-800">
+                                <div className="font-medium text-gray-900 dark:text-gray-100">{contact.name}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{contact.role}</div>
+                                <div className="mt-1 flex flex-row gap-4 text-xs">
+                                  {contact.phone && (
+                                    <div className="flex items-center">
+                                      <Phone className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                      <a
+                                        href={`tel:${contact.phone.replace(/\D/g, '')}`}
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                                      >
+                                        {contact.phone}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {contact.email && (
+                                    <div className="flex items-center">
+                                      <Mail className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                      <a
+                                        href={`mailto:${contact.email}`}
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                                      >
+                                        {contact.email}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Today's Supplements Section */}
+          <div className="mt-6">
+            <h3 className={cn(styles.manageMedicinesTitle, "medicine-form-manage-medicines-title mb-3")}>
+              {t("Today's Supplements")}
+            </h3>
+            {todaySupplements.length === 0 ? (
+              <div className={cn(styles.emptyState, "medicine-form-empty-state")}>
+                <Pill className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <p>{t('No supplements given today')}</p>
+              </div>
+            ) : (
+              <div className={cn(styles.activeDosesContainer, "medicine-form-active-doses-container")}>
+                {todaySupplements.map((supplement) => (
+                  <div key={supplement.id} className={cn(styles.doseCard, "medicine-form-dose-card")}>
+                    <div className={cn(styles.doseHeader, "medicine-form-dose-header")}>
+                      <div className="flex items-center">
+                        <div className={cn(styles.iconContainer, "medicine-form-icon-container")}>
+                          <Pill className="h-4 w-4" />
+                        </div>
+                        <h3 className={cn(styles.doseName, "medicine-form-dose-name ml-2")}>
+                          {supplement.supplementName}
+                        </h3>
+                      </div>
+                      <span className={cn(styles.doseAmount, "medicine-form-dose-amount")}>
+                        {supplement.doseAmount} {supplement.unitAbbr}
+                      </span>
+                    </div>
+                    <p className={cn(styles.doseTime, "medicine-form-dose-time")}>
+                      {t('Last dose:')} {formatDate(supplement.time)}
+                    </p>
+                    <div className={cn(styles.totalDose, "medicine-form-total-dose mt-2")}>
+                      {supplement.doseAmount} {supplement.unitAbbr}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

@@ -28,6 +28,7 @@ interface MedicineFormProps {
   units: {unitAbbr: string, unitName: string}[];
   contacts: {id: string, name: string, role: string}[];
   onSave: (formData: MedicineFormData) => Promise<void>;
+  isSupplement?: boolean;
 }
 
 /**
@@ -43,6 +44,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
   units,
   contacts,
   onSave,
+  isSupplement = false,
 }) => {
 
   const { t } = useLocalization();
@@ -131,7 +133,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
       };
     }
     
-    // Default values for new medicine
+    // Default values for new medicine/supplement
     return {
       name: '',
       typicalDoseSize: undefined,
@@ -139,6 +141,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
       doseMinTime: '',
       notes: '',
       active: true,
+      isSupplement,
       contactIds: [],
     };
   });
@@ -167,6 +170,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
         doseMinTime: '',
         notes: '',
         active: true,
+        isSupplement,
         contactIds: [],
       });
       // Reset time selector for new medicine
@@ -410,8 +414,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={medicine ? t('Edit Medicine') : t('Add New Medicine')}
-      description={medicine ? t('Update medicine details') : t('Add a new medicine to track')}
+      title={medicine ? (isSupplement ? t('Edit Supplement') : t('Edit Medicine')) : (isSupplement ? t('Add New Supplement') : t('Add New Medicine'))}
+      description={medicine ? (isSupplement ? t('Update supplement details') : t('Update medicine details')) : (isSupplement ? t('Add a new supplement to track') : t('Add a new medicine to track'))}
     >
       <FormPageContent>
         <form id="medicine-form" onSubmit={handleSubmit}>
@@ -419,7 +423,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
             {/* Medicine Name */}
             <div className={styles.formGroup}>
               <Label htmlFor="name">
-                {t('Medicine Name')}
+                {isSupplement ? t('Supplement Name') : t('Medicine Name')}
                 <span className="text-red-500 ml-1">*</span>
               </Label>
               <div className="relative">
@@ -429,7 +433,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full pl-9"
-                  placeholder={t("Enter medicine name")}
+                  placeholder={isSupplement ? t("Enter supplement name") : t("Enter medicine name")}
                 />
                 <PillBottle className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
@@ -492,8 +496,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
               </div>
             </div>
             
-            {/* Minimum Time Between Doses */}
-            <div className={styles.formGroup}>
+            {/* Minimum Time Between Doses - hidden for supplements */}
+            {!isSupplement && <div className={styles.formGroup}>
               <Label htmlFor="doseMinTime">
                 {t('Minimum Time Between Doses')}
               </Label>
@@ -544,8 +548,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   {errors.doseMinTime}
                 </div>
               )}
-            </div>
-            
+            </div>}
+
             {/* Active Status */}
             <div className="flex items-center space-x-2 py-2">
               <Switch
@@ -557,7 +561,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                 htmlFor="active-status"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                {t('Active Medicine')}
+                {isSupplement ? t('Active Supplement') : t('Active Medicine')}
               </Label>
             </div>
             

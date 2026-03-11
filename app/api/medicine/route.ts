@@ -217,8 +217,9 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const active = searchParams.get('active');
+    const isSupplement = searchParams.get('isSupplement');
     const contactId = searchParams.get('contactId');
-    
+
     // Build where clause
     const where: any = {
       deletedAt: null,
@@ -232,6 +233,10 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 
     if (active !== null) {
       where.active = active === 'true';
+    }
+
+    if (isSupplement !== null) {
+      where.isSupplement = isSupplement === 'true';
     }
 
     // If ID is provided, fetch a single medicine

@@ -327,6 +327,7 @@ export interface MedicineCreate {
   doseMinTime?: string;
   notes?: string;
   active?: boolean;
+  isSupplement?: boolean;
   contactIds?: string[]; // IDs of contacts to associate with this medicine
 }
 

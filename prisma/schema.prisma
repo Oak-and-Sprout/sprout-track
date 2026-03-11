@@ -774,6 +774,7 @@ model Medicine {
   doseMinTime     String? // Minimum time between doses (format: "HH:MM")
   notes           String? // Additional notes about the medicine
   active          Boolean   @default(true)
+  isSupplement    Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
@@ -789,6 +790,7 @@ model Medicine {
 
   @@index([name])
   @@index([active])
+  @@index([isSupplement])
   @@index([unitAbbr])
   @@index([deletedAt])
   @@index([familyId])

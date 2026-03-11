@@ -491,6 +491,13 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             initialTime={'doseAmount' in selectedActivity && 'time' in selectedActivity ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
             activity={'doseAmount' in selectedActivity && 'medicineId' in selectedActivity ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
+            isSupplement={
+              'medicine' in selectedActivity &&
+              selectedActivity.medicine && typeof selectedActivity.medicine === 'object' &&
+              'isSupplement' in selectedActivity.medicine
+                ? !!(selectedActivity.medicine as any).isSupplement
+                : false
+            }
           />
         </>
       )}

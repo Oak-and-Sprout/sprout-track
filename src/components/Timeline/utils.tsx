@@ -10,7 +10,8 @@ import {
   Scale,
   RotateCw,
   Thermometer,
-  PillBottle
+  PillBottle,
+  Pill
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { 
@@ -22,7 +23,10 @@ import {
 
 export const getActivityIcon = (activity: ActivityType) => {
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine log
+    // Medicine or supplement log
+    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && activity.medicine.isSupplement) {
+      return <Pill className="h-4 w-4 text-white" />;
+    }
     return <PillBottle className="h-4 w-4 text-white" />;
   }
   // Check for breast milk adjustment BEFORE pump (both have amount)
@@ -530,10 +534,15 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
 
 export const getActivityDescription = (activity: ActivityType, settings: Settings | null, t: (key: string) => string): ActivityDescription => {
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine log
+    // Medicine or supplement log
     let medName = t('Medicine');
-    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
-      medName = (activity.medicine as { name?: string }).name || medName;
+    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object') {
+      if ('isSupplement' in activity.medicine && activity.medicine.isSupplement) {
+        medName = t('Supplement');
+      }
+      if ('name' in activity.medicine && activity.medicine.name) {
+        medName = (activity.medicine as { name?: string }).name || medName;
+      }
     }
     const dose = activity.doseAmount ? `${activity.doseAmount} ${activity.unitAbbr || ''}`.trim() : '';
     const medTime = formatTime(activity.time, settings, true, t);
@@ -899,11 +908,8 @@ export const getActivityEndpoint = (activity: ActivityType): string => {
 
 export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine log: pill bottle green
-    return {
-      bg: 'bg-[#43B755]',
-      textColor: 'text-white',
-    };
+    // Medicine and supplement logs: green
+    return { bg: 'bg-[#43B755]', textColor: 'text-white' };
   }
   // Breast milk adjustment style
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {

@@ -239,7 +239,13 @@ const TimelineV2ActivityList = ({
                           else if ('soapUsed' in activity) activityTypeClass = 'bath';
                           else if ('title' in activity && 'category' in activity) activityTypeClass = 'milestone';
                           else if ('value' in activity && 'unit' in activity) activityTypeClass = 'measurement';
-                          else if ('doseAmount' in activity && 'medicineId' in activity) activityTypeClass = 'medicine';
+                          else if ('doseAmount' in activity && 'medicineId' in activity) {
+                            if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && (activity.medicine as any).isSupplement) {
+                              activityTypeClass = 'supplement';
+                            } else {
+                              activityTypeClass = 'medicine';
+                            }
+                          }
                           
                           return (
                             <motion.div
@@ -415,8 +421,13 @@ const TimelineV2ActivityList = ({
                                       const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
                                       const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
                                       let medName = t('Medicine');
-                                      if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
-                                        medName = (activity.medicine as { name?: string }).name || medName;
+                                      if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object') {
+                                        if ('isSupplement' in activity.medicine && (activity.medicine as any).isSupplement) {
+                                          medName = t('Supplement');
+                                        }
+                                        if ('name' in activity.medicine && activity.medicine.name) {
+                                          medName = (activity.medicine as { name?: string }).name || medName;
+                                        }
                                       }
                                       return `${medName} - ${dose}`;
                                     }
