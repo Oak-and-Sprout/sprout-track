@@ -294,3 +294,157 @@ When multiple activity types share fields (e.g., PlayLog and SleepLog both have 
 **Total: ~29 files** (27 modified + 2 new for form component and CSS)
 
 After translations, run: `node scripts/check-missing-translations.js`
+
+---
+
+## Theming: Light & Dark Mode
+
+The application uses a **dual styling approach** - TypeScript style objects for light mode and CSS files with `html.dark` selectors for dark mode overrides.
+
+### How the Theme System Works
+
+**Theme Context:** `src/context/theme.tsx`
+- Manages `theme` state (`'light'` | `'dark'`) and `useSystemTheme` (boolean)
+- Persists preference to `localStorage`
+- Listens to `window.matchMedia('(prefers-color-scheme: dark)')` for OS preferences
+- Adds/removes `dark` class on `document.documentElement`
+- Exports `ThemeProvider` (wraps app) and `useTheme()` hook
+
+**Tailwind Config:** `tailwind.config.js`
+- `darkMode: 'class'` - Tailwind generates dark utilities using `html.dark` selectors (not media queries)
+
+### The Dual Styling Pattern
+
+Every component that needs custom styling beyond basic Tailwind follows this two-file pattern:
+
+#### Light Mode: `.styles.ts` files
+TypeScript objects exporting Tailwind class strings. These define all visual styling for light mode.
+
+```typescript
+// example-component.styles.ts
+const styles = {
+  container: "bg-white border-gray-200 text-gray-900",
+  title: "text-sm font-semibold text-gray-800",
+  icon: "text-gray-500",
+};
+export default styles;
+```
+
+#### Dark Mode: `.css` files
+CSS files using `html.dark` selectors to override light mode styles. Use `!important` to override Tailwind utilities.
+
+```css
+/* example-component.css */
+html.dark .example-container {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important;     /* gray-700 */
+  color: #e5e7eb !important;            /* gray-200 */
+}
+
+html.dark .example-title {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+```
+
+#### Component Usage
+Components import both and apply semantic CSS classes alongside Tailwind classes:
+
+```tsx
+import styles from './example-component.styles';
+import './example-component.css';
+
+const ExampleComponent = () => (
+  <div className={`${styles.container} example-container`}>
+    <h3 className={`${styles.title} example-title`}>Title</h3>
+  </div>
+);
+```
+
+The semantic class (e.g., `example-container`) is what the CSS file targets for dark mode overrides. The `.styles.ts` Tailwind classes handle light mode.
+
+### Dark Mode Color Palette
+
+Use these consistent colors across all dark mode CSS:
+
+| Purpose | Tailwind | Hex |
+|---------|----------|-----|
+| Page/card background | gray-800 | `#1f2937` |
+| Elevated/hover background | gray-700 | `#374151` |
+| Active/pressed background | gray-600 | `#4b5563` |
+| Primary text | gray-200 | `#e5e7eb` |
+| Secondary text | gray-300 | `#d1d5db` |
+| Muted/label text | gray-400 | `#9ca3af` |
+| Borders | gray-600/700 | `#4b5563` / `#374151` |
+
+### Where Dark Mode Styles Live
+
+| Scope | File |
+|-------|------|
+| Global styles, `form-label`, `form-input` | `app/globals.css` |
+| Activity tiles | `src/components/ui/activity-tile/activity-tile.css` |
+| Timeline event icons & lines | `src/components/Timeline/timeline-activity-list.css` |
+| Daily stats tiles | `src/components/Timeline/TimelineV2/TimelineV2DailyStats.css` |
+| Full log timeline | `src/components/FullLogTimeline/full-log-timeline.css` |
+| Form page shell | `src/components/ui/form-page/form-page.css` |
+| Per-form overrides | `src/components/forms/<Name>Form/<name>-form.css` |
+
+### Adding Dark Mode for a New Activity
+
+When adding a new activity type, you need dark mode styles in these locations:
+
+1. **Timeline event icon** (`timeline-activity-list.css`):
+   ```css
+   /* Light mode */
+   .event-icon.play {
+     background: #F3C4A2;
+   }
+   .event-icon.play svg, .event-icon.play svg path {
+     color: #ffffff !important;
+     stroke: #ffffff !important;
+   }
+
+   /* Dark mode */
+   html.dark .event-icon.play {
+     background: #F3C4A2 !important;
+   }
+   html.dark .event-icon.play svg, html.dark .event-icon.play svg path {
+     color: #ffffff !important;
+     stroke: #ffffff !important;
+   }
+   ```
+
+2. **Timeline line dot** (`timeline-activity-list.css`):
+   ```css
+   .timeline-event.play::before {
+     background: #F3C4A2 !important;
+   }
+   ```
+
+3. **Daily stats icon color** (`TimelineV2DailyStats.css`):
+   ```css
+   html.dark .timeline-v2-daily-stats [class*="text-[#F3C4A2"] {
+     color: #F3C4A2 !important;
+   }
+   ```
+
+4. **Form component** (`activity-form.css`) - if the form has custom inputs, dropdowns, or buttons that need dark overrides:
+   ```css
+   html.dark .activity-form-input {
+     background-color: transparent !important;
+     border-color: #374151 !important;
+   }
+   html.dark .activity-type-button-active {
+     background-color: rgba(243, 196, 162, 0.2) !important;
+     border-color: #F3C4A2 !important;
+     color: #F3C4A2 !important;
+   }
+   ```
+
+### Key Rules
+
+- **Always use `!important`** in dark mode CSS to override Tailwind utilities
+- **Always use hex colors**, not Tailwind class names, in CSS files
+- **Activity-specific colors** (icon colors, stat tile colors) should be **preserved** in dark mode - they provide visual identity
+- **Background, text, and border** colors should shift to the dark palette
+- **Add comments** with the Tailwind color name (e.g., `/* gray-700 */`) for maintainability
+- The `form-label` class is globally defined in `app/globals.css` and overridden for dark mode in `src/components/ui/form-page/form-page.css` - forms using `FormPage` get this for free
