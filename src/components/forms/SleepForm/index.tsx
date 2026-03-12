@@ -24,6 +24,9 @@ import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
 import { Settings } from 'lucide-react';
+import { Checkbox } from '@/src/components/ui/checkbox';
+
+import './sleep-form.css';
 
 // Note: DEFAULT_LOCATIONS are displayed as-is but could be localized if needed
 const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
@@ -588,22 +591,22 @@ export default function SleepForm({
                   <button
                     type="button"
                     onClick={() => setShowLocationManager(!showLocationManager)}
-                    className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                    className="sleep-settings-button p-1 text-muted-foreground hover:text-foreground transition-colors"
                     title={t('Manage visible locations')}
                   >
                     <Settings className="h-4 w-4" />
                   </button>
                 </div>
                 {showLocationManager && (
-                  <div className="mb-2 p-3 border rounded-md bg-muted/50 space-y-1">
+                  <div className="sleep-location-manager mb-2 p-3 border border-gray-300 rounded-md bg-muted/50 space-y-1">
                     <p className="text-xs text-muted-foreground mb-2">{t('Toggle locations to show or hide them')}</p>
                     {DEFAULT_LOCATIONS.map((location) => (
                       <label key={location} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input
-                          type="checkbox"
+                        <Checkbox
+                          variant="primary"
+                          size="sm"
                           checked={!hiddenLocations.includes(location)}
-                          onChange={() => toggleLocationVisibility(location)}
-                          className="rounded"
+                          onCheckedChange={() => toggleLocationVisibility(location)}
                         />
                         {location}
                       </label>
