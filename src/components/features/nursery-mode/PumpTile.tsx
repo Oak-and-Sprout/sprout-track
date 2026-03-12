@@ -157,28 +157,15 @@ export function PumpTile({ colors, log, onLog, onActiveChange, animating, babyId
     );
   }
 
-  if (phase === 'paused' && activeSide) {
-    return (
-      <TileShell
-        label={t('Pump')}
-        colors={colors}
-        log={log}
-        animating={animating}
-        expanded={expanded}
-        statusText={`${t('Paused')} — ${formatDuration(elapsed)}`}
-      >
-        <div className="flex gap-[clamp(0.375rem,1vw,0.75rem)] mt-auto pt-3">
-          <SubButton label={t('Resume')} onClick={handleResume} colors={colors} expanded={expanded} />
-          {canSwitch && (
-            <SubButton label={t('Switch')} onClick={handleSwitch} colors={colors} expanded={expanded} />
-          )}
-          <SubButton label={t('Stop')} onClick={handleStop} colors={colors} active expanded={expanded} />
-        </div>
-      </TileShell>
-    );
-  }
+  // Shared button layout for timing and paused: [Switch?] [Pause/Resume] [Stop]
+  if ((phase === 'timing' || phase === 'paused') && activeSide) {
+    const isPaused = phase === 'paused';
+    const sidePausedLabels: Record<PumpSide, string> = {
+      left: `${t('Paused')} — ${t('Left Side')} — ${formatDuration(elapsed)}`,
+      right: `${t('Paused')} — ${t('Right Side')} — ${formatDuration(elapsed)}`,
+      both: `${t('Paused')} — ${formatDuration(elapsed)}`,
+    };
 
-  if (phase === 'timing' && activeSide) {
     return (
       <TileShell
         label={t('Pump')}
@@ -186,20 +173,24 @@ export function PumpTile({ colors, log, onLog, onActiveChange, animating, babyId
         log={log}
         animating={animating}
         expanded={expanded}
-        statusText={sideLabels[activeSide]}
+        statusText={isPaused ? sidePausedLabels[activeSide] : sideLabels[activeSide]}
       >
         <div className="flex gap-[clamp(0.375rem,1vw,0.75rem)] mt-auto pt-3">
           {canSwitch && (
             <SubButton label={t('Switch')} onClick={handleSwitch} colors={colors} expanded={expanded} />
           )}
-          <SubButton label={t('Pause')} onClick={handlePause} colors={colors} expanded={expanded} />
+          {isPaused ? (
+            <SubButton label={t('Resume')} onClick={handleResume} colors={colors} expanded={expanded} />
+          ) : (
+            <SubButton label={t('Pause')} onClick={handlePause} colors={colors} expanded={expanded} />
+          )}
           <SubButton
             label={t('Stop')}
             onClick={handleStop}
             colors={colors}
             active
             expanded={expanded}
-            timerText={formatDuration(elapsed)}
+            timerText={isPaused ? undefined : formatDuration(elapsed)}
           />
         </div>
       </TileShell>

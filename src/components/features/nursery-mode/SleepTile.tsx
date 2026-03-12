@@ -10,9 +10,11 @@ interface SleepTileProps {
   colors: NurseryColors;
   log: TileLog | null;
   onLog: (tileId: string, note: string) => void;
+  onActiveChange?: (tileId: string, isActive: boolean) => void;
   animating: boolean;
   babyId: string;
   toUTCString: (date: Date | null | undefined) => string | null;
+  expanded?: boolean;
 }
 
 const LOCATIONS = ['Crib', 'Contact'];
@@ -27,7 +29,7 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function SleepTile({ colors, log, onLog, animating, babyId, toUTCString }: SleepTileProps) {
+export function SleepTile({ colors, log, onLog, onActiveChange, animating, babyId, toUTCString, expanded }: SleepTileProps) {
   const { t } = useLocalization();
   const [phase, setPhase] = useState<SleepPhase>('awake');
   const [activeSleepId, setActiveSleepId] = useState<string | null>(null);
@@ -36,13 +38,17 @@ export function SleepTile({ colors, log, onLog, animating, babyId, toUTCString }
   const [submitting, setSubmitting] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check for ongoing sleep and fetch locations on mount
+  // Notify parent of active state changes
+  useEffect(() => {
+    onActiveChange?.('sleep', phase === 'sleeping');
+  }, [phase, onActiveChange]);
+
+  // Check for ongoing sleep on mount
   useEffect(() => {
     if (!babyId) return;
     const authToken = localStorage.getItem('authToken');
     const headers = { Authorization: authToken ? `Bearer ${authToken}` : '' };
 
-    // Check for ongoing sleep
     const checkOngoingSleep = async () => {
       try {
         const res = await fetch(`/api/sleep-log?babyId=${babyId}`, { headers });
@@ -145,14 +151,16 @@ export function SleepTile({ colors, log, onLog, animating, babyId, toUTCString }
         log={log}
         animating={animating}
         sleeping
+        expanded={expanded}
         statusText={`${t('Sleeping')} — ${formatDuration(elapsed)}`}
       >
-        <div className="flex gap-1.5 mt-auto pt-2">
+        <div className="flex gap-[clamp(0.375rem,1vw,0.75rem)] mt-auto pt-3">
           <SubButton
             label={t('Wake Up')}
             onClick={endSleep}
             colors={colors}
             active
+            expanded={expanded}
             timerText={formatDuration(elapsed)}
             disabled={submitting}
           />
@@ -162,7 +170,6 @@ export function SleepTile({ colors, log, onLog, animating, babyId, toUTCString }
   }
 
   if (phase === 'selecting_location') {
-    // Show location buttons in a wrap grid
     return (
       <TileShell label={t('Sleep')} colors={colors} log={log} animating={animating} statusText={t('Select Location')}>
         <div className="flex flex-wrap gap-1.5 mt-auto pt-2">

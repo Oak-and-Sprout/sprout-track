@@ -6,6 +6,7 @@ import { useBaby } from '@/app/context/baby';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
 import { useWakeLock } from '@/src/hooks/useWakeLock';
+import { useFullscreen } from '@/src/hooks/useFullscreen';
 import { useNurseryColors } from '@/src/hooks/useNurseryColors';
 import { useNurserySettings } from '@/src/hooks/useNurserySettings';
 import { ChevronDown } from 'lucide-react';
@@ -33,6 +34,7 @@ export function NurseryModeContainer() {
   const { toUTCString } = useTimezone();
   const { t } = useLocalization();
   const wakeLock = useWakeLock();
+  const fullscreen = useFullscreen();
   const { settings, isLoading, saveSettings } = useNurserySettings(null);
 
   const [hue, setHue] = useState<number | null>(null);
@@ -122,20 +124,21 @@ export function NurseryModeContainer() {
 
   const handleExit = useCallback(() => {
     wakeLock.release();
+    if (fullscreen.isFullscreen) fullscreen.exit();
     router.push(`/${slug}/log-entry`);
-  }, [wakeLock, router, slug]);
+  }, [wakeLock, fullscreen, router, slug]);
 
-  const bgGradient = `
-    radial-gradient(ellipse 120% 80% at 20% 90%,
-      hsla(${(effectiveHue + 20) % 360}, 25%, ${Math.max(effectiveBrightness - 3, 3)}%, 0.6),
-      transparent 70%),
-    radial-gradient(ellipse 100% 60% at 85% 15%,
-      hsla(${(effectiveHue - 15 + 360) % 360}, 20%, ${Math.max(effectiveBrightness + 4, 8)}%, 0.4),
-      transparent 60%),
-    linear-gradient(165deg,
-      hsl(${effectiveHue}, 20%, ${effectiveBrightness}%) 0%,
-      hsl(${(effectiveHue + 8) % 360}, 18%, ${Math.max(effectiveBrightness - 2, 3)}%) 100%)
-  `;
+  // Base background gradient
+  const baseBg = `linear-gradient(165deg,
+    hsl(${effectiveHue}, 20%, ${effectiveBrightness}%) 0%,
+    hsl(${(effectiveHue + 8) % 360}, 18%, ${Math.max(effectiveBrightness - 2, 3)}%) 100%)`;
+
+  // Lava lamp blob colors — hue shifts ±8-20 degrees, higher saturation for visibility
+  const b = effectiveBrightness;
+  const h = effectiveHue;
+  const blob1Color = `hsla(${(h + 20) % 360}, 35%, ${Math.max(b + 3, 8)}%, 0.7)`;
+  const blob2Color = `hsla(${(h - 15 + 360) % 360}, 30%, ${Math.max(b + 8, 12)}%, 0.6)`;
+  const blob3Color = `hsla(${(h + 10) % 360}, 32%, ${Math.max(b + 5, 10)}%, 0.55)`;
 
   const tileComponents: Record<string, React.ComponentType<any>> = {
     feed: FeedTile,
@@ -164,9 +167,52 @@ export function NurseryModeContainer() {
       `}</style>
 
       <div
-        className="fixed inset-0 z-[9999] flex flex-col font-sans overflow-hidden transition-all duration-700"
-        style={{ background: bgGradient }}
+        className="fixed inset-0 z-[9999] flex flex-col font-sans overflow-hidden"
+        style={{
+          background: baseBg,
+          animation: 'nursery-hueShift 45s ease-in-out infinite',
+        }}
       >
+        {/* Lava lamp blobs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          <div
+            className="absolute rounded-full"
+            style={{
+              width: '130%',
+              height: '80%',
+              left: '-15%',
+              bottom: '-20%',
+              background: `radial-gradient(ellipse at center, ${blob1Color}, transparent 70%)`,
+              animation: 'nursery-blob1 30s ease-in-out infinite',
+              willChange: 'transform',
+            }}
+          />
+          <div
+            className="absolute rounded-full"
+            style={{
+              width: '100%',
+              height: '70%',
+              right: '-10%',
+              top: '-15%',
+              background: `radial-gradient(ellipse at center, ${blob2Color}, transparent 65%)`,
+              animation: 'nursery-blob2 25s ease-in-out infinite',
+              willChange: 'transform',
+            }}
+          />
+          <div
+            className="absolute rounded-full"
+            style={{
+              width: '90%',
+              height: '60%',
+              left: '5%',
+              top: '20%',
+              background: `radial-gradient(ellipse at center, ${blob3Color}, transparent 60%)`,
+              animation: 'nursery-blob3 35s ease-in-out infinite',
+              willChange: 'transform',
+            }}
+          />
+        </div>
+
         {/* Header */}
         <div
           className="flex justify-between items-start"
@@ -339,6 +385,9 @@ export function NurseryModeContainer() {
           toggleTile={toggleTile}
           wakeLockActive={wakeLock.isActive}
           wakeLockSupported={wakeLock.isSupported}
+          fullscreenActive={fullscreen.isFullscreen}
+          fullscreenSupported={fullscreen.isSupported}
+          onToggleFullscreen={() => fullscreen.toggle()}
           colors={colors}
         />
       </div>

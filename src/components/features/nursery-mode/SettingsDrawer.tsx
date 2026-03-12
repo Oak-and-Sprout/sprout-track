@@ -20,12 +20,16 @@ interface SettingsDrawerProps {
   toggleTile: (id: string) => void;
   wakeLockActive: boolean;
   wakeLockSupported: boolean;
+  fullscreenActive: boolean;
+  fullscreenSupported: boolean;
+  onToggleFullscreen: () => void;
   colors: NurseryColors;
 }
 
 export function SettingsDrawer({
   open, onClose, hue, setHue, brightness, setBrightness,
-  tiles, toggleTile, wakeLockActive, wakeLockSupported, colors,
+  tiles, toggleTile, wakeLockActive, wakeLockSupported,
+  fullscreenActive, fullscreenSupported, onToggleFullscreen, colors,
 }: SettingsDrawerProps) {
   const { t } = useLocalization();
 
@@ -90,6 +94,30 @@ export function SettingsDrawer({
             }
           </div>
         </div>
+
+        {/* Fullscreen Toggle */}
+        {fullscreenSupported && (
+          <button
+            onClick={onToggleFullscreen}
+            className="p-3 rounded-lg cursor-pointer font-sans text-left outline-none border-none"
+            style={{
+              background: fullscreenActive
+                ? (colors.isLight ? 'hsla(210, 30%, 90%, 0.6)' : 'hsla(210, 30%, 20%, 0.3)')
+                : (colors.isLight ? 'hsla(40, 30%, 90%, 0.6)' : 'hsla(40, 30%, 20%, 0.3)'),
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            <div
+              className="text-xs font-medium tracking-wide uppercase mb-1"
+              style={{ color: colors.text }}
+            >
+              {t('Fullscreen')}
+            </div>
+            <div className="text-sm" style={{ color: colors.label }}>
+              {fullscreenActive ? t('Active — tap to exit') : t('Inactive — tap to enter')}
+            </div>
+          </button>
+        )}
 
         {/* Hue Slider */}
         <div>
