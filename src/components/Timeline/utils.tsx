@@ -378,6 +378,9 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       if (activity.blowout) {
         details.push({ label: t('Blowout/Leakage'), value: t('Yes') });
       }
+      if (activity.creamApplied) {
+        details.push({ label: t('Diaper Cream Applied'), value: t('Yes') });
+      }
 
       return {
         title: t('Diaper Record'),
@@ -803,11 +806,12 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 
       // Add blowout information for all diaper types
       const blowoutText = activity.blowout ? ` - ${t('Blowout/Leakage')}` : '';
+      const creamText = activity.creamApplied ? ` - ${t('Diaper Cream Applied')}` : '';
 
       const time = formatTime(activity.time, settings, true, t);
       return {
         type: formatDiaperType(activity.type),
-        details: `${details}${time}${blowoutText}`
+        details: `${details}${time}${blowoutText}${creamText}`
       };
     }
   }

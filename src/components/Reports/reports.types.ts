@@ -52,6 +52,7 @@ export interface DiaperActivity {
   condition: string | null;
   color: string | null;
   blowout: boolean;
+  creamApplied: boolean;
   caretakerId: string | null;
   caretakerName?: string;
   createdAt: string;

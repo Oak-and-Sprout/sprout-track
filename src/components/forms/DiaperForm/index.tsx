@@ -68,6 +68,7 @@ export default function DiaperForm({
     condition: '',
     color: '',
     blowout: false,
+    creamApplied: false,
   });
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -118,6 +119,7 @@ export default function DiaperForm({
           condition: activity.condition || '',
           color: activity.color || '',
           blowout: activity.blowout || false,
+          creamApplied: activity.creamApplied || false,
         });
         
         // Store the initial time used for editing
@@ -189,6 +191,7 @@ export default function DiaperForm({
         condition: formData.condition || null,
         color: formData.color || null,
         blowout: formData.blowout,
+        creamApplied: formData.creamApplied,
       };
 
       // Get auth token from localStorage
@@ -232,6 +235,7 @@ export default function DiaperForm({
         condition: '',
         color: '',
         blowout: false,
+        creamApplied: false,
       });
     } catch (error) {
       console.error('Error saving diaper log:', error);
@@ -284,16 +288,28 @@ export default function DiaperForm({
 
             {/* Blowout/Leakage checkbox - visible for all diaper types */}
             {formData.type && (
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  checked={formData.blowout}
-                  onCheckedChange={(checked) => setFormData({ ...formData, blowout: checked })}
-                  disabled={loading}
-                />
-                <label className="form-label text-sm">
-                  {t('Blowout/Leakage')}
-                </label>
-              </div>
+              <>
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    checked={formData.blowout}
+                    onCheckedChange={(checked) => setFormData({ ...formData, blowout: checked })}
+                    disabled={loading}
+                  />
+                  <label className="form-label text-sm">
+                    {t('Blowout/Leakage')}
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    checked={formData.creamApplied}
+                    onCheckedChange={(checked) => setFormData({ ...formData, creamApplied: checked })}
+                    disabled={loading}
+                  />
+                  <label className="form-label text-sm">
+                    {t('Diaper Cream Applied')}
+                  </label>
+                </div>
+              </>
             )}
 
             {formData.type && formData.type !== 'WET' && (
