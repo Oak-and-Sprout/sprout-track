@@ -44,3 +44,6 @@ scripts/port-config.sh
 # robots.txt and sitemap
 robots.txt
 sitemap.xml
+
+# encrypted file storage
+/Files
