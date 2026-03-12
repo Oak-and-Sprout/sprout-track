@@ -2,7 +2,7 @@ import React, { useEffect, useState, Suspense } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
-import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2 } from 'lucide-react';
+import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2, Moon } from 'lucide-react';
 import { LanguageSelector } from './language-selector';
 
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
@@ -366,6 +366,14 @@ export const SideNav: React.FC<SideNavProps> = ({
             path="/reports"
             label={t('Reports')}
             isActive={currentPath === '/reports'}
+            onClick={onNavigate}
+            className="side-nav-item"
+          />
+          <SideNavItem
+            path="/nursery-mode"
+            label={t('Nursery Mode')}
+            icon={<Moon size={16} />}
+            isActive={currentPath === '/nursery-mode'}
             onClick={onNavigate}
             className="side-nav-item"
           />
