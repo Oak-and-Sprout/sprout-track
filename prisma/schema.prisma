@@ -190,6 +190,7 @@ model Family {
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
+  vaccineLogs    VaccineLog[]
 }
 
 // New model for family membership
@@ -239,6 +240,7 @@ model Baby {
   notificationPreferences NotificationPreference[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeed ActiveBreastFeed?
+  vaccineLogs  VaccineLog[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -285,6 +287,7 @@ model Caretaker {
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
+  vaccineLogs   VaccineLog[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -469,6 +472,7 @@ model Settings {
   defaultWeightUnit   String   @default("LB") // Default unit for weight measurement
   defaultTempUnit     String   @default("F") // Default unit for temperature
   activitySettings    String? // JSON string for activity order and visibility settings
+  sleepLocationSettings String? // JSON string for hidden sleep locations
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
   createdAt           DateTime @default(now())
@@ -681,6 +685,7 @@ model Contact {
   // Relationships
   events    ContactEvent[] // Events associated with this contact
   medicines ContactMedicine[] // Medicines associated with this medicine
+  vaccines  ContactVaccine[] // Vaccines associated with this contact
 
   @@index([role])
   @@index([deletedAt])
@@ -840,6 +845,61 @@ model ContactMedicine {
   @@id([contactId, medicineId])
   @@index([contactId])
   @@index([medicineId])
+}
+
+// Vaccine tracking
+model VaccineLog {
+  id            String    @id @default(uuid())
+  time          DateTime
+  vaccineName   String
+  doseNumber    Int?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+  documents   VaccineDocument[]
+  contacts    ContactVaccine[]
+
+  @@index([time])
+  @@index([vaccineName])
+  @@index([babyId])
+  @@index([caretakerId])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+model VaccineDocument {
+  id              String    @id @default(uuid())
+  originalName    String
+  storedName      String
+  mimeType        String
+  fileSize        Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vaccineLog   VaccineLog @relation(fields: [vaccineLogId], references: [id], onDelete: Cascade)
+  vaccineLogId String
+
+  @@index([vaccineLogId])
+}
+
+// Junction table for many-to-many relationship between contacts and vaccines
+model ContactVaccine {
+  contact      Contact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId    String
+  vaccineLog   VaccineLog @relation(fields: [vaccineLogId], references: [id], onDelete: Cascade)
+  vaccineLogId String
+
+  @@id([contactId, vaccineLogId])
+  @@index([contactId])
+  @@index([vaccineLogId])
 }
 
 // New model for family setup invitations

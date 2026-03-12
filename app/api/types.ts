@@ -1,4 +1,4 @@
-import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed } from '@prisma/client';
+import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, VaccineLog, VaccineDocument } from '@prisma/client';
 
 // Family types
 export interface Family {
@@ -41,6 +41,11 @@ export interface ActivitySettings {
   order: string[];
   visible: string[];
   caretakerId?: string | null; // Optional caretaker ID for per-caretaker settings
+}
+
+// Sleep location settings types
+export interface SleepLocationSettings {
+  hiddenLocations: string[];
 }
 
 export interface ApiResponse<T = void> {
@@ -368,6 +373,34 @@ export interface MedicineLogCreate {
   doseAmount: number;
   unitAbbr?: string | null;
   notes?: string;
+}
+
+// Vaccine log types
+export type VaccineLogResponse = Omit<VaccineLog, 'time' | 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  time: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  documents?: VaccineDocumentResponse[];
+  contacts?: { contact: { id: string; name: string; role: string } }[];
+};
+
+export type VaccineDocumentResponse = {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export interface VaccineLogCreate {
+  babyId: string;
+  time: string;
+  vaccineName: string;
+  doseNumber?: number;
+  notes?: string;
+  contactIds?: string[];
 }
 
 // Beta Subscriber types
