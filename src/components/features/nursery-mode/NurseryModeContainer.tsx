@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useBaby } from '@/app/context/baby';
 import { useTimezone } from '@/app/context/timezone';
@@ -46,7 +46,7 @@ export function NurseryModeContainer() {
   const [babySwitcherOpen, setBabySwitcherOpen] = useState(false);
   const [expandedTileId, setExpandedTileId] = useState<string | null>(null);
 
-  // Fetch babies list
+  // Fetch babies list and auto-select if needed
   useEffect(() => {
     const fetchBabies = async () => {
       try {
@@ -57,7 +57,12 @@ export function NurseryModeContainer() {
         if (res.ok) {
           const data = await res.json();
           if (data.success) {
-            setBabies(data.data.filter((b: Baby) => !b.inactive));
+            const activeBabies = data.data.filter((b: Baby) => !b.inactive);
+            setBabies(activeBabies);
+            // Auto-select first baby if none selected
+            if (!selectedBaby && activeBabies.length > 0) {
+              setSelectedBaby(activeBabies[0]);
+            }
           }
         }
       } catch (err) {
@@ -65,7 +70,116 @@ export function NurseryModeContainer() {
       }
     };
     fetchBabies();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Poll for recent activity updates every 10 seconds
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSeenRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!selectedBaby) return;
+
+    const fetchRecentActivity = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const headers: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+        const babyId = selectedBaby.id;
+
+        const [feedRes, diaperRes, sleepRes, pumpRes] = await Promise.all([
+          fetch(`/api/feed-log?babyId=${babyId}`, { headers }),
+          fetch(`/api/diaper-log?babyId=${babyId}`, { headers }),
+          fetch(`/api/sleep-log?babyId=${babyId}`, { headers }),
+          fetch(`/api/pump-log?babyId=${babyId}`, { headers }),
+        ]);
+
+        const [feedData, diaperData, sleepData, pumpData] = await Promise.all([
+          feedRes.ok ? feedRes.json() : null,
+          diaperRes.ok ? diaperRes.json() : null,
+          sleepRes.ok ? sleepRes.json() : null,
+          pumpRes.ok ? pumpRes.json() : null,
+        ]);
+
+        const newLogs: Record<string, TileLog> = {};
+
+        // Latest feed
+        if (feedData?.success && feedData.data?.length > 0) {
+          const latest = feedData.data[0];
+          const id = latest.id;
+          if (id !== lastSeenRef.current.feed) {
+            lastSeenRef.current.feed = id;
+            const time = new Date(latest.time || latest.startTime)
+              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+              .toLowerCase();
+            const typeLabels: Record<string, string> = {
+              BREAST: 'Breast', BOTTLE: 'Bottle', FOOD: 'Food',
+              FORMULA: 'Formula', PUMPED_BOTTLE: 'Pumped Bottle',
+            };
+            newLogs.feed = { last: time, note: typeLabels[latest.type] || latest.type };
+          }
+        }
+
+        // Latest diaper
+        if (diaperData?.success && diaperData.data?.length > 0) {
+          const latest = diaperData.data[0];
+          const id = latest.id;
+          if (id !== lastSeenRef.current.diaper) {
+            lastSeenRef.current.diaper = id;
+            const time = new Date(latest.time)
+              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+              .toLowerCase();
+            const typeLabels: Record<string, string> = { WET: 'Wet', DIRTY: 'Dirty', BOTH: 'Both' };
+            newLogs.diaper = { last: time, note: typeLabels[latest.type] || latest.type };
+          }
+        }
+
+        // Latest sleep (completed only)
+        if (sleepData?.success && sleepData.data?.length > 0) {
+          const latest = sleepData.data.find((s: any) => s.endTime);
+          if (latest) {
+            const id = latest.id;
+            if (id !== lastSeenRef.current.sleep) {
+              lastSeenRef.current.sleep = id;
+              const time = new Date(latest.endTime)
+                .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                .toLowerCase();
+              const dur = latest.duration ? `${latest.duration} min` : '';
+              newLogs.sleep = { last: time, note: dur ? `${latest.location || 'Sleep'} — ${dur}` : (latest.location || 'Sleep') };
+            }
+          }
+        }
+
+        // Latest pump
+        if (pumpData?.success && pumpData.data?.length > 0) {
+          const latest = pumpData.data[0];
+          const id = latest.id;
+          if (id !== lastSeenRef.current.pump) {
+            lastSeenRef.current.pump = id;
+            const time = new Date(latest.startTime)
+              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+              .toLowerCase();
+            const actionLabels: Record<string, string> = { STORED: 'Stored', FED: 'Fed', DISCARDED: 'Discarded' };
+            newLogs.pump = { last: time, note: actionLabels[latest.pumpAction] || latest.pumpAction };
+          }
+        }
+
+        if (Object.keys(newLogs).length > 0) {
+          setLogs(prev => ({ ...prev, ...newLogs }));
+        }
+      } catch (err) {
+        console.error('Failed to poll activities:', err);
+      }
+    };
+
+    // Initial fetch
+    fetchRecentActivity();
+
+    // Poll every 10 seconds
+    pollRef.current = setInterval(fetchRecentActivity, 10000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [selectedBaby?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize from settings once loaded
   const effectiveHue = hue ?? settings.hue;
@@ -300,6 +414,7 @@ export function NurseryModeContainer() {
                           setSelectedBaby(baby);
                           setBabySwitcherOpen(false);
                           setLogs({});
+                          lastSeenRef.current = {};
                         }}
                         className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
                         style={{
