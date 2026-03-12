@@ -799,12 +799,14 @@ export function ActivityTileGroup({
             </button>
           </DropdownMenuTrigger>
           {/* Apply scrolling directly to DropdownMenuContent */}
-          <DropdownMenuContent 
-            align="end" 
-            className="max-h-[80vh] overflow-y-auto p-1"
+          <DropdownMenuContent
+            align="end"
+            className="p-0"
             avoidCollisions={true}
             collisionPadding={10}
-          > 
+            style={{ maxHeight: 'calc(var(--radix-dropdown-menu-content-available-height, 80vh) - 20px)', overflowY: 'auto' }}
+          >
+            <div className="p-1">
             {/* Combined Visibility and Reordering Options */}
             {activityOrder.map((activity, index) => (
                 <div
@@ -1003,7 +1005,7 @@ export function ActivityTileGroup({
                 </DropdownMenuCheckboxItem>
               </div>
             ))}
-            {/* No inner wrapper div needed */}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
