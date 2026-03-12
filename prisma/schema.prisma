@@ -192,6 +192,7 @@ model Family {
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
   vaccineLogs    VaccineLog[]
+  apiKeys        ApiKey[]
 }
 
 // New model for family membership
@@ -242,6 +243,7 @@ model Baby {
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeed ActiveBreastFeed?
   vaccineLogs  VaccineLog[]
+  apiKeys      ApiKey[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -1273,4 +1275,27 @@ model ActiveBreastFeed {
 
   @@index([babyId])
   @@index([familyId])
+}
+
+// API Key for external integrations (Home Assistant, webhooks, etc.)
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String // User-provided label: "Nursery Button", "HA Dashboard", etc.
+  keyPrefix   String // First 16 chars of key for UI display: "st_live_XXXXXXXX"
+  keyHash     String    @unique // SHA-256 hash of full key for lookup
+  familyId    String
+  babyId      String? // Optional: restrict to a specific baby
+  scopes      String // JSON array: ["read","write"] or ["read"] or ["write"]
+  lastUsedAt  DateTime?
+  expiresAt   DateTime? // Optional expiration
+  revoked     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  family Family @relation(fields: [familyId], references: [id])
+  baby   Baby?  @relation(fields: [babyId], references: [id])
+
+  @@index([keyHash])
+  @@index([familyId])
+  @@index([revoked])
 }

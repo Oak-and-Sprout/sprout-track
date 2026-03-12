@@ -1,0 +1,412 @@
+#!/usr/bin/env node
+
+/**
+ * Webhook API Test Script for Sprout Track
+ *
+ * Tests the /api/hooks/v1/ endpoints using a real API key.
+ * Prompts for base URL and API key interactively.
+ *
+ * Usage:
+ *   node scripts/test-webhook-api.js
+ *   node scripts/test-webhook-api.js --read-only
+ *   node scripts/test-webhook-api.js --write-only
+ */
+
+const readline = require('readline');
+
+const args = process.argv.slice(2);
+const readOnly = args.includes('--read-only');
+const writeOnly = args.includes('--write-only');
+
+let API_KEY;
+let BASE_URL;
+let HOOKS_BASE;
+
+function prompt(question, defaultValue) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const display = defaultValue ? `${question} [${defaultValue}]: ` : `${question}: `;
+  return new Promise((resolve) => {
+    rl.question(display, (answer) => {
+      rl.close();
+      resolve(answer.trim() || defaultValue || '');
+    });
+  });
+}
+
+// ── Helpers ──
+
+let passed = 0;
+let failed = 0;
+let skipped = 0;
+
+function log(icon, msg) {
+  console.log(`  ${icon} ${msg}`);
+}
+
+async function request(method, path, body) {
+  const url = `${HOOKS_BASE}${path}`;
+  const opts = {
+    method,
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  const res = await fetch(url, opts);
+  const json = await res.json();
+  return { status: res.status, headers: Object.fromEntries(res.headers.entries()), ...json };
+}
+
+async function test(name, fn) {
+  try {
+    await fn();
+    passed++;
+    log('\x1b[32m✓\x1b[0m', name);
+  } catch (err) {
+    failed++;
+    log('\x1b[31m✗\x1b[0m', `${name}\n      ${err.message}`);
+  }
+}
+
+function assert(condition, msg) {
+  if (!condition) throw new Error(msg || 'Assertion failed');
+}
+
+// ── Read Tests ──
+
+async function runReadTests(babyId) {
+  console.log('\n\x1b[1m── Read Tests (GET) ──\x1b[0m\n');
+
+  await test('GET /babies — list babies', async () => {
+    const res = await request('GET', '/babies');
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.babies), 'Expected babies array');
+    assert(res.data.babies.length > 0, 'Expected at least one baby');
+    const baby = res.data.babies[0];
+    assert(baby.id, 'Baby should have id');
+    assert(baby.firstName, 'Baby should have firstName');
+    assert(typeof baby.ageInDays === 'number', 'Baby should have ageInDays');
+    log(' ', `Found ${res.data.babies.length} baby(ies): ${res.data.babies.map(b => b.firstName).join(', ')}`);
+  });
+
+  await test(`GET /babies/${babyId}/status — dashboard snapshot`, async () => {
+    const res = await request('GET', `/babies/${babyId}/status`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.baby, 'Expected baby object');
+    assert(res.data.lastActivities !== undefined, 'Expected lastActivities');
+    assert(res.data.dailyCounts !== undefined, 'Expected dailyCounts');
+    assert(res.data.warnings !== undefined, 'Expected warnings');
+    const dc = res.data.dailyCounts;
+    log(' ', `Daily: ${dc.feeds} feeds, ${dc.diapers} diapers, ${dc.sleepMinutes}min sleep, ${dc.baths} baths`);
+    if (res.data.lastActivities.feed) {
+      log(' ', `Last feed: ${res.data.lastActivities.feed.minutesAgo} min ago (${res.data.lastActivities.feed.type})`);
+    }
+  });
+
+  await test(`GET /babies/${babyId}/activities — recent activities`, async () => {
+    const res = await request('GET', `/babies/${babyId}/activities?limit=5`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.activities), 'Expected activities array');
+    assert(typeof res.data.count === 'number', 'Expected count');
+    log(' ', `Got ${res.data.count} activities`);
+    if (res.data.activities.length > 0) {
+      const types = [...new Set(res.data.activities.map(a => a.activityType))];
+      log(' ', `Types: ${types.join(', ')}`);
+    }
+  });
+
+  await test(`GET /babies/${babyId}/activities?type=feed — filtered activities`, async () => {
+    const res = await request('GET', `/babies/${babyId}/activities?type=feed&limit=3`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.activities), 'Expected activities array');
+    res.data.activities.forEach(a => {
+      assert(a.activityType === 'feed', `Expected feed, got ${a.activityType}`);
+    });
+    log(' ', `Got ${res.data.count} feed activities`);
+  });
+
+  await test(`GET /babies/${babyId}/measurements/latest — latest measurements`, async () => {
+    const res = await request('GET', `/babies/${babyId}/measurements/latest`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.measurements, 'Expected measurements object');
+    const types = Object.keys(res.data.measurements);
+    const available = types.filter(t => res.data.measurements[t] !== null);
+    log(' ', `Measurement types: ${types.join(', ')}`);
+    log(' ', `Has data: ${available.length > 0 ? available.join(', ') : 'none'}`);
+  });
+
+  // Edge cases
+  await test('GET /babies/invalid-id/status — 404 for bad baby ID', async () => {
+    const res = await request('GET', '/babies/nonexistent-baby-id/status');
+    assert(!res.success, 'Expected failure');
+    assert(res.error, 'Expected error object');
+  });
+
+  await test('GET /babies/${babyId}/activities?type=invalid — 400 for bad type', async () => {
+    const res = await request('GET', `/babies/${babyId}/activities?type=invalid`);
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'INVALID_ACTIVITY_TYPE', `Expected INVALID_ACTIVITY_TYPE, got ${res.error.code}`);
+  });
+
+  // Rate limit headers
+  await test('Rate limit headers present on responses', async () => {
+    const res = await request('GET', '/babies');
+    assert(res.headers['x-ratelimit-limit'], 'Expected X-RateLimit-Limit header');
+    assert(res.headers['x-ratelimit-remaining'], 'Expected X-RateLimit-Remaining header');
+    assert(res.headers['x-ratelimit-reset'], 'Expected X-RateLimit-Reset header');
+    log(' ', `Limit: ${res.headers['x-ratelimit-limit']}, Remaining: ${res.headers['x-ratelimit-remaining']}`);
+  });
+}
+
+// ── Write Tests ──
+
+async function runWriteTests(babyId) {
+  console.log('\n\x1b[1m── Write Tests (POST) ──\x1b[0m\n');
+
+  await test('POST feed (bottle)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed',
+      feedType: 'BOTTLE',
+      amount: 4,
+      unitAbbr: 'OZ',
+      bottleType: 'formula',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.activityType === 'feed', 'Expected feed type');
+    assert(res.data.id, 'Expected record id');
+    log(' ', `Created feed ${res.data.id}`);
+  });
+
+  await test('POST diaper (wet)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'diaper',
+      diaperType: 'WET',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.activityType === 'diaper', 'Expected diaper type');
+    log(' ', `Created diaper ${res.data.id}`);
+  });
+
+  await test('POST sleep (start then end)', async () => {
+    const startRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NAP',
+      action: 'start',
+    });
+    assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
+    assert(startRes.data.details.isActive === true, 'Expected active sleep');
+    log(' ', `Started sleep ${startRes.data.id}`);
+
+    // Wait a moment then end it
+    await new Promise(r => setTimeout(r, 500));
+
+    const endRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NAP',
+      action: 'end',
+    });
+    assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
+    assert(endRes.data.details.isActive === false, 'Expected inactive sleep');
+    log(' ', `Ended sleep ${endRes.data.id}, duration: ${endRes.data.details.duration} min`);
+  });
+
+  await test('POST sleep (log with duration)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NAP',
+      action: 'log',
+      duration: 45,
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.details.duration === 45, 'Expected 45 min duration');
+    log(' ', `Logged sleep ${res.data.id}`);
+  });
+
+  await test('POST mood', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'mood',
+      mood: 'HAPPY',
+      intensity: 4,
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    log(' ', `Created mood ${res.data.id}`);
+  });
+
+  await test('POST note', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'note',
+      content: 'API test note - safe to delete',
+      category: 'test',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    log(' ', `Created note ${res.data.id}`);
+  });
+
+  await test('POST bath', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'bath',
+      soapUsed: true,
+      shampooUsed: false,
+      notes: 'API test bath',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    log(' ', `Created bath ${res.data.id}`);
+  });
+
+  await test('POST measurement (weight)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'measurement',
+      measurementType: 'WEIGHT',
+      value: 18.5,
+      unit: 'LB',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    log(' ', `Created measurement ${res.data.id}`);
+  });
+
+  // Validation tests
+  await test('POST feed — missing feedType returns 400', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed',
+      amount: 4,
+    });
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'INVALID_FEED_TYPE', `Expected INVALID_FEED_TYPE, got ${res.error.code}`);
+  });
+
+  await test('POST invalid type returns 400', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'invalid_type',
+    });
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'INVALID_ACTIVITY_TYPE', `Expected INVALID_ACTIVITY_TYPE, got ${res.error.code}`);
+  });
+
+  await test('POST sleep end with no active sleep returns 400', async () => {
+    // End any active sleeps first by logging a completed one
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NAP',
+      action: 'end',
+    });
+    // This might succeed (ending an existing one) or fail — either is fine for setup.
+    // Now try again — should fail because no active sleep remains.
+    const res2 = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NAP',
+      action: 'end',
+    });
+    // If the first end succeeded, the second should fail
+    if (res.success) {
+      assert(!res2.success, 'Expected failure on second end');
+      assert(res2.error.code === 'NO_ACTIVE_SLEEP', `Expected NO_ACTIVE_SLEEP, got ${res2.error.code}`);
+    }
+  });
+
+  await test('POST medicine — nonexistent name returns 404', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'medicine',
+      medicineName: 'NonexistentMedicine12345',
+      amount: 1,
+    });
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'MEDICINE_NOT_FOUND', `Expected MEDICINE_NOT_FOUND, got ${res.error.code}`);
+  });
+}
+
+// ── Auth Tests ──
+
+async function runAuthTests() {
+  console.log('\n\x1b[1m── Auth Tests ──\x1b[0m\n');
+
+  await test('Missing auth header returns 401', async () => {
+    const res = await fetch(`${HOOKS_BASE}/babies`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const json = await res.json();
+    assert(res.status === 401, `Expected 401, got ${res.status}`);
+    assert(!json.success, 'Expected failure');
+  });
+
+  await test('Invalid API key returns 401', async () => {
+    const res = await fetch(`${HOOKS_BASE}/babies`, {
+      headers: {
+        'Authorization': 'Bearer st_live_0000000000000000000000000000000000',
+        'Content-Type': 'application/json',
+      },
+    });
+    const json = await res.json();
+    assert(res.status === 401, `Expected 401, got ${res.status}`);
+    assert(!json.success, 'Expected failure');
+  });
+
+  await test('Bad token format returns 401', async () => {
+    const res = await fetch(`${HOOKS_BASE}/babies`, {
+      headers: {
+        'Authorization': 'Bearer not_a_valid_key',
+        'Content-Type': 'application/json',
+      },
+    });
+    const json = await res.json();
+    assert(res.status === 401, `Expected 401, got ${res.status}`);
+  });
+}
+
+// ── Main ──
+
+async function main() {
+  console.log('\n\x1b[1;36m╔══════════════════════════════════════╗\x1b[0m');
+  console.log('\x1b[1;36m║   Sprout Track Webhook API Tests     ║\x1b[0m');
+  console.log('\x1b[1;36m╚══════════════════════════════════════╝\x1b[0m\n');
+
+  BASE_URL = (await prompt('Base URL', 'http://localhost:3000')).replace(/\/$/, '');
+  HOOKS_BASE = `${BASE_URL}/api/hooks/v1`;
+
+  API_KEY = await prompt('API Key (st_live_...)');
+  if (!API_KEY || !API_KEY.startsWith('st_live_')) {
+    console.error('\n\x1b[31mError: A valid API key starting with st_live_ is required.\x1b[0m');
+    console.error('Create one in Settings > Admin > Integrations.\n');
+    process.exit(1);
+  }
+
+  console.log(`\n  Base URL: ${HOOKS_BASE}`);
+  console.log(`  API Key: ${API_KEY.substring(0, 16)}...`);
+
+  // Auth tests always run
+  await runAuthTests();
+
+  // Discover babies
+  const babiesRes = await request('GET', '/babies');
+  if (!babiesRes.success || !babiesRes.data.babies.length) {
+    console.error('\n\x1b[31mCould not list babies. Check your API key and that babies exist.\x1b[0m');
+    if (babiesRes.error) console.error(`  Error: ${babiesRes.error.message || babiesRes.error}`);
+    process.exit(1);
+  }
+
+  const babyId = babiesRes.data.babies[0].id;
+  console.log(`  Testing with baby: ${babiesRes.data.babies[0].firstName} (${babyId})`);
+
+  if (!writeOnly) {
+    await runReadTests(babyId);
+  }
+
+  if (!readOnly) {
+    await runWriteTests(babyId);
+  }
+
+  // Summary
+  console.log('\n\x1b[1m── Summary ──\x1b[0m\n');
+  console.log(`  \x1b[32m${passed} passed\x1b[0m`);
+  if (failed > 0) console.log(`  \x1b[31m${failed} failed\x1b[0m`);
+  if (skipped > 0) console.log(`  \x1b[33m${skipped} skipped\x1b[0m`);
+  console.log('');
+
+  process.exit(failed > 0 ? 1 : 0);
+}
+
+main().catch((err) => {
+  console.error('\n\x1b[31mUnexpected error:\x1b[0m', err);
+  process.exit(1);
+});
