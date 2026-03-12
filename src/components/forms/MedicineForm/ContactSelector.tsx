@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/src/lib/utils';
 import { Check, X, Plus, Phone, Mail, Edit, User } from 'lucide-react';
 import { Label } from '@/src/components/ui/label';
@@ -37,43 +37,6 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
   const [showContactForm, setShowContactForm] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Fetch contacts from API - memoized to avoid dependency issues
-  const fetchContacts = useCallback(async () => {
-    try {
-      // Fetch contacts from API
-      const url = `/api/contact`;
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(t('Failed to fetch contacts'));
-      }
-      
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        // If we have a callback to update contacts in the parent component
-        if (onAddNewContact && Array.isArray(result.data)) {
-          // Update the contacts list with any new contacts
-          result.data.forEach((contact: Contact) => {
-            if (!contacts.some(c => c.id === contact.id)) {
-              onAddNewContact(contact);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching contacts:', error);
-    }
-  }, [onAddNewContact]); // Remove contacts dependency to prevent repeated calls
-  
-  // Fetch contacts on component mount only
-  useEffect(() => {
-    // Only fetch if we have the callback to update contacts and haven't fetched yet
-    if (onAddNewContact && contacts.length === 0) {
-      fetchContacts();
-    }
-  }, [onAddNewContact]); // Remove fetchContacts dependency to prevent repeated calls
   
   // Filter contacts based on search term
   const filteredContacts = contacts.filter(contact => 
@@ -124,19 +87,16 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
       if (onAddNewContact) {
         // Always pass the contact data to the parent component
         onAddNewContact(contactData);
-        
+
         // Auto-select the newly added contact if it has an ID
         if (contactData.id) {
           onContactsChange([...selectedContactIds, contactData.id]);
         }
-      } 
+      }
       // If it's an existing contact
       else if (contactData.id && onEditContact) {
         onEditContact(contactData);
       }
-      
-      // Immediately refresh contacts list from the API
-      await fetchContacts();
     } catch (error) {
       console.error('Error handling saved contact:', error);
     } finally {
@@ -156,14 +116,11 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
         
         // Update the parent component
         onDeleteContact(contactId);
-        
+
         // Remove the contact from selection if it's selected
         if (selectedContactIds.includes(contactId)) {
           onContactsChange(selectedContactIds.filter(id => id !== contactId));
         }
-        
-        // Refresh contacts list from the API
-        await fetchContacts();
       } catch (error) {
         console.error('Error handling contact deletion:', error);
       } finally {

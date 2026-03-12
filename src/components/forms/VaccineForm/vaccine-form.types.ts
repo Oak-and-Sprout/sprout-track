@@ -1,4 +1,5 @@
 import { VaccineLogResponse } from '@/app/api/types';
+import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
 
 /**
  * Tab types for the VaccineForm component
@@ -27,6 +28,8 @@ export interface RecordVaccineTabProps {
   onClose: () => void;
   refreshData: () => void;
   activity?: VaccineLogResponse;
+  contacts: Contact[];
+  onContactsUpdated: (contacts: Contact[]) => void;
 }
 
 /**

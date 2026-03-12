@@ -32,6 +32,8 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
   onClose,
   refreshData,
   activity,
+  contacts: parentContacts,
+  onContactsUpdated,
 }) => {
   const { t } = useLocalization();
   const { toUTCString } = useTimezone();
@@ -53,7 +55,6 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Contacts state
-  const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
 
   // Documents state
@@ -242,18 +243,17 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
   };
 
   const handleAddNewContact = (contact: Contact) => {
-    setContacts(prev => {
-      if (prev.some(c => c.id === contact.id)) return prev;
-      return [...prev, contact];
-    });
+    if (!parentContacts.some(c => c.id === contact.id)) {
+      onContactsUpdated([...parentContacts, contact]);
+    }
   };
 
   const handleEditContact = (contact: Contact) => {
-    setContacts(prev => prev.map(c => c.id === contact.id ? contact : c));
+    onContactsUpdated(parentContacts.map(c => c.id === contact.id ? contact : c));
   };
 
   const handleDeleteContact = (contactId: string) => {
-    setContacts(prev => prev.filter(c => c.id !== contactId));
+    onContactsUpdated(parentContacts.filter(c => c.id !== contactId));
     setSelectedContactIds(prev => prev.filter(id => id !== contactId));
   };
 
@@ -588,7 +588,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
         <div>
           <Label className="form-label">{t('Healthcare Provider')}</Label>
           <ContactSelector
-            contacts={contacts}
+            contacts={parentContacts}
             selectedContactIds={selectedContactIds}
             onContactsChange={handleContactsChange}
             onAddNewContact={handleAddNewContact}

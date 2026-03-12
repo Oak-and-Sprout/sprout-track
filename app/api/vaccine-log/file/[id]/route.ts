@@ -49,7 +49,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     // Encode filename for Content-Disposition (RFC 5987) to handle non-ASCII chars
     const encodedFilename = encodeURIComponent(document.originalName).replace(/['()]/g, escape);
 
-    return new NextResponse(decryptedBuffer.buffer.slice(decryptedBuffer.byteOffset, decryptedBuffer.byteOffset + decryptedBuffer.byteLength), {
+    return new NextResponse(decryptedBuffer.buffer.slice(decryptedBuffer.byteOffset, decryptedBuffer.byteOffset + decryptedBuffer.byteLength) as ArrayBuffer, {
       headers: {
         'Content-Type': document.mimeType,
         'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,

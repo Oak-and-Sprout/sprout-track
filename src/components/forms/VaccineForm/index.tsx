@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { VaccineFormProps, VaccineFormTab } from './vaccine-form.types';
+import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
 import { Syringe, ClipboardList } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { FormPage, FormPageFooter } from '@/src/components/ui/form-page';
@@ -41,6 +42,29 @@ const VaccineForm: React.FC<VaccineFormProps> = ({
   const { t } = useLocalization();
   const [activeTab, setActiveTab] = useState<string>('record');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+
+  // Fetch contacts once when form opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchContacts = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/api/contact', {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && Array.isArray(result.data)) {
+            setContacts(result.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+      }
+    };
+    fetchContacts();
+  }, [isOpen]);
 
   // Function to refresh data in all tabs
   const refreshData = useCallback(() => {
@@ -81,6 +105,8 @@ const VaccineForm: React.FC<VaccineFormProps> = ({
           onClose={onClose}
           refreshData={refreshData}
           activity={activity}
+          contacts={contacts}
+          onContactsUpdated={setContacts}
         />
       ),
     },
