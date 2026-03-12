@@ -39,20 +39,22 @@ export default function NurseryLayout({
   };
 
   return (
-    <DeploymentProvider>
-      <LocalizationProvider>
-        <FamilyProvider onLogout={handleLogout}>
-          <BabyProvider>
-            <TimezoneProvider>
-              <ThemeProvider>
-                <ToastProvider>
-                  {children}
-                </ToastProvider>
-              </ThemeProvider>
-            </TimezoneProvider>
-          </BabyProvider>
-        </FamilyProvider>
-      </LocalizationProvider>
-    </DeploymentProvider>
+    <div style={{ background: '#0a0a1a', minHeight: '100vh' }}>
+      <DeploymentProvider>
+        <LocalizationProvider>
+          <FamilyProvider onLogout={handleLogout}>
+            <BabyProvider>
+              <TimezoneProvider>
+                <ThemeProvider>
+                  <ToastProvider>
+                    {children}
+                  </ToastProvider>
+                </ThemeProvider>
+              </TimezoneProvider>
+            </BabyProvider>
+          </FamilyProvider>
+        </LocalizationProvider>
+      </DeploymentProvider>
+    </div>
   );
 }

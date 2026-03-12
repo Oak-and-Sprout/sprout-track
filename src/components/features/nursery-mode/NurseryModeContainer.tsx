@@ -164,10 +164,18 @@ export function NurseryModeContainer() {
           box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer;
         }
         * { -webkit-tap-highlight-color: transparent; }
+        @supports (padding-top: env(safe-area-inset-top)) {
+          .nursery-safe-area {
+            padding-top: env(safe-area-inset-top) !important;
+            padding-left: env(safe-area-inset-left) !important;
+            padding-right: env(safe-area-inset-right) !important;
+            padding-bottom: env(safe-area-inset-bottom) !important;
+          }
+        }
       `}</style>
 
       <div
-        className="fixed inset-0 z-[9999] flex flex-col font-sans overflow-hidden"
+        className="fixed inset-0 z-[9999] flex flex-col font-sans overflow-hidden nursery-safe-area"
         style={{
           background: baseBg,
           animation: 'nursery-hueShift 45s ease-in-out infinite',
@@ -215,80 +223,9 @@ export function NurseryModeContainer() {
 
         {/* Header */}
         <div
-          className="flex justify-between items-start"
+          className="flex justify-end items-start"
           style={{ padding: 'clamp(1rem, 3vw, 2rem) clamp(1.25rem, 4vw, 2.5rem)', paddingBottom: 0 }}
         >
-          <div className="relative">
-            <button
-              onClick={() => babies.length > 1 && setBabySwitcherOpen(!babySwitcherOpen)}
-              className="bg-transparent border-none p-0 flex items-center gap-1.5 cursor-pointer text-left"
-              style={{ cursor: babies.length > 1 ? 'pointer' : 'default' }}
-            >
-              <div
-                className="text-[clamp(1rem,2.2vw,1.2rem)] font-light tracking-tight font-serif"
-                style={{ color: colors.text, opacity: 0.7 }}
-              >
-                {selectedBaby ? selectedBaby.firstName : t('Sprout Track')}
-              </div>
-              {babies.length > 1 && (
-                <ChevronDown
-                  size={18}
-                  style={{
-                    color: colors.text,
-                    opacity: 0.6,
-                    transform: babySwitcherOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s ease',
-                  }}
-                />
-              )}
-            </button>
-            <div
-              className="text-[clamp(0.55rem,1.2vw,0.7rem)] font-normal tracking-widest uppercase mt-0.5 font-sans"
-              style={{ color: colors.text, opacity: 0.35 }}
-            >
-              {t('Nursery Mode')}
-            </div>
-
-            {/* Baby switcher dropdown */}
-            {babySwitcherOpen && babies.length > 1 && (
-              <>
-                <div
-                  className="fixed inset-0 z-[100]"
-                  onClick={() => setBabySwitcherOpen(false)}
-                />
-                <div
-                  className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
-                  style={{
-                    background: colors.panelBg,
-                    backdropFilter: 'blur(40px)',
-                    WebkitBackdropFilter: 'blur(40px)',
-                    border: `1px solid ${colors.border}`,
-                    minWidth: '140px',
-                    animation: 'nursery-fadeIn 0.15s ease',
-                  }}
-                >
-                  {babies.map((baby) => (
-                    <button
-                      key={baby.id}
-                      onClick={() => {
-                        setSelectedBaby(baby);
-                        setBabySwitcherOpen(false);
-                        setLogs({});
-                      }}
-                      className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
-                      style={{
-                        color: colors.text,
-                        opacity: selectedBaby?.id === baby.id ? 1 : 0.6,
-                        background: selectedBaby?.id === baby.id ? colors.btnBg : 'transparent',
-                      }}
-                    >
-                      {baby.firstName}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
           <div className="flex items-center gap-6">
             <button
               onClick={() => setSettingsOpen(true)}
@@ -307,12 +244,78 @@ export function NurseryModeContainer() {
           </div>
         </div>
 
-        {/* Clock */}
+        {/* Clock + Baby Selector */}
         <div
           className="flex-shrink-0 flex items-center justify-center"
           style={{ padding: 'clamp(1.25rem, 4vw, 3rem) 0 clamp(0.75rem, 2.5vw, 1.5rem)' }}
         >
-          <Clock colors={colors} />
+          <div className="flex items-center gap-8">
+            <Clock colors={colors} />
+            <div className="relative flex flex-col items-start">
+              <button
+                onClick={() => babies.length > 1 && setBabySwitcherOpen(!babySwitcherOpen)}
+                className="bg-transparent border-none p-0 flex items-center gap-1.5 cursor-pointer text-left"
+                style={{ cursor: babies.length > 1 ? 'pointer' : 'default' }}
+              >
+                <div
+                  className="text-[clamp(1rem,2.2vw,1.2rem)] font-light tracking-tight font-serif"
+                  style={{ color: colors.text, opacity: 0.7 }}
+                >
+                  {selectedBaby ? selectedBaby.firstName : t('Sprout Track')}
+                </div>
+                {babies.length > 1 && (
+                  <ChevronDown
+                    size={18}
+                    style={{
+                      color: colors.text,
+                      opacity: 0.6,
+                      transform: babySwitcherOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                    }}
+                  />
+                )}
+              </button>
+              {/* Baby switcher dropdown */}
+              {babySwitcherOpen && babies.length > 1 && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[100]"
+                    onClick={() => setBabySwitcherOpen(false)}
+                  />
+                  <div
+                    className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
+                    style={{
+                      background: colors.panelBg,
+                      backdropFilter: 'blur(40px)',
+                      WebkitBackdropFilter: 'blur(40px)',
+                      border: `1px solid ${colors.border}`,
+                      minWidth: '140px',
+                      animation: 'nursery-fadeIn 0.15s ease',
+                    }}
+                  >
+                    {babies.map((baby) => (
+                      <button
+                        key={baby.id}
+                        onClick={() => {
+                          setSelectedBaby(baby);
+                          setBabySwitcherOpen(false);
+                          setLogs({});
+                        }}
+                        className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
+                        style={{
+                          color: colors.text,
+                          opacity: selectedBaby?.id === baby.id ? 1 : 0.6,
+                          background: selectedBaby?.id === baby.id ? colors.btnBg : 'transparent',
+                        }}
+                      >
+                        {baby.firstName}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Tiles */}
@@ -359,8 +362,14 @@ export function NurseryModeContainer() {
           </div>
         </div>
 
-        {/* Wake lock status */}
-        <div className="pb-[clamp(0.75rem,2vw,1.25rem)] text-center">
+        {/* Footer */}
+        <div className="pb-[clamp(0.75rem,2vw,1.25rem)] text-center flex flex-col items-center gap-1">
+          <span
+            className="font-sans text-[clamp(0.55rem,1.2vw,0.7rem)] tracking-widest uppercase"
+            style={{ color: colors.text, opacity: 0.35 }}
+          >
+            {t('Nursery Mode')}
+          </span>
           <span
             className="font-sans text-[0.6rem] tracking-wider uppercase"
             style={{
