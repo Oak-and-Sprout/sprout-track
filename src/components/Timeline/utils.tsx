@@ -239,9 +239,9 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         }
       }
       
-      // Always show location if specified
-      if (activity.location) {
-        details.push({ label: t('Location'), value: formatLocation(activity.location) });
+      // Always show location if specified (SleepLog only)
+      if ((activity as any).location) {
+        details.push({ label: t('Location'), value: formatLocation((activity as any).location) });
       }
 
       return {
@@ -649,10 +649,11 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true, t) : t('ongoing');
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
       
-      // Format location
+      // Format location (SleepLog only)
       let locationText = '';
-      if (activity.location) {
-        const location = activity.location === 'OTHER' ? t('Other') : activity.location.split('_').map(word => 
+      if ((activity as any).location) {
+        const loc = (activity as any).location;
+        const location = loc === 'OTHER' ? t('Other') : loc.split('_').map((word: string) =>
           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
         ).join(' ');
         locationText = location;

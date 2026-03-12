@@ -475,6 +475,50 @@ html.dark .activity-chart-hour-label {
   color: #6b7280 !important; /* gray-500 */
 }
 
+/* Health tab - supplement icon */
+html.dark .reports-icon-supplement {
+  color: #86efac !important; /* green-300 */
+}
+
+/* Health tab - vaccine items */
+html.dark .reports-health-vaccine-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-health-vaccine-header:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-health-vaccine-icon-bg {
+  background-color: rgba(20, 184, 166, 0.15) !important; /* teal-500/15 */
+}
+
+html.dark .reports-health-vaccine-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-health-vaccine-date {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .reports-health-vaccine-detail {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-health-vaccine-detail-row {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Health tab - consistency bars */
+html.dark .reports-health-consistency-bar {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-health-consistency-fill {
+  background-color: #14b8a6 !important; /* teal-500 */
+}
+
 /* Heatmap dark mode */
 html.dark .heatmap-legend {
   border-color: #374151 !important; /* gray-700 */
@@ -485,4 +529,22 @@ html.dark .heatmap-legend span {
 }
 
 html.dark .heatmap-slot {
+}
+
+/* Activity/Play Stats Section */
+html.dark .reports-icon-activity {
+  color: #F3C4A2 !important;
+}
+
+html.dark .reports-play-type-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-play-type-name {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .reports-play-type-details {
+  color: #9ca3af !important; /* gray-400 */
 }

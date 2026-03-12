@@ -253,7 +253,7 @@ export interface PlayLogCreate {
   startTime: string;
   duration?: number;
   type: string;
-  location?: string;
+  notes?: string;
   activities?: string;
 }
 

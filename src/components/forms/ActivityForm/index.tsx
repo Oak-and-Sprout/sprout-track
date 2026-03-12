@@ -157,7 +157,7 @@ export default function ActivityForm({
         setPlayType(activity.type as PlayType);
         setDuration(activity.duration ? String(activity.duration) : '');
         setSubCategory(activity.activities || '');
-        setNotes(activity.location || '');
+        setNotes(activity.notes || '');
       } else {
         // New entry
         try {
@@ -197,7 +197,7 @@ export default function ActivityForm({
         duration: durationMinutes,
         type: playType,
         activities: subCategory || null,
-        location: notes || null,
+        notes: notes || null,
       };
 
       const authToken = localStorage.getItem('authToken');

@@ -66,7 +66,8 @@ export const useActivityDescription = () => {
         const startTimeFormatted = activity.startTime ? formatDateTime(activity.startTime) : 'unknown';
         const endTimeFormatted = activity.endTime ? formatDateTime(activity.endTime) : 'ongoing';
         const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
-        const location = activity.location === 'OTHER' ? 'Other' : activity.location?.split('_').map(word => 
+        const loc = (activity as any).location;
+        const location = loc === 'OTHER' ? 'Other' : loc?.split('_').map((word: string) =>
           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
         ).join(' ');
         

@@ -586,7 +586,7 @@ model PlayLog {
   endTime    DateTime?
   duration   Int? // Duration in minutes
   type       PlayType
-  location   String?
+  notes      String?
   activities String? // Description of activities during play
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

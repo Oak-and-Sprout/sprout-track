@@ -180,7 +180,25 @@ export interface MedicineLogActivity {
     doseMinTime: string | null;
     notes: string | null;
     active: boolean;
+    isSupplement: boolean;
   };
+}
+
+export interface PlayActivity {
+  id: string;
+  babyId: string;
+  familyId: string | null;
+  startTime: string;
+  endTime: string | null;
+  duration: number | null;
+  type: string;
+  notes: string | null;
+  activities: string | null;
+  caretakerId: string | null;
+  caretakerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 // Union type for all activities
@@ -194,10 +212,11 @@ export type ActivityType =
   | BreastMilkAdjustmentActivity
   | MilestoneActivity
   | MeasurementActivity
-  | MedicineLogActivity;
+  | MedicineLogActivity
+  | PlayActivity;
 
 // Tab types
-export type ReportTab = 'stats' | 'milestones' | 'growth' | 'activity' | 'heatmaps';
+export type ReportTab = 'stats' | 'milestones' | 'growth' | 'activity' | 'heatmaps' | 'health';
 
 // Date range type
 export interface DateRange {
@@ -350,6 +369,23 @@ export interface OtherStats {
   medicines: MedicineStat[];
 }
 
+// Play/Activity stats
+export interface PlayTypeStat {
+  type: string;
+  displayName: string;
+  count: number;
+  totalMinutes: number;
+  avgMinutes: number;
+}
+
+export interface PlayStats {
+  totalSessions: number;
+  totalMinutes: number;
+  avgSessionMinutes: number;
+  sessionsPerDay: number;
+  byType: PlayTypeStat[];
+}
+
 // Combined stats for the Stats Tab
 export interface CombinedStats {
   sleep: SleepStats;
@@ -358,4 +394,36 @@ export interface CombinedStats {
   other: OtherStats;
   pump: PumpStats;
   bath: BathStats;
+  play: PlayStats;
+}
+
+// Health Tab props
+export interface HealthTabProps {
+  activities: ActivityType[];
+  dateRange: DateRange;
+  isLoading: boolean;
+}
+
+// Per-medicine/supplement health stat
+export interface MedicineHealthStat {
+  name: string;
+  medicineId: string;
+  count: number;
+  totalAmount: number;
+  unit: string;
+  avgDoseAmount: number;
+  doseMinTime: string | null;
+  consistencyScore: number; // days with doses / total days in range * 100
+  daysWithDoses: number;
+  totalDaysInRange: number;
+}
+
+// Vaccine record from API
+export interface VaccineRecord {
+  id: string;
+  time: string;
+  vaccineName: string;
+  doseNumber: number | null;
+  notes: string | null;
+  contacts?: { contact: { id: string; name: string; role: string } }[];
 }

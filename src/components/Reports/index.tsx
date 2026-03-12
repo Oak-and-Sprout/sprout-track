@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, TrendingUp, Activity, Grid3X3, CalendarIcon, Loader2, Baby as BabyIcon, Trophy } from 'lucide-react';
+import { BarChart3, TrendingUp, Activity, Grid3X3, CalendarIcon, Loader2, Baby as BabyIcon, Trophy, HeartPulse } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useBaby } from '@/app/context/baby';
 import { Button } from '@/src/components/ui/button';
@@ -18,6 +18,7 @@ import MilestonesTab from './MilestonesTab';
 import GrowthTrendsTab from './GrowthTrendsTab';
 import ActivityTab from './ActivityTab';
 import HeatmapsTab from './HeatmapsTab';
+import HealthTab from './HealthTab';
 import { useLocalization } from '@/src/context/localization';
 
 import './reports.css';
@@ -141,6 +142,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
   const tabs = useMemo(
     () => [
       { id: 'stats' as ReportTab, label: t('Stats Tab'), icon: BarChart3 },
+      { id: 'health' as ReportTab, label: t('Health'), icon: HeartPulse },
       { id: 'milestones' as ReportTab, label: t('Milestones Tab'), icon: Trophy },
       { id: 'growth' as ReportTab, label: t('Growth Trends Tab'), icon: TrendingUp },
       { id: 'activity' as ReportTab, label: t('Activity Tab'), icon: Activity },
@@ -162,6 +164,8 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
         return <ActivityTab activities={activities} dateRange={dateRange} isLoading={isLoading} />;
       case 'heatmaps':
         return <HeatmapsTab activities={activities} dateRange={dateRange} isLoading={isLoading} />;
+      case 'health':
+        return <HealthTab activities={activities} dateRange={dateRange} isLoading={isLoading} />;
       default:
         return null;
     }

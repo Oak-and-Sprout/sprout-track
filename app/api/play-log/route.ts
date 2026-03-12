@@ -49,7 +49,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         endTime: endTimeUTC,
         duration: body.duration || null,
         type: body.type as PlayType,
-        location: body.location || null,
+        notes: body.notes || null,
         activities: body.activities || null,
         caretakerId: caretakerId,
         familyId,
@@ -132,7 +132,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       }
     }
     if (body.type !== undefined) data.type = body.type as PlayType;
-    if (body.location !== undefined) data.location = body.location || null;
+    if (body.notes !== undefined) data.notes = body.notes || null;
     if (body.activities !== undefined) data.activities = body.activities || null;
 
     const playLog = await prisma.playLog.update({
