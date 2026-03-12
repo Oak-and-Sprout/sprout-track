@@ -11,13 +11,14 @@ import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
+import VaccineForm from '@/src/components/forms/VaccineForm';
 import { ActivityType, FilterType, FullLogTimelineProps } from './full-log-timeline.types';
 import FullLogFilter from './FullLogFilter';
 import FullLogSearchBar from './FullLogSearchBar';
 import FullLogActivityList from './FullLogActivityList';
 import FullLogActivityDetails from './FullLogActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '@/src/components/Timeline/utils';
-import { PumpLogResponse, MedicineLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse } from '@/app/api/types';
+import { PumpLogResponse, MedicineLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
 import { cn } from '@/src/lib/utils';
 import styles from './full-log-timeline.styles';
 import './full-log-timeline.css';
@@ -38,7 +39,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play' | 'vaccine' | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -233,6 +234,15 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       return false;
     }
 
+    // Vaccine activity search
+    if ('vaccineName' in activity) {
+      const act = activity as any;
+      if (act.vaccineName && act.vaccineName.toLowerCase().includes(searchLower)) return true;
+      if (act.notes && act.notes.toLowerCase().includes(searchLower)) return true;
+      if (act.administeredBy && act.administeredBy.toLowerCase().includes(searchLower)) return true;
+      return false;
+    }
+
     // Play activity search
     if ('activities' in activity && 'type' in activity) {
       const act = activity as any;
@@ -274,6 +284,8 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
               return 'doseAmount' in activity && 'medicineId' in activity;
             case 'play':
               return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
+            case 'vaccine':
+              return 'vaccineName' in activity;
             default:
               return true;
           }
@@ -321,11 +333,13 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
               return 'value' in activity && 'unit' in activity;
             case 'medicine':
               return 'doseAmount' in activity && 'medicineId' in activity;
+            case 'vaccine':
+              return 'vaccineName' in activity;
             default:
               return true;
           }
         });
-    
+
     // Then filter by search query
     const searchFiltered = !searchQuery 
       ? typeFiltered 
@@ -359,7 +373,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
   };
 
   // Handle activity editing
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play' | 'vaccine') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -578,6 +592,21 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
             initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
             activity={'activities' in selectedActivity && 'type' in selectedActivity ?
               (selectedActivity as unknown as PlayLogResponse) : undefined}
+            onSuccess={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+              onActivityDeleted?.();
+            }}
+          />
+          <VaccineForm
+            isOpen={editModalType === 'vaccine'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
+            activity={'vaccineName' in selectedActivity ? (selectedActivity as unknown as VaccineLogResponse) : undefined}
             onSuccess={() => {
               setEditModalType(null);
               setSelectedActivity(null);

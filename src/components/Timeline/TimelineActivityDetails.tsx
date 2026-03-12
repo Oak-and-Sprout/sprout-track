@@ -68,6 +68,7 @@ const TimelineActivityDetails = ({
       else if ('doseAmount' in activity && 'medicineId' in activity) onEdit(activity, 'medicine');
       else if ('content' in activity) onEdit(activity, 'note');
       else if ('soapUsed' in activity) onEdit(activity, 'bath');
+      else if ('vaccineName' in activity) onEdit(activity, 'vaccine');
       else if ('title' in activity && 'category' in activity) onEdit(activity, 'milestone');
       else if ('value' in activity && 'unit' in activity) onEdit(activity, 'measurement');
     }

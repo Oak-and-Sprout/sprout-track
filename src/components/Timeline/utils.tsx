@@ -13,7 +13,8 @@ import {
   PillBottle,
   Pill,
   Baby,
-  Activity
+  Activity,
+  Syringe
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { 
@@ -66,6 +67,9 @@ export const getActivityIcon = (activity: ActivityType) => {
   }
   if ('soapUsed' in activity) {
     return <Bath className="h-4 w-4 text-white" />; // Bath activity
+  }
+  if ('vaccineName' in activity) {
+    return <Syringe className="h-4 w-4" style={{ color: '#EF4444' }} />;
   }
   if ('title' in activity && 'category' in activity) {
     return <Trophy className="h-4 w-4 text-white" />; // Milestone activity
@@ -494,6 +498,27 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     };
   }
 
+  // Vaccine activity
+  if ('vaccineName' in activity) {
+    const vaccineDetails = [
+      { label: t('Vaccine'), value: (activity as any).vaccineName },
+      { label: t('Time'), value: formatTime((activity as any).time, settings, true, t) },
+    ];
+    if ((activity as any).doseNumber) {
+      vaccineDetails.push({ label: t('Dose #'), value: String((activity as any).doseNumber) });
+    }
+    if ((activity as any).notes) {
+      vaccineDetails.push({ label: t('Notes'), value: (activity as any).notes });
+    }
+    if ((activity as any).administeredBy) {
+      vaccineDetails.push({ label: t('Administered By'), value: (activity as any).administeredBy });
+    }
+    return {
+      title: t('Vaccine Record'),
+      details: [...vaccineDetails, ...caretakerDetail],
+    };
+  }
+
   // Milestone activity
   if ('title' in activity && 'category' in activity) {
     const formatMilestoneCategory = (category: string) => {
@@ -888,6 +913,17 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     }
   }
 
+  // Vaccine activity
+  if ('vaccineName' in activity) {
+    const time = formatTime((activity as any).time, settings, true, t);
+    const parts = [time];
+    if ((activity as any).doseNumber) parts.push(`${t('Dose')} #${(activity as any).doseNumber}`);
+    return {
+      type: (activity as any).vaccineName,
+      details: parts.join(' • ')
+    };
+  }
+
   // Milestone activity
   if ('title' in activity && 'category' in activity) {
     const formatMilestoneCategory = (category: string) => {
@@ -961,6 +997,7 @@ export const getActivityEndpoint = (activity: ActivityType): string => {
   if ('doseAmount' in activity && 'medicineId' in activity) return 'medicine-log';
   if ('content' in activity) return 'note';
   if ('soapUsed' in activity) return 'bath-log';
+  if ('vaccineName' in activity) return 'vaccine-log';
   if ('title' in activity && 'category' in activity) return 'milestone-log';
   if ('value' in activity && 'unit' in activity) return 'measurement-log';
   
@@ -1024,6 +1061,9 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
       bg: 'bg-gradient-to-r from-orange-400 to-orange-500',
       textColor: 'text-white',
     };
+  }
+  if ('vaccineName' in activity) {
+    return { bg: 'bg-white border-2 border-red-500', textColor: 'text-red-600' };
   }
   if ('title' in activity && 'category' in activity) {
     return {

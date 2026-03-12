@@ -16,7 +16,8 @@ import {
   Icon,
   Eye,
   EyeOff,
-  Baby
+  Baby,
+  Syringe
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -113,6 +114,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let measurementCount = 0;
     let playCount = 0;
     let totalPlayMinutes = 0;
+    let vaccineCount = 0;
     let awakeMinutes = 0;
 
     const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
@@ -281,6 +283,15 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
       }
       
+      // Vaccine activities
+      if ('vaccineName' in activity) {
+        const time = new Date((activity as any).time);
+        if (time >= startOfDay && time <= endOfDay) {
+          vaccineCount++;
+        }
+        return;
+      }
+
       // Milestone activities
       if ('title' in activity && 'category' in activity) {
         const activityDate = new Date(activity.date);
@@ -558,6 +569,20 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches pump
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Vaccine tile
+    if (vaccineCount > 0) {
+      tiles.push({
+        filter: 'vaccine',
+        label: t('Vaccines'),
+        value: vaccineCount.toString(),
+        icon: <Syringe className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#EF4444]',
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });

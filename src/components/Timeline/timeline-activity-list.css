@@ -557,3 +557,23 @@ html.dark .event-icon.play svg path {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
+
+.event-icon.vaccine {
+  background: #ffffff;
+  border: 2px solid #EF4444;
+}
+.event-icon.vaccine svg, .event-icon.vaccine svg path {
+  color: #EF4444 !important;
+  stroke: #EF4444 !important;
+}
+.timeline-event.vaccine::before {
+  background: #EF4444 !important;
+}
+html.dark .event-icon.vaccine {
+  background: transparent !important;
+  border: 2px solid #EF4444 !important;
+}
+html.dark .event-icon.vaccine svg, html.dark .event-icon.vaccine svg path {
+  color: #EF4444 !important;
+  stroke: #EF4444 !important;
+}

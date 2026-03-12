@@ -1,5 +1,5 @@
 import { ActivityType } from './activity-tile.types';
-import { BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse } from '@/app/api/types';
+import { BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse } from '@/app/api/types';
 import { useTimezone } from '@/app/context/timezone';
 
 /**
@@ -21,7 +21,7 @@ export const getActivityTime = (activity: ActivityType): string => {
 /**
  * Determines the variant based on the activity type
  */
-export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'default' => {
+export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine' | 'default' => {
   // Check for play log before sleep (both have 'type' and 'duration' but play has 'activities')
   if ('type' in activity && 'startTime' in activity && 'activities' in activity) {
     const playTypes = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
@@ -36,6 +36,7 @@ export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | '
     if ('value' in activity && 'unit' in activity) return 'measurement';
   }
   if ('doseAmount' in activity && 'medicineId' in activity) return 'medicine';
+  if ('vaccineName' in activity) return 'vaccine';
   if ('title' in activity && 'category' in activity) return 'milestone';
   if ('leftAmount' in activity || 'rightAmount' in activity) return 'pump';
   if ('content' in activity) return 'note';
@@ -218,6 +219,20 @@ export const useActivityDescription = () => {
       };
     }
     
+    // Type guard for VaccineLogResponse
+    const isVaccineLog = (activity: ActivityType): activity is VaccineLogResponse => {
+      return 'vaccineName' in activity;
+    };
+
+    if (isVaccineLog(activity)) {
+      const time = formatDateTime(activity.time);
+      const doseInfo = activity.doseNumber ? ` - Dose ${activity.doseNumber}` : '';
+      return {
+        type: activity.vaccineName,
+        details: `${time}${doseInfo}`
+      };
+    }
+
     // Type guard for PumpLogResponse
     const isPumpLog = (activity: ActivityType): activity is PumpLogResponse => {
       return 'leftAmount' in activity || 'rightAmount' in activity;

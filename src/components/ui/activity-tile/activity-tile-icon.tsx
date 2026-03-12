@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Edit, Icon, LampWallDown, Trophy, Baby, Activity } from 'lucide-react';
+import { Moon, Edit, Icon, LampWallDown, Trophy, Baby, Activity, Syringe } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { cn } from "@/src/lib/utils";
 import { activityTileStyles as styles } from './activity-tile.styles';
@@ -47,6 +47,8 @@ export function ActivityTileIcon({
           <Activity className="absolute bottom-0 right-0 h-8 w-8" style={{ color: '#F3C4A2' }} />
         </div>
       );
+    } else if ('vaccineName' in activity) {
+      icon = <Syringe className="h-4 w-4" style={{ color: '#EF4444' }} />;
     } else if ('content' in activity) {
       icon = <Edit className={cn(styles.icon.base, styles.icon.variants[variant])} />;
     } else if ('leftAmount' in activity || 'rightAmount' in activity) {

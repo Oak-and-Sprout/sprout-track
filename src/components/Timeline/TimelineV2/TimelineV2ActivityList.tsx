@@ -223,6 +223,7 @@ const TimelineV2ActivityList = ({
                             if (bgClass.includes('bg-[#EA6A5E]')) return '#EA6A5E'; // red - matches old timeline
                             if (bgClass.includes('bg-[#43B755]')) return '#43B755'; // green - matches old timeline
                             if (bgClass.includes('bg-[#F3C4A2]')) return '#F3C4A2'; // peach - play activity
+                            if (bgClass.includes('border-red-500')) return '#EF4444'; // red - vaccine
                             return '#9ca3af'; // default gray
                           };
                           
@@ -239,6 +240,7 @@ const TimelineV2ActivityList = ({
                           else if ('condition' in activity) activityTypeClass = 'diaper';
                           else if ('content' in activity) activityTypeClass = 'note';
                           else if ('soapUsed' in activity) activityTypeClass = 'bath';
+                          else if ('vaccineName' in activity) activityTypeClass = 'vaccine';
                           else if ('title' in activity && 'category' in activity) activityTypeClass = 'milestone';
                           else if ('value' in activity && 'unit' in activity) activityTypeClass = 'measurement';
                           else if ('doseAmount' in activity && 'medicineId' in activity) {
@@ -409,9 +411,15 @@ const TimelineV2ActivityList = ({
                                       return details.join(' • ');
                                     }
                                     
+                                    if ('vaccineName' in activity) {
+                                      const parts = [(activity as any).vaccineName];
+                                      if ((activity as any).doseNumber) parts.push(`${t('Dose')} #${(activity as any).doseNumber}`);
+                                      return parts.join(' • ');
+                                    }
+
                                     if ('title' in activity && 'category' in activity) {
-                                      const title = activity.title.length > 40 ? 
-                                        activity.title.substring(0, 40) + '...' : 
+                                      const title = activity.title.length > 40 ?
+                                        activity.title.substring(0, 40) + '...' :
                                         activity.title;
                                       return title;
                                     }

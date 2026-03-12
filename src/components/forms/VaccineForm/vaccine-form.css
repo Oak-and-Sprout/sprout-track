@@ -1,0 +1,166 @@
+/* Dark mode styles for the VaccineForm component */
+
+/* Tab content */
+html.dark .vaccine-form-tab-content {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Form inputs and dropdowns */
+html.dark .vaccine-form-dropdown-trigger {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .vaccine-form-dropdown-icon {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+html.dark .vaccine-dropdown-container {
+  background-color: rgb(30, 41, 59) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark .vaccine-dropdown-item {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+html.dark .vaccine-dropdown-item:hover,
+html.dark .vaccine-dropdown-item-highlighted {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .vaccine-dropdown-no-match,
+html.dark .vaccine-dropdown-no-vaccines {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Select (dose number) */
+html.dark .vaccine-form-select {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Date inputs */
+html.dark .vaccine-form-date-input {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Contact selector within vaccine form */
+html.dark .vaccine-form-tab-content .contact-selector-list {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(30, 41, 59, 0.8) !important;
+}
+
+html.dark .vaccine-form-tab-content .contact-selector-role-header {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+html.dark .vaccine-form-tab-content .contact-selector-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .vaccine-form-tab-content .contact-selector-item-selected {
+  background-color: rgba(45, 212, 191, 0.1) !important;
+}
+
+html.dark .vaccine-form-tab-content .contact-selector-contact-info {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+html.dark .vaccine-form-tab-content .contact-selector-contact-details {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+html.dark .vaccine-form-tab-content .contact-selector-selected-tag {
+  background-color: rgba(45, 212, 191, 0.2) !important;
+  color: #4fd1c5 !important;
+}
+
+html.dark .vaccine-form-tab-content .contact-selector-empty-state {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* File upload area */
+html.dark .vaccine-form-upload-area {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: rgba(30, 41, 59, 0.4) !important;
+}
+
+html.dark .vaccine-form-file-input {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+html.dark .vaccine-form-upload-hint {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Document items */
+html.dark .vaccine-form-document-item {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .vaccine-form-document-name {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* History list items */
+html.dark .vaccine-history-item {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .vaccine-history-item-header:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .vaccine-history-item-name {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .vaccine-history-item-date {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+html.dark .vaccine-history-item-details {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .vaccine-history-detail-row {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Icon container */
+html.dark .vaccine-form-icon-container {
+  background-color: rgba(45, 212, 191, 0.2) !important;
+  color: #4fd1c5 !important;
+}
+
+/* Export button */
+html.dark .vaccine-form-export-button {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+html.dark .vaccine-form-export-button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Loading and error states */
+html.dark .vaccine-form-loading-container p {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+html.dark .vaccine-form-error-container p {
+  color: #ef4444 !important;
+}
+
+/* Empty state */
+html.dark .vaccine-form-empty-state p {
+  color: rgba(255, 255, 255, 0.5) !important;
+}

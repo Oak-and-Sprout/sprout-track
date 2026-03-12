@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
-import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse } from '../types';
+import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse, VaccineLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
-  SleepLogResponse | FeedLogResponse | DiaperLogResponse | NoteResponse | BathLogResponse | PumpLogResponse | PlayLogResponse | MilestoneResponse | MeasurementResponse | MedicineLogResponse | BreastMilkAdjustmentResponse
+  SleepLogResponse | FeedLogResponse | DiaperLogResponse | NoteResponse | BathLogResponse | PumpLogResponse | PlayLogResponse | MilestoneResponse | MeasurementResponse | MedicineLogResponse | BreastMilkAdjustmentResponse | VaccineLogResponse
 ) & {
   caretakerId?: string | null;
   caretakerName?: string;
@@ -140,7 +140,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     }
 
     // Get recent activities from each type with caretaker information
-    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, playLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments] = await Promise.all([
+    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, playLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments, vaccineLogs] = await Promise.all([
       prisma.sleepLog.findMany({
         where: {
           babyId,
@@ -333,6 +333,28 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         },
         include: {
           caretaker: true
+        },
+        orderBy: { time: 'desc' }
+      }),
+      prisma.vaccineLog.findMany({
+        where: {
+          babyId,
+          ...(startDateUTC && endDateUTC ? {
+            time: {
+              gte: startDateUTC,
+              lte: endDateUTC
+            }
+          } : {}),
+          familyId, // Filter by the verified family ID
+        },
+        include: {
+          caretaker: true,
+          documents: true,
+          contacts: {
+            include: {
+              contact: true
+            }
+          }
         },
         orderBy: { time: 'desc' }
       })
@@ -537,6 +559,26 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         };
       });
 
+    // Format vaccine logs
+    const formattedVaccineLogs: ActivityTypeWithCaretaker[] = vaccineLogs
+      .map(log => {
+        const { caretaker, documents, ...logWithoutCaretaker } = log;
+        return {
+          ...logWithoutCaretaker,
+          time: formatForResponse(log.time) || '',
+          createdAt: formatForResponse(log.createdAt) || '',
+          updatedAt: formatForResponse(log.updatedAt) || '',
+          deletedAt: formatForResponse(log.deletedAt),
+          caretakerId: log.caretakerId,
+          caretakerName: caretaker ? caretaker.name : undefined,
+          documents: documents ? documents.map(doc => ({
+            ...doc,
+            createdAt: formatForResponse(doc.createdAt) || '',
+            updatedAt: formatForResponse(doc.updatedAt) || '',
+          })) : [],
+        };
+      });
+
     // Combine and sort all activities
     const allActivities = [
       ...formattedSleepLogs,
@@ -549,7 +591,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       ...formattedMilestoneLogs,
       ...formattedMeasurementLogs,
       ...formattedMedicineLogs,
-      ...formattedBreastMilkAdjustments
+      ...formattedBreastMilkAdjustments,
+      ...formattedVaccineLogs
     ]
     .sort((a, b) => getActivityTime(b) - getActivityTime(a));
     
