@@ -27,6 +27,10 @@ const ACTIVITY_TYPE_MAP: Record<string, string> = {
   NOTE: 'note',
   wake: 'wake',
   WAKE: 'wake',
+  play: 'play',
+  PLAY: 'play',
+  supplement: 'supplement',
+  SUPPLEMENT: 'supplement',
 };
 
 /**
@@ -152,6 +156,23 @@ function buildNotificationBody(
         });
       }
       return t('notification.medicine.body', userLanguage, { babyName, byActor });
+    }
+    case 'supplement': {
+      if (activityData?.medicineName) {
+        return t('notification.supplement.named.body', userLanguage, {
+          babyName, medicineName: activityData.medicineName, byActor,
+        });
+      }
+      return t('notification.supplement.body', userLanguage, { babyName, byActor });
+    }
+    case 'play': {
+      if (activityData?.type) {
+        const playType = activityData.type.replace(/_/g, ' ').toLowerCase();
+        return t('notification.play.typed.body', userLanguage, {
+          babyName, playType, byActor,
+        });
+      }
+      return t('notification.play.body', userLanguage, { babyName, byActor });
     }
     case 'note': {
       if (activityData?.content) {
@@ -353,6 +374,19 @@ export async function resetTimerNotificationState(
         where: {
           babyId,
           eventType: NotificationEventType.DIAPER_TIMER_EXPIRED,
+        },
+        data: {
+          lastTimerNotifiedAt: null,
+        },
+      });
+    }
+
+    // Medicine/supplement activity resets medicine timer
+    if (normalizedActivityType === 'medicine' || normalizedActivityType === 'supplement') {
+      await prisma.notificationPreference.updateMany({
+        where: {
+          babyId,
+          eventType: NotificationEventType.MEDICINE_TIMER_EXPIRED,
         },
         data: {
           lastTimerNotifiedAt: null,

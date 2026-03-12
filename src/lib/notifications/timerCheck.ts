@@ -34,6 +34,42 @@ function parseWarningTime(warningTime: string): number {
 }
 
 /**
+ * Parse dose minimum time string (format: "DD:HH:MM") to total minutes
+ * Used for medicine doseMinTime field (different from baby warning times which use "HH:MM")
+ * @param doseMinTime - Time string in "DD:HH:MM" format (e.g., "00:04:00" = 4 hours)
+ * @returns Total minutes, or -1 if invalid format
+ */
+function parseDoseMinTime(doseMinTime: string): number {
+  if (!doseMinTime || typeof doseMinTime !== 'string') {
+    return -1;
+  }
+
+  const parts = doseMinTime.split(':');
+
+  // Support both DD:HH:MM and HH:MM formats
+  if (parts.length === 3) {
+    const [days, hours, minutes] = parts.map(Number);
+    if (isNaN(days) || isNaN(hours) || isNaN(minutes) || days < 0 || hours < 0 || minutes < 0 || hours > 23 || minutes > 59) {
+      console.error(`[TimerCheck] Invalid doseMinTime values "${doseMinTime}": days=${days}, hours=${hours}, minutes=${minutes}`);
+      return -1;
+    }
+    return (days * 24 * 60) + (hours * 60) + minutes;
+  }
+
+  if (parts.length === 2) {
+    const [hours, minutes] = parts.map(Number);
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0 || minutes > 59) {
+      console.error(`[TimerCheck] Invalid doseMinTime values "${doseMinTime}": hours=${hours}, minutes=${minutes}`);
+      return -1;
+    }
+    return (hours * 60) + minutes;
+  }
+
+  console.error(`[TimerCheck] Invalid doseMinTime format "${doseMinTime}": expected "DD:HH:MM" or "HH:MM" format`);
+  return -1;
+}
+
+/**
  * Get the most recent activity time for a baby
  * @param babyId - The baby ID
  * @param activityType - Type of activity ('feed' or 'diaper')
@@ -255,6 +291,7 @@ export async function checkTimerExpirations(): Promise<number> {
           in: [
             NotificationEventType.FEED_TIMER_EXPIRED,
             NotificationEventType.DIAPER_TIMER_EXPIRED,
+            NotificationEventType.MEDICINE_TIMER_EXPIRED,
           ],
         },
         enabled: true,
@@ -277,6 +314,7 @@ export async function checkTimerExpirations(): Promise<number> {
             lastName: true,
             feedWarningTime: true,
             diaperWarningTime: true,
+            familyId: true,
           },
         },
       },
@@ -480,6 +518,136 @@ export async function checkTimerExpirations(): Promise<number> {
           }
         } else {
           console.log(`[TimerCheck] Diaper timer check skipped: lastDiaperTime=${lastDiaperTime}, threshold=${thresholdMinutes}`);
+        }
+      }
+
+      // Check medicine timer
+      if (eventMap.has(NotificationEventType.MEDICINE_TIMER_EXPIRED)) {
+        const medicinePreferences = eventMap.get(NotificationEventType.MEDICINE_TIMER_EXPIRED)!;
+        console.log(`[TimerCheck] Checking medicine timers for baby ${babyId}`);
+
+        if (!baby.familyId) {
+          console.warn(`[TimerCheck] Baby ${babyId} has no familyId, skipping medicine timer check`);
+        } else {
+          // Find all active medicines with doseMinTime set for this family
+          const medicines = await prisma.medicine.findMany({
+            where: {
+              familyId: baby.familyId,
+              active: true,
+              doseMinTime: { not: null },
+              deletedAt: null,
+            },
+            select: {
+              id: true,
+              name: true,
+              doseMinTime: true,
+            },
+          });
+
+          for (const medicine of medicines) {
+            const thresholdMinutes = parseDoseMinTime(medicine.doseMinTime!);
+            if (thresholdMinutes <= 0) continue;
+
+            // Find the last dose of this medicine for this baby
+            const lastDose = await prisma.medicineLog.findFirst({
+              where: {
+                babyId,
+                medicineId: medicine.id,
+                deletedAt: null,
+              },
+              orderBy: { time: 'desc' },
+              select: { time: true },
+            });
+
+            if (!lastDose) continue;
+
+            const timeSinceLastDose = (Date.now() - lastDose.time.getTime()) / (1000 * 60);
+            if (timeSinceLastDose < thresholdMinutes) continue;
+
+            console.log(`[TimerCheck] Medicine "${medicine.name}" eligible: ${timeSinceLastDose.toFixed(1)}min since last dose (threshold: ${thresholdMinutes}min)`);
+
+            for (const preference of medicinePreferences) {
+              if (!preference.subscription) {
+                console.warn(`[TimerCheck] Preference ${preference.id} has no subscription, skipping`);
+                continue;
+              }
+
+              const eligible = isNotificationEligible(
+                preference.lastTimerNotifiedAt,
+                preference.timerIntervalMinutes,
+                lastDose.time,
+                thresholdMinutes
+              );
+
+              console.log(`[TimerCheck] Medicine timer preference ${preference.id} for "${medicine.name}": eligible=${eligible}, lastNotified=${preference.lastTimerNotifiedAt}, interval=${preference.timerIntervalMinutes}`);
+
+              if (eligible) {
+                try {
+                  console.log(`[TimerCheck] Sending medicine timer notification for preference ${preference.id}, medicine "${medicine.name}"...`);
+
+                  const userLanguage = await getUserLanguage(
+                    preference.subscription.accountId,
+                    preference.subscription.caretakerId
+                  );
+
+                  const timeElapsed = formatTimeElapsed(timeSinceLastDose, userLanguage);
+
+                  const payload: NotificationPayload = {
+                    title: t('notification.timer.medicine.title', userLanguage),
+                    body: t('notification.timer.medicine.body', userLanguage, {
+                      babyName: baby.firstName,
+                      medicineName: medicine.name,
+                      timeElapsed,
+                    }),
+                    icon: '/sprout-128.png',
+                    badge: '/sprout-128.png',
+                    tag: `timer-${baby.id}-medicine-${medicine.id}`,
+                    data: {
+                      eventType: NotificationEventType.MEDICINE_TIMER_EXPIRED,
+                      babyId: baby.id,
+                    },
+                  };
+
+                  // Update lastTimerNotifiedAt BEFORE sending (race condition fix)
+                  const previousNotifiedAt = preference.lastTimerNotifiedAt;
+                  const newNotifiedAt = new Date();
+                  await prisma.notificationPreference.update({
+                    where: { id: preference.id },
+                    data: { lastTimerNotifiedAt: newNotifiedAt },
+                  });
+
+                  try {
+                    await sendNotificationWithLogging(
+                      preference.subscription.id,
+                      {
+                        endpoint: preference.subscription.endpoint,
+                        p256dh: preference.subscription.p256dh,
+                        auth: preference.subscription.auth,
+                      },
+                      payload,
+                      NotificationEventType.MEDICINE_TIMER_EXPIRED,
+                      null,
+                      baby.id
+                    );
+                    notificationsSent++;
+                    console.log(`[TimerCheck] Medicine timer notification sent successfully for "${medicine.name}" (total: ${notificationsSent})`);
+                  } catch (sendError) {
+                    console.error(`[TimerCheck] Send failed, rolling back lastTimerNotifiedAt for preference ${preference.id}`);
+                    await prisma.notificationPreference.update({
+                      where: { id: preference.id },
+                      data: { lastTimerNotifiedAt: previousNotifiedAt },
+                    });
+                    throw sendError;
+                  }
+                } catch (error) {
+                  console.error(
+                    `[TimerCheck] Error sending medicine timer notification for preference ${preference.id}, medicine "${medicine.name}":`,
+                    error
+                  );
+                }
+              }
+            }
+          }
         }
       }
     }

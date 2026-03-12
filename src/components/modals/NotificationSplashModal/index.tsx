@@ -28,7 +28,11 @@ import {
   subscribeToPush,
   sendSubscriptionToServer,
 } from '@/src/lib/notifications/client';
-import { Bell, Loader2, CheckCircle } from 'lucide-react';
+import { Bell, Loader2, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+
+const ALL_ACTIVITY_TYPES = [
+  'feed', 'diaper', 'sleep', 'bath', 'pump', 'medicine', 'supplement', 'play', 'note', 'milestone', 'measurement',
+] as const;
 
 interface NotificationSplashModalProps {
   open: boolean;
@@ -39,6 +43,7 @@ interface NotificationSplashModalProps {
 interface PreferenceState {
   enabled: boolean;
   timerIntervalMinutes: number | null;
+  activityTypes: string[] | null;
 }
 
 type PreferenceKey = string; // `${babyId}-${eventType}`
@@ -55,6 +60,7 @@ export default function NotificationSplashModal({
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<Record<PreferenceKey, PreferenceState>>({});
   const [savingPreference, setSavingPreference] = useState<string | null>(null);
+  const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
 
   const handleDismiss = () => {
     localStorage.setItem('notificationSplashDismissed', Date.now().toString());
@@ -123,6 +129,7 @@ export default function NotificationSplashModal({
           defaultPrefs[`${baby.id}-${NotificationEventType.ACTIVITY_CREATED}`] = {
             enabled: true,
             timerIntervalMinutes: null,
+            activityTypes: null,
           };
         } catch (error) {
           console.error(`Error creating default preference for baby ${baby.id}:`, error);
@@ -155,7 +162,7 @@ export default function NotificationSplashModal({
   const handlePreferenceUpdate = async (
     babyId: string,
     eventType: NotificationEventType,
-    updates: { enabled?: boolean; timerIntervalMinutes?: number | null }
+    updates: { enabled?: boolean; timerIntervalMinutes?: number | null; activityTypes?: string[] | null }
   ) => {
     if (!subscriptionId) return;
 
@@ -190,6 +197,9 @@ export default function NotificationSplashModal({
           timerIntervalMinutes: updates.timerIntervalMinutes !== undefined
             ? updates.timerIntervalMinutes
             : prev[prefKey]?.timerIntervalMinutes ?? null,
+          activityTypes: updates.activityTypes !== undefined
+            ? updates.activityTypes
+            : prev[prefKey]?.activityTypes ?? null,
         },
       }));
     } catch (error: any) {
@@ -206,7 +216,7 @@ export default function NotificationSplashModal({
   };
 
   const getPreference = (babyId: string, eventType: NotificationEventType): PreferenceState => {
-    return preferences[`${babyId}-${eventType}`] || { enabled: false, timerIntervalMinutes: null };
+    return preferences[`${babyId}-${eventType}`] || { enabled: false, timerIntervalMinutes: null, activityTypes: null };
   };
 
   const handleComplete = () => {
@@ -289,15 +299,82 @@ export default function NotificationSplashModal({
                   </h4>
 
                   {/* Activity Created */}
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">{t('Activity Created')}</Label>
-                    <Switch
-                      checked={getPreference(baby.id, NotificationEventType.ACTIVITY_CREATED).enabled}
-                      onCheckedChange={(checked) =>
-                        handlePreferenceUpdate(baby.id, NotificationEventType.ACTIVITY_CREATED, { enabled: checked })
-                      }
-                      disabled={savingPreference === `${baby.id}-${NotificationEventType.ACTIVITY_CREATED}`}
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">{t('Activity Created')}</Label>
+                      <Switch
+                        checked={getPreference(baby.id, NotificationEventType.ACTIVITY_CREATED).enabled}
+                        onCheckedChange={(checked) =>
+                          handlePreferenceUpdate(baby.id, NotificationEventType.ACTIVITY_CREATED, { enabled: checked })
+                        }
+                        disabled={savingPreference === `${baby.id}-${NotificationEventType.ACTIVITY_CREATED}`}
+                      />
+                    </div>
+                    {/* Activity Type Sub-Selections */}
+                    {getPreference(baby.id, NotificationEventType.ACTIVITY_CREATED).enabled && (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                          onClick={() => {
+                            setExpandedActivities((prev) => ({
+                              ...prev,
+                              [baby.id]: !prev[baby.id],
+                            }));
+                          }}
+                        >
+                          {expandedActivities[baby.id] ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                          {t('Select Activities')}
+                        </button>
+                        {expandedActivities[baby.id] && (
+                          <div className="grid grid-cols-2 gap-2 pl-2">
+                            {ALL_ACTIVITY_TYPES.map((actType) => {
+                              const pref = getPreference(baby.id, NotificationEventType.ACTIVITY_CREATED);
+                              const currentTypes = pref.activityTypes || [];
+                              const isAll = currentTypes.length === 0;
+                              const isChecked = isAll || currentTypes.includes(actType);
+                              return (
+                                <label
+                                  key={actType}
+                                  className="flex items-center gap-2 text-sm cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      let newTypes: string[];
+                                      if (isAll) {
+                                        newTypes = ALL_ACTIVITY_TYPES.filter((at) => at !== actType) as unknown as string[];
+                                      } else if (e.target.checked) {
+                                        newTypes = [...currentTypes, actType];
+                                      } else {
+                                        newTypes = currentTypes.filter((at) => at !== actType);
+                                      }
+                                      const saveTypes =
+                                        newTypes.length === ALL_ACTIVITY_TYPES.length ? null : newTypes;
+                                      handlePreferenceUpdate(
+                                        baby.id,
+                                        NotificationEventType.ACTIVITY_CREATED,
+                                        { activityTypes: saveTypes }
+                                      );
+                                    }}
+                                    disabled={savingPreference === `${baby.id}-${NotificationEventType.ACTIVITY_CREATED}`}
+                                    className="rounded border-gray-300"
+                                  />
+                                  <span className="capitalize">
+                                    {t(actType.charAt(0).toUpperCase() + actType.slice(1))}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Feed Timer Expired */}
@@ -361,6 +438,44 @@ export default function NotificationSplashModal({
                           })
                         }
                         disabled={savingPreference === `${baby.id}-${NotificationEventType.DIAPER_TIMER_EXPIRED}`}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('Repeat Interval')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="null">{t('Once per expiration')}</SelectItem>
+                          <SelectItem value="15">{t('Every 15 minutes')}</SelectItem>
+                          <SelectItem value="30">{t('Every 30 minutes')}</SelectItem>
+                          <SelectItem value="60">{t('Every hour')}</SelectItem>
+                          <SelectItem value="120">{t('Every 2 hours')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Medicine Timer Expired */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">{t('Medicine Timer Expired')}</Label>
+                      <Switch
+                        checked={getPreference(baby.id, NotificationEventType.MEDICINE_TIMER_EXPIRED).enabled}
+                        onCheckedChange={(checked) =>
+                          handlePreferenceUpdate(baby.id, NotificationEventType.MEDICINE_TIMER_EXPIRED, { enabled: checked })
+                        }
+                        disabled={savingPreference === `${baby.id}-${NotificationEventType.MEDICINE_TIMER_EXPIRED}`}
+                      />
+                    </div>
+                    {getPreference(baby.id, NotificationEventType.MEDICINE_TIMER_EXPIRED).enabled && (
+                      <Select
+                        value={
+                          getPreference(baby.id, NotificationEventType.MEDICINE_TIMER_EXPIRED).timerIntervalMinutes?.toString() || 'null'
+                        }
+                        onValueChange={(value) =>
+                          handlePreferenceUpdate(baby.id, NotificationEventType.MEDICINE_TIMER_EXPIRED, {
+                            timerIntervalMinutes: value === 'null' ? null : parseInt(value),
+                          })
+                        }
+                        disabled={savingPreference === `${baby.id}-${NotificationEventType.MEDICINE_TIMER_EXPIRED}`}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder={t('Repeat Interval')} />

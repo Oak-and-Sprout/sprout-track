@@ -25,7 +25,11 @@ import {
   getCurrentSubscription,
   checkSubscriptionStatus,
 } from '@/src/lib/notifications/client';
-import { Loader2, Trash2, Bell, BellOff } from 'lucide-react';
+import { Loader2, Trash2, Bell, BellOff, ChevronDown, ChevronUp } from 'lucide-react';
+
+const ALL_ACTIVITY_TYPES = [
+  'feed', 'diaper', 'sleep', 'bath', 'pump', 'medicine', 'supplement', 'play', 'note', 'milestone', 'measurement',
+] as const;
 
 interface NotificationSettingsProps {
   babies: Baby[];
@@ -77,6 +81,7 @@ export default function NotificationSettings({
   const [subscribing, setSubscribing] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState<string | undefined>();
+  const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
 
   // Fetch subscriptions and preferences
   const fetchData = async () => {
@@ -467,6 +472,83 @@ export default function NotificationSettings({
                         disabled={loading}
                       />
                     </div>
+                    {/* Activity Type Sub-Selections */}
+                    {getPreference(
+                      subscription.id,
+                      baby.id,
+                      NotificationEventType.ACTIVITY_CREATED
+                    )?.enabled && (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                          onClick={() => {
+                            const key = `${subscription.id}-${baby.id}`;
+                            setExpandedActivities((prev) => ({
+                              ...prev,
+                              [key]: !prev[key],
+                            }));
+                          }}
+                        >
+                          {expandedActivities[`${subscription.id}-${baby.id}`] ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                          {t('Select Activities')}
+                        </button>
+                        {expandedActivities[`${subscription.id}-${baby.id}`] && (
+                          <div className="grid grid-cols-2 gap-2 pl-2">
+                            {ALL_ACTIVITY_TYPES.map((actType) => {
+                              const pref = getPreference(
+                                subscription.id,
+                                baby.id,
+                                NotificationEventType.ACTIVITY_CREATED
+                              );
+                              const currentTypes = parseActivityTypes(pref?.activityTypes ?? null);
+                              const isAll = currentTypes.length === 0;
+                              const isChecked = isAll || currentTypes.includes(actType);
+                              return (
+                                <label
+                                  key={actType}
+                                  className="flex items-center gap-2 text-sm cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      let newTypes: string[];
+                                      if (isAll) {
+                                        // Was "all" - uncheck this one means select all except this
+                                        newTypes = ALL_ACTIVITY_TYPES.filter((at) => at !== actType) as unknown as string[];
+                                      } else if (e.target.checked) {
+                                        newTypes = [...currentTypes, actType];
+                                      } else {
+                                        newTypes = currentTypes.filter((at) => at !== actType);
+                                      }
+                                      // If all selected, save as null (meaning all)
+                                      const saveTypes =
+                                        newTypes.length === ALL_ACTIVITY_TYPES.length ? null : newTypes;
+                                      handlePreferenceUpdate(
+                                        subscription.id,
+                                        baby.id,
+                                        NotificationEventType.ACTIVITY_CREATED,
+                                        { activityTypes: saveTypes }
+                                      );
+                                    }}
+                                    disabled={loading}
+                                    className="rounded border-gray-300"
+                                  />
+                                  <span className="capitalize">
+                                    {t(actType.charAt(0).toUpperCase() + actType.slice(1))}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Feed Timer Expired Preference */}
@@ -575,6 +657,71 @@ export default function NotificationSettings({
                             subscription.id,
                             baby.id,
                             NotificationEventType.DIAPER_TIMER_EXPIRED,
+                            {
+                              timerIntervalMinutes:
+                                value === 'null' ? null : parseInt(value),
+                            }
+                          )
+                        }
+                        disabled={loading}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('Repeat Interval')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="null">
+                            {t('Once per expiration')}
+                          </SelectItem>
+                          <SelectItem value="15">{t('Every 15 minutes')}</SelectItem>
+                          <SelectItem value="30">{t('Every 30 minutes')}</SelectItem>
+                          <SelectItem value="60">{t('Every hour')}</SelectItem>
+                          <SelectItem value="120">{t('Every 2 hours')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Medicine Timer Expired Preference */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">{t('Medicine Timer Expired')}</Label>
+                      <Switch
+                        checked={
+                          getPreference(
+                            subscription.id,
+                            baby.id,
+                            NotificationEventType.MEDICINE_TIMER_EXPIRED
+                          )?.enabled ?? false
+                        }
+                        onCheckedChange={(checked) =>
+                          handlePreferenceUpdate(
+                            subscription.id,
+                            baby.id,
+                            NotificationEventType.MEDICINE_TIMER_EXPIRED,
+                            { enabled: checked }
+                          )
+                        }
+                        disabled={loading}
+                      />
+                    </div>
+                    {getPreference(
+                      subscription.id,
+                      baby.id,
+                      NotificationEventType.MEDICINE_TIMER_EXPIRED
+                    )?.enabled && (
+                      <Select
+                        value={
+                          getPreference(
+                            subscription.id,
+                            baby.id,
+                            NotificationEventType.MEDICINE_TIMER_EXPIRED
+                          )?.timerIntervalMinutes?.toString() || 'null'
+                        }
+                        onValueChange={(value) =>
+                          handlePreferenceUpdate(
+                            subscription.id,
+                            baby.id,
+                            NotificationEventType.MEDICINE_TIMER_EXPIRED,
                             {
                               timerIntervalMinutes:
                                 value === 'null' ? null : parseInt(value),

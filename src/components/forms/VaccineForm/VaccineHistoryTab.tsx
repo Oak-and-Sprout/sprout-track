@@ -29,7 +29,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
   refreshTrigger,
 }) => {
   const { t } = useLocalization();
-  const { formatDate } = useTimezone();
+  const { formatDateTime } = useTimezone();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vaccineRecords, setVaccineRecords] = useState<VaccineLogResponse[]>([]);
@@ -229,7 +229,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
                         {record.vaccineName}
                       </div>
                       <div className="text-xs text-gray-500 vaccine-history-item-date">
-                        {formatDate(record.time)}
+                        {formatDateTime(record.time)}
                         {record.doseNumber && ` - ${t('Dose')} ${record.doseNumber}`}
                       </div>
                     </div>

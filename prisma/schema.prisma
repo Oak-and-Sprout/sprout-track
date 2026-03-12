@@ -101,6 +101,7 @@ enum NotificationEventType {
   ACTIVITY_CREATED
   FEED_TIMER_EXPIRED
   DIAPER_TIMER_EXPIRED
+  MEDICINE_TIMER_EXPIRED
 }
 
 // Account model for email/password authentication
