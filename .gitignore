@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+/st-guardian/node_modules
 /.pnp
 .pnp.js
 
@@ -34,6 +35,8 @@ next-env.d.ts
 
 *.db
 /db
+*.db-shm
+*.db-wal
 
 # custom port configuration
 scripts/port-config.sh
