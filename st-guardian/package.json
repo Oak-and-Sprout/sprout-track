@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
-    "http-proxy": "^1.18.1"
+    "http-proxy-node16": "^1.0.6"
   }
 }

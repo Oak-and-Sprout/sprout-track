@@ -5,7 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const httpProxy = require('http-proxy');
+const httpProxy = require('http-proxy-node16');
 const Database = require('better-sqlite3');
 
 // =============================================================================
