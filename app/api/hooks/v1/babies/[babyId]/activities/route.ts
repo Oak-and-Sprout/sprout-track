@@ -4,7 +4,7 @@ import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
 
-const VALID_TYPES = ['sleep', 'feed', 'diaper', 'mood', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine'] as const;
+const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine'] as const;
 type ActivityType = typeof VALID_TYPES[number];
 
 // ── Helper: resolve caretaker by name ──
@@ -97,25 +97,6 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
           id: r.id,
           time: r.startTime.toISOString(),
           details: { type: r.type, startTime: r.startTime.toISOString(), endTime: r.endTime?.toISOString() || null, duration: r.duration, location: r.location, quality: r.quality, isActive: !r.endTime },
-          caretakerName: r.caretaker?.name || null,
-        }));
-      })
-    );
-  }
-
-  if (types.includes('mood')) {
-    queries.push(
-      prisma.moodLog.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since } },
-        orderBy: { time: 'desc' },
-        take: limit,
-        include: { caretaker: { select: { name: true } } },
-      }).then((rows) => {
-        rows.forEach((r) => activities.push({
-          activityType: 'mood',
-          id: r.id,
-          time: r.time.toISOString(),
-          details: { mood: r.mood, intensity: r.intensity },
           caretakerName: r.caretaker?.name || null,
         }));
       })
@@ -283,10 +264,27 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
 
     switch (type as ActivityType) {
       case 'feed': {
-        const { feedType, amount, unitAbbr, side, food, notes, bottleType } = body;
-        if (!feedType || !['BREAST', 'BOTTLE', 'SOLIDS'].includes(feedType)) {
-          return hookError('INVALID_FEED_TYPE', 'feedType must be BREAST, BOTTLE, or SOLIDS', 400, rl.headers);
+        let { feedType, amount, unitAbbr, side, food, notes, bottleType } = body;
+        // Map friendly names to DB enum + bottleType
+        const FEED_ALIASES: Record<string, { feedType: string; bottleType?: string }> = {
+          'BREAST': { feedType: 'BREAST' },
+          'breast': { feedType: 'BREAST' },
+          'BOTTLE': { feedType: 'BOTTLE' },
+          'bottle': { feedType: 'BOTTLE' },
+          'SOLIDS': { feedType: 'SOLIDS' },
+          'solids': { feedType: 'SOLIDS' },
+          'formula': { feedType: 'BOTTLE', bottleType: 'formula' },
+          'breast milk': { feedType: 'BOTTLE', bottleType: 'breast milk' },
+          'milk': { feedType: 'BOTTLE', bottleType: 'milk' },
+          'other': { feedType: 'BOTTLE', bottleType: 'other' },
+        };
+        const alias = feedType ? FEED_ALIASES[feedType] : undefined;
+        if (!alias) {
+          return hookError('INVALID_FEED_TYPE', 'feedType must be BREAST, BOTTLE, SOLIDS, formula, breast milk, milk, or other', 400, rl.headers);
         }
+        feedType = alias.feedType;
+        if (alias.bottleType && !bottleType) bottleType = alias.bottleType;
+
         result = await prisma.feedLog.create({
           data: { time, type: feedType, amount: amount ? parseFloat(amount) : null, unitAbbr: unitAbbr || null, side: side || null, food: food || null, notes: notes || null, bottleType: bottleType || null, babyId, caretakerId, familyId },
         });
@@ -347,17 +345,6 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           data: { startTime, endTime, duration: sleepDuration, type: sleepType, location: location || null, quality: quality || null, babyId, caretakerId, familyId },
         });
         return hookSuccess({ activityType: 'sleep', id: result.id, time: result.startTime.toISOString(), details: { type: sleepType, action: 'log', duration: sleepDuration, isActive: false } }, { familyId, babyId }, rl.headers);
-      }
-
-      case 'mood': {
-        const { mood, intensity } = body;
-        if (!mood || !['HAPPY', 'CALM', 'FUSSY', 'CRYING'].includes(mood)) {
-          return hookError('INVALID_MOOD', 'mood must be HAPPY, CALM, FUSSY, or CRYING', 400, rl.headers);
-        }
-        result = await prisma.moodLog.create({
-          data: { time, mood, intensity: intensity ? parseInt(intensity, 10) : 3, babyId, caretakerId, familyId },
-        });
-        return hookSuccess({ activityType: 'mood', id: result.id, time: result.time.toISOString(), details: { mood, intensity: result.intensity } }, { familyId, babyId }, rl.headers);
       }
 
       case 'note': {

@@ -137,6 +137,55 @@ async function runReadTests(babyId) {
     log(' ', `Has data: ${available.length > 0 ? available.join(', ') : 'none'}`);
   });
 
+  // Reference data
+  await test(`GET /babies/${babyId}/reference — all reference data`, async () => {
+    const res = await request('GET', `/babies/${babyId}/reference`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.medicines !== undefined, 'Expected medicines');
+    assert(res.data.sleepLocations !== undefined, 'Expected sleepLocations');
+    assert(res.data.playCategories !== undefined, 'Expected playCategories');
+    assert(res.data.feedTypes !== undefined, 'Expected feedTypes');
+    log(' ', `Medicines: ${res.data.medicines.length}, Locations: ${res.data.sleepLocations.length}, Feed types: ${res.data.feedTypes.length}`);
+  });
+
+  await test(`GET /babies/${babyId}/reference?type=medicines — medicines only`, async () => {
+    const res = await request('GET', `/babies/${babyId}/reference?type=medicines`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.medicines), 'Expected medicines array');
+    assert(res.data.sleepLocations === undefined, 'Should not include sleepLocations');
+    if (res.data.medicines.length > 0) {
+      const m = res.data.medicines[0];
+      assert(m.name, 'Medicine should have name');
+      log(' ', `Found: ${res.data.medicines.map(m => m.name).join(', ')}`);
+    } else {
+      log(' ', 'No medicines configured');
+    }
+  });
+
+  await test(`GET /babies/${babyId}/reference?type=sleep-locations — sleep locations`, async () => {
+    const res = await request('GET', `/babies/${babyId}/reference?type=sleep-locations`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.sleepLocations), 'Expected sleepLocations array');
+    assert(res.data.sleepLocations.length > 0, 'Expected at least default locations');
+    log(' ', `Locations: ${res.data.sleepLocations.join(', ')}`);
+  });
+
+  await test(`GET /babies/${babyId}/reference?type=feed-types — feed types`, async () => {
+    const res = await request('GET', `/babies/${babyId}/reference?type=feed-types`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.feedTypes), 'Expected feedTypes array');
+    const values = res.data.feedTypes.map(f => f.value);
+    assert(values.includes('formula'), 'Should include formula shorthand');
+    assert(values.includes('BREAST'), 'Should include BREAST');
+    log(' ', `Feed types: ${values.join(', ')}`);
+  });
+
+  await test(`GET /babies/${babyId}/reference?type=invalid — 400 for bad type`, async () => {
+    const res = await request('GET', `/babies/${babyId}/reference?type=invalid`);
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'INVALID_REF_TYPE', `Expected INVALID_REF_TYPE, got ${res.error.code}`);
+  });
+
   // Edge cases
   await test('GET /babies/invalid-id/status — 404 for bad baby ID', async () => {
     const res = await request('GET', '/babies/nonexistent-baby-id/status');
@@ -165,17 +214,29 @@ async function runReadTests(babyId) {
 async function runWriteTests(babyId) {
   console.log('\n\x1b[1m── Write Tests (POST) ──\x1b[0m\n');
 
-  await test('POST feed (bottle)', async () => {
+  await test('POST feed (formula shorthand)', async () => {
     const res = await request('POST', `/babies/${babyId}/activities`, {
       type: 'feed',
-      feedType: 'BOTTLE',
+      feedType: 'formula',
       amount: 4,
       unitAbbr: 'OZ',
-      bottleType: 'formula',
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.activityType === 'feed', 'Expected feed type');
+    assert(res.data.details.type === 'BOTTLE', 'Expected BOTTLE as resolved feedType');
+    assert(res.data.details.bottleType === 'formula', 'Expected formula as bottleType');
     assert(res.data.id, 'Expected record id');
+    log(' ', `Created feed ${res.data.id} (formula → BOTTLE)`);
+  });
+
+  await test('POST feed (BREAST — backward compatible)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed',
+      feedType: 'BREAST',
+      side: 'LEFT',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.details.type === 'BREAST', 'Expected BREAST feedType');
     log(' ', `Created feed ${res.data.id}`);
   });
 
@@ -222,16 +283,6 @@ async function runWriteTests(babyId) {
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.details.duration === 45, 'Expected 45 min duration');
     log(' ', `Logged sleep ${res.data.id}`);
-  });
-
-  await test('POST mood', async () => {
-    const res = await request('POST', `/babies/${babyId}/activities`, {
-      type: 'mood',
-      mood: 'HAPPY',
-      intensity: 4,
-    });
-    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
-    log(' ', `Created mood ${res.data.id}`);
   });
 
   await test('POST note', async () => {

@@ -14,6 +14,17 @@ export function withApiKeyAuth(
   requiredScope: 'read' | 'write'
 ) {
   return async (req: NextRequest, routeContext?: any): Promise<NextResponse> => {
+    // Require HTTPS unless request is to localhost/127.0.0.1
+    const url = new URL(req.url);
+    const host = url.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    if (!isLocal && url.protocol !== 'https:') {
+      return NextResponse.json(
+        { success: false, error: { code: 'HTTPS_REQUIRED', message: 'API requests must use HTTPS' } },
+        { status: 403 }
+      );
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(

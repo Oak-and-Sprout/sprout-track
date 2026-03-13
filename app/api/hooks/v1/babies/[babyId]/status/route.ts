@@ -31,11 +31,10 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   const today = startOfToday();
 
   // Fetch last activities in parallel
-  const [lastFeed, lastDiaper, lastSleep, lastMood, lastBath, lastMedicine, lastPump] = await Promise.all([
+  const [lastFeed, lastDiaper, lastSleep, lastBath, lastMedicine, lastPump] = await Promise.all([
     prisma.feedLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { caretaker: { select: { name: true } }, unit: { select: { unitAbbr: true } } } }),
     prisma.diaperLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { caretaker: { select: { name: true } } } }),
     prisma.sleepLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { startTime: 'desc' }, include: { caretaker: { select: { name: true } } } }),
-    prisma.moodLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' } }),
     prisma.bathLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' } }),
     prisma.medicineLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { medicine: { select: { name: true } } } }),
     prisma.pumpLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { startTime: 'desc' } }),
@@ -106,12 +105,6 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
       duration: lastSleep.duration,
       type: lastSleep.type,
       isActive: !lastSleep.endTime,
-    } : null,
-    mood: lastMood ? {
-      time: lastMood.time.toISOString(),
-      minutesAgo: minutesAgo(lastMood.time),
-      mood: lastMood.mood,
-      intensity: lastMood.intensity,
     } : null,
     bath: lastBath ? {
       time: lastBath.time.toISOString(),

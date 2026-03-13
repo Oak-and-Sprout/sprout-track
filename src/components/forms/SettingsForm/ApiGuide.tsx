@@ -169,6 +169,21 @@ export default function ApiGuide({ babies }: ApiGuideProps) {
           </AccordionContent>
         </AccordionItem>
 
+        {/* Reference Data */}
+        <AccordionItem value="reference">
+          <AccordionTrigger>
+            <span className="flex items-center gap-2 text-sm">
+              <Badge variant="secondary" className="text-xs">GET</Badge>
+              {t('Reference Data')}
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <p className="text-xs text-gray-500 mb-2">{t('Returns valid values for medicines, sleep locations, play categories, and feed types.')}</p>
+            <p className="text-xs text-gray-400 mb-1">Query params: ?type=medicines|sleep-locations|play-categories|feed-types</p>
+            <CopyableCodeBlock code={buildCurl('GET', `/babies/${sampleBabyId}/reference?type=medicines`)} />
+          </AccordionContent>
+        </AccordionItem>
+
         {/* Recent Activities */}
         <AccordionItem value="activities-get">
           <AccordionTrigger>
