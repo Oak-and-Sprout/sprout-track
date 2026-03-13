@@ -6,12 +6,14 @@ import { withAuthContext, AuthResult } from '../utils/auth';
 interface NurseryModeUserSettings {
   hue: number;
   brightness: number;
+  saturation: number;
   visibleTiles: string[];
 }
 
 const DEFAULT_SETTINGS: NurseryModeUserSettings = {
   hue: 230,
   brightness: 15,
+  saturation: 25,
   visibleTiles: ['feed', 'pump', 'diaper', 'sleep'],
 };
 
@@ -49,11 +51,11 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
 
     // Cascade: caretaker-specific → global → defaults
     if (caretakerId && allSettings[caretakerId]) {
-      return NextResponse.json({ success: true, data: allSettings[caretakerId] });
+      return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS, ...allSettings[caretakerId] } });
     }
 
     if (allSettings.global) {
-      return NextResponse.json({ success: true, data: allSettings.global });
+      return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS, ...allSettings.global } });
     }
 
     return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS } });
@@ -71,11 +73,13 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
     }
 
     const body = await req.json();
-    const { hue, brightness, visibleTiles, caretakerId } = body;
+    const { hue, brightness, saturation, visibleTiles, caretakerId } = body;
 
     if (typeof hue !== 'number' || typeof brightness !== 'number' || !Array.isArray(visibleTiles)) {
       return NextResponse.json({ success: false, error: 'Invalid nursery mode settings format' }, { status: 400 });
     }
+
+    const effectiveSaturation = typeof saturation === 'number' ? saturation : DEFAULT_SETTINGS.saturation;
 
     let currentSettings = await prisma.settings.findFirst({
       where: { familyId },
@@ -109,7 +113,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
     }
 
     const settingsKey = caretakerId || 'global';
-    const userSettings: NurseryModeUserSettings = { hue, brightness, visibleTiles };
+    const userSettings: NurseryModeUserSettings = { hue, brightness, saturation: effectiveSaturation, visibleTiles };
 
     allSettings[settingsKey] = userSettings;
 

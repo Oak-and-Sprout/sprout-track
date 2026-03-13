@@ -39,6 +39,7 @@ export function NurseryModeContainer() {
 
   const [hue, setHue] = useState<number | null>(null);
   const [brightness, setBrightness] = useState<number | null>(null);
+  const [saturation, setSaturation] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [logs, setLogs] = useState<Record<string, TileLog>>({});
   const [animatingTile, setAnimatingTile] = useState<string | null>(null);
@@ -184,8 +185,9 @@ export function NurseryModeContainer() {
   // Initialize from settings once loaded
   const effectiveHue = hue ?? settings.hue;
   const effectiveBrightness = brightness ?? settings.brightness;
+  const effectiveSaturation = saturation ?? settings.saturation;
 
-  const colors = useNurseryColors(effectiveHue, effectiveBrightness);
+  const colors = useNurseryColors(effectiveHue, effectiveBrightness, effectiveSaturation);
 
   const tiles = useMemo<TileConfig[]>(() => {
     const allTiles = [
@@ -211,26 +213,34 @@ export function NurseryModeContainer() {
     setTimeout(() => setAnimatingTile(null), 600);
   }, []);
 
+  const currentSettings = useCallback(() => ({
+    ...settings,
+    hue: hue ?? settings.hue,
+    brightness: brightness ?? settings.brightness,
+    saturation: saturation ?? settings.saturation,
+  }), [settings, hue, brightness, saturation]);
+
   const handleHueChange = useCallback((newHue: number) => {
     setHue(newHue);
-    saveSettings({ ...settings, hue: newHue, brightness: brightness ?? settings.brightness });
-  }, [settings, brightness, saveSettings]);
+    saveSettings({ ...currentSettings(), hue: newHue });
+  }, [currentSettings, saveSettings]);
 
   const handleBrightnessChange = useCallback((newBrightness: number) => {
     setBrightness(newBrightness);
-    saveSettings({ ...settings, hue: hue ?? settings.hue, brightness: newBrightness });
-  }, [settings, hue, saveSettings]);
+    saveSettings({ ...currentSettings(), brightness: newBrightness });
+  }, [currentSettings, saveSettings]);
+
+  const handleSaturationChange = useCallback((newSaturation: number) => {
+    setSaturation(newSaturation);
+    saveSettings({ ...currentSettings(), saturation: newSaturation });
+  }, [currentSettings, saveSettings]);
 
   const toggleTile = useCallback((id: string) => {
     const newVisible = settings.visibleTiles.includes(id)
       ? settings.visibleTiles.filter(t => t !== id)
       : [...settings.visibleTiles, id];
-    saveSettings({
-      hue: hue ?? settings.hue,
-      brightness: brightness ?? settings.brightness,
-      visibleTiles: newVisible,
-    });
-  }, [settings, hue, brightness, saveSettings]);
+    saveSettings({ ...currentSettings(), visibleTiles: newVisible });
+  }, [settings.visibleTiles, currentSettings, saveSettings]);
 
   const handleActiveChange = useCallback((tileId: string, isActive: boolean) => {
     setExpandedTileId(prev => isActive ? tileId : (prev === tileId ? null : prev));
@@ -242,17 +252,22 @@ export function NurseryModeContainer() {
     router.push(`/${slug}/log-entry`);
   }, [wakeLock, fullscreen, router, slug]);
 
+  // Dim: 0-50% → 0-45% lightness, 50-100% → 45-70% lightness
+  const dimL = effectiveBrightness <= 50
+    ? (effectiveBrightness / 50) * 45
+    : 45 + ((effectiveBrightness - 50) / 50) * 25;
+  const sat = effectiveSaturation;
+
   // Base background gradient
   const baseBg = `linear-gradient(165deg,
-    hsl(${effectiveHue}, 20%, ${effectiveBrightness}%) 0%,
-    hsl(${(effectiveHue + 8) % 360}, 18%, ${Math.max(effectiveBrightness - 2, 3)}%) 100%)`;
+    hsl(${effectiveHue}, ${sat}%, ${dimL}%) 0%,
+    hsl(${(effectiveHue + 8) % 360}, ${sat * 0.9}%, ${Math.max(dimL - 2, 1)}%) 100%)`;
 
-  // Lava lamp blob colors — hue shifts ±8-20 degrees, higher saturation for visibility
-  const b = effectiveBrightness;
+  // Lava lamp blob colors — wider hue shifts ±25-40 degrees for more color variation
   const h = effectiveHue;
-  const blob1Color = `hsla(${(h + 20) % 360}, 35%, ${Math.max(b + 3, 8)}%, 0.7)`;
-  const blob2Color = `hsla(${(h - 15 + 360) % 360}, 30%, ${Math.max(b + 8, 12)}%, 0.6)`;
-  const blob3Color = `hsla(${(h + 10) % 360}, 32%, ${Math.max(b + 5, 10)}%, 0.55)`;
+  const blob1Color = `hsla(${(h + 40) % 360}, ${Math.min(sat * 1.4, 100)}%, ${Math.min(dimL + 3, 48)}%, 0.7)`;
+  const blob2Color = `hsla(${(h - 30 + 360) % 360}, ${Math.min(sat * 1.2, 100)}%, ${Math.min(dimL + 8, 50)}%, 0.6)`;
+  const blob3Color = `hsla(${(h + 25) % 360}, ${Math.min(sat * 1.3, 100)}%, ${Math.min(dimL + 5, 48)}%, 0.55)`;
 
   const tileComponents: Record<string, React.ComponentType<any>> = {
     feed: FeedTile,
@@ -273,7 +288,7 @@ export function NurseryModeContainer() {
     <>
       <style>{`
         input[type="range"]::-webkit-slider-thumb {
-          -webkit-appearance: none; width: 18px; height: 18px;
+          -webkit-appearance: none; width: 36px; height: 36px;
           border-radius: 50%; background: white;
           box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer;
         }
@@ -505,6 +520,8 @@ export function NurseryModeContainer() {
           setHue={handleHueChange}
           brightness={effectiveBrightness}
           setBrightness={handleBrightnessChange}
+          saturation={effectiveSaturation}
+          setSaturation={handleSaturationChange}
           tiles={tiles}
           toggleTile={toggleTile}
           wakeLockActive={wakeLock.isActive}

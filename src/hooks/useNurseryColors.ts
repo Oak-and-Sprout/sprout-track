@@ -19,24 +19,53 @@ export interface NurseryColors {
   sleepGlow: string;
 }
 
-export function useNurseryColors(hue: number, brightness: number): NurseryColors {
+export function useNurseryColors(hue: number, brightness: number, saturation: number): NurseryColors {
   return useMemo(() => {
-    const isLight = brightness > 55;
+    // Dim mapping:
+    //   0-50%   → 0-45% lightness (dark, scaling toward full color)
+    //   50-100% → 45-70% lightness (light, adding up to 25% whiteness)
+    const dimL = brightness <= 50
+      ? (brightness / 50) * 45
+      : 45 + ((brightness - 50) / 50) * 25;
+    // Saturation: 0-100 used directly as HSL saturation percentage
+    const s = saturation;
+    // Light mode flips at 50%
+    const isLight = brightness > 50;
+
+    if (isLight) {
+      return {
+        isLight,
+        text: `hsla(${hue}, ${s * 0.15}%, 15%, 0.85)`,
+        subtext: `hsla(${hue}, ${s * 0.10}%, 30%, 0.5)`,
+        border: `hsla(${hue}, ${s * 0.20}%, 40%, 0.12)`,
+        tileBg: `hsla(${hue}, ${s * 0.20}%, ${Math.min(dimL + 7, 97)}%, 0.5)`,
+        tilePressed: `hsla(${hue}, ${s * 0.25}%, ${Math.min(dimL + 2, 92)}%, 0.7)`,
+        logText: `hsla(${hue}, ${s * 0.12}%, 25%, 0.6)`,
+        btnBg: `hsla(${hue}, ${s * 0.18}%, ${Math.min(dimL + 0, 90)}%, 0.55)`,
+        btnHover: `hsla(${hue}, ${s * 0.22}%, ${Math.min(dimL - 6, 84)}%, 0.7)`,
+        btnActive: `hsla(${hue}, ${s * 0.28}%, ${Math.min(dimL - 12, 78)}%, 0.8)`,
+        accent: `hsla(${hue}, ${s * 0.30}%, 45%, 0.7)`,
+        panelBg: `hsla(${hue}, ${s * 0.15}%, ${Math.min(dimL + 6, 96)}%, 0.92)`,
+        label: `hsla(${hue}, ${s * 0.08}%, 35%, 0.6)`,
+        sleepGlow: `hsla(${hue}, ${s * 0.25}%, ${Math.min(dimL - 5, 75)}%, 0.2)`,
+      };
+    }
+
     return {
       isLight,
-      text: isLight ? `hsla(${hue}, 15%, 15%, 0.85)` : `hsla(${hue}, 15%, 95%, 0.85)`,
-      subtext: isLight ? `hsla(${hue}, 10%, 30%, 0.5)` : `hsla(${hue}, 10%, 80%, 0.4)`,
-      border: isLight ? `hsla(${hue}, 20%, 40%, 0.12)` : `hsla(${hue}, 20%, 80%, 0.08)`,
-      tileBg: isLight ? `hsla(${hue}, 20%, 97%, 0.5)` : `hsla(${hue}, 20%, 18%, 0.35)`,
-      tilePressed: isLight ? `hsla(${hue}, 25%, 92%, 0.7)` : `hsla(${hue}, 25%, 25%, 0.5)`,
-      logText: isLight ? `hsla(${hue}, 12%, 25%, 0.6)` : `hsla(${hue}, 12%, 75%, 0.5)`,
-      btnBg: isLight ? `hsla(${hue}, 18%, 90%, 0.55)` : `hsla(${hue}, 18%, 24%, 0.45)`,
-      btnHover: isLight ? `hsla(${hue}, 22%, 84%, 0.7)` : `hsla(${hue}, 22%, 30%, 0.6)`,
-      btnActive: isLight ? `hsla(${hue}, 28%, 78%, 0.8)` : `hsla(${hue}, 28%, 35%, 0.7)`,
-      accent: isLight ? `hsla(${hue}, 30%, 45%, 0.7)` : `hsla(${hue}, 30%, 70%, 0.7)`,
-      panelBg: isLight ? `hsla(${hue}, 15%, 96%, 0.92)` : `hsla(${hue}, 15%, 12%, 0.92)`,
-      label: isLight ? `hsla(${hue}, 8%, 35%, 0.6)` : `hsla(${hue}, 8%, 70%, 0.5)`,
-      sleepGlow: isLight ? `hsla(${hue}, 25%, 75%, 0.2)` : `hsla(${hue}, 25%, 40%, 0.15)`,
+      text: `hsla(${hue}, ${s * 0.15}%, 95%, 0.85)`,
+      subtext: `hsla(${hue}, ${s * 0.10}%, 80%, 0.4)`,
+      border: `hsla(${hue}, ${s * 0.20}%, 80%, 0.08)`,
+      tileBg: `hsla(${hue}, ${s * 0.20}%, ${Math.min(dimL + 5, 50)}%, 0.35)`,
+      tilePressed: `hsla(${hue}, ${s * 0.25}%, ${Math.min(dimL + 10, 55)}%, 0.5)`,
+      logText: `hsla(${hue}, ${s * 0.12}%, 75%, 0.5)`,
+      btnBg: `hsla(${hue}, ${s * 0.18}%, ${Math.min(dimL + 8, 52)}%, 0.45)`,
+      btnHover: `hsla(${hue}, ${s * 0.22}%, ${Math.min(dimL + 12, 55)}%, 0.6)`,
+      btnActive: `hsla(${hue}, ${s * 0.28}%, ${Math.min(dimL + 15, 58)}%, 0.7)`,
+      accent: `hsla(${hue}, ${s * 0.30}%, 70%, 0.7)`,
+      panelBg: `hsla(${hue}, ${s * 0.15}%, ${Math.max(dimL - 2, 2)}%, 0.92)`,
+      label: `hsla(${hue}, ${s * 0.08}%, 70%, 0.5)`,
+      sleepGlow: `hsla(${hue}, ${s * 0.25}%, ${Math.min(dimL + 10, 50)}%, 0.15)`,
     };
-  }, [hue, brightness]);
+  }, [hue, brightness, saturation]);
 }

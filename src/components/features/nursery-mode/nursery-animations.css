@@ -41,11 +41,11 @@
   100% { transform: translate(0, 0) scale(1);         opacity: 0.4; }
 }
 
-/* Hue shift — gentle overall color rotation */
+/* Hue shift — broader color rotation for more variation */
 @keyframes nursery-hueShift {
   0%   { filter: hue-rotate(0deg); }
-  25%  { filter: hue-rotate(8deg); }
-  50%  { filter: hue-rotate(-5deg); }
-  75%  { filter: hue-rotate(6deg); }
+  25%  { filter: hue-rotate(18deg); }
+  50%  { filter: hue-rotate(-12deg); }
+  75%  { filter: hue-rotate(15deg); }
   100% { filter: hue-rotate(0deg); }
 }

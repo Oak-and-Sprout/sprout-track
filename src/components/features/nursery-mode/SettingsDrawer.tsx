@@ -16,6 +16,8 @@ interface SettingsDrawerProps {
   setHue: (hue: number) => void;
   brightness: number;
   setBrightness: (brightness: number) => void;
+  saturation: number;
+  setSaturation: (saturation: number) => void;
   tiles: TileConfig[];
   toggleTile: (id: string) => void;
   wakeLockActive: boolean;
@@ -28,6 +30,7 @@ interface SettingsDrawerProps {
 
 export function SettingsDrawer({
   open, onClose, hue, setHue, brightness, setBrightness,
+  saturation, setSaturation,
   tiles, toggleTile, wakeLockActive, wakeLockSupported,
   fullscreenActive, fullscreenSupported, onToggleFullscreen, colors,
 }: SettingsDrawerProps) {
@@ -39,7 +42,7 @@ export function SettingsDrawer({
         <div
           onClick={onClose}
           className="fixed inset-0 z-[90]"
-          style={{ background: 'rgba(0,0,0,0.3)', animation: 'nursery-fadeIn 0.25s ease' }}
+          style={{ background: 'transparent' }}
         />
       )}
       <div
@@ -130,15 +133,15 @@ export function SettingsDrawer({
           <input
             type="range" min="0" max="360" value={hue}
             onChange={(e) => setHue(Number(e.target.value))}
-            className="w-full h-1.5 rounded-sm outline-none cursor-pointer"
+            className="w-full h-3 rounded-sm outline-none cursor-pointer"
             style={{
               WebkitAppearance: 'none',
               appearance: 'none' as any,
               background: `linear-gradient(to right,
-                hsl(0,25%,${brightness > 55 ? 70 : 40}%),hsl(60,25%,${brightness > 55 ? 70 : 40}%),
-                hsl(120,25%,${brightness > 55 ? 70 : 40}%),hsl(180,25%,${brightness > 55 ? 70 : 40}%),
-                hsl(240,25%,${brightness > 55 ? 70 : 40}%),hsl(300,25%,${brightness > 55 ? 70 : 40}%),
-                hsl(360,25%,${brightness > 55 ? 70 : 40}%))`,
+                hsl(0,${saturation}%,${colors.isLight ? 70 : 40}%),hsl(60,${saturation}%,${colors.isLight ? 70 : 40}%),
+                hsl(120,${saturation}%,${colors.isLight ? 70 : 40}%),hsl(180,${saturation}%,${colors.isLight ? 70 : 40}%),
+                hsl(240,${saturation}%,${colors.isLight ? 70 : 40}%),hsl(300,${saturation}%,${colors.isLight ? 70 : 40}%),
+                hsl(360,${saturation}%,${colors.isLight ? 70 : 40}%))`,
             }}
           />
           <div className="text-sm italic mt-1 font-serif" style={{ color: colors.label }}>
@@ -146,26 +149,49 @@ export function SettingsDrawer({
           </div>
         </div>
 
-        {/* Brightness Slider */}
+        {/* Dim Slider */}
         <div>
           <div
             className="text-[0.7rem] font-medium tracking-wider uppercase mb-3 font-sans"
             style={{ color: colors.label }}
           >
-            {t('Brightness')}
+            {t('Dim')}
           </div>
           <input
-            type="range" min="5" max="90" value={brightness}
+            type="range" min="2" max="100" value={brightness}
             onChange={(e) => setBrightness(Number(e.target.value))}
-            className="w-full h-1.5 rounded-sm outline-none cursor-pointer"
+            className="w-full h-3 rounded-sm outline-none cursor-pointer"
             style={{
               WebkitAppearance: 'none',
               appearance: 'none' as any,
-              background: `linear-gradient(to right, hsl(${hue},20%,5%), hsl(${hue},20%,90%))`,
+              background: `linear-gradient(to right, hsl(${hue},${saturation}%,1%), hsl(${hue},${saturation}%,45%), hsl(${hue},${saturation}%,70%))`,
             }}
           />
           <div className="text-sm italic mt-1 font-serif" style={{ color: colors.label }}>
             {brightness}%
+          </div>
+        </div>
+
+        {/* Saturation Slider */}
+        <div>
+          <div
+            className="text-[0.7rem] font-medium tracking-wider uppercase mb-3 font-sans"
+            style={{ color: colors.label }}
+          >
+            {t('Saturation')}
+          </div>
+          <input
+            type="range" min="0" max="100" value={saturation}
+            onChange={(e) => setSaturation(Number(e.target.value))}
+            className="w-full h-3 rounded-sm outline-none cursor-pointer"
+            style={{
+              WebkitAppearance: 'none',
+              appearance: 'none' as any,
+              background: `linear-gradient(to right, hsl(${hue},0%,${brightness <= 50 ? (brightness / 50) * 45 : 45 + ((brightness - 50) / 50) * 25}%), hsl(${hue},100%,${brightness <= 50 ? (brightness / 50) * 45 : 45 + ((brightness - 50) / 50) * 25}%))`,
+            }}
+          />
+          <div className="text-sm italic mt-1 font-serif" style={{ color: colors.label }}>
+            {saturation}%
           </div>
         </div>
 

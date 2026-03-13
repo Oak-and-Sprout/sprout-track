@@ -27,7 +27,7 @@ export function SubButton({ label, onClick, colors, active, timerText, disabled,
       style={{
         padding: expanded
           ? (timerText ? '0.9rem 0.8rem' : '1.1rem 0.8rem')
-          : (timerText ? '0.45rem 0.4rem' : '0.55rem 0.4rem'),
+          : (timerText ? '0.9rem 0.4rem' : '1.1rem 0.4rem'),
         border: `1px solid ${active ? colors.accent : colors.border}`,
         borderRadius: expanded ? '0.75rem' : '0.55rem',
         background: pressed ? colors.btnActive : active ? colors.btnHover : colors.btnBg,

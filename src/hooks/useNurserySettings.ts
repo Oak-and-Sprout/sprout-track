@@ -5,12 +5,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 export interface NurseryModeSettings {
   hue: number;
   brightness: number;
+  saturation: number;
   visibleTiles: string[];
 }
 
 const DEFAULT_SETTINGS: NurseryModeSettings = {
   hue: 230,
   brightness: 15,
+  saturation: 25,
   visibleTiles: ['feed', 'pump', 'diaper', 'sleep'],
 };
 
@@ -29,7 +31,7 @@ export function useNurserySettings(caretakerId: string | null) {
         });
         const data = await res.json();
         if (data.success && data.data) {
-          setSettings(data.data);
+          setSettings({ ...DEFAULT_SETTINGS, ...data.data });
         }
       } catch (err) {
         console.error('Failed to fetch nursery mode settings:', err);
