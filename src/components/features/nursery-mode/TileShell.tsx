@@ -24,18 +24,26 @@ export function TileShell({ label, colors, log, animating, sleeping, expanded, s
 
   return (
     <div
-      className="rounded-2xl flex flex-col backdrop-blur-[20px] relative overflow-hidden"
+      className="rounded-2xl flex flex-col liquid-glass-tile relative overflow-hidden"
       style={{
         background: colors.tileBg,
         border: `1px solid ${hasGlow ? colors.accent : colors.border}`,
         padding: expanded ? 'clamp(1.2rem, 3.5vw, 2rem)' : 'clamp(0.85rem, 2.5vw, 1.4rem)',
-        boxShadow: hasGlow
-          ? `0 0 25px ${colors.sleepGlow}, inset 0 0 15px ${colors.sleepGlow}`
-          : 'none',
+        boxShadow: [
+          hasGlow ? `0 0 25px ${colors.sleepGlow}` : '',
+          `inset 1px 1px 0 0 ${colors.glassHighlight}`,
+          `inset -1px -1px 0 0 ${colors.glassShadow}`,
+        ].filter(Boolean).join(', '),
         minHeight: expanded ? 'clamp(200px, 40vw, 320px)' : 'clamp(130px, 24vw, 195px)',
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
+      {/* Fog/smoke overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none rounded-2xl"
+        style={{ background: colors.smokeBg }}
+      />
+
       {animating && (
         <div
           className="absolute inset-0 pointer-events-none"

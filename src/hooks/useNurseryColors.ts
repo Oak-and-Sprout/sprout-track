@@ -17,6 +17,9 @@ export interface NurseryColors {
   panelBg: string;
   label: string;
   sleepGlow: string;
+  smokeBg: string;
+  glassHighlight: string;
+  glassShadow: string;
 }
 
 export function useNurseryColors(hue: number, brightness: number, saturation: number): NurseryColors {
@@ -48,6 +51,9 @@ export function useNurseryColors(hue: number, brightness: number, saturation: nu
         panelBg: `hsla(${hue}, ${s * 0.15}%, ${Math.min(dimL + 6, 96)}%, 0.92)`,
         label: `hsla(${hue}, ${s * 0.08}%, 35%, 0.6)`,
         sleepGlow: `hsla(${hue}, ${s * 0.25}%, ${Math.min(dimL - 5, 75)}%, 0.2)`,
+        smokeBg: `hsla(${hue}, ${s * 0.08}%, 98%, 0.01)`,
+        glassHighlight: `hsla(${hue}, ${s * 0.05}%, 100%, 0.20)`,
+        glassShadow: `hsla(${hue}, ${s * 0.10}%, 30%, 0.10)`,
       };
     }
 
@@ -66,6 +72,9 @@ export function useNurseryColors(hue: number, brightness: number, saturation: nu
       panelBg: `hsla(${hue}, ${s * 0.15}%, ${Math.max(dimL - 2, 2)}%, 0.92)`,
       label: `hsla(${hue}, ${s * 0.08}%, 70%, 0.5)`,
       sleepGlow: `hsla(${hue}, ${s * 0.25}%, ${Math.min(dimL + 10, 50)}%, 0.15)`,
+      smokeBg: `hsla(${(hue + 20) % 360}, ${s * 0.25}%, ${Math.min(dimL + 15, 55)}%, 0.01)`,
+      glassHighlight: `hsla(${hue}, ${s * 0.10}%, 90%, 0.08)`,
+      glassShadow: `hsla(${hue}, ${s * 0.15}%, 5%, 0.25)`,
     };
   }, [hue, brightness, saturation]);
 }

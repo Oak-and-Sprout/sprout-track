@@ -301,7 +301,42 @@ export function NurseryModeContainer() {
             padding-bottom: env(safe-area-inset-bottom) !important;
           }
         }
+        @supports (backdrop-filter: url(#liquid-glass)) {
+          .liquid-glass-tile {
+            backdrop-filter: url(#liquid-glass) blur(20px) brightness(1.05) saturate(1.3) !important;
+            -webkit-backdrop-filter: url(#liquid-glass) blur(20px) brightness(1.05) saturate(1.3) !important;
+          }
+          .liquid-glass-btn {
+            backdrop-filter: url(#liquid-glass) blur(12px) brightness(1.05) saturate(1.2) !important;
+            -webkit-backdrop-filter: url(#liquid-glass) blur(12px) brightness(1.05) saturate(1.2) !important;
+          }
+        }
+        @supports not (backdrop-filter: url(#liquid-glass)) {
+          .liquid-glass-tile {
+            backdrop-filter: blur(20px) brightness(1.05) saturate(1.3) !important;
+            -webkit-backdrop-filter: blur(20px) brightness(1.05) saturate(1.3) !important;
+          }
+          .liquid-glass-btn {
+            backdrop-filter: blur(12px) brightness(1.05) saturate(1.2) !important;
+            -webkit-backdrop-filter: blur(12px) brightness(1.05) saturate(1.2) !important;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .liquid-glass-tile, .liquid-glass-btn {
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+          }
+        }
       `}</style>
+
+      <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+        <defs>
+          <filter id="liquid-glass" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves={3} seed={2} result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale={6} xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
 
       <div
         className="fixed inset-0 z-[9999] flex flex-col font-sans overflow-hidden nursery-safe-area"

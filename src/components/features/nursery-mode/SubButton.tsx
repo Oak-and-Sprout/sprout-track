@@ -23,7 +23,7 @@ export function SubButton({ label, onClick, colors, active, timerText, disabled,
       onPointerUp={() => setPressed(false)}
       onPointerLeave={() => setPressed(false)}
       disabled={disabled}
-      className="flex-1 cursor-pointer font-sans font-medium outline-none flex flex-col items-center min-w-0"
+      className="flex-1 cursor-pointer font-sans font-medium outline-none flex flex-col items-center min-w-0 liquid-glass-btn relative overflow-hidden"
       style={{
         padding: expanded
           ? (timerText ? '0.9rem 0.8rem' : '1.1rem 0.8rem')
@@ -37,8 +37,17 @@ export function SubButton({ label, onClick, colors, active, timerText, disabled,
         fontSize: expanded ? 'clamp(0.9rem, 1.8vw, 1.1rem)' : 'clamp(0.65rem, 1.3vw, 0.78rem)',
         gap: expanded ? '0.35rem' : '0.125rem',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: `inset 1px 1px 0 0 ${colors.glassHighlight}, inset -1px -1px 0 0 ${colors.glassShadow}`,
       }}
     >
+      {/* Fog overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: colors.smokeBg,
+          borderRadius: expanded ? '0.75rem' : '0.55rem',
+        }}
+      />
       <span>{label}</span>
       {timerText && (
         <span
