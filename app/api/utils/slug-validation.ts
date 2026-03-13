@@ -19,7 +19,15 @@ export const RESERVED_URLS = [
   'layout',
   'metadata',
   'page',
-  'template'
+  'template',
+  // ST-Guardian reserved URLs
+  'health',
+  'logs',
+  'maintenance',
+  'status',
+  'update',
+  'uptime',
+  'version'
 ] as const;
 
 /**
