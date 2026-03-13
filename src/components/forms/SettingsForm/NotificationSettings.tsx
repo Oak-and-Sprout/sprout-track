@@ -25,6 +25,7 @@ import {
   getCurrentSubscription,
   checkSubscriptionStatus,
 } from '@/src/lib/notifications/client';
+import { Card, CardContent } from '@/src/components/ui/card';
 import { Loader2, Trash2, Bell, BellOff, ChevronDown, ChevronUp } from 'lucide-react';
 
 const ALL_ACTIVITY_TYPES = [
@@ -392,41 +393,40 @@ export default function NotificationSettings({
           <Label className="form-label">{t('Registered Devices')}</Label>
           <div className="space-y-2">
             {subscriptions.map((subscription) => (
-              <div
-                key={subscription.id}
-                className="flex items-center justify-between p-3 border border-slate-200 rounded-lg"
-              >
-                <div className="flex-1">
-                  <div className="font-medium">
-                    {subscription.deviceLabel || t('Device')}
+              <Card key={subscription.id}>
+                <CardContent className="flex items-center justify-between p-3">
+                  <div className="flex-1">
+                    <Label className="form-label">
+                      {subscription.deviceLabel || t('Device')}
+                    </Label>
+                    <div className="text-sm text-gray-500">
+                      {subscription.lastSuccessAt
+                        ? `${t('Last Success')}: ${new Date(
+                            subscription.lastSuccessAt
+                          ).toLocaleString()}`
+                        : subscription.lastFailureAt
+                        ? `${t('Last Failure')}: ${new Date(
+                            subscription.lastFailureAt
+                          ).toLocaleString()}`
+                        : ''}
+                      {subscription.failureCount > 0 && (
+                        <span className="ml-2 text-red-600">
+                          ({subscription.failureCount} {t('Failures')})
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {subscription.lastSuccessAt
-                      ? `${t('Last Success')}: ${new Date(
-                          subscription.lastSuccessAt
-                        ).toLocaleString()}`
-                      : subscription.lastFailureAt
-                      ? `${t('Last Failure')}: ${new Date(
-                          subscription.lastFailureAt
-                        ).toLocaleString()}`
-                      : ''}
-                    {subscription.failureCount > 0 && (
-                      <span className="ml-2 text-red-600">
-                        ({subscription.failureCount} {t('Failures')})
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleRemoveDevice(subscription)}
-                  disabled={loading}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('Remove Device')}
-                </Button>
-              </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemoveDevice(subscription)}
+                    disabled={loading}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('Remove Device')}
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -438,10 +438,11 @@ export default function NotificationSettings({
         <div className="space-y-6">
           <Label className="form-label">{t('Notification Preferences')}</Label>
           {babies.map((baby) => (
-            <div key={baby.id} className="space-y-4 p-4 border border-slate-200 rounded-lg">
-              <h4 className="font-medium">
+            <Card key={baby.id}>
+            <CardContent className="space-y-4 p-4">
+              <Label className="form-label text-base">
                 {baby.firstName} {baby.lastName}
-              </h4>
+              </Label>
 
               {subscriptions.map((subscription) => (
                 <div key={subscription.id} className="space-y-4 pl-4 border-l-2 border-slate-200">
@@ -539,9 +540,9 @@ export default function NotificationSettings({
                                     disabled={loading}
                                     className="rounded border-gray-300"
                                   />
-                                  <span className="capitalize">
+                                  <Label className="form-label capitalize cursor-pointer">
                                     {t(actType.charAt(0).toUpperCase() + actType.slice(1))}
-                                  </span>
+                                  </Label>
                                 </label>
                               );
                             })}
@@ -747,7 +748,8 @@ export default function NotificationSettings({
                   </div>
                 </div>
               ))}
-            </div>
+            </CardContent>
+            </Card>
           ))}
         </div>
       )}

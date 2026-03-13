@@ -28,6 +28,7 @@ import {
   subscribeToPush,
   sendSubscriptionToServer,
 } from '@/src/lib/notifications/client';
+import { Card, CardContent } from '@/src/components/ui/card';
 import { Bell, Loader2, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 const ALL_ACTIVITY_TYPES = [
@@ -293,10 +294,11 @@ export default function NotificationSplashModal({
 
             <div className="space-y-4 mt-4 max-h-[50vh] overflow-y-auto">
               {babies.map((baby) => (
-                <div key={baby.id} className="space-y-3 p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
-                  <h4 className="font-medium">
+                <Card key={baby.id}>
+                <CardContent className="space-y-3 p-4">
+                  <Label className="form-label text-base">
                     {baby.firstName} {baby.lastName}
-                  </h4>
+                  </Label>
 
                   {/* Activity Created */}
                   <div className="space-y-2">
@@ -365,9 +367,9 @@ export default function NotificationSplashModal({
                                     disabled={savingPreference === `${baby.id}-${NotificationEventType.ACTIVITY_CREATED}`}
                                     className="rounded border-gray-300"
                                   />
-                                  <span className="capitalize">
+                                  <Label className="form-label capitalize cursor-pointer">
                                     {t(actType.charAt(0).toUpperCase() + actType.slice(1))}
-                                  </span>
+                                  </Label>
                                 </label>
                               );
                             })}
@@ -490,7 +492,8 @@ export default function NotificationSplashModal({
                       </Select>
                     )}
                   </div>
-                </div>
+                </CardContent>
+                </Card>
               ))}
             </div>
 

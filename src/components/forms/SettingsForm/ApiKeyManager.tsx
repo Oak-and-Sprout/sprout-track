@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Baby } from '@prisma/client';
 import { Key, Plus, Copy, Check, Trash2, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
@@ -248,7 +249,8 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
 
       {/* Create form */}
       {showCreateForm && (
-        <div className="mb-4 p-4 border border-slate-200 rounded-lg space-y-3">
+        <Card className="mb-4">
+        <CardContent className="p-4 space-y-3">
           <div>
             <Label className="form-label">{t('Key Name')}</Label>
             <Input
@@ -332,7 +334,8 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
               {t('Cancel')}
             </Button>
           </div>
-        </div>
+        </CardContent>
+        </Card>
       )}
 
       {/* Key list */}
@@ -349,14 +352,15 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
       ) : (
         <div className="space-y-2">
           {apiKeys.map((key) => (
-            <div
+            <Card
               key={key.id}
-              className={`p-3 border rounded-lg ${key.revoked ? 'opacity-60 border-red-200 bg-red-50' : 'border-slate-200'}`}
+              className={key.revoked ? 'opacity-60 border-red-200 bg-red-50' : ''}
             >
+            <CardContent className="p-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm truncate">{key.name}</span>
+                    <Label className="form-label text-sm truncate">{key.name}</Label>
                     {key.revoked && <Badge variant="error">{t('Revoked')}</Badge>}
                   </div>
                   <p className="text-xs font-mono text-gray-500 mt-1">{key.keyPrefix}...</p>
@@ -407,7 +411,8 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
                   </div>
                 )}
               </div>
-            </div>
+            </CardContent>
+            </Card>
           ))}
         </div>
       )}
