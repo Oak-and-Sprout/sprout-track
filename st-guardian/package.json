@@ -1,0 +1,13 @@
+{
+  "name": "st-guardian",
+  "version": "1.0.0",
+  "description": "Lightweight reverse proxy, health monitor, and update orchestrator for Sprout Track",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "http-proxy": "^1.18.1"
+  }
+}
