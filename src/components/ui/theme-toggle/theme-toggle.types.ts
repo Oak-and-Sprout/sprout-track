@@ -20,5 +20,5 @@ export interface ThemeToggleProps
    * - "default": Full version with helper text, backgrounds, and highlighting
    * - "light": Simplified version with just icon, label, and hover effects
    */
-  variant?: "default" | "light";
+  variant?: "default" | "light" | "minimal";
 }

@@ -800,6 +800,37 @@ async function handleLogs(req, res) {
 const GITHUB_REPO = 'Oak-and-Sprout/sprout-track';
 let versionCache = { latestTag: null, checkedAt: 0 };
 
+// Match only valid semver tags: optional 'v' prefix followed by digits.digits.digits
+const SEMVER_TAG_RE = /^v?(\d+\.\d+\.\d+)$/;
+
+function fetchGitHubPage(url) {
+  return new Promise((resolve, reject) => {
+    const https = require('https');
+    const req = https.get(url, {
+      headers: {
+        'User-Agent': 'st-guardian',
+        'Accept': 'application/vnd.github.v3+json',
+      },
+      timeout: 10000,
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          // Parse Link header for next page
+          const link = res.headers.link || '';
+          const nextMatch = link.match(/<([^>]+)>;\s*rel="next"/);
+          resolve({ status: res.statusCode, data: JSON.parse(data), next: nextMatch ? nextMatch[1] : null });
+        } catch {
+          reject(new Error('Invalid JSON from GitHub'));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('GitHub request timeout')); });
+  });
+}
+
 async function fetchLatestTag() {
   // Cache for 5 minutes
   if (versionCache.latestTag && Date.now() - versionCache.checkedAt < 5 * 60 * 1000) {
@@ -807,39 +838,30 @@ async function fetchLatestTag() {
   }
 
   try {
-    const res = await new Promise((resolve, reject) => {
-      const https = require('https');
-      const req = https.get(
-        `https://api.github.com/repos/${GITHUB_REPO}/tags?per_page=1`,
-        {
-          headers: {
-            'User-Agent': 'st-guardian',
-            'Accept': 'application/vnd.github.v3+json',
-          },
-          timeout: 10000,
-        },
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => { data += chunk; });
-          res.on('end', () => {
-            try {
-              resolve({ status: res.statusCode, data: JSON.parse(data) });
-            } catch {
-              reject(new Error('Invalid JSON from GitHub'));
-            }
-          });
-        }
-      );
-      req.on('error', reject);
-      req.on('timeout', () => { req.destroy(); reject(new Error('GitHub request timeout')); });
-    });
+    const allVersions = [];
+    let url = `https://api.github.com/repos/${GITHUB_REPO}/tags?per_page=100`;
+    const maxPages = 5; // Safety limit
 
-    if (res.status === 200 && Array.isArray(res.data) && res.data.length > 0) {
-      const tag = res.data[0].name.replace(/^v/, '');
-      versionCache = { latestTag: tag, checkedAt: Date.now() };
-      return tag;
+    for (let page = 0; page < maxPages; page++) {
+      const res = await fetchGitHubPage(url);
+      if (res.status !== 200 || !Array.isArray(res.data)) break;
+
+      for (const t of res.data) {
+        const m = t.name.match(SEMVER_TAG_RE);
+        if (m) allVersions.push(m[1]);
+      }
+
+      // Stop paginating once we have semver tags (we have enough to compare)
+      if (allVersions.length > 0 || !res.next) break;
+      url = res.next;
     }
-    return null;
+
+    if (allVersions.length === 0) return null;
+
+    allVersions.sort((a, b) => compareVersions(b, a));
+    const latest = allVersions[0];
+    versionCache = { latestTag: latest, checkedAt: Date.now() };
+    return latest;
   } catch (err) {
     log(`Version check failed: ${err.message}`);
     return null;

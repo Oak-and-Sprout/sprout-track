@@ -11,7 +11,10 @@ import {
   FormPageFooter 
 } from '@/src/components/ui/form-page';
 import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle, RefreshCw, Key } from 'lucide-react';
+import { Card, CardContent } from '@/src/components/ui/card';
+import { Badge } from '@/src/components/ui/badge';
 import { BackupRestore } from '@/src/components/BackupRestore';
+import { GuardianUpdate } from '@/src/components/GuardianUpdate';
 import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 import {
   DropdownMenu,
@@ -967,7 +970,6 @@ export default function AppConfigForm({
                         id="vapidPublicKey"
                         value={notificationFormData.vapidPublicKey}
                         readOnly
-                        className="font-mono text-xs bg-gray-50 dark:bg-gray-800"
                         placeholder={t('No public key configured')}
                       />
                     </div>
@@ -981,7 +983,6 @@ export default function AppConfigForm({
                         name="vapidPrivateKey"
                         value={notificationFormData.vapidPrivateKey}
                         onChange={handleNotificationInputChange}
-                        className="font-mono text-xs"
                         placeholder={t('No private key configured')}
                       />
                     </div>
@@ -1032,9 +1033,13 @@ export default function AppConfigForm({
                     <Label className="text-sm font-medium">
                       {t('Cron Secret')}
                     </Label>
-                    <p className="text-xs text-gray-500 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
-                      {t('Managed via NOTIFICATION_CRON_SECRET environment variable. Server restart required if changed.')}
-                    </p>
+                    <Card className="shadow-none">
+                      <CardContent className="p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {t('Managed via NOTIFICATION_CRON_SECRET environment variable. Server restart required if changed.')}
+                        </p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </div>
@@ -1048,126 +1053,89 @@ export default function AppConfigForm({
                       {t('Notification System Status')}
                     </Label>
                   </div>
-                  <div className="space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    {notificationStatusLoading ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
-                        <span className="ml-2 text-sm text-gray-600">{t('Loading...')}</span>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Feature Enabled */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Feature Enabled')}</span>
-                          <div className="flex items-center">
-                            {notificationStatus.enabled ? (
-                              <>
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                                <span className="text-sm text-green-600">{t('Enabled')}</span>
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="h-4 w-4 text-red-500 mr-1" />
-                                <span className="text-sm text-red-600">{t('Disabled')}</span>
-                              </>
-                            )}
-                          </div>
+                  <Card className="shadow-none">
+                    <CardContent className="p-4 space-y-3">
+                      {notificationStatusLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                          <Label className="ml-2 text-sm text-gray-600">{t('Loading...')}</Label>
                         </div>
-
-                        {/* VAPID Keys */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('VAPID Keys')}</span>
-                          <div className="flex items-center">
-                            {notificationStatus.vapidConfigured ? (
-                              <>
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                                <span className="text-sm text-green-600">{t('Configured')}</span>
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="h-4 w-4 text-red-500 mr-1" />
-                                <span className="text-sm text-red-600">{t('Not Configured')}</span>
-                              </>
-                            )}
+                      ) : (
+                        <>
+                          {/* Feature Enabled */}
+                          <div className="flex items-center justify-between">
+                            <Label className="text-gray-900 dark:text-gray-400">{t('Feature Enabled')}</Label>
+                            <Badge variant={notificationStatus.enabled ? 'success' : 'error'}>
+                              {notificationStatus.enabled ? t('Enabled') : t('Disabled')}
+                            </Badge>
                           </div>
-                        </div>
 
-                        {/* Cron Secret */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Cron Secret')}</span>
-                          <div className="flex items-center">
-                            {notificationStatus.cronSecretConfigured ? (
-                              <>
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                                <span className="text-sm text-green-600">{t('Configured')}</span>
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="h-4 w-4 text-red-500 mr-1" />
-                                <span className="text-sm text-red-600">{t('Not Configured')}</span>
-                              </>
-                            )}
+                          {/* VAPID Keys */}
+                          <div className="flex items-center justify-between">
+                            <Label className="text-gray-900 dark:text-gray-400">{t('VAPID Keys')}</Label>
+                            <Badge variant={notificationStatus.vapidConfigured ? 'success' : 'error'}>
+                              {notificationStatus.vapidConfigured ? t('Configured') : t('Not Configured')}
+                            </Badge>
                           </div>
-                        </div>
 
-                        {/* Subscriptions */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Active Subscriptions')}</span>
-                          <div className="flex items-center">
+                          {/* Cron Secret */}
+                          <div className="flex items-center justify-between">
+                            <Label className="text-gray-900 dark:text-gray-400">{t('Cron Secret')}</Label>
+                            <Badge variant={notificationStatus.cronSecretConfigured ? 'success' : 'error'}>
+                              {notificationStatus.cronSecretConfigured ? t('Configured') : t('Not Configured')}
+                            </Badge>
+                          </div>
+
+                          {/* Subscriptions */}
+                          <div className="flex items-center justify-between">
+                            <Label className="text-gray-900 dark:text-gray-400">{t('Active Subscriptions')}</Label>
                             {notificationStatus.subscriptionCount > 0 ? (
-                              <>
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                                <span className="text-sm text-green-600">
+                              <div className="flex items-center gap-1">
+                                <Badge variant="success">
                                   {notificationStatus.subscriptionCount}
-                                  {notificationStatus.failedSubscriptionCount > 0 && (
-                                    <span className="text-yellow-600 ml-1">
-                                      ({notificationStatus.failedSubscriptionCount} {t('with failures')})
-                                    </span>
-                                  )}
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
-                                <span className="text-sm text-yellow-600">{t('None')}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Last Cron Run */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{t('Last Cron Run')}</span>
-                          <div className="flex items-center">
-                            {notificationStatus.lastCronRun ? (
-                              <>
-                                {notificationStatus.lastCronRun.success ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                                ) : (
-                                  <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
+                                </Badge>
+                                {notificationStatus.failedSubscriptionCount > 0 && (
+                                  <Badge variant="warning">
+                                    {notificationStatus.failedSubscriptionCount} {t('with failures')}
+                                  </Badge>
                                 )}
-                                <span className={`text-sm ${notificationStatus.lastCronRun.success ? 'text-green-600' : 'text-yellow-600'}`}>
-                                  {new Date(notificationStatus.lastCronRun.timestamp!).toLocaleString()}
-                                  {notificationStatus.lastCronRun.notificationsSent > 0 && (
-                                    <span className="ml-1">
-                                      ({notificationStatus.lastCronRun.notificationsSent} {t('sent')})
-                                    </span>
-                                  )}
-                                </span>
-                              </>
+                              </div>
                             ) : (
-                              <>
-                                <AlertCircle className="h-4 w-4 text-yellow-500 mr-1" />
-                                <span className="text-sm text-yellow-600">{t('Never')}</span>
-                              </>
+                              <Badge variant="warning">{t('None')}</Badge>
                             )}
                           </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+
+                          {/* Last Cron Run */}
+                          <div className="flex items-center justify-between">
+                            <Label className="text-gray-900 dark:text-gray-400">{t('Last Cron Run')}</Label>
+                            {notificationStatus.lastCronRun ? (
+                              <div className="flex items-center gap-1">
+                                <Badge variant={notificationStatus.lastCronRun.success ? 'success' : 'warning'}>
+                                  {new Date(notificationStatus.lastCronRun.timestamp!).toLocaleString()}
+                                </Badge>
+                                {notificationStatus.lastCronRun.notificationsSent > 0 && (
+                                  <Badge variant="info">
+                                    {notificationStatus.lastCronRun.notificationsSent} {t('sent')}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <Badge variant="warning">{t('Never')}</Badge>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               )}
+
+              {/* System Updates Section */}
+              <GuardianUpdate
+                isLoading={loading}
+                isSaving={saving}
+                onError={(error) => setError(error)}
+              />
 
               {/* Database Management Section */}
               <BackupRestore

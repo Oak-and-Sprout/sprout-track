@@ -64,7 +64,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
 
   // Get the appropriate icon and label for the current theme
   const getCurrentThemeIcon = () => {
-    const iconSize = variant === 'light' ? 14 : 16;
+    const iconSize = (variant === 'light' || variant === 'minimal') ? 14 : 16;
     if (!isHydrated) return <Sun size={iconSize} />; // Default to Sun icon during SSR
     if (useSystemTheme) return <Monitor size={iconSize} />;
     return theme === 'light' ? <Sun size={iconSize} /> : <Moon size={iconSize} />;
@@ -76,14 +76,15 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
     return theme === 'light' ? 'Light' : 'Dark';
   };
 
-  // Render light variant
-  if (variant === 'light') {
+  // Render light or minimal variant
+  if (variant === 'light' || variant === 'minimal') {
+    const isMinimal = variant === 'minimal';
     return (
       <button
         onClick={cycleTheme}
         className={cn(
-          themeToggleStyles.buttonLight,
-          "theme-toggle-button-light",
+          isMinimal ? themeToggleStyles.buttonMinimal : themeToggleStyles.buttonLight,
+          isMinimal ? "theme-toggle-button-minimal" : "theme-toggle-button-light",
           className
         )}
         aria-label={`Switch to ${getNextTheme()} mode`}
@@ -91,12 +92,12 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         {...props}
       >
         <span className="theme-icon-container-light">
-          <span className="theme-icon-light">
+          <span className={isMinimal ? "theme-icon-minimal" : "theme-icon-light"}>
             {getCurrentThemeIcon()}
           </span>
         </span>
         <span className="theme-info-light">
-          <span className="current-theme-light">{getCurrentThemeLabel()}</span>
+          <span className={isMinimal ? "current-theme-minimal" : "current-theme-light"}>{getCurrentThemeLabel()}</span>
         </span>
       </button>
     );
