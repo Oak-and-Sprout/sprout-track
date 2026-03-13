@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useBaby } from '@/app/context/baby';
 import { useTimezone } from '@/app/context/timezone';
@@ -46,6 +46,28 @@ export function NurseryModeContainer() {
   const [babies, setBabies] = useState<Baby[]>([]);
   const [babySwitcherOpen, setBabySwitcherOpen] = useState(false);
   const [expandedTileId, setExpandedTileId] = useState<string | null>(null);
+  const [isLandscape, setIsLandscape] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
+  );
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+  );
+
+  // Listen for orientation and size changes
+  useLayoutEffect(() => {
+    const landscapeMql = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
+    const mobileMql = window.matchMedia('(max-width: 768px)');
+    setIsLandscape(landscapeMql.matches);
+    setIsMobile(mobileMql.matches);
+    const onLandscape = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
+    const onMobile = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    landscapeMql.addEventListener('change', onLandscape);
+    mobileMql.addEventListener('change', onMobile);
+    return () => {
+      landscapeMql.removeEventListener('change', onLandscape);
+      mobileMql.removeEventListener('change', onMobile);
+    };
+  }, []);
 
   // Fetch babies list and auto-select if needed
   useEffect(() => {
@@ -385,11 +407,86 @@ export function NurseryModeContainer() {
           />
         </div>
 
-        {/* Header */}
+        {/* Header — landscape: clock + baby inline with buttons; portrait: buttons only */}
         <div
-          className="flex justify-end items-start"
-          style={{ padding: 'clamp(1rem, 3vw, 2rem) clamp(1.25rem, 4vw, 2.5rem)', paddingBottom: 0 }}
+          className="flex items-center flex-shrink-0"
+          style={{
+            paddingTop: isLandscape ? 'clamp(0.5rem, 1.5vw, 0.75rem)' : 'clamp(1rem, 3vw, 2rem)',
+            paddingRight: isLandscape ? 'clamp(1rem, 3vw, 2rem)' : 'clamp(1.25rem, 4vw, 2.5rem)',
+            paddingBottom: 0,
+            paddingLeft: isLandscape ? 'clamp(1rem, 3vw, 2rem)' : 'clamp(1.25rem, 4vw, 2.5rem)',
+            justifyContent: isLandscape ? 'space-between' : 'flex-end',
+          }}
         >
+          {isLandscape && (
+            <div className="flex items-center gap-4">
+              <Clock colors={colors} compact />
+              <div className="relative flex flex-col items-start">
+                <button
+                  onClick={() => babies.length > 1 && setBabySwitcherOpen(!babySwitcherOpen)}
+                  className="bg-transparent border-none p-0 flex items-center gap-1.5 cursor-pointer text-left"
+                  style={{ cursor: babies.length > 1 ? 'pointer' : 'default' }}
+                >
+                  <div
+                    className="text-[clamp(0.8rem,1.8vw,1rem)] font-light tracking-tight font-serif"
+                    style={{ color: colors.text, opacity: 0.7 }}
+                  >
+                    {selectedBaby ? selectedBaby.firstName : t('Sprout Track')}
+                  </div>
+                  {babies.length > 1 && (
+                    <ChevronDown
+                      size={14}
+                      style={{
+                        color: colors.text,
+                        opacity: 0.6,
+                        transform: babySwitcherOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease',
+                      }}
+                    />
+                  )}
+                </button>
+                {babySwitcherOpen && babies.length > 1 && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[100]"
+                      onClick={() => setBabySwitcherOpen(false)}
+                    />
+                    <div
+                      className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
+                      style={{
+                        background: colors.panelBg,
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        border: `1px solid ${colors.border}`,
+                        minWidth: '140px',
+                        animation: 'nursery-fadeIn 0.15s ease',
+                      }}
+                    >
+                      {babies.map((baby) => (
+                        <button
+                          key={baby.id}
+                          onClick={() => {
+                            setSelectedBaby(baby);
+                            setBabySwitcherOpen(false);
+                            setLogs({});
+                            lastSeenRef.current = {};
+                          }}
+                          className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
+                          style={{
+                            color: colors.text,
+                            opacity: selectedBaby?.id === baby.id ? 1 : 0.6,
+                            background: selectedBaby?.id === baby.id ? colors.btnBg : 'transparent',
+                          }}
+                        >
+                          {baby.firstName}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-6">
             <button
               onClick={() => setSettingsOpen(true)}
@@ -408,91 +505,100 @@ export function NurseryModeContainer() {
           </div>
         </div>
 
-        {/* Clock + Baby Selector */}
-        <div
-          className="flex-shrink-0 flex items-center justify-center"
-          style={{ padding: 'clamp(1.25rem, 4vw, 3rem) 0 clamp(0.75rem, 2.5vw, 1.5rem)' }}
-        >
-          <div className="flex items-center gap-8">
-            <Clock colors={colors} />
-            <div className="relative flex flex-col items-start">
-              <button
-                onClick={() => babies.length > 1 && setBabySwitcherOpen(!babySwitcherOpen)}
-                className="bg-transparent border-none p-0 flex items-center gap-1.5 cursor-pointer text-left"
-                style={{ cursor: babies.length > 1 ? 'pointer' : 'default' }}
-              >
-                <div
-                  className="text-[clamp(1rem,2.2vw,1.2rem)] font-light tracking-tight font-serif"
-                  style={{ color: colors.text, opacity: 0.7 }}
+        {/* Clock + Baby Selector — portrait only */}
+        {!isLandscape && (
+          <div
+            className="flex-shrink-0 flex items-center justify-center"
+            style={{ padding: 'clamp(1.25rem, 4vw, 3rem) 0 clamp(0.75rem, 2.5vw, 1.5rem)' }}
+          >
+            <div className="flex items-center gap-8">
+              <Clock colors={colors} />
+              <div className="relative flex flex-col items-start">
+                <button
+                  onClick={() => babies.length > 1 && setBabySwitcherOpen(!babySwitcherOpen)}
+                  className="bg-transparent border-none p-0 flex items-center gap-1.5 cursor-pointer text-left"
+                  style={{ cursor: babies.length > 1 ? 'pointer' : 'default' }}
                 >
-                  {selectedBaby ? selectedBaby.firstName : t('Sprout Track')}
-                </div>
-                {babies.length > 1 && (
-                  <ChevronDown
-                    size={18}
-                    style={{
-                      color: colors.text,
-                      opacity: 0.6,
-                      transform: babySwitcherOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s ease',
-                    }}
-                  />
-                )}
-              </button>
-              {/* Baby switcher dropdown */}
-              {babySwitcherOpen && babies.length > 1 && (
-                <>
                   <div
-                    className="fixed inset-0 z-[100]"
-                    onClick={() => setBabySwitcherOpen(false)}
-                  />
-                  <div
-                    className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
-                    style={{
-                      background: colors.panelBg,
-                      backdropFilter: 'blur(40px)',
-                      WebkitBackdropFilter: 'blur(40px)',
-                      border: `1px solid ${colors.border}`,
-                      minWidth: '140px',
-                      animation: 'nursery-fadeIn 0.15s ease',
-                    }}
+                    className="text-[clamp(1rem,2.2vw,1.2rem)] font-light tracking-tight font-serif"
+                    style={{ color: colors.text, opacity: 0.7 }}
                   >
-                    {babies.map((baby) => (
-                      <button
-                        key={baby.id}
-                        onClick={() => {
-                          setSelectedBaby(baby);
-                          setBabySwitcherOpen(false);
-                          setLogs({});
-                          lastSeenRef.current = {};
-                        }}
-                        className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
-                        style={{
-                          color: colors.text,
-                          opacity: selectedBaby?.id === baby.id ? 1 : 0.6,
-                          background: selectedBaby?.id === baby.id ? colors.btnBg : 'transparent',
-                        }}
-                      >
-                        {baby.firstName}
-                      </button>
-                    ))}
+                    {selectedBaby ? selectedBaby.firstName : t('Sprout Track')}
                   </div>
-                </>
-              )}
+                  {babies.length > 1 && (
+                    <ChevronDown
+                      size={18}
+                      style={{
+                        color: colors.text,
+                        opacity: 0.6,
+                        transform: babySwitcherOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease',
+                      }}
+                    />
+                  )}
+                </button>
+                {babySwitcherOpen && babies.length > 1 && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[100]"
+                      onClick={() => setBabySwitcherOpen(false)}
+                    />
+                    <div
+                      className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
+                      style={{
+                        background: colors.panelBg,
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        border: `1px solid ${colors.border}`,
+                        minWidth: '140px',
+                        animation: 'nursery-fadeIn 0.15s ease',
+                      }}
+                    >
+                      {babies.map((baby) => (
+                        <button
+                          key={baby.id}
+                          onClick={() => {
+                            setSelectedBaby(baby);
+                            setBabySwitcherOpen(false);
+                            setLogs({});
+                            lastSeenRef.current = {};
+                          }}
+                          className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
+                          style={{
+                            color: colors.text,
+                            opacity: selectedBaby?.id === baby.id ? 1 : 0.6,
+                            background: selectedBaby?.id === baby.id ? colors.btnBg : 'transparent',
+                          }}
+                        >
+                          {baby.firstName}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Tiles */}
         <div
-          className="flex-1 flex items-start justify-center overflow-hidden"
-          style={{ padding: '0 clamp(1.25rem, 4vw, 2.5rem) clamp(1rem, 2.5vw, 1.5rem)' }}
+          className="flex-1 flex justify-center overflow-hidden"
+          style={{
+            padding: isLandscape
+              ? 'clamp(0.25rem, 1vw, 0.5rem) clamp(1rem, 3vw, 2rem)'
+              : '0 clamp(1.25rem, 4vw, 2.5rem) clamp(1rem, 2.5vw, 1.5rem)',
+            alignItems: isMobile ? 'stretch' : 'flex-start',
+          }}
         >
           <div
-            className="grid w-full max-w-[620px]"
+            className={isMobile ? 'flex flex-col w-full' : 'grid w-full'}
             style={{
+              maxWidth: isLandscape ? '100%' : '620px',
               gap: expandedTileId ? '0' : 'clamp(0.5rem, 1.3vw, 0.75rem)',
-              gridTemplateColumns: expandedTileId || activeTiles.length === 1 ? '1fr' : '1fr 1fr',
+              ...(!isMobile && {
+                gridTemplateColumns: expandedTileId || activeTiles.length === 1 ? '1fr' : '1fr 1fr',
+              }),
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
@@ -505,10 +611,12 @@ export function NurseryModeContainer() {
                 <div
                   key={tile.id}
                   style={{
+                    flex: isMobile && !isHidden ? 1 : undefined,
+                    minHeight: 0,
                     opacity: isHidden ? 0 : 1,
-                    maxHeight: isHidden ? 0 : '500px',
+                    maxHeight: isHidden ? 0 : undefined,
                     overflow: 'hidden',
-                    transition: 'opacity 0.3s ease, max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'opacity 0.3s ease, max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), flex 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 >
                   <Component
@@ -527,25 +635,27 @@ export function NurseryModeContainer() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="pb-[clamp(0.75rem,2vw,1.25rem)] text-center flex flex-col items-center gap-1">
-          <span
-            className="font-sans text-[clamp(0.55rem,1.2vw,0.7rem)] tracking-widest uppercase"
-            style={{ color: colors.text, opacity: 0.35 }}
-          >
-            {t('Nursery Mode')}
-          </span>
-          <span
-            className="font-sans text-[0.6rem] tracking-wider uppercase"
-            style={{
-              color: colors.text,
-              opacity: 0.25,
-              animation: wakeLock.isActive ? 'nursery-gentlePulse 4s ease-in-out infinite' : 'none',
-            }}
-          >
-            {wakeLock.isActive ? t('Screen lock active') : wakeLock.isSupported ? t('Requesting wake lock...') : t('Wake lock not supported')}
-          </span>
-        </div>
+        {/* Footer — hidden in landscape to save space */}
+        {!isLandscape && (
+          <div className="pb-[clamp(0.75rem,2vw,1.25rem)] text-center flex flex-col items-center gap-1">
+            <span
+              className="font-sans text-[clamp(0.55rem,1.2vw,0.7rem)] tracking-widest uppercase"
+              style={{ color: colors.text, opacity: 0.35 }}
+            >
+              {t('Nursery Mode')}
+            </span>
+            <span
+              className="font-sans text-[0.6rem] tracking-wider uppercase"
+              style={{
+                color: colors.text,
+                opacity: 0.25,
+                animation: wakeLock.isActive ? 'nursery-gentlePulse 4s ease-in-out infinite' : 'none',
+              }}
+            >
+              {wakeLock.isActive ? t('Screen lock active') : wakeLock.isSupported ? t('Requesting wake lock...') : t('Wake lock not supported')}
+            </span>
+          </div>
+        )}
 
         {/* Settings Drawer */}
         <SettingsDrawer

@@ -24,7 +24,7 @@ export function TileShell({ label, colors, log, animating, sleeping, expanded, s
 
   return (
     <div
-      className="rounded-2xl flex flex-col liquid-glass-tile relative overflow-hidden"
+      className="rounded-2xl flex flex-col liquid-glass-tile relative overflow-hidden h-full"
       style={{
         background: colors.tileBg,
         border: `1px solid ${hasGlow ? colors.accent : colors.border}`,
@@ -34,7 +34,6 @@ export function TileShell({ label, colors, log, animating, sleeping, expanded, s
           `inset 1px 1px 0 0 ${colors.glassHighlight}`,
           `inset -1px -1px 0 0 ${colors.glassShadow}`,
         ].filter(Boolean).join(', '),
-        minHeight: expanded ? 'clamp(200px, 40vw, 320px)' : 'clamp(130px, 24vw, 195px)',
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
