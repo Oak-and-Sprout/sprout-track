@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { MedicineFormProps, MedicineFormTab } from './medicine-form.types';
-import { PillBottle, Loader2, Activity, Settings } from 'lucide-react';
+import { PillBottle, Pill, Loader2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { FormPage, FormPageFooter } from '@/src/components/ui/form-page';
 import { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
 import ActiveDosesTab from './ActiveDosesTab';
 import ManageMedicinesTab from './ManageMedicinesTab';
+import ManageSupplementsTab from './ManageSupplementsTab';
 import GiveMedicineForm from '../GiveMedicineForm';
 import { useLocalization } from '@/src/context/localization';
 
@@ -43,14 +44,22 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
   const [activeTab, setActiveTab] = useState<string>('active-doses');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [showGiveMedicineForm, setShowGiveMedicineForm] = useState(false);
-  
+  const [isSupplementMode, setIsSupplementMode] = useState(false);
+
   // Function to refresh data in all tabs
   const refreshData = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
   }, []);
-  
+
   // Handle opening the Give Medicine form
   const handleOpenGiveMedicine = useCallback(() => {
+    setIsSupplementMode(false);
+    setShowGiveMedicineForm(true);
+  }, []);
+
+  // Handle opening the Give Supplement form
+  const handleOpenGiveSupplement = useCallback(() => {
+    setIsSupplementMode(true);
     setShowGiveMedicineForm(true);
   }, []);
   
@@ -82,12 +91,13 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
     {
       id: 'active-doses',
       label: t('Doses'),
-      icon: Activity,
+      icon: PillBottle,
       content: (
         <ActiveDosesTab
           babyId={babyId}
           refreshData={refreshData}
           onGiveMedicine={handleOpenGiveMedicine}
+          onGiveSupplement={handleOpenGiveSupplement}
           refreshTrigger={refreshTrigger}
         />
       ),
@@ -95,10 +105,21 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
     {
       id: 'manage-medicines',
       label: t('Medicines'),
-      icon: Settings,
+      icon: PillBottle,
       content: (
         <ManageMedicinesTab
           refreshData={refreshData}
+        />
+      ),
+    },
+    {
+      id: 'supplements',
+      label: t('Supplements'),
+      icon: Pill,
+      content: (
+        <ManageSupplementsTab
+          refreshData={refreshData}
+          onGiveSupplement={handleOpenGiveSupplement}
         />
       ),
     },
@@ -136,6 +157,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
         onSuccess={handleGiveMedicineSuccess}
         refreshData={refreshData}
         activity={activity}
+        isSupplement={isSupplementMode}
       />
     </>
   );

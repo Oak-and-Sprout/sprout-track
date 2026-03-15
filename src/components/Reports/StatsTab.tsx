@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Accordion } from '@/src/components/ui/accordion';
 import { styles } from './reports.styles';
-import { useBaby } from '@/app/context/baby';
 import { useTimezone } from '@/app/context/timezone';
 import {
   StatsTabProps,
   ActivityType,
   CombinedStats,
-  MeasurementActivity,
   LocationStat,
   MedicineStat,
 } from './reports.types';
@@ -20,29 +18,8 @@ import FeedingStatsSection from './FeedingStatsSection';
 import DiaperStatsSection from './DiaperStatsSection';
 import PumpingStatsSection from './PumpingStatsSection';
 import BathStatsSection from './BathStatsSection';
-import TemperatureStatsSection from './TemperatureStatsSection';
+import PlayStatsSection from './PlayStatsSection';
 import { useLocalization } from '@/src/context/localization';
-
-// Helper to calculate age in months from birth date (copied from GrowthChart)
-const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {
-  const birth = new Date(birthDate);
-  const measurement = new Date(measurementDate);
-
-  const years = measurement.getFullYear() - birth.getFullYear();
-  const months = measurement.getMonth() - birth.getMonth();
-  const days = measurement.getDate() - birth.getDate();
-
-  let totalMonths = years * 12 + months;
-  if (days < 0) {
-    totalMonths -= 1;
-  }
-
-  // Add fractional month based on day of month
-  const daysInMonth = new Date(measurement.getFullYear(), measurement.getMonth() + 1, 0).getDate();
-  const dayFraction = (days >= 0 ? days : daysInMonth + days) / daysInMonth;
-
-  return Math.max(0, totalMonths + dayFraction);
-};
 
 /**
  * StatsTab Component
@@ -56,9 +33,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
   isLoading
 }) => {
   const { t } = useLocalization();
-  const { selectedBaby } = useBaby();
   const { toLocalDate } = useTimezone();
-  const [temperatureMeasurements, setTemperatureMeasurements] = useState<MeasurementActivity[]>([]);
 
   // Helper function to get the night period date key for a sleep entry
   // Night period for Day X = 12:00 PM Day X-1 to 11:59 AM Day X
@@ -153,6 +128,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
           bathsPerWeek: 0,
           soapShampooBathsPerWeek: 0,
         },
+        play: {
+          totalSessions: 0,
+          totalMinutes: 0,
+          avgSessionMinutes: 0,
+          sessionsPerDay: 0,
+          byType: [],
+        },
       };
     }
 
@@ -210,6 +192,12 @@ const StatsTab: React.FC<StatsTabProps> = ({
     let pumpSessions = 0;
     let pumpUnit: string | null = null;
 
+    // Play/Activity tracking
+    let playCount = 0;
+    let playTotalMinutes = 0;
+    const playByType: Record<string, { count: number; totalMinutes: number }> = {};
+    const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
+
     // Generate list of valid night period keys for the selected date range
     // For date range 7/13-7/16, valid night keys are: 7/12, 7/13, 7/14, 7/15
     // (7/12's night = 7/12 12PM to 7/13 11:59AM, which is displayed as 7/13's night sleep)
@@ -233,6 +221,19 @@ const StatsTab: React.FC<StatsTabProps> = ({
     }
 
     activities.forEach((activity) => {
+      // Play/Activity - check BEFORE sleep since both have duration, startTime, type
+      if ('activities' in activity && 'type' in activity && PLAY_TYPES.includes((activity as any).type)) {
+        const playActivity = activity as any;
+        playCount++;
+        const dur = playActivity.duration || 0;
+        playTotalMinutes += dur;
+        const pType = playActivity.type;
+        if (!playByType[pType]) playByType[pType] = { count: 0, totalMinutes: 0 };
+        playByType[pType].count++;
+        playByType[pType].totalMinutes += dur;
+        return; // Skip further checks for this activity
+      }
+
       // Sleep activities
       if ('duration' in activity && 'startTime' in activity && 'type' in activity) {
         const activityType = (activity as any).type;
@@ -542,6 +543,26 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const avgLeftPumpAmount = pumpSessions > 0 ? totalLeftPumpAmount / pumpSessions : 0;
     const avgRightPumpAmount = pumpSessions > 0 ? totalRightPumpAmount / pumpSessions : 0;
 
+    // Play stats
+    const playTypeDisplayNames: Record<string, string> = {
+      TUMMY_TIME: t('Tummy Time'),
+      INDOOR_PLAY: t('Indoor Play'),
+      OUTDOOR_PLAY: t('Outdoor Play'),
+      WALK: t('Walk'),
+      CUSTOM: t('Custom'),
+    };
+    const avgPlaySessionMinutes = playCount > 0 ? Math.round(playTotalMinutes / playCount) : 0;
+    const playSessionsPerDay = daysInRange > 0 ? Math.round((playCount / daysInRange) * 10) / 10 : 0;
+    const playByTypeArray = Object.entries(playByType)
+      .map(([type, data]) => ({
+        type,
+        displayName: playTypeDisplayNames[type] || type,
+        count: data.count,
+        totalMinutes: data.totalMinutes,
+        avgMinutes: data.count > 0 ? Math.round(data.totalMinutes / data.count) : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
     return {
       sleep: {
         totalSleepMinutes,
@@ -593,6 +614,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
         totalBaths: bathCount,
         bathsPerWeek,
         soapShampooBathsPerWeek,
+      },
+      play: {
+        totalSessions: playCount,
+        totalMinutes: playTotalMinutes,
+        avgSessionMinutes: avgPlaySessionMinutes,
+        sessionsPerDay: playSessionsPerDay,
+        byType: playByTypeArray,
       },
     };
   }, [activities, dateRange, getNightPeriodDateKey, getCalendarDayKey]);
@@ -734,84 +762,6 @@ const StatsTab: React.FC<StatsTabProps> = ({
     };
   }, [activities, dateRange, getNightPeriodDateKey, getCalendarDayKey]);
 
-  // Baby current age in months for chart ranges (birth to current age + 1 month, clamped)
-  const babyCurrentAgeMonths = useMemo((): number => {
-    if (!selectedBaby?.birthDate) return 12; // default to 12 months if no birthdate
-
-    const now = new Date();
-    const birth = new Date(selectedBaby.birthDate);
-
-    const years = now.getFullYear() - birth.getFullYear();
-    const months = now.getMonth() - birth.getMonth();
-    const days = now.getDate() - birth.getDate();
-
-    let totalMonths = years * 12 + months;
-    if (days < 0) {
-      totalMonths -= 1;
-    }
-
-    const ageWithBuffer = Math.ceil(totalMonths + 1);
-
-    return Math.max(3, Math.min(36, ageWithBuffer));
-  }, [selectedBaby]);
-
-  // Fetch all temperature measurements for the baby (ignores date range filter)
-  useEffect(() => {
-    const fetchTemperatures = async () => {
-      if (!selectedBaby) {
-        setTemperatureMeasurements([]);
-        return;
-      }
-
-      try {
-        const authToken = localStorage.getItem('authToken');
-        const response = await fetch(
-          `/api/measurement-log?babyId=${selectedBaby.id}&type=TEMPERATURE`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authToken ? `Bearer ${authToken}` : '',
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setTemperatureMeasurements((data.data || []) as MeasurementActivity[]);
-          } else {
-            setTemperatureMeasurements([]);
-          }
-        } else {
-          setTemperatureMeasurements([]);
-        }
-      } catch {
-        setTemperatureMeasurements([]);
-      }
-    };
-
-    fetchTemperatures();
-  }, [selectedBaby]);
-
-  // Temperature measurements for chart
-  const temperatureData = useMemo(() => {
-    if (!selectedBaby?.birthDate) return [];
-
-    const birthStr = selectedBaby.birthDate!.toString();
-
-    return temperatureMeasurements
-      .map((m) => {
-        const ageMonths = calculateAgeInMonths(birthStr, m.date);
-        return {
-          ageMonths,
-          value: m.value,
-          unit: m.unit,
-        };
-      })
-      .filter((point) => point.ageMonths >= 0 && point.ageMonths <= babyCurrentAgeMonths)
-      .sort((a, b) => a.ageMonths - b.ageMonths);
-  }, [temperatureMeasurements, selectedBaby, babyCurrentAgeMonths]);
-
   // Loading state
   if (isLoading) {
     return (
@@ -835,7 +785,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <Accordion type="multiple" defaultValue={['sleep', 'feeding', 'diaper', 'pumping', 'baths', 'temperature']}>
+      <Accordion type="multiple" defaultValue={['sleep', 'feeding', 'diaper', 'activities', 'pumping', 'baths']}>
         {/* Sleep Section */}
         <SleepStatsSection
           stats={stats.sleep}
@@ -850,17 +800,14 @@ const StatsTab: React.FC<StatsTabProps> = ({
         {/* Diaper Section */}
         <DiaperStatsSection stats={stats.diaper} activities={activities} dateRange={dateRange} />
 
+        {/* Activities Section */}
+        <PlayStatsSection stats={stats.play} activities={activities} dateRange={dateRange} />
+
         {/* Pumping Section */}
         <PumpingStatsSection stats={stats.pump} activities={activities} dateRange={dateRange} />
 
         {/* Baths Section */}
         <BathStatsSection stats={stats.bath} activities={activities} dateRange={dateRange} />
-
-        {/* Temperature Section */}
-        <TemperatureStatsSection
-          temperatureData={temperatureData}
-          babyCurrentAgeMonths={babyCurrentAgeMonths}
-        />
       </Accordion>
     </div>
   );

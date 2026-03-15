@@ -72,7 +72,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(feedLog.babyId, 'feed', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { type: body.type }).catch(console.error);
+    notifyActivityCreated(feedLog.babyId, 'feed', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { type: body.type, amount: body.amount, unitAbbr: body.unitAbbr, food: body.food, side: body.side }).catch(console.error);
     resetTimerNotificationState(feedLog.babyId, 'feed').catch(console.error);
 
     return NextResponse.json<ApiResponse<FeedLogResponse>>({

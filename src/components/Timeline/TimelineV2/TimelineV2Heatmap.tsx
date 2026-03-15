@@ -1,8 +1,11 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
+import { Moon, Icon, LampWallDown } from 'lucide-react';
+import { diaper, bottleBaby } from '@lucide/lab';
 import { ActivityType } from '../types';
 import {
   TIME_SLOTS,
   SLOT_MINUTES,
+  HeatmapType,
   HEATMAP_TYPES_IN_ORDER,
   HEATMAP_COLORS,
   buildHeatmapDataForActivities,
@@ -17,8 +20,19 @@ interface TimelineV2HeatmapProps {
 }
 
 const CHART_HEIGHT = 1500;
-const LANE_WIDTH = 8; // each heatmap type lane
+const LANE_WIDTH = 16; // each heatmap type lane
 const LANE_GAP = 2;
+
+// Only show these lanes in the heatmap
+const DISPLAYED_HEATMAP_TYPES: HeatmapType[] = ['allSleep', 'feeds', 'diapers', 'pumps'];
+
+// Icon config per heatmap lane
+const HEATMAP_ICONS: Record<string, { icon: any; isLabIcon?: boolean }> = {
+  allSleep: { icon: Moon },
+  feeds: { icon: bottleBaby, isLabIcon: true },
+  diapers: { icon: diaper, isLabIcon: true },
+  pumps: { icon: LampWallDown },
+};
 
 // Format hour for labels (reuses pattern from Reports)
 const formatHourLabel = (hour: number): string => {
@@ -109,7 +123,7 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
     return null;
   }
 
-  const totalLanes = HEATMAP_TYPES_IN_ORDER.length;
+  const totalLanes = DISPLAYED_HEATMAP_TYPES.length;
   const totalWidth = totalLanes * (LANE_WIDTH + LANE_GAP);
 
   return (
@@ -120,7 +134,7 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
       <div
         ref={contentRef}
         className="absolute inset-x-0 timeline-v2-heatmap-content"
-        style={{ height: CHART_HEIGHT, width: totalWidth, margin: '0 auto' }}
+        style={{ height: CHART_HEIGHT, width: totalWidth, marginLeft: 8 }}
       >
         {/* Hour grid lines */}
         <div className="absolute inset-0 pointer-events-none">
@@ -156,69 +170,90 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
         </div>
 
         {/* Stacked heatmap lanes */}
-        {HEATMAP_TYPES_IN_ORDER.map((type, laneIndex) => {
-          const data = heatmapData[type];
-          const colors = HEATMAP_COLORS[type];
-          const laneLeft = laneIndex * (LANE_WIDTH + LANE_GAP);
-
-          if (!data || data.maxCount === 0) {
-            return null;
-          }
-
-          return (
-            <div
-              key={type}
-              className="absolute top-0 bottom-0"
-              style={{ left: laneLeft, width: LANE_WIDTH }}
-            >
-              {data.slots.map((intensity, slotIndex) => {
-                const slotHour = (slotIndex * SLOT_MINUTES) / 60;
-                const topPercent = ((24 - slotHour - SLOT_MINUTES / 60) / 24) * 100;
-                const heightPercent = (SLOT_MINUTES / 60 / 24) * 100;
-
-                const backgroundColor =
-                  intensity > 0
-                    ? interpolateColor(intensity, colors.base, colors.light)
-                    : 'transparent';
-
-                return (
-                  <div
-                    key={slotIndex}
-                    className="absolute left-0 right-0 timeline-v2-heatmap-slot"
-                    style={{
-                      top: `${topPercent}%`,
-                      height: `${heightPercent}%`,
-                      backgroundColor,
-                      opacity: getSlotOpacity(intensity),
-                    }}
-                    title={
-                      intensity > 0
-                        ? `${type}: ${Math.round(intensity * data.maxCount)}`
-                        : undefined
-                    }
-                  />
-                );
-              })}
-            </div>
-          );
-        })}
-
-        {/* Current time bar - always based on \"now\" */}
         {(() => {
           const now = new Date();
           const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
           const totalMinutes = 24 * 60;
-          const topPercent = ((24 * 60 - minutesSinceMidnight) / totalMinutes) * 100;
+          const timeBarTopPercent = ((24 * 60 - minutesSinceMidnight) / totalMinutes) * 100;
 
           return (
-            <div
-              className="absolute left-0 right-0 timeline-v2-heatmap-time-bar"
-              style={{
-                top: `${topPercent}%`,
-                height: 2,
-                backgroundColor: '#14b8a6',
-              }}
-            />
+            <>
+              {DISPLAYED_HEATMAP_TYPES.map((type, laneIndex) => {
+                const data = heatmapData[type];
+                const colors = HEATMAP_COLORS[type];
+                const laneLeft = laneIndex * (LANE_WIDTH + LANE_GAP);
+                const iconConfig = HEATMAP_ICONS[type];
+
+                if (!data || data.maxCount === 0) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={type}
+                    className="absolute top-0 bottom-0"
+                    style={{ left: laneLeft, width: LANE_WIDTH }}
+                  >
+                    {data.slots.map((intensity, slotIndex) => {
+                      const slotHour = (slotIndex * SLOT_MINUTES) / 60;
+                      const topPercent = ((24 - slotHour - SLOT_MINUTES / 60) / 24) * 100;
+                      const heightPercent = (SLOT_MINUTES / 60 / 24) * 100;
+
+                      const backgroundColor =
+                        intensity > 0
+                          ? interpolateColor(intensity, colors.base, colors.light)
+                          : 'transparent';
+
+                      return (
+                        <div
+                          key={slotIndex}
+                          className="absolute left-0 right-0 timeline-v2-heatmap-slot"
+                          style={{
+                            top: `${topPercent}%`,
+                            height: `${heightPercent}%`,
+                            backgroundColor,
+                            opacity: getSlotOpacity(intensity),
+                          }}
+                          title={
+                            intensity > 0
+                              ? `${type}: ${Math.round(intensity * data.maxCount)}`
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+
+                    {/* Lane icon below current-time bar */}
+                    <div
+                      className="absolute flex items-start justify-center pointer-events-none"
+                      style={{
+                        top: `${timeBarTopPercent}%`,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        paddingTop: 4,
+                      }}
+                    >
+                      {iconConfig.isLabIcon ? (
+                        <Icon iconNode={iconConfig.icon} className="h-3 w-3" style={{ color: colors.base }} />
+                      ) : (
+                        <iconConfig.icon className="h-3 w-3" style={{ color: colors.base }} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Current time bar */}
+              <div
+                className="absolute left-0 right-0 timeline-v2-heatmap-time-bar"
+                style={{
+                  top: `${timeBarTopPercent}%`,
+                  height: 2,
+                  backgroundColor: '#14b8a6',
+                }}
+              />
+            </>
           );
         })()}
       </div>

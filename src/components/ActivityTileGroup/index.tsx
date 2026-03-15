@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityTile } from '@/src/components/ui/activity-tile';
 import { StatusBubble } from "@/src/components/ui/status-bubble";
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActivitySettings } from '@/app/api/types';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse, ActivitySettings } from '@/app/api/types';
 import { ArrowDownUp } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
@@ -20,10 +20,12 @@ interface ActivityTileGroupProps {
     diaperWarningTime?: string | number;
   } | null;
   sleepingBabies: Set<string>;
+  feedingBabies?: Set<string>;
   sleepStartTime: Record<string, Date>;
   lastSleepEndTime: Record<string, Date>;
   lastFeedTime: Record<string, Date>;
   lastDiaperTime: Record<string, Date>;
+  feedStartTime?: Record<string, Date>;
   updateUnlockTimer: () => void;
   onSleepClick: () => void;
   onFeedClick: () => void;
@@ -34,6 +36,8 @@ interface ActivityTileGroupProps {
   onMeasurementClick: () => void;
   onMilestoneClick: () => void;
   onMedicineClick: () => void;
+  onPlayClick?: () => void;
+  onVaccineClick?: () => void;
 }
 
 /**
@@ -43,15 +47,17 @@ interface ActivityTileGroupProps {
  * and displaying status bubbles with timing information.
  */
 // Activity type definition
-type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'measurement' | 'milestone' | 'medicine';
+type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine';
 
 export function ActivityTileGroup({
   selectedBaby,
   sleepingBabies,
+  feedingBabies,
   sleepStartTime,
   lastSleepEndTime,
   lastFeedTime,
   lastDiaperTime,
+  feedStartTime,
   updateUnlockTimer,
   onSleepClick,
   onFeedClick,
@@ -69,7 +75,9 @@ export function ActivityTileGroup({
     if (medicineForm) {
       (medicineForm as HTMLElement).click();
     }
-  }
+  },
+  onPlayClick = () => {},
+  onVaccineClick = () => {}
 }: ActivityTileGroupProps) {
   const { theme } = useTheme();
   const { t } = useLocalization();
@@ -91,7 +99,7 @@ export function ActivityTileGroup({
   if (!selectedBaby?.id) return null;
 
   // Define all activity types
-  const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'];
+  const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'];
   
   // State for visible activities and their order
   const [visibleActivities, setVisibleActivities] = useState<Set<ActivityType>>(
@@ -239,7 +247,7 @@ export function ActivityTileGroup({
   // Function to set default settings
   const setDefaultSettings = () => {
     // Define all activity types
-    const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'];
+    const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'];
     
     // Set default order and make all activities visible by default
     setActivityOrder([...allActivityTypes]);
@@ -257,8 +265,8 @@ export function ActivityTileGroup({
   };
   
   // Refs to store the original settings for comparison
-  const originalOrderRef = React.useRef<ActivityType[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine']);
-  const originalVisibleRef = React.useRef<string[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine']);
+  const originalOrderRef = React.useRef<ActivityType[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine']);
+  const originalVisibleRef = React.useRef<string[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine']);
   
   // Track if settings have been modified since loading
   const [settingsModified, setSettingsModified] = useState(false);
@@ -381,7 +389,9 @@ export function ActivityTileGroup({
     pump: t('Pump'),
     measurement: t('Measurement'),
     milestone: t('Milestone'),
-    medicine: t('Medicine')
+    medicine: t('Medicine'),
+    play: t('Activity'),
+    vaccine: t('Vaccines')
   };
 
   // Function to render activity tile based on type
@@ -442,7 +452,8 @@ export function ActivityTileGroup({
           )}
           </div>
         );
-      case 'feed':
+      case 'feed': {
+        const isBabyFeeding = selectedBaby?.id && feedingBabies?.has(selectedBaby.id);
         return (
           <div key="feed" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
             <ActivityTile
@@ -460,7 +471,7 @@ export function ActivityTileGroup({
                 updatedAt: new Date().toISOString(),
                 deletedAt: null
               } as unknown as FeedLogResponse}
-              title={t('Feed')}
+              title={isBabyFeeding ? t('End Feed') : t('Feed')}
               variant="feed"
               isButton={true}
               onClick={() => {
@@ -468,18 +479,27 @@ export function ActivityTileGroup({
                 onFeedClick();
               }}
             />
-            {selectedBaby?.id && lastFeedTime[selectedBaby.id] && !exceeds24Hours(lastFeedTime[selectedBaby.id]) && (
+            {isBabyFeeding ? (
               <StatusBubble
-                status="feed"
+                status="feedActive"
                 className="overflow-visible z-40"
-                durationInMinutes={0} // Fallback value
-                startTime={lastFeedTime[selectedBaby.id].toISOString()}
-                warningTime={selectedBaby.feedWarningTime as string}
-                activityType="feed" // Explicitly specify this is for feed activities only
+                durationInMinutes={0}
               />
+            ) : (
+              selectedBaby?.id && lastFeedTime[selectedBaby.id] && !exceeds24Hours(lastFeedTime[selectedBaby.id]) && (
+                <StatusBubble
+                  status="feed"
+                  className="overflow-visible z-40"
+                  durationInMinutes={0}
+                  startTime={lastFeedTime[selectedBaby.id].toISOString()}
+                  warningTime={selectedBaby.feedWarningTime as string}
+                  activityType="feed"
+                />
+              )
             )}
           </div>
         );
+      }
       case 'diaper':
         return (
           <div key="diaper" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
@@ -652,6 +672,35 @@ export function ActivityTileGroup({
             />
           </div>
         );
+      case 'play':
+        return (
+          <div key="play" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+            <ActivityTile
+              activity={{
+                id: 'play-button',
+                babyId: selectedBaby.id,
+                startTime: new Date().toISOString(),
+                endTime: null,
+                duration: null,
+                type: 'TUMMY_TIME',
+                location: null,
+                activities: null,
+                caretakerId: null,
+                familyId: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                deletedAt: null
+              } as unknown as PlayLogResponse}
+              title={t('Activity')}
+              variant="play"
+              isButton={true}
+              onClick={() => {
+                updateUnlockTimer();
+                onPlayClick();
+              }}
+            />
+          </div>
+        );
       case 'medicine':
         return (
           <div key="medicine" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
@@ -683,6 +732,33 @@ export function ActivityTileGroup({
               onClick={() => {
                 updateUnlockTimer();
                 onMedicineClick();
+              }}
+            />
+          </div>
+        );
+      case 'vaccine':
+        return (
+          <div key="vaccine" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+            <ActivityTile
+              activity={{
+                id: 'vaccine-button',
+                babyId: selectedBaby.id,
+                time: new Date().toISOString(),
+                vaccineName: 'Vaccine',
+                doseNumber: null,
+                site: null,
+                notes: '',
+                caretakerId: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                deletedAt: null
+              } as unknown as VaccineLogResponse}
+              title={t('Vaccines')}
+              variant="vaccine"
+              isButton={true}
+              onClick={() => {
+                updateUnlockTimer();
+                onVaccineClick();
               }}
             />
           </div>
@@ -723,12 +799,14 @@ export function ActivityTileGroup({
             </button>
           </DropdownMenuTrigger>
           {/* Apply scrolling directly to DropdownMenuContent */}
-          <DropdownMenuContent 
-            align="end" 
-            className="max-h-[80vh] overflow-y-auto p-1"
+          <DropdownMenuContent
+            align="end"
+            className="p-0"
             avoidCollisions={true}
             collisionPadding={10}
-          > 
+            style={{ maxHeight: 'calc(var(--radix-dropdown-menu-content-available-height, 80vh) - 20px)', overflowY: 'auto' }}
+          >
+            <div className="p-1">
             {/* Combined Visibility and Reordering Options */}
             {activityOrder.map((activity, index) => (
                 <div
@@ -927,7 +1005,7 @@ export function ActivityTileGroup({
                 </DropdownMenuCheckboxItem>
               </div>
             ))}
-            {/* No inner wrapper div needed */}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -67,6 +67,7 @@ enum PlayType {
   TUMMY_TIME
   INDOOR_PLAY
   OUTDOOR_PLAY
+  WALK
   CUSTOM
 }
 
@@ -100,6 +101,7 @@ enum NotificationEventType {
   ACTIVITY_CREATED
   FEED_TIMER_EXPIRED
   DIAPER_TIMER_EXPIRED
+  MEDICINE_TIMER_EXPIRED
 }
 
 // Account model for email/password authentication
@@ -188,6 +190,9 @@ model Family {
   feedback       Feedback[]
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
+  activeBreastFeeds ActiveBreastFeed[]
+  vaccineLogs    VaccineLog[]
+  apiKeys        ApiKey[]
 }
 
 // New model for family membership
@@ -236,6 +241,9 @@ model Baby {
   medicineLogs MedicineLog[] // New relationship for medicine logs
   notificationPreferences NotificationPreference[]
   breastMilkAdjustments BreastMilkAdjustment[]
+  activeBreastFeed ActiveBreastFeed?
+  vaccineLogs  VaccineLog[]
+  apiKeys      ApiKey[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -281,6 +289,8 @@ model Caretaker {
   feedback      Feedback[]
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
+  activeBreastFeeds ActiveBreastFeed[]
+  vaccineLogs   VaccineLog[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -379,8 +389,9 @@ model DiaperLog {
   type      DiaperType
   condition String?
   color     String?
-  blowout   Boolean    @default(false)
-  createdAt DateTime   @default(now())
+  blowout      Boolean    @default(false)
+  creamApplied Boolean    @default(false)
+  createdAt    DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   deletedAt DateTime?
 
@@ -465,6 +476,8 @@ model Settings {
   defaultWeightUnit   String   @default("LB") // Default unit for weight measurement
   defaultTempUnit     String   @default("F") // Default unit for temperature
   activitySettings    String? // JSON string for activity order and visibility settings
+  sleepLocationSettings String? // JSON string for hidden sleep locations
+  nurseryModeSettings String? // JSON string for nursery mode settings per caretaker
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
   createdAt           DateTime @default(now())
@@ -577,7 +590,7 @@ model PlayLog {
   endTime    DateTime?
   duration   Int? // Duration in minutes
   type       PlayType
-  location   String?
+  notes      String?
   activities String? // Description of activities during play
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -677,6 +690,7 @@ model Contact {
   // Relationships
   events    ContactEvent[] // Events associated with this contact
   medicines ContactMedicine[] // Medicines associated with this medicine
+  vaccines  ContactVaccine[] // Vaccines associated with this contact
 
   @@index([role])
   @@index([deletedAt])
@@ -771,6 +785,7 @@ model Medicine {
   doseMinTime     String? // Minimum time between doses (format: "HH:MM")
   notes           String? // Additional notes about the medicine
   active          Boolean   @default(true)
+  isSupplement    Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
@@ -786,6 +801,7 @@ model Medicine {
 
   @@index([name])
   @@index([active])
+  @@index([isSupplement])
   @@index([unitAbbr])
   @@index([deletedAt])
   @@index([familyId])
@@ -834,6 +850,61 @@ model ContactMedicine {
   @@id([contactId, medicineId])
   @@index([contactId])
   @@index([medicineId])
+}
+
+// Vaccine tracking
+model VaccineLog {
+  id            String    @id @default(uuid())
+  time          DateTime
+  vaccineName   String
+  doseNumber    Int?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+  documents   VaccineDocument[]
+  contacts    ContactVaccine[]
+
+  @@index([time])
+  @@index([vaccineName])
+  @@index([babyId])
+  @@index([caretakerId])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+model VaccineDocument {
+  id              String    @id @default(uuid())
+  originalName    String
+  storedName      String
+  mimeType        String
+  fileSize        Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vaccineLog   VaccineLog @relation(fields: [vaccineLogId], references: [id], onDelete: Cascade)
+  vaccineLogId String
+
+  @@index([vaccineLogId])
+}
+
+// Junction table for many-to-many relationship between contacts and vaccines
+model ContactVaccine {
+  contact      Contact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId    String
+  vaccineLog   VaccineLog @relation(fields: [vaccineLogId], references: [id], onDelete: Cascade)
+  vaccineLogId String
+
+  @@id([contactId, vaccineLogId])
+  @@index([contactId])
+  @@index([vaccineLogId])
 }
 
 // New model for family setup invitations
@@ -1180,4 +1251,51 @@ model NotificationLog {
   @@index([subscriptionId])
   @@index([createdAt])
   @@index([success])
+}
+
+// Active breastfeeding session tracking (persistent across devices)
+model ActiveBreastFeed {
+  id                   String      @id @default(uuid())
+  activeSide           BreastSide  // Currently active side (LEFT or RIGHT)
+  isPaused             Boolean     @default(false)
+  leftDuration         Int         @default(0) // Accumulated seconds for left side
+  rightDuration        Int         @default(0) // Accumulated seconds for right side
+  currentSideStartTime DateTime? // When current side started timing (null when paused)
+  sessionStartTime     DateTime // When the overall session began
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  // Relationships
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String     @unique // Only one active session per baby
+  family      Family?    @relation(fields: [familyId], references: [id])
+  familyId    String?
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([babyId])
+  @@index([familyId])
+}
+
+// API Key for external integrations (Home Assistant, webhooks, etc.)
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String // User-provided label: "Nursery Button", "HA Dashboard", etc.
+  keyPrefix   String // First 16 chars of key for UI display: "st_live_XXXXXXXX"
+  keyHash     String    @unique // SHA-256 hash of full key for lookup
+  familyId    String
+  babyId      String? // Optional: restrict to a specific baby
+  scopes      String // JSON array: ["read","write"] or ["read"] or ["write"]
+  lastUsedAt  DateTime?
+  expiresAt   DateTime? // Optional expiration
+  revoked     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  family Family @relation(fields: [familyId], references: [id])
+  baby   Baby?  @relation(fields: [babyId], references: [id])
+
+  @@index([keyHash])
+  @@index([familyId])
+  @@index([revoked])
 }

@@ -4,7 +4,7 @@ import { ApiResponse, MedicineLogCreate, MedicineLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
+import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 
 /**
  * Handle POST request to create a new medicine log entry
@@ -58,7 +58,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(medicineLog.babyId, 'medicine', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { medicineId: body.medicineId }).catch(console.error);
+    const activityType = medicine?.isSupplement ? 'supplement' : 'medicine';
+    notifyActivityCreated(medicineLog.babyId, activityType, { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { medicineId: body.medicineId, medicineName: medicine?.name }).catch(console.error);
+    resetTimerNotificationState(medicineLog.babyId, 'medicine').catch(console.error);
 
     return NextResponse.json<ApiResponse<MedicineLogResponse>>({
       success: true,

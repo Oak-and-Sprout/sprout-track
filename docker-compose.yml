@@ -13,6 +13,7 @@ services:
     volumes:
       - db-data:/db
       - env-data:/app/env
+      - files:/app/Files
       - ./logs:/app/logs
     environment:
       - NODE_ENV=production
@@ -36,3 +37,5 @@ volumes:
     name: sprout-track-db
   env-data:
     name: sprout-track-env
+  files:
+    name: sprout-track-files

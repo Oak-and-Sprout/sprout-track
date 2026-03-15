@@ -1,0 +1,51 @@
+@keyframes nursery-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes nursery-tileFlash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes nursery-gentlePulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Lava lamp blob animations — wide drifts with opacity breathing */
+@keyframes nursery-blob1 {
+  0%   { transform: translate(0, 0) scale(1);       opacity: 0.55; }
+  20%  { transform: translate(15%, -20%) scale(1.15); opacity: 0.7; }
+  40%  { transform: translate(-10%, 12%) scale(0.9);  opacity: 0.45; }
+  60%  { transform: translate(20%, 8%) scale(1.1);    opacity: 0.65; }
+  80%  { transform: translate(-5%, -15%) scale(0.95); opacity: 0.5; }
+  100% { transform: translate(0, 0) scale(1);        opacity: 0.55; }
+}
+
+@keyframes nursery-blob2 {
+  0%   { transform: translate(0, 0) scale(1);        opacity: 0.45; }
+  20%  { transform: translate(-18%, 10%) scale(0.88); opacity: 0.6; }
+  40%  { transform: translate(12%, -18%) scale(1.15); opacity: 0.4; }
+  60%  { transform: translate(-8%, -8%) scale(0.95);  opacity: 0.55; }
+  80%  { transform: translate(15%, 12%) scale(1.08);  opacity: 0.5; }
+  100% { transform: translate(0, 0) scale(1);         opacity: 0.45; }
+}
+
+@keyframes nursery-blob3 {
+  0%   { transform: translate(0, 0) scale(1);        opacity: 0.4; }
+  20%  { transform: translate(10%, 18%) scale(1.12);  opacity: 0.55; }
+  40%  { transform: translate(-20%, -10%) scale(0.85); opacity: 0.35; }
+  60%  { transform: translate(8%, -15%) scale(1.05);  opacity: 0.5; }
+  80%  { transform: translate(-12%, 6%) scale(0.92);  opacity: 0.45; }
+  100% { transform: translate(0, 0) scale(1);         opacity: 0.4; }
+}
+
+/* Hue shift — broader color rotation for more variation */
+@keyframes nursery-hueShift {
+  0%   { filter: hue-rotate(0deg); }
+  25%  { filter: hue-rotate(18deg); }
+  50%  { filter: hue-rotate(-12deg); }
+  75%  { filter: hue-rotate(15deg); }
+  100% { filter: hue-rotate(0deg); }
+}

@@ -9,19 +9,21 @@ import PumpForm from '@/src/components/forms/PumpForm';
 import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
+import ActivityForm from '@/src/components/forms/ActivityForm';
+import VaccineForm from '@/src/components/forms/VaccineForm';
 import { ActivityType, FilterType, TimelineProps } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
-import { PumpLogResponse, BreastMilkAdjustmentResponse } from '@/app/api/types';
+import { PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
 
 const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
   
@@ -39,7 +41,8 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const fetchBreastMilkBalance = async (babyId: string) => {
     try {
       const authToken = localStorage.getItem('authToken');
-      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=OZ`, {
+      const unit = settings?.defaultBottleUnit || 'OZ';
+      const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=${unit}`, {
         headers: {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
         }
@@ -219,12 +222,17 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     if (babyId) {
       fetchActivitiesForDate(babyId, selectedDate, true);
       fetchHeatmapActivitiesForWindow(babyId, selectedDate);
-      fetchBreastMilkBalance(babyId);
     } else {
       setDateFilteredActivities(activities);
       setHeatmapActivities(activities);
     }
   }, [activities, selectedDate, babyId]);
+
+  useEffect(() => {
+    if (babyId) {
+      fetchBreastMilkBalance(babyId);
+    }
+  }, [babyId, settings?.defaultBottleUnit]);
 
   useEffect(() => {
     if (!babyId) return;
@@ -294,6 +302,10 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
               return 'title' in activity && 'category' in activity;
             case 'measurement':
               return 'value' in activity && 'unit' in activity;
+            case 'play':
+              return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
+            case 'vaccine':
+              return 'vaccineName' in activity;
             default:
               return true;
           }
@@ -330,7 +342,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -350,6 +362,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
         isHeatmapVisible={isHeatmapVisible}
         onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
         breastMilkBalance={breastMilkBalance}
+        defaultBottleUnit={settings?.defaultBottleUnit}
       />
 
       {/* Activity List + Right-side Heatmap */}
@@ -367,7 +380,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
 
         {/* Right-side stacked heatmap - desktop/tablet */}
         {isHeatmapVisible && (
-          <div className="hidden md:flex w-40 lg:w-56 border-l border-gray-200 bg-white relative timeline-v2-heatmap-panel overflow-hidden">
+          <div className="hidden md:flex w-24 px-1 border-l border-gray-200 bg-white relative timeline-v2-heatmap-panel overflow-hidden">
             <TimelineV2Heatmap
               activities={heatmapActivities}
               selectedDate={selectedDate}
@@ -395,7 +408,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'duration' in selectedActivity && 'type' in selectedActivity ? selectedActivity : undefined}
+            activity={'duration' in selectedActivity && 'type' in selectedActivity && !('activities' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
             isSleeping={false}
             onSleepToggle={() => {}}
@@ -483,6 +496,36 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
             babyId={selectedActivity.babyId}
             initialTime={'doseAmount' in selectedActivity && 'time' in selectedActivity ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
             activity={'doseAmount' in selectedActivity && 'medicineId' in selectedActivity ? selectedActivity : undefined}
+            onSuccess={handleFormSuccess}
+            isSupplement={
+              'medicine' in selectedActivity &&
+              selectedActivity.medicine && typeof selectedActivity.medicine === 'object' &&
+              'isSupplement' in selectedActivity.medicine
+                ? !!(selectedActivity.medicine as any).isSupplement
+                : false
+            }
+          />
+          <ActivityForm
+            isOpen={editModalType === 'play'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'startTime' in selectedActivity && selectedActivity.startTime ? String(selectedActivity.startTime) : getActivityTime(selectedActivity)}
+            activity={'activities' in selectedActivity && 'type' in selectedActivity ?
+              (selectedActivity as unknown as PlayLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
+          />
+          <VaccineForm
+            isOpen={editModalType === 'vaccine'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
+            activity={'vaccineName' in selectedActivity ? (selectedActivity as unknown as VaccineLogResponse) : undefined}
             onSuccess={handleFormSuccess}
           />
         </>

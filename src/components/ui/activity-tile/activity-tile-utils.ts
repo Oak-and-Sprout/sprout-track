@@ -1,5 +1,5 @@
 import { ActivityType } from './activity-tile.types';
-import { BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse } from '@/app/api/types';
+import { BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse } from '@/app/api/types';
 import { useTimezone } from '@/app/context/timezone';
 
 /**
@@ -21,15 +21,22 @@ export const getActivityTime = (activity: ActivityType): string => {
 /**
  * Determines the variant based on the activity type
  */
-export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'measurement' | 'milestone' | 'medicine' | 'default' => {
+export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine' | 'default' => {
+  // Check for play log before sleep (both have 'type' and 'duration' but play has 'activities')
+  if ('type' in activity && 'startTime' in activity && 'activities' in activity) {
+    const playTypes = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
+    if (playTypes.includes((activity as any).type)) return 'play';
+  }
   if ('type' in activity) {
-    if ('duration' in activity) return 'sleep';
+    if ('duration' in activity && 'quality' in activity) return 'sleep';
+    if ('duration' in activity && 'location' in activity && !('amount' in activity) && !('condition' in activity)) return 'sleep';
     if ('amount' in activity) return 'feed';
     if ('condition' in activity) return 'diaper';
     if ('soapUsed' in activity || 'shampooUsed' in activity) return 'bath';
     if ('value' in activity && 'unit' in activity) return 'measurement';
   }
   if ('doseAmount' in activity && 'medicineId' in activity) return 'medicine';
+  if ('vaccineName' in activity) return 'vaccine';
   if ('title' in activity && 'category' in activity) return 'milestone';
   if ('leftAmount' in activity || 'rightAmount' in activity) return 'pump';
   if ('content' in activity) return 'note';
@@ -59,7 +66,8 @@ export const useActivityDescription = () => {
         const startTimeFormatted = activity.startTime ? formatDateTime(activity.startTime) : 'unknown';
         const endTimeFormatted = activity.endTime ? formatDateTime(activity.endTime) : 'ongoing';
         const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
-        const location = activity.location === 'OTHER' ? 'Other' : activity.location?.split('_').map(word => 
+        const loc = (activity as any).location;
+        const location = loc === 'OTHER' ? 'Other' : loc?.split('_').map((word: string) =>
           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
         ).join(' ');
         
@@ -163,6 +171,33 @@ export const useActivityDescription = () => {
         };
       }
     }
+    // Type guard for PlayLogResponse
+    const isPlayLog = (activity: ActivityType): activity is PlayLogResponse => {
+      return 'activities' in activity && 'startTime' in activity && 'type' in activity &&
+        ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
+    };
+
+    if (isPlayLog(activity)) {
+      const startTime = activity.startTime ? formatDateTime(activity.startTime) : '';
+      const formatPlayType = (type: string) => {
+        switch (type) {
+          case 'TUMMY_TIME': return 'Tummy Time';
+          case 'INDOOR_PLAY': return 'Indoor Play';
+          case 'OUTDOOR_PLAY': return 'Outdoor Play';
+          case 'WALK': return 'Walk';
+          default: return type.split('_').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          ).join(' ');
+        }
+      };
+      const duration = activity.duration ? ` - ${activity.duration} min` : '';
+      const subCategory = activity.activities ? ` (${activity.activities})` : '';
+      return {
+        type: formatPlayType(activity.type),
+        details: `${startTime}${duration}${subCategory}`
+      };
+    }
+
     if ('content' in activity) {
       const time = formatDateTime(activity.time);
       const truncatedContent = activity.content.length > 50 ? activity.content.substring(0, 50) + '...' : activity.content;
@@ -185,6 +220,20 @@ export const useActivityDescription = () => {
       };
     }
     
+    // Type guard for VaccineLogResponse
+    const isVaccineLog = (activity: ActivityType): activity is VaccineLogResponse => {
+      return 'vaccineName' in activity;
+    };
+
+    if (isVaccineLog(activity)) {
+      const time = formatDateTime(activity.time);
+      const doseInfo = activity.doseNumber ? ` - Dose ${activity.doseNumber}` : '';
+      return {
+        type: activity.vaccineName,
+        details: `${time}${doseInfo}`
+      };
+    }
+
     // Type guard for PumpLogResponse
     const isPumpLog = (activity: ActivityType): activity is PumpLogResponse => {
       return 'leftAmount' in activity || 'rightAmount' in activity;

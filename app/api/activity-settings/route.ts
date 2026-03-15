@@ -28,8 +28,8 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
     
     // Default settings to use if none are found
     const defaultSettings: ActivitySettings = {
-      order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'],
-      visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'],
+      order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'],
+      visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'],
       caretakerId: caretakerId || null,
     };
     
@@ -274,8 +274,8 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
     return NextResponse.json({ 
       success: true, 
       data: {
-        order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'],
-        visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'],
+        order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'],
+        visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'],
         caretakerId: errorCaretakerId || null,
       }
     });
@@ -314,7 +314,7 @@ async function saveActivitySettings(req: NextRequest, authContext: AuthResult): 
     
     // Default activities list - keep in sync with the one in getActivitySettings
     const defaultActivities = [
-      'sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'
+      'sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'
     ];
     
     // Check for any missing activities in the provided order
@@ -365,8 +365,8 @@ async function saveActivitySettings(req: NextRequest, authContext: AuthResult): 
           defaultTempUnit: 'F',
           activitySettings: JSON.stringify({
             global: {
-              order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine'],
-              visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'measurement', 'milestone', 'medicine']
+              order: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'],
+              visible: ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine']
             }
           }),
         }

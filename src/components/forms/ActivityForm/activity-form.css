@@ -1,0 +1,95 @@
+/* Dark mode overrides for ActivityForm component */
+
+/* Make dropdown trigger input look better in dark mode */
+html.dark .activity-form-dropdown-trigger {
+  background-color: transparent !important;
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Style for dropdown trigger icon in dark mode */
+html.dark .activity-form-dropdown-icon {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Style for dropdown trigger on hover in dark mode */
+html.dark .activity-form-dropdown-trigger:hover {
+  border-color: #4b5563 !important; /* gray-600 */
+}
+
+/* Style for dropdown trigger when focused in dark mode */
+html.dark .activity-form-dropdown-trigger:focus {
+  border-color: #fdba74 !important; /* orange-300 */
+  outline: none !important;
+  ring-color: rgba(253, 186, 116, 0.5) !important; /* orange-300 with opacity */
+}
+
+/* Input fields in dark mode */
+html.dark .activity-form-input {
+  background-color: transparent !important;
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Activity type buttons */
+html.dark .activity-type-button-inactive {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .activity-type-button-inactive:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .activity-type-button-active {
+  background-color: rgba(243, 196, 162, 0.2) !important; /* peach with opacity */
+  border-color: #F3C4A2 !important; /* peach */
+  color: #F3C4A2 !important; /* peach */
+}
+
+/* Custom dropdown styles */
+.activity-dropdown-item {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.activity-dropdown-item:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+html.dark .activity-dropdown-item:hover {
+  background-color: #374151; /* dark:gray-700 */
+}
+
+/* Dropdown item text color in dark mode */
+html.dark .activity-dropdown-item {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Dropdown container */
+.activity-dropdown-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+html.dark .activity-dropdown-container {
+  background-color: #1f2937; /* dark:gray-800 */
+  border-color: #374151; /* dark:gray-700 */
+}
+
+/* Dropdown item highlighted state in dark mode */
+html.dark .activity-dropdown-item-highlighted {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+/* No matching categories text in dark mode */
+html.dark .activity-dropdown-no-match {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* No categories found text in dark mode */
+html.dark .activity-dropdown-no-categories {
+  color: #9ca3af !important; /* gray-400 */
+}

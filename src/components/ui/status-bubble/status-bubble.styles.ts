@@ -13,6 +13,9 @@ export const statusBubbleStyles = {
       normal: "bg-green-500 text-white",
       warning: "bg-red-500 text-white",
     },
+    feedActive: {
+      bgColor: "bg-yellow-400 text-yellow-900",
+    },
     diaper: {
       normal: "bg-green-500 text-white",
       warning: "bg-red-500 text-white",

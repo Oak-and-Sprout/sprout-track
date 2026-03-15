@@ -13,6 +13,9 @@ export const themeToggleStyles = {
   
   // Light variant button - simplified styling
   buttonLight: "flex items-center text-white hover:text-teal-700 transition-colors duration-200",
+
+  // Minimal variant button - gray-200 in both modes
+  buttonMinimal: "flex items-center text-gray-200 hover:text-teal-700 transition-colors duration-200",
   
   // Theme icon styles are defined in CSS for better control of the circle indicator
 };
@@ -32,6 +35,7 @@ export const themeToggleVariants = cva(
       variant: {
         default: "",
         light: "",
+        minimal: "",
       },
     },
     defaultVariants: {

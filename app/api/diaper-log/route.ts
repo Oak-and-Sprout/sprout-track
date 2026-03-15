@@ -110,10 +110,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Convert time to UTC if provided
-    const data = body.time
-      ? { ...body, time: toUTC(body.time) }
-      : body;
+    // Convert time to UTC if provided and strip relation fields
+    const data: any = { ...body };
+    if (body.time) {
+      data.time = toUTC(body.time);
+    }
+    delete data.babyId;
+    delete data.familyId;
+    delete data.caretakerId;
 
     const diaperLog = await prisma.diaperLog.update({
       where: { id },

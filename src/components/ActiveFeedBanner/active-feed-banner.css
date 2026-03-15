@@ -1,0 +1,168 @@
+/* ActiveFeedBanner - matches ActivityTileGroup and Timeline background */
+
+.active-feed-banner {
+  background-color: white;
+  margin: 0;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+}
+
+/* Inner card - the highlighted content area */
+.banner-inner-active {
+  background-color: #f0fdf4; /* green-50 */
+  border: 1px solid #bbf7d0; /* green-200 */
+}
+
+.banner-inner-paused {
+  background-color: #fefce8; /* yellow-50 */
+  border: 1px solid #fde68a; /* yellow-200 */
+}
+
+/* Labels and text */
+.banner-label {
+  color: #6b7280; /* gray-500 */
+}
+
+.banner-timer {
+  color: #15803d; /* green-700 */
+}
+
+.banner-subtimes {
+  color: #6b7280; /* gray-500 */
+}
+
+.banner-paused-label {
+  color: #ca8a04; /* yellow-600 */
+}
+
+/* Shared button base - round, larger */
+.banner-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.banner-btn:active {
+  transform: scale(0.95);
+}
+
+/* Switch button */
+.banner-btn-switch {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #374151; /* gray-700 */
+}
+
+.banner-btn-switch:hover {
+  background-color: #e5e7eb; /* gray-200 */
+}
+
+/* Pause button */
+.banner-btn-pause {
+  background-color: #fef3c7; /* amber-100 */
+  color: #92400e; /* amber-800 */
+}
+
+.banner-btn-pause:hover {
+  background-color: #fde68a; /* amber-200 */
+}
+
+/* Stop button */
+.banner-btn-stop {
+  background-color: #fee2e2; /* red-100 */
+  color: #991b1b; /* red-800 */
+}
+
+.banner-btn-stop:hover {
+  background-color: #fecaca; /* red-200 */
+}
+
+/* Resume button */
+.banner-btn-resume {
+  background-color: #dcfce7; /* green-100 */
+  color: #166534; /* green-800 */
+  width: auto;
+  padding: 0 12px;
+  gap: 2px;
+}
+
+.banner-btn-resume:hover {
+  background-color: #bbf7d0; /* green-200 */
+}
+
+/* Dark mode - uses !important to override Tailwind v4 CSS layer priority in Safari */
+html.dark .active-feed-banner {
+  background-color: #1f2937 !important; /* gray-800 - matches ActivityTileGroup dark */
+  border-top-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .banner-inner-active {
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .banner-inner-paused {
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #facc15 !important; /* yellow-400 */
+}
+
+html.dark .banner-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .banner-timer {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .banner-subtimes {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .banner-paused-label {
+  color: #facc15 !important; /* yellow-400 */
+}
+
+html.dark .banner-btn-switch {
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .banner-btn-switch:hover {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .banner-btn-pause {
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .banner-btn-pause:hover {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .banner-btn-stop {
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #f87171 !important; /* red-400 */
+}
+
+html.dark .banner-btn-stop:hover {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .banner-btn-resume {
+  background-color: #374151 !important; /* gray-700 */
+  border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .banner-btn-resume:hover {
+  background-color: #4b5563 !important; /* gray-600 */
+}

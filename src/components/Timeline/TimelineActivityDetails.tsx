@@ -50,8 +50,12 @@ const TimelineActivityDetails = ({
   
   const handleEdit = () => {
     if (activity) {
+      // Check play activity before sleep since both have duration and type
+      if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
+        onEdit(activity, 'play');
+      }
       // Check for breast milk adjustment before pump
-      if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
+      else if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
         onEdit(activity, 'breast-milk-adjustment');
       }
       // Check for pump activity first since it can also have duration
@@ -64,6 +68,7 @@ const TimelineActivityDetails = ({
       else if ('doseAmount' in activity && 'medicineId' in activity) onEdit(activity, 'medicine');
       else if ('content' in activity) onEdit(activity, 'note');
       else if ('soapUsed' in activity) onEdit(activity, 'bath');
+      else if ('vaccineName' in activity) onEdit(activity, 'vaccine');
       else if ('title' in activity && 'category' in activity) onEdit(activity, 'milestone');
       else if ('value' in activity && 'unit' in activity) onEdit(activity, 'measurement');
     }

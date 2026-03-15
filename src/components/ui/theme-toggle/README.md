@@ -47,7 +47,7 @@ export default function HeaderComponent() {
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `className` | `string` | `undefined` | Additional CSS class names to apply to the theme toggle |
-| `variant` | `"default" \| "light"` | `"default"` | Toggle variant - "default" has full styling with helper text and backgrounds, "light" is simplified with just icon and label |
+| `variant` | `"default" \| "light" \| "minimal"` | `"default"` | Toggle variant - "default" has full styling with helper text and backgrounds, "light" is simplified with just icon and label, "minimal" is like light but uses gray-200 text in both modes |
 | `...props` | `ButtonHTMLAttributes<HTMLButtonElement>` | - | All standard button HTML attributes |
 
 ## Implementation Details
@@ -69,6 +69,9 @@ The light variant provides a simplified interface with:
 - Only the current theme label (no helper text)
 - Smaller text size (12px vs 14px)
 - Minimal padding for compact layouts
+
+### Minimal Variant
+The minimal variant is identical to the light variant in structure but uses `gray-200` (`#e5e7eb`) for both icon and label text in both light and dark modes, making it suitable for use on darker backgrounds regardless of theme.
 
 The component is styled using TailwindCSS for light mode styles and CSS classes for dark mode styles rather than Tailwind's dark mode variants for better cross-platform compatibility.
 

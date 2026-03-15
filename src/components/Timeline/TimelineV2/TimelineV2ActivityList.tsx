@@ -222,24 +222,34 @@ const TimelineV2ActivityList = ({
                             if (bgClass.includes('bg-[#4875EC]')) return '#4875EC'; // blue - matches old timeline
                             if (bgClass.includes('bg-[#EA6A5E]')) return '#EA6A5E'; // red - matches old timeline
                             if (bgClass.includes('bg-[#43B755]')) return '#43B755'; // green - matches old timeline
+                            if (bgClass.includes('bg-[#F3C4A2]')) return '#F3C4A2'; // peach - play activity
+                            if (bgClass.includes('border-red-500')) return '#EF4444'; // red - vaccine
                             return '#9ca3af'; // default gray
                           };
                           
                           const activityColor = getActivityColor(style.bg);
                           
                           // Determine activity type class for styling
-                          // Check pump FIRST since it also has duration and startTime
+                          // Check play and pump FIRST since they also have duration and startTime
                           let activityTypeClass = '';
-                          if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
+                          if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) activityTypeClass = 'play';
+                          else if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
                           else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
                           else if ('duration' in activity && 'type' in activity) activityTypeClass = 'sleep';
                           else if ('amount' in activity) activityTypeClass = 'feed';
                           else if ('condition' in activity) activityTypeClass = 'diaper';
                           else if ('content' in activity) activityTypeClass = 'note';
                           else if ('soapUsed' in activity) activityTypeClass = 'bath';
+                          else if ('vaccineName' in activity) activityTypeClass = 'vaccine';
                           else if ('title' in activity && 'category' in activity) activityTypeClass = 'milestone';
                           else if ('value' in activity && 'unit' in activity) activityTypeClass = 'measurement';
-                          else if ('doseAmount' in activity && 'medicineId' in activity) activityTypeClass = 'medicine';
+                          else if ('doseAmount' in activity && 'medicineId' in activity) {
+                            if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && (activity.medicine as any).isSupplement) {
+                              activityTypeClass = 'supplement';
+                            } else {
+                              activityTypeClass = 'medicine';
+                            }
+                          }
                           
                           return (
                             <motion.div
@@ -295,9 +305,17 @@ const TimelineV2ActivityList = ({
                                       return amounts.join(' • ');
                                     }
                                     
+                                    // Play activity - check before sleep/duration
+                                    if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
+                                      const parts = [];
+                                      if ((activity as any).duration) parts.push(`${(activity as any).duration} ${t('min')}`);
+                                      if ((activity as any).activities) parts.push((activity as any).activities);
+                                      return parts.length > 0 ? parts.join(' • ') : t('Activity');
+                                    }
+
                                     if ('duration' in activity) {
-                                      const location = ('location' in activity && activity.location && activity.location !== 'OTHER') ? 
-                                        activity.location.split('_').map((word: string) => 
+                                      const location = ('location' in activity && activity.location && activity.location !== 'OTHER') ?
+                                        activity.location.split('_').map((word: string) =>
                                           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                                         ).join(' ') : '';
                                       const duration = activity.duration ? `${Math.floor(activity.duration / 60)}h ${activity.duration % 60}m` : '';
@@ -369,6 +387,9 @@ const TimelineV2ActivityList = ({
                                       if (activity.blowout) {
                                         details.push(t('Blowout/Leakage'));
                                       }
+                                      if (activity.creamApplied) {
+                                        details.push(t('Diaper Cream Applied'));
+                                      }
                                       return details.length > 0 ? details.join(' • ') : t('Diaper');
                                     }
                                     
@@ -393,9 +414,15 @@ const TimelineV2ActivityList = ({
                                       return details.join(' • ');
                                     }
                                     
+                                    if ('vaccineName' in activity) {
+                                      const parts = [(activity as any).vaccineName];
+                                      if ((activity as any).doseNumber) parts.push(`${t('Dose')} #${(activity as any).doseNumber}`);
+                                      return parts.join(' • ');
+                                    }
+
                                     if ('title' in activity && 'category' in activity) {
-                                      const title = activity.title.length > 40 ? 
-                                        activity.title.substring(0, 40) + '...' : 
+                                      const title = activity.title.length > 40 ?
+                                        activity.title.substring(0, 40) + '...' :
                                         activity.title;
                                       return title;
                                     }
@@ -415,8 +442,13 @@ const TimelineV2ActivityList = ({
                                       const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
                                       const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
                                       let medName = t('Medicine');
-                                      if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
-                                        medName = (activity.medicine as { name?: string }).name || medName;
+                                      if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object') {
+                                        if ('isSupplement' in activity.medicine && (activity.medicine as any).isSupplement) {
+                                          medName = t('Supplement');
+                                        }
+                                        if ('name' in activity.medicine && activity.medicine.name) {
+                                          medName = (activity.medicine as { name?: string }).name || medName;
+                                        }
                                       }
                                       return `${medName} - ${dose}`;
                                     }

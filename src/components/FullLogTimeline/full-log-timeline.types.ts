@@ -10,7 +10,7 @@ export type FullLogActivityType = ImportedActivityType & {
 // Use FullLogActivityType for internal component logic
 export type ActivityType = FullLogActivityType;
 
-export type FilterType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | null;
+export type FilterType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play' | 'vaccine' | null;
 
 export interface FullLogTimelineProps {
   activities: ImportedActivityType[];
@@ -52,7 +52,7 @@ export interface FullLogActivityDetailsProps {
   isOpen: boolean;
   onClose: () => void;
   onDelete: (activity: ActivityType) => void;
-  onEdit: (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine') => void;
+  onEdit: (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'medicine' | 'play' | 'vaccine') => void;
 }
 
 export interface ActivityDetail {

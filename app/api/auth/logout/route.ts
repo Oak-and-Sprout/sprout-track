@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '../../types';
-import { invalidateToken } from '../../utils/auth';
+import { invalidateToken, clearRefreshTokenCookie } from '../../utils/auth';
 
 /**
  * Handles logout requests by clearing authentication cookies
@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
       path: '/',
       maxAge: 0, // Expire immediately
     });
-    
+
+    // Clear the refresh token cookie
+    clearRefreshTokenCookie(response);
+
     return response;
   } catch (error) {
     console.error('Logout error:', error);

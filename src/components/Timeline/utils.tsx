@@ -10,7 +10,11 @@ import {
   Scale,
   RotateCw,
   Thermometer,
-  PillBottle
+  PillBottle,
+  Pill,
+  Baby,
+  Activity,
+  Syringe
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { 
@@ -20,9 +24,22 @@ import {
   ActivityStyle 
 } from './types';
 
+const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
+
+const isPlayActivity = (activity: any): boolean => {
+  return 'activities' in activity && 'type' in activity && PLAY_TYPES.includes(activity.type);
+};
+
 export const getActivityIcon = (activity: ActivityType) => {
+  // Play activity - check before sleep since both have duration and type
+  if (isPlayActivity(activity)) {
+    return <Baby className="h-4 w-4 text-white" />;
+  }
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine log
+    // Medicine or supplement log
+    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && activity.medicine.isSupplement) {
+      return <Pill className="h-4 w-4 text-white" />;
+    }
     return <PillBottle className="h-4 w-4 text-white" />;
   }
   // Check for breast milk adjustment BEFORE pump (both have amount)
@@ -50,6 +67,9 @@ export const getActivityIcon = (activity: ActivityType) => {
   }
   if ('soapUsed' in activity) {
     return <Bath className="h-4 w-4 text-white" />; // Bath activity
+  }
+  if ('vaccineName' in activity) {
+    return <Syringe className="h-4 w-4" style={{ color: '#EF4444' }} />;
   }
   if ('title' in activity && 'category' in activity) {
     return <Trophy className="h-4 w-4 text-white" />; // Milestone activity
@@ -139,7 +159,37 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   const caretakerDetail = activity.caretakerName ? [
     { label: t('Caretaker'), value: activity.caretakerName }
   ] : [];
-  
+
+  // Play activity - check before sleep since both have duration and type
+  if (isPlayActivity(activity)) {
+    const formatPlayType = (type: string) => {
+      switch (type) {
+        case 'TUMMY_TIME': return t('Tummy Time');
+        case 'INDOOR_PLAY': return t('Indoor Play');
+        case 'OUTDOOR_PLAY': return t('Outdoor Play');
+        case 'WALK': return t('Walk');
+        default: return type;
+      }
+    };
+    const playDetails = [
+      { label: t('Start Time'), value: formatTime((activity as any).startTime, settings, true, t) },
+      { label: t('Activity Type'), value: formatPlayType((activity as any).type) },
+    ];
+    if ((activity as any).duration) {
+      playDetails.push({ label: t('Duration'), value: `${(activity as any).duration} ${t('minutes')}` });
+    }
+    if ((activity as any).activities) {
+      playDetails.push({ label: t('Sub-Category'), value: (activity as any).activities });
+    }
+    if ((activity as any).location) {
+      playDetails.push({ label: t('Notes'), value: (activity as any).location });
+    }
+    return {
+      title: t('Activity Record'),
+      details: [...playDetails, ...caretakerDetail],
+    };
+  }
+
   if ('type' in activity) {
     if ('duration' in activity) {
       // For sleep activities, always show dates with times
@@ -184,14 +234,14 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
           { label: t('Duration'), value: durationValue }
         );
         // Only show quality if sleep has ended
-        if (activity.quality) {
-          details.push({ label: t('Quality'), value: formatSleepQuality(activity.quality) });
+        if ((activity as any).quality) {
+          details.push({ label: t('Quality'), value: formatSleepQuality((activity as any).quality) });
         }
       }
       
-      // Always show location if specified
-      if (activity.location) {
-        details.push({ label: t('Location'), value: formatLocation(activity.location) });
+      // Always show location if specified (SleepLog only)
+      if ((activity as any).location) {
+        details.push({ label: t('Location'), value: formatLocation((activity as any).location) });
       }
 
       return {
@@ -328,6 +378,9 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       if (activity.blowout) {
         details.push({ label: t('Blowout/Leakage'), value: t('Yes') });
       }
+      if (activity.creamApplied) {
+        details.push({ label: t('Diaper Cream Applied'), value: t('Yes') });
+      }
 
       return {
         title: t('Diaper Record'),
@@ -448,6 +501,27 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     };
   }
 
+  // Vaccine activity
+  if ('vaccineName' in activity) {
+    const vaccineDetails = [
+      { label: t('Vaccine'), value: (activity as any).vaccineName },
+      { label: t('Time'), value: formatTime((activity as any).time, settings, true, t) },
+    ];
+    if ((activity as any).doseNumber) {
+      vaccineDetails.push({ label: t('Dose #'), value: String((activity as any).doseNumber) });
+    }
+    if ((activity as any).notes) {
+      vaccineDetails.push({ label: t('Notes'), value: (activity as any).notes });
+    }
+    if ((activity as any).administeredBy) {
+      vaccineDetails.push({ label: t('Administered By'), value: (activity as any).administeredBy });
+    }
+    return {
+      title: t('Vaccine Record'),
+      details: [...vaccineDetails, ...caretakerDetail],
+    };
+  }
+
   // Milestone activity
   if ('title' in activity && 'category' in activity) {
     const formatMilestoneCategory = (category: string) => {
@@ -529,11 +603,36 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
 };
 
 export const getActivityDescription = (activity: ActivityType, settings: Settings | null, t: (key: string) => string): ActivityDescription => {
+  // Play activity - check before sleep since both have duration and type
+  if (isPlayActivity(activity)) {
+    const formatPlayType = (type: string) => {
+      switch (type) {
+        case 'TUMMY_TIME': return t('Tummy Time');
+        case 'INDOOR_PLAY': return t('Indoor Play');
+        case 'OUTDOOR_PLAY': return t('Outdoor Play');
+        case 'WALK': return t('Walk');
+        default: return type;
+      }
+    };
+    const time = formatTime((activity as any).startTime, settings, true, t);
+    const parts = [time];
+    if ((activity as any).duration) parts.push(`${(activity as any).duration} ${t('min')}`);
+    if ((activity as any).activities) parts.push((activity as any).activities);
+    return {
+      type: formatPlayType((activity as any).type),
+      details: parts.join(' • ')
+    };
+  }
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine log
+    // Medicine or supplement log
     let medName = t('Medicine');
-    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
-      medName = (activity.medicine as { name?: string }).name || medName;
+    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object') {
+      if ('isSupplement' in activity.medicine && activity.medicine.isSupplement) {
+        medName = t('Supplement');
+      }
+      if ('name' in activity.medicine && activity.medicine.name) {
+        medName = (activity.medicine as { name?: string }).name || medName;
+      }
     }
     const dose = activity.doseAmount ? `${activity.doseAmount} ${activity.unitAbbr || ''}`.trim() : '';
     const medTime = formatTime(activity.time, settings, true, t);
@@ -550,10 +649,11 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true, t) : t('ongoing');
       const duration = activity.duration ? ` ${formatDuration(activity.duration)}` : '';
       
-      // Format location
+      // Format location (SleepLog only)
       let locationText = '';
-      if (activity.location) {
-        const location = activity.location === 'OTHER' ? t('Other') : activity.location.split('_').map(word => 
+      if ((activity as any).location) {
+        const loc = (activity as any).location;
+        const location = loc === 'OTHER' ? t('Other') : loc.split('_').map((word: string) =>
           word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
         ).join(' ');
         locationText = location;
@@ -561,14 +661,14 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       
       // Format quality
       let qualityText = '';
-      if (activity.quality) {
+      if ((activity as any).quality) {
         const qualityMap: Record<string, string> = {
           'POOR': t('Poor'),
           'FAIR': t('Fair'),
           'GOOD': t('Good'),
           'EXCELLENT': t('Excellent')
         };
-        qualityText = qualityMap[activity.quality] || activity.quality.charAt(0) + activity.quality.slice(1).toLowerCase();
+        qualityText = qualityMap[(activity as any).quality] || (activity as any).quality.charAt(0) + (activity as any).quality.slice(1).toLowerCase();
       }
       
       // Build details string
@@ -707,11 +807,12 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 
       // Add blowout information for all diaper types
       const blowoutText = activity.blowout ? ` - ${t('Blowout/Leakage')}` : '';
+      const creamText = activity.creamApplied ? ` - ${t('Diaper Cream Applied')}` : '';
 
       const time = formatTime(activity.time, settings, true, t);
       return {
         type: formatDiaperType(activity.type),
-        details: `${details}${time}${blowoutText}`
+        details: `${details}${time}${blowoutText}${creamText}`
       };
     }
   }
@@ -817,6 +918,17 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     }
   }
 
+  // Vaccine activity
+  if ('vaccineName' in activity) {
+    const time = formatTime((activity as any).time, settings, true, t);
+    const parts = [time];
+    if ((activity as any).doseNumber) parts.push(`${t('Dose')} #${(activity as any).doseNumber}`);
+    return {
+      type: (activity as any).vaccineName,
+      details: parts.join(' • ')
+    };
+  }
+
   // Milestone activity
   if ('title' in activity && 'category' in activity) {
     const formatMilestoneCategory = (category: string) => {
@@ -878,6 +990,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 };
 
 export const getActivityEndpoint = (activity: ActivityType): string => {
+  // Check play activity before sleep since both have duration and type
+  if (isPlayActivity(activity)) return 'play-log';
   // Check for breast milk adjustment before pump
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) return 'breast-milk-adjustment';
   // Check for pump activity first since it can also have duration
@@ -888,6 +1002,7 @@ export const getActivityEndpoint = (activity: ActivityType): string => {
   if ('doseAmount' in activity && 'medicineId' in activity) return 'medicine-log';
   if ('content' in activity) return 'note';
   if ('soapUsed' in activity) return 'bath-log';
+  if ('vaccineName' in activity) return 'vaccine-log';
   if ('title' in activity && 'category' in activity) return 'milestone-log';
   if ('value' in activity && 'unit' in activity) return 'measurement-log';
   
@@ -898,12 +1013,13 @@ export const getActivityEndpoint = (activity: ActivityType): string => {
 };
 
 export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
+  // Play activity - check before sleep since both have duration and type
+  if (isPlayActivity(activity)) {
+    return { bg: 'bg-[#F3C4A2]', textColor: 'text-white' };
+  }
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine log: pill bottle green
-    return {
-      bg: 'bg-[#43B755]',
-      textColor: 'text-white',
-    };
+    // Medicine and supplement logs: green
+    return { bg: 'bg-[#43B755]', textColor: 'text-white' };
   }
   // Breast milk adjustment style
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
@@ -950,6 +1066,9 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
       bg: 'bg-gradient-to-r from-orange-400 to-orange-500',
       textColor: 'text-white',
     };
+  }
+  if ('vaccineName' in activity) {
+    return { bg: 'bg-white border-2 border-red-500', textColor: 'text-red-600' };
   }
   if ('title' in activity && 'category' in activity) {
     return {

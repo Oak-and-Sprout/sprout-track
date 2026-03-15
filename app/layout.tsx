@@ -4,6 +4,12 @@ import { Metadata } from 'next';
 import { LocalizationProvider } from '@/src/context/localization';
 import './globals.css';
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover' as const,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NODE_ENV === 'production' ? 'https://www.sprout-track.com' : 'http://localhost:3000'),
   title: 'Sprout Track',

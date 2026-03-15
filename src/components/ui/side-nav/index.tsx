@@ -369,6 +369,13 @@ export const SideNav: React.FC<SideNavProps> = ({
             onClick={onNavigate}
             className="side-nav-item"
           />
+          <SideNavItem
+            path="/nursery-mode"
+            label={t('Nursery Mode')}
+            isActive={currentPath === '/nursery-mode'}
+            onClick={onNavigate}
+            className="side-nav-item"
+          />
         </nav>
 
         {/* Version display at bottom of nav items */}
@@ -499,14 +506,12 @@ export const SideNav: React.FC<SideNavProps> = ({
           {/* Theme Toggle Component */}
           <ThemeToggle className="mb-2" />
           
-          {/* Settings Button - only shown for admins */}
-          {isAdmin && (
-            <FooterButton
-              icon={<Settings />}
-              label={t('Settings')}
-              onClick={onSettingsClick}
-            />
-          )}
+          {/* Settings Button */}
+          <FooterButton
+            icon={<Settings />}
+            label={t('Settings')}
+            onClick={onSettingsClick}
+          />
           
           {/* Logout Button */}
           <FooterButton

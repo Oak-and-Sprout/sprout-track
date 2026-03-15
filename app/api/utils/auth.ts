@@ -9,6 +9,81 @@ function getJwtSecret(): string {
   return process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
 }
 
+// Separate secret for refresh tokens to prevent token type confusion
+function getRefreshTokenSecret(): string {
+  return (process.env.JWT_SECRET || 'baby-tracker-jwt-secret') + '-refresh';
+}
+
+// Access token lifetime (uses existing AUTH_LIFE env var, admin-configurable)
+export const ACCESS_TOKEN_LIFE = parseInt(process.env.AUTH_LIFE || '1800', 10);
+
+// Refresh token lifetime (sliding window - max inactivity gap before re-login)
+export const REFRESH_TOKEN_LIFE = parseInt(process.env.REFRESH_TOKEN_LIFE || '604800', 10); // Default 7 days
+
+/**
+ * Refresh token payload - minimal claims for looking up fresh data on refresh
+ */
+export interface RefreshTokenPayload {
+  userId: string;
+  authType: 'CARETAKER' | 'SYSTEM' | 'ACCOUNT' | 'SYSADMIN';
+  familyId: string | null;
+  accountId: string | null;
+  tokenType: 'refresh';
+}
+
+/**
+ * Creates a signed refresh token JWT
+ */
+export function createRefreshToken(payload: Omit<RefreshTokenPayload, 'tokenType'>): string {
+  return jwt.sign(
+    { ...payload, tokenType: 'refresh' },
+    getRefreshTokenSecret(),
+    { expiresIn: `${REFRESH_TOKEN_LIFE}s` }
+  );
+}
+
+/**
+ * Verifies and decodes a refresh token
+ * Returns the payload if valid, null if invalid/expired
+ */
+export function verifyRefreshToken(token: string): RefreshTokenPayload | null {
+  try {
+    const decoded = jwt.verify(token, getRefreshTokenSecret()) as any;
+    if (decoded.tokenType !== 'refresh') {
+      return null;
+    }
+    return decoded as RefreshTokenPayload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sets the refresh token as an HTTP-only cookie on the response
+ */
+export function setRefreshTokenCookie(response: NextResponse, token: string): void {
+  response.cookies.set('refreshToken', token, {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_LIFE,
+    path: '/',
+  });
+}
+
+/**
+ * Clears the refresh token cookie
+ */
+export function clearRefreshTokenCookie(response: NextResponse): void {
+  response.cookies.set('refreshToken', '', {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 0,
+  });
+}
+
 // In-memory token blacklist (in a production app, this would be in Redis or similar)
 // This is a simple Map that stores invalidated tokens with their expiry time
 const tokenBlacklist = new Map<string, number>();

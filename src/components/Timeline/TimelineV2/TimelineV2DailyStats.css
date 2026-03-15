@@ -101,6 +101,14 @@ html.dark .timeline-v2-daily-stats [class*="text-[#EA6A5E"] {
   color: #EA6A5E !important; /* red - measurement */
 }
 
+html.dark .timeline-v2-daily-stats [class*="text-[#F3C4A2"] {
+  color: #F3C4A2 !important; /* peach - play activity */
+}
+
+html.dark .timeline-v2-daily-stats [class*="text-[#EF4444"] {
+  color: #EF4444 !important;
+}
+
 html.dark .timeline-v2-daily-stats .text-amber-600 {
   color: #d97706 !important; /* amber-600 - awake time */
 }

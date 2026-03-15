@@ -146,7 +146,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
               <div className="flex items-center mr-4 sm:mr-6 lg:mr-8">
-                <ThemeToggle variant="light" />
+                <ThemeToggle variant="minimal" />
               </div>
             </div>
           </div>

@@ -5,11 +5,11 @@ import jwt from 'jsonwebtoken';
 import { verifyPassword } from '../../utils/password-utils';
 import { checkIpLockout, recordFailedAttempt, resetFailedAttempts } from '../../utils/ip-lockout';
 import { logApiCall, getClientInfo } from '../../utils/api-logger';
+import { ACCESS_TOKEN_LIFE, createRefreshToken, setRefreshTokenCookie } from '../../utils/auth';
 
 // Secret key for JWT signing - in production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
-// Token expiration time in seconds (default to 12 hours if not specified)
-const TOKEN_EXPIRATION = parseInt(process.env.AUTH_LIFE || '43200', 10);
+const TOKEN_EXPIRATION = ACCESS_TOKEN_LIFE;
 
 interface AccountLoginRequest {
   email: string;
@@ -271,13 +271,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
       },
     }).catch(err => console.error('Failed to log API call:', err));
 
-    return NextResponse.json<ApiResponse<AccountLoginResponse>>(
+    const jsonResponse = NextResponse.json<ApiResponse<AccountLoginResponse>>(
       {
         success: true,
         data: response,
       },
       { status: 200 }
     );
+
+    // Set refresh token cookie for account user
+    const accountRefreshToken = createRefreshToken({
+      userId: account.id,
+      authType: 'ACCOUNT',
+      familyId: account.familyId,
+      accountId: account.id,
+    });
+    setRefreshTokenCookie(jsonResponse, accountRefreshToken);
+
+    return jsonResponse;
 
   } catch (error) {
     console.error('Account login error:', error);

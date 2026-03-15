@@ -477,6 +477,9 @@ const TimelineActivityList = ({
                                             if (activity.blowout) {
                                               details.push(t('Blowout/Leakage'));
                                             }
+                                            if (activity.creamApplied) {
+                                              details.push(t('Diaper Cream Applied'));
+                                            }
                                             return details.join(' • ');
                                           }
                                           

@@ -5,6 +5,7 @@ import { cn } from "@/src/lib/utils";
 import { statusBubbleStyles as styles } from './status-bubble.styles';
 import { StatusBubbleProps, StatusStyle } from './status-bubble.types';
 import { useTimezone } from '@/app/context/timezone';
+import { useLocalization } from '@/src/context/localization';
 
 /**
  * Converts warning time (hh:mm) to minutes
@@ -26,6 +27,7 @@ export function StatusBubble({
   activityType // Add activityType prop
 }: StatusBubbleProps & { startTime?: string }) {
   const { userTimezone, calculateDurationMinutes, formatDuration } = useTimezone();
+  const { t } = useLocalization();
   const [calculatedDuration, setCalculatedDuration] = useState(durationInMinutes);
   
   const updateDuration = useCallback(() => {
@@ -97,6 +99,11 @@ export function StatusBubble({
           bgColor: styles.statusStyles.awake.bgColor,
           icon: <Sun className={cn(styles.icon, styles.statusStyles.awake.iconColor)} />
         };
+      case 'feedActive':
+        return {
+          bgColor: styles.statusStyles.feedActive.bgColor,
+          icon: <Icon iconNode={bottleBaby} className={styles.icon} />
+        };
       case 'feed':
         return {
           bgColor: isWarning ? styles.statusStyles.feed.warning : styles.statusStyles.feed.normal,
@@ -126,7 +133,7 @@ export function StatusBubble({
       )}
     >
       {icon}
-      <span>{formatDuration(displayDuration)}</span>
+      <span>{status === 'feedActive' ? t('Feeding') : formatDuration(displayDuration)}</span>
     </div>
   );
 }

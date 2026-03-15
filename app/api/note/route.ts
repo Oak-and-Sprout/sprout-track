@@ -4,6 +4,7 @@ import { ApiResponse, NoteCreate, NoteResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
+import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -39,6 +40,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         familyId: userFamilyId,
       },
     });
+
+    // Notify subscribers about note creation (non-blocking)
+    notifyActivityCreated(note.babyId, 'note', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { content: body.content }).catch(console.error);
 
     // Format dates as ISO strings for response
     const response: NoteResponse = {

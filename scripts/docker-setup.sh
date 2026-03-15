@@ -35,7 +35,7 @@ show_usage() {
     echo "  NOTIFICATION_CRON_SECRET  Secret for cron endpoint"
     echo "  APP_URL     Base URL for API calls"
     echo ""
-    echo "See documentation/PushNotifications-README.md for full notification setup"
+    echo "See documentation/Admin-Documentation/push-notifications.md for full notification setup"
     echo ""
     echo "Examples:"
     echo "  $0 build    # Build the Docker image"

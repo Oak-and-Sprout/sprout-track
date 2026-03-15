@@ -140,8 +140,14 @@
 .timeline-event.measurement::before { 
   background: #EA6A5E !important; /* red - matches old timeline */
 }
-.timeline-event.medicine::before { 
+.timeline-event.medicine::before {
   background: #43B755 !important; /* green - matches old timeline */
+}
+.timeline-event.supplement::before {
+  background: #43B755 !important; /* green - supplements */
+}
+.timeline-event.play::before {
+  background: #F3C4A2 !important; /* peach - play activity */
 }
 
 .event-icon {
@@ -231,6 +237,22 @@
 .event-icon.medicine svg,
 .event-icon.medicine svg path {
   color: #ffffff !important; /* white - matches old timeline */
+  stroke: #ffffff !important;
+}
+.event-icon.supplement {
+  background: #43B755; /* green - supplements */
+}
+.event-icon.supplement svg,
+.event-icon.supplement svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+.event-icon.play {
+  background: #F3C4A2; /* peach - play activity */
+}
+.event-icon.play svg,
+.event-icon.play svg path {
+  color: #ffffff !important; /* white on peach background */
   stroke: #ffffff !important;
 }
 
@@ -514,4 +536,44 @@ html.dark .event-icon.medicine svg,
 html.dark .event-icon.medicine svg path {
   color: #ffffff !important;
   stroke: #ffffff !important;
+}
+
+html.dark .event-icon.supplement {
+  background: #43B755 !important; /* green */
+}
+
+html.dark .event-icon.supplement svg,
+html.dark .event-icon.supplement svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html.dark .event-icon.play {
+  background: #F3C4A2 !important; /* peach */
+}
+
+html.dark .event-icon.play svg,
+html.dark .event-icon.play svg path {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.event-icon.vaccine {
+  background: #ffffff;
+  border: 2px solid #EF4444;
+}
+.event-icon.vaccine svg, .event-icon.vaccine svg path {
+  color: #EF4444 !important;
+  stroke: #EF4444 !important;
+}
+.timeline-event.vaccine::before {
+  background: #EF4444 !important;
+}
+html.dark .event-icon.vaccine {
+  background: transparent !important;
+  border: 2px solid #EF4444 !important;
+}
+html.dark .event-icon.vaccine svg, html.dark .event-icon.vaccine svg path {
+  color: #EF4444 !important;
+  stroke: #EF4444 !important;
 }

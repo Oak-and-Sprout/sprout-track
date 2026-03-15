@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import '../../../(app)/[slug]/log-entry/no-activities.css';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse } from '@/app/api/types';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActiveBreastFeedResponse } from '@/app/api/types';
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
 import { StatusBubble } from "@/src/components/ui/status-bubble";
@@ -24,11 +24,14 @@ import PumpForm from '@/src/components/forms/PumpForm';
 import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MedicineForm from '@/src/components/forms/MedicineForm';
+import ActivityForm from '@/src/components/forms/ActivityForm';
+import VaccineForm from '@/src/components/forms/VaccineForm';
 import { useParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
+import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
 
 function HomeContent(): React.ReactElement {
-  const { selectedBaby, sleepingBabies, setSleepingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
+  const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
   const { userTimezone } = useTimezone();
   const { family } = useFamily();
   const { t } = useLocalization();
@@ -44,6 +47,8 @@ function HomeContent(): React.ReactElement {
   const [showMeasurementModal, setShowMeasurementModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showMedicineModal, setShowMedicineModal] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [showVaccineModal, setShowVaccineModal] = useState<boolean>(false);
   const [activities, setActivities] = useState<ActivityType[]>([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [localTime, setLocalTime] = useState<string>('');
@@ -64,6 +69,9 @@ function HomeContent(): React.ReactElement {
     ongoingSleep?: SleepLogResponse;
     lastEndedSleep?: SleepLogResponse & { endTime: string };
   }>({});
+
+  const [activeFeedData, setActiveFeedData] = useState<ActiveBreastFeedResponse | null>(null);
+  const [feedStartTime, setFeedStartTime] = useState<Record<string, Date>>({});
 
   // Define checkSleepStatus before it's used
   const checkSleepStatus = useCallback(async (babyId: string) => {
@@ -127,7 +135,45 @@ function HomeContent(): React.ReactElement {
       console.error('Error checking sleep status:', error);
     }
   }, [userTimezone, family]);
-  
+
+  // Check for active breastfeed sessions
+  const checkFeedStatus = useCallback(async (babyId: string) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/active-breastfeed?babyId=${babyId}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        }
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setActiveFeedData(data.data);
+        setFeedingBabies((prev: Set<string>) => {
+          const newSet = new Set(prev);
+          newSet.add(babyId);
+          return newSet;
+        });
+        setFeedStartTime((prev: Record<string, Date>) => ({
+          ...prev,
+          [babyId]: new Date(data.data.sessionStartTime)
+        }));
+      } else {
+        setActiveFeedData(null);
+        setFeedingBabies((prev: Set<string>) => {
+          const newSet = new Set(prev);
+          newSet.delete(babyId);
+          return newSet;
+        });
+      }
+    } catch (error) {
+      console.error('Error checking feed status:', error);
+    }
+  }, [setFeedingBabies]);
+
   const refreshActivities = useCallback(async (babyId: string | undefined, dateFilter?: Date) => {
     if (!babyId) return;
     
@@ -267,11 +313,12 @@ function HomeContent(): React.ReactElement {
       if (selectedBaby?.id) {
         await refreshActivities(selectedBaby.id);
         await checkSleepStatus(selectedBaby.id);
+        await checkFeedStatus(selectedBaby.id);
       }
     };
-    
+
     initializeData();
-  }, [selectedBaby, refreshActivities, checkSleepStatus]);
+  }, [selectedBaby, refreshActivities, checkSleepStatus, checkFeedStatus]);
 
   // Handle sleep status changes
   useEffect(() => {
@@ -319,6 +366,7 @@ function HomeContent(): React.ReactElement {
         // User came back to the tab, refresh immediately
         refreshActivities(selectedBaby.id);
         checkSleepStatus(selectedBaby.id);
+        checkFeedStatus(selectedBaby.id);
       }
     };
 
@@ -334,12 +382,14 @@ function HomeContent(): React.ReactElement {
       if (wasIdle.current && !isCurrentlyIdle) {
         refreshActivities(selectedBaby.id);
         checkSleepStatus(selectedBaby.id);
+        checkFeedStatus(selectedBaby.id);
         lastRefreshTimestamp.current = Date.now();
       }
       // Case 2: User is active and the regular refresh interval has passed
       else if (!isCurrentlyIdle && timeSinceLastRefresh > activeRefreshRate) {
         refreshActivities(selectedBaby.id);
         checkSleepStatus(selectedBaby.id);
+        checkFeedStatus(selectedBaby.id);
         lastRefreshTimestamp.current = Date.now();
       }
 
@@ -353,7 +403,83 @@ function HomeContent(): React.ReactElement {
       clearInterval(poll);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [selectedBaby?.id, refreshActivities, checkSleepStatus]);
+  }, [selectedBaby?.id, refreshActivities, checkSleepStatus, checkFeedStatus]);
+
+  // Active breastfeed action handlers
+  const handleFeedSwitch = async () => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=switch`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkFeedStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error switching feed side:', error);
+    }
+  };
+
+  const handleFeedPause = async () => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=pause`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkFeedStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error pausing feed:', error);
+    }
+  };
+
+  const handleFeedResume = async (side: 'LEFT' | 'RIGHT') => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=resume`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+        body: JSON.stringify({ side }),
+      });
+      await checkFeedStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error resuming feed:', error);
+    }
+  };
+
+  const handleFeedEnd = async () => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      setActiveFeedData(null);
+      setFeedingBabies((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        newSet.delete(selectedBaby.id);
+        return newSet;
+      });
+      await refreshActivities(selectedBaby.id);
+    } catch (error) {
+      console.error('Error ending feed:', error);
+    }
+  };
 
   return (
     <div className="relative isolate">
@@ -362,13 +488,21 @@ function HomeContent(): React.ReactElement {
         <ActivityTileGroup
           selectedBaby={selectedBaby}
           sleepingBabies={sleepingBabies}
+          feedingBabies={feedingBabies}
           sleepStartTime={sleepStartTime}
           lastSleepEndTime={lastSleepEndTime}
           lastFeedTime={lastFeedTime}
           lastDiaperTime={lastDiaperTime}
+          feedStartTime={feedStartTime}
           updateUnlockTimer={updateUnlockTimer}
           onSleepClick={() => setShowSleepModal(true)}
-          onFeedClick={() => setShowFeedModal(true)}
+          onFeedClick={() => {
+            // Auto-pause the timer when opening the End Feed form
+            if (selectedBaby?.id && feedingBabies.has(selectedBaby.id) && activeFeedData && !activeFeedData.isPaused) {
+              handleFeedPause();
+            }
+            setShowFeedModal(true);
+          }}
           onDiaperClick={() => setShowDiaperModal(true)}
           onNoteClick={() => setShowNoteModal(true)}
           onBathClick={() => setShowBathModal(true)}
@@ -376,6 +510,20 @@ function HomeContent(): React.ReactElement {
           onMeasurementClick={() => setShowMeasurementModal(true)}
           onMilestoneClick={() => setShowMilestoneModal(true)}
           onMedicineClick={() => setShowMedicineModal(true)}
+          onPlayClick={() => setShowActivityModal(true)}
+          onVaccineClick={() => setShowVaccineModal(true)}
+        />
+      )}
+
+      {/* Active Breastfeed Banner */}
+      {selectedBaby?.id && activeFeedData && (
+        <ActiveFeedBanner
+          activeFeed={activeFeedData}
+          onSwitch={handleFeedSwitch}
+          onPause={handleFeedPause}
+          onResume={handleFeedResume}
+          onEnd={handleFeedEnd}
+          onOpenForm={() => setShowFeedModal(true)}
         />
       )}
 
@@ -498,9 +646,20 @@ function HomeContent(): React.ReactElement {
         }}
         babyId={selectedBaby?.id || ''}
         initialTime={localTime}
-        onSuccess={() => {
+        isFeeding={selectedBaby?.id ? feedingBabies.has(selectedBaby.id) : false}
+        activeFeedData={activeFeedData}
+        onFeedToggle={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            checkFeedStatus(selectedBaby.id);
+          }
+        }}
+        onSwitch={handleFeedSwitch}
+        onPause={handleFeedPause}
+        onResume={handleFeedResume}
+        onSuccess={async () => {
+          if (selectedBaby?.id) {
+            await refreshActivities(selectedBaby.id);
+            await checkFeedStatus(selectedBaby.id);
           }
         }}
       />
@@ -610,6 +769,34 @@ function HomeContent(): React.ReactElement {
         }}
       />
       
+      {/* Activity Form */}
+      <ActivityForm
+        isOpen={showActivityModal}
+        onClose={() => {
+          setShowActivityModal(false);
+        }}
+        babyId={selectedBaby?.id || ''}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            refreshActivities(selectedBaby.id);
+          }
+        }}
+      />
+
+      {/* Vaccine Form */}
+      <VaccineForm
+        isOpen={showVaccineModal}
+        onClose={() => setShowVaccineModal(false)}
+        babyId={selectedBaby?.id || ''}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            refreshActivities(selectedBaby.id);
+          }
+        }}
+      />
+
       {/* Settings Modal */}
       <SettingsModal
         open={showSettingsModal}

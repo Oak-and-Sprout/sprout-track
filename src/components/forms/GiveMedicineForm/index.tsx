@@ -34,6 +34,7 @@ interface GiveMedicineFormProps {
   onSuccess?: () => void;
   refreshData?: () => void;
   activity?: any;
+  isSupplement?: boolean;
 }
 
 /**
@@ -42,14 +43,15 @@ interface GiveMedicineFormProps {
  * A standalone form for recording medicine administration
  * Follows the same pattern as other forms in the app (CaretakerForm, etc.)
  */
-const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({ 
+const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
   isOpen,
   onClose,
-  babyId, 
-  initialTime, 
+  babyId,
+  initialTime,
   onSuccess,
   refreshData,
   activity,
+  isSupplement = false,
 }) => {
 
   const { t } = useLocalization();
@@ -161,7 +163,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
         const authToken = localStorage.getItem('authToken');
         try {
           const fetchOptions = { headers: { 'Authorization': `Bearer ${authToken}` } };
-          const medicinesResponse = await fetch('/api/medicine?active=true', fetchOptions);
+          const medicinesResponse = await fetch(`/api/medicine?active=true&isSupplement=${isSupplement}`, fetchOptions);
           if (!medicinesResponse.ok) throw new Error('Failed to load medicines');
           const medicinesData = await medicinesResponse.json();
           if (medicinesData.success) {
@@ -250,7 +252,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
   
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.medicineId) newErrors.medicineId = t('Please select a medicine');
+    if (!formData.medicineId) newErrors.medicineId = isSupplement ? t('Please select a supplement') : t('Please select a medicine');
     if (!formData.time) newErrors.time = t('Please select a time');
     if (formData.doseAmount < 0) newErrors.doseAmount = t('Dose cannot be negative');
     if (formData.doseAmount > 0 && !formData.unitAbbr) newErrors.unitAbbr = t('Please select a unit');
@@ -351,8 +353,8 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={activity ? t('Edit Medicine Log') : t('Give Medicine')}
-      description={activity ? t('Update medicine administration details') : t('Record medicine administration')}
+      title={activity ? (isSupplement ? t('Edit Supplement Log') : t('Edit Medicine Log')) : (isSupplement ? t('Give Supplement') : t('Give Medicine'))}
+      description={activity ? (isSupplement ? t('Update supplement administration details') : t('Update medicine administration details')) : (isSupplement ? t('Record supplement administration') : t('Record medicine administration'))}
     >
       <form id="give-medicine-form" onSubmit={handleSubmit} className="h-full flex flex-col">
         <FormPageContent>
@@ -371,16 +373,16 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
               )}
               
               <div>
-                <Label htmlFor="medicine">{t('Medicine')}</Label>
+                <Label htmlFor="medicine">{isSupplement ? t('Supplement') : t('Medicine')}</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
-                      {selectedMedicine ? selectedMedicine.name : t('Select a medicine')}
+                      {selectedMedicine ? selectedMedicine.name : (isSupplement ? t('Select a supplement') : t('Select a medicine'))}
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>{t('Available Medicines')}</DropdownMenuLabel>
+                    <DropdownMenuLabel>{isSupplement ? t('Available Supplements') : t('Available Medicines')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {medicines.map(med => (
                       <DropdownMenuItem key={med.id} onSelect={() => handleMedicineChange(med.id)}>

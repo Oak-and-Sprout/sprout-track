@@ -26,6 +26,13 @@
   padding: 4px;
 }
 
+/* Minimal variant button - gray-200 in both modes */
+.theme-toggle-button-minimal {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
 /* Theme icon container and styling */
 .theme-icon-container {
   display: flex;
@@ -77,6 +84,29 @@
 /* Light variant - no circle indicator */
 .theme-icon-light::before {
   display: none;
+}
+
+/* Minimal variant icon - same size as light, gray-200 color */
+.theme-icon-minimal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #e5e7eb; /* gray-200 */
+}
+
+/* Minimal variant - no circle indicator */
+.theme-icon-minimal::before {
+  display: none;
+}
+
+/* Minimal variant current theme - gray-200 text */
+.current-theme-minimal {
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 500; /* font-medium */
+  color: #e5e7eb; /* gray-200 */
 }
 
 /* Active theme indicators - light mode styles */
@@ -144,12 +174,29 @@ html.dark .theme-toggle-button-light:hover {
   color: #5eead4 !important; /* teal-300 - just color change, no background */
 }
 
+/* Dark mode overrides for minimal variant */
+html.dark .theme-toggle-button-minimal {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .theme-toggle-button-minimal:hover {
+  color: #5eead4 !important; /* teal-300 - just color change, no background */
+}
+
 html.dark .theme-icon {
   color: #9ca3af; /* gray-400 */
 }
 
 html.dark .theme-icon-light {
   color: #9ca3af; /* gray-400 */
+}
+
+html.dark .theme-icon-minimal {
+  color: #e5e7eb; /* gray-200 - same in both modes */
+}
+
+html.dark .current-theme-minimal {
+  color: #e5e7eb; /* gray-200 - same in both modes */
 }
 
 html.dark .current-theme {

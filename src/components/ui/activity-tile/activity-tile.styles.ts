@@ -18,13 +18,15 @@ export const activityTileStyles = {
       note: "",
       bath: "",
       pump: "",
+      play: "",
       measurement: "",
       milestone: "",
       medicine: "",
+      vaccine: "",
       default: ""
     }
   },
-  
+
   iconContainer: {
     base: "flex-shrink-0 mt-1 items-center justify-center transition-transform duration-200 overflow-visible",
     variants: {
@@ -34,13 +36,15 @@ export const activityTileStyles = {
       note: "",
       bath: "",
       pump: "",
+      play: "",
       measurement: "",
       milestone: "",
       medicine: "",
+      vaccine: "",
       default: ""
     }
   },
-  
+
   icon: {
     base: "h-16 w-16",
     variants: {
@@ -50,8 +54,10 @@ export const activityTileStyles = {
       note: "text-yellow-600",
       bath: "text-orange-600",
       pump: "text-purple-600",
+      play: "text-orange-400",
       measurement: "text-indigo-600",
       medicine: "text-red-600",
+      vaccine: "text-red-600",
       milestone: "text-pink-600",
       default: "text-gray-800"
     },
@@ -63,9 +69,11 @@ export const activityTileStyles = {
       note: '/note-128.png',
       bath: '/bath-128.png',
       pump: '/pump-128.png',
+      play: '/activity-128.png',
       measurement: '/measurement-128.png',
       milestone: '/milestone-128.png',
       medicine: '/med-128.png',
+      vaccine: '/vaccine-128.png',
       default: '/default-128.png'
     }
   },

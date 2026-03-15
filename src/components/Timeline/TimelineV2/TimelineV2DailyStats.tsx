@@ -7,6 +7,7 @@ import {
   Moon,
   Sun,
   PillBottle,
+  Pill,
   Edit,
   Bath,
   LampWallDown,
@@ -14,7 +15,9 @@ import {
   Ruler,
   Icon,
   Eye,
-  EyeOff
+  EyeOff,
+  Baby,
+  Syringe
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -28,6 +31,7 @@ import { FilterType } from '../types';
 import { ActivityType } from '../types';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import { useLocalization } from '@/src/context/localization';
+import { convertVolume } from '@/src/utils/unit-conversion';
 
 import './TimelineV2DailyStats.css';
 
@@ -43,6 +47,7 @@ interface TimelineV2DailyStatsProps {
    isHeatmapVisible: boolean;
    onHeatmapToggle: () => void;
    breastMilkBalance?: string;
+   defaultBottleUnit?: string;
 }
 
 interface StatTile {
@@ -67,7 +72,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   onFilterChange,
   isHeatmapVisible,
   onHeatmapToggle,
-  breastMilkBalance
+  breastMilkBalance,
+  defaultBottleUnit
 }) => {
   const { t } = useLocalization();
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -93,22 +99,41 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let dirtyCount = 0;
     let poopCount = 0;
     let totalFeedCount = 0;
-    const bottleFeedAmounts: Record<string, number> = {};
+    const preferredUnit = defaultBottleUnit || 'OZ';
+    let bottleFeedTotal = 0;
     let leftBreastFeedMinutes = 0;
     let rightBreastFeedMinutes = 0;
     const solidsAmounts: Record<string, number> = {};
     const medicineStats: Record<string, { count: number, total: number, unit: string }> = {};
+    const supplementStats: Record<string, { count: number, total: number, unit: string }> = {};
     let noteCount = 0;
     let bathCount = 0;
     let pumpCount = 0;
-    const pumpAmounts: Record<string, number> = {};
+    let pumpTotal = 0;
     let milestoneCount = 0;
     let measurementCount = 0;
+    let playCount = 0;
+    let totalPlayMinutes = 0;
+    let vaccineCount = 0;
     let awakeMinutes = 0;
 
+    const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
+
     activities.forEach(activity => {
+      // Play activities - check before sleep since both have duration, startTime, type
+      if ('activities' in activity && 'type' in activity && PLAY_TYPES.includes((activity as any).type)) {
+        const time = new Date((activity as any).startTime);
+        if (time >= startOfDay && time <= endOfDay) {
+          playCount++;
+          if ((activity as any).duration) {
+            totalPlayMinutes += (activity as any).duration;
+          }
+        }
+        return; // Skip further checks for this activity
+      }
+
       // Sleep activities (exclude pump activities which also have duration and startTime)
-      if ('duration' in activity && 'startTime' in activity && 
+      if ('duration' in activity && 'startTime' in activity &&
           'type' in activity && // Sleep activities have type (NAP or NIGHT_SLEEP)
           !('leftAmount' in activity || 'rightAmount' in activity)) { // Exclude pump activities
         const startTime = new Date(activity.startTime);
@@ -131,12 +156,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         if (time >= startOfDay && time <= endOfDay) {
           if (activity.type === 'BOTTLE') {
             totalFeedCount++;
-            // Track bottle feed amounts by unit
-            const unit = activity.unitAbbr || 'oz';
-            if (!bottleFeedAmounts[unit]) {
-              bottleFeedAmounts[unit] = 0;
-            }
-            bottleFeedAmounts[unit] += activity.amount || 0;
+            const entryUnit = activity.unitAbbr || 'OZ';
+            const amount = activity.amount || 0;
+            bottleFeedTotal += convertVolume(amount, entryUnit, preferredUnit);
           } else if (activity.type === 'SOLIDS') {
             totalFeedCount++;
             // Track solids amounts by unit
@@ -196,29 +218,33 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
       }
       
-      // Medicine activities
+      // Medicine and supplement activities
       if ('doseAmount' in activity && 'medicineId' in activity) {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
-          // Get medicine name
+          // Determine if supplement
+          const isSupplement = 'medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && (activity.medicine as any).isSupplement;
+          const targetStats = isSupplement ? supplementStats : medicineStats;
+
+          // Get medicine/supplement name
           let medicineName = t('unknown');
           if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
             medicineName = (activity.medicine as { name?: string }).name || medicineName;
           }
-          
-          // Initialize medicine record if it doesn't exist
-          if (!medicineStats[medicineName]) {
-            medicineStats[medicineName] = { 
-              count: 0, 
-              total: 0, 
-              unit: activity.unitAbbr || '' 
+
+          // Initialize record if it doesn't exist
+          if (!targetStats[medicineName]) {
+            targetStats[medicineName] = {
+              count: 0,
+              total: 0,
+              unit: activity.unitAbbr || ''
             };
           }
-          
+
           // Increment count and add to total
-          medicineStats[medicineName].count += 1;
+          targetStats[medicineName].count += 1;
           if (activity.doseAmount && typeof activity.doseAmount === 'number') {
-            medicineStats[medicineName].total += activity.doseAmount;
+            targetStats[medicineName].total += activity.doseAmount;
           }
         }
       }
@@ -251,13 +277,21 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           pumpCount++;
           const total = (activity as any).totalAmount || 0;
           if (total > 0) {
-            const unit = (activity as any).unitAbbr || 'oz';
-            if (!pumpAmounts[unit]) pumpAmounts[unit] = 0;
-            pumpAmounts[unit] += total;
+            const entryUnit = (activity as any).unitAbbr || 'OZ';
+            pumpTotal += convertVolume(total, entryUnit, preferredUnit);
           }
         }
       }
       
+      // Vaccine activities
+      if ('vaccineName' in activity) {
+        const time = new Date((activity as any).time);
+        if (time >= startOfDay && time <= endOfDay) {
+          vaccineCount++;
+        }
+        return;
+      }
+
       // Milestone activities
       if ('title' in activity && 'category' in activity) {
         const activityDate = new Date(activity.date);
@@ -338,9 +372,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     // Combined feed tile (bottle, breast, and solids)
     if (totalFeedCount > 0) {
       // Format bottle feed amounts
-      const formattedBottleAmounts = Object.entries(bottleFeedAmounts)
-        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
-        .join(', ');
+      const formattedBottleAmounts = bottleFeedTotal > 0
+        ? `${Math.round(bottleFeedTotal * 100) / 100} ${preferredUnit.toLowerCase()}`
+        : '';
       
       // Format solids amounts
       const formattedSolidsAmounts = Object.entries(solidsAmounts)
@@ -419,7 +453,6 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     const medicineEntries = Object.entries(medicineStats).filter(([_, stats]) => stats.count > 0);
     if (medicineEntries.length > 0) {
       if (medicineEntries.length === 1) {
-        // Single medicine: show "MedicineName: countx (totalAmount unit)"
         const [medicineName, stats] = medicineEntries[0];
         tiles.push({
           filter: 'medicine',
@@ -432,17 +465,48 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           bgActiveColor: 'bg-gray-100'
         });
       } else {
-        // Multiple medicines: show all in label "Med1: 2x (10mg), Med2: 1x (5mg)"
         const totalCount = medicineEntries.reduce((sum, [_, stats]) => sum + stats.count, 0);
         const label = medicineEntries
           .map(([name, stats]) => `${name}: ${stats.count}x (${stats.total}${stats.unit})`)
           .join(', ');
-        
         tiles.push({
           filter: 'medicine',
           label: label,
           value: totalCount.toString(),
           icon: <PillBottle className="h-full w-full" />,
+          bgColor: 'bg-gray-50',
+          iconColor: 'text-[#43B755]', // green - matches timeline
+          borderColor: 'border-gray-500',
+          bgActiveColor: 'bg-gray-100'
+        });
+      }
+    }
+
+    // Supplement tiles
+    const supplementEntries = Object.entries(supplementStats).filter(([_, stats]) => stats.count > 0);
+    if (supplementEntries.length > 0) {
+      if (supplementEntries.length === 1) {
+        const [supplementName, stats] = supplementEntries[0];
+        tiles.push({
+          filter: 'medicine',
+          label: `${supplementName}: ${stats.count}x (${stats.total}${stats.unit})`,
+          value: stats.count.toString(),
+          icon: <Pill className="h-full w-full" />,
+          bgColor: 'bg-gray-50',
+          iconColor: 'text-[#43B755]', // green - matches timeline
+          borderColor: 'border-gray-500',
+          bgActiveColor: 'bg-gray-100'
+        });
+      } else {
+        const totalCount = supplementEntries.reduce((sum, [_, stats]) => sum + stats.count, 0);
+        const label = supplementEntries
+          .map(([name, stats]) => `${name}: ${stats.count}x (${stats.total}${stats.unit})`)
+          .join(', ');
+        tiles.push({
+          filter: 'medicine',
+          label: label,
+          value: totalCount.toString(),
+          icon: <Pill className="h-full w-full" />,
           bgColor: 'bg-gray-50',
           iconColor: 'text-[#43B755]', // green - matches timeline
           borderColor: 'border-gray-500',
@@ -481,9 +545,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
 
     // Pump tile
     if (pumpCount > 0) {
-      const formattedPumpAmounts = Object.entries(pumpAmounts)
-        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
-        .join(', ');
+      const formattedPumpAmounts = pumpTotal > 0
+        ? `${Math.round(pumpTotal * 100) / 100} ${preferredUnit.toLowerCase()}`
+        : '';
       tiles.push({
         filter: 'pump',
         label: formattedPumpAmounts || t('Pump'),
@@ -505,6 +569,20 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         icon: <LampWallDown className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches pump
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Vaccine tile
+    if (vaccineCount > 0) {
+      tiles.push({
+        filter: 'vaccine',
+        label: t('Vaccines'),
+        value: vaccineCount.toString(),
+        icon: <Syringe className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#EF4444]',
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -533,6 +611,21 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         icon: <Ruler className="h-full w-full" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#EA6A5E]', // red - matches timeline
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Play/Activity tile
+    if (playCount > 0) {
+      const playLabel = totalPlayMinutes > 0 ? formatMinutes(totalPlayMinutes) : t('Play Time');
+      tiles.push({
+        filter: 'play',
+        label: playLabel,
+        value: playCount.toString(),
+        icon: <Baby className="h-full w-full" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#F3C4A2]', // peach - matches play activity
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });
@@ -721,7 +814,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         {/* Slide-out panel */}
         <div
           className={`
-            absolute inset-y-0 right-0 w-1/2 max-w-xs bg-white shadow-xl
+            absolute inset-y-0 right-0 w-24 bg-white shadow-xl
             transform transition-transform duration-300
             timeline-v2-heatmap-panel
             ${isHeatmapVisible ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}
@@ -734,10 +827,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               onClick={onHeatmapToggle}
             >
               <EyeOff className="h-3 w-3" />
-              <span>{t('Hide heatmap')}</span>
+              <span>{t('Hide')}</span>
             </button>
           </div>
-          <div className="h-full px-2 py-2">
+          <div className="h-full px-1 py-2">
             <TimelineV2Heatmap
               activities={heatmapActivities}
               selectedDate={date}

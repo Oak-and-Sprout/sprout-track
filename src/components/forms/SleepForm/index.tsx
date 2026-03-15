@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SleepType, SleepQuality } from '@prisma/client';
 import { SleepLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -14,15 +14,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { 
-  FormPage, 
-  FormPageContent, 
-  FormPageFooter 
+import {
+  FormPage,
+  FormPageContent,
+  FormPageFooter
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { Settings } from 'lucide-react';
+import { Checkbox } from '@/src/components/ui/checkbox';
+
+import './sleep-form.css';
 
 // Note: DEFAULT_LOCATIONS are displayed as-is but could be localized if needed
 const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
@@ -76,20 +80,19 @@ export default function SleepForm({
   const [customLocations, setCustomLocations] = useState<string[]>([]);
   const [isCustomLocation, setIsCustomLocation] = useState(false);
   const [customLocationInput, setCustomLocationInput] = useState('');
+  const [hiddenLocations, setHiddenLocations] = useState<string[]>([]);
+  const [showLocationManager, setShowLocationManager] = useState(false);
 
-  // Fetch custom locations when form opens
+  // Fetch custom locations and hidden location settings when form opens
   useEffect(() => {
     if (isOpen) {
+      const authToken = localStorage.getItem('authToken');
+      const headers = { 'Authorization': authToken ? `Bearer ${authToken}` : '' };
+
       const fetchCustomLocations = async () => {
         try {
-          const authToken = localStorage.getItem('authToken');
-          const response = await fetch('/api/sleep-log?locations=true', {
-            headers: {
-              'Authorization': authToken ? `Bearer ${authToken}` : ''
-            }
-          });
+          const response = await fetch('/api/sleep-log?locations=true', { headers });
           if (!response.ok) return;
-          
           const data = await response.json();
           if (data.success) {
             setCustomLocations(data.data);
@@ -98,9 +101,59 @@ export default function SleepForm({
           console.error('Error fetching custom locations:', error);
         }
       };
+
+      const fetchHiddenLocations = async () => {
+        try {
+          const response = await fetch('/api/sleep-location-settings', { headers });
+          if (!response.ok) return;
+          const data = await response.json();
+          if (data.success && data.data) {
+            setHiddenLocations(data.data.hiddenLocations || []);
+          }
+        } catch (error) {
+          console.error('Error fetching sleep location settings:', error);
+        }
+      };
+
       fetchCustomLocations();
+      fetchHiddenLocations();
+    } else {
+      setShowLocationManager(false);
     }
   }, [isOpen]);
+
+  const saveHiddenLocations = useCallback(async (newHidden: string[]) => {
+    setHiddenLocations(newHidden);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch('/api/sleep-location-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+        },
+        body: JSON.stringify({ hiddenLocations: newHidden }),
+      });
+    } catch (error) {
+      console.error('Error saving sleep location settings:', error);
+    }
+  }, []);
+
+  const toggleLocationVisibility = useCallback((location: string) => {
+    const newHidden = hiddenLocations.includes(location)
+      ? hiddenLocations.filter(l => l !== location)
+      : [...hiddenLocations, location];
+    saveHiddenLocations(newHidden);
+  }, [hiddenLocations, saveHiddenLocations]);
+
+  // Compute visible default locations, preserving the activity's current location if editing
+  const visibleDefaultLocations = DEFAULT_LOCATIONS.filter(loc => {
+    if (hiddenLocations.includes(loc)) {
+      // Still show it if it's the current activity's location (editing mode)
+      return activity?.location === loc;
+    }
+    return true;
+  });
 
   useEffect(() => {
     if (isOpen && !isInitialized) {
@@ -533,7 +586,33 @@ export default function SleepForm({
                 </Select>
               </div>
               <div>
-                <label className="form-label">{t('Location')}</label>
+                <div className="flex items-center justify-between">
+                  <label className="form-label">{t('Location')}</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowLocationManager(!showLocationManager)}
+                    className="sleep-settings-button p-1 text-muted-foreground hover:text-foreground transition-colors"
+                    title={t('Manage visible locations')}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                </div>
+                {showLocationManager && (
+                  <div className="sleep-location-manager mb-2 p-3 border border-gray-300 rounded-md bg-muted/50 space-y-1">
+                    <p className="text-xs text-muted-foreground mb-2">{t('Toggle locations to show or hide them')}</p>
+                    {DEFAULT_LOCATIONS.map((location) => (
+                      <label key={location} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          variant="primary"
+                          size="sm"
+                          checked={!hiddenLocations.includes(location)}
+                          onCheckedChange={() => toggleLocationVisibility(location)}
+                        />
+                        {location}
+                      </label>
+                    ))}
+                  </div>
+                )}
                 <Select
                   value={formData.location}
                   onValueChange={(value: string) => {
@@ -546,13 +625,13 @@ export default function SleepForm({
                       setFormData({ ...formData, location: value });
                     }
                   }}
-                  disabled={(isSleeping && !isEditMode) || loading} // Only disabled when ending sleep and not editing
+                  disabled={(isSleeping && !isEditMode) || loading}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder={t("Select location")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEFAULT_LOCATIONS.map((location) => (
+                    {visibleDefaultLocations.map((location) => (
                       <SelectItem key={location} value={location}>
                         {location}
                       </SelectItem>

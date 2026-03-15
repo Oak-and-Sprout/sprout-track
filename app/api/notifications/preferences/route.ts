@@ -197,7 +197,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     }
 
     // Validate and parse activityTypes if provided (should be JSON string array)
-    const VALID_ACTIVITY_TYPES = ['feed', 'diaper', 'sleep', 'bath', 'pump', 'medicine', 'note', 'milestone', 'measurement'];
+    const VALID_ACTIVITY_TYPES = ['feed', 'diaper', 'sleep', 'bath', 'pump', 'medicine', 'supplement', 'play', 'note', 'milestone', 'measurement'];
     let activityTypesJson: string | null = null;
     if (activityTypes !== undefined && activityTypes !== null) {
       let activityTypesArray: string[];

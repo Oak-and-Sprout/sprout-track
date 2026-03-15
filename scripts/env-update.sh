@@ -40,8 +40,9 @@ if [ -z "$ENC_HASH_EXISTS" ]; then
     echo "PORT=3000" >> "$ENV_FILE"
     echo "TZ=UTC" >> "$ENV_FILE"
     echo "AUTH_LIFE=86400" >> "$ENV_FILE"
-    echo "IDLE_TIME=28800" >> "$ENV_FILE"
-    echo "APP_VERSION=0.98.0" >> "$ENV_FILE"
+    echo "IDLE_TIME=604800" >> "$ENV_FILE"
+    echo "REFRESH_TOKEN_LIFE=604800" >> "$ENV_FILE"
+    echo "APP_VERSION=1.0.0" >> "$ENV_FILE"
     echo "COOKIE_SECURE=false" >> "$ENV_FILE"
     echo "# Encryption hash for local deployment data encryption" >> "$ENV_FILE"
     echo "ENC_HASH=\"$RANDOM_HASH\"" >> "$ENV_FILE"
@@ -76,6 +77,33 @@ if [ -z "$CRON_SECRET_EXISTS" ]; then
     echo "NOTIFICATION_CRON_SECRET generated and added to .env file"
 else
     echo "NOTIFICATION_CRON_SECRET already exists in .env file"
+fi
+
+# Check and add REFRESH_TOKEN_LIFE for sliding-window refresh token support
+echo "Checking for REFRESH_TOKEN_LIFE in .env file..."
+REFRESH_TOKEN_EXISTS=$(grep -E "^REFRESH_TOKEN_LIFE=" "$ENV_FILE" | cut -d '=' -f2 | tr -d '"')
+
+if [ -z "$REFRESH_TOKEN_EXISTS" ]; then
+    echo "REFRESH_TOKEN_LIFE not found. Adding with default value (604800 = 7 days)..."
+    echo "# Refresh token lifetime in seconds (default 7 days). Sliding window: resets on each refresh." >> "$ENV_FILE"
+    echo "REFRESH_TOKEN_LIFE=604800" >> "$ENV_FILE"
+    echo "REFRESH_TOKEN_LIFE added to .env file"
+else
+    echo "REFRESH_TOKEN_LIFE already exists in .env file"
+fi
+
+# Update IDLE_TIME to match REFRESH_TOKEN_LIFE (idle timeout is effectively deprecated by refresh tokens)
+echo "Checking IDLE_TIME alignment with REFRESH_TOKEN_LIFE..."
+IDLE_TIME_VALUE=$(grep -E "^IDLE_TIME=" "$ENV_FILE" | cut -d '=' -f2 | tr -d '"')
+REFRESH_TOKEN_VALUE=$(grep -E "^REFRESH_TOKEN_LIFE=" "$ENV_FILE" | cut -d '=' -f2 | tr -d '"')
+
+if [ -n "$IDLE_TIME_VALUE" ] && [ -n "$REFRESH_TOKEN_VALUE" ] && [ "$IDLE_TIME_VALUE" != "$REFRESH_TOKEN_VALUE" ]; then
+    echo "Updating IDLE_TIME ($IDLE_TIME_VALUE) to match REFRESH_TOKEN_LIFE ($REFRESH_TOKEN_VALUE)..."
+    sed -i.bak "s/^IDLE_TIME=.*/IDLE_TIME=$REFRESH_TOKEN_VALUE/" "$ENV_FILE"
+    rm -f "$ENV_FILE.bak"
+    echo "IDLE_TIME updated to $REFRESH_TOKEN_VALUE"
+else
+    echo "IDLE_TIME already aligned with REFRESH_TOKEN_LIFE"
 fi
 
 echo "Environment configuration check completed." 

@@ -627,6 +627,7 @@ export default function PinLogin({
                   className="text-center text-xl sr-only"
                   placeholder="ID"
                   maxLength={2}
+                  inputMode="none"
                   autoFocus={activeInput === 'loginId'}
                   onFocus={handleFocusLoginId}
                   disabled={!!lockoutTime}
@@ -639,6 +640,7 @@ export default function PinLogin({
                   className="text-center text-xl font-semibold sr-only"
                   placeholder="PIN"
                   maxLength={10}
+                  inputMode="none"
                   autoFocus={activeInput === 'pin'}
                   onFocus={handleFocusPin}
                   disabled={!!lockoutTime}
@@ -680,6 +682,7 @@ export default function PinLogin({
                   className="text-center text-xl font-semibold sr-only"
                   placeholder="PIN"
                   maxLength={10}
+                  inputMode="none"
                   autoFocus={activeInput === 'pin'}
                   onFocus={handleFocusPin}
                   disabled={!!lockoutTime}
