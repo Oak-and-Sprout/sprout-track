@@ -1,4 +1,4 @@
-# Sprout Track — Webhook API Documentation
+# Sprout Track -- Webhook API Documentation
 
 **Version:** 1.0
 **Base Path:** `/api/hooks/v1`
@@ -7,12 +7,12 @@
 
 ## Overview
 
-The Sprout Track Webhook API allows external services to read and write baby activity data over HTTP. Any service that can make HTTP requests can integrate with it — Home Assistant, Grafana, Node-RED, n8n, IFTTT, shell scripts, cron jobs, NFC automations, physical buttons, and more.
+The Sprout Track Webhook API allows external services to read and write baby activity data over HTTP. Any service that can make HTTP requests can integrate with it -- Home Assistant, Grafana, Node-RED, n8n, IFTTT, shell scripts, cron jobs, NFC automations, physical buttons, and more.
 
 **Two directions of data flow:**
 
-- **GET** — Poll Sprout Track for current state, recent activities, and reference data (dashboards, sensors, monitoring)
-- **POST** — Push new events into Sprout Track (physical buttons, automations, voice assistants)
+- **GET** -- Poll Sprout Track for current state, recent activities, and reference data (dashboards, sensors, monitoring)
+- **POST** -- Push new events into Sprout Track (physical buttons, automations, voice assistants)
 
 ---
 
@@ -20,7 +20,7 @@ The Sprout Track Webhook API allows external services to read and write baby act
 
 ### API Keys
 
-API keys are created and managed in **Settings > Admin > Integrations**.
+API keys are created and managed by caretakers with the **admin** role in the main app under **Settings > Admin > Integrations**. This is in the main Sprout Track interface, not the Family Manager.
 
 Each key:
 - Is scoped to a **family**
@@ -156,7 +156,7 @@ curl -s \
 
 ### GET /babies/:babyId/status
 
-Dashboard snapshot — last activity per type, daily counts, and overdue warnings.
+Dashboard snapshot -- last activity per type, daily counts, and overdue warnings.
 
 ```bash
 curl -s \
@@ -473,7 +473,7 @@ Returns valid values for use with POST endpoints. Use this to discover medicines
 | Param | Default | Description |
 |-------|---------|-------------|
 | `type` | all | `medicines`, `sleep-locations`, `play-categories`, or `feed-types` |
-| `playType` | — | Filter play categories by play type |
+| `playType` | -- | Filter play categories by play type |
 
 ```bash
 curl -s \
@@ -509,7 +509,7 @@ curl -s \
 
 ## Sample Scenarios
 
-### 1. Home Assistant — Baby Status Sensors
+### 1. Home Assistant -- Baby Status Sensors
 
 Poll the status endpoint to create sensors for feed time, diaper count, and sleep state.
 
@@ -535,7 +535,7 @@ rest:
         value_template: "{{ value_json.data.warnings.feedOverdue }}"
 ```
 
-### 2. Home Assistant — Button to Log Formula Feed
+### 2. Home Assistant -- Button to Log Formula Feed
 
 Use a physical Zigbee button or dashboard button to log a 4oz formula bottle with one press.
 
@@ -562,7 +562,7 @@ rest_command:
     payload: '{"type":"feed","feedType":"formula","amount":4,"unitAbbr":"OZ"}'
 ```
 
-### 3. NFC Tag — Quick Diaper Log
+### 3. NFC Tag -- Quick Diaper Log
 
 Tap an NFC tag on the changing table to log a wet diaper. Works with iOS Shortcuts or Android Tasker.
 
@@ -574,13 +574,13 @@ curl -X POST \
   http://sprout-track:3000/api/hooks/v1/babies/BABY_ID/activities
 ```
 
-### 4. Cron Job — Daily Summary Script
+### 4. Cron Job -- Daily Summary Script
 
 Run a nightly script that fetches the day's activity counts and sends a summary.
 
 ```bash
 #!/bin/bash
-# daily-summary.sh — run via cron at 9pm
+# daily-summary.sh -- run via cron at 9pm
 
 API_KEY="st_live_YOUR_KEY"
 BASE="http://sprout-track:3000/api/hooks/v1"
@@ -610,13 +610,13 @@ GET /api/hooks/v1/babies/BABY_ID/activities?type=diaper&limit=50&since=2026-03-0
 
 Each response includes timestamped records that can be plotted on time-series panels.
 
-### 6. Automation — Feed Overdue Alert
+### 6. Automation -- Feed Overdue Alert
 
 Poll the status endpoint and send a notification when the feed warning triggers.
 
 ```bash
 #!/bin/bash
-# check-feed.sh — run every 5 minutes via cron
+# check-feed.sh -- run every 5 minutes via cron
 
 API_KEY="st_live_YOUR_KEY"
 BASE="http://sprout-track:3000/api/hooks/v1"
@@ -635,7 +635,7 @@ fi
 
 ### 7. Sleep Tracking with Start/End
 
-Use two buttons or automations — one to start, one to end a nap.
+Use two buttons or automations -- one to start, one to end a nap.
 
 **Start nap (when baby goes down):**
 ```bash
