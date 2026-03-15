@@ -42,7 +42,7 @@ if [ -z "$ENC_HASH_EXISTS" ]; then
     echo "AUTH_LIFE=86400" >> "$ENV_FILE"
     echo "IDLE_TIME=604800" >> "$ENV_FILE"
     echo "REFRESH_TOKEN_LIFE=604800" >> "$ENV_FILE"
-    echo "APP_VERSION=0.98.0" >> "$ENV_FILE"
+    echo "APP_VERSION=1.0.0" >> "$ENV_FILE"
     echo "COOKIE_SECURE=false" >> "$ENV_FILE"
     echo "# Encryption hash for local deployment data encryption" >> "$ENV_FILE"
     echo "ENC_HASH=\"$RANDOM_HASH\"" >> "$ENV_FILE"

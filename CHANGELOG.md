@@ -1,5 +1,66 @@
 # Sprout Track Changelog
 
+## v1.0.0 - The Official, Official Release of Sprout Track
+
+### Changes
+
+#### Webhooks for Home Assistant and Other Tools
+- Added webhook support for Home Assistant and other integrations, manageable from the settings page
+- Webhooks fire on activity events (feedings, naps, etc.) to trigger automations
+- Requires HTTPS and an API key for secure access
+- Added in-app API documentation for webhook setup
+
+#### Nursery Mode
+- Added a dedicated tablet/phone interface for quick activity logging without navigating the full app
+- Includes device color changing, adjustable dim and saturation settings, keep-awake, and full-screen support on supported devices
+- Doubles as a night light for the nursery
+
+#### Medicine vs Supplements
+- Separated supplement tracking from medicine tracking since supplements are typically daily and don't require minimum safe dose period tracking
+- Added reports for medicine and supplement history over time
+
+#### Vaccines
+- Added dedicated vaccine activity tracking with 50 preloaded common vaccines for quick search
+- Added encrypted document storage for vaccine records
+- Added vaccine record export to Excel format for daycares or other providers
+
+#### Activity Tracking and Reports
+- Added activity logging for tummy time, indoor time, outdoor time, and walks
+- Added reports and charts for activity data
+
+#### st-guardian Maintenance Page
+- Added st-guardian, a lightweight Node.js sidecar for reverse proxying, version tracking, updates, and serving a health/uptime/maintenance page
+- Includes slug reservations and in-app deployment sync
+- Not active in Docker (use docker pull to update)
+
+#### Persistent Breastfeed Status
+- Breastfeed timer now persists if you leave the app, with an easy-to-use banner showing the active session
+
+#### Refresh Token for Authentication
+- Added refresh token flow so sessions don't expire unexpectedly
+- Applies to all authentication types including PIN-based auth
+- Third-party integrations can use rolling refresh tokens to stay authorized
+
+#### Heatmap Overhaul
+- Added icons to the log entry heatmap
+- Consolidated reports heatmap into a single mobile-friendly view
+
+#### Various QoL Fixes
+- Componentized the settings menu and added the ability for regular users to adjust push notification settings and unit defaults
+- Added daily stats conversion based on user's preferred unit
+- Dark mode theming fixes for when a device is in dark mode but the app is set to light mode
+- Added diaper cream checkbox to diaper tracking
+- Added sleep location masking to hide unused sleep locations
+- Regional decimal format fixes to allow comma input with automatic conversion for data storage
+- Fixed a bug causing the Android keyboard to pop up during the login screen
+- Added GitHub Actions to automate amd64/arm64 builds (thanks Beadsworth)
+- Fixed all missing UTC conversion issues in reports (thanks Beadsworth)
+- Updated notification descriptions to be more detailed
+- Updated theme toggle to use correct colors
+- Cleaned up theming to properly use correct components
+- Fixed background process and baby context issues
+- Fixed config dropdown extending past the screen
+
 ## v0.98.0 - Push Notifications and Localization
 
 ### Changes
@@ -9,7 +70,6 @@
 - Applied bugfixes for pumping numbers and charts values that are represented (thank you tionkje)
 - Added bugfix for some modals showing up blurry
 - Added bugfix for auth mode to be caretaker auth if user sets up additional caretakers during the setup wizard
-
 ## v0.97.2 - Breastfeed timer hotfix
 
 ### Changes

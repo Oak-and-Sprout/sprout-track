@@ -55,11 +55,11 @@ RUN mkdir -p /app/env && \
     echo "TZ=UTC" >> /app/env/.env && \
     echo "AUTH_LIFE=86400" >> /app/env/.env && \
     echo "IDLE_TIME=28800" >> /app/env/.env && \
-    echo "APP_VERSION=0.98.0" >> /app/env/.env && \
+    echo "APP_VERSION=1.0.0" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
     echo "Base .env file created (ENC_HASH will be generated at startup)" && \
     # Create symlink so Next.js can find the env file at build time and runtime
-    ln -s /app/env/.env /app/.env
+    ln -sf /app/env/.env /app/.env
 
 # Build the application
 RUN npm run build
@@ -79,6 +79,7 @@ ENV LOG_DATABASE_URL="file:/db/baby-tracker-logs.db"
 # Create volume mount points
 VOLUME /db
 VOLUME /app/env
+VOLUME /app/Files
 
 # Copy startup script that runs migrations and starts the app
 COPY docker-startup.sh /usr/local/bin/docker-startup.sh
