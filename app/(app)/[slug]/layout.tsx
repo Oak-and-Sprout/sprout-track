@@ -814,6 +814,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
                           ? t('Log Entry')
                           : pathname?.includes('/calendar')
                           ? t('Calendar')
+                          : pathname?.includes('/reports')
+                          ? t('Reports')
                           : t('Full Log')}
                       </span>
                     </div>
