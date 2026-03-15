@@ -139,7 +139,7 @@ async function deleteExistingDemoFamily(demoFamily) {
   
   // Delete junction tables first (many-to-many relationships)
   const junctionTables = [
-    'babyEvent', 'caretakerEvent', 'contactEvent', 'contactMedicine', 'familyMember'
+    'babyEvent', 'caretakerEvent', 'contactEvent', 'contactMedicine', 'contactVaccine', 'familyMember'
   ];
   
   for (const table of junctionTables) {
@@ -197,6 +197,18 @@ async function deleteExistingDemoFamily(demoFamily) {
             where: { contactId: { in: contactIds } }
           });
         }
+      } else if (table === 'contactVaccine') {
+        // Delete contact vaccine relationships for contacts in this family
+        const contacts = await prisma.contact.findMany({
+          where: { familyId: familyId },
+          select: { id: true }
+        });
+        const contactIds = contacts.map(c => c.id);
+        if (contactIds.length > 0) {
+          await prisma.contactVaccine.deleteMany({
+            where: { contactId: { in: contactIds } }
+          });
+        }
       }
       console.log(`  Cleared ${table} junction records for demo family`);
     } catch (error) {
@@ -204,22 +216,63 @@ async function deleteExistingDemoFamily(demoFamily) {
     }
   }
   
+  // Delete vaccine documents (FK to vaccineLog) before deleting vaccine logs
+  try {
+    const vaccineLogs = await prisma.vaccineLog.findMany({
+      where: { familyId: familyId },
+      select: { id: true }
+    });
+    const vaccineLogIds = vaccineLogs.map(v => v.id);
+    if (vaccineLogIds.length > 0) {
+      await prisma.vaccineDocument.deleteMany({
+        where: { vaccineLogId: { in: vaccineLogIds } }
+      });
+    }
+    console.log('  Cleared vaccineDocument records for demo family');
+  } catch (error) {
+    console.log(`  Note: Could not clear vaccineDocument records: ${error.message}`);
+  }
+
+  // Delete notification logs and preferences (FK to pushSubscription) before deleting subscriptions
+  try {
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { familyId: familyId },
+      select: { id: true }
+    });
+    const subscriptionIds = subscriptions.map(s => s.id);
+    if (subscriptionIds.length > 0) {
+      await prisma.notificationLog.deleteMany({
+        where: { subscriptionId: { in: subscriptionIds } }
+      });
+      await prisma.notificationPreference.deleteMany({
+        where: { subscriptionId: { in: subscriptionIds } }
+      });
+    }
+    console.log('  Cleared notificationLog and notificationPreference records for demo family');
+  } catch (error) {
+    console.log(`  Note: Could not clear notification records: ${error.message}`);
+  }
+
   // Delete in order to respect foreign key constraints
   // Models with familyId field - ordered to handle dependencies
   const modelsWithFamilyId = [
     // Activity logs (depend on baby/caretaker)
-    'sleepLog', 'feedLog', 'diaperLog', 'moodLog', 'note', 'milestone', 
+    'sleepLog', 'feedLog', 'diaperLog', 'moodLog', 'note', 'milestone',
     'pumpLog', 'playLog', 'bathLog', 'measurement', 'medicineLog',
-    
+    'breastMilkAdjustment', 'activeBreastFeed', 'vaccineLog',
+
+    // Push subscriptions, feedback, API keys (have direct familyId)
+    'pushSubscription', 'feedback', 'apiKey',
+
     // Calendar events (depend on babies/caretakers through junction tables)
     'calendarEvent',
-    
+
     // Medicine and contacts
     'medicine', 'contact',
-    
+
     // Core entities
-    'baby', 'caretaker', 
-    
+    'baby', 'caretaker',
+
     // Settings and family setup
     'settings', 'familySetup'
   ];
@@ -344,6 +397,7 @@ async function createDemoFamily() {
       familyId: family.id,
       familyName: family.name,
       securityPin: DEMO_CARETAKER_PIN,
+      authType: 'CARETAKER',
       defaultBottleUnit: 'OZ',
       defaultSolidsUnit: 'TBSP',
       defaultHeightUnit: 'IN',
