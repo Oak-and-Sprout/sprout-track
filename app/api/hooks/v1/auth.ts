@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '../../db';
 
+/**
+ * Returns true if the hostname is a private/local network address.
+ * Allows HTTP for loopback, RFC 1918, link-local, and IPv6 ULA/link-local.
+ */
+function isPrivateNetwork(hostname: string): boolean {
+  if (hostname === 'localhost') return true;
+
+  // IPv6 loopback and private ranges
+  if (hostname === '::1') return true;
+  const cleanIPv6 = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (cleanIPv6.startsWith('fc') || cleanIPv6.startsWith('fd') || cleanIPv6.startsWith('fe80')) return true;
+
+  // IPv4 checks
+  const parts = hostname.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(p => isNaN(p))) return false;
+
+  if (parts[0] === 127) return true;                                      // 127.0.0.0/8 loopback
+  if (parts[0] === 10) return true;                                       // 10.0.0.0/8
+  if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;  // 172.16.0.0/12
+  if (parts[0] === 192 && parts[1] === 168) return true;                  // 192.168.0.0/16
+  if (parts[0] === 169 && parts[1] === 254) return true;                  // 169.254.0.0/16 link-local
+
+  return false;
+}
+
 export interface ApiKeyContext {
   familyId: string;
   keyId: string;
@@ -14,11 +39,10 @@ export function withApiKeyAuth(
   requiredScope: 'read' | 'write'
 ) {
   return async (req: NextRequest, routeContext?: any): Promise<NextResponse> => {
-    // Require HTTPS unless request is to localhost/127.0.0.1
+    // Require HTTPS unless request is from a private/local network address
     const url = new URL(req.url);
     const host = url.hostname;
-    const isLocal = host === 'localhost' || host === '127.0.0.1';
-    if (!isLocal && url.protocol !== 'https:') {
+    if (!isPrivateNetwork(host) && url.protocol !== 'https:') {
       return NextResponse.json(
         { success: false, error: { code: 'HTTPS_REQUIRED', message: 'API requests must use HTTPS' } },
         { status: 403 }

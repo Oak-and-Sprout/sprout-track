@@ -47,7 +47,12 @@ Authorization: Bearer st_live_your_key_here
 
 ### HTTPS Requirement
 
-All API requests must use HTTPS. Plain HTTP is only allowed when the request is to `localhost` or `127.0.0.1` (for local development and testing).
+All API requests from public/external networks must use HTTPS. Plain HTTP is allowed from private and local network addresses:
+
+- `localhost` / `127.0.0.0/8` (loopback)
+- `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` (RFC 1918 private networks)
+- `169.254.0.0/16` (link-local)
+- `::1`, `fc00::/7`, `fe80::/10` (IPv6 loopback, ULA, and link-local)
 
 ### Error Codes
 
