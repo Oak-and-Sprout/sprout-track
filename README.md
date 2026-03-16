@@ -18,8 +18,14 @@ Try out Sprout Track at our live demo: **[https://www.sprout-track.com/demo](htt
 ## Quick Start: Docker
 
 ```bash
-docker pull sprouttrack/sprout-track:latest
-docker-compose up -d
+docker run -d \
+  --name sprout-track \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -v sprout-track-db:/db \
+  -v sprout-track-env:/app/env \
+  -v sprout-track-files:/app/Files \
+  sprouttrack/sprout-track:latest
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
