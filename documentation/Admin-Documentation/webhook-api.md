@@ -188,7 +188,8 @@ curl -s \
       "diaper": { "time": "...", "minutesAgo": 45, "type": "WET" },
       "sleep": { "startTime": "...", "endTime": "...", "minutesAgo": 120, "duration": 90, "type": "NAP", "isActive": false },
       "bath": { "time": "...", "minutesAgo": 300 },
-      "medicine": { "time": "...", "minutesAgo": 480, "medicineName": "Vitamin D Drops" },
+      "medicine": { "time": "...", "minutesAgo": 480, "medicineName": "Infant Tylenol" },
+      "supplement": { "time": "...", "minutesAgo": 600, "supplementName": "Vitamin D Drops" },
       "pump": { "startTime": "...", "minutesAgo": 200, "duration": 15, "isActive": false }
     },
     "dailyCounts": {
@@ -199,7 +200,8 @@ curl -s \
       "sleepMinutes": 180,
       "naps": 2,
       "baths": 1,
-      "medicines": 1
+      "medicines": 1,
+      "supplements": 2
     },
     "warnings": {
       "feedOverdue": false,
@@ -223,7 +225,7 @@ Recent activity logs with optional filtering.
 
 | Param | Default | Description |
 |-------|---------|-------------|
-| `type` | all | Filter by type: `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine` |
+| `type` | all | Filter by type: `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine`, `supplement` |
 | `limit` | 10 | Max records per type (1–50) |
 | `since` | 24h ago | ISO 8601 datetime cutoff |
 
@@ -421,6 +423,21 @@ All fields optional. `soapUsed` and `shampooUsed` default to `true`.
 
 Optional fields: `amount`, `unitAbbr`, `notes`
 
+#### Supplement
+
+```json
+{
+  "type": "supplement",
+  "supplementName": "Vitamin D Drops",
+  "amount": 1,
+  "unitAbbr": "ML"
+}
+```
+
+`supplementName` must match an active supplement configured for your family. If not found, the error response lists available supplements. Use the reference endpoint (`?type=supplements`) to look them up first.
+
+Optional fields: `amount`, `unitAbbr`, `notes`
+
 #### Play
 
 ```json
@@ -472,7 +489,7 @@ Returns valid values for use with POST endpoints. Use this to discover medicines
 
 | Param | Default | Description |
 |-------|---------|-------------|
-| `type` | all | `medicines`, `sleep-locations`, `play-categories`, or `feed-types` |
+| `type` | all | `medicines`, `supplements`, `sleep-locations`, `play-categories`, or `feed-types` |
 | `playType` | -- | Filter play categories by play type |
 
 ```bash
@@ -487,8 +504,10 @@ curl -s \
 {
   "data": {
     "medicines": [
-      { "id": "...", "name": "Vitamin D Drops", "typicalDoseSize": 1, "unitAbbr": "ML", "isSupplement": true },
       { "id": "...", "name": "Infant Tylenol", "typicalDoseSize": 1.25, "unitAbbr": "ML", "isSupplement": false }
+    ],
+    "supplements": [
+      { "id": "...", "name": "Vitamin D Drops", "typicalDoseSize": 1, "unitAbbr": "ML", "isSupplement": true }
     ],
     "sleepLocations": ["Bassinet", "Stroller", "Crib", "Car Seat", "Parents Room", "Contact", "Other"],
     "playCategories": ["Blocks", "Reading", "Sensory Play"],
@@ -657,9 +676,9 @@ curl -X POST \
 
 The API automatically calculates the duration.
 
-### 8. Medicine Administration with Lookup
+### 8. Medicine & Supplement Administration with Lookup
 
-First, discover available medicines, then log a dose.
+Medicines and supplements are separate types. Use the reference endpoint to discover what's available, then log a dose.
 
 **Look up medicines:**
 ```bash
@@ -668,12 +687,28 @@ curl -s \
   "http://sprout-track:3000/api/hooks/v1/babies/BABY_ID/reference?type=medicines"
 ```
 
-**Log a dose:**
+**Log a medicine dose:**
 ```bash
 curl -X POST \
   -H "Authorization: Bearer st_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"type":"medicine","medicineName":"Vitamin D Drops","amount":1,"unitAbbr":"ML"}' \
+  -d '{"type":"medicine","medicineName":"Infant Tylenol","amount":1.25,"unitAbbr":"ML"}' \
+  http://sprout-track:3000/api/hooks/v1/babies/BABY_ID/activities
+```
+
+**Look up supplements:**
+```bash
+curl -s \
+  -H "Authorization: Bearer st_live_YOUR_KEY" \
+  "http://sprout-track:3000/api/hooks/v1/babies/BABY_ID/reference?type=supplements"
+```
+
+**Log a supplement dose:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer st_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"supplement","supplementName":"Vitamin D Drops","amount":1,"unitAbbr":"ML"}' \
   http://sprout-track:3000/api/hooks/v1/babies/BABY_ID/activities
 ```
 

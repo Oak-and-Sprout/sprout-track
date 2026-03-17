@@ -31,22 +31,24 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   const today = startOfToday();
 
   // Fetch last activities in parallel
-  const [lastFeed, lastDiaper, lastSleep, lastBath, lastMedicine, lastPump] = await Promise.all([
+  const [lastFeed, lastDiaper, lastSleep, lastBath, lastMedicine, lastSupplement, lastPump] = await Promise.all([
     prisma.feedLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { caretaker: { select: { name: true } }, unit: { select: { unitAbbr: true } } } }),
     prisma.diaperLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { caretaker: { select: { name: true } } } }),
     prisma.sleepLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { startTime: 'desc' }, include: { caretaker: { select: { name: true } } } }),
     prisma.bathLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' } }),
-    prisma.medicineLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { medicine: { select: { name: true } } } }),
+    prisma.medicineLog.findFirst({ where: { babyId, deletedAt: null, medicine: { isSupplement: false } }, orderBy: { time: 'desc' }, include: { medicine: { select: { name: true } } } }),
+    prisma.medicineLog.findFirst({ where: { babyId, deletedAt: null, medicine: { isSupplement: true } }, orderBy: { time: 'desc' }, include: { medicine: { select: { name: true } } } }),
     prisma.pumpLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { startTime: 'desc' } }),
   ]);
 
   // Fetch daily counts in parallel
-  const [feedCount, diapers, sleepLogs, bathCount, medicineCount] = await Promise.all([
+  const [feedCount, diapers, sleepLogs, bathCount, medicineCount, supplementCount] = await Promise.all([
     prisma.feedLog.count({ where: { babyId, deletedAt: null, time: { gte: today } } }),
     prisma.diaperLog.findMany({ where: { babyId, deletedAt: null, time: { gte: today } }, select: { type: true } }),
     prisma.sleepLog.findMany({ where: { babyId, deletedAt: null, startTime: { gte: today } }, select: { duration: true, type: true } }),
     prisma.bathLog.count({ where: { babyId, deletedAt: null, time: { gte: today } } }),
-    prisma.medicineLog.count({ where: { babyId, deletedAt: null, time: { gte: today } } }),
+    prisma.medicineLog.count({ where: { babyId, deletedAt: null, time: { gte: today }, medicine: { isSupplement: false } } }),
+    prisma.medicineLog.count({ where: { babyId, deletedAt: null, time: { gte: today }, medicine: { isSupplement: true } } }),
   ]);
 
   const diapersByType: Record<string, number> = {};
@@ -115,6 +117,11 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
       minutesAgo: minutesAgo(lastMedicine.time),
       medicineName: lastMedicine.medicine?.name || null,
     } : null,
+    supplement: lastSupplement ? {
+      time: lastSupplement.time.toISOString(),
+      minutesAgo: minutesAgo(lastSupplement.time),
+      supplementName: lastSupplement.medicine?.name || null,
+    } : null,
     pump: lastPump ? {
       startTime: lastPump.startTime.toISOString(),
       endTime: lastPump.endTime?.toISOString() || null,
@@ -140,6 +147,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
       naps,
       baths: bathCount,
       medicines: medicineCount,
+      supplements: supplementCount,
     },
     warnings: {
       feedOverdue,
