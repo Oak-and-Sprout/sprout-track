@@ -1,11 +1,26 @@
 #!/bin/sh
 
-# Ensure the database directory exists
-mkdir -p /db
+# Detect database provider from environment
+DB_PROVIDER="${DATABASE_PROVIDER:-sqlite}"
+echo "Database provider: $DB_PROVIDER"
 
-# Create a symbolic link from /app/db to /db to ensure both paths point to the same location
-mkdir -p /app
-ln -sf /db /app/db
+# SQLite-specific setup: create directories and symlinks
+if [ "$DB_PROVIDER" = "sqlite" ]; then
+  # Ensure the database directory exists
+  mkdir -p /db
+
+  # Create a symbolic link from /app/db to /db to ensure both paths point to the same location
+  mkdir -p /app
+  ln -sf /db /app/db
+
+  # Set default DATABASE_URL if not provided
+  if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "file:/db/baby-tracker.db" ]; then
+    export DATABASE_URL="file:/db/baby-tracker.db"
+  fi
+  if [ -z "$LOG_DATABASE_URL" ] || [ "$LOG_DATABASE_URL" = "file:/db/baby-tracker-logs.db" ]; then
+    export LOG_DATABASE_URL="file:/db/baby-tracker-logs.db"
+  fi
+fi
 
 # Set up timezone for Alpine Linux
 if [ -n "$TZ" ]; then
@@ -17,76 +32,71 @@ if [ -n "$TZ" ]; then
   fi
 fi
 
-# Check and generate ENC_HASH if missing
-echo "Checking for ENC_HASH in .env file..."
+# Ensure all required environment variables exist with defaults
+echo "Ensuring environment defaults..."
+npm run env:ensure -- docker /app/env/.env
+
+# Source the env file so vars are available in this shell session
 ENV_FILE="/app/env/.env"
-
-# Check if ENC_HASH exists and has a value
-ENC_HASH_EXISTS=$(grep -E "^ENC_HASH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
-
-if [ -z "$ENC_HASH_EXISTS" ]; then
-    echo "ENC_HASH not found. Generating unique ENC_HASH for this container..."
-    
-    # Generate a secure random hash (64 characters)
-    RANDOM_HASH=$(openssl rand -hex 32)
-    
-    # Add ENC_HASH to .env file
-    echo "" >> "$ENV_FILE"
-    echo "# Encryption hash for data encryption (generated at container startup)" >> "$ENV_FILE"
-    echo "ENC_HASH=\"$RANDOM_HASH\"" >> "$ENV_FILE"
-    
-    echo "ENC_HASH generated and added to .env file"
-else
-    echo "ENC_HASH already exists in .env file"
-fi
+set -a
+. "$ENV_FILE"
+set +a
 
 echo "Generating Prisma clients..."
-DATABASE_URL="file:/db/baby-tracker.db" npm run prisma:generate
-LOG_DATABASE_URL="file:/db/baby-tracker-logs.db" npm run prisma:generate:log
+npm run prisma:generate
+npm run prisma:generate:log
 
-echo "Running database migrations..."
-# Deploy main database migrations
-DATABASE_URL="file:/db/baby-tracker.db" npx prisma migrate deploy
+if [ "$DB_PROVIDER" = "postgresql" ]; then
+  # PostgreSQL: wait for database to be ready, then push schema
+  echo "Waiting for PostgreSQL to be ready..."
+  # Extract host and port from DATABASE_URL for pg_isready
+  PG_HOST=$(echo "$DATABASE_URL" | sed -n 's|.*@\([^:/]*\).*|\1|p')
+  PG_PORT=$(echo "$DATABASE_URL" | sed -n 's|.*:\([0-9]*\)/.*|\1|p')
+  PG_PORT="${PG_PORT:-5432}"
 
-echo "Creating log database schema..."
-# Create/update log database schema
-LOG_DATABASE_URL="file:/db/baby-tracker-logs.db" npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+  if [ -n "$PG_HOST" ]; then
+    RETRIES=30
+    until pg_isready -h "$PG_HOST" -p "$PG_PORT" -q 2>/dev/null || [ "$RETRIES" -eq 0 ]; do
+      echo "Waiting for PostgreSQL at $PG_HOST:$PG_PORT... ($RETRIES retries left)"
+      RETRIES=$((RETRIES - 1))
+      sleep 1
+    done
+
+    if [ "$RETRIES" -eq 0 ]; then
+      echo "WARNING: PostgreSQL may not be ready, attempting to continue..."
+    else
+      echo "PostgreSQL is ready."
+    fi
+  fi
+
+  echo "Pushing database schema to PostgreSQL..."
+  npx prisma db push --accept-data-loss --skip-generate
+
+  echo "Pushing log database schema to PostgreSQL..."
+  npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+else
+  # SQLite: use migration deploy (existing behavior)
+  echo "Running database migrations..."
+  npx prisma migrate deploy
+
+  echo "Creating log database schema..."
+  npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+fi
 
 echo "Seeding database..."
 # Seed script has built-in checks for all entities (families, caretakers, settings, units)
 # It only creates/updates what doesn't exist, so it's safe to run on every startup
-DATABASE_URL="file:/db/baby-tracker.db" npx prisma db seed
+npx prisma db seed
 
 # Notification setup (only if enabled)
 if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
   echo ""
   echo "=== Notification Setup ==="
   echo "Notifications are enabled, setting up notification infrastructure..."
-  
+
   echo "VAPID keys are generated automatically in the database during seeding."
+  echo "✓ NOTIFICATION_CRON_SECRET handled by env:ensure script"
 
-  # Check and generate NOTIFICATION_CRON_SECRET if missing
-  echo "Validating notification environment variables..."
-  NOTIFICATION_CRON_SECRET_CHECK=$(grep -E "^NOTIFICATION_CRON_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
-  if [ -z "$NOTIFICATION_CRON_SECRET_CHECK" ]; then
-    echo "NOTIFICATION_CRON_SECRET not found. Generating secure cron secret..."
-    CRON_SECRET=$(openssl rand -hex 32)
-
-    # Check if the line exists but is empty
-    if grep -q "^NOTIFICATION_CRON_SECRET=" "$ENV_FILE"; then
-      sed -i "s/^NOTIFICATION_CRON_SECRET=.*/NOTIFICATION_CRON_SECRET=\"$CRON_SECRET\"/" "$ENV_FILE"
-    else
-      echo "" >> "$ENV_FILE"
-      echo "# Secret for securing the notification cron endpoint" >> "$ENV_FILE"
-      echo "NOTIFICATION_CRON_SECRET=\"$CRON_SECRET\"" >> "$ENV_FILE"
-    fi
-
-    export NOTIFICATION_CRON_SECRET="$CRON_SECRET"
-    echo "✓ NOTIFICATION_CRON_SECRET generated and added to .env file"
-  else
-    echo "✓ NOTIFICATION_CRON_SECRET is set"
-  fi
-  
   # Check APP_URL or ROOT_DOMAIN
   APP_URL_CHECK=$(grep -E "^APP_URL=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
   ROOT_DOMAIN_CHECK=$(grep -E "^ROOT_DOMAIN=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
@@ -96,16 +106,16 @@ if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
   else
     echo "✓ API URL configuration found"
   fi
-  
+
   # Setup cron job
   echo "Setting up notification cron job..."
-  DATABASE_URL="file:/db/baby-tracker.db" npm run notification:cron:setup
+  npm run notification:cron:setup
   if [ $? -eq 0 ]; then
     echo "✓ Cron job setup completed"
   else
     echo "⚠ Warning: Cron job setup failed, but continuing..."
   fi
-  
+
   # Start cron daemon in background
   echo "Starting cron daemon..."
   crond -f -d 8 &
@@ -115,7 +125,7 @@ if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
   else
     echo "⚠ Warning: Failed to start cron daemon"
   fi
-  
+
   echo "=== Notification Setup Complete ==="
   echo ""
 else

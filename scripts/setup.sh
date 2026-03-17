@@ -82,24 +82,46 @@ echo "  - Log Prisma client generated successfully."
 
 echo "Prisma clients generated successfully."
 
+# Detect database provider
+DB_PROVIDER="${DATABASE_PROVIDER:-sqlite}"
+echo "Database provider: $DB_PROVIDER"
+
 # Step 5: Run database migrations (main and log)
 echo "Step 5: Running database migrations..."
 
-echo "  - Deploying main database migrations..."
-npx prisma migrate deploy
-if [ $? -ne 0 ]; then
-    echo "Error: Main database migrations failed! Setup aborted."
-    exit 1
-fi
-echo "  - Main database migrations deployed successfully."
+if [ "$DB_PROVIDER" = "postgresql" ]; then
+    echo "  - Pushing main database schema to PostgreSQL..."
+    npx prisma db push --accept-data-loss --skip-generate
+    if [ $? -ne 0 ]; then
+        echo "Error: PostgreSQL schema push failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Main database schema pushed successfully."
 
-echo "  - Creating log database schema..."
-npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss
-if [ $? -ne 0 ]; then
-    echo "Error: Log database creation failed! Setup aborted."
-    exit 1
+    echo "  - Pushing log database schema to PostgreSQL..."
+    npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+    if [ $? -ne 0 ]; then
+        echo "Error: Log database schema push failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Log database schema pushed successfully."
+else
+    echo "  - Deploying main database migrations..."
+    npx prisma migrate deploy
+    if [ $? -ne 0 ]; then
+        echo "Error: Main database migrations failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Main database migrations deployed successfully."
+
+    echo "  - Creating log database schema..."
+    npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss
+    if [ $? -ne 0 ]; then
+        echo "Error: Log database creation failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Log database schema created successfully."
 fi
-echo "  - Log database schema created successfully."
 
 echo "Database migrations deployed successfully."
 

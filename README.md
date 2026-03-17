@@ -15,7 +15,7 @@ Try out Sprout Track at our live demo: **[https://www.sprout-track.com/demo](htt
 - ID: `01`
 - PIN: `111111`
 
-## Quick Start: Docker
+## Quick Start: Docker (SQLite)
 
 ```bash
 docker run -d \
@@ -28,6 +28,12 @@ docker run -d \
   sprouttrack/sprout-track:latest
 ```
 
+## Quick Start: Docker (PostgreSQL)
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 - Default PIN: `111222`
@@ -35,7 +41,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 The Setup Wizard will guide you through initial configuration on first access.
 
-See [Docker Deployment](documentation/Admin-Documentation/docker-deployment.md) for volumes, custom ports, and container details.
+See [Docker Deployment](documentation/Admin-Documentation/docker-deployment.md) for volumes, custom ports, database provider options, and container details.
 
 ## Quick Start: Local
 
@@ -83,7 +89,7 @@ See [Initial Setup](documentation/Admin-Documentation/initial-setup.md) for deta
 
 - Next.js with App Router
 - TypeScript
-- Prisma with SQLite
+- Prisma with SQLite or PostgreSQL
 - TailwindCSS
 - Docker
 - PWA with Push Notifications, Keep Awake, and Full Screen (on supported devices)
