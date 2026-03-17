@@ -5,40 +5,47 @@ import JSZip from 'jszip';
 import prisma from '../db';
 import { withSysAdminAuth, ApiResponse } from '../utils/auth';
 import { reloadEnvFile, ensureEnvDefaults } from '../utils/env-reload';
+import { isSQLite } from '../utils/db-provider';
+import { importFromSQLiteFile, importFromJSON, exportToJSON } from '../utils/db-backup';
 
 // Helper to ensure database is closed before operations
 async function disconnectPrisma() {
   await prisma.$disconnect();
 }
 
-// Original GET handler
+// GET handler — create backup
 async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<any>>> {
   try {
-    // Ensure database connection is closed
-    await disconnectPrisma();
-
-    const dbPath = path.resolve('./db/baby-tracker.db');
-    const envPath = path.resolve('./.env');
     const dateStr = new Date().toISOString().split('T')[0];
-
-    // Read the database file
-    const dbContent = await fs.promises.readFile(dbPath);
-
-    // Read the .env file
-    const envContent = await fs.promises.readFile(envPath, 'utf-8');
-
-    // Create a zip file
     const zip = new JSZip();
-    zip.file('baby-tracker.db', dbContent);
-    zip.file(`${dateStr}.backup.env`, envContent);
+
+    if (isSQLite()) {
+      // SQLite: zip the .db file directly (existing behavior)
+      await disconnectPrisma();
+
+      const dbPath = path.resolve('./db/baby-tracker.db');
+      const dbContent = await fs.promises.readFile(dbPath);
+      zip.file('baby-tracker.db', dbContent);
+    } else {
+      // PostgreSQL: export all data as JSON via Prisma
+      const data = await exportToJSON();
+      zip.file('data.json', JSON.stringify(data, null, 2));
+    }
+
+    // Include .env file in backup
+    const envPath = path.resolve('./.env');
+    try {
+      const envContent = await fs.promises.readFile(envPath, 'utf-8');
+      zip.file(`${dateStr}.backup.env`, envContent);
+    } catch {
+      // .env file may not exist, that's ok
+    }
 
     // Generate the zip file as a buffer
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
     // Create response with the zip content
     const response = new NextResponse(zipBuffer as any);
-
-    // Set headers for file download
     response.headers.set('Content-Type', 'application/zip');
     response.headers.set('Content-Disposition', `attachment; filename="sprout-track-backup-${dateStr}.zip"`);
 
@@ -55,12 +62,9 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
   }
 }
 
-// Original POST handler
+// POST handler — restore backup
 async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<any>>> {
   try {
-    // Ensure database connection is closed
-    await disconnectPrisma();
-
     const formData = await req.formData();
     const file = formData.get('file') as File;
 
@@ -74,7 +78,6 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
       );
     }
 
-    const dbPath = path.resolve('./db/baby-tracker.db');
     const envPath = path.resolve('./.env');
     const dateStr = new Date().toISOString().split('T')[0];
 
@@ -89,59 +92,78 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
       try {
         const zip = await JSZip.loadAsync(buffer);
 
-        // Extract database file
+        // Check what format the backup is in
         const dbFile = zip.file('baby-tracker.db');
-        if (!dbFile) {
+        const jsonFile = zip.file('data.json');
+
+        if (jsonFile) {
+          // JSON format backup (from PostgreSQL) — works on any provider
+          const jsonContent = await jsonFile.async('string');
+          const data = JSON.parse(jsonContent);
+          const result = await importFromJSON(data);
+          console.log(`Restored ${result.recordsImported} records across ${result.tablesImported} tables from JSON backup`);
+        } else if (dbFile) {
+          const dbContent = await dbFile.async('nodebuffer');
+
+          // Validate it's a SQLite database
+          if (!dbContent.toString('utf8', 0, 16).includes('SQLite')) {
+            return NextResponse.json<ApiResponse<null>>(
+              {
+                success: false,
+                error: 'Invalid database file in zip archive'
+              },
+              { status: 400 }
+            );
+          }
+
+          if (isSQLite()) {
+            // SQLite → SQLite: write the .db file directly (existing behavior)
+            await disconnectPrisma();
+
+            const dbPath = path.resolve('./db/baby-tracker.db');
+
+            // Create backup of existing database
+            const backupPath = `${dbPath}.backup-${dateStr}`;
+            await fs.promises.copyFile(dbPath, backupPath);
+
+            // Write new database file
+            await fs.promises.writeFile(dbPath, dbContent);
+          } else {
+            // SQLite → PostgreSQL: read with better-sqlite3, insert via Prisma
+            const result = await importFromSQLiteFile(dbContent);
+            console.log(`Migrated ${result.recordsImported} records across ${result.tablesImported} tables from SQLite to PostgreSQL`);
+          }
+        } else {
           return NextResponse.json<ApiResponse<null>>(
             {
               success: false,
-              error: 'Database file not found in zip archive'
+              error: 'No database file or data.json found in zip archive'
             },
             { status: 400 }
           );
         }
 
-        const dbContent = await dbFile.async('nodebuffer');
-
-        // Validate it's a SQLite database
-        if (!dbContent.toString('utf8', 0, 16).includes('SQLite')) {
-          return NextResponse.json<ApiResponse<null>>(
-            {
-              success: false,
-              error: 'Invalid database file in zip archive'
-            },
-            { status: 400 }
-          );
-        }
-
-        // Extract .env file if it exists
+        // Extract and restore .env file if it exists
         const envFiles = Object.keys(zip.files).filter(name => name.endsWith('.backup.env'));
-        let envContent: string | null = null;
-
         if (envFiles.length > 0) {
           const envFile = zip.file(envFiles[0]);
           if (envFile) {
-            envContent = await envFile.async('string');
+            const envContent = await envFile.async('string');
+
+            // Backup existing .env
+            if (await fs.promises.access(envPath).then(() => true).catch(() => false)) {
+              const envBackupPath = `${envPath}.backup-${dateStr}`;
+              await fs.promises.copyFile(envPath, envBackupPath);
+            }
+
+            await fs.promises.writeFile(envPath, envContent);
           }
         }
 
-        // Create backup of existing database
-        const backupPath = `${dbPath}.backup-${dateStr}`;
-        await fs.promises.copyFile(dbPath, backupPath);
-
-        // Create backup of existing .env
-        const envBackupPath = `${envPath}.backup-${dateStr}`;
-        if (await fs.promises.access(envPath).then(() => true).catch(() => false)) {
-          await fs.promises.copyFile(envPath, envBackupPath);
-        }
-
-        // Write new database file
-        await fs.promises.writeFile(dbPath, dbContent);
-
-        // Write new .env file if provided
-        if (envContent) {
-          await fs.promises.writeFile(envPath, envContent);
-        }
+        // Ensure all required env vars exist (fills gaps from older backups)
+        ensureEnvDefaults(envPath);
+        // Reload environment variables into process.env
+        reloadEnvFile(envPath);
 
         // Ensure all required env vars exist (fills gaps from older backups)
         ensureEnvDefaults(envPath);
@@ -161,29 +183,35 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
       }
     } else {
       // Handle raw database file restoration (legacy support)
-      // Validate file is a SQLite database
-      if (!buffer.toString('utf8', 0, 16).includes('SQLite')) {
+      if (buffer.toString('utf8', 0, 16).includes('SQLite')) {
+        if (isSQLite()) {
+          // SQLite → SQLite: write the .db file directly
+          await disconnectPrisma();
+
+          const dbPath = path.resolve('./db/baby-tracker.db');
+          const backupPath = `${dbPath}.backup-${dateStr}`;
+          await fs.promises.copyFile(dbPath, backupPath);
+          await fs.promises.writeFile(dbPath, buffer);
+        } else {
+          // SQLite → PostgreSQL: read with better-sqlite3, insert via Prisma
+          const result = await importFromSQLiteFile(buffer);
+          console.log(`Migrated ${result.recordsImported} records across ${result.tablesImported} tables from SQLite to PostgreSQL`);
+        }
+
+        // Ensure all required env vars exist
+        ensureEnvDefaults(envPath);
+        reloadEnvFile(envPath);
+
+        return NextResponse.json<ApiResponse<null>>({ success: true });
+      } else {
         return NextResponse.json<ApiResponse<null>>(
           {
             success: false,
-            error: 'Invalid database file'
+            error: 'Invalid file format. Expected a .zip backup or .db SQLite file.'
           },
           { status: 400 }
         );
       }
-
-      // Create backup of existing database
-      const backupPath = `${dbPath}.backup-${dateStr}`;
-      await fs.promises.copyFile(dbPath, backupPath);
-
-      // Write new database file
-      await fs.promises.writeFile(dbPath, buffer);
-
-      // Ensure all required env vars exist
-      ensureEnvDefaults(envPath);
-      reloadEnvFile(envPath);
-
-      return NextResponse.json<ApiResponse<null>>({ success: true });
     }
   } catch (error) {
     console.error('Restore error:', error);

@@ -1,11 +1,19 @@
+# Sprout Track - SQLite Deployment (Default)
+#
+# Quick start:
+#   docker compose up -d
+#
+# Build from source instead of pulling:
+#   docker compose up -d --build
+
 services:
   app:
+    image: sprouttrack/sprout-track:latest
     build:
       context: .
       dockerfile: Dockerfile
       args:
         ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-true}
-    image: sprout-track
     container_name: sprout-track
     restart: unless-stopped
     ports:
@@ -14,9 +22,9 @@ services:
       - db-data:/db
       - env-data:/app/env
       - files:/app/Files
-      - ./logs:/app/logs
     environment:
       - NODE_ENV=production
+      - DATABASE_PROVIDER=${DATABASE_PROVIDER:-sqlite}
       - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS:-true}
       - NOTIFICATION_CRON_SECRET=${NOTIFICATION_CRON_SECRET:-}
       - NOTIFICATION_LOG_RETENTION_DAYS=${NOTIFICATION_LOG_RETENTION_DAYS:-30}

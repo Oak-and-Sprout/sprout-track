@@ -28,6 +28,11 @@ const path = require('path');
 // ---------------------------------------------------------------------------
 const ENV_DEFAULTS = [
   {
+    key: 'DATABASE_PROVIDER',
+    default: 'sqlite',
+    comment: 'Database provider: "sqlite" or "postgresql"'
+  },
+  {
     key: 'DATABASE_URL',
     dockerDefault: 'file:/db/baby-tracker.db',
     localDefault: 'file:../db/baby-tracker.db',
@@ -81,7 +86,7 @@ const ENV_DEFAULTS = [
   },
   {
     key: 'APP_VERSION',
-    default: '1.1.0',
+    default: '1.0.0',
     comment: 'Application version'
   },
   {

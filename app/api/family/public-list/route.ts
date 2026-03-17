@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../db';
-import { ApiResponse, FamilyResponse, Family } from '../../types';
+import { ApiResponse, FamilyResponse } from '../../types';
 
 // This endpoint doesn't require authentication as it's used for the initial family selection
 export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<FamilyResponse[]>>> {
   try {
-    // Use raw query to get families
-    const rawFamilies = await prisma.$queryRaw`
-      SELECT id, name, slug, "createdAt", "updatedAt", "isActive"
-      FROM "Family"
-      WHERE "isActive" = true
-      ORDER BY name ASC
-    `;
-    
-    // Convert raw result to typed array
-    const families = rawFamilies as Array<{
-      id: string;
-      name: string;
-      slug: string;
-      createdAt: Date;
-      updatedAt: Date;
-      isActive: boolean;
-    }>;
-    
+    const families = await prisma.family.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+        updatedAt: true,
+        isActive: true,
+      },
+    });
+
     // Convert dates to strings for JSON response
     const familyResponses: FamilyResponse[] = families.map((family) => ({
       id: family.id,
@@ -32,7 +27,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<Fa
       createdAt: new Date(family.createdAt).toISOString(),
       updatedAt: new Date(family.updatedAt).toISOString(),
     }));
-    
+
     return NextResponse.json({
       success: true,
       data: familyResponses,

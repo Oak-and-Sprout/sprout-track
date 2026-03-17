@@ -1,11 +1,19 @@
 # Use Node.js LTS as the base image
 FROM node:22-alpine
 
-# Build argument for notification features
+# Build arguments
 ARG ENABLE_NOTIFICATIONS=true
+ARG DATABASE_PROVIDER=sqlite
 
-# Install tzdata package for timezone support, openssl for ENC_HASH generation, and dcron for notifications
-RUN apk add --no-cache tzdata openssl dcron curl
+# Install system packages:
+# - tzdata: timezone support
+# - openssl: ENC_HASH generation
+# - dcron: notification cron jobs
+# - curl: healthcheck
+# - postgresql-client: pg_isready for PostgreSQL healthchecks
+# - python3 make g++: build tools for better-sqlite3 native module
+RUN apk add --no-cache tzdata openssl dcron curl postgresql-client \
+    python3 make g++
 
 # Set working directory
 WORKDIR /app
@@ -16,13 +24,17 @@ COPY package.json package-lock.json ./
 # Copy prisma files first
 COPY prisma ./prisma/
 
+# Copy the prisma-provider script (needed before prisma generate)
+COPY scripts/prisma-provider.js ./scripts/
+
 # Install dependencies
 RUN npm ci
 
 # Disable Next.js telemetry
 RUN npm exec next telemetry disable
 
-# Generate Prisma clients (both main and log clients needed for build)
+# Configure Prisma for the target database provider and generate clients
+ENV DATABASE_PROVIDER=${DATABASE_PROVIDER}
 RUN npm run prisma:generate && \
     npm run prisma:generate:log
 
@@ -44,11 +56,11 @@ RUN if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then \
     fi
 
 # Create env directory and base .env file (ENC_HASH will be generated at container startup)
+# DATABASE_URL is set at runtime via environment variables
 RUN mkdir -p /app/env && \
     echo "Creating base .env file..." && \
     echo "# Environment variables for Docker container" > /app/env/.env && \
-    echo "DATABASE_URL=\"file:/db/baby-tracker.db\"" >> /app/env/.env && \
-    echo "LOG_DATABASE_URL=\"file:/db/baby-tracker-logs.db\"" >> /app/env/.env && \
+    echo "DATABASE_PROVIDER=\"${DATABASE_PROVIDER}\"" >> /app/env/.env && \
     echo "ENABLE_LOG=\"false\"" >> /app/env/.env && \
     echo "NODE_ENV=production" >> /app/env/.env && \
     echo "PORT=3000" >> /app/env/.env && \
@@ -66,6 +78,9 @@ RUN mkdir -p /app/env && \
 # Build the application
 RUN npm run build
 
+# Remove build-only dependencies to reduce image size
+RUN apk del python3 make g++
+
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -74,7 +89,7 @@ ENV TZ=UTC
 # Set notification environment variable from build arg
 ENV ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS}
 
-# Update database URLs to point to the volume
+# Default database URLs (SQLite) — overridden at runtime for PostgreSQL
 ENV DATABASE_URL="file:/db/baby-tracker.db"
 ENV LOG_DATABASE_URL="file:/db/baby-tracker-logs.db"
 

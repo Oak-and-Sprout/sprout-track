@@ -1,6 +1,6 @@
 # Docker Deployment
 
-## Quick Start
+## Quick Start (SQLite -- Default)
 
 Run the latest image:
 
@@ -27,6 +27,23 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Default admin password: `admin`
 
 On first access, the Setup Wizard will guide you through initial configuration.
+
+## Quick Start (PostgreSQL)
+
+Use the PostgreSQL compose file:
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+This starts both the app and a PostgreSQL 16 instance. The app automatically creates the database schema and seeds default data on first run.
+
+To use your own external PostgreSQL server instead of the built-in one, set `DATABASE_URL` in your environment and remove the `postgres` service from the compose file:
+
+```bash
+DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track" \
+  docker compose -f docker-compose.postgres.yml up -d app
+```
 
 ## Custom Port
 
@@ -72,11 +89,39 @@ environment:
   - TZ=America/New_York
 ```
 
+## Database Provider
+
+Sprout Track supports two database backends:
+
+| Provider | Default | Use Case |
+|----------|---------|----------|
+| **SQLite** | Yes | Simple, zero-config, single-file database. Great for most users. |
+| **PostgreSQL** | No | External database server. Better for high availability or existing infrastructure. |
+
+The database provider is selected via the `DATABASE_PROVIDER` environment variable (`sqlite` or `postgresql`). SQLite is the default -- no configuration needed.
+
+### Choosing a Provider
+
+- **SQLite** is recommended for most users. It requires no external services, stores everything in a single file, and handles the typical workload of a family tracking app with ease.
+- **PostgreSQL** is useful if you already run a PostgreSQL server, want to use managed database services, or prefer a client-server database architecture.
+
+Both providers support the same features. You can migrate between them at any time using the built-in backup/restore tool (see [Database Migration](upgrades-and-backups.md#migrating-between-database-providers)).
+
 ## Volumes
+
+### SQLite Deployment
 
 | Volume | Mount Point | Purpose |
 |--------|-------------|---------|
 | `sprout-track-db` | `/db` | SQLite database files |
+| `sprout-track-env` | `/app/env` | Environment configuration (`.env` file, encryption keys) |
+| `sprout-track-files` | `/app/Files` | Encrypted file storage (vaccine documents) |
+
+### PostgreSQL Deployment
+
+| Volume | Mount Point | Purpose |
+|--------|-------------|---------|
+| `sprout-track-pg-data` | `/var/lib/postgresql/data` | PostgreSQL data (on the postgres container) |
 | `sprout-track-env` | `/app/env` | Environment configuration (`.env` file, encryption keys) |
 | `sprout-track-files` | `/app/Files` | Encrypted file storage (vaccine documents) |
 
@@ -97,9 +142,12 @@ Your `ENC_HASH` (used for file encryption) is never overwritten once generated. 
 Each time the container starts, it automatically:
 
 1. Ensures the `.env` file is complete (generates missing secrets, adds new defaults)
-2. Runs database migrations
-3. Seeds the database with defaults (safe to run repeatedly)
-4. Sets up the notification cron job (if notifications are enabled)
+2. Configures Prisma for the active database provider
+3. Runs database migrations (SQLite) or pushes the schema (PostgreSQL)
+4. Seeds the database with defaults (safe to run repeatedly)
+5. Sets up the notification cron job (if notifications are enabled)
+
+For PostgreSQL, the startup script also waits for the database server to be ready before running migrations.
 
 This means upgrades are handled automatically -- just pull the new image and restart.
 
@@ -146,12 +194,17 @@ docker logs -f sprout-track
 To build the image locally instead of pulling from Docker Hub:
 
 ```bash
+# SQLite (default)
 docker-compose build
 docker-compose up -d
+
+# PostgreSQL
+docker compose -f docker-compose.postgres.yml build
+docker compose -f docker-compose.postgres.yml up -d
 ```
 
 ## Related Documentation
 
 - [Environment Variables](environment-variables.md) -- full variable reference
-- [Upgrades and Backups](upgrades-and-backups.md) -- upgrade procedures and backup strategies
+- [Upgrades and Backups](upgrades-and-backups.md) -- upgrade procedures, backup strategies, and database migration
 - [Push Notifications](push-notifications.md) -- notification setup
