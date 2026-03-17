@@ -17,7 +17,8 @@
     "prisma:seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
     "setup:vapid": "tsx scripts/setup-vapid-keys.ts",
     "notification:cron:setup": "tsx scripts/setup-notification-cron.ts",
-    "notification:cron:run": "bash scripts/run-notification-cron.sh"
+    "notification:cron:run": "bash scripts/run-notification-cron.sh",
+    "env:ensure": "node scripts/ensure-env-defaults.js"
   },
   "dependencies": {
     "@lucide/lab": "^0.1.2",

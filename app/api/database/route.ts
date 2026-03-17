@@ -4,7 +4,7 @@ import path from 'path';
 import JSZip from 'jszip';
 import prisma from '../db';
 import { withSysAdminAuth, ApiResponse } from '../utils/auth';
-import { reloadEnvFile } from '../utils/env-reload';
+import { reloadEnvFile, ensureEnvDefaults } from '../utils/env-reload';
 
 // Helper to ensure database is closed before operations
 async function disconnectPrisma() {
@@ -141,9 +141,12 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
         // Write new .env file if provided
         if (envContent) {
           await fs.promises.writeFile(envPath, envContent);
-          // Reload environment variables from the new .env file
-          reloadEnvFile(envPath);
         }
+
+        // Ensure all required env vars exist (fills gaps from older backups)
+        ensureEnvDefaults(envPath);
+        // Reload environment variables into process.env
+        reloadEnvFile(envPath);
 
         return NextResponse.json<ApiResponse<null>>({ success: true });
       } catch (zipError) {
@@ -175,6 +178,10 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
 
       // Write new database file
       await fs.promises.writeFile(dbPath, buffer);
+
+      // Ensure all required env vars exist
+      ensureEnvDefaults(envPath);
+      reloadEnvFile(envPath);
 
       return NextResponse.json<ApiResponse<null>>({ success: true });
     }
