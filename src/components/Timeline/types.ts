@@ -23,6 +23,7 @@ export interface TimelineFilterProps {
   onDateChange: (days: number) => void;
   onDateSelection: (date: Date) => void;
   onFilterChange: (filter: FilterType) => void;
+  enableBreastMilkTracking?: boolean;
 }
 
 export interface TimelineActivityListProps {

@@ -482,6 +482,8 @@ export default function SettingsForm({
           loading={loading}
           appConfig={appConfig}
           deploymentConfig={deploymentConfig}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
           editingFamily={editingFamily}
           familyEditData={familyEditData}
           slugError={slugError}

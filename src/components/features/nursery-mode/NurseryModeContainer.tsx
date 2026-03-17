@@ -46,6 +46,7 @@ export function NurseryModeContainer() {
   const [babies, setBabies] = useState<Baby[]>([]);
   const [babySwitcherOpen, setBabySwitcherOpen] = useState(false);
   const [expandedTileId, setExpandedTileId] = useState<string | null>(null);
+  const [enableBreastMilkTracking, setEnableBreastMilkTracking] = useState(true);
   const [isLandscape, setIsLandscape] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
   );
@@ -67,6 +68,27 @@ export function NurseryModeContainer() {
       landscapeMql.removeEventListener('change', onLandscape);
       mobileMql.removeEventListener('change', onMobile);
     };
+  }, []);
+
+  // Fetch family settings for breast milk tracking flag
+  useEffect(() => {
+    const fetchFamilySettings = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const res = await fetch('/api/settings', {
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setEnableBreastMilkTracking(data.data?.enableBreastMilkTracking ?? true);
+          }
+        }
+      } catch (err) {
+        // Default to enabled on error
+      }
+    };
+    fetchFamilySettings();
   }, []);
 
   // Fetch babies list and auto-select if needed
@@ -628,6 +650,7 @@ export function NurseryModeContainer() {
                     babyId={selectedBaby.id}
                     toUTCString={toUTCString}
                     expanded={isExpanded}
+                    enableBreastMilkTracking={enableBreastMilkTracking}
                   />
                 </div>
               );

@@ -17,6 +17,7 @@ import {
 } from '@/src/components/ui/select';
 import { ShareButton } from '@/src/components/ui/share-button';
 import { useLocalization } from '@/src/context/localization';
+import { Settings } from '@/app/api/types';
 
 interface FamilyData {
   id: string;
@@ -34,6 +35,8 @@ interface ConfigTabProps {
   loading: boolean;
   appConfig: { rootDomain: string; enableHttps: boolean } | null;
   deploymentConfig: { deploymentMode: string; enableAccounts: boolean; allowAccountRegistration: boolean; notificationsEnabled?: boolean } | null;
+  settings: Settings | null;
+  onSettingsChange: (updates: Partial<Settings>) => Promise<void>;
   // Family editing
   editingFamily: boolean;
   familyEditData: Partial<FamilyData>;
@@ -62,6 +65,8 @@ export default function ConfigTab({
   loading,
   appConfig,
   deploymentConfig,
+  settings,
+  onSettingsChange,
   editingFamily,
   familyEditData,
   slugError,
@@ -273,6 +278,28 @@ export default function ConfigTab({
               <Plus className="h-4 w-4 mr-2" />
               {t('Add')}
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Breast Milk Tracking */}
+      <div className="border-t border-slate-200 pt-6">
+        <h3 className="form-label mb-4">{t('Breast Milk Tracking')}</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="form-label">{t('Enable Breast Milk Inventory Tracking')}</Label>
+              <p className="text-sm text-gray-500">{t('Track stored, fed, and discarded pump actions and breast milk inventory balance')}</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="enableBreastMilkTracking"
+                checked={(settings as any)?.enableBreastMilkTracking ?? true}
+                onChange={(e) => onSettingsChange({ enableBreastMilkTracking: e.target.checked } as any)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+            </div>
           </div>
         </div>
       </div>

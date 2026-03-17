@@ -96,6 +96,10 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
   };
 
   const fetchBreastMilkBalance = async (babyId: string) => {
+    if ((settings as any)?.enableBreastMilkTracking === false) {
+      setBreastMilkBalance(undefined);
+      return;
+    }
     try {
       const authToken = localStorage.getItem('authToken');
       const unit = settings?.defaultBottleUnit || 'OZ';
@@ -218,10 +222,17 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
     };
   }, [babyId, selectedDate]);
 
+  const breastMilkTrackingEnabled = (settings as any)?.enableBreastMilkTracking ?? true;
+
   const sortedActivities = useMemo(() => {
+    // Filter out breast-milk-adjustment activities when tracking is disabled
+    const baseActivities = !breastMilkTrackingEnabled
+      ? dateFilteredActivities.filter(activity => !('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)))
+      : dateFilteredActivities;
+
     const filtered = !activeFilter || activeFilter === null
-      ? dateFilteredActivities
-      : dateFilteredActivities.filter(activity => {
+      ? baseActivities
+      : baseActivities.filter(activity => {
           switch (activeFilter) {
             case 'sleep':
               return 'duration' in activity;
@@ -257,7 +268,7 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
     });
 
     return sorted;
-  }, [dateFilteredActivities, activeFilter]);
+  }, [dateFilteredActivities, activeFilter, breastMilkTrackingEnabled]);
 
   const handleDelete = async (activity: ActivityType) => {
     // Note: confirm dialog is browser-native and cannot be localized easily
@@ -298,6 +309,7 @@ const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
           onDateChange={handleDateChange}
           onDateSelection={handleDateSelection}
           onFilterChange={setActiveFilter}
+          enableBreastMilkTracking={breastMilkTrackingEnabled}
         />
       </CardHeader>
 
