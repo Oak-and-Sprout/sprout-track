@@ -167,6 +167,12 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
 
     // If we have a JWT token, verify it
     if (token) {
+      // Reject obviously invalid tokens before calling jwt.verify
+      // (e.g., "undefined", "null", or tokens missing the three-part JWT structure)
+      if (!token.includes('.') || token === 'undefined' || token === 'null') {
+        return { authenticated: false, error: 'Invalid token format' };
+      }
+
       // Check if token is blacklisted
       if (tokenBlacklist.has(token)) {
         return { authenticated: false, error: 'Token has been invalidated' };
