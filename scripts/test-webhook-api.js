@@ -99,7 +99,8 @@ async function runReadTests(babyId) {
     assert(res.data.dailyCounts !== undefined, 'Expected dailyCounts');
     assert(res.data.warnings !== undefined, 'Expected warnings');
     const dc = res.data.dailyCounts;
-    log(' ', `Daily: ${dc.feeds} feeds, ${dc.diapers} diapers, ${dc.sleepMinutes}min sleep, ${dc.baths} baths`);
+    assert(dc.supplements !== undefined, 'Expected supplements in dailyCounts');
+    log(' ', `Daily: ${dc.feeds} feeds, ${dc.diapers} diapers, ${dc.sleepMinutes}min sleep, ${dc.baths} baths, ${dc.medicines} medicines, ${dc.supplements} supplements`);
     if (res.data.lastActivities.feed) {
       log(' ', `Last feed: ${res.data.lastActivities.feed.minutesAgo} min ago (${res.data.lastActivities.feed.type})`);
     }
@@ -142,10 +143,11 @@ async function runReadTests(babyId) {
     const res = await request('GET', `/babies/${babyId}/reference`);
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.medicines !== undefined, 'Expected medicines');
+    assert(res.data.supplements !== undefined, 'Expected supplements');
     assert(res.data.sleepLocations !== undefined, 'Expected sleepLocations');
     assert(res.data.playCategories !== undefined, 'Expected playCategories');
     assert(res.data.feedTypes !== undefined, 'Expected feedTypes');
-    log(' ', `Medicines: ${res.data.medicines.length}, Locations: ${res.data.sleepLocations.length}, Feed types: ${res.data.feedTypes.length}`);
+    log(' ', `Medicines: ${res.data.medicines.length}, Supplements: ${res.data.supplements.length}, Locations: ${res.data.sleepLocations.length}, Feed types: ${res.data.feedTypes.length}`);
   });
 
   await test(`GET /babies/${babyId}/reference?type=medicines — medicines only`, async () => {
@@ -170,6 +172,21 @@ async function runReadTests(babyId) {
     log(' ', `Locations: ${res.data.sleepLocations.join(', ')}`);
   });
 
+  await test(`GET /babies/${babyId}/reference?type=supplements — supplements only`, async () => {
+    const res = await request('GET', `/babies/${babyId}/reference?type=supplements`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.supplements), 'Expected supplements array');
+    assert(res.data.medicines === undefined, 'Should not include medicines');
+    res.data.supplements.forEach(s => {
+      assert(s.isSupplement === true, `Expected isSupplement=true, got ${s.isSupplement}`);
+    });
+    if (res.data.supplements.length > 0) {
+      log(' ', `Found: ${res.data.supplements.map(s => s.name).join(', ')}`);
+    } else {
+      log(' ', 'No supplements configured');
+    }
+  });
+
   await test(`GET /babies/${babyId}/reference?type=feed-types — feed types`, async () => {
     const res = await request('GET', `/babies/${babyId}/reference?type=feed-types`);
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
@@ -178,6 +195,26 @@ async function runReadTests(babyId) {
     assert(values.includes('formula'), 'Should include formula shorthand');
     assert(values.includes('BREAST'), 'Should include BREAST');
     log(' ', `Feed types: ${values.join(', ')}`);
+  });
+
+  await test(`GET /babies/${babyId}/activities?type=medicine — medicine activities only`, async () => {
+    const res = await request('GET', `/babies/${babyId}/activities?type=medicine&limit=5`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.activities), 'Expected activities array');
+    res.data.activities.forEach(a => {
+      assert(a.activityType === 'medicine', `Expected medicine, got ${a.activityType}`);
+    });
+    log(' ', `Got ${res.data.count} medicine activities`);
+  });
+
+  await test(`GET /babies/${babyId}/activities?type=supplement — supplement activities only`, async () => {
+    const res = await request('GET', `/babies/${babyId}/activities?type=supplement&limit=5`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(Array.isArray(res.data.activities), 'Expected activities array');
+    res.data.activities.forEach(a => {
+      assert(a.activityType === 'supplement', `Expected supplement, got ${a.activityType}`);
+    });
+    log(' ', `Got ${res.data.count} supplement activities`);
   });
 
   await test(`GET /babies/${babyId}/reference?type=invalid — 400 for bad type`, async () => {
@@ -356,6 +393,78 @@ async function runWriteTests(babyId) {
     }
   });
 
+  await test('POST pump (start then end)', async () => {
+    const startRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'pump',
+      action: 'start',
+    });
+    assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
+    assert(startRes.data.details.isActive === true, 'Expected active pump');
+    log(' ', `Started pump ${startRes.data.id}`);
+
+    await new Promise(r => setTimeout(r, 500));
+
+    const endRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'pump',
+      action: 'end',
+      leftAmount: 2,
+      rightAmount: 1.5,
+      unitAbbr: 'OZ',
+    });
+    assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
+    assert(endRes.data.details.isActive === false, 'Expected inactive pump');
+    log(' ', `Ended pump ${endRes.data.id}, duration: ${endRes.data.details.duration} min`);
+  });
+
+  await test('POST pump (log with duration)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'pump',
+      action: 'log',
+      duration: 20,
+      leftAmount: 3,
+      rightAmount: 2,
+      unitAbbr: 'OZ',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.details.duration === 20, 'Expected 20 min duration');
+    log(' ', `Logged pump ${res.data.id}`);
+  });
+
+  await test('POST play (tummy time)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'play',
+      playType: 'TUMMY_TIME',
+      duration: 15,
+      notes: 'API test tummy time',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.activityType === 'play', 'Expected play type');
+    assert(res.data.details.type === 'TUMMY_TIME', 'Expected TUMMY_TIME');
+    log(' ', `Created play ${res.data.id}`);
+  });
+
+  // Medicine with valid name (conditional on having medicines configured)
+  await test('POST medicine — valid name (if available)', async () => {
+    const refRes = await request('GET', `/babies/${babyId}/reference?type=medicines`);
+    if (!refRes.success || !refRes.data.medicines || refRes.data.medicines.length === 0) {
+      log(' ', 'No medicines configured — skipping valid medicine POST test');
+      skipped++;
+      passed--; // undo the auto-pass from test()
+      return;
+    }
+    const med = refRes.data.medicines[0];
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'medicine',
+      medicineName: med.name,
+      amount: med.typicalDoseSize || 1,
+      unitAbbr: med.unitAbbr || 'ML',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.activityType === 'medicine', 'Expected medicine type');
+    assert(res.data.details.medicineName === med.name, `Expected ${med.name}`);
+    log(' ', `Created medicine log ${res.data.id} (${med.name})`);
+  });
+
   await test('POST medicine — nonexistent name returns 404', async () => {
     const res = await request('POST', `/babies/${babyId}/activities`, {
       type: 'medicine',
@@ -364,6 +473,38 @@ async function runWriteTests(babyId) {
     });
     assert(!res.success, 'Expected failure');
     assert(res.error.code === 'MEDICINE_NOT_FOUND', `Expected MEDICINE_NOT_FOUND, got ${res.error.code}`);
+  });
+
+  // Supplement with valid name (conditional on having supplements configured)
+  await test('POST supplement — valid name (if available)', async () => {
+    const refRes = await request('GET', `/babies/${babyId}/reference?type=supplements`);
+    if (!refRes.success || !refRes.data.supplements || refRes.data.supplements.length === 0) {
+      log(' ', 'No supplements configured — skipping valid supplement POST test');
+      skipped++;
+      passed--; // undo the auto-pass from test()
+      return;
+    }
+    const sup = refRes.data.supplements[0];
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'supplement',
+      supplementName: sup.name,
+      amount: sup.typicalDoseSize || 1,
+      unitAbbr: sup.unitAbbr || 'ML',
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.activityType === 'supplement', 'Expected supplement type');
+    assert(res.data.details.supplementName === sup.name, `Expected ${sup.name}`);
+    log(' ', `Created supplement log ${res.data.id} (${sup.name})`);
+  });
+
+  await test('POST supplement — nonexistent name returns 404', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'supplement',
+      supplementName: 'NonexistentSupplement12345',
+      amount: 1,
+    });
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'SUPPLEMENT_NOT_FOUND', `Expected SUPPLEMENT_NOT_FOUND, got ${res.error.code}`);
   });
 }
 

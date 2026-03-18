@@ -415,8 +415,12 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       try {
         const authToken = localStorage.getItem('authToken');
         const response = await fetch('/api/settings', {
+          cache: 'no-store',
           headers: {
             'Authorization': authToken ? `Bearer ${authToken}` : '',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Expires': '0',
           },
         });
 
@@ -452,9 +456,12 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
         const response = await fetch(
           `/api/cdc-growth-data?sex=${sex}&type=${measurementType}`,
           {
+            cache: 'no-store',
             headers: {
-              'Content-Type': 'application/json',
               'Authorization': authToken ? `Bearer ${authToken}` : '',
+              'Pragma': 'no-cache',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Expires': '0',
             },
           }
         );
@@ -496,9 +503,12 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
         const response = await fetch(
           `/api/measurement-log?babyId=${selectedBaby.id}&type=${apiType}`,
           {
+            cache: 'no-store',
             headers: {
-              'Content-Type': 'application/json',
               'Authorization': authToken ? `Bearer ${authToken}` : '',
+              'Pragma': 'no-cache',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Expires': '0',
             },
           }
         );
@@ -631,14 +641,20 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
 
     // Add any remaining measurement points that don't align with CDC data points
     measurementPointsMap.forEach((measurement, age) => {
-      // Find surrounding CDC points and interpolate
-      const lowerIdx = baseData.findIndex(d => d.ageMonths > age) - 1;
-      if (lowerIdx >= 0 && lowerIdx < baseData.length - 1) {
-        const lower = baseData[lowerIdx];
-        const upper = baseData[lowerIdx + 1];
+      if (!baseData.length) return;
+
+      // Find the first CDC point with age greater than the measurement
+      const upperIdx = baseData.findIndex(d => d.ageMonths > age);
+
+      let interpolatedPoint: ChartDataPoint;
+
+      if (upperIdx > 0) {
+        // Normal case: interpolate between surrounding CDC points
+        const lower = baseData[upperIdx - 1];
+        const upper = baseData[upperIdx];
         const ratio = (age - lower.ageMonths) / (upper.ageMonths - lower.ageMonths);
 
-        mergedData.push({
+        interpolatedPoint = {
           ageMonths: age,
           p3: lower.p3 + ratio * (upper.p3 - lower.p3),
           p5: lower.p5 + ratio * (upper.p5 - lower.p5),
@@ -652,8 +668,30 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
           measurement: measurement.value,
           measurementDate: measurement.date,
           percentile: measurement.percentile,
-        });
+        };
+      } else if (upperIdx === -1) {
+        // Edge case: measurement is at or beyond last CDC point — use last point's values
+        const last = baseData[baseData.length - 1];
+        interpolatedPoint = {
+          ...last,
+          ageMonths: age,
+          measurement: measurement.value,
+          measurementDate: measurement.date,
+          percentile: measurement.percentile,
+        };
+      } else {
+        // Edge case: measurement is before first CDC point — use first point's values
+        const first = baseData[0];
+        interpolatedPoint = {
+          ...first,
+          ageMonths: age,
+          measurement: measurement.value,
+          measurementDate: measurement.date,
+          percentile: measurement.percentile,
+        };
       }
+
+      mergedData.push(interpolatedPoint);
     });
 
     // Sort by age

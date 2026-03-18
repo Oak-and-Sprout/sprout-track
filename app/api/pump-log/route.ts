@@ -68,8 +68,12 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       },
     });
 
-    // If pump action is "FED", auto-create a bottle feed log
-    if (pumpAction === 'FED' && totalAmount) {
+    // If pump action is "FED", auto-create a bottle feed log (only when breast milk tracking is enabled)
+    const familySettings = await prisma.settings.findFirst({
+      where: { familyId: userFamilyId },
+      select: { enableBreastMilkTracking: true },
+    });
+    if (familySettings?.enableBreastMilkTracking !== false && pumpAction === 'FED' && totalAmount) {
       try {
         await prisma.feedLog.create({
           data: {

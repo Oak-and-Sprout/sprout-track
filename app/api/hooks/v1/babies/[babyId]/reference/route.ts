@@ -4,7 +4,7 @@ import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
 
-const VALID_TYPES = ['medicines', 'sleep-locations', 'play-categories', 'feed-types'] as const;
+const VALID_TYPES = ['medicines', 'supplements', 'sleep-locations', 'play-categories', 'feed-types'] as const;
 type RefType = typeof VALID_TYPES[number];
 
 const DEFAULT_SLEEP_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
@@ -19,9 +19,9 @@ const FEED_TYPES = [
   { value: 'other', description: 'Other bottle type' },
 ];
 
-async function getMedicines(familyId: string) {
+async function getMedicines(familyId: string, isSupplement: boolean = false) {
   const medicines = await prisma.medicine.findMany({
-    where: { familyId, deletedAt: null, active: true },
+    where: { familyId, deletedAt: null, active: true, isSupplement },
     select: { id: true, name: true, typicalDoseSize: true, unitAbbr: true, isSupplement: true },
     orderBy: { name: 'asc' },
   });
@@ -76,7 +76,10 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   const data: any = {};
 
   if (!typeParam || typeParam === 'medicines') {
-    data.medicines = await getMedicines(ctx.familyId);
+    data.medicines = await getMedicines(ctx.familyId, false);
+  }
+  if (!typeParam || typeParam === 'supplements') {
+    data.supplements = await getMedicines(ctx.familyId, true);
   }
   if (!typeParam || typeParam === 'sleep-locations') {
     data.sleepLocations = await getSleepLocations(babyId);

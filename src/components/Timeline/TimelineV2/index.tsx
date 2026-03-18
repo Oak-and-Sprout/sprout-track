@@ -38,7 +38,13 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
 
   const babyId = useMemo(() => (activities.length > 0 ? activities[0].babyId : undefined), [activities]);
 
+  const breastMilkTrackingEnabled = (settings as any)?.enableBreastMilkTracking ?? true;
+
   const fetchBreastMilkBalance = async (babyId: string) => {
+    if (!breastMilkTrackingEnabled) {
+      setBreastMilkBalance(undefined);
+      return;
+    }
     try {
       const authToken = localStorage.getItem('authToken');
       const unit = settings?.defaultBottleUnit || 'OZ';
@@ -274,19 +280,24 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   }, [babyId, selectedDate]);
 
   const sortedActivities = useMemo(() => {
+    // Filter out breast-milk-adjustment activities when tracking is disabled
+    const baseActivities = !breastMilkTrackingEnabled
+      ? dateFilteredActivities.filter(activity => !('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)))
+      : dateFilteredActivities;
+
     const filtered = !activeFilter || activeFilter === null
-      ? dateFilteredActivities
-      : dateFilteredActivities.filter(activity => {
+      ? baseActivities
+      : baseActivities.filter(activity => {
           switch (activeFilter) {
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
               return 'amount' in activity;
             case 'diaper':
-              return 'condition' in activity && 'type' in activity && 
+              return 'condition' in activity && 'type' in activity &&
                      (activity.type === 'WET' || activity.type === 'BOTH');
             case 'poop':
-              return 'condition' in activity && 'type' in activity && 
+              return 'condition' in activity && 'type' in activity &&
                      (activity.type === 'DIRTY' || activity.type === 'BOTH');
             case 'medicine':
               return 'doseAmount' in activity && 'medicineId' in activity;
@@ -318,7 +329,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     });
 
     return sorted;
-  }, [dateFilteredActivities, activeFilter]);
+  }, [dateFilteredActivities, activeFilter, breastMilkTrackingEnabled]);
 
   const handleDelete = async (activity: ActivityType) => {
     if (!confirm('Are you sure you want to delete this activity?')) return;
@@ -361,8 +372,9 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
         onFilterChange={handleFilterChange}
         isHeatmapVisible={isHeatmapVisible}
         onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
-        breastMilkBalance={breastMilkBalance}
+        breastMilkBalance={breastMilkTrackingEnabled ? breastMilkBalance : undefined}
         defaultBottleUnit={settings?.defaultBottleUnit}
+        enableBreastMilkTracking={breastMilkTrackingEnabled}
       />
 
       {/* Activity List + Right-side Heatmap */}

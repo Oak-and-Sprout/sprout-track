@@ -480,6 +480,7 @@ model Settings {
   nurseryModeSettings String? // JSON string for nursery mode settings per caretaker
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
+  enableBreastMilkTracking Boolean @default(true) // Enable breast milk inventory tracking (stored/fed/discarded actions, adjustments, balance)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

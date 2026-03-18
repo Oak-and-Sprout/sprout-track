@@ -49,9 +49,13 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
         const authToken = localStorage.getItem('authToken');
 
         const response = await fetch(`/api/milestone-log?babyId=${selectedBaby.id}`, {
+          cache: 'no-store',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': authToken ? `Bearer ${authToken}` : '',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Expires': '0',
           },
         });
 

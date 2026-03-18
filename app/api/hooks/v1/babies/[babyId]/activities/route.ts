@@ -4,7 +4,7 @@ import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
 
-const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine'] as const;
+const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
 type ActivityType = typeof VALID_TYPES[number];
 
 // ── Helper: resolve caretaker by name ──
@@ -181,7 +181,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('medicine')) {
     queries.push(
       prisma.medicineLog.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since } },
+        where: { babyId, deletedAt: null, time: { gte: since }, medicine: { isSupplement: false } },
         orderBy: { time: 'desc' },
         take: limit,
         include: { caretaker: { select: { name: true } }, medicine: { select: { name: true } } },
@@ -191,6 +191,25 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
           id: r.id,
           time: r.time.toISOString(),
           details: { medicineName: r.medicine?.name, doseAmount: r.doseAmount, unitAbbr: r.unitAbbr, notes: r.notes },
+          caretakerName: r.caretaker?.name || null,
+        }));
+      })
+    );
+  }
+
+  if (types.includes('supplement')) {
+    queries.push(
+      prisma.medicineLog.findMany({
+        where: { babyId, deletedAt: null, time: { gte: since }, medicine: { isSupplement: true } },
+        orderBy: { time: 'desc' },
+        take: limit,
+        include: { caretaker: { select: { name: true } }, medicine: { select: { name: true } } },
+      }).then((rows) => {
+        rows.forEach((r) => activities.push({
+          activityType: 'supplement',
+          id: r.id,
+          time: r.time.toISOString(),
+          details: { supplementName: r.medicine?.name, doseAmount: r.doseAmount, unitAbbr: r.unitAbbr, notes: r.notes },
           caretakerName: r.caretaker?.name || null,
         }));
       })
@@ -428,17 +447,17 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         if (!medicineName) {
           return hookError('MEDICINE_NAME_REQUIRED', 'medicineName is required', 400, rl.headers);
         }
-        // Look up medicine by name (case-insensitive)
         const medicine = await prisma.medicine.findFirst({
           where: {
             familyId,
             name: { equals: medicineName },
+            isSupplement: false,
             deletedAt: null,
           },
         });
         if (!medicine) {
           const available = await prisma.medicine.findMany({
-            where: { familyId, deletedAt: null, active: true },
+            where: { familyId, deletedAt: null, active: true, isSupplement: false },
             select: { name: true },
           });
           const names = available.map((m) => m.name).join(', ');
@@ -448,6 +467,34 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           data: { time, doseAmount: amount ? parseFloat(amount) : 0, unitAbbr: unitAbbr || medicine.unitAbbr || null, medicineId: medicine.id, babyId, caretakerId, familyId },
         });
         return hookSuccess({ activityType: 'medicine', id: result.id, time: result.time.toISOString(), details: { medicineName: medicine.name, doseAmount: result.doseAmount, unitAbbr: result.unitAbbr } }, { familyId, babyId }, rl.headers);
+      }
+
+      case 'supplement': {
+        const { supplementName, medicineName: altName, amount, unitAbbr, notes } = body;
+        const name = supplementName || altName;
+        if (!name) {
+          return hookError('SUPPLEMENT_NAME_REQUIRED', 'supplementName is required', 400, rl.headers);
+        }
+        const supplement = await prisma.medicine.findFirst({
+          where: {
+            familyId,
+            name: { equals: name },
+            isSupplement: true,
+            deletedAt: null,
+          },
+        });
+        if (!supplement) {
+          const available = await prisma.medicine.findMany({
+            where: { familyId, deletedAt: null, active: true, isSupplement: true },
+            select: { name: true },
+          });
+          const names = available.map((m) => m.name).join(', ');
+          return hookError('SUPPLEMENT_NOT_FOUND', `Supplement '${name}' not found. Available: ${names || 'none'}`, 404, rl.headers);
+        }
+        result = await prisma.medicineLog.create({
+          data: { time, doseAmount: amount ? parseFloat(amount) : 0, unitAbbr: unitAbbr || supplement.unitAbbr || null, medicineId: supplement.id, babyId, caretakerId, familyId },
+        });
+        return hookSuccess({ activityType: 'supplement', id: result.id, time: result.time.toISOString(), details: { supplementName: supplement.name, doseAmount: result.doseAmount, unitAbbr: result.unitAbbr } }, { familyId, babyId }, rl.headers);
       }
 
       case 'play': {

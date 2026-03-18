@@ -17,28 +17,15 @@ if [ -n "$TZ" ]; then
   fi
 fi
 
-# Check and generate ENC_HASH if missing
-echo "Checking for ENC_HASH in .env file..."
+# Ensure all required environment variables exist with defaults
+echo "Ensuring environment defaults..."
+npm run env:ensure -- docker /app/env/.env
+
+# Source the env file so vars are available in this shell session
 ENV_FILE="/app/env/.env"
-
-# Check if ENC_HASH exists and has a value
-ENC_HASH_EXISTS=$(grep -E "^ENC_HASH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
-
-if [ -z "$ENC_HASH_EXISTS" ]; then
-    echo "ENC_HASH not found. Generating unique ENC_HASH for this container..."
-    
-    # Generate a secure random hash (64 characters)
-    RANDOM_HASH=$(openssl rand -hex 32)
-    
-    # Add ENC_HASH to .env file
-    echo "" >> "$ENV_FILE"
-    echo "# Encryption hash for data encryption (generated at container startup)" >> "$ENV_FILE"
-    echo "ENC_HASH=\"$RANDOM_HASH\"" >> "$ENV_FILE"
-    
-    echo "ENC_HASH generated and added to .env file"
-else
-    echo "ENC_HASH already exists in .env file"
-fi
+set -a
+. "$ENV_FILE"
+set +a
 
 echo "Generating Prisma clients..."
 DATABASE_URL="file:/db/baby-tracker.db" npm run prisma:generate
@@ -64,29 +51,8 @@ if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
   echo "Notifications are enabled, setting up notification infrastructure..."
   
   echo "VAPID keys are generated automatically in the database during seeding."
+  echo "✓ NOTIFICATION_CRON_SECRET handled by env:ensure script"
 
-  # Check and generate NOTIFICATION_CRON_SECRET if missing
-  echo "Validating notification environment variables..."
-  NOTIFICATION_CRON_SECRET_CHECK=$(grep -E "^NOTIFICATION_CRON_SECRET=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
-  if [ -z "$NOTIFICATION_CRON_SECRET_CHECK" ]; then
-    echo "NOTIFICATION_CRON_SECRET not found. Generating secure cron secret..."
-    CRON_SECRET=$(openssl rand -hex 32)
-
-    # Check if the line exists but is empty
-    if grep -q "^NOTIFICATION_CRON_SECRET=" "$ENV_FILE"; then
-      sed -i "s/^NOTIFICATION_CRON_SECRET=.*/NOTIFICATION_CRON_SECRET=\"$CRON_SECRET\"/" "$ENV_FILE"
-    else
-      echo "" >> "$ENV_FILE"
-      echo "# Secret for securing the notification cron endpoint" >> "$ENV_FILE"
-      echo "NOTIFICATION_CRON_SECRET=\"$CRON_SECRET\"" >> "$ENV_FILE"
-    fi
-
-    export NOTIFICATION_CRON_SECRET="$CRON_SECRET"
-    echo "✓ NOTIFICATION_CRON_SECRET generated and added to .env file"
-  else
-    echo "✓ NOTIFICATION_CRON_SECRET is set"
-  fi
-  
   # Check APP_URL or ROOT_DOMAIN
   APP_URL_CHECK=$(grep -E "^APP_URL=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')
   ROOT_DOMAIN_CHECK=$(grep -E "^ROOT_DOMAIN=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '"')

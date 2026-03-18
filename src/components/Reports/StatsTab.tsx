@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Accordion } from '@/src/components/ui/accordion';
@@ -34,6 +34,33 @@ const StatsTab: React.FC<StatsTabProps> = ({
 }) => {
   const { t } = useLocalization();
   const { toLocalDate } = useTimezone();
+  const [enableBreastMilkTracking, setEnableBreastMilkTracking] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/api/settings', {
+          cache: 'no-store',
+          headers: {
+            'Authorization': authToken ? `Bearer ${authToken}` : '',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Expires': '0',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setEnableBreastMilkTracking(data.data?.enableBreastMilkTracking ?? true);
+          }
+        }
+      } catch {
+        // Default to enabled on error
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Helper function to get the night period date key for a sleep entry
   // Night period for Day X = 12:00 PM Day X-1 to 11:59 AM Day X
@@ -804,7 +831,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
         <PlayStatsSection stats={stats.play} activities={activities} dateRange={dateRange} />
 
         {/* Pumping Section */}
-        <PumpingStatsSection stats={stats.pump} activities={activities} dateRange={dateRange} />
+        <PumpingStatsSection stats={stats.pump} activities={activities} dateRange={dateRange} enableBreastMilkTracking={enableBreastMilkTracking} />
 
         {/* Baths Section */}
         <BathStatsSection stats={stats.bath} activities={activities} dateRange={dateRange} />

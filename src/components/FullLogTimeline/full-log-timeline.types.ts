@@ -27,6 +27,7 @@ export interface FullLogFilterProps {
   endDate: Date;
   onDateRangeChange: (startDate: Date, endDate: Date) => void;
   onQuickFilter: (days: number) => void;
+  enableBreastMilkTracking?: boolean;
 }
 
 export interface FullLogSearchBarProps {

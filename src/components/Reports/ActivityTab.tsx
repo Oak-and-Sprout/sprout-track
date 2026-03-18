@@ -214,8 +214,12 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
       try {
         const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
         const response = await fetch('/api/settings', {
+          cache: 'no-store',
           headers: {
             'Authorization': authToken ? `Bearer ${authToken}` : '',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Expires': '0',
           },
         });
         if (response.ok) {

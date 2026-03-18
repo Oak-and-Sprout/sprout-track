@@ -255,12 +255,19 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
     return false;
   }, []);
 
+  const breastMilkTrackingEnabled = (settings as any)?.enableBreastMilkTracking ?? true;
+
   // Filter and sort activities
   const sortedActivities = useMemo(() => {
+    // Filter out breast-milk-adjustment activities when tracking is disabled
+    const baseActivities = !breastMilkTrackingEnabled
+      ? activities.filter(activity => !('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)))
+      : activities;
+
     // First filter by activity type
-    const typeFiltered = !activeFilter 
-      ? activities 
-      : activities.filter(activity => {
+    const typeFiltered = !activeFilter
+      ? baseActivities
+      : baseActivities.filter(activity => {
           switch (activeFilter) {
             case 'sleep':
               return 'duration' in activity;
@@ -304,14 +311,19 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
 
     const startIndex = (currentPage - 1) * itemsPerPage;
     return sorted.slice(startIndex, startIndex + itemsPerPage);
-  }, [activities, activeFilter, currentPage, itemsPerPage, searchQuery, matchesSearch]);
+  }, [activities, activeFilter, currentPage, itemsPerPage, searchQuery, matchesSearch, breastMilkTrackingEnabled]);
 
   // Calculate total pages
   const totalPages = useMemo(() => {
+    // Filter out breast-milk-adjustment activities when tracking is disabled
+    const baseActivities = !breastMilkTrackingEnabled
+      ? activities.filter(activity => !('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)))
+      : activities;
+
     // First filter by activity type
-    const typeFiltered = !activeFilter 
-      ? activities 
-      : activities.filter(activity => {
+    const typeFiltered = !activeFilter
+      ? baseActivities
+      : baseActivities.filter(activity => {
           switch (activeFilter) {
             case 'sleep':
               return 'duration' in activity;
@@ -346,7 +358,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       : typeFiltered.filter(activity => matchesSearch(activity, searchQuery));
     
     return Math.ceil(searchFiltered.length / itemsPerPage);
-  }, [activities, activeFilter, itemsPerPage, searchQuery, matchesSearch]);
+  }, [activities, activeFilter, itemsPerPage, searchQuery, matchesSearch, breastMilkTrackingEnabled]);
 
   // Handle activity deletion
   const handleDelete = async (activity: ActivityType) => {
@@ -399,6 +411,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
           startDate={startDate}
           endDate={endDate}
           onDateRangeChange={onDateRangeChange}
+          enableBreastMilkTracking={breastMilkTrackingEnabled}
           onQuickFilter={handleQuickFilter}
         />
       </CardHeader>

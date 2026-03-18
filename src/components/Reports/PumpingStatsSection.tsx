@@ -19,6 +19,7 @@ interface PumpingStatsSectionProps {
   stats: PumpStats;
   activities: ActivityType[];
   dateRange: DateRange;
+  enableBreastMilkTracking?: boolean;
 }
 
 // Helper function to format minutes into hours and minutes
@@ -36,7 +37,7 @@ const formatMinutes = (minutes: number): string => {
  *
  * Displays pumping statistics including pumps per day, duration, and amounts.
  */
-const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activities, dateRange }) => {
+const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activities, dateRange, enableBreastMilkTracking = true }) => {
   const { t } = useLocalization();
   const { selectedBaby } = useBaby();
   const [chartModalOpen, setChartModalOpen] = useState(false);
@@ -45,7 +46,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
 
   useEffect(() => {
     const fetchBalance = async () => {
-      if (!selectedBaby) {
+      if (!selectedBaby || enableBreastMilkTracking === false) {
         setCurrentBalance(null);
         return;
       }
@@ -54,9 +55,13 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
         const response = await fetch(
           `/api/breast-milk-balance?babyId=${selectedBaby.id}&unit=${stats.unit}`,
           {
+            cache: 'no-store',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': authToken ? `Bearer ${authToken}` : '',
+              'Pragma': 'no-cache',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Expires': '0',
             },
           }
         );
@@ -71,7 +76,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
       }
     };
     fetchBalance();
-  }, [selectedBaby, stats.unit]);
+  }, [selectedBaby, stats.unit, enableBreastMilkTracking]);
 
   return (
     <>
@@ -163,6 +168,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
         activities={activities}
         dateRange={dateRange}
         currentBalance={currentBalance}
+        enableBreastMilkTracking={enableBreastMilkTracking}
       />
     </>
   );

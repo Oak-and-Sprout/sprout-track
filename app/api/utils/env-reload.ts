@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
 /**
  * Parses a .env file content and returns key-value pairs
@@ -56,6 +57,24 @@ function parseEnvFile(content: string): Record<string, string> {
  * @param envFilePath Optional path to the .env file. Defaults to './.env'
  * @returns True if the reload was successful, false otherwise
  */
+/**
+ * Ensures all required environment variables exist in the .env file.
+ * Adds missing vars with correct defaults without overwriting existing values.
+ * Uses the centralized ensure-env-defaults.js script (single source of truth).
+ */
+export function ensureEnvDefaults(envFilePath?: string): boolean {
+  try {
+    const envPath = envFilePath || path.resolve('./.env');
+    const mode = process.env.NODE_ENV === 'production' ? 'docker' : 'local';
+    const scriptPath = path.resolve('./scripts/ensure-env-defaults.js');
+    execSync(`node ${scriptPath} ${mode} ${envPath}`, { stdio: 'inherit' });
+    return true;
+  } catch (error) {
+    console.error('Error ensuring env defaults:', error);
+    return false;
+  }
+}
+
 export function reloadEnvFile(envFilePath?: string): boolean {
   try {
     const envPath = envFilePath || path.resolve('./.env');

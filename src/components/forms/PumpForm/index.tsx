@@ -112,6 +112,7 @@ export default function PumpForm({
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
+  const [breastMilkTrackingEnabled, setBreastMilkTrackingEnabled] = useState(true);
 
   // Handle start date/time change
   const handleStartDateTimeChange = (date: Date) => {
@@ -227,6 +228,7 @@ export default function PumpForm({
             if (data.success && data.data?.defaultBottleUnit) {
               setFormData(prev => ({ ...prev, unitAbbr: data.data.defaultBottleUnit }));
             }
+            setBreastMilkTrackingEnabled(data.data?.enableBreastMilkTracking ?? true);
           } catch (error) {
             console.error('Error fetching settings:', error);
           }
@@ -572,8 +574,8 @@ export default function PumpForm({
       description={getDescription()}
     >
         <FormPageContent>
-          {/* Mode Switch - only show when not editing */}
-          {!activity && !adjustmentActivity && (
+          {/* Mode Switch - only show when not editing and breast milk tracking is enabled */}
+          {breastMilkTrackingEnabled && !activity && !adjustmentActivity && (
             <div className="flex items-center gap-3 px-1 py-3 mb-4">
               <Label className="text-sm font-medium">{t('Pump Session')}</Label>
               <Switch
@@ -727,7 +729,8 @@ export default function PumpForm({
                   </div>
                 </div>
 
-                {/* Pump Action Radio Buttons */}
+                {/* Pump Action Radio Buttons - only show when breast milk tracking is enabled */}
+                {breastMilkTrackingEnabled && (
                 <div className="space-y-2">
                   <Label>{t('Action')}</Label>
                   <div className="flex space-x-2">
@@ -742,6 +745,7 @@ export default function PumpForm({
                     </Button>
                   </div>
                 </div>
+                )}
 
                 {/* Notes */}
                 <div className="space-y-2">

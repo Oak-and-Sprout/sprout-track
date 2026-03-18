@@ -30,6 +30,7 @@ interface PumpingChartModalProps {
   activities: ActivityType[];
   dateRange: DateRange;
   currentBalance?: { balance: number; unit: string } | null;
+  enableBreastMilkTracking?: boolean;
 }
 
 // Helper function to format minutes into hours and minutes
@@ -54,6 +55,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
   activities,
   dateRange,
   currentBalance,
+  enableBreastMilkTracking = true,
 }) => {
   const { t } = useLocalization();
   // Calculate pump count per day
@@ -532,7 +534,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
           </>
         )}
 
-        {metric === 'inventory' && (
+        {metric === 'inventory' && enableBreastMilkTracking && (
           <>
             {inventoryData.length === 0 ? (
               <div className={cn(styles.emptyContainer, 'reports-empty-container')}>

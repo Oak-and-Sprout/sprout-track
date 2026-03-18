@@ -35,6 +35,7 @@ const TimelineFilter = ({
   onDateChange,
   onDateSelection,
   onFilterChange,
+  enableBreastMilkTracking = true,
 }: TimelineFilterProps) => {
   
 
@@ -51,7 +52,7 @@ const TimelineFilter = ({
     { type: 'bath', icon: <Bath className="h-4 w-4" />, label: t('Bath') },
     { type: 'note', icon: <Edit className="h-4 w-4" />, label: t('Note') },
     { type: 'pump', icon: <LampWallDown className="h-4 w-4" />, label: t('Pump') },
-    { type: 'breast-milk-adjustment', icon: <LampWallDown className="h-4 w-4" />, label: t('Milk Adjust') },
+    ...(enableBreastMilkTracking ? [{ type: 'breast-milk-adjustment' as const, icon: <LampWallDown className="h-4 w-4" />, label: t('Milk Adjust') }] : []),
     { type: 'milestone', icon: <Trophy className="h-4 w-4" />, label: t('Milestone') },
     { type: 'measurement', icon: <Ruler className="h-4 w-4" />, label: t('Measurement') },
     { type: 'medicine', icon: <PillBottle className="h-4 w-4" />, label: t('Medicine') },

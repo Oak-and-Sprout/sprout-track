@@ -54,9 +54,11 @@ RUN mkdir -p /app/env && \
     echo "PORT=3000" >> /app/env/.env && \
     echo "TZ=UTC" >> /app/env/.env && \
     echo "AUTH_LIFE=86400" >> /app/env/.env && \
-    echo "IDLE_TIME=28800" >> /app/env/.env && \
-    echo "APP_VERSION=1.0.0" >> /app/env/.env && \
+    echo "REFRESH_TOKEN_LIFE=604800" >> /app/env/.env && \
+    echo "IDLE_TIME=604800" >> /app/env/.env && \
+    echo "APP_VERSION=1.1.0" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
+    echo "ENABLE_NOTIFICATIONS=true" >> /app/env/.env && \
     echo "Base .env file created (ENC_HASH will be generated at startup)" && \
     # Create symlink so Next.js can find the env file at build time and runtime
     ln -sf /app/env/.env /app/.env

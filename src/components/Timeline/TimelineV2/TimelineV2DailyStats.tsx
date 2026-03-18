@@ -48,6 +48,7 @@ interface TimelineV2DailyStatsProps {
    onHeatmapToggle: () => void;
    breastMilkBalance?: string;
    defaultBottleUnit?: string;
+   enableBreastMilkTracking?: boolean;
 }
 
 interface StatTile {
@@ -73,7 +74,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   isHeatmapVisible,
   onHeatmapToggle,
   breastMilkBalance,
-  defaultBottleUnit
+  defaultBottleUnit,
+  enableBreastMilkTracking = true
 }) => {
   const { t } = useLocalization();
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -560,8 +562,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
-    // Breast milk stored balance tile
-    if (breastMilkBalance) {
+    // Breast milk stored balance tile (only when tracking is enabled)
+    if (breastMilkBalance && enableBreastMilkTracking !== false) {
       tiles.push({
         filter: null,
         label: t('Breast Milk Stored'),

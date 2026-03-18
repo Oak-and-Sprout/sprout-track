@@ -50,3 +50,5 @@ sitemap.xml
 
 # encrypted file storage
 /Files
+/logs
+/Logs
