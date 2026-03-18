@@ -248,9 +248,13 @@ const HealthTab: React.FC<HealthTabProps> = ({
         const response = await fetch(
           `/api/measurement-log?babyId=${selectedBaby.id}&type=TEMPERATURE`,
           {
+            cache: 'no-store',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': authToken ? `Bearer ${authToken}` : '',
+              'Pragma': 'no-cache',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Expires': '0',
             },
           }
         );
@@ -287,9 +291,13 @@ const HealthTab: React.FC<HealthTabProps> = ({
         const response = await fetch(
           `/api/vaccine-log?babyId=${selectedBaby.id}`,
           {
+            cache: 'no-store',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': authToken ? `Bearer ${authToken}` : '',
+              'Pragma': 'no-cache',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Expires': '0',
             },
           }
         );
