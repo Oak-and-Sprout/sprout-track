@@ -56,7 +56,7 @@ RUN mkdir -p /app/env && \
     echo "AUTH_LIFE=86400" >> /app/env/.env && \
     echo "REFRESH_TOKEN_LIFE=604800" >> /app/env/.env && \
     echo "IDLE_TIME=604800" >> /app/env/.env && \
-    echo "APP_VERSION=1.0.0" >> /app/env/.env && \
+    echo "APP_VERSION=1.1.0" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
     echo "ENABLE_NOTIFICATIONS=true" >> /app/env/.env && \
     echo "Base .env file created (ENC_HASH will be generated at startup)" && \
