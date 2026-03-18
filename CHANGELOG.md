@@ -1,5 +1,14 @@
 # Sprout Track Changelog
 
+## v1.1.0 - Breast Milk Storage Enhancement, Supplement API, and Caching Bug Fix
+
+### Changes
+
+- Added ability to disable breast milk storage for the family in the settings > config area. This can be managed by family admins. This turns of all storage questions and storage cards.
+- Added supplement type to API, documentation, and enhanced testing scripts
+- Added caching fixes to charts not always updating properly
+- Updated environment file handling in docker and local installations for consistency
+
 ## v1.0.0 - The Official, Official Release of Sprout Track
 
 ### Changes
