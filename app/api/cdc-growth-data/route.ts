@@ -128,6 +128,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     return NextResponse.json<ApiResponse<CdcGrowthDataRecord[]>>({
       success: true,
       data,
+    }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch (error) {
     console.error('Error fetching CDC growth data:', error);

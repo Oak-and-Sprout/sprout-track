@@ -41,7 +41,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
       try {
         const authToken = localStorage.getItem('authToken');
         const response = await fetch('/api/settings', {
-          headers: { 'Authorization': authToken ? `Bearer ${authToken}` : '' },
+          cache: 'no-store',
+          headers: {
+            'Authorization': authToken ? `Bearer ${authToken}` : '',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Expires': '0',
+          },
         });
         if (response.ok) {
           const data = await response.json();

@@ -55,9 +55,13 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
         const response = await fetch(
           `/api/breast-milk-balance?babyId=${selectedBaby.id}&unit=${stats.unit}`,
           {
+            cache: 'no-store',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': authToken ? `Bearer ${authToken}` : '',
+              'Pragma': 'no-cache',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Expires': '0',
             },
           }
         );

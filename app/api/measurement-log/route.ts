@@ -189,6 +189,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<MeasurementResponse>>({
         success: true,
         data: response,
+      }, {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
       });
     }
 
@@ -246,6 +248,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     return NextResponse.json<ApiResponse<MeasurementResponse[]>>({
       success: true,
       data: response,
+    }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     });
   } catch (error) {
     console.error('Error fetching measurements:', error);
