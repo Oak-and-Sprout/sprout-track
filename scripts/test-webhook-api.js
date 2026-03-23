@@ -106,6 +106,21 @@ async function runReadTests(babyId) {
     }
   });
 
+  await test(`GET /babies/${babyId}/status?timezone=America/New_York — timezone param`, async () => {
+    const res = await request('GET', `/babies/${babyId}/status?timezone=America/New_York`);
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.dailyCounts.date, 'Expected date in dailyCounts');
+    assert(/^\d{4}-\d{2}-\d{2}$/.test(res.data.dailyCounts.date), `Expected YYYY-MM-DD date, got: ${res.data.dailyCounts.date}`);
+    log(' ', `Daily counts date with timezone: ${res.data.dailyCounts.date}`);
+  });
+
+  await test(`GET /babies/${babyId}/status?timezone=Fake/Zone — invalid timezone returns 400`, async () => {
+    const res = await request('GET', `/babies/${babyId}/status?timezone=Fake/Zone`);
+    assert(!res.success, 'Expected failure');
+    assert(res.status === 400, `Expected 400, got ${res.status}`);
+    assert(res.error.code === 'INVALID_TIMEZONE', `Expected INVALID_TIMEZONE, got ${res.error.code}`);
+  });
+
   await test(`GET /babies/${babyId}/activities — recent activities`, async () => {
     const res = await request('GET', `/babies/${babyId}/activities?limit=5`);
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
@@ -308,6 +323,47 @@ async function runWriteTests(babyId) {
     assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
     assert(endRes.data.details.isActive === false, 'Expected inactive sleep');
     log(' ', `Ended sleep ${endRes.data.id}, duration: ${endRes.data.details.duration} min`);
+  });
+
+  await test('POST sleep (end without sleepType — type unchanged)', async () => {
+    const startRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NAP',
+      action: 'start',
+    });
+    assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
+    log(' ', `Started sleep ${startRes.data.id} as NAP`);
+
+    await new Promise(r => setTimeout(r, 500));
+
+    const endRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      action: 'end',
+    });
+    assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
+    assert(endRes.data.details.type === 'NAP', `Expected NAP, got ${endRes.data.details.type}`);
+    log(' ', `Ended sleep ${endRes.data.id} — type stayed NAP`);
+  });
+
+  await test('POST sleep (end with sleepType change — NAP to NIGHT_SLEEP)', async () => {
+    const startRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NAP',
+      action: 'start',
+    });
+    assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
+    log(' ', `Started sleep ${startRes.data.id} as NAP`);
+
+    await new Promise(r => setTimeout(r, 500));
+
+    const endRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'sleep',
+      sleepType: 'NIGHT_SLEEP',
+      action: 'end',
+    });
+    assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
+    assert(endRes.data.details.type === 'NIGHT_SLEEP', `Expected NIGHT_SLEEP, got ${endRes.data.details.type}`);
+    log(' ', `Ended sleep ${endRes.data.id} — type changed to NIGHT_SLEEP`);
   });
 
   await test('POST sleep (log with duration)', async () => {

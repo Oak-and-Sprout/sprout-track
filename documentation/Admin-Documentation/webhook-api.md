@@ -339,7 +339,15 @@ Sleep supports three actions:
 ```json
 {
   "type": "sleep",
-  "sleepType": "NAP",
+  "action": "end"
+}
+```
+
+**End and change the sleep type (e.g., a nap that became a night sleep):**
+```json
+{
+  "type": "sleep",
+  "sleepType": "NIGHT_SLEEP",
   "action": "end"
 }
 ```
@@ -355,9 +363,11 @@ Sleep supports three actions:
 }
 ```
 
-**sleepType:** `NAP` or `NIGHT_SLEEP`
+**sleepType:** `NAP` or `NIGHT_SLEEP` -- required for `start` and `log`, optional for `end`
 **action:** `start`, `end`, or `log`
 Optional fields: `location`, `quality`, `duration` (minutes, required for `log`)
+
+> **Note:** If `sleepType` is provided on `end`, the sleep record's type is updated. If omitted, the type from `start` is preserved.
 
 #### Note
 

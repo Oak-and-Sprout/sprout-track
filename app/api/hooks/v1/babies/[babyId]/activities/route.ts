@@ -323,11 +323,14 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
 
       case 'sleep': {
         const { sleepType, action, duration: sleepDuration, location, quality } = body;
-        if (!sleepType || !['NAP', 'NIGHT_SLEEP'].includes(sleepType)) {
-          return hookError('INVALID_SLEEP_TYPE', 'sleepType must be NAP or NIGHT_SLEEP', 400, rl.headers);
-        }
         if (!action || !['start', 'end', 'log'].includes(action)) {
           return hookError('INVALID_ACTION', 'action must be start, end, or log', 400, rl.headers);
+        }
+        if (sleepType && !['NAP', 'NIGHT_SLEEP'].includes(sleepType)) {
+          return hookError('INVALID_SLEEP_TYPE', 'sleepType must be NAP or NIGHT_SLEEP', 400, rl.headers);
+        }
+        if (action !== 'end' && !sleepType) {
+          return hookError('INVALID_SLEEP_TYPE', 'sleepType is required for start and log actions', 400, rl.headers);
         }
 
         if (action === 'start') {
@@ -349,7 +352,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           const dur = Math.round((time.getTime() - activeSleep.startTime.getTime()) / 60000);
           result = await prisma.sleepLog.update({
             where: { id: activeSleep.id },
-            data: { endTime: time, duration: dur, quality: quality || activeSleep.quality },
+            data: { endTime: time, duration: dur, quality: quality || activeSleep.quality, ...(sleepType && { type: sleepType }) },
           });
           return hookSuccess({ activityType: 'sleep', id: result.id, time: result.startTime.toISOString(), details: { type: result.type, action: 'end', duration: dur, isActive: false } }, { familyId, babyId }, rl.headers);
         }
