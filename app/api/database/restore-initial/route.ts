@@ -123,11 +123,6 @@ async function handler(request: NextRequest, authContext: AuthResult): Promise<N
         // Reload environment variables into process.env
         reloadEnvFile(envPath);
 
-        // Ensure all required env vars exist (fills gaps from older backups)
-        ensureEnvDefaults(envPath);
-        // Reload environment variables into process.env
-        reloadEnvFile(envPath);
-
         return NextResponse.json<ApiResponse<null>>({
           success: true,
           data: null

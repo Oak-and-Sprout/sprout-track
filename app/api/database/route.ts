@@ -165,11 +165,6 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
         // Reload environment variables into process.env
         reloadEnvFile(envPath);
 
-        // Ensure all required env vars exist (fills gaps from older backups)
-        ensureEnvDefaults(envPath);
-        // Reload environment variables into process.env
-        reloadEnvFile(envPath);
-
         return NextResponse.json<ApiResponse<null>>({ success: true });
       } catch (zipError) {
         console.error('Zip extraction error:', zipError);
