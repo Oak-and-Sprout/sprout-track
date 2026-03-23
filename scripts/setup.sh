@@ -47,6 +47,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Load database configuration from .env (only DB vars, to avoid interfering with the build)
+if [ -f "$PROJECT_DIR/.env" ]; then
+    _db_provider=$(grep -m1 '^DATABASE_PROVIDER=' "$PROJECT_DIR/.env" | cut -d= -f2- | tr -d '"' | tr -d "'")
+    _db_url=$(grep -m1 '^DATABASE_URL=' "$PROJECT_DIR/.env" | cut -d= -f2- | tr -d '"' | tr -d "'")
+    _log_db_url=$(grep -m1 '^LOG_DATABASE_URL=' "$PROJECT_DIR/.env" | cut -d= -f2- | tr -d '"' | tr -d "'")
+    [ -n "$_db_provider" ] && export DATABASE_PROVIDER="$_db_provider"
+    [ -n "$_db_url" ] && export DATABASE_URL="$_db_url"
+    [ -n "$_log_db_url" ] && export LOG_DATABASE_URL="$_log_db_url"
+    echo "Database configuration loaded (provider: ${DATABASE_PROVIDER:-sqlite})."
+fi
+
 # Step 3: Install dependencies
 echo "Step 3: Installing dependencies..."
 npm install
