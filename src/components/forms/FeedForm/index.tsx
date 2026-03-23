@@ -296,8 +296,12 @@ export default function FeedForm({
       }
       
       // Update the selected date time
+      // For breast feeds, use startTime (session start) instead of time (session end)
+      const displayTimeStr = activity.type === 'BREAST' && activity.startTime
+        ? activity.startTime
+        : activity.time;
       try {
-        const activityDate = new Date(activity.time);
+        const activityDate = new Date(displayTimeStr);
         // Check if the date is valid
         if (!isNaN(activityDate.getTime())) {
           setSelectedDateTime(activityDate);
@@ -305,9 +309,9 @@ export default function FeedForm({
       } catch (error) {
         console.error('Error parsing activity time:', error);
       }
-      
+
       // Format the date for the time property
-      const date = new Date(activity.time);
+      const date = new Date(displayTimeStr);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');

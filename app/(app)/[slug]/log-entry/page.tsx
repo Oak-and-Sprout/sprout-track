@@ -229,9 +229,13 @@ function HomeContent(): React.ReactElement {
             new Date(b.time).getTime() - new Date(a.time).getTime()
           )[0];
         if (lastFeed) {
+          // For breast feeds, use startTime (when feeding began) instead of time (when it ended)
+          const feedTime = (lastFeed.type === 'BREAST' && lastFeed.startTime)
+            ? lastFeed.startTime
+            : lastFeed.time;
           setLastFeedTime(prev => ({
             ...prev,
-            [babyId]: new Date(lastFeed.time)
+            [babyId]: new Date(feedTime)
           }));
         }
 

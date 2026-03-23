@@ -265,7 +265,7 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
 
     if (leftDur > 0) {
       const leftEndTime = now;
-      const leftStartTime = new Date(leftEndTime.getTime() - leftDur * 1000);
+      const leftStartTime = session.sessionStartTime;
 
       const leftLog = await prisma.feedLog.create({
         data: {
@@ -285,7 +285,7 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
 
     if (rightDur > 0) {
       const rightEndTime = now;
-      const rightStartTime = new Date(rightEndTime.getTime() - rightDur * 1000);
+      const rightStartTime = session.sessionStartTime;
 
       const rightLog = await prisma.feedLog.create({
         data: {
