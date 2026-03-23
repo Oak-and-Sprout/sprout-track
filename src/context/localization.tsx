@@ -33,7 +33,7 @@ const LocalizationContext = createContext<LocalizationContextType | undefined>(u
 
 const SUPPORTED_LANGUAGES = Array.isArray(supportedLanguagesJson)
   ? supportedLanguagesJson
-  : ['en', 'es', 'fr'];
+  : ['en', 'es', 'fr', 'it'];
 
 /**
  * Provider component for localization context
@@ -60,7 +60,8 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     // NOTE: keep these as explicit imports so Next can bundle them.
     const loaders: Record<string, () => Promise<Record<string, string>>> = {
       es: async () => (await import('@/src/localization/translations/es.json')).default as Record<string, string>,
-      fr: async () => (await import('@/src/localization/translations/fr.json')).default as Record<string, string>
+      fr: async () => (await import('@/src/localization/translations/fr.json')).default as Record<string, string>,
+      it: async () => (await import('@/src/localization/translations/it.json')).default as Record<string, string>
     };
 
     const supported = SUPPORTED_LANGUAGES.includes(lang);
