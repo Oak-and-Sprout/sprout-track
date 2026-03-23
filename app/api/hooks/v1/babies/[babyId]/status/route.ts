@@ -2,21 +2,60 @@ import { NextRequest } from 'next/server';
 import prisma from '../../../../../db';
 import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth';
 import { checkRateLimit } from '../../../rate-limiter';
-import { hookSuccess } from '../../../response';
+import { hookSuccess, hookError } from '../../../response';
 
 function minutesAgo(date: Date): number {
   return Math.floor((Date.now() - date.getTime()) / 60000);
 }
 
-function startOfToday(): Date {
+function isValidTimezone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function startOfTodayInTimezone(timezone?: string): Date {
+  if (timezone) {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    });
+    const parts = formatter.formatToParts(new Date());
+    const year = parseInt(parts.find(p => p.type === 'year')!.value);
+    const month = parseInt(parts.find(p => p.type === 'month')!.value) - 1;
+    const day = parseInt(parts.find(p => p.type === 'day')!.value);
+    // Compute the offset between the target timezone and UTC right now
+    const now = new Date();
+    const tzStr = now.toLocaleString('en-US', { timeZone: timezone });
+    const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
+    const offsetMs = new Date(utcStr).getTime() - new Date(tzStr).getTime();
+    // Midnight in the target timezone expressed as UTC
+    return new Date(Date.UTC(year, month, day) + offsetMs);
+  }
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
+function localDateString(today: Date, timezone?: string): string {
+  if (timezone) {
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: timezone });
+    return formatter.format(new Date());
+  }
+  return today.toISOString().split('T')[0];
+}
+
 async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any) {
   const rl = checkRateLimit(ctx.keyId, 'GET');
   if (!rl.allowed) return rl.response!;
+
+  const timezone = req.nextUrl.searchParams.get('timezone') || undefined;
+  if (timezone && !isValidTimezone(timezone)) {
+    return hookError('INVALID_TIMEZONE', `Invalid timezone: "${timezone}". Use an IANA timezone like "America/New_York".`, 400, rl.headers);
+  }
 
   const params = await routeContext.params;
   const babyId = params.babyId;
@@ -28,7 +67,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     select: { id: true, firstName: true, birthDate: true, feedWarningTime: true, diaperWarningTime: true },
   });
 
-  const today = startOfToday();
+  const today = startOfTodayInTimezone(timezone);
 
   // Fetch last activities in parallel
   const [lastFeed, lastDiaper, lastSleep, lastBath, lastMedicine, lastSupplement, lastPump] = await Promise.all([
@@ -139,7 +178,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     },
     lastActivities,
     dailyCounts: {
-      date: today.toISOString().split('T')[0],
+      date: localDateString(today, timezone),
       feeds: feedCount,
       diapers: diapers.length,
       diapersByType,

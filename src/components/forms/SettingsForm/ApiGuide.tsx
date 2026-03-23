@@ -165,7 +165,8 @@ export default function ApiGuide({ babies }: ApiGuideProps) {
           </AccordionTrigger>
           <AccordionContent>
             <p className="text-xs text-gray-500 mb-2">{t('Returns a snapshot of current state, daily counts, and warnings.')}</p>
-            <CopyableCodeBlock code={buildCurl('GET', `/babies/${sampleBabyId}/status`)} />
+            <p className="text-xs text-gray-400 mb-1">Query params: ?timezone=America/Chicago (IANA timezone for daily counts)</p>
+            <CopyableCodeBlock code={buildCurl('GET', `/babies/${sampleBabyId}/status?timezone=America/Chicago`)} />
           </AccordionContent>
         </AccordionItem>
 
