@@ -1,20 +1,18 @@
 # Sprout Track - PostgreSQL Deployment
 #
-# Quick start (pull from Docker Hub):
+# Requires an existing PostgreSQL 14+ server with databases created:
+#   CREATE DATABASE sprout_track;
+#   CREATE DATABASE sprout_track_logs;
+#
+# Set your connection details via environment variables or a .env file:
+#   DATABASE_URL=postgresql://user:password@your-host:5432/sprout_track
+#   LOG_DATABASE_URL=postgresql://user:password@your-host:5432/sprout_track_logs
+#
+# Quick start:
 #   docker compose -f docker-compose.postgres.yml up -d
 #
 # Build from source instead of pulling:
 #   docker compose -f docker-compose.postgres.yml up -d --build
-#
-# To migrate from SQLite:
-#   1. Back up your SQLite instance via the app UI (Settings > Database > Backup)
-#   2. Start this compose file: docker compose -f docker-compose.postgres.yml up -d
-#   3. Restore your backup via the app UI (Settings > Database > Restore)
-#      The app will automatically read the SQLite .db file and import into PostgreSQL.
-#
-# To use an external PostgreSQL server, remove the postgres service and set:
-#   DATABASE_URL=postgresql://user:password@your-host:5432/sprout_track
-#   LOG_DATABASE_URL=postgresql://user:password@your-host:5432/sprout_track
 
 services:
   app:
@@ -35,8 +33,8 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-sprout}:${POSTGRES_PASSWORD:-sprout}@postgres:5432/${POSTGRES_DB:-sprout_track}
-      - LOG_DATABASE_URL=postgresql://${POSTGRES_USER:-sprout}:${POSTGRES_PASSWORD:-sprout}@postgres:5432/${POSTGRES_DB:-sprout_track}
+      - DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL to your PostgreSQL connection string}
+      - LOG_DATABASE_URL=${LOG_DATABASE_URL:?Set LOG_DATABASE_URL to your PostgreSQL connection string}
       - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS:-true}
       - NOTIFICATION_CRON_SECRET=${NOTIFICATION_CRON_SECRET:-}
       - NOTIFICATION_LOG_RETENTION_DAYS=${NOTIFICATION_LOG_RETENTION_DAYS:-30}
@@ -45,9 +43,6 @@ services:
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
       - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:notifications@sprouttrack.app}
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
@@ -55,26 +50,7 @@ services:
       retries: 3
       start_period: 60s
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: sprout-track-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-sprout}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sprout}
-      POSTGRES_DB: ${POSTGRES_DB:-sprout_track}
-    volumes:
-      - pg-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-EXEC", "pg_isready -U ${POSTGRES_USER:-sprout}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
 volumes:
-  pg-data:
-    name: sprout-track-pg-data
   env-data:
     name: sprout-track-env
   files:
