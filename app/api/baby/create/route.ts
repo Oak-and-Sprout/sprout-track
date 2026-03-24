@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/prisma/db';
+import prisma from '@/app/api/db';
 import { z } from 'zod';
 import { ApiResponse, getAuthenticatedUser } from '@/app/api/utils/auth';
 import { checkWritePermission } from '@/app/api/utils/writeProtection';

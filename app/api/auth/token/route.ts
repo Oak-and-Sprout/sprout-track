@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/prisma/db';
+import prisma from '@/app/api/db';
 import { ApiResponse } from '@/app/api/utils/auth';
 import jwt from 'jsonwebtoken';
 

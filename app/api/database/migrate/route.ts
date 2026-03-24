@@ -4,6 +4,7 @@ import { promisify } from 'util';
 import path from 'path';
 import { withSysAdminAuth, ApiResponse } from '../../utils/auth';
 import { isPostgreSQL } from '../../utils/db-provider';
+import { reconnectPrisma } from '../../db';
 
 const execAsync = promisify(exec);
 
@@ -81,6 +82,10 @@ async function handler(request: NextRequest): Promise<NextResponse<ApiResponse<a
       throw new Error('Failed to seed database with default data. Some features may not work correctly.');
     }
     
+    // Step 5: Reconnect Prisma so the in-process singleton uses the restored database
+    console.log('Step 5: Reconnecting Prisma client...');
+    await reconnectPrisma();
+
     console.log('🎉 Post-restore migration completed successfully!');
     
     return NextResponse.json<ApiResponse<any>>({

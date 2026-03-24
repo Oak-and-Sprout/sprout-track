@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuthContext, ApiResponse, AuthResult } from '@/app/api/utils/auth';
-import prisma from '@/prisma/db';
+import prisma from '@/app/api/db';
 import crypto from 'crypto';
 
 interface SetupLinkResponse {
