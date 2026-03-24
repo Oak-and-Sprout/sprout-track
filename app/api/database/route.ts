@@ -4,7 +4,7 @@ import path from 'path';
 import JSZip from 'jszip';
 import prisma from '../db';
 import { withSysAdminAuth, ApiResponse } from '../utils/auth';
-import { reloadEnvFile, ensureEnvDefaults } from '../utils/env-reload';
+import { reloadEnvFile, ensureEnvDefaults, parseEnvFile, replaceEnvVar } from '../utils/env-reload';
 import { isSQLite } from '../utils/db-provider';
 import { importFromSQLiteFile, importFromJSON, exportToJSON } from '../utils/db-backup';
 
@@ -143,20 +143,41 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<a
           );
         }
 
-        // Extract and restore .env file if it exists
+        // Extract and restore .env file if it exists, preserving current DB connection params
         const envFiles = Object.keys(zip.files).filter(name => name.endsWith('.backup.env'));
         if (envFiles.length > 0) {
           const envFile = zip.file(envFiles[0]);
           if (envFile) {
             const envContent = await envFile.async('string');
 
-            // Backup existing .env
-            if (await fs.promises.access(envPath).then(() => true).catch(() => false)) {
+            // Save current DB connection params before overwriting
+            const preserveKeys = ['DATABASE_PROVIDER', 'DATABASE_URL', 'LOG_DATABASE_URL'];
+            const preserved: Record<string, string> = {};
+            const currentEnvExists = await fs.promises.access(envPath).then(() => true).catch(() => false);
+            if (currentEnvExists) {
+              const currentEnvContent = await fs.promises.readFile(envPath, 'utf-8');
+              const currentVars = parseEnvFile(currentEnvContent);
+              for (const key of preserveKeys) {
+                if (currentVars[key]) preserved[key] = currentVars[key];
+              }
+
+              // Backup existing .env
               const envBackupPath = `${envPath}.backup-${dateStr}`;
               await fs.promises.copyFile(envPath, envBackupPath);
             }
 
+            // Write the backup's .env
             await fs.promises.writeFile(envPath, envContent);
+
+            // Re-apply preserved DB connection params
+            if (Object.keys(preserved).length > 0) {
+              let restoredContent = await fs.promises.readFile(envPath, 'utf-8');
+              for (const [key, value] of Object.entries(preserved)) {
+                restoredContent = replaceEnvVar(restoredContent, key, value);
+              }
+              await fs.promises.writeFile(envPath, restoredContent);
+              console.log('Database connection parameters preserved during .env restore');
+            }
           }
         }
 
