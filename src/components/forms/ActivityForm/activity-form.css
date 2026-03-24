@@ -93,3 +93,21 @@ html.dark .activity-dropdown-no-match {
 html.dark .activity-dropdown-no-categories {
   color: #9ca3af !important; /* gray-400 */
 }
+
+/* Timer text in activity form */
+.activity-timer-active-text {
+  color: #15803d; /* green-700 */
+}
+
+.activity-timer-paused-text {
+  color: #ca8a04; /* yellow-600 */
+}
+
+html.dark .activity-timer-active-text {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .activity-timer-paused-text {
+  color: #facc15 !important; /* yellow-400 */
+}
+

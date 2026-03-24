@@ -191,6 +191,7 @@ model Family {
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
+  activeActivities  ActiveActivity[]
   vaccineLogs    VaccineLog[]
   apiKeys        ApiKey[]
 }
@@ -242,6 +243,7 @@ model Baby {
   notificationPreferences NotificationPreference[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeed ActiveBreastFeed?
+  activeActivity   ActiveActivity?
   vaccineLogs  VaccineLog[]
   apiKeys      ApiKey[]
 
@@ -290,6 +292,7 @@ model Caretaker {
   pushSubscriptions PushSubscription[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
+  activeActivities  ActiveActivity[]
   vaccineLogs   VaccineLog[]
 
   @@index([deletedAt])
@@ -1269,6 +1272,30 @@ model ActiveBreastFeed {
   // Relationships
   baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
   babyId      String     @unique // Only one active session per baby
+  family      Family?    @relation(fields: [familyId], references: [id])
+  familyId    String?
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([babyId])
+  @@index([familyId])
+}
+
+model ActiveActivity {
+  id               String    @id @default(uuid())
+  playType         PlayType              // TUMMY_TIME, INDOOR_PLAY, OUTDOOR_PLAY, WALK
+  isPaused         Boolean   @default(false)
+  duration         Int       @default(0)  // Accumulated seconds
+  currentStartTime DateTime?             // When current timing segment started (null when paused)
+  sessionStartTime DateTime              // When the overall session began
+  subCategory      String?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relationships
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String     @unique          // Only one active activity session per baby
   family      Family?    @relation(fields: [familyId], references: [id])
   familyId    String?
   caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])

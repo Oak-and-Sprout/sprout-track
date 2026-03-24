@@ -1,4 +1,4 @@
-import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, VaccineLog, VaccineDocument } from '@prisma/client';
+import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, ActiveActivity, VaccineLog, VaccineDocument } from '@prisma/client';
 
 // Family types
 export interface Family {
@@ -126,6 +126,14 @@ export interface FeedLogCreate {
 // Active breastfeed session types
 export type ActiveBreastFeedResponse = Omit<ActiveBreastFeed, 'currentSideStartTime' | 'sessionStartTime' | 'createdAt' | 'updatedAt'> & {
   currentSideStartTime: string | null;
+  sessionStartTime: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Active activity session types
+export type ActiveActivityResponse = Omit<ActiveActivity, 'currentStartTime' | 'sessionStartTime' | 'createdAt' | 'updatedAt'> & {
+  currentStartTime: string | null;
   sessionStartTime: string;
   createdAt: string;
   updatedAt: string;
