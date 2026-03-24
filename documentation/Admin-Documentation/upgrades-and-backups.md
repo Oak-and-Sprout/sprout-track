@@ -119,6 +119,8 @@ After upload, the app automatically:
 
 This means you can take a backup from a SQLite instance and restore it onto PostgreSQL (or vice versa) without any manual conversion.
 
+**Database connection parameters are preserved during restore.** When you restore a backup, the `.env` file from the backup is applied, but your current `DATABASE_PROVIDER`, `DATABASE_URL`, and `LOG_DATABASE_URL` values are always kept. This ensures that restoring a backup from a different database provider (e.g., a SQLite backup onto a PostgreSQL instance) does not break your database connection. All other `.env` settings from the backup (such as `ENC_HASH`) are restored normally.
+
 If the restored database is from v0.94.24 or earlier, the Family Manager admin password is automatically reset to `admin` and you will be notified. See [Admin Password Reset](admin-password-reset.md).
 
 **Note**: Restore operations require system administrator authentication.
@@ -150,23 +152,32 @@ You can migrate between SQLite and PostgreSQL at any time using the built-in bac
 
 1. **Back up your SQLite instance.** In the app, go to Settings (or Family Manager) and click **Backup Database**. This downloads a `.zip` file containing your `baby-tracker.db` file and `.env` configuration.
 
-2. **Start a PostgreSQL instance.** Switch to the PostgreSQL compose file:
+2. **Set up your PostgreSQL server.** Create the databases on your PostgreSQL 14+ server:
+
+   ```sql
+   CREATE DATABASE sprout_track;
+   CREATE DATABASE sprout_track_logs;
+   ```
+
+3. **Start the app with PostgreSQL.** Stop the SQLite container and start with PostgreSQL:
 
    ```bash
    # Stop the SQLite container
    docker-compose down
 
-   # Start with PostgreSQL
+   # Start with PostgreSQL (set your connection details)
+   DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track" \
+   LOG_DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track_logs" \
    docker compose -f docker-compose.postgres.yml up -d
    ```
 
    The app starts with an empty PostgreSQL database and runs the Setup Wizard.
 
-3. **Restore your backup.** In the Setup Wizard's family setup step (or in Settings after initial setup), click **Restore Database** and upload your SQLite backup `.zip` file.
+4. **Restore your backup.** In the Setup Wizard's family setup step (or in Settings after initial setup), click **Restore Database** and upload your SQLite backup `.zip` file.
 
-   The app automatically reads the SQLite `.db` file from the backup, extracts all data, and imports it into PostgreSQL. After import, it runs migrations and seeds to ensure the schema is current.
+   The app automatically reads the SQLite `.db` file from the backup, extracts all data, and imports it into PostgreSQL. Your database connection parameters are preserved — the backup's `.env` values for `DATABASE_PROVIDER`, `DATABASE_URL`, and `LOG_DATABASE_URL` will not overwrite your PostgreSQL settings. After import, it runs migrations and seeds to ensure the schema is current.
 
-4. **Verify.** Log in with your existing credentials and confirm your data is present.
+5. **Verify.** Log in with your existing credentials and confirm your data is present.
 
 ### PostgreSQL to SQLite
 
@@ -175,21 +186,21 @@ You can migrate between SQLite and PostgreSQL at any time using the built-in bac
 2. **Start a SQLite instance.**
 
    ```bash
-   # Stop the PostgreSQL containers
-   docker compose -f docker-compose.postgres.yml down
+   # Stop the app container
+   docker-compose down
 
    # Start with SQLite (default)
    docker-compose up -d
    ```
 
-3. **Restore your backup.** Upload the PostgreSQL backup `.zip` file via the restore tool. The app imports the JSON data into the SQLite database.
+3. **Restore your backup.** Upload the PostgreSQL backup `.zip` file via the restore tool. The app imports the JSON data into the SQLite database. Your SQLite connection parameters are preserved — the backup's PostgreSQL settings will not overwrite them.
 
 4. **Verify.** Log in and confirm your data.
 
 ### Notes on Migration
 
 - Both directions preserve all data including activity logs, settings, caretakers, babies, and configuration.
-- The `.env` file in the backup is also restored, which includes your `ENC_HASH` encryption key (required for decrypting vaccine documents and other encrypted files).
+- The `.env` file in the backup is restored, which includes your `ENC_HASH` encryption key (required for decrypting vaccine documents and other encrypted files). However, your current database connection parameters (`DATABASE_PROVIDER`, `DATABASE_URL`, `LOG_DATABASE_URL`) are always preserved and never overwritten by the backup's values.
 - After migration, your encrypted files volume (`sprout-track-files`) should be preserved or copied to the new deployment.
 - Migration can also be done during initial setup via the Setup Wizard's import feature.
 

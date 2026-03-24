@@ -30,8 +30,19 @@ docker run -d \
 
 ## Quick Start: Docker (PostgreSQL)
 
+Requires an existing PostgreSQL 14+ server. Create the `sprout_track` and `sprout_track_logs` databases, then run:
+
 ```bash
-docker compose -f docker-compose.postgres.yml up -d
+docker run -d \
+  --name sprout-track \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e DATABASE_PROVIDER=postgresql \
+  -e DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track" \
+  -e LOG_DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track_logs" \
+  -v sprout-track-env:/app/env \
+  -v sprout-track-files:/app/Files \
+  sprouttrack/sprout-track:latest
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -41,9 +52,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 The Setup Wizard will guide you through initial configuration on first access.
 
-See [Docker Deployment](documentation/Admin-Documentation/docker-deployment.md) for volumes, custom ports, database provider options, and container details.
+See [Docker Deployment](documentation/Admin-Documentation/docker-deployment.md) for docker-compose setup, volumes, custom ports, and container details.
 
-## Quick Start: Local
+## Quick Start: Local (SQLite)
 
 Requires Node.js 22+, npm 10+, Git, and Bash.
 
@@ -57,7 +68,7 @@ npm run start
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-See [Local Deployment](documentation/Admin-Documentation/local-deployment.md) for manual setup, available scripts, and service management.
+PostgreSQL is also supported for local deployments. See [Local Deployment](documentation/Admin-Documentation/local-deployment.md) for PostgreSQL setup, manual setup, available scripts, and service management.
 
 ## First-Time Setup
 

@@ -40,10 +40,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Quick Setup (PostgreSQL)
 
-1. Create a PostgreSQL database:
+1. Create PostgreSQL databases:
 
 ```sql
 CREATE DATABASE sprout_track;
+CREATE DATABASE sprout_track_logs;
 ```
 
 2. Clone and configure:
@@ -54,12 +55,12 @@ cd sprout-track
 chmod +x scripts/*.sh
 ```
 
-3. Set the database provider in your `.env` (or export before running setup):
+3. Create/edit your `.env` file with the PostgreSQL settings:
 
-```bash
-export DATABASE_PROVIDER="postgresql"
-export DATABASE_URL="postgresql://user:password@localhost:5432/sprout_track"
-export LOG_DATABASE_URL="postgresql://user:password@localhost:5432/sprout_track"
+```env
+DATABASE_PROVIDER="postgresql"
+DATABASE_URL="postgresql://user:password@localhost:5432/sprout_track"
+LOG_DATABASE_URL="postgresql://user:password@localhost:5432/sprout_track_logs"
 ```
 
 4. Run setup and start:
@@ -69,7 +70,7 @@ export LOG_DATABASE_URL="postgresql://user:password@localhost:5432/sprout_track"
 npm start
 ```
 
-The setup script detects `DATABASE_PROVIDER` and uses `prisma db push` instead of SQLite migrations.
+The setup script reads `DATABASE_PROVIDER`, `DATABASE_URL`, and `LOG_DATABASE_URL` from your `.env` file automatically and uses `prisma db push` instead of SQLite migrations.
 
 ## Manual Setup
 

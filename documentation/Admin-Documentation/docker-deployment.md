@@ -30,20 +30,35 @@ On first access, the Setup Wizard will guide you through initial configuration.
 
 ## Quick Start (PostgreSQL)
 
-Use the PostgreSQL compose file:
+Requires an existing PostgreSQL 14+ server. Create the databases first:
+
+```sql
+CREATE DATABASE sprout_track;
+CREATE DATABASE sprout_track_logs;
+```
+
+Run the latest image with your PostgreSQL connection details:
+
+```bash
+docker run -d \
+  --name sprout-track \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e DATABASE_PROVIDER=postgresql \
+  -e DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track" \
+  -e LOG_DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track_logs" \
+  -v sprout-track-env:/app/env \
+  -v sprout-track-files:/app/Files \
+  sprouttrack/sprout-track:latest
+```
+
+Or with docker-compose, set `DATABASE_URL` and `LOG_DATABASE_URL` in your environment (or a `.env` file) and use the PostgreSQL compose file:
 
 ```bash
 docker compose -f docker-compose.postgres.yml up -d
 ```
 
-This starts both the app and a PostgreSQL 16 instance. The app automatically creates the database schema and seeds default data on first run.
-
-To use your own external PostgreSQL server instead of the built-in one, set `DATABASE_URL` in your environment and remove the `postgres` service from the compose file:
-
-```bash
-DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track" \
-  docker compose -f docker-compose.postgres.yml up -d app
-```
+The app automatically creates the database schema and seeds default data on first run.
 
 ## Custom Port
 
@@ -121,9 +136,10 @@ Both providers support the same features. You can migrate between them at any ti
 
 | Volume | Mount Point | Purpose |
 |--------|-------------|---------|
-| `sprout-track-pg-data` | `/var/lib/postgresql/data` | PostgreSQL data (on the postgres container) |
 | `sprout-track-env` | `/app/env` | Environment configuration (`.env` file, encryption keys) |
 | `sprout-track-files` | `/app/Files` | Encrypted file storage (vaccine documents) |
+
+Data is stored in your external PostgreSQL server, so no database volume is needed on the app container.
 
 All named volumes persist across container restarts and upgrades. Your data, configuration, and encryption keys are preserved automatically when pulling a new image.
 
@@ -133,7 +149,7 @@ The container automatically manages the `.env` file stored in the `sprout-track-
 
 - **First run:** Creates a complete `.env` with all required defaults and generates encryption keys (`ENC_HASH`)
 - **Upgrades:** Adds any new environment variables introduced in newer versions without overwriting your existing settings
-- **Backup restore:** Fills in any missing variables after restoring a `.env` from an older backup
+- **Backup restore:** Fills in any missing variables after restoring a `.env` from an older backup. Database connection parameters (`DATABASE_PROVIDER`, `DATABASE_URL`, `LOG_DATABASE_URL`) are always preserved during restore, even if the backup came from a different database provider
 
 Your `ENC_HASH` (used for file encryption) is never overwritten once generated. See [Environment Variables](environment-variables.md) for the full reference.
 
@@ -147,7 +163,7 @@ Each time the container starts, it automatically:
 4. Seeds the database with defaults (safe to run repeatedly)
 5. Sets up the notification cron job (if notifications are enabled)
 
-For PostgreSQL, the startup script also waits for the database server to be ready before running migrations.
+For PostgreSQL, the startup script waits for the database server to be ready before running migrations.
 
 This means upgrades are handled automatically -- just pull the new image and restart.
 
@@ -198,7 +214,7 @@ To build the image locally instead of pulling from Docker Hub:
 docker-compose build
 docker-compose up -d
 
-# PostgreSQL
+# PostgreSQL (requires DATABASE_URL and LOG_DATABASE_URL in environment)
 docker compose -f docker-compose.postgres.yml build
 docker compose -f docker-compose.postgres.yml up -d
 ```
