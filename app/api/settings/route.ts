@@ -37,6 +37,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           defaultWeightUnit: 'LB',
           defaultTempUnit: 'F',
           enableBreastMilkTracking: true,
+          includeSolidsInFeedTimer: true,
           familyId: targetFamilyId,
         },
       });
@@ -111,6 +112,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       'familyName', 'securityPin', 'authType',
       'enableDebugTimer', 'enableDebugTimezone',
       'enableBreastMilkTracking',
+      'includeSolidsInFeedTimer',
     ];
 
     const isAdmin = authContext.caretakerRole === 'ADMIN' ||

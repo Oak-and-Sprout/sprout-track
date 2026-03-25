@@ -28,6 +28,8 @@ Translations are stored in **per-language JSON files** under `src/localization/t
 - `en.json`: English (also acts as the fallback)
 - `es.json`: Spanish
 - `fr.json`: French
+- `de.json`: German
+- `it.json`: Italian
 - `it.json`: Italian
 - Supported languages (codes, display names, abbreviations, and UI order) are configured in `src/localization/supported-languages.json`. The app reads this file via `src/localization/supported-languages-config.ts` (also used by `/api/localization` for validation).
 
@@ -62,8 +64,7 @@ Each file is a flat map of **translation key → translated string**. Translatio
 
 To add a new translation:
 
-1. Open `/src/localization/translations/en.json` (and optionally `es.json` / `fr.json`)
-2. Add a new key with translations for all supported languages:
+1. Open `/src/localization/translations/en.json` and add the new key:
 
 ```json
 {
@@ -71,13 +72,7 @@ To add a new translation:
 }
 ```
 
-And in `es.json` / `fr.json`:
-
-```json
-{
-  "English text": "Texto en español"
-}
-```
+2. Run `node scripts/check-missing-translations.js` — this adds missing keys (with empty values) to all other language files and sorts all files alphabetically.
 
 3. Use the key in your component:
 
@@ -92,26 +87,26 @@ function MyComponent() {
 
 ## Maintaining Translation Files
 
-### Sorting Translation Files
+### Syncing and Sorting Translation Files
 
-To keep translation files organized and easy to navigate, all translation files should be sorted alphabetically by their keys. A script is provided to automatically sort all translation files:
+The recommended script for maintaining translations is:
 
 ```bash
-node scripts/sort-translation-files.js
+node scripts/check-missing-translations.js
 ```
 
 This script will:
-- Sort all JSON files in `src/localization/translations/` alphabetically by key
-- Preserve all translation values
-- Only modify files if they need sorting (won't touch already-sorted files)
-- Use case-insensitive alphabetical ordering
+- Compare all translation files against `en.json` (the reference)
+- Add missing keys with empty string values to other language files
+- Sort all files alphabetically by key
+- Report any extra keys in non-reference files
+
+A simpler sort-only script is also available: `node scripts/sort-translation-files.js`
 
 **When to run:**
-- After adding new translation keys manually
+- After adding new translation keys to `en.json`
 - Before committing translation file changes
 - When translation files become disorganized
-
-**Note:** The script maintains proper JSON formatting with 2-space indentation and a trailing newline.
 
 ## Adding New Languages
 

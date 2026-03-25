@@ -58,6 +58,30 @@ function HomeContent(): React.ReactElement {
   const [lastSleepEndTime, setLastSleepEndTime] = useState<Record<string, Date>>({});
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
   const [lastDiaperTime, setLastDiaperTime] = useState<Record<string, Date>>({});
+  const [includeSolidsInFeedTimer, setIncludeSolidsInFeedTimer] = useState(true);
+  const includeSolidsRef = useRef(true);
+
+  // Fetch family settings for feed timer configuration
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) return;
+        const response = await fetch('/api/settings', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+          const value = data.data.includeSolidsInFeedTimer ?? true;
+          setIncludeSolidsInFeedTimer(value);
+          includeSolidsRef.current = value;
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    };
+    fetchSettings();
+  }, [family?.id]);
 
   // Track the currently selected date in the Timeline component
   const [selectedTimelineDate, setSelectedTimelineDate] = useState<Date | null>(null);
@@ -251,12 +275,12 @@ function HomeContent(): React.ReactElement {
       if (timelineData.success) {
         setActivities(timelineData.data);
 
-        // Update last feed time - only track bottle and breast feeds, not solids
+        // Update last feed time
         const lastFeed = timelineData.data
-          .filter((activity: ActivityType) => 
-            'amount' in activity && 
-            'type' in activity && 
-            (activity.type === 'BOTTLE' || activity.type === 'BREAST')
+          .filter((activity: ActivityType) =>
+            'amount' in activity &&
+            'type' in activity &&
+            (activity.type === 'BOTTLE' || activity.type === 'BREAST' || (includeSolidsRef.current && activity.type === 'SOLIDS'))
           )
           .sort((a: FeedLogResponse, b: FeedLogResponse) => 
             new Date(b.time).getTime() - new Date(a.time).getTime()
