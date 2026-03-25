@@ -289,26 +289,28 @@ export default function DiaperForm({
             {/* Blowout/Leakage checkbox - visible for all diaper types */}
             {formData.type && (
               <>
-                <div className="flex items-center space-x-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
                   <Checkbox
                     checked={formData.blowout}
                     onCheckedChange={(checked) => setFormData({ ...formData, blowout: checked })}
                     disabled={loading}
+                    variant="success"
                   />
-                  <label className="form-label text-sm">
+                  <span className="form-label text-sm">
                     {t('Blowout/Leakage')}
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3">
+                  </span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
                   <Checkbox
                     checked={formData.creamApplied}
                     onCheckedChange={(checked) => setFormData({ ...formData, creamApplied: checked })}
                     disabled={loading}
+                    variant="success"
                   />
-                  <label className="form-label text-sm">
+                  <span className="form-label text-sm">
                     {t('Diaper Cream Applied')}
-                  </label>
-                </div>
+                  </span>
+                </label>
               </>
             )}
 
