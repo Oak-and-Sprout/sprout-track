@@ -459,3 +459,133 @@ export interface FeedbackCreate {
 export interface FeedbackUpdate {
   viewed?: boolean;
 }
+
+// Monthly Report Card types
+export interface MonthlyReport {
+  baby: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    birthDate: string;
+    gender: 'MALE' | 'FEMALE' | null;
+    ageAtEndOfMonth: { months: number; days: number };
+  };
+  period: {
+    year: number;
+    month: number;
+    daysInMonth: number;
+    daysTracked: number;
+    isCurrentMonth: boolean;
+  };
+  growth: {
+    weight: GrowthMetric | null;
+    length: GrowthMetric | null;
+    headCircumference: GrowthMetric | null;
+    velocity: { value: number; unit: string } | null;
+    chartData: {
+      weight: GrowthChartData;
+      length: GrowthChartData;
+      headCircumference: GrowthChartData;
+    };
+  };
+  feeding: {
+    avgBottlesPerDay: number;
+    avgBottleSize: { value: number; unit: string };
+    avgDailyIntake: { value: number; unit: string };
+    dailyIntakeDelta: { value: number; direction: 'up' | 'down' | 'stable' } | null;
+    avgSolidsPerDay: number;
+    breakdown: {
+      formula: number;
+      breastMilk: number;
+      solids: number;
+    };
+  };
+  sleep: {
+    avgTotalPerDay: number;
+    avgNightSleep: number;
+    avgNapsPerDay: number;
+    longestStretch: number;
+    qualityDistribution: {
+      excellent: number;
+      good: number;
+      fair: number;
+      poor: number;
+    };
+    locationDistribution: {
+      location: string;
+      nightCount: number;
+      napCount: number;
+    }[];
+  };
+  diapers: {
+    avgChangesPerDay: number;
+    avgDirtyPerDay: number;
+    blowoutCount: number;
+    creamApplicationRate: number;
+    colorFlags: {
+      date: string;
+      color: string;
+    }[];
+  };
+  activity: {
+    avgTummyTimePerDay: number;
+    tummyTimeDelta: { value: number; direction: 'up' | 'down' | 'stable' } | null;
+    avgOutdoorTimePerDay: number;
+    bathCount: number;
+    avgBathInterval: number;
+  };
+  milestones: {
+    id: string;
+    date: string;
+    title: string;
+    description: string | null;
+    category: 'MOTOR' | 'COGNITIVE' | 'SOCIAL' | 'LANGUAGE' | 'CUSTOM';
+  }[];
+  health: {
+    supplements: {
+      name: string;
+      daysAdministered: number;
+      totalDays: number;
+      compliancePercent: number;
+    }[];
+    medicines: {
+      name: string;
+      totalAdministrations: number;
+    }[];
+    vaccines: {
+      name: string;
+      doseNumber: number | null;
+      date: string;
+    }[];
+  };
+  caretakers: {
+    name: string;
+    totalLogs: number;
+    percentage: number;
+  }[];
+}
+
+export interface GrowthChartData {
+  points: GrowthChartPoint[];
+}
+
+export interface GrowthChartPoint {
+  ageMonths: number;
+  p3: number;
+  p10: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p90: number;
+  p97: number;
+  measurement?: number;
+  measurementDate?: string;
+  percentile?: number;
+}
+
+export interface GrowthMetric {
+  value: number;
+  unit: string;
+  percentile: number;
+  trend: 'up' | 'down' | 'stable';
+}

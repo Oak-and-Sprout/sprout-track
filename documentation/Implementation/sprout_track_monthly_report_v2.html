@@ -1,0 +1,363 @@
+
+<style>
+.ro{display:flex;align-items:center;gap:6px;margin-bottom:1.5rem;}
+.ro-btn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);font-size:16px;transition:background 0.15s;}
+.ro-btn:hover{background:var(--color-background-secondary);}
+.ro-btn:active{transform:scale(0.95);}
+.ro-strip{display:flex;overflow:hidden;position:relative;flex:1;height:42px;align-items:center;}
+.ro-card{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;transition:transform 0.35s cubic-bezier(.4,0,.2,1),opacity 0.35s cubic-bezier(.4,0,.2,1);}
+.ro-month{font-size:18px;font-weight:500;color:var(--color-text-primary);line-height:1.2;}
+.ro-sub{font-size:12px;color:var(--color-text-secondary);}
+.sec{font-size:16px;font-weight:500;margin:0 0 10px;color:var(--color-text-primary);}
+.mc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;}
+.mc-label{font-size:12px;color:var(--color-text-secondary);margin:0;}
+.mc-val{font-size:20px;font-weight:500;margin:4px 0 2px;color:var(--color-text-primary);}
+.mc-sub{font-size:11px;margin:0;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 16px;}
+.ms-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);}
+</style>
+
+<div style="padding: 1rem 0; max-width: 680px; margin: 0 auto; font-family: var(--font-sans);">
+
+  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 1rem;">
+    <div style="width: 56px; height: 56px; border-radius: 50%; background: #E1F5EE; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 500; color: #0F6E56;">E</div>
+    <div>
+      <p style="font-weight: 500; font-size: 20px; margin: 0; color: var(--color-text-primary);">Emmett's monthly report</p>
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin: 2px 0 0;" id="ageLabel">Age: 7 months, 12 days</p>
+    </div>
+    <div style="margin-left: auto; padding: 4px 12px; border-radius: var(--border-radius-md); background: #E1F5EE; color: #085041; font-size: 12px; font-weight: 500; cursor: pointer;">PDF export</div>
+  </div>
+
+  <div class="ro">
+    <div class="ro-btn" id="prevMonth">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="ro-strip" id="roStrip">
+      <div class="ro-card" id="roCard" style="transform:translateX(0);opacity:1;">
+        <span class="ro-month" id="roMonth">March 2026</span>
+        <span class="ro-sub" id="roSub">31 days tracked</span>
+      </div>
+    </div>
+    <div class="ro-btn" id="nextMonth">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <div id="reportBody">
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.5rem;">
+    <div class="mc"><p class="mc-label">Weight</p><p class="mc-val" id="s-weight">18.4 lb</p><p class="mc-sub" style="color:#0F6E56;" id="s-wpct">62nd percentile ↑</p></div>
+    <div class="mc"><p class="mc-label">Length</p><p class="mc-val" id="s-length">27.2 in</p><p class="mc-sub" style="color:#0F6E56;" id="s-lpct">58th percentile →</p></div>
+    <div class="mc"><p class="mc-label">Head circ.</p><p class="mc-val" id="s-head">17.1 in</p><p class="mc-sub" style="color:#0F6E56;" id="s-hpct">55th percentile →</p></div>
+    <div class="mc"><p class="mc-label">Growth velocity</p><p class="mc-val" id="s-vel">+1.2 lb</p><p class="mc-sub" style="color:var(--color-text-secondary);" id="s-velsub">since last month</p></div>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem; padding: 12px;">
+    <p style="font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 0 0 4px;">Weight-for-age (CDC)</p>
+    <div style="position: relative; width: 100%; height: 180px;"><canvas id="growthChart"></canvas></div>
+  </div>
+
+  <p class="sec">Feeding</p>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 1rem;">
+    <div class="mc"><p class="mc-label">Avg bottles/day</p><p class="mc-val" id="s-bpd">5.3</p><p class="mc-sub" style="color:var(--color-text-secondary);" id="s-bpdsub">avg 5.8 oz each</p></div>
+    <div class="mc"><p class="mc-label">Daily intake</p><p class="mc-val" id="s-intake">30.7 oz</p><p class="mc-sub" style="color:#0F6E56;" id="s-intakesub">↑ 2.1 oz from Feb</p></div>
+    <div class="mc"><p class="mc-label">Solids sessions</p><p class="mc-val" id="s-solids">1.8/day</p><p class="mc-sub" style="color:var(--color-text-secondary);" id="s-solidssub">new this month</p></div>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <p style="font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 0 0 6px;">Feeding breakdown</p>
+    <div style="display: flex; height: 18px; border-radius: 9px; overflow: hidden; margin-bottom: 8px;">
+      <div id="fb-formula" style="width: 42%; background: #85B7EB;"></div>
+      <div id="fb-bm" style="width: 33%; background: #5DCAA5;"></div>
+      <div id="fb-solids" style="width: 25%; background: #FAC775;"></div>
+    </div>
+    <div style="display: flex; gap: 16px; font-size: 12px; color: var(--color-text-secondary);" id="fbLegend">
+      <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #85B7EB;"></span>Formula 42%</span>
+      <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #5DCAA5;"></span>Breast milk 33%</span>
+      <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #FAC775;"></span>Solids 25%</span>
+    </div>
+  </div>
+
+  <p class="sec">Sleep</p>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1rem;">
+    <div class="mc"><p class="mc-label">Avg total/day</p><p class="mc-val" id="s-stotal">14.2 hr</p></div>
+    <div class="mc"><p class="mc-label">Night sleep</p><p class="mc-val" id="s-snight">10.6 hr</p></div>
+    <div class="mc"><p class="mc-label">Avg naps</p><p class="mc-val" id="s-snaps">2.4/day</p></div>
+    <div class="mc"><p class="mc-label">Longest stretch</p><p class="mc-val" id="s-slong">7.5 hr</p></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.5rem;">
+    <div class="card" style="padding: 12px;">
+      <p style="font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 0 0 4px;">Sleep quality</p>
+      <div style="position: relative; width: 100%; height: 150px;"><canvas id="sleepQualChart"></canvas></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--color-text-secondary);margin-top:6px;" id="sqLeg"></div>
+    </div>
+    <div class="card" style="padding: 12px;">
+      <p style="font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 0 0 4px;">Sleep location</p>
+      <div style="position: relative; width: 100%; height: 150px;"><canvas id="sleepLocChart"></canvas></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--color-text-secondary);margin-top:6px;" id="slLeg"></div>
+    </div>
+  </div>
+
+  <p class="sec">Diapers</p>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1rem;">
+    <div class="mc"><p class="mc-label">Avg changes/day</p><p class="mc-val" id="s-dchanges">7.8</p></div>
+    <div class="mc"><p class="mc-label">Dirty diapers/day</p><p class="mc-val" id="s-ddirty">2.3</p></div>
+    <div class="mc"><p class="mc-label">Blowouts</p><p class="mc-val" id="s-dblowout">3</p></div>
+    <div class="mc"><p class="mc-label">Cream applied</p><p class="mc-val" id="s-dcream">38%</p></div>
+  </div>
+  <div id="diaperNote" style="background: #FAEEDA; border-radius: var(--border-radius-md); padding: 10px 14px; margin-bottom: 1.5rem; font-size: 13px; color: #633806;">
+    <span style="font-weight: 500;">Note for doctor:</span> 2 instances of green-colored stool logged (Mar 8, Mar 19). No other color abnormalities.
+  </div>
+
+  <p class="sec">Activity &amp; play</p>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.5rem;">
+    <div class="mc"><p class="mc-label">Tummy time/day</p><p class="mc-val" id="s-tummy">42 min</p><p class="mc-sub" style="color:#0F6E56;" id="s-tummysub">↑ 11 min from Feb</p></div>
+    <div class="mc"><p class="mc-label">Outdoor time/day</p><p class="mc-val" id="s-outdoor">28 min</p><p class="mc-sub" style="color:var(--color-text-secondary);">walks + outdoor play</p></div>
+    <div class="mc"><p class="mc-label">Baths this month</p><p class="mc-val" id="s-baths">12</p><p class="mc-sub" style="color:var(--color-text-secondary);" id="s-bathsub">every ~2.5 days</p></div>
+  </div>
+
+  <p class="sec">Milestones reached</p>
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.5rem;" id="milestoneList">
+    <div class="ms-row"><div style="width:28px;height:28px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#534AB7;">M</div><div style="flex:1;"><p style="font-size:14px;font-weight:500;margin:0;color:var(--color-text-primary);">Sits without support</p><p style="font-size:12px;color:var(--color-text-secondary);margin:2px 0 0;">Motor · Mar 5</p></div></div>
+    <div class="ms-row"><div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#185FA5;">L</div><div style="flex:1;"><p style="font-size:14px;font-weight:500;margin:0;color:var(--color-text-primary);">Babbles "mama" sounds</p><p style="font-size:12px;color:var(--color-text-secondary);margin:2px 0 0;">Language · Mar 12</p></div></div>
+    <div class="ms-row"><div style="width:28px;height:28px;border-radius:50%;background:#FBEAF0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#993556;">S</div><div style="flex:1;"><p style="font-size:14px;font-weight:500;margin:0;color:var(--color-text-primary);">Stranger anxiety begins</p><p style="font-size:12px;color:var(--color-text-secondary);margin:2px 0 0;">Social · Mar 18</p></div></div>
+    <div class="ms-row"><div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#0F6E56;">C</div><div style="flex:1;"><p style="font-size:14px;font-weight:500;margin:0;color:var(--color-text-primary);">Transfers objects hand-to-hand</p><p style="font-size:12px;color:var(--color-text-secondary);margin:2px 0 0;">Cognitive · Mar 22</p></div></div>
+  </div>
+
+  <p class="sec">Health &amp; medicine</p>
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <table style="width: 100%; font-size: 13px; border-collapse: collapse;" id="healthTable">
+      <tr style="border-bottom: 0.5px solid var(--color-border-tertiary);">
+        <td style="padding: 6px 0; color: var(--color-text-secondary);">Vitamin D drops</td>
+        <td style="padding: 6px 0; text-align: right; color: var(--color-text-primary);">28/31 days</td>
+        <td style="padding: 6px 0; text-align: right; width: 60px;"><span style="background: #E1F5EE; color: #085041; padding: 2px 8px; border-radius: 10px; font-size: 11px;">90%</span></td>
+      </tr>
+      <tr style="border-bottom: 0.5px solid var(--color-border-tertiary);">
+        <td style="padding: 6px 0; color: var(--color-text-secondary);">Iron supplement</td>
+        <td style="padding: 6px 0; text-align: right; color: var(--color-text-primary);">25/31 days</td>
+        <td style="padding: 6px 0; text-align: right; width: 60px;"><span style="background: #FAEEDA; color: #633806; padding: 2px 8px; border-radius: 10px; font-size: 11px;">81%</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; color: var(--color-text-secondary);">Vaccines</td>
+        <td style="padding: 6px 0; text-align: right; color: var(--color-text-primary);" colspan="2">Flu (dose 2) · Mar 14</td>
+      </tr>
+    </table>
+  </div>
+
+  <p class="sec">Caretaker activity</p>
+  <div class="card" style="margin-bottom: 1rem;">
+    <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+      <tr style="border-bottom: 0.5px solid var(--color-border-tertiary);">
+        <td style="padding: 6px 0; color: var(--color-text-secondary);">Mom</td>
+        <td style="padding: 6px 0; text-align: right; color: var(--color-text-primary);">312 logs</td>
+        <td style="padding: 6px 0; text-align: right; width: 50px; color: var(--color-text-secondary); font-size: 12px;">52%</td>
+      </tr>
+      <tr style="border-bottom: 0.5px solid var(--color-border-tertiary);">
+        <td style="padding: 6px 0; color: var(--color-text-secondary);">Dad</td>
+        <td style="padding: 6px 0; text-align: right; color: var(--color-text-primary);">198 logs</td>
+        <td style="padding: 6px 0; text-align: right; width: 50px; color: var(--color-text-secondary); font-size: 12px;">33%</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; color: var(--color-text-secondary);">Grandma</td>
+        <td style="padding: 6px 0; text-align: right; color: var(--color-text-primary);">89 logs</td>
+        <td style="padding: 6px 0; text-align: right; width: 50px; color: var(--color-text-secondary); font-size: 12px;">15%</td>
+      </tr>
+    </table>
+  </div>
+
+  </div>
+
+  <div style="border-top: 0.5px solid var(--color-border-tertiary); padding-top: 1rem; margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+    <p style="font-size: 12px; color: var(--color-text-tertiary); margin: 0;">Generated by Sprout Track · sprout-track.com</p>
+    <div style="display: flex; gap: 8px;">
+      <button style="font-size: 12px; padding: 4px 12px;" onclick="sendPrompt('Show me a week-by-week breakdown for this month')">Weekly detail ↗</button>
+      <button style="font-size: 12px; padding: 4px 12px;" onclick="sendPrompt('Compare the last two months side by side')">Compare months ↗</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+const txtMuted = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)';
+const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+const months = [
+  {
+    label: 'March 2026', days: 31, age: 'Age: 7 months, 12 days',
+    weight:'18.4 lb', wpct:'62nd percentile ↑', length:'27.2 in', lpct:'58th percentile →',
+    head:'17.1 in', hpct:'55th percentile →', vel:'+1.2 lb', velsub:'since last month',
+    bpd:'5.3', bpdsub:'avg 5.8 oz each', intake:'30.7 oz', intakesub:'↑ 2.1 oz from Feb',
+    solids:'1.8/day', solidssub:'new this month',
+    fb:[42,33,25], fbLabels:['Formula 42%','Breast milk 33%','Solids 25%'],
+    stotal:'14.2 hr', snight:'10.6 hr', snaps:'2.4/day', slong:'7.5 hr',
+    sqData:[12,14,4,1], sqLabels:['Excellent 12','Good 14','Fair 4','Poor 1'],
+    slData:[18,8,3,2], slLabels:['Crib','Bassinet','Stroller','Car seat'],
+    slNapData:[6,14,8,3], slNapLabels:['Crib','Arms','Stroller','Car seat'],
+    dchanges:'7.8', ddirty:'2.3', dblowout:'3', dcream:'38%',
+    dNote:'<span style="font-weight:500;">Note for doctor:</span> 2 instances of green-colored stool logged (Mar 8, Mar 19). No other color abnormalities.',
+    tummy:'42 min', tummysub:'↑ 11 min from Feb', outdoor:'28 min', baths:'12', bathsub:'every ~2.5 days',
+    growthEmmett:[7.8,9.8,11.5,13.0,14.6,15.9,17.2,18.4], growthLabels:['Birth','1m','2m','3m','4m','5m','6m','7m']
+  },
+  {
+    label: 'February 2026', days: 28, age: 'Age: 6 months, 12 days',
+    weight:'17.2 lb', wpct:'60th percentile ↑', length:'26.5 in', lpct:'56th percentile →',
+    head:'16.8 in', hpct:'54th percentile →', vel:'+1.3 lb', velsub:'since last month',
+    bpd:'5.6', bpdsub:'avg 5.4 oz each', intake:'28.6 oz', intakesub:'↑ 1.8 oz from Jan',
+    solids:'0.6/day', solidssub:'introducing purees',
+    fb:[52,38,10], fbLabels:['Formula 52%','Breast milk 38%','Solids 10%'],
+    stotal:'14.8 hr', snight:'10.2 hr', snaps:'2.8/day', slong:'6.8 hr',
+    sqData:[10,12,5,1], sqLabels:['Excellent 10','Good 12','Fair 5','Poor 1'],
+    slData:[15,9,2,2], slLabels:['Crib','Bassinet','Stroller','Car seat'],
+    slNapData:[4,18,4,2], slNapLabels:['Crib','Arms','Stroller','Car seat'],
+    dchanges:'8.2', ddirty:'2.5', dblowout:'5', dcream:'42%',
+    dNote:'<span style="font-weight:500;">Note for doctor:</span> 1 instance of mucousy stool logged (Feb 11). No other abnormalities.',
+    tummy:'31 min', tummysub:'↑ 8 min from Jan', outdoor:'18 min', baths:'10', bathsub:'every ~2.8 days',
+    growthEmmett:[7.8,9.8,11.5,13.0,14.6,15.9,17.2], growthLabels:['Birth','1m','2m','3m','4m','5m','6m']
+  },
+  {
+    label: 'January 2026', days: 31, age: 'Age: 5 months, 12 days',
+    weight:'15.9 lb', wpct:'58th percentile ↑', length:'25.8 in', lpct:'55th percentile →',
+    head:'16.4 in', hpct:'52nd percentile →', vel:'+1.3 lb', velsub:'since last month',
+    bpd:'6.1', bpdsub:'avg 4.9 oz each', intake:'26.8 oz', intakesub:'steady',
+    solids:'--', solidssub:'not yet started',
+    fb:[55,45,0], fbLabels:['Formula 55%','Breast milk 45%',''],
+    stotal:'15.4 hr', snight:'9.8 hr', snaps:'3.2/day', slong:'5.5 hr',
+    sqData:[8,14,6,3], sqLabels:['Excellent 8','Good 14','Fair 6','Poor 3'],
+    slData:[12,14,3,2], slLabels:['Crib','Bassinet','Stroller','Car seat'],
+    slNapData:[3,20,5,3], slNapLabels:['Crib','Arms','Stroller','Car seat'],
+    dchanges:'8.6', ddirty:'2.8', dblowout:'4', dcream:'45%',
+    dNote:'No color abnormalities this month.',
+    tummy:'23 min', tummysub:'↑ 5 min from Dec', outdoor:'12 min', baths:'9', bathsub:'every ~3.4 days',
+    growthEmmett:[7.8,9.8,11.5,13.0,14.6,15.9], growthLabels:['Birth','1m','2m','3m','4m','5m']
+  }
+];
+
+let currentIdx = 0;
+let growthChartInst = null;
+let sqChartInst = null;
+let slChartInst = null;
+
+const p97 = [9.1,11.1,13.0,14.5,15.8,17.0,18.0,18.9,19.7];
+const p50 = [7.5,9.4,11.1,12.6,13.8,14.8,15.7,16.5,17.2];
+const p3  = [5.7,7.1,8.6,9.9,11.0,11.9,12.6,13.2,13.8];
+
+function renderMonth(idx) {
+  const m = months[idx];
+  document.getElementById('ageLabel').textContent = m.age;
+  document.getElementById('roMonth').textContent = m.label;
+  document.getElementById('roSub').textContent = m.days + ' days tracked';
+  document.getElementById('s-weight').textContent = m.weight;
+  document.getElementById('s-wpct').textContent = m.wpct;
+  document.getElementById('s-length').textContent = m.length;
+  document.getElementById('s-lpct').textContent = m.lpct;
+  document.getElementById('s-head').textContent = m.head;
+  document.getElementById('s-hpct').textContent = m.hpct;
+  document.getElementById('s-vel').textContent = m.vel;
+  document.getElementById('s-velsub').textContent = m.velsub;
+  document.getElementById('s-bpd').textContent = m.bpd;
+  document.getElementById('s-bpdsub').textContent = m.bpdsub;
+  document.getElementById('s-intake').textContent = m.intake;
+  document.getElementById('s-intakesub').textContent = m.intakesub;
+  document.getElementById('s-solids').textContent = m.solids;
+  document.getElementById('s-solidssub').textContent = m.solidssub;
+  document.getElementById('fb-formula').style.width = m.fb[0] + '%';
+  document.getElementById('fb-bm').style.width = m.fb[1] + '%';
+  document.getElementById('fb-solids').style.width = m.fb[2] + '%';
+  const legHTML = [['#85B7EB',m.fbLabels[0]],['#5DCAA5',m.fbLabels[1]],['#FAC775',m.fbLabels[2]]].filter(x=>x[1]).map(([c,l])=>'<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:'+c+';"></span>'+l+'</span>').join('');
+  document.getElementById('fbLegend').innerHTML = legHTML;
+  document.getElementById('s-stotal').textContent = m.stotal;
+  document.getElementById('s-snight').textContent = m.snight;
+  document.getElementById('s-snaps').textContent = m.snaps;
+  document.getElementById('s-slong').textContent = m.slong;
+  document.getElementById('s-dchanges').textContent = m.dchanges;
+  document.getElementById('s-ddirty').textContent = m.ddirty;
+  document.getElementById('s-dblowout').textContent = m.dblowout;
+  document.getElementById('s-dcream').textContent = m.dcream;
+  document.getElementById('diaperNote').innerHTML = m.dNote;
+  document.getElementById('s-tummy').textContent = m.tummy;
+  document.getElementById('s-tummysub').textContent = m.tummysub;
+  document.getElementById('s-outdoor').textContent = m.outdoor;
+  document.getElementById('s-baths').textContent = m.baths;
+  document.getElementById('s-bathsub').textContent = m.bathsub;
+  document.getElementById('nextMonth').style.opacity = idx === 0 ? '0.3' : '1';
+  document.getElementById('nextMonth').style.pointerEvents = idx === 0 ? 'none' : 'auto';
+  document.getElementById('prevMonth').style.opacity = idx === months.length - 1 ? '0.3' : '1';
+  document.getElementById('prevMonth').style.pointerEvents = idx === months.length - 1 ? 'none' : 'auto';
+  renderGrowthChart(m);
+  renderSleepQualChart(m);
+  renderSleepLocChart(m);
+}
+
+function renderGrowthChart(m) {
+  const len = m.growthEmmett.length;
+  if (growthChartInst) growthChartInst.destroy();
+  growthChartInst = new Chart(document.getElementById('growthChart'), {
+    type: 'line',
+    data: {
+      labels: m.growthLabels,
+      datasets: [
+        {label:'97th',data:p97.slice(0,len),borderColor:'rgba(134,183,235,0.25)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {label:'50th',data:p50.slice(0,len),borderColor:'rgba(134,183,235,0.5)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {label:'3rd',data:p3.slice(0,len),borderColor:'rgba(134,183,235,0.25)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {label:'Emmett',data:m.growthEmmett,borderColor:'#1D9E75',borderWidth:2.5,pointRadius:m.growthEmmett.map((_,i)=>i===len-1?5:0),pointBackgroundColor:'#1D9E75',fill:false,tension:0.3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11},color:txtMuted}},y:{grid:{color:gridColor},ticks:{font:{size:11},color:txtMuted,callback:v=>v+' lb'},min:4,max:22}}}
+  });
+}
+
+function renderSleepQualChart(m) {
+  if (sqChartInst) sqChartInst.destroy();
+  sqChartInst = new Chart(document.getElementById('sleepQualChart'), {
+    type: 'doughnut',
+    data:{labels:['Excellent','Good','Fair','Poor'],datasets:[{data:m.sqData,backgroundColor:['#1D9E75','#5DCAA5','#FAC775','#F09595'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false}}}
+  });
+  document.getElementById('sqLeg').innerHTML = [['#1D9E75',m.sqLabels[0]],['#5DCAA5',m.sqLabels[1]],['#FAC775',m.sqLabels[2]],['#F09595',m.sqLabels[3]]].map(([c,l])=>'<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:'+c+';"></span>'+l+'</span>').join('');
+}
+
+function renderSleepLocChart(m) {
+  if (slChartInst) slChartInst.destroy();
+  slChartInst = new Chart(document.getElementById('sleepLocChart'), {
+    type: 'bar',
+    data:{
+      labels: m.slLabels,
+      datasets:[
+        {label:'Night',data:m.slData,backgroundColor:'#534AB7',borderRadius:3},
+        {label:'Naps',data:m.slNapData,backgroundColor:'#AFA9EC',borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:false,grid:{display:false},ticks:{font:{size:11},color:txtMuted}},y:{grid:{color:gridColor},ticks:{font:{size:11},color:txtMuted}}}}
+  });
+  document.getElementById('slLeg').innerHTML = '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#534AB7;"></span>Night sleep</span><span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#AFA9EC;"></span>Naps</span>';
+}
+
+function animateMonth(dir) {
+  const card = document.getElementById('roCard');
+  card.style.transform = 'translateX(' + (dir * -100) + '%)';
+  card.style.opacity = '0';
+  setTimeout(() => {
+    card.style.transition = 'none';
+    card.style.transform = 'translateX(' + (dir * 100) + '%)';
+    renderMonth(currentIdx);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        card.style.transition = 'transform 0.35s cubic-bezier(.4,0,.2,1),opacity 0.35s cubic-bezier(.4,0,.2,1)';
+        card.style.transform = 'translateX(0)';
+        card.style.opacity = '1';
+      });
+    });
+  }, 200);
+}
+
+document.getElementById('prevMonth').addEventListener('click', () => {
+  if (currentIdx < months.length - 1) { currentIdx++; animateMonth(1); }
+});
+document.getElementById('nextMonth').addEventListener('click', () => {
+  if (currentIdx > 0) { currentIdx--; animateMonth(-1); }
+});
+
+renderMonth(0);
+</script>

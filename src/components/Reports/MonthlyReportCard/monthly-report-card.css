@@ -1,0 +1,253 @@
+/* Dark mode overrides for Monthly Report Card */
+
+/* Container */
+html.dark .report-card-container {
+  color: #e5e7eb; /* gray-200 */
+}
+
+/* Header */
+html.dark .report-card-avatar {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .report-card-header-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-header-age {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-pdf-button {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .report-card-pdf-button:hover {
+  background-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+/* Month selector */
+html.dark .report-card-month-button {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-month-button:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .report-card-month-label {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-month-sub {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Section headings */
+html.dark .report-card-section-heading {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Metric cards */
+html.dark .report-card-metric {
+  background-color: #1f2937 !important; /* gray-800 */
+}
+
+html.dark .report-card-metric-label {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-metric-value {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .report-card-metric-sub-positive {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .report-card-metric-sub-neutral {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-metric-sub-warning {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .report-card-metric-sub-danger {
+  color: #f87171 !important; /* red-400 */
+}
+
+/* Cards (bordered containers) */
+html.dark .report-card-card {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .report-card-card-title {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Feeding breakdown */
+html.dark .report-card-breakdown-legend {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Chart legends */
+html.dark .report-card-chart-legend {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Doctor callout */
+html.dark .report-card-doctor-callout {
+  background-color: rgba(251, 191, 36, 0.1) !important;
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+/* Milestone rows */
+html.dark .report-card-milestone-row {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .report-card-milestone-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-milestone-sub {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-milestone-empty {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* Health table */
+html.dark .report-card-health-row {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .report-card-health-cell-name {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-health-cell-value {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-compliance-green {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .report-card-compliance-amber {
+  background-color: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .report-card-compliance-red {
+  background-color: rgba(248, 113, 113, 0.15) !important;
+  color: #f87171 !important; /* red-400 */
+}
+
+/* Caretaker table */
+html.dark .report-card-caretaker-name {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-caretaker-logs {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-caretaker-pct {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Footer */
+html.dark .report-card-footer {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .report-card-footer-brand {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* Loading / Error / Empty */
+html.dark .report-card-loading-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-error-text {
+  color: #f87171 !important; /* red-400 */
+}
+
+html.dark .report-card-empty-text {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-no-data {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* Chart toggle buttons */
+html.dark .report-card-chart-toggle {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .report-card-chart-toggle:hover {
+  background-color: #374151 !important; /* gray-700 */
+  color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.dark .report-card-chart-toggle-active {
+  background-color: rgba(20, 184, 166, 0.15) !important; /* teal-500/15 */
+  border-color: #14b8a6 !important; /* teal-500 */
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .report-card-chart-toggle-active:hover {
+  background-color: rgba(20, 184, 166, 0.25) !important; /* teal-500/25 */
+}
+
+/* Growth chart custom tooltip */
+html.dark .report-card-chart-tooltip {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .report-card-chart-tooltip p {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .report-card-chart-tooltip .font-medium {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-chart-tooltip .text-orange-600 {
+  color: #fb923c !important; /* orange-400 */
+}
+
+/* Recharts overrides for report card charts */
+html.dark .report-card-chart .recharts-cartesian-grid-horizontal line,
+html.dark .report-card-chart .recharts-cartesian-grid-vertical line {
+  stroke: #374151 !important; /* gray-700 */
+}
+
+html.dark .report-card-chart .recharts-cartesian-axis-tick-value {
+  fill: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-chart .recharts-cartesian-axis-line {
+  stroke: #4b5563 !important; /* gray-600 */
+}
+
+html.dark .report-card-chart .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
