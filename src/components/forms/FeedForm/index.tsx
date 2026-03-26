@@ -402,13 +402,14 @@ export default function FeedForm({
 
   useEffect(() => {
     if (formData.type === 'BOTTLE' || formData.type === 'SOLIDS') {
-      fetchLastAmount(formData.type);
-      
-      // Set the appropriate default unit based on feed type
-      if (formData.type === 'BOTTLE') {
-        setFormData(prev => ({ ...prev, unit: defaultSettings.defaultBottleUnit }));
-      } else if (formData.type === 'SOLIDS') {
-        setFormData(prev => ({ ...prev, unit: defaultSettings.defaultSolidsUnit }));
+      if (!activity) {
+        fetchLastAmount(formData.type);
+
+        if (formData.type === 'BOTTLE') {
+          setFormData(prev => ({ ...prev, unit: defaultSettings.defaultBottleUnit }));
+        } else if (formData.type === 'SOLIDS') {
+          setFormData(prev => ({ ...prev, unit: defaultSettings.defaultSolidsUnit }));
+        }
       }
     }
   }, [formData.type, babyId, defaultSettings.defaultBottleUnit, defaultSettings.defaultSolidsUnit]);
