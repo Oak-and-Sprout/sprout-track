@@ -21,6 +21,7 @@ const writeOnly = args.includes('--write-only');
 let API_KEY;
 let BASE_URL;
 let HOOKS_BASE;
+let CARETAKER_NAME;
 
 function prompt(question, defaultValue) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -272,6 +273,7 @@ async function runWriteTests(babyId) {
       feedType: 'formula',
       amount: 4,
       unitAbbr: 'OZ',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.activityType === 'feed', 'Expected feed type');
@@ -286,6 +288,7 @@ async function runWriteTests(babyId) {
       type: 'feed',
       feedType: 'BREAST',
       side: 'LEFT',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.details.type === 'BREAST', 'Expected BREAST feedType');
@@ -296,6 +299,7 @@ async function runWriteTests(babyId) {
     const res = await request('POST', `/babies/${babyId}/activities`, {
       type: 'diaper',
       diaperType: 'WET',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.activityType === 'diaper', 'Expected diaper type');
@@ -307,6 +311,7 @@ async function runWriteTests(babyId) {
       type: 'sleep',
       sleepType: 'NAP',
       action: 'start',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
     assert(startRes.data.details.isActive === true, 'Expected active sleep');
@@ -319,6 +324,7 @@ async function runWriteTests(babyId) {
       type: 'sleep',
       sleepType: 'NAP',
       action: 'end',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
     assert(endRes.data.details.isActive === false, 'Expected inactive sleep');
@@ -330,6 +336,7 @@ async function runWriteTests(babyId) {
       type: 'sleep',
       sleepType: 'NAP',
       action: 'start',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
     log(' ', `Started sleep ${startRes.data.id} as NAP`);
@@ -339,6 +346,7 @@ async function runWriteTests(babyId) {
     const endRes = await request('POST', `/babies/${babyId}/activities`, {
       type: 'sleep',
       action: 'end',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
     assert(endRes.data.details.type === 'NAP', `Expected NAP, got ${endRes.data.details.type}`);
@@ -350,6 +358,7 @@ async function runWriteTests(babyId) {
       type: 'sleep',
       sleepType: 'NAP',
       action: 'start',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
     log(' ', `Started sleep ${startRes.data.id} as NAP`);
@@ -360,6 +369,7 @@ async function runWriteTests(babyId) {
       type: 'sleep',
       sleepType: 'NIGHT_SLEEP',
       action: 'end',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
     assert(endRes.data.details.type === 'NIGHT_SLEEP', `Expected NIGHT_SLEEP, got ${endRes.data.details.type}`);
@@ -372,6 +382,7 @@ async function runWriteTests(babyId) {
       sleepType: 'NAP',
       action: 'log',
       duration: 45,
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.details.duration === 45, 'Expected 45 min duration');
@@ -383,6 +394,7 @@ async function runWriteTests(babyId) {
       type: 'note',
       content: 'API test note - safe to delete',
       category: 'test',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     log(' ', `Created note ${res.data.id}`);
@@ -394,6 +406,7 @@ async function runWriteTests(babyId) {
       soapUsed: true,
       shampooUsed: false,
       notes: 'API test bath',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     log(' ', `Created bath ${res.data.id}`);
@@ -405,6 +418,7 @@ async function runWriteTests(babyId) {
       measurementType: 'WEIGHT',
       value: 18.5,
       unit: 'LB',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     log(' ', `Created measurement ${res.data.id}`);
@@ -453,6 +467,7 @@ async function runWriteTests(babyId) {
     const startRes = await request('POST', `/babies/${babyId}/activities`, {
       type: 'pump',
       action: 'start',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
     assert(startRes.data.details.isActive === true, 'Expected active pump');
@@ -466,6 +481,7 @@ async function runWriteTests(babyId) {
       leftAmount: 2,
       rightAmount: 1.5,
       unitAbbr: 'OZ',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
     assert(endRes.data.details.isActive === false, 'Expected inactive pump');
@@ -480,6 +496,7 @@ async function runWriteTests(babyId) {
       leftAmount: 3,
       rightAmount: 2,
       unitAbbr: 'OZ',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.details.duration === 20, 'Expected 20 min duration');
@@ -492,6 +509,7 @@ async function runWriteTests(babyId) {
       playType: 'TUMMY_TIME',
       duration: 15,
       notes: 'API test tummy time',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.activityType === 'play', 'Expected play type');
@@ -514,6 +532,7 @@ async function runWriteTests(babyId) {
       medicineName: med.name,
       amount: med.typicalDoseSize || 1,
       unitAbbr: med.unitAbbr || 'ML',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.activityType === 'medicine', 'Expected medicine type');
@@ -546,6 +565,7 @@ async function runWriteTests(babyId) {
       supplementName: sup.name,
       amount: sup.typicalDoseSize || 1,
       unitAbbr: sup.unitAbbr || 'ML',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
     assert(res.data.activityType === 'supplement', 'Expected supplement type');
@@ -619,8 +639,11 @@ async function main() {
     process.exit(1);
   }
 
+  CARETAKER_NAME = await prompt('Caretaker name (optional, press Enter to skip)');
+
   console.log(`\n  Base URL: ${HOOKS_BASE}`);
   console.log(`  API Key: ${API_KEY.substring(0, 16)}...`);
+  if (CARETAKER_NAME) console.log(`  Caretaker: ${CARETAKER_NAME}`);
 
   // Auth tests always run
   await runAuthTests();
