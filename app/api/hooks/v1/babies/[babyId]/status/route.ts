@@ -84,7 +84,17 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   const [feedCount, diapers, sleepLogs, bathCount, medicineCount, supplementCount] = await Promise.all([
     prisma.feedLog.count({ where: { babyId, deletedAt: null, time: { gte: today } } }),
     prisma.diaperLog.findMany({ where: { babyId, deletedAt: null, time: { gte: today } }, select: { type: true } }),
-    prisma.sleepLog.findMany({ where: { babyId, deletedAt: null, startTime: { gte: today } }, select: { duration: true, type: true } }),
+    prisma.sleepLog.findMany({
+      where: {
+        babyId,
+        deletedAt: null,
+        OR: [
+          { startTime: { gte: today } },
+          { endTime: { gte: today }, startTime: { lt: today } },
+        ],
+      },
+      select: { duration: true, type: true, startTime: true, endTime: true },
+    }),
     prisma.bathLog.count({ where: { babyId, deletedAt: null, time: { gte: today } } }),
     prisma.medicineLog.count({ where: { babyId, deletedAt: null, time: { gte: today }, medicine: { isSupplement: false } } }),
     prisma.medicineLog.count({ where: { babyId, deletedAt: null, time: { gte: today }, medicine: { isSupplement: true } } }),
@@ -95,7 +105,13 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     diapersByType[d.type] = (diapersByType[d.type] || 0) + 1;
   });
 
-  const sleepMinutes = sleepLogs.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const sleepMinutes = sleepLogs.reduce((sum, s) => {
+    if (!s.duration) return sum;
+    if (s.startTime < today && s.endTime) {
+      return sum + Math.floor((s.endTime.getTime() - today.getTime()) / 60000);
+    }
+    return sum + s.duration;
+  }, 0);
   const naps = sleepLogs.filter((s) => s.type === 'NAP').length;
 
   // Warnings
