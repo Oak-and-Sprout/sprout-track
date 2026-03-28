@@ -122,6 +122,10 @@ The database provider is selected via the `DATABASE_PROVIDER` environment variab
 
 Both providers support the same features. You can migrate between them at any time using the built-in backup/restore tool (see [Database Migration](upgrades-and-backups.md#migrating-between-database-providers)).
 
+> **ⓘ To migrate:**  
+> Create a new instance of Sprout Track configured for your desired database provider, then restore your database using a backup from your previous instance.  
+> All your data will be imported into the new database provider, but your environment files (`.env`) will retain the current connection settings.
+
 ## Volumes
 
 ### SQLite Deployment

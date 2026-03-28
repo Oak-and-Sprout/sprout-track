@@ -241,6 +241,10 @@ When using PostgreSQL, the `db/` directory is not used -- data is stored in your
 
 You can switch between SQLite and PostgreSQL at any time using the built-in backup and restore tools. See [Migrating Between Database Providers](upgrades-and-backups.md#migrating-between-database-providers) for step-by-step instructions.
 
+> **ⓘ To migrate:**  
+> Create a new instance of Sprout Track configured for your desired database provider, then restore your database using a backup from your previous instance.  
+> All your data will be imported into the new database provider, but your environment files (`.env`) will retain the current connection settings.
+
 ## Related Documentation
 
 - [Environment Variables](environment-variables.md) -- full variable reference
