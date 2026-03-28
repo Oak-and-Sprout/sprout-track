@@ -435,14 +435,11 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
 
   const avgSolidsPerDay = effectiveDays > 0 ? Math.round((solidsFeeds.length / effectiveDays) * 10) / 10 : 0;
 
-  // Feeding breakdown
-  const totalFeedCount = feedLogs.length;
-  const formulaBottles = bottleFeeds.filter(f => f.bottleType === 'formula' || f.bottleType === 'formula\\breast');
-  const breastMilkBottles = bottleFeeds.filter(f => f.bottleType === 'breast milk');
-  const formulaCount = formulaBottles.length;
-  const breastMilkCount = breastMilkBottles.length + breastFeeds.length;
+  // Feeding breakdown (by feed type: BOTTLE, BREAST, SOLIDS)
+  const bottleCount = bottleFeeds.length;
+  const breastMilkCount = breastFeeds.length;
   const solidsCount = solidsFeeds.length;
-  const breakdownTotal = formulaCount + breastMilkCount + solidsCount || 1;
+  const breakdownTotal = bottleCount + breastMilkCount + solidsCount || 1;
 
   // ─── Sleep ───
   const totalSleepMinutes = sleepLogs.reduce((sum, s) => sum + (s.duration || 0), 0);
@@ -631,7 +628,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       dailyIntakeDelta,
       avgSolidsPerDay,
       breakdown: {
-        formula: Math.round((formulaCount / breakdownTotal) * 100),
+        bottle: Math.round((bottleCount / breakdownTotal) * 100),
         breastMilk: Math.round((breastMilkCount / breakdownTotal) * 100),
         solids: Math.round((solidsCount / breakdownTotal) * 100),
       },
