@@ -2,18 +2,14 @@
 
 import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import '../../../(app)/[slug]/log-entry/no-activities.css';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActiveBreastFeedResponse, ActiveActivityResponse } from '@/app/api/types';
-import { Button } from "@/src/components/ui/button";
+import { ActiveBreastFeedResponse, ActiveActivityResponse } from '@/app/api/types';
 import { Card } from "@/src/components/ui/card";
-import { StatusBubble } from "@/src/components/ui/status-bubble";
 import { Baby as BabyIcon } from 'lucide-react';
 import TimelineV2 from '@/src/components/Timeline/TimelineV2';
 import SettingsModal from '@/src/components/modals/SettingsModal';
 import { useBaby } from '../../../context/baby';
-import { useTimezone } from '../../../context/timezone';
 import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
-import { ActivityType } from '@/src/components/ui/activity-tile';
 import { ActivityTileGroup } from '@/src/components/ActivityTileGroup';
 import SleepForm from '@/src/components/forms/SleepForm';
 import FeedForm from '@/src/components/forms/FeedForm';
@@ -33,7 +29,6 @@ import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
 
 function HomeContent(): React.ReactElement {
   const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
-  const { userTimezone } = useTimezone();
   const { family } = useFamily();
   const { t } = useLocalization();
   const params = useParams();
@@ -50,10 +45,8 @@ function HomeContent(): React.ReactElement {
   const [showMedicineModal, setShowMedicineModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showVaccineModal, setShowVaccineModal] = useState<boolean>(false);
-  const [activities, setActivities] = useState<ActivityType[]>([]);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [localTime, setLocalTime] = useState<string>('');
-  const lastSleepCheck = useRef<string>('');
   const [sleepStartTime, setSleepStartTime] = useState<Record<string, Date>>({});
   const [lastSleepEndTime, setLastSleepEndTime] = useState<Record<string, Date>>({});
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
@@ -83,18 +76,6 @@ function HomeContent(): React.ReactElement {
     fetchSettings();
   }, [family?.id]);
 
-  // Track the currently selected date in the Timeline component
-  const [selectedTimelineDate, setSelectedTimelineDate] = useState<Date | null>(null);
-  
-  // Track polling state for activity timers (same as Timeline component)
-  const lastRefreshTimestamp = useRef<number>(Date.now());
-  const wasIdle = useRef<boolean>(false);
-  
-  const [sleepData, setSleepData] = useState<{
-    ongoingSleep?: SleepLogResponse;
-    lastEndedSleep?: SleepLogResponse & { endTime: string };
-  }>({});
-
   const [activeFeedData, setActiveFeedData] = useState<ActiveBreastFeedResponse | null>(null);
   const [feedStartTime, setFeedStartTime] = useState<Record<string, Date>>({});
   const [activeActivityData, setActiveActivityData] = useState<ActiveActivityResponse | null>(null);
@@ -106,68 +87,7 @@ function HomeContent(): React.ReactElement {
     notes: string | null;
   } | null>(null);
 
-  // Define checkSleepStatus before it's used
-  const checkSleepStatus = useCallback(async (babyId: string) => {
-    // Prevent duplicate checks
-    const checkId = `${babyId}-${Date.now()}`;
-    if (lastSleepCheck.current === checkId) return;
-    lastSleepCheck.current = checkId;
-
-    try {
-      // Add a timestamp to prevent caching
-      const timestamp = new Date().getTime();
-      
-      // Add family ID to the request if available
-      let url = `/api/timeline?babyId=${babyId}&limit=200&_t=${timestamp}&timezone=${encodeURIComponent(userTimezone)}`;
-      if (family?.id) {
-        url += `&familyId=${family.id}`;
-      }
-      
-      const authToken = localStorage.getItem('authToken');
-      const response = await fetch(url, {
-        cache: 'no-store',
-        headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Expires': '0',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
-        }
-      });
-      if (!response.ok) return;
-      
-      const data = await response.json();
-      if (!data.success) return;
-      
-    // Filter for sleep logs only - ensure we only get sleep activities, not pump activities
-    const sleepLogs = data.data
-      .filter((activity: ActivityType): activity is SleepLogResponse => 
-        'duration' in activity && 'startTime' in activity && 
-        'type' in activity && (activity.type === 'NAP' || activity.type === 'NIGHT_SLEEP')
-      );
-      
-      // Find ongoing sleep
-      const ongoingSleep = sleepLogs.find((log: SleepLogResponse) => !log.endTime);
-      
-      // Find last ended sleep
-      const completedSleeps = sleepLogs
-        .filter((log: SleepLogResponse): log is SleepLogResponse & { endTime: string } => 
-          log.endTime !== null && typeof log.endTime === 'string'
-        )
-        .sort((a: SleepLogResponse & { endTime: string }, b: SleepLogResponse & { endTime: string }) => 
-          new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
-        );
-      
-      setSleepData({
-        ongoingSleep,
-        lastEndedSleep: completedSleeps[0]
-      });
-      
-      // Update refresh timestamp for polling mechanism
-      lastRefreshTimestamp.current = Date.now();
-    } catch (error) {
-      console.error('Error checking sleep status:', error);
-    }
-  }, [userTimezone, family]);
+  // Sleep status is now provided by TimelineV2 via onLatestStatusReady callback
 
   // Check for active breastfeed sessions
   const checkFeedStatus = useCallback(async (babyId: string) => {
@@ -231,109 +151,12 @@ function HomeContent(): React.ReactElement {
     }
   }, []);
 
-  const refreshActivities = useCallback(async (babyId: string | undefined, dateFilter?: Date) => {
-    if (!babyId) return;
-    
-    try {
-      // Add a timestamp to prevent caching
-      const timestamp = new Date().getTime();
-      
-      // If a date filter is provided, use it in the API call
-      let url = `/api/timeline?babyId=${babyId}&limit=200&_t=${timestamp}&timezone=${encodeURIComponent(userTimezone)}`;
-      
-      // Add family ID to the request if available
-      if (family?.id) {
-        url += `&familyId=${family.id}`;
-      }
-      
-      if (dateFilter) {
-        // Update the selected date
-        setSelectedTimelineDate(dateFilter);
-        url += `&date=${encodeURIComponent(dateFilter.toISOString())}`;
-        console.log(`Refreshing activities with date filter: ${dateFilter.toISOString()}`);
-      } else if (selectedTimelineDate) {
-        // If we have a previously selected date, use it
-        url += `&date=${encodeURIComponent(selectedTimelineDate.toISOString())}`;
-        console.log(`Refreshing activities with previous date filter: ${selectedTimelineDate.toISOString()}`);
-      } else {
-        console.log(`Refreshing activities without date filter`);
-      }
-      
-      // Fetch timeline data
-      const authToken = localStorage.getItem('authToken');
-      const timelineResponse = await fetch(url, {
-        cache: 'no-store',
-        headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Expires': '0',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
-        }
-      });
-      const timelineData = await timelineResponse.json();
-      
-      if (timelineData.success) {
-        setActivities(timelineData.data);
-
-        // Update last feed time
-        const lastFeed = timelineData.data
-          .filter((activity: ActivityType) =>
-            'amount' in activity &&
-            'type' in activity &&
-            (activity.type === 'BOTTLE' || activity.type === 'BREAST' || (includeSolidsRef.current && activity.type === 'SOLIDS'))
-          )
-          .sort((a: FeedLogResponse, b: FeedLogResponse) => 
-            new Date(b.time).getTime() - new Date(a.time).getTime()
-          )[0];
-        if (lastFeed) {
-          // For breast feeds, use startTime (when feeding began) instead of time (when it ended)
-          const feedTime = (lastFeed.type === 'BREAST' && lastFeed.startTime)
-            ? lastFeed.startTime
-            : lastFeed.time;
-          setLastFeedTime(prev => ({
-            ...prev,
-            [babyId]: new Date(feedTime)
-          }));
-        }
-
-        // Update last diaper time
-        const lastDiaper = timelineData.data
-          .filter((activity: ActivityType) => 'condition' in activity)
-          .sort((a: DiaperLogResponse, b: DiaperLogResponse) => 
-            new Date(b.time).getTime() - new Date(a.time).getTime()
-          )[0];
-        if (lastDiaper) {
-          setLastDiaperTime(prev => ({
-            ...prev,
-            [babyId]: new Date(lastDiaper.time)
-          }));
-        }
-        
-        // Update last sleep end time - only consider sleep activities
-        const completedSleeps = timelineData.data
-          .filter((activity: ActivityType): activity is SleepLogResponse & { endTime: string } => 
-            'duration' in activity && 'startTime' in activity && 
-            'type' in activity && (activity.type === 'NAP' || activity.type === 'NIGHT_SLEEP') &&
-            activity.endTime !== null && typeof activity.endTime === 'string'
-          )
-          .sort((a: SleepLogResponse & { endTime: string }, b: SleepLogResponse & { endTime: string }) => 
-            new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
-          );
-        
-        if (completedSleeps.length > 0) {
-          setLastSleepEndTime(prev => ({
-            ...prev,
-            [babyId]: new Date(completedSleeps[0].endTime)
-          }));
-        }
-        
-        // Update refresh timestamp for polling mechanism
-        lastRefreshTimestamp.current = Date.now();
-      }
-    } catch (error) {
-      console.error('Error refreshing activities:', error);
-    }
-  }, [userTimezone, selectedTimelineDate, family]);
+  // Timeline data fetching is now owned by TimelineV2 component
+  // Use refreshTrigger to signal TimelineV2 to re-fetch after form submissions
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const triggerRefresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
   // Update unlock timer on any activity
   const updateUnlockTimer = () => {
@@ -372,95 +195,32 @@ function HomeContent(): React.ReactElement {
   useEffect(() => {
     const initializeData = async () => {
       if (selectedBaby?.id) {
-        await refreshActivities(selectedBaby.id);
-        await checkSleepStatus(selectedBaby.id);
+        // Timeline data and sleep status are now handled by TimelineV2
         await checkFeedStatus(selectedBaby.id);
         await checkActivityStatus(selectedBaby.id);
       }
     };
 
     initializeData();
-  }, [selectedBaby, refreshActivities, checkSleepStatus, checkFeedStatus, checkActivityStatus]);
+  }, [selectedBaby, checkFeedStatus, checkActivityStatus]);
 
-  // Handle sleep status changes
-  useEffect(() => {
-    if (!selectedBaby?.id) return;
+  // Sleep status changes are now handled by handleLatestStatusReady callback from TimelineV2
 
-    const { ongoingSleep, lastEndedSleep } = sleepData;
-    
-    if (ongoingSleep) {
-      setSleepingBabies((prev: Set<string>) => {
-        const newSet = new Set(prev);
-        newSet.add(selectedBaby.id);
-        return newSet;
-      });
-      setSleepStartTime((prev: Record<string, Date>) => ({
-        ...prev,
-        [selectedBaby.id]: new Date(ongoingSleep.startTime)
-      }));
-    } else {
-      setSleepingBabies((prev: Set<string>) => {
-        const newSet = new Set(prev);
-        newSet.delete(selectedBaby.id);
-        return newSet;
-      });
-      setSleepStartTime((prev: Record<string, Date>) => {
-        const newState = { ...prev };
-        delete newState[selectedBaby.id];
-        return newState;
-      });
-      
-      if (lastEndedSleep) {
-        setLastSleepEndTime(prev => ({
-          ...prev,
-          [selectedBaby.id]: new Date(lastEndedSleep.endTime)
-        }));
-      }
-    }
-  }, [sleepData, selectedBaby]);
-
-  // Activity timer polling mechanism (same intervals as Timeline component)
+  // Poll only for active feed/activity status (timeline polling is handled by TimelineV2)
   useEffect(() => {
     if (!selectedBaby?.id) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // User came back to the tab, refresh immediately
-        refreshActivities(selectedBaby.id);
-        checkSleepStatus(selectedBaby.id);
         checkFeedStatus(selectedBaby.id);
         checkActivityStatus(selectedBaby.id);
       }
     };
 
     const poll = setInterval(() => {
-      const idleThreshold = 5 * 60 * 1000; // 5 minutes
-      const activeRefreshRate = 30 * 1000; // 30 seconds
-
-      const idleTime = Date.now() - parseInt(localStorage.getItem('unlockTime') || `${Date.now()}`);
-      const isCurrentlyIdle = idleTime >= idleThreshold;
-      const timeSinceLastRefresh = Date.now() - lastRefreshTimestamp.current;
-
-      // Case 1: User just came back from an idle state (was idle, now is not)
-      if (wasIdle.current && !isCurrentlyIdle) {
-        refreshActivities(selectedBaby.id);
-        checkSleepStatus(selectedBaby.id);
-        checkFeedStatus(selectedBaby.id);
-        checkActivityStatus(selectedBaby.id);
-        lastRefreshTimestamp.current = Date.now();
-      }
-      // Case 2: User is active and the regular refresh interval has passed
-      else if (!isCurrentlyIdle && timeSinceLastRefresh > activeRefreshRate) {
-        refreshActivities(selectedBaby.id);
-        checkSleepStatus(selectedBaby.id);
-        checkFeedStatus(selectedBaby.id);
-        checkActivityStatus(selectedBaby.id);
-        lastRefreshTimestamp.current = Date.now();
-      }
-
-      // Update the idle state for the next check
-      wasIdle.current = isCurrentlyIdle;
-    }, 10000); // Check status every 10 seconds
+      checkFeedStatus(selectedBaby.id);
+      checkActivityStatus(selectedBaby.id);
+    }, 30000); // Check every 30 seconds
 
     window.addEventListener('visibilitychange', handleVisibilityChange);
 
@@ -468,7 +228,7 @@ function HomeContent(): React.ReactElement {
       clearInterval(poll);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [selectedBaby?.id, refreshActivities, checkSleepStatus, checkFeedStatus, checkActivityStatus]);
+  }, [selectedBaby?.id, checkFeedStatus, checkActivityStatus]);
 
   // Active breastfeed action handlers
   const handleFeedSwitch = async () => {
@@ -540,7 +300,7 @@ function HomeContent(): React.ReactElement {
         newSet.delete(selectedBaby.id);
         return newSet;
       });
-      await refreshActivities(selectedBaby.id);
+      triggerRefresh();
     } catch (error) {
       console.error('Error ending feed:', error);
     }
@@ -635,6 +395,45 @@ function HomeContent(): React.ReactElement {
     }
   };
 
+  // Receive latest status data from TimelineV2
+  const handleLatestStatusReady = useCallback((data: import('@/src/components/Timeline/types').LatestStatusData) => {
+    if (!selectedBaby?.id) return;
+
+    if (data.lastFeedTime) {
+      setLastFeedTime(prev => ({ ...prev, [selectedBaby.id]: data.lastFeedTime! }));
+    }
+    if (data.lastDiaperTime) {
+      setLastDiaperTime(prev => ({ ...prev, [selectedBaby.id]: data.lastDiaperTime! }));
+    }
+    if (data.lastSleepEndTime) {
+      setLastSleepEndTime(prev => ({ ...prev, [selectedBaby.id]: data.lastSleepEndTime! }));
+    }
+
+    // Update sleeping babies set
+    if (data.ongoingSleep) {
+      setSleepingBabies((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        newSet.add(selectedBaby.id);
+        return newSet;
+      });
+      setSleepStartTime((prev: Record<string, Date>) => ({
+        ...prev,
+        [selectedBaby.id]: new Date(data.ongoingSleep!.startTime)
+      }));
+    } else {
+      setSleepingBabies((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        newSet.delete(selectedBaby.id);
+        return newSet;
+      });
+      setSleepStartTime((prev: Record<string, Date>) => {
+        const newState = { ...prev };
+        delete newState[selectedBaby.id];
+        return newState;
+      });
+    }
+  }, [selectedBaby?.id]);
+
   return (
     <div className="relative isolate">
       {/* Activity Tile Group */}
@@ -693,34 +492,16 @@ function HomeContent(): React.ReactElement {
       )}
 
       {/* Timeline Section */}
-      {selectedBaby && (
+      {selectedBaby?.id && (
         <Card className="overflow-hidden border-0 relative z-0">
-          {activities.length > 0 ? (
-            <TimelineV2 
-              activities={activities} 
-              onActivityDeleted={(dateFilter?: Date) => {
-                if (selectedBaby?.id) {
-                  // If a date filter is provided, use it when refreshing activities
-                  if (dateFilter) {
-                    console.log(`Refreshing with date filter: ${dateFilter.toISOString()}`);
-                    // Don't call refreshActivities here, let the TimelineV2 component handle it
-                  } else {
-                    refreshActivities(selectedBaby.id);
-                  }
-                }
-              }}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-192px)] text-center bg-white border-t border-gray-200 no-activities-container">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center no-activities-icon-container">
-                <BabyIcon className="h-8 w-8 text-indigo-600 no-activities-icon" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1 no-activities-title">{t('No activities recorded')}</h3>
-              <p className="text-sm text-gray-500 no-activities-text">
-                {t('Activities will appear here once you start tracking')}
-              </p>
-            </div>
-          )}
+          <TimelineV2
+            babyId={selectedBaby.id}
+            refreshTrigger={refreshTrigger}
+            onLatestStatusReady={handleLatestStatusReady}
+            onActivityDeleted={() => {
+              triggerRefresh();
+            }}
+          />
         </Card>
       )}
 
@@ -795,10 +576,9 @@ function HomeContent(): React.ReactElement {
         }}
         babyId={selectedBaby?.id || ''}
         initialTime={localTime}
-        onSuccess={async () => {
+        onSuccess={() => {
           if (selectedBaby?.id) {
-            await refreshActivities(selectedBaby.id);
-            await checkSleepStatus(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -823,7 +603,7 @@ function HomeContent(): React.ReactElement {
         onResume={handleFeedResume}
         onSuccess={async () => {
           if (selectedBaby?.id) {
-            await refreshActivities(selectedBaby.id);
+            triggerRefresh();
             await checkFeedStatus(selectedBaby.id);
           }
         }}
@@ -839,7 +619,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -854,7 +634,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -869,7 +649,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -884,7 +664,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -899,7 +679,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -914,7 +694,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -929,7 +709,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -951,7 +731,7 @@ function HomeContent(): React.ReactElement {
         prefillData={activityPrefillData}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
             checkActivityStatus(selectedBaby.id);
           }
         }}
@@ -965,7 +745,7 @@ function HomeContent(): React.ReactElement {
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
       />
@@ -976,7 +756,7 @@ function HomeContent(): React.ReactElement {
         onClose={() => {
           setShowSettingsModal(false);
           if (selectedBaby?.id) {
-            refreshActivities(selectedBaby.id);
+            triggerRefresh();
           }
         }}
         variant="settings"

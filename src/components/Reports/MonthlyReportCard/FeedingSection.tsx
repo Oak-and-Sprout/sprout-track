@@ -19,8 +19,8 @@ const FeedingSection: React.FC<FeedingSectionProps> = ({ feeding }) => {
       ? s.metricSubWarning
       : s.metricSubNeutral;
 
-  const { formula, breastMilk, solids } = feeding.breakdown;
-  const hasBreakdown = formula + breastMilk + solids > 0;
+  const { bottle, breastMilk, solids } = feeding.breakdown;
+  const hasBreakdown = bottle + breastMilk + solids > 0;
 
   return (
     <>
@@ -56,15 +56,15 @@ const FeedingSection: React.FC<FeedingSectionProps> = ({ feeding }) => {
         <div className={cn(s.card, 'report-card-card')}>
           <p className={cn(s.cardTitle, 'report-card-card-title')}>{t('Feeding breakdown')}</p>
           <div className={cn(s.breakdownBar)}>
-            {formula > 0 && <div style={{ width: `${formula}%`, background: chartColors.formula }} />}
+            {bottle > 0 && <div style={{ width: `${bottle}%`, background: chartColors.bottle }} />}
             {breastMilk > 0 && <div style={{ width: `${breastMilk}%`, background: chartColors.breastMilk }} />}
             {solids > 0 && <div style={{ width: `${solids}%`, background: chartColors.solids }} />}
           </div>
           <div className={cn(s.breakdownLegend, 'report-card-breakdown-legend')}>
-            {formula > 0 && (
+            {bottle > 0 && (
               <span className={s.breakdownLegendItem}>
-                <span className={s.breakdownDot} style={{ background: chartColors.formula }} />
-                {t('Formula')} {formula}%
+                <span className={s.breakdownDot} style={{ background: chartColors.bottle }} />
+                {t('Bottle')} {bottle}%
               </span>
             )}
             {breastMilk > 0 && (

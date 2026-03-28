@@ -152,10 +152,11 @@ export const buildHeatmapDataForActivities = (activities: ActivityType[]): Heatm
           }
         }
       } else if (activity.type === 'NAP') {
-        // Nap windows - full duration, but not counted in allSleep
+        // Nap windows - full duration, counted in both naps and allSleep
         if (end) {
           for (let slot = timeToSlot(startHours); slot <= timeToSlot(endHours); slot++) {
             slotCounts.naps[slot]++;
+            slotCounts.allSleep[slot]++;
           }
         } else {
           // No end time, use ±30 min window
@@ -163,6 +164,7 @@ export const buildHeatmapDataForActivities = (activities: ActivityType[]): Heatm
           const napEnd = Math.min(24, startHours + 30/60);
           for (let slot = timeToSlot(napStart); slot <= timeToSlot(napEnd); slot++) {
             slotCounts.naps[slot]++;
+            slotCounts.allSleep[slot]++;
           }
         }
       }

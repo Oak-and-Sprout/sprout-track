@@ -1,5 +1,6 @@
 import { Settings } from '@prisma/client';
 import { ActivityType as ImportedActivityType } from '@/src/components/ui/activity-tile/activity-tile.types';
+import { SleepLogResponse } from '@/app/api/types';
 
 // Define the extended ActivityType that includes caretaker information
 export type TimelineActivityType = ImportedActivityType & {
@@ -12,8 +13,24 @@ export type ActivityType = TimelineActivityType;
 
 export type FilterType = 'sleep' | 'feed' | 'diaper' | 'poop' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null;
 
-export interface TimelineProps {
+export interface LatestStatusData {
+  lastFeedTime?: Date;
+  lastDiaperTime?: Date;
+  lastSleepEndTime?: Date;
+  ongoingSleep?: SleepLogResponse;
+  lastEndedSleep?: SleepLogResponse & { endTime: string };
+}
+
+// Legacy props for the old Timeline component (not actively used)
+export interface LegacyTimelineProps {
   activities: ImportedActivityType[];
+  onActivityDeleted?: (dateFilter?: Date) => void;
+}
+
+export interface TimelineProps {
+  babyId: string;
+  refreshTrigger?: number;
+  onLatestStatusReady?: (data: LatestStatusData) => void;
   onActivityDeleted?: (dateFilter?: Date) => void;
 }
 

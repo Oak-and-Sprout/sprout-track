@@ -13,14 +13,14 @@ import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
 import DailyStats from '@/src/components/DailyStats';
-import { ActivityType, FilterType, TimelineProps } from './types';
+import { ActivityType, FilterType, LegacyTimelineProps } from './types';
 import TimelineFilter from './TimelineFilter';
 import TimelineActivityList from './TimelineActivityList';
 import TimelineActivityDetails from './TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from './utils';
 import { PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
 
-const Timeline = ({ activities, onActivityDeleted }: TimelineProps) => {
+const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);

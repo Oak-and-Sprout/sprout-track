@@ -495,7 +495,7 @@ export interface MonthlyReport {
     dailyIntakeDelta: { value: number; direction: 'up' | 'down' | 'stable' } | null;
     avgSolidsPerDay: number;
     breakdown: {
-      formula: number;
+      bottle: number;
       breastMilk: number;
       solids: number;
     };
