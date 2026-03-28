@@ -1,5 +1,5 @@
 import { Settings } from '@prisma/client';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import SleepForm from '@/src/components/forms/SleepForm';
 import FeedForm from '@/src/components/forms/FeedForm';
 import DiaperForm from '@/src/components/forms/DiaperForm';
@@ -11,34 +11,96 @@ import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
-import { ActivityType, FilterType, TimelineProps } from '../types';
+import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
-import { PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
+import { useActivityCache } from './useActivityCache';
 
-const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
+const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
-  
+
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
   const [heatmapActivities, setHeatmapActivities] = useState<ActivityType[]>([]);
-  
+
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
   const [isFetchAnimated, setIsFetchAnimated] = useState<boolean>(true);
   const [breastMilkBalance, setBreastMilkBalance] = useState<string | undefined>(undefined);
   const lastRefreshTimestamp = useRef<number>(Date.now());
   const wasIdle = useRef<boolean>(false);
+  const prevRefreshTrigger = useRef<number>(refreshTrigger ?? 0);
 
-  const babyId = useMemo(() => (activities.length > 0 ? activities[0].babyId : undefined), [activities]);
+  const activityCache = useActivityCache();
 
   const breastMilkTrackingEnabled = (settings as any)?.enableBreastMilkTracking ?? true;
+
+  // Extract latest status data from activities and notify parent
+  const emitLatestStatus = useCallback((activities: ActivityType[]) => {
+    if (!onLatestStatusReady) return;
+
+    const status: LatestStatusData = {};
+
+    // Find last feed time
+    const lastFeed = activities
+      .filter((a) =>
+        'amount' in a && 'type' in a &&
+        ((a as any).type === 'BOTTLE' || (a as any).type === 'BREAST' || (a as any).type === 'SOLIDS') &&
+        'time' in a
+      )
+      .sort((a, b) => new Date((b as any).time).getTime() - new Date((a as any).time).getTime())[0];
+
+    if (lastFeed) {
+      const feedAny = lastFeed as any;
+      const feedTime = (feedAny.type === 'BREAST' && feedAny.startTime)
+        ? String(feedAny.startTime)
+        : feedAny.time;
+      status.lastFeedTime = new Date(feedTime);
+    }
+
+    // Find last diaper time
+    const lastDiaper = activities
+      .filter((a) => 'condition' in a && 'time' in a)
+      .sort((a, b) => new Date((b as any).time).getTime() - new Date((a as any).time).getTime())[0];
+
+    if (lastDiaper) {
+      status.lastDiaperTime = new Date((lastDiaper as any).time);
+    }
+
+    // Find sleep status
+    const sleepLogs = activities
+      .filter((a): a is ActivityType =>
+        'duration' in a && 'startTime' in a &&
+        'type' in a && ((a as any).type === 'NAP' || (a as any).type === 'NIGHT_SLEEP')
+      );
+
+    const ongoingSleep = sleepLogs.find(log => !(log as any).endTime);
+    if (ongoingSleep) {
+      status.ongoingSleep = ongoingSleep as unknown as SleepLogResponse;
+    }
+
+    const completedSleeps = sleepLogs
+      .filter((log) => {
+        const endTime = (log as any).endTime;
+        return endTime !== null && typeof endTime === 'string';
+      })
+      .sort((a, b) => new Date((b as any).endTime).getTime() - new Date((a as any).endTime).getTime());
+
+    if (completedSleeps.length > 0) {
+      const lastSleep = completedSleeps[0] as any;
+      status.lastSleepEndTime = new Date(lastSleep.endTime);
+      status.lastEndedSleep = lastSleep as SleepLogResponse & { endTime: string };
+    }
+
+    onLatestStatusReady(status);
+  }, [onLatestStatusReady]);
 
   const fetchBreastMilkBalance = async (babyId: string) => {
     if (!breastMilkTrackingEnabled) {
@@ -69,54 +131,22 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     }
   };
 
-  const fetchActivitiesForDate = async (babyId: string, date: Date, isAnimated: boolean) => {
+  // Fetch activities for date using cache
+  const fetchActivitiesForDate = useCallback(async (date: Date, isAnimated: boolean) => {
+    if (!babyId) return;
+
     setIsFetchAnimated(isAnimated);
     if (isAnimated) {
       setIsLoadingActivities(true);
     }
 
     try {
-      const timestamp = new Date().getTime();
+      const result = await activityCache.fetchWindow(babyId, date, 1);
+      setDateFilteredActivities(result.activities);
+      lastRefreshTimestamp.current = Date.now();
 
-      // Calculate start of day in user's timezone
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const startDateISO = startOfDay.toISOString();
-
-      // Calculate end of day in user's timezone
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-      const endDateISO = endOfDay.toISOString();
-      
-      const urlPath = window.location.pathname;
-      const familySlugMatch = urlPath.match(/^\/([^\/]+)\//);
-      const familySlug = familySlugMatch ? familySlugMatch[1] : null;
-      
-      let url = `/api/timeline?babyId=${babyId}&startDate=${encodeURIComponent(startDateISO)}&endDate=${encodeURIComponent(endDateISO)}&_t=${timestamp}`;
-      
-      const authToken = localStorage.getItem('authToken');
-      const response = await fetch(url, {
-        cache: 'no-store',
-        headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Expires': '0',
-          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setDateFilteredActivities(data.data);
-          lastRefreshTimestamp.current = Date.now();
-        } else {
-          setDateFilteredActivities([]);
-        }
-      } else {
-        console.error('Failed to fetch activities:', await response.text());
-        setDateFilteredActivities([]);
-      }
+      // Emit status from the full window of activities (covers yesterday/today/tomorrow)
+      emitLatestStatus(result.allActivities);
     } catch (error) {
       console.error('Error fetching activities for date:', error);
       setDateFilteredActivities([]);
@@ -125,60 +155,48 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
         setIsLoadingActivities(false);
       }
     }
-  };
+  }, [babyId, activityCache, emitLatestStatus]);
 
-  const fetchHeatmapActivitiesForWindow = async (babyId: string, date: Date) => {
+  // Refresh just today's data (for polling — bypasses cache)
+  const refreshCurrentDay = useCallback(async () => {
+    if (!babyId) return;
+
     try {
-      // Start 29 days before the selected date (inclusive), at start of day
-      const startOfWindow = new Date(date);
-      startOfWindow.setHours(0, 0, 0, 0);
-      startOfWindow.setDate(startOfWindow.getDate() - 29);
-      const startDateISO = startOfWindow.toISOString();
+      const activities = await activityCache.refreshDate(babyId, selectedDate);
+      setDateFilteredActivities(activities);
+      lastRefreshTimestamp.current = Date.now();
 
-      // End at end of selected date
-      const endOfWindow = new Date(date);
-      endOfWindow.setHours(23, 59, 59, 999);
-      const endDateISO = endOfWindow.toISOString();
-
-      const timestamp = new Date().getTime();
-
-      let url = `/api/timeline?babyId=${babyId}&startDate=${encodeURIComponent(startDateISO)}&endDate=${encodeURIComponent(endDateISO)}&_t=${timestamp}`;
-
-      const authToken = localStorage.getItem('authToken');
-      const response = await fetch(url, {
-        cache: 'no-store',
-        headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Expires': '0',
-          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setHeatmapActivities(data.data);
-        } else {
-          setHeatmapActivities([]);
-        }
-      } else {
-        console.error('Failed to fetch heatmap activities:', await response.text());
-        setHeatmapActivities([]);
-      }
+      // Also emit status from the refreshed data
+      emitLatestStatus(activities);
     } catch (error) {
-      console.error('Error fetching heatmap activities for window:', error);
-      setHeatmapActivities([]);
+      console.error('Error refreshing current day:', error);
     }
-  };
+  }, [babyId, selectedDate, activityCache, emitLatestStatus]);
+
+  const fetchHeatmapData = useCallback(async () => {
+    if (!babyId) return;
+    try {
+      const activities = await activityCache.fetchHeatmap(babyId, selectedDate);
+      setHeatmapActivities(activities);
+    } catch (error) {
+      console.error('Error fetching heatmap data:', error);
+    }
+  }, [babyId, selectedDate, activityCache]);
 
   const handleFormSuccess = () => {
     setEditModalType(null);
     setSelectedActivity(null);
 
     if (babyId) {
-      fetchActivitiesForDate(babyId, selectedDate, true);
+      // Invalidate today's cache and re-fetch
+      activityCache.invalidateDate(selectedDate);
+      fetchActivitiesForDate(selectedDate, true);
       fetchBreastMilkBalance(babyId);
+
+      // Also refresh heatmap if visible
+      if (isHeatmapVisible) {
+        fetchHeatmapData();
+      }
     }
 
     if (onActivityDeleted) {
@@ -189,7 +207,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const handleDateSelection = (newDate: Date) => {
     setSelectedDate(newDate);
     if (babyId) {
-      fetchActivitiesForDate(babyId, newDate, true);
+      fetchActivitiesForDate(newDate, true);
       if (onActivityDeleted) {
         onActivityDeleted(newDate);
       }
@@ -205,7 +223,8 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(activeFilter === filter ? null : filter);
   };
-  
+
+  // Fetch settings
   useEffect(() => {
     const fetchSettings = async () => {
       const authToken = localStorage.getItem('authToken');
@@ -223,30 +242,48 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
     };
     fetchSettings();
   }, []);
-  
+
+  // Initial fetch when babyId changes
   useEffect(() => {
     if (babyId) {
-      fetchActivitiesForDate(babyId, selectedDate, true);
-      fetchHeatmapActivitiesForWindow(babyId, selectedDate);
-    } else {
-      setDateFilteredActivities(activities);
-      setHeatmapActivities(activities);
+      activityCache.invalidateAll();
+      fetchActivitiesForDate(selectedDate, true);
     }
-  }, [activities, selectedDate, babyId]);
+  }, [babyId]);
 
+  // Fetch breast milk balance
   useEffect(() => {
     if (babyId) {
       fetchBreastMilkBalance(babyId);
     }
   }, [babyId, settings?.defaultBottleUnit]);
 
+  // Handle refreshTrigger from parent (form submissions in log-entry page)
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger !== prevRefreshTrigger.current) {
+      prevRefreshTrigger.current = refreshTrigger;
+      if (babyId) {
+        activityCache.invalidateDate(selectedDate);
+        fetchActivitiesForDate(selectedDate, true);
+        fetchBreastMilkBalance(babyId);
+      }
+    }
+  }, [refreshTrigger]);
+
+  // Lazy-load heatmap when toggled visible or date changes while visible
+  useEffect(() => {
+    if (isHeatmapVisible && babyId) {
+      fetchHeatmapData();
+    }
+  }, [isHeatmapVisible, selectedDate, babyId]);
+
+  // Single polling loop — replaces both parent and child polling
   useEffect(() => {
     if (!babyId) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // User came back to the tab, refresh immediately
-        fetchActivitiesForDate(babyId, selectedDate, false);
+        refreshCurrentDay();
       }
     };
 
@@ -258,18 +295,14 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
       const isCurrentlyIdle = idleTime >= idleThreshold;
       const timeSinceLastRefresh = Date.now() - lastRefreshTimestamp.current;
 
-      // Case 1: User just came back from an idle state (was idle, now is not)
       if (wasIdle.current && !isCurrentlyIdle) {
-        fetchActivitiesForDate(babyId, selectedDate, false);
-      }
-      // Case 2: User is active and the regular refresh interval has passed
-      else if (!isCurrentlyIdle && timeSinceLastRefresh > activeRefreshRate) {
-        fetchActivitiesForDate(babyId, selectedDate, false);
+        refreshCurrentDay();
+      } else if (!isCurrentlyIdle && timeSinceLastRefresh > activeRefreshRate) {
+        refreshCurrentDay();
       }
 
-      // Update the idle state for the next check
       wasIdle.current = isCurrentlyIdle;
-    }, 10000); // Check status every 10 seconds
+    }, 10000);
 
     window.addEventListener('visibilitychange', handleVisibilityChange);
 
@@ -277,7 +310,7 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
       clearInterval(poll);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [babyId, selectedDate]);
+  }, [babyId, refreshCurrentDay]);
 
   const sortedActivities = useMemo(() => {
     // Filter out breast-milk-adjustment activities when tracking is disabled
@@ -346,6 +379,9 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
 
       if (response.ok) {
         setSelectedActivity(null);
+        // Invalidate cache and refresh
+        activityCache.invalidateDate(selectedDate);
+        fetchActivitiesForDate(selectedDate, true);
         onActivityDeleted?.();
       }
     } catch (error) {
@@ -547,4 +583,3 @@ const TimelineV2 = ({ activities, onActivityDeleted }: TimelineProps) => {
 };
 
 export default TimelineV2;
-
