@@ -23,6 +23,29 @@ export interface SetupWizardProps {
    * Whether this is initial setup of a blank database
    */
   initialSetup?: boolean;
+
+  /**
+   * Stage to resume from (2 or 3) when resuming an incomplete setup
+   */
+  resumeStage?: number;
+
+  /**
+   * Pre-existing family data for resuming setup
+   */
+  familyData?: {
+    id: string;
+    name: string;
+    slug: string;
+    authType: string | null;
+    securityPin: string | null;
+    caretakers: Array<{
+      loginId: string;
+      name: string;
+      type: string;
+      role: 'ADMIN' | 'USER';
+      securityPin: string;
+    }>;
+  };
 }
 
 /**

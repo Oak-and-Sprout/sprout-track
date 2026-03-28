@@ -161,7 +161,8 @@ model Family {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  isActive  Boolean  @default(true)
+  isActive   Boolean  @default(true)
+  setupStage Int      @default(0) // 0=not started, 1=family created, 2=security configured, 3=complete
 
   // Account ownership
   account   Account?

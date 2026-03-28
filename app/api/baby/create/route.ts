@@ -62,6 +62,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<B
       },
     });
 
+    // Mark setup as complete if still in progress
+    if (family.setupStage < 3) {
+      await prisma.family.update({
+        where: { id: familyId },
+        data: { setupStage: 3 },
+      });
+    }
+
     return NextResponse.json({ success: true, data: newBaby }, { status: 201 });
   } catch (error) {
     console.error('Error creating baby:', error);

@@ -69,6 +69,7 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Famil
             name,
             slug,
             isActive: true,
+            setupStage: 1,
           },
         });
 
@@ -127,6 +128,7 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Famil
             name,
             slug,
             isActive: true,
+            setupStage: 1,
             accountId: authResult.accountId,
           },
         });
@@ -219,6 +221,7 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Famil
               name,
               slug,
               isActive: true,
+              setupStage: 1,
             },
           });
 
@@ -253,6 +256,7 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Famil
                 name,
                 slug,
                 isActive: true,
+                setupStage: 1,
               },
             });
 
@@ -270,6 +274,7 @@ async function handler(req: NextRequest): Promise<NextResponse<ApiResponse<Famil
                 name,
                 slug,
                 isActive: true,
+                setupStage: 1,
               },
             });
 
