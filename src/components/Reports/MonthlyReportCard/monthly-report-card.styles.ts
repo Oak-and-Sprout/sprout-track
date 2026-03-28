@@ -115,7 +115,7 @@ export const milestoneBadgeColors: Record<string, { bg: string; text: string; le
 // Chart colors
 export const chartColors = {
   bottle: '#85B7EB',
-  breastMilk: '#5DCAA5',
+  breast: '#5DCAA5',
   solids: '#FAC775',
   excellent: '#1D9E75',
   good: '#5DCAA5',

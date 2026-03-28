@@ -435,11 +435,31 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
 
   const avgSolidsPerDay = effectiveDays > 0 ? Math.round((solidsFeeds.length / effectiveDays) * 10) / 10 : 0;
 
+  // Breastfeeding stats (only when breast feeds exist)
+  const leftBreastFeeds = breastFeeds.filter(f => f.side === 'LEFT');
+  const rightBreastFeeds = breastFeeds.filter(f => f.side === 'RIGHT');
+  const avgLeftDuration = leftBreastFeeds.length > 0
+    ? Math.round((leftBreastFeeds.reduce((sum, f) => sum + (f.feedDuration || 0), 0) / leftBreastFeeds.length / 60) * 10) / 10
+    : 0;
+  const avgRightDuration = rightBreastFeeds.length > 0
+    ? Math.round((rightBreastFeeds.reduce((sum, f) => sum + (f.feedDuration || 0), 0) / rightBreastFeeds.length / 60) * 10) / 10
+    : 0;
+  const breastSessionDays: Record<string, Set<string>> = {};
+  breastFeeds.forEach(f => {
+    const day = f.time.toISOString().split('T')[0];
+    if (!breastSessionDays[day]) breastSessionDays[day] = new Set();
+    breastSessionDays[day].add(f.time.toISOString());
+  });
+  const totalBreastSessions = Object.values(breastSessionDays).reduce((sum, s) => sum + s.size, 0);
+  const avgBreastSessionsPerDay = effectiveDays > 0
+    ? Math.round((totalBreastSessions / effectiveDays) * 10) / 10
+    : 0;
+
   // Feeding breakdown (by feed type: BOTTLE, BREAST, SOLIDS)
   const bottleCount = bottleFeeds.length;
-  const breastMilkCount = breastFeeds.length;
+  const breastCount = breastFeeds.length;
   const solidsCount = solidsFeeds.length;
-  const breakdownTotal = bottleCount + breastMilkCount + solidsCount || 1;
+  const breakdownTotal = bottleCount + breastCount + solidsCount || 1;
 
   // ─── Sleep ───
   const totalSleepMinutes = sleepLogs.reduce((sum, s) => sum + (s.duration || 0), 0);
@@ -627,9 +647,14 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       avgDailyIntake: { value: avgDailyIntake, unit: avgBottleSize.unit },
       dailyIntakeDelta,
       avgSolidsPerDay,
+      breastfeeding: breastFeeds.length > 0 ? {
+        avgSessionsPerDay: avgBreastSessionsPerDay,
+        avgLeftDuration,
+        avgRightDuration,
+      } : null,
       breakdown: {
         bottle: Math.round((bottleCount / breakdownTotal) * 100),
-        breastMilk: Math.round((breastMilkCount / breakdownTotal) * 100),
+        breast: Math.round((breastCount / breakdownTotal) * 100),
         solids: Math.round((solidsCount / breakdownTotal) * 100),
       },
     },

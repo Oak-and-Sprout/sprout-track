@@ -494,9 +494,14 @@ export interface MonthlyReport {
     avgDailyIntake: { value: number; unit: string };
     dailyIntakeDelta: { value: number; direction: 'up' | 'down' | 'stable' } | null;
     avgSolidsPerDay: number;
+    breastfeeding: {
+      avgSessionsPerDay: number;
+      avgLeftDuration: number;
+      avgRightDuration: number;
+    } | null;
     breakdown: {
       bottle: number;
-      breastMilk: number;
+      breast: number;
       solids: number;
     };
   };
