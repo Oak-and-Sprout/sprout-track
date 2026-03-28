@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActivityTile } from '@/src/components/ui/activity-tile';
 import { StatusBubble } from "@/src/components/ui/status-bubble";
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse, ActivitySettings } from '@/app/api/types';
@@ -112,7 +112,22 @@ export function ActivityTileGroup({
   // State for drag and drop
   const [draggedActivity, setDraggedActivity] = useState<ActivityType | null>(null);
   const touchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null); // Ref for touch start timeout
-  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Convert vertical mouse wheel events to horizontal scroll
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
   // State for tracking if settings have been loaded
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   
@@ -770,7 +785,7 @@ export function ActivityTileGroup({
 
   return (
     <div className="activity-tile-group">
-      <div className="flex overflow-x-auto border-0 no-scrollbar snap-x snap-mandatory relative p-2 gap-1">
+      <div ref={scrollContainerRef} className="flex overflow-x-auto border-0 no-scrollbar snap-x snap-mandatory relative p-2 gap-1">
         {/* Render activity tiles based on order and visibility */}
         {activityOrder.map(activity => renderActivityTile(activity))}
 
