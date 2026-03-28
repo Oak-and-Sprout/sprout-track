@@ -19,7 +19,7 @@ async function checkHandler(req: NextRequest, authContext: AuthResult): Promise<
     tempPrisma = new PrismaClient({
       datasources: {
         db: {
-          url: 'file:../db/baby-tracker.db'
+          url: process.env.DATABASE_URL || 'file:../db/baby-tracker.db'
         }
       }
     });

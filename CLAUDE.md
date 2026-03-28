@@ -159,17 +159,17 @@ export const GET = withAuthContext(handler);
 
 ### Translation files
 
-- Per-language JSON files in `src/localization/translations/`: `en.json`, `es.json`, `fr.json`
+- Per-language JSON files in `src/localization/translations/`: `en.json`, `es.json`, `fr.json`, `de.json`, `it.json`
 - Flat key-value structure — keys are the English text, values are the translated string
 - Supported languages are configured in `src/localization/supported-languages.json`
 - English (`en.json`) is the fallback — always add keys here first
-- After adding or modifying keys, run `node scripts/sort-translation-files.js` to alphabetically sort all translation files
+- After adding or modifying keys, run `node scripts/check-missing-translations.js` to add missing keys to all other language files and sort everything
 
 ### Adding new user-facing text
 
-1. Add the key to `en.json` (and optionally `es.json`, `fr.json`)
+1. Add the key to `en.json` only
 1. Use `t('Your new key')` in the component
-1. Run `node scripts/sort-translation-files.js`
+1. Run `node scripts/check-missing-translations.js` — this adds missing keys (with empty values) to all other language files and sorts all files alphabetically
 
 ### Language preference storage
 

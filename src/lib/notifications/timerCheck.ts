@@ -91,9 +91,15 @@ async function getLastActivityTime(
         },
         select: {
           time: true,
+          type: true,
+          startTime: true,
         },
       });
-      return lastFeed?.time || null;
+      if (!lastFeed) return null;
+      // For breast feeds, use startTime (session start) instead of time (session end)
+      return (lastFeed.type === 'BREAST' && lastFeed.startTime)
+        ? lastFeed.startTime
+        : lastFeed.time;
     } else if (activityType === 'diaper') {
       const lastDiaper = await prisma.diaperLog.findFirst({
         where: {

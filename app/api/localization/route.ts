@@ -2,22 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { supportedLanguageCodes } from '@/src/localization/supported-languages-config';
+
+const supportedSet = new Set(supportedLanguageCodes);
 
 /**
- * Valid ISO 639-1 language codes (2-letter codes)
- * Common languages supported by the application
- */
-const VALID_LANGUAGE_CODES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ru', 'ar', 'hi'];
-
-/**
- * Validates if a language code is a valid ISO 639-1 code
+ * Validates if a language code is allowed (configured in supported-languages.json)
  */
 function isValidLanguageCode(lang: string): boolean {
-  if (!lang || typeof lang !== 'string' || lang.length !== 2) {
+  if (!lang || typeof lang !== 'string' || lang.length !== 2 || !/^[a-z]{2}$/i.test(lang)) {
     return false;
   }
-  // Check if it's in our supported list or matches ISO 639-1 pattern (2 lowercase letters)
-  return VALID_LANGUAGE_CODES.includes(lang.toLowerCase()) || /^[a-z]{2}$/.test(lang.toLowerCase());
+  return supportedSet.has(lang.toLowerCase());
 }
 
 /**
@@ -100,7 +96,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<{ language: string }>>(
         {
           success: false,
-          error: 'Invalid language code. Must be a valid ISO 639-1 code (2 letters).',
+          error: 'Invalid language code. Must be a supported language from supported-languages.json.',
         },
         { status: 400 }
       );

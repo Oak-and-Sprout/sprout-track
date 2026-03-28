@@ -97,6 +97,10 @@ export const getActivityIcon = (activity: ActivityType) => {
 
 export const getActivityTime = (activity: ActivityType): string => {
   if ('time' in activity && activity.time) {
+    // For breast feeds, prefer startTime (session start) over time (session end)
+    if ('type' in activity && activity.type === 'BREAST' && 'startTime' in activity && activity.startTime) {
+      return String(activity.startTime);
+    }
     return activity.time;
   }
   if ('startTime' in activity && activity.startTime) {
@@ -265,8 +269,12 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
           default: return side;
         }
       };
+      // For breast feeds, show startTime (session start) instead of time (session end)
+      const displayTime = activity.type === 'BREAST' && (activity as any).startTime
+        ? (activity as any).startTime
+        : activity.time;
       const details = [
-        { label: t('Time'), value: formatTime(activity.time, settings, true, t) },
+        { label: t('Time'), value: formatTime(displayTime, settings, true, t) },
         { label: t('Type'), value: formatFeedType(activity.type) },
       ];
 

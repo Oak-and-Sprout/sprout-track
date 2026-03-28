@@ -1035,7 +1035,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
                 strokeWidth={2}
                 dot={{ fill: '#f97316', strokeWidth: 2, r: 5 }}
                 activeDot={{ r: 8, fill: '#ea580c' }}
-                connectNulls={false}
+                connectNulls={true}
               />
             </LineChart>
           </ResponsiveContainer>

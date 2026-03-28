@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
  * Parses a .env file content and returns key-value pairs
  * Handles comments, empty lines, quoted values, and unquoted values
  */
-function parseEnvFile(content: string): Record<string, string> {
+export function parseEnvFile(content: string): Record<string, string> {
   const envVars: Record<string, string> = {};
   const lines = content.split('\n');
 
@@ -51,12 +51,20 @@ function parseEnvFile(content: string): Record<string, string> {
 }
 
 /**
- * Reloads environment variables from the .env file into process.env
- * This is useful after restoring a backup that includes a new .env file
- * 
- * @param envFilePath Optional path to the .env file. Defaults to './.env'
- * @returns True if the reload was successful, false otherwise
+ * Replaces or appends an environment variable in .env file content.
+ * If the key exists, its value is updated in-place. If not, it's appended.
  */
+export function replaceEnvVar(content: string, key: string, value: string): string {
+  const regex = new RegExp(`^${key}=.*$`, 'm');
+  const needsQuotes = value.includes(' ') || value.includes('://');
+  const newLine = needsQuotes ? `${key}="${value}"` : `${key}=${value}`;
+  if (regex.test(content)) {
+    return content.replace(regex, newLine);
+  }
+  const suffix = content.endsWith('\n') ? '' : '\n';
+  return content + suffix + newLine + '\n';
+}
+
 /**
  * Ensures all required environment variables exist in the .env file.
  * Adds missing vars with correct defaults without overwriting existing values.

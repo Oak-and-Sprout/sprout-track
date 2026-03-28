@@ -201,7 +201,9 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       const uniqueLocations = sleepLogs
         .map(log => log.location)
         .filter((location): location is string => location !== null && location.trim() !== '')
-        .filter(location => !defaultLocations.includes(location));
+        .filter(location => !defaultLocations.some(
+          def => def.toLowerCase() === location.toLowerCase()
+        ));
 
       return NextResponse.json<ApiResponse<string[]>>({
         success: true,

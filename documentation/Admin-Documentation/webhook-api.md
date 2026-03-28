@@ -158,10 +158,16 @@ curl -s \
 
 Dashboard snapshot -- last activity per type, daily counts, and overdue warnings.
 
+**Query Parameters:**
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `timezone` | server local | IANA timezone (e.g., `America/New_York`, `Europe/London`). Controls which calendar day is used for daily counts. Without this, the server's local timezone is used, which may not match yours. |
+
 ```bash
 curl -s \
   -H "Authorization: Bearer st_live_YOUR_KEY" \
-  http://localhost:3000/api/hooks/v1/babies/BABY_ID/status
+  "http://localhost:3000/api/hooks/v1/babies/BABY_ID/status?timezone=America/Chicago"
 ```
 
 **Response:**
@@ -333,7 +339,15 @@ Sleep supports three actions:
 ```json
 {
   "type": "sleep",
-  "sleepType": "NAP",
+  "action": "end"
+}
+```
+
+**End and change the sleep type (e.g., a nap that became a night sleep):**
+```json
+{
+  "type": "sleep",
+  "sleepType": "NIGHT_SLEEP",
   "action": "end"
 }
 ```
@@ -349,9 +363,11 @@ Sleep supports three actions:
 }
 ```
 
-**sleepType:** `NAP` or `NIGHT_SLEEP`
+**sleepType:** `NAP` or `NIGHT_SLEEP` -- required for `start` and `log`, optional for `end`
 **action:** `start`, `end`, or `log`
 Optional fields: `location`, `quality`, `duration` (minutes, required for `log`)
+
+> **Note:** If `sleepType` is provided on `end`, the sleep record's type is updated. If omitted, the type from `start` is preserved.
 
 #### Note
 
@@ -535,7 +551,7 @@ Poll the status endpoint to create sensors for feed time, diaper count, and slee
 ```yaml
 # configuration.yaml
 rest:
-  - resource: http://sprout-track:3000/api/hooks/v1/babies/BABY_ID/status
+  - resource: "http://sprout-track:3000/api/hooks/v1/babies/BABY_ID/status?timezone=America/Chicago"
     headers:
       Authorization: "Bearer st_live_YOUR_KEY"
     scan_interval: 60
@@ -604,8 +620,9 @@ Run a nightly script that fetches the day's activity counts and sends a summary.
 API_KEY="st_live_YOUR_KEY"
 BASE="http://sprout-track:3000/api/hooks/v1"
 BABY_ID="YOUR_BABY_ID"
+TIMEZONE="America/Chicago"
 
-STATUS=$(curl -s -H "Authorization: Bearer $API_KEY" "$BASE/babies/$BABY_ID/status")
+STATUS=$(curl -s -H "Authorization: Bearer $API_KEY" "$BASE/babies/$BABY_ID/status?timezone=$TIMEZONE")
 
 FEEDS=$(echo "$STATUS" | jq '.data.dailyCounts.feeds')
 DIAPERS=$(echo "$STATUS" | jq '.data.dailyCounts.diapers')
@@ -640,8 +657,9 @@ Poll the status endpoint and send a notification when the feed warning triggers.
 API_KEY="st_live_YOUR_KEY"
 BASE="http://sprout-track:3000/api/hooks/v1"
 BABY_ID="YOUR_BABY_ID"
+TIMEZONE="America/Chicago"
 
-STATUS=$(curl -s -H "Authorization: Bearer $API_KEY" "$BASE/babies/$BABY_ID/status")
+STATUS=$(curl -s -H "Authorization: Bearer $API_KEY" "$BASE/babies/$BABY_ID/status?timezone=$TIMEZONE")
 OVERDUE=$(echo "$STATUS" | jq -r '.data.warnings.feedOverdue')
 
 if [ "$OVERDUE" = "true" ]; then

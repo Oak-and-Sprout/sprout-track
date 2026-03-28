@@ -25,28 +25,40 @@ import './setup-wizard.css';
  * <SetupWizard onComplete={(family) => console.log('Setup complete!', family)} />
  * ```
  */
-const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSetup = false }) => {
+const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSetup = false, resumeStage, familyData }) => {
   const { t } = useLocalization();
-  
-  const [stage, setStage] = useState(1);
+
+  // Track the lowest stage the user can navigate back to
+  // Once a stage is saved to the DB, the user can't go back to it
+  const initialMinStage = familyData ? (resumeStage || 2) : 1;
+  const [minStage, setMinStage] = useState(initialMinStage);
+  const [stage, setStage] = useState(resumeStage || 1);
   const [loading, setLoading] = useState(false);
-  
+
   // Stage 1: Family setup
-  const [familyName, setFamilyName] = useState('');
-  const [familySlug, setFamilySlug] = useState('');
-  const [createdFamily, setCreatedFamily] = useState<{ id: string; name: string; slug: string } | null>(null);
-  
-  // Stage 2: Security setup
-  const [useSystemPin, setUseSystemPin] = useState(true);
-  const [systemPin, setSystemPin] = useState('');
-  const [confirmSystemPin, setConfirmSystemPin] = useState('');
+  const [familyName, setFamilyName] = useState(familyData?.name || '');
+  const [familySlug, setFamilySlug] = useState(familyData?.slug || '');
+  const [createdFamily, setCreatedFamily] = useState<{ id: string; name: string; slug: string } | null>(
+    familyData ? { id: familyData.id, name: familyData.name, slug: familyData.slug } : null
+  );
+
+  // Stage 2: Security setup — pre-fill from familyData when resuming
+  const [useSystemPin, setUseSystemPin] = useState(
+    familyData ? (familyData.authType !== 'CARETAKER') : true
+  );
+  const [systemPin, setSystemPin] = useState(
+    familyData?.securityPin && familyData.authType !== 'CARETAKER' ? familyData.securityPin : ''
+  );
+  const [confirmSystemPin, setConfirmSystemPin] = useState(
+    familyData?.securityPin && familyData.authType !== 'CARETAKER' ? familyData.securityPin : ''
+  );
   const [caretakers, setCaretakers] = useState<Array<{
     loginId: string;
     name: string;
     type: string;
     role: 'ADMIN' | 'USER';
     securityPin: string;
-  }>>([]);
+  }>>(familyData?.caretakers || []);
   const [newCaretaker, setNewCaretaker] = useState({
     loginId: '',
     name: '',
@@ -141,6 +153,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
         if (data.success) {
           // Store the created family for later use
           setCreatedFamily(data.data);
+          setMinStage(2);
           setStage(2);
         } else {
           setError(data.error || 'Failed to create family');
@@ -164,17 +177,10 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
           return;
         }
         
-        // For token-based setup or account-based setup, defer system PIN saving until final stage
-        // to avoid authentication conflicts
-        if (token || isAccountAuth()) {
-          setStage(3);
-          return;
-        }
-        
         try {
           setLoading(true);
-          
-          // Save system PIN to settings (this will also update system caretaker automatically)
+
+          // Save system PIN to settings for all auth types
           const settingsResponse = await fetch(`/api/settings?familyId=${createdFamily?.id}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
@@ -188,10 +194,10 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             throw new Error('Failed to save security PIN to settings');
           }
 
-          // For non-token auth, update system caretaker if we have a caretaker ID
+          // Update system caretaker if we have a caretaker ID
           const caretakerId = localStorage.getItem('caretakerId');
           if (caretakerId) {
-            const caretakerResponse = await fetch('/api/caretaker', {
+            const caretakerResponse = await fetch(`/api/caretaker?familyId=${createdFamily?.id}`, {
               method: 'PUT',
               headers: getAuthHeaders(),
               body: JSON.stringify({
@@ -199,12 +205,20 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
                 securityPin: systemPin,
               }),
             });
-            
+
             if (!caretakerResponse.ok) {
               console.warn('Failed to update system caretaker PIN (non-fatal)');
             }
           }
-          
+
+          // Update setup stage to 2
+          await fetch('/api/family/update-setup-stage', {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ setupStage: 2, familyId: createdFamily?.id }),
+          });
+
+          setMinStage(3);
           setStage(3);
         } catch (error) {
           console.error('Error saving security PIN:', error);
@@ -219,18 +233,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
           return;
         }
         
-        // For token-based setup or account-based setup, defer caretaker creation until final stage
-        // to avoid authentication conflicts
-        if (token || isAccountAuth()) {
-          setStage(3);
-          return;
-        }
-        
         try {
           setLoading(true);
-          // Save caretakers for the created family (non-token setup only)
+          // Save caretakers for the created family (all auth types)
           for (const caretaker of caretakers) {
-            const response = await fetch('/api/caretaker', {
+            const response = await fetch(`/api/caretaker?familyId=${createdFamily?.id}`, {
               method: 'POST',
               headers: getAuthHeaders(),
               body: JSON.stringify({
@@ -257,6 +264,14 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             console.warn('Failed to set auth type to CARETAKER (non-fatal)');
           }
 
+          // Update setup stage to 2
+          await fetch('/api/family/update-setup-stage', {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ setupStage: 2, familyId: createdFamily?.id }),
+          });
+
+          setMinStage(3);
           setStage(3);
         } catch (error) {
           console.error('Error saving caretakers:', error);
@@ -289,158 +304,68 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
       
       try {
         setLoading(true);
-        
-        // For token-based setup or account-based setup, save baby first, then security settings/caretakers
-        // This avoids authentication conflicts where creating caretakers disables token access
-        if (token || isAccountAuth()) {
-          // Step 1: Save baby information first
-          const babyResponse = await fetch('/api/baby', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              firstName: babyFirstName,
-              lastName: babyLastName,
-              birthDate: new Date(babyBirthDate),
-              gender: babyGender,
-              feedWarningTime,
-              diaperWarningTime,
-              familyId: createdFamily?.id,
-            }),
-          });
-          
-          if (!babyResponse.ok) {
-            throw new Error('Failed to save baby information');
-          }
-          
-          // Step 2: Save security settings/caretakers after baby is created
-          if (useSystemPin) {
-            // Save system PIN to settings
-            const settingsResponse = await fetch(`/api/settings?familyId=${createdFamily?.id}`, {
-              method: 'PUT',
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                securityPin: systemPin,
-                authType: 'SYSTEM',
-              }),
-            });
 
-            if (!settingsResponse.ok) {
-              throw new Error('Failed to save security PIN to settings');
-            }
+        // Save baby — security was already saved in Stage 2 for all auth types
+        const babyResponse = await fetch(`/api/baby?familyId=${createdFamily?.id}`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            firstName: babyFirstName,
+            lastName: babyLastName,
+            birthDate: new Date(babyBirthDate),
+            gender: babyGender,
+            feedWarningTime,
+            diaperWarningTime,
+            familyId: createdFamily?.id,
+          }),
+        });
 
-            // For account authentication, link to the system caretaker
-            if (isAccountAuth()) {
-              try {
-                // Get the system caretaker (loginId '00') for this family
-                const systemCaretakerResponse = await fetch(`/api/caretaker/system?familyId=${createdFamily?.id}`, {
-                  headers: getAuthHeaders(),
-                });
-                
-                if (systemCaretakerResponse.ok) {
-                  const systemCaretakerData = await systemCaretakerResponse.json();
-                  if (systemCaretakerData.success && systemCaretakerData.data?.id) {
-                    // Link the account to the system caretaker
-                    const linkResponse = await fetch('/api/accounts/link-caretaker', {
+        if (!babyResponse.ok) {
+          throw new Error('Failed to save baby information');
+        }
+
+        // For account auth, link the account to the appropriate caretaker
+        if (isAccountAuth()) {
+          try {
+            if (useSystemPin) {
+              // Link account to system caretaker
+              const systemCaretakerResponse = await fetch(`/api/caretaker/system?familyId=${createdFamily?.id}`, {
+                headers: getAuthHeaders(),
+              });
+
+              if (systemCaretakerResponse.ok) {
+                const systemCaretakerData = await systemCaretakerResponse.json();
+                if (systemCaretakerData.success && systemCaretakerData.data?.id) {
+                  await fetch('/api/accounts/link-caretaker', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ caretakerId: systemCaretakerData.data.id }),
+                  });
+                }
+              }
+            } else if (caretakers.length > 0) {
+              // Link account to first caretaker — need to find its ID
+              const caretakerListResponse = await fetch(`/api/family/${createdFamily?.id}/caretakers`, {
+                headers: getAuthHeaders(),
+              });
+
+              if (caretakerListResponse.ok) {
+                const caretakerListData = await caretakerListResponse.json();
+                if (caretakerListData.success && caretakerListData.data?.length > 0) {
+                  // Find the first non-system caretaker
+                  const firstCaretaker = caretakerListData.data.find((c: { loginId: string }) => c.loginId !== '00');
+                  if (firstCaretaker) {
+                    await fetch('/api/accounts/link-caretaker', {
                       method: 'POST',
                       headers: getAuthHeaders(),
-                      body: JSON.stringify({
-                        caretakerId: systemCaretakerData.data.id,
-                      }),
+                      body: JSON.stringify({ caretakerId: firstCaretaker.id }),
                     });
-                    
-                    if (!linkResponse.ok) {
-                      console.error('Failed to link account to system caretaker');
-                    } else {
-                      console.log('Successfully linked account to system caretaker');
-                    }
                   }
-                } else {
-                  console.error('Failed to fetch system caretaker for linking');
-                }
-              } catch (error) {
-                console.error('Error linking account to system caretaker:', error);
-                // Don't throw error here as the main setup is complete
-              }
-            }
-          } else {
-            // Save caretakers
-            let accountCaretakerId: string | null = null;
-            
-            for (const caretaker of caretakers) {
-              const caretakerResponse = await fetch('/api/caretaker', {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({
-                  ...caretaker,
-                  familyId: createdFamily?.id,
-                }),
-              });
-              
-              if (!caretakerResponse.ok) {
-                throw new Error(`Failed to save caretaker: ${caretaker.name}`);
-              }
-              
-              // For account authentication, link the first (and only) caretaker to the account
-              if (isAccountAuth() && !accountCaretakerId) {
-                const caretakerData = await caretakerResponse.json();
-                if (caretakerData.success && caretakerData.data?.id) {
-                  accountCaretakerId = caretakerData.data.id;
                 }
               }
             }
-            
-            // Set auth type to CARETAKER since individual caretakers were created
-            const authTypeResponse = await fetch(`/api/settings?familyId=${createdFamily?.id}`, {
-              method: 'PUT',
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                authType: 'CARETAKER',
-              }),
-            });
-
-            if (!authTypeResponse.ok) {
-              console.warn('Failed to set auth type to CARETAKER (non-fatal)');
-            }
-
-            // Link the caretaker to the account
-            if (isAccountAuth() && accountCaretakerId) {
-              try {
-                const linkResponse = await fetch('/api/accounts/link-caretaker', {
-                  method: 'POST',
-                  headers: getAuthHeaders(),
-                  body: JSON.stringify({
-                    caretakerId: accountCaretakerId,
-                  }),
-                });
-                
-                if (!linkResponse.ok) {
-                  console.error('Failed to link caretaker to account, but continuing setup');
-                  // Don't throw error here as the main setup is complete
-                }
-              } catch (error) {
-                console.error('Error linking caretaker to account:', error);
-                // Don't throw error here as the main setup is complete
-              }
-            }
-          }
-        } else {
-          // For non-token setup, just save baby (security was already handled in stage 2)
-          const babyResponse = await fetch('/api/baby', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              firstName: babyFirstName,
-              lastName: babyLastName,
-              birthDate: new Date(babyBirthDate),
-              gender: babyGender,
-              feedWarningTime,
-              diaperWarningTime,
-              familyId: createdFamily?.id,
-            }),
-          });
-          
-          if (!babyResponse.ok) {
-            throw new Error('Failed to save baby information');
+          } catch (error) {
+            console.error('Error linking account to caretaker:', error);
           }
         }
         
@@ -494,7 +419,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
   };
 
   const handlePrevious = () => {
-    if (stage > 1) {
+    if (stage > minStage) {
       setStage(stage - 1);
       setError('');
     }
@@ -581,6 +506,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             className={cn(styles.stageImage, "setup-wizard-stage-image")}
           />
           <h1 className={cn(styles.title, "setup-wizard-title")}>{t('Sprout Track')}</h1>
+          {familyData && (
+            <p className="text-sm text-teal-700 font-medium mt-1">
+              {t('Completing setup for')} <strong>{familyData.name}</strong>
+            </p>
+          )}
           <div className={cn(styles.progressBar, "setup-wizard-progress-bar")}>
             <div 
               className={cn(styles.progressIndicator, "setup-wizard-progress-indicator")}
@@ -652,10 +582,10 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
           <Button
             variant="outline"
             onClick={handlePrevious}
-            disabled={stage === 1 || loading}
+            disabled={stage <= minStage || loading}
             className={cn(styles.previousButton, "setup-wizard-previous-button")}
           >
-            {stage === 1 ? 'Cancel' : 'Previous'}
+            {stage <= minStage ? 'Cancel' : 'Previous'}
           </Button>
           <Button
             onClick={handleNext}

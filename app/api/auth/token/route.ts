@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/prisma/db';
+import prisma from '@/app/api/db';
 import { ApiResponse } from '@/app/api/utils/auth';
 import jwt from 'jsonwebtoken';
 
@@ -45,12 +45,17 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<T
       }, { status: 410 });
     }
 
-    // Check if token has already been used
+    // Check if token has already been used — only reject if setup is fully complete
     if (setupToken.familyId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Setup token has already been used',
-      }, { status: 409 });
+      const family = await prisma.family.findUnique({
+        where: { id: setupToken.familyId },
+      });
+      if (family && family.setupStage >= 3) {
+        return NextResponse.json({
+          success: false,
+          error: 'Setup token has already been used',
+        }, { status: 409 });
+      }
     }
 
     // Verify password
@@ -69,6 +74,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<T
       {
         setupToken: token,
         isSetupAuth: true,
+        familyId: setupToken.familyId || null,
         exp: Math.floor(expiresAt / 1000),
       },
       jwtSecret

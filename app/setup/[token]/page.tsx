@@ -113,6 +113,23 @@ export default function SetupPageWithToken({ params }: SetupPageWithTokenProps) 
           
           // Check if this is token-based authentication for the correct token
           if (decodedPayload.isSetupAuth && decodedPayload.setupToken === tokenParam) {
+            // If token has a linked family with incomplete setup, redirect to resume-setup
+            if (decodedPayload.familyId) {
+              try {
+                const statusRes = await fetch(`/api/family/setup-status?familyId=${decodedPayload.familyId}`, {
+                  headers: { 'Authorization': `Bearer ${authToken}` },
+                });
+                if (statusRes.ok) {
+                  const statusData = await statusRes.json();
+                  if (statusData.success && statusData.data.setupStage < 3) {
+                    router.push(`/${statusData.data.familyData.slug}/resume-setup`);
+                    return;
+                  }
+                }
+              } catch (e) {
+                console.error('Error checking setup status:', e);
+              }
+            }
             setIsAuthenticated(true);
           } else if (decodedPayload.isSysAdmin) {
             // System admin can also access setup pages

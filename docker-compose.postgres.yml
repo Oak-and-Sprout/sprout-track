@@ -1,0 +1,57 @@
+# Sprout Track - PostgreSQL Deployment
+#
+# Requires an existing PostgreSQL 14+ server with databases created:
+#   CREATE DATABASE sprout_track;
+#   CREATE DATABASE sprout_track_logs;
+#
+# Set your connection details via environment variables or a .env file:
+#   DATABASE_URL=postgresql://user:password@your-host:5432/sprout_track
+#   LOG_DATABASE_URL=postgresql://user:password@your-host:5432/sprout_track_logs
+#
+# Quick start:
+#   docker compose -f docker-compose.postgres.yml up -d
+#
+# Build from source instead of pulling:
+#   docker compose -f docker-compose.postgres.yml up -d --build
+
+services:
+  app:
+    image: sprouttrack/sprout-track:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-true}
+        DATABASE_PROVIDER: postgresql
+    container_name: sprout-track
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - env-data:/app/env
+      - files:/app/Files
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL to your PostgreSQL connection string}
+      - LOG_DATABASE_URL=${LOG_DATABASE_URL:?Set LOG_DATABASE_URL to your PostgreSQL connection string}
+      - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS:-true}
+      - NOTIFICATION_CRON_SECRET=${NOTIFICATION_CRON_SECRET:-}
+      - NOTIFICATION_LOG_RETENTION_DAYS=${NOTIFICATION_LOG_RETENTION_DAYS:-30}
+      - APP_URL=${APP_URL:-}
+      - ROOT_DOMAIN=${ROOT_DOMAIN:-}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:notifications@sprouttrack.app}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  env-data:
+    name: sprout-track-env
+  files:
+    name: sprout-track-files

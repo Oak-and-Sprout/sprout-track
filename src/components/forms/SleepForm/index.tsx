@@ -155,6 +155,14 @@ export default function SleepForm({
     return true;
   });
 
+  // Compute visible custom locations, same logic as defaults
+  const visibleCustomLocations = customLocations.filter(loc => {
+    if (hiddenLocations.includes(loc)) {
+      return activity?.location === loc;
+    }
+    return true;
+  });
+
   useEffect(() => {
     if (isOpen && !isInitialized) {
       if (activity) {
@@ -611,6 +619,23 @@ export default function SleepForm({
                         {location}
                       </label>
                     ))}
+                    {customLocations.length > 0 && (
+                      <>
+                        <hr className="my-2 border-border" />
+                        <p className="text-xs text-muted-foreground mb-1">{t('Custom Locations')}</p>
+                        {customLocations.map((location) => (
+                          <label key={location} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              variant="primary"
+                              size="sm"
+                              checked={!hiddenLocations.includes(location)}
+                              onCheckedChange={() => toggleLocationVisibility(location)}
+                            />
+                            {location}
+                          </label>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
                 <Select
@@ -637,7 +662,7 @@ export default function SleepForm({
                       </SelectItem>
                     ))}
                     <SelectItem value="Custom">{t('Custom')}</SelectItem>
-                    {customLocations.map((location) => (
+                    {visibleCustomLocations.map((location) => (
                       <SelectItem key={location} value={location}>
                         {location}
                       </SelectItem>

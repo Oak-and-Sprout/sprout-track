@@ -38,6 +38,15 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       },
     });
 
+    // Mark setup as complete if still in progress
+    const family = await prisma.family.findUnique({ where: { id: targetFamilyId } });
+    if (family && family.setupStage < 3) {
+      await prisma.family.update({
+        where: { id: targetFamilyId },
+        data: { setupStage: 3 },
+      });
+    }
+
     // Format response with ISO strings
     const response: BabyResponse = {
       ...baby,

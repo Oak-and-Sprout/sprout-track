@@ -1,6 +1,6 @@
 # Sprout Track
 
-v1.0.0 :) - A self-hosted Next.js application for tracking baby activities, milestones, and development.
+v1.2.0 😁 - A self-hosted Next.js application for tracking baby activities, milestones, and development.
 
 ![Docker Stars](https://img.shields.io/docker/stars/sprouttrack/sprout-track) ![Docker Image Size](https://img.shields.io/docker/image-size/sprouttrack/sprout-track) ![Docker Pulls](https://img.shields.io/docker/pulls/sprouttrack/sprout-track)
 
@@ -15,7 +15,7 @@ Try out Sprout Track at our live demo: **[https://www.sprout-track.com/demo](htt
 - ID: `01`
 - PIN: `111111`
 
-## Quick Start: Docker
+## Quick Start: Docker (SQLite)
 
 ```bash
 docker run -d \
@@ -28,6 +28,23 @@ docker run -d \
   sprouttrack/sprout-track:latest
 ```
 
+## Quick Start: Docker (PostgreSQL)
+
+Requires an existing PostgreSQL 14+ server. Create the `sprout_track` and `sprout_track_logs` databases, then run:
+
+```bash
+docker run -d \
+  --name sprout-track \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e DATABASE_PROVIDER=postgresql \
+  -e DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track" \
+  -e LOG_DATABASE_URL="postgresql://user:password@your-host:5432/sprout_track_logs" \
+  -v sprout-track-env:/app/env \
+  -v sprout-track-files:/app/Files \
+  sprouttrack/sprout-track:latest
+```
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 - Default PIN: `111222`
@@ -35,9 +52,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 The Setup Wizard will guide you through initial configuration on first access.
 
-See [Docker Deployment](documentation/Admin-Documentation/docker-deployment.md) for volumes, custom ports, and container details.
+See [Docker Deployment](documentation/Admin-Documentation/docker-deployment.md) for docker-compose setup, volumes, custom ports, and container details.
 
-## Quick Start: Local
+## Quick Start: Local (SQLite)
 
 Requires Node.js 22+, npm 10+, Git, and Bash.
 
@@ -51,7 +68,7 @@ npm run start
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-See [Local Deployment](documentation/Admin-Documentation/local-deployment.md) for manual setup, available scripts, and service management.
+PostgreSQL is also supported for local deployments. See [Local Deployment](documentation/Admin-Documentation/local-deployment.md) for PostgreSQL setup, manual setup, available scripts, and service management.
 
 ## First-Time Setup
 
@@ -83,7 +100,7 @@ See [Initial Setup](documentation/Admin-Documentation/initial-setup.md) for deta
 
 - Next.js with App Router
 - TypeScript
-- Prisma with SQLite
+- Prisma with SQLite or PostgreSQL
 - TailwindCSS
 - Docker
 - PWA with Push Notifications, Keep Awake, and Full Screen (on supported devices)
