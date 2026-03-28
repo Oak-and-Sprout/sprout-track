@@ -1,5 +1,11 @@
 # Sprout Track Changelog
 
+## v1.2.3 - Dedicated Breast Feed Section for Report Card
+
+### Changes
+
+- Added a dedicated breastfeeding section in report card that appears if breastfeeding entries exist for the month
+
 ## v1.2.2 - Hotfix Pass for Webhook Status, Report Card, and Timeline
 
 ### Changes
