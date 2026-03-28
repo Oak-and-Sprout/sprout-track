@@ -893,7 +893,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
       {/* Show page content without app UI when on root slug page and not authenticated */}
       {!shouldShowAppUI && (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-gradient-to-r from-teal-600 to-teal-700">
           {children}
         </div>
       )}
