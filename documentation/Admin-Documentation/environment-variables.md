@@ -77,7 +77,7 @@ You do not need to create the `.env` file manually. The setup process handles it
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_VERSION` | `"1.2.0"` | Application version string |
+| `APP_VERSION` | `"1.2.1"` | Application version string |
 | `TZ` | -- | Timezone for the container (Docker only, e.g., `America/New_York`) |
 
 ## Security-Sensitive Variables

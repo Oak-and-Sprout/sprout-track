@@ -1,5 +1,11 @@
 # Sprout Track Changelog
 
+## v1.2.1 - Docker Build Fix
+
+### Changes
+
+- Added dummy database locations to fix build process
+
 ## v1.2.0 - Postgres, Report Cards, Bug Fixes, Activity Timers, oh my!
 
 ### Changes
