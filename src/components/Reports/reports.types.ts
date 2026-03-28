@@ -216,7 +216,7 @@ export type ActivityType =
   | PlayActivity;
 
 // Tab types
-export type ReportTab = 'stats' | 'milestones' | 'growth' | 'activity' | 'heatmaps' | 'health';
+export type ReportTab = 'stats' | 'milestones' | 'growth' | 'activity' | 'heatmaps' | 'health' | 'report-card';
 
 // Date range type
 export interface DateRange {

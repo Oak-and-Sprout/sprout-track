@@ -1,5 +1,41 @@
 # Sprout Track Changelog
 
+## v1.2.0 - Postgres, Report Cards, Bug Fixes, Activity Timers, oh my!
+
+### Changes
+
+#### Enhancements
+- Added activity timer for play activities
+- Updated translation management to be dynamic based on the translation files and supported-languages.json
+- Added Italian translation (thank you gianfma!)
+- Added German translation
+- Added a report card you can export from the reports tab that shows progress up to the month selected compared against the previous month
+- Updated diaper, bath, and settings forms to have consistent checkboxes
+- Added family setting (**settings > config**) to configure whether or not solid foods impact the feed timer (defaulted to on, but may be turned off for transitions into solids where a family may not want to have it impact bottle/breast feed times)
+- Added logic to have last feed side show up first in the activity list
+- Streamlined the setup wizard to have persistent steps allowing the user to continue setup where they left off
+- Enabled scroll-wheel support on activity tray from desktop devices where activities clip off screen
+
+#### Bug Fixes
+- Fixed API bug where data was reported back incorrectly due to server time returned as UTC
+- Fixed activity tray feed bubble so time shows from start of previous feed not end
+- Fixed lines not rendering between measurements in growth chart
+- Added caching bugfixes for charts preventing some data elements from not showing properly
+- Fixed a condition where family slugs are not available after importing a backup
+- Added fixes for better handling of legacy sleep locations from showing in hide list and dropdown
+- Fixed a bug where editing feed entries pulled in the last value instead of the value for the entry the user is editing
+- Fixed a condition during setup that allows users to create additional family slugs in the setup page when setup is incomplete
+- Fixed a bug where caretaker name was not showing for medicines or supplements when viewing activity details
+
+#### Webhook Updates
+- Changed sleep location to be optional when ending sleep in the activity API
+- Updated activity API to trigger notifications when activities are posted
+
+#### PostgreSQL Support
+- Added full postgres support with data import updates for smooth migrations
+- Updated env database connection properties to be persistent on import from backup (database type, database path, and API log path)
+- Updated routes to ensure all queries will work in sqlite and postgres
+
 ## v1.1.0 - Breast Milk Storage Enhancement, Supplement API, and Caching Bug Fix
 
 ### Changes

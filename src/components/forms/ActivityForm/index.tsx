@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { PlayLogResponse } from '@/app/api/types';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { PlayLogResponse, ActiveActivityResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
+import { dateTimePickerButtonStyles } from '@/src/components/ui/date-time-picker/date-time-picker.styles';
+import { cn } from '@/src/lib/utils';
 import {
   FormPage,
   FormPageContent,
   FormPageFooter
 } from '@/src/components/ui/form-page';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Timer, Pause, Play, Square } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
@@ -21,6 +23,16 @@ import { useLocalization } from '@/src/context/localization';
 import './activity-form.css';
 
 type PlayType = 'TUMMY_TIME' | 'INDOOR_PLAY' | 'OUTDOOR_PLAY' | 'WALK';
+
+const formatTimerDuration = (totalSeconds: number): string => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 const DEFAULT_SUBCATEGORIES: Record<PlayType, string[]> = {
   TUMMY_TIME: [],
@@ -36,6 +48,18 @@ interface ActivityFormProps {
   initialTime: string;
   activity?: PlayLogResponse;
   onSuccess?: () => void;
+  activeActivityData?: ActiveActivityResponse | null;
+  onStartTimer?: (playType: string, subCategory: string, notes: string, existingDurationSeconds: number) => void;
+  onPauseTimer?: () => void;
+  onResumeTimer?: () => void;
+  onEndTimer?: () => void;
+  prefillData?: {
+    startTime: string;
+    durationMinutes: number;
+    playType: string;
+    subCategory: string | null;
+    notes: string | null;
+  } | null;
 }
 
 export default function ActivityForm({
@@ -45,6 +69,12 @@ export default function ActivityForm({
   initialTime,
   activity,
   onSuccess,
+  activeActivityData,
+  onStartTimer,
+  onPauseTimer,
+  onResumeTimer,
+  onEndTimer,
+  prefillData,
 }: ActivityFormProps) {
   const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
@@ -65,6 +95,42 @@ export default function ActivityForm({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Live timer state for active activity
+  const [liveElapsed, setLiveElapsed] = useState(0);
+  const isTimerActive = !!activeActivityData && !activity;
+
+  const calculateElapsed = useCallback(() => {
+    if (!activeActivityData || activeActivityData.isPaused || !activeActivityData.currentStartTime) {
+      return 0;
+    }
+    return Math.floor((Date.now() - new Date(activeActivityData.currentStartTime).getTime()) / 1000);
+  }, [activeActivityData]);
+
+  useEffect(() => {
+    if (!activeActivityData || activeActivityData.isPaused) {
+      setLiveElapsed(0);
+      return;
+    }
+    setLiveElapsed(calculateElapsed());
+    const interval = setInterval(() => {
+      setLiveElapsed(calculateElapsed());
+    }, 1000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setLiveElapsed(calculateElapsed());
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [activeActivityData, calculateElapsed]);
+
+  const liveTotalSeconds = activeActivityData
+    ? activeActivityData.duration + (activeActivityData.isPaused ? 0 : liveElapsed)
+    : 0;
 
   // Sub-category dropdown state
   const [categories, setCategories] = useState<string[]>([]);
@@ -158,6 +224,18 @@ export default function ActivityForm({
         setDuration(activity.duration ? String(activity.duration) : '');
         setSubCategory(activity.activities || '');
         setNotes(activity.notes || '');
+      } else if (activeActivityData) {
+        // Active timer mode - populate from active session
+        try {
+          const date = new Date(activeActivityData.sessionStartTime);
+          if (!isNaN(date.getTime())) {
+            setSelectedDateTime(date);
+          }
+        } catch {}
+        setPlayType(activeActivityData.playType as PlayType);
+        setDuration(''); // Duration is live, don't set a static value
+        setSubCategory(activeActivityData.subCategory || '');
+        setNotes(activeActivityData.notes || '');
       } else {
         // New entry
         try {
@@ -176,6 +254,22 @@ export default function ActivityForm({
       setIsInitialized(false);
     }
   }, [isOpen, activity, initialTime]);
+
+  // Handle prefill data from ended activity timer
+  useEffect(() => {
+    if (prefillData && isOpen) {
+      try {
+        const date = new Date(prefillData.startTime);
+        if (!isNaN(date.getTime())) {
+          setSelectedDateTime(date);
+        }
+      } catch {}
+      setPlayType(prefillData.playType as PlayType);
+      setDuration(prefillData.durationMinutes > 0 ? String(prefillData.durationMinutes) : '');
+      setSubCategory(prefillData.subCategory || '');
+      setNotes(prefillData.notes || '');
+    }
+  }, [prefillData, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -355,7 +449,7 @@ export default function ActivityForm({
                       setPlayType(option.value);
                       setSubCategory('');
                     }}
-                    disabled={loading}
+                    disabled={loading || isTimerActive}
                   >
                     {option.label}
                   </button>
@@ -366,12 +460,66 @@ export default function ActivityForm({
             {/* Start Time */}
             <div>
               <label className="form-label">{t('Start Time')}</label>
-              <DateTimePicker
-                value={selectedDateTime}
-                onChange={handleDateTimeChange}
-                disabled={loading}
-                placeholder={t("Select start time...")}
-              />
+              <div className="flex flex-wrap gap-2">
+                <DateTimePicker
+                  value={selectedDateTime}
+                  onChange={handleDateTimeChange}
+                  disabled={loading}
+                  placeholder={t("Select start time...")}
+                />
+                {/* Start Timer button - no active session */}
+                {!activity && onStartTimer && !activeActivityData && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const existingSeconds = duration ? parseInt(duration, 10) * 60 : 0;
+                      onStartTimer(playType, subCategory, notes, existingSeconds);
+                      onClose();
+                    }}
+                    className={cn(dateTimePickerButtonStyles, "date-time-picker-button whitespace-nowrap")}
+                    disabled={loading}
+                  >
+                    <Timer className="h-4 w-4" />
+                    {duration ? t('Resume Timer') : t('Start Timer')}
+                  </Button>
+                )}
+                {/* Active timer controls */}
+                {isTimerActive && activeActivityData && (
+                  <div className="flex items-center gap-2">
+                    <span className={`font-mono text-sm font-semibold ${activeActivityData.isPaused ? 'activity-timer-paused-text' : 'activity-timer-active-text'}`}>
+                      {formatTimerDuration(liveTotalSeconds)}
+                    </span>
+                    {!activeActivityData.isPaused ? (
+                      <button
+                        type="button"
+                        onClick={onPauseTimer}
+                        className="banner-btn activity-banner-btn-pause"
+                        title={t('Pause Activity')}
+                      >
+                        <Pause className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={onResumeTimer}
+                        className="banner-btn activity-banner-btn-resume"
+                        title={t('Resume Activity')}
+                      >
+                        <Play className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={onEndTimer}
+                      className="banner-btn activity-banner-btn-stop"
+                      title={t('End Activity')}
+                    >
+                      <Square className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Duration */}

@@ -261,20 +261,20 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
     const rightDur = body.rightDuration !== undefined ? body.rightDuration : finalRightDuration;
 
     // Create FeedLog records for each side that has duration
+    // Last-fed side gets +1s startTime so it sorts first in lists
+    const baseStartTime = session.sessionStartTime;
+    const lastSideStartTime = new Date(baseStartTime.getTime() + 10);
     const feedLogs = [];
 
     if (leftDur > 0) {
-      const leftEndTime = now;
-      const leftStartTime = new Date(leftEndTime.getTime() - leftDur * 1000);
-
       const leftLog = await prisma.feedLog.create({
         data: {
           babyId: session.babyId,
-          time: leftEndTime,
+          time: now,
           type: 'BREAST',
           side: 'LEFT',
-          startTime: leftStartTime,
-          endTime: leftEndTime,
+          startTime: session.activeSide === 'LEFT' ? lastSideStartTime : baseStartTime,
+          endTime: now,
           feedDuration: leftDur,
           caretakerId: caretakerId,
           familyId: userFamilyId,
@@ -284,17 +284,14 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
     }
 
     if (rightDur > 0) {
-      const rightEndTime = now;
-      const rightStartTime = new Date(rightEndTime.getTime() - rightDur * 1000);
-
       const rightLog = await prisma.feedLog.create({
         data: {
           babyId: session.babyId,
-          time: rightEndTime,
+          time: now,
           type: 'BREAST',
           side: 'RIGHT',
-          startTime: rightStartTime,
-          endTime: rightEndTime,
+          startTime: session.activeSide === 'RIGHT' ? lastSideStartTime : baseStartTime,
+          endTime: now,
           feedDuration: rightDur,
           caretakerId: caretakerId,
           familyId: userFamilyId,

@@ -21,6 +21,10 @@ html.dark .body {
   background-color: #374151 !important;
 }
 
+html.dark .slug-page-content {
+  background-color: #1f2937;
+}
+
 @keyframes formulaRipple {
   0% {
     clip-path: polygon(

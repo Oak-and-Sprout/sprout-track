@@ -217,7 +217,7 @@ function FamilySlugPageContent() {
 
   // Not authenticated - show login UI
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center bg-white slug-page-content">
       {families.length > 1 && (
         <div className="w-full max-w-md mx-auto mb-4 p-4">
           <label className="block text-sm font-medium mb-2">{t('Select Family')}</label>

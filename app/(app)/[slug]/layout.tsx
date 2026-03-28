@@ -21,7 +21,7 @@ import { cn } from '@/src/lib/utils';
 import { Baby } from '@prisma/client';
 import BabySelector from '@/src/components/BabySelector';
 import BabyQuickInfo from '@/src/components/BabyQuickInfo';
-import SetupWizard from '@/src/components/SetupWizard';
+// SetupWizard moved to dedicated /{slug}/resume-setup route
 import { DynamicTitle } from '@/src/components/ui/dynamic-title';
 import { AccountButton } from '@/src/components/ui/account-button';
 import AccountManager from '@/src/components/account-manager';
@@ -64,7 +64,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [isWideScreen, setIsWideScreen] = useState(false);
   const [familyName, setFamilyName] = useState('');
   const [babies, setBabies] = useState<Baby[]>([]);
-  const [showSetup, setShowSetup] = useState(false);
+  const [showSetup] = useState(false); // Kept for layout compatibility; setup now uses dedicated route
   const [isUnlocked, setIsUnlocked] = useState(() => {
     // Only run this on client-side
     if (typeof window !== 'undefined') {
@@ -224,8 +224,31 @@ function AppContent({ children }: { children: React.ReactNode }) {
           const activeBabies = babiesData.data.filter((baby: Baby) => !baby.inactive);
           setBabies(activeBabies);
           
-          // Check if we need to show setup
-          setShowSetup(activeBabies.length === 0);
+          // If no active babies, check setup status and redirect accordingly
+          if (activeBabies.length === 0) {
+            try {
+              const setupUrl = isSysAdmin && family?.id
+                ? `/api/family/setup-status?familyId=${family.id}`
+                : '/api/family/setup-status';
+              const setupResponse = await fetch(setupUrl, {
+                headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+              });
+              if (setupResponse.ok) {
+                const setupData = await setupResponse.json();
+                if (setupData.success && setupData.data.setupStage < 3) {
+                  if (setupData.data.canSetup) {
+                    router.push(`/${familySlug}/resume-setup`);
+                    return;
+                  } else {
+                    router.push('/');
+                    return;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error('Error checking setup status:', e);
+            }
+          }
           
           // Get selected baby from URL or select first baby if only one exists
           const urlParams = new URLSearchParams(window.location.search);
@@ -840,11 +863,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             <AccountExpirationBanner isAccountAuth={isAccountAuth} />
             
             <main className="flex-1 relative z-0">
-              {showSetup ? (
-                <SetupWizard onComplete={fetchData} />
-              ) : (
-                children
-              )}
+              {children}
             </main>
           </div>
 
@@ -874,7 +893,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
       {/* Show page content without app UI when on root slug page and not authenticated */}
       {!shouldShowAppUI && (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-gradient-to-r from-teal-600 to-teal-700">
           {children}
         </div>
       )}

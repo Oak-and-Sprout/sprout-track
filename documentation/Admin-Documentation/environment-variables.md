@@ -11,11 +11,18 @@ You do not need to create the `.env` file manually. The setup process handles it
 
 ## Variable Reference
 
+### Database
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_PROVIDER` | `"sqlite"` | Database backend: `"sqlite"` or `"postgresql"`. Controls schema generation and migration strategy. |
+| `DATABASE_URL` | `"file:../db/baby-tracker.db"` | Database connection string. For SQLite: a `file:` path. For PostgreSQL: `postgresql://user:password@host:5432/dbname`. |
+| `LOG_DATABASE_URL` | `"file:../db/api-logs.db"` | Connection string for the API log database. Can point to the same database as `DATABASE_URL` (uses separate tables). |
+
 ### Core
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | `"file:../db/baby-tracker.db"` | Path to the main SQLite database |
 | `NODE_ENV` | `"production"` (Docker) | Node environment (`development` or `production`) |
 | `PORT` | `3000` | Host port mapping (Docker only, set in compose or env) |
 
@@ -52,7 +59,6 @@ You do not need to create the `.env` file manually. The setup process handles it
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ENABLE_LOG` | `"false"` | Enable API request/response logging to a separate database |
-| `LOG_DATABASE_URL` | `"file:../db/api-logs.db"` | Path to the API log SQLite database |
 
 ### Service Management
 
@@ -71,7 +77,7 @@ You do not need to create the `.env` file manually. The setup process handles it
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_VERSION` | `"1.1.0"` | Application version string |
+| `APP_VERSION` | `"1.2.0"` | Application version string |
 | `TZ` | -- | Timezone for the container (Docker only, e.g., `America/New_York`) |
 
 ## Security-Sensitive Variables
@@ -94,6 +100,38 @@ The following variables are automatically generated if missing:
 | `IDLE_TIME` | `env-update.sh` | Default value `604800` matched to `REFRESH_TOKEN_LIFE` |
 | `REFRESH_TOKEN_LIFE` | `env-update.sh` | Default value `604800` |
 
+## PostgreSQL Configuration
+
+When using PostgreSQL (`DATABASE_PROVIDER="postgresql"`), set `DATABASE_URL` to a PostgreSQL connection string:
+
+```
+DATABASE_URL="postgresql://user:password@host:5432/sprout_track"
+```
+
+The `LOG_DATABASE_URL` can point to the same database — Prisma uses separate table names so there is no conflict:
+
+```
+LOG_DATABASE_URL="postgresql://user:password@host:5432/sprout_track"
+```
+
+Or use a separate database if preferred:
+
+```
+LOG_DATABASE_URL="postgresql://user:password@host:5432/sprout_track_logs"
+```
+
+The `docker-compose.postgres.yml` file sets these automatically when using the built-in PostgreSQL service.
+
+### PostgreSQL-specific environment variables (docker-compose.postgres.yml)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `POSTGRES_USER` | `sprout` | PostgreSQL superuser name |
+| `POSTGRES_PASSWORD` | `sprout` | PostgreSQL superuser password |
+| `POSTGRES_DB` | `sprout_track` | Default database name |
+
+These are used by the `postgres:16-alpine` container and to construct `DATABASE_URL` in the compose file. Change them in your `.env` or directly in the compose file for production use.
+
 ## Docker vs. Local
 
 | Aspect | Docker | Local |
@@ -102,3 +140,4 @@ The following variables are automatically generated if missing:
 | Auto-generation | `docker-startup.sh` on every container start | `./scripts/env-update.sh` during setup/deployment |
 | Port configuration | `PORT` env var in compose file | `-p` flag in package.json scripts |
 | Timezone | `TZ` env var | System timezone |
+| Database provider | `DATABASE_PROVIDER` env var (default: `sqlite`) | `DATABASE_PROVIDER` in `.env` (default: `sqlite`) |

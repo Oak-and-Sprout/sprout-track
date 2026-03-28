@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/prisma/db';
+import prisma from '@/app/api/db';
 import { z } from 'zod';
 import { ApiResponse, getAuthenticatedUser } from '@/app/api/utils/auth';
 import { checkWritePermission } from '@/app/api/utils/writeProtection';
@@ -61,6 +61,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<B
         }
       },
     });
+
+    // Mark setup as complete if still in progress
+    if (family.setupStage < 3) {
+      await prisma.family.update({
+        where: { id: familyId },
+        data: { setupStage: 3 },
+      });
+    }
 
     return NextResponse.json({ success: true, data: newBaby }, { status: 201 });
   } catch (error) {

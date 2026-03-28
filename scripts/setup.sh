@@ -47,6 +47,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Load database configuration from .env (only DB vars, to avoid interfering with the build)
+if [ -f "$PROJECT_DIR/.env" ]; then
+    _db_provider=$(grep -m1 '^DATABASE_PROVIDER=' "$PROJECT_DIR/.env" | cut -d= -f2- | tr -d '"' | tr -d "'")
+    _db_url=$(grep -m1 '^DATABASE_URL=' "$PROJECT_DIR/.env" | cut -d= -f2- | tr -d '"' | tr -d "'")
+    _log_db_url=$(grep -m1 '^LOG_DATABASE_URL=' "$PROJECT_DIR/.env" | cut -d= -f2- | tr -d '"' | tr -d "'")
+    [ -n "$_db_provider" ] && export DATABASE_PROVIDER="$_db_provider"
+    [ -n "$_db_url" ] && export DATABASE_URL="$_db_url"
+    [ -n "$_log_db_url" ] && export LOG_DATABASE_URL="$_log_db_url"
+    echo "Database configuration loaded (provider: ${DATABASE_PROVIDER:-sqlite})."
+fi
+
 # Step 3: Install dependencies
 echo "Step 3: Installing dependencies..."
 npm install
@@ -82,24 +93,46 @@ echo "  - Log Prisma client generated successfully."
 
 echo "Prisma clients generated successfully."
 
+# Detect database provider
+DB_PROVIDER="${DATABASE_PROVIDER:-sqlite}"
+echo "Database provider: $DB_PROVIDER"
+
 # Step 5: Run database migrations (main and log)
 echo "Step 5: Running database migrations..."
 
-echo "  - Deploying main database migrations..."
-npx prisma migrate deploy
-if [ $? -ne 0 ]; then
-    echo "Error: Main database migrations failed! Setup aborted."
-    exit 1
-fi
-echo "  - Main database migrations deployed successfully."
+if [ "$DB_PROVIDER" = "postgresql" ]; then
+    echo "  - Pushing main database schema to PostgreSQL..."
+    npx prisma db push --accept-data-loss --skip-generate
+    if [ $? -ne 0 ]; then
+        echo "Error: PostgreSQL schema push failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Main database schema pushed successfully."
 
-echo "  - Creating log database schema..."
-npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss
-if [ $? -ne 0 ]; then
-    echo "Error: Log database creation failed! Setup aborted."
-    exit 1
+    echo "  - Pushing log database schema to PostgreSQL..."
+    npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+    if [ $? -ne 0 ]; then
+        echo "Error: Log database schema push failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Log database schema pushed successfully."
+else
+    echo "  - Deploying main database migrations..."
+    npx prisma migrate deploy
+    if [ $? -ne 0 ]; then
+        echo "Error: Main database migrations failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Main database migrations deployed successfully."
+
+    echo "  - Creating log database schema..."
+    npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss
+    if [ $? -ne 0 ]; then
+        echo "Error: Log database creation failed! Setup aborted."
+        exit 1
+    fi
+    echo "  - Log database schema created successfully."
 fi
-echo "  - Log database schema created successfully."
 
 echo "Database migrations deployed successfully."
 

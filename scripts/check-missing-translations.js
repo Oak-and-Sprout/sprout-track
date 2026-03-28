@@ -1,28 +1,54 @@
 #!/usr/bin/env node
 
 /**
- * Script to compare all translation files, add missing keys with blank values,
- * and then sort all files alphabetically.
+ * Compare all translation JSON files to en.json, add missing keys (empty string values),
+ * and run sort-translation-files.js.
  *
- * Uses en.json as the reference file. Any keys missing from other language files
- * are added with an empty string value. Also reports extra keys that exist in
- * language files but not in the reference.
+ * - Empty files: treated as {} then all reference keys are added.
+ * - Invalid JSON or non-object root: file is replaced with all reference keys (empty values).
  *
- * Usage: node scripts/check-missing-translations.js
+ * Do NOT run with bash. Use:
+ *   node scripts/check-missing-translations.js
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Configuration
 const TRANSLATIONS_DIR = path.join(__dirname, '../src/localization/translations');
 const REFERENCE_LANG = 'en';
 const SORT_SCRIPT = path.join(__dirname, 'sort-translation-files.js');
 
 /**
- * Main function
+ * @returns {{ translations: Record<string, string>, status: 'ok' | 'empty' | 'invalid', detail?: string }}
  */
+function loadTranslationsFile(filePath) {
+  let raw;
+  try {
+    raw = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return { translations: {}, status: 'invalid', detail: 'could not read file' };
+  }
+
+  if (raw.trim() === '') {
+    return { translations: {}, status: 'empty' };
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { translations: {}, status: 'invalid', detail: 'root must be a JSON object' };
+    }
+    const translations = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      translations[k] = typeof v === 'string' ? v : v == null ? '' : String(v);
+    }
+    return { translations, status: 'ok' };
+  } catch (e) {
+    return { translations: {}, status: 'invalid', detail: e.message };
+  }
+}
+
 function main() {
   console.log('Checking translation files for missing keys...\n');
 
@@ -31,14 +57,13 @@ function main() {
     process.exit(1);
   }
 
-  const files = fs.readdirSync(TRANSLATIONS_DIR).filter(file => file.endsWith('.json'));
+  const files = fs.readdirSync(TRANSLATIONS_DIR).filter((file) => file.endsWith('.json'));
 
   if (files.length === 0) {
     console.log('No translation files found.');
     return;
   }
 
-  // Load reference file
   const refFile = `${REFERENCE_LANG}.json`;
   if (!files.includes(refFile)) {
     console.error(`Error: Reference file ${refFile} not found.`);
@@ -51,21 +76,34 @@ function main() {
 
   console.log(`Reference: ${refFile} (${refKeys.length} keys)\n`);
 
-  const langFiles = files.filter(file => file !== refFile);
+  const langFiles = files.filter((file) => file !== refFile);
   let totalAdded = 0;
   let totalExtra = 0;
+  let totalFromScratch = 0;
 
   for (const file of langFiles) {
     const filePath = path.join(TRANSLATIONS_DIR, file);
-    const translations = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const { translations, status, detail } = loadTranslationsFile(filePath);
+
+    if (status === 'invalid') {
+      totalFromScratch++;
+      console.log(`── ${file} ──`);
+      console.log(`  Invalid or unreadable JSON (${detail}). Replacing with keys from ${refFile} (empty values).\n`);
+    } else if (status === 'empty') {
+      totalFromScratch++;
+      console.log(`── ${file} ──`);
+      console.log(`  Empty file. Filling with all keys from ${refFile} (empty values).\n`);
+    }
+
     const langKeys = Object.keys(translations);
+    const missing = refKeys.filter((key) => !(key in translations));
+    const extra = langKeys.filter((key) => !(key in refTranslations));
 
-    const missing = refKeys.filter(key => !(key in translations));
-    const extra = langKeys.filter(key => !(key in refTranslations));
+    if (status === 'ok') {
+      console.log(`── ${file} (${langKeys.length} keys) ──`);
+    }
 
-    console.log(`── ${file} (${langKeys.length} keys) ──`);
-
-    if (missing.length === 0 && extra.length === 0) {
+    if (missing.length === 0 && extra.length === 0 && status === 'ok') {
       console.log('  All keys match the reference file.\n');
       continue;
     }
@@ -75,7 +113,13 @@ function main() {
       console.log(`  Added ${missing.length} missing key(s) with blank values:`);
       for (const key of missing) {
         translations[key] = '';
+      }
+      const preview = missing.length > 20 ? missing.slice(0, 20) : missing;
+      for (const key of preview) {
         console.log(`    + "${key}"`);
+      }
+      if (missing.length > 20) {
+        console.log(`    ... and ${missing.length - 20} more`);
       }
       fs.writeFileSync(filePath, JSON.stringify(translations, null, 2) + '\n', 'utf8');
     }
@@ -83,27 +127,31 @@ function main() {
     if (extra.length > 0) {
       totalExtra += extra.length;
       console.log(`  Extra ${extra.length} key(s) not in ${refFile}:`);
-      for (const key of extra) {
+      for (const key of extra.slice(0, 15)) {
         console.log(`    ~ "${key}"`);
+      }
+      if (extra.length > 15) {
+        console.log(`    ... and ${extra.length - 15} more`);
       }
     }
 
     console.log('');
   }
 
-  // Summary
   console.log('── Summary ──');
+  if (totalFromScratch > 0) {
+    console.log(`${totalFromScratch} file(s) were empty or invalid and filled from ${refFile}.`);
+  }
   if (totalAdded > 0) {
     console.log(`${totalAdded} key(s) added across all files.`);
   }
   if (totalExtra > 0) {
     console.log(`${totalExtra} extra key(s) across all files (not in ${refFile}).`);
   }
-  if (totalAdded === 0 && totalExtra === 0) {
+  if (totalAdded === 0 && totalExtra === 0 && totalFromScratch === 0) {
     console.log('All translation files are in sync!');
   }
 
-  // Run the sort script
   console.log('\nSorting translation files...');
   try {
     execSync(`node "${SORT_SCRIPT}"`, { stdio: 'inherit' });
@@ -113,5 +161,4 @@ function main() {
   }
 }
 
-// Run the script
 main();

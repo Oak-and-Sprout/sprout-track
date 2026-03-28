@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import '../../../(app)/[slug]/log-entry/no-activities.css';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActiveBreastFeedResponse } from '@/app/api/types';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, ActiveBreastFeedResponse, ActiveActivityResponse } from '@/app/api/types';
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
 import { StatusBubble } from "@/src/components/ui/status-bubble";
@@ -29,6 +29,7 @@ import VaccineForm from '@/src/components/forms/VaccineForm';
 import { useParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
+import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
 
 function HomeContent(): React.ReactElement {
   const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
@@ -57,6 +58,30 @@ function HomeContent(): React.ReactElement {
   const [lastSleepEndTime, setLastSleepEndTime] = useState<Record<string, Date>>({});
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
   const [lastDiaperTime, setLastDiaperTime] = useState<Record<string, Date>>({});
+  const [includeSolidsInFeedTimer, setIncludeSolidsInFeedTimer] = useState(true);
+  const includeSolidsRef = useRef(true);
+
+  // Fetch family settings for feed timer configuration
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) return;
+        const response = await fetch('/api/settings', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+          const value = data.data.includeSolidsInFeedTimer ?? true;
+          setIncludeSolidsInFeedTimer(value);
+          includeSolidsRef.current = value;
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    };
+    fetchSettings();
+  }, [family?.id]);
 
   // Track the currently selected date in the Timeline component
   const [selectedTimelineDate, setSelectedTimelineDate] = useState<Date | null>(null);
@@ -72,6 +97,14 @@ function HomeContent(): React.ReactElement {
 
   const [activeFeedData, setActiveFeedData] = useState<ActiveBreastFeedResponse | null>(null);
   const [feedStartTime, setFeedStartTime] = useState<Record<string, Date>>({});
+  const [activeActivityData, setActiveActivityData] = useState<ActiveActivityResponse | null>(null);
+  const [activityPrefillData, setActivityPrefillData] = useState<{
+    startTime: string;
+    durationMinutes: number;
+    playType: string;
+    subCategory: string | null;
+    notes: string | null;
+  } | null>(null);
 
   // Define checkSleepStatus before it's used
   const checkSleepStatus = useCallback(async (babyId: string) => {
@@ -174,6 +207,30 @@ function HomeContent(): React.ReactElement {
     }
   }, [setFeedingBabies]);
 
+  // Check for active activity sessions
+  const checkActivityStatus = useCallback(async (babyId: string) => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/active-activity?babyId=${babyId}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        }
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setActiveActivityData(data.data);
+      } else {
+        setActiveActivityData(null);
+      }
+    } catch (error) {
+      console.error('Error checking activity status:', error);
+    }
+  }, []);
+
   const refreshActivities = useCallback(async (babyId: string | undefined, dateFilter?: Date) => {
     if (!babyId) return;
     
@@ -218,20 +275,24 @@ function HomeContent(): React.ReactElement {
       if (timelineData.success) {
         setActivities(timelineData.data);
 
-        // Update last feed time - only track bottle and breast feeds, not solids
+        // Update last feed time
         const lastFeed = timelineData.data
-          .filter((activity: ActivityType) => 
-            'amount' in activity && 
-            'type' in activity && 
-            (activity.type === 'BOTTLE' || activity.type === 'BREAST')
+          .filter((activity: ActivityType) =>
+            'amount' in activity &&
+            'type' in activity &&
+            (activity.type === 'BOTTLE' || activity.type === 'BREAST' || (includeSolidsRef.current && activity.type === 'SOLIDS'))
           )
           .sort((a: FeedLogResponse, b: FeedLogResponse) => 
             new Date(b.time).getTime() - new Date(a.time).getTime()
           )[0];
         if (lastFeed) {
+          // For breast feeds, use startTime (when feeding began) instead of time (when it ended)
+          const feedTime = (lastFeed.type === 'BREAST' && lastFeed.startTime)
+            ? lastFeed.startTime
+            : lastFeed.time;
           setLastFeedTime(prev => ({
             ...prev,
-            [babyId]: new Date(lastFeed.time)
+            [babyId]: new Date(feedTime)
           }));
         }
 
@@ -314,11 +375,12 @@ function HomeContent(): React.ReactElement {
         await refreshActivities(selectedBaby.id);
         await checkSleepStatus(selectedBaby.id);
         await checkFeedStatus(selectedBaby.id);
+        await checkActivityStatus(selectedBaby.id);
       }
     };
 
     initializeData();
-  }, [selectedBaby, refreshActivities, checkSleepStatus, checkFeedStatus]);
+  }, [selectedBaby, refreshActivities, checkSleepStatus, checkFeedStatus, checkActivityStatus]);
 
   // Handle sleep status changes
   useEffect(() => {
@@ -367,6 +429,7 @@ function HomeContent(): React.ReactElement {
         refreshActivities(selectedBaby.id);
         checkSleepStatus(selectedBaby.id);
         checkFeedStatus(selectedBaby.id);
+        checkActivityStatus(selectedBaby.id);
       }
     };
 
@@ -383,6 +446,7 @@ function HomeContent(): React.ReactElement {
         refreshActivities(selectedBaby.id);
         checkSleepStatus(selectedBaby.id);
         checkFeedStatus(selectedBaby.id);
+        checkActivityStatus(selectedBaby.id);
         lastRefreshTimestamp.current = Date.now();
       }
       // Case 2: User is active and the regular refresh interval has passed
@@ -390,6 +454,7 @@ function HomeContent(): React.ReactElement {
         refreshActivities(selectedBaby.id);
         checkSleepStatus(selectedBaby.id);
         checkFeedStatus(selectedBaby.id);
+        checkActivityStatus(selectedBaby.id);
         lastRefreshTimestamp.current = Date.now();
       }
 
@@ -403,7 +468,7 @@ function HomeContent(): React.ReactElement {
       clearInterval(poll);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [selectedBaby?.id, refreshActivities, checkSleepStatus, checkFeedStatus]);
+  }, [selectedBaby?.id, refreshActivities, checkSleepStatus, checkFeedStatus, checkActivityStatus]);
 
   // Active breastfeed action handlers
   const handleFeedSwitch = async () => {
@@ -481,6 +546,95 @@ function HomeContent(): React.ReactElement {
     }
   };
 
+  // Active activity action handlers
+  const handleActivityStart = async (playType: string, subCategory: string, notes: string, existingDurationSeconds: number) => {
+    if (!selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/active-activity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+        body: JSON.stringify({
+          babyId: selectedBaby.id,
+          playType,
+          subCategory: subCategory || null,
+          notes: notes || null,
+          existingDuration: existingDurationSeconds,
+        }),
+      });
+      if (response.ok) {
+        await checkActivityStatus(selectedBaby.id);
+      }
+    } catch (error) {
+      console.error('Error starting activity timer:', error);
+    }
+  };
+
+  const handleActivityPause = async () => {
+    if (!activeActivityData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-activity?id=${activeActivityData.id}&action=pause`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkActivityStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error pausing activity:', error);
+    }
+  };
+
+  const handleActivityResume = async () => {
+    if (!activeActivityData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-activity?id=${activeActivityData.id}&action=resume`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkActivityStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error resuming activity:', error);
+    }
+  };
+
+  const handleActivityEnd = async () => {
+    if (!activeActivityData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/active-activity?id=${activeActivityData.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        setActivityPrefillData({
+          startTime: data.data.sessionStartTime,
+          durationMinutes: Math.ceil(data.data.duration / 60),
+          playType: data.data.playType,
+          subCategory: data.data.subCategory,
+          notes: data.data.notes,
+        });
+        setShowActivityModal(true);
+      }
+      setActiveActivityData(null);
+    } catch (error) {
+      console.error('Error ending activity:', error);
+    }
+  };
+
   return (
     <div className="relative isolate">
       {/* Activity Tile Group */}
@@ -524,6 +678,17 @@ function HomeContent(): React.ReactElement {
           onResume={handleFeedResume}
           onEnd={handleFeedEnd}
           onOpenForm={() => setShowFeedModal(true)}
+        />
+      )}
+
+      {/* Active Activity Banner */}
+      {selectedBaby?.id && activeActivityData && (
+        <ActiveActivityBanner
+          activeActivity={activeActivityData}
+          onPause={handleActivityPause}
+          onResume={handleActivityResume}
+          onEnd={handleActivityEnd}
+          onOpenForm={() => setShowActivityModal(true)}
         />
       )}
 
@@ -774,12 +939,20 @@ function HomeContent(): React.ReactElement {
         isOpen={showActivityModal}
         onClose={() => {
           setShowActivityModal(false);
+          setActivityPrefillData(null);
         }}
         babyId={selectedBaby?.id || ''}
         initialTime={localTime}
+        activeActivityData={activeActivityData}
+        onStartTimer={handleActivityStart}
+        onPauseTimer={handleActivityPause}
+        onResumeTimer={handleActivityResume}
+        onEndTimer={handleActivityEnd}
+        prefillData={activityPrefillData}
         onSuccess={() => {
           if (selectedBaby?.id) {
             refreshActivities(selectedBaby.id);
+            checkActivityStatus(selectedBaby.id);
           }
         }}
       />

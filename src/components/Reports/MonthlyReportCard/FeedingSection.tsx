@@ -1,0 +1,89 @@
+'use client';
+
+import React from 'react';
+import { cn } from '@/src/lib/utils';
+import { useLocalization } from '@/src/context/localization';
+import { reportCardStyles as s, chartColors } from './monthly-report-card.styles';
+import type { FeedingSectionProps } from './monthly-report-card.types';
+
+const FeedingSection: React.FC<FeedingSectionProps> = ({ feeding }) => {
+  const { t } = useLocalization();
+
+  const deltaText = feeding.dailyIntakeDelta
+    ? `${feeding.dailyIntakeDelta.direction === 'up' ? '↑' : feeding.dailyIntakeDelta.direction === 'down' ? '↓' : '→'} ${Math.abs(feeding.dailyIntakeDelta.value)} ${feeding.avgDailyIntake.unit} ${t('from last month')}`
+    : null;
+
+  const deltaClass = feeding.dailyIntakeDelta?.direction === 'up'
+    ? s.metricSubPositive
+    : feeding.dailyIntakeDelta?.direction === 'down'
+      ? s.metricSubWarning
+      : s.metricSubNeutral;
+
+  const { formula, breastMilk, solids } = feeding.breakdown;
+  const hasBreakdown = formula + breastMilk + solids > 0;
+
+  return (
+    <>
+      <p className={cn(s.sectionHeading, 'report-card-section-heading')}>{t('Feeding')}</p>
+
+      <div className={cn(s.metricGrid3)}>
+        <div className={cn(s.metricCard, 'report-card-metric')}>
+          <p className={cn(s.metricLabel, 'report-card-metric-label')}>{t('Avg bottles/day')}</p>
+          <p className={cn(s.metricValue, 'report-card-metric-value')}>{feeding.avgBottlesPerDay}</p>
+          <p className={cn(s.metricSub, s.metricSubNeutral, 'report-card-metric-sub-neutral')}>
+            {t('avg')} {feeding.avgBottleSize.value} {feeding.avgBottleSize.unit} {t('each')}
+          </p>
+        </div>
+
+        <div className={cn(s.metricCard, 'report-card-metric')}>
+          <p className={cn(s.metricLabel, 'report-card-metric-label')}>{t('Daily intake')}</p>
+          <p className={cn(s.metricValue, 'report-card-metric-value')}>{feeding.avgDailyIntake.value} {feeding.avgDailyIntake.unit}</p>
+          {deltaText && (
+            <p className={cn(s.metricSub, deltaClass, `report-card-metric-sub-${feeding.dailyIntakeDelta?.direction === 'up' ? 'positive' : feeding.dailyIntakeDelta?.direction === 'down' ? 'warning' : 'neutral'}`)}>
+              {deltaText}
+            </p>
+          )}
+        </div>
+
+        <div className={cn(s.metricCard, 'report-card-metric')}>
+          <p className={cn(s.metricLabel, 'report-card-metric-label')}>{t('Solids sessions')}</p>
+          <p className={cn(s.metricValue, 'report-card-metric-value')}>{feeding.avgSolidsPerDay}/{t('day')}</p>
+        </div>
+      </div>
+
+      {/* Feeding breakdown bar */}
+      {hasBreakdown && (
+        <div className={cn(s.card, 'report-card-card')}>
+          <p className={cn(s.cardTitle, 'report-card-card-title')}>{t('Feeding breakdown')}</p>
+          <div className={cn(s.breakdownBar)}>
+            {formula > 0 && <div style={{ width: `${formula}%`, background: chartColors.formula }} />}
+            {breastMilk > 0 && <div style={{ width: `${breastMilk}%`, background: chartColors.breastMilk }} />}
+            {solids > 0 && <div style={{ width: `${solids}%`, background: chartColors.solids }} />}
+          </div>
+          <div className={cn(s.breakdownLegend, 'report-card-breakdown-legend')}>
+            {formula > 0 && (
+              <span className={s.breakdownLegendItem}>
+                <span className={s.breakdownDot} style={{ background: chartColors.formula }} />
+                {t('Formula')} {formula}%
+              </span>
+            )}
+            {breastMilk > 0 && (
+              <span className={s.breakdownLegendItem}>
+                <span className={s.breakdownDot} style={{ background: chartColors.breastMilk }} />
+                {t('Breast milk')} {breastMilk}%
+              </span>
+            )}
+            {solids > 0 && (
+              <span className={s.breakdownLegendItem}>
+                <span className={s.breakdownDot} style={{ background: chartColors.solids }} />
+                {t('Solids')} {solids}%
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default FeedingSection;

@@ -258,28 +258,26 @@ export default function BathForm({
             <div className="space-y-2">
               <Label>{t('Bath Options')}</Label>
               <div className="flex flex-col space-y-2">
-                <div className="flex items-center space-x-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
                   <Checkbox
-                    id="soapUsed"
                     checked={formData.soapUsed}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       handleCheckboxChange('soapUsed', checked as boolean)
                     }
                     variant="success"
                   />
-                  <Label htmlFor="soapUsed" className="cursor-pointer">{t('Soap Used')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
+                  <span className="form-label text-sm">{t('Soap Used')}</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
                   <Checkbox
-                    id="shampooUsed"
                     checked={formData.shampooUsed}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       handleCheckboxChange('shampooUsed', checked as boolean)
                     }
                     variant="success"
                   />
-                  <Label htmlFor="shampooUsed" className="cursor-pointer">{t('Shampoo Used')}</Label>
-                </div>
+                  <span className="form-label text-sm">{t('Shampoo Used')}</span>
+                </label>
               </div>
             </div>
             

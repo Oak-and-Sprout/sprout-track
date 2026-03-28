@@ -295,11 +295,24 @@ function loadSupportedLanguages() {
   try {
     const content = fs.readFileSync(SUPPORTED_LANGUAGES_FILE, 'utf8');
     const parsed = JSON.parse(content);
-    const langs = Array.isArray(parsed) ? parsed.filter(l => typeof l === 'string') : [];
-    const unique = Array.from(new Set(langs));
-    return unique.includes('en') ? unique : ['en', ...unique];
+    if (!Array.isArray(parsed)) return ['en'];
+
+    const codes = [];
+    const seen = new Set();
+    for (const item of parsed) {
+      let code;
+      if (typeof item === 'string') {
+        code = item.toLowerCase().trim();
+      } else if (item && typeof item === 'object' && typeof item.code === 'string') {
+        code = item.code.toLowerCase().trim();
+      }
+      if (!code || code.length !== 2 || seen.has(code)) continue;
+      seen.add(code);
+      codes.push(code);
+    }
+
+    return codes.includes('en') ? codes : ['en', ...codes];
   } catch {
-    // Fallback to current app default if config file is missing/invalid
     return ['en', 'es', 'fr'];
   }
 }

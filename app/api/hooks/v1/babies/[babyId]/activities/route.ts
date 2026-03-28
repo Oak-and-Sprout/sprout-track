@@ -3,6 +3,7 @@ import prisma from '../../../../../db';
 import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth';
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
+import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -307,6 +308,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.feedLog.create({
           data: { time, type: feedType, amount: amount ? parseFloat(amount) : null, unitAbbr: unitAbbr || null, side: side || null, food: food || null, notes: notes || null, bottleType: bottleType || null, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'feed', { caretakerId }, { type: feedType, amount, unitAbbr, food, side }).catch(console.error);
+        resetTimerNotificationState(babyId, 'feed').catch(console.error);
         return hookSuccess({ activityType: 'feed', id: result.id, time: result.time.toISOString(), details: { type: feedType, amount, unitAbbr, bottleType, side, food } }, { familyId, babyId }, rl.headers);
       }
 
@@ -318,22 +321,28 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.diaperLog.create({
           data: { time, type: diaperType, condition: condition || null, color: color || null, blowout: blowout === true, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'diaper', { caretakerId }, { type: diaperType }).catch(console.error);
+        resetTimerNotificationState(babyId, 'diaper').catch(console.error);
         return hookSuccess({ activityType: 'diaper', id: result.id, time: result.time.toISOString(), details: { type: diaperType, condition, color, blowout } }, { familyId, babyId }, rl.headers);
       }
 
       case 'sleep': {
         const { sleepType, action, duration: sleepDuration, location, quality } = body;
-        if (!sleepType || !['NAP', 'NIGHT_SLEEP'].includes(sleepType)) {
-          return hookError('INVALID_SLEEP_TYPE', 'sleepType must be NAP or NIGHT_SLEEP', 400, rl.headers);
-        }
         if (!action || !['start', 'end', 'log'].includes(action)) {
           return hookError('INVALID_ACTION', 'action must be start, end, or log', 400, rl.headers);
+        }
+        if (sleepType && !['NAP', 'NIGHT_SLEEP'].includes(sleepType)) {
+          return hookError('INVALID_SLEEP_TYPE', 'sleepType must be NAP or NIGHT_SLEEP', 400, rl.headers);
+        }
+        if (action !== 'end' && !sleepType) {
+          return hookError('INVALID_SLEEP_TYPE', 'sleepType is required for start and log actions', 400, rl.headers);
         }
 
         if (action === 'start') {
           result = await prisma.sleepLog.create({
             data: { startTime: time, type: sleepType, location: location || null, quality: quality || null, babyId, caretakerId, familyId },
           });
+          notifyActivityCreated(babyId, 'sleep', { caretakerId }, { type: sleepType }).catch(console.error);
           return hookSuccess({ activityType: 'sleep', id: result.id, time: result.startTime.toISOString(), details: { type: sleepType, action: 'start', isActive: true } }, { familyId, babyId }, rl.headers);
         }
 
@@ -349,8 +358,9 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           const dur = Math.round((time.getTime() - activeSleep.startTime.getTime()) / 60000);
           result = await prisma.sleepLog.update({
             where: { id: activeSleep.id },
-            data: { endTime: time, duration: dur, quality: quality || activeSleep.quality },
+            data: { endTime: time, duration: dur, quality: quality || activeSleep.quality, ...(sleepType && { type: sleepType }) },
           });
+          notifyActivityCreated(babyId, 'wake', { caretakerId }, { duration: dur }).catch(console.error);
           return hookSuccess({ activityType: 'sleep', id: result.id, time: result.startTime.toISOString(), details: { type: result.type, action: 'end', duration: dur, isActive: false } }, { familyId, babyId }, rl.headers);
         }
 
@@ -363,6 +373,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.sleepLog.create({
           data: { startTime, endTime, duration: sleepDuration, type: sleepType, location: location || null, quality: quality || null, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'sleep', { caretakerId }, { type: sleepType }).catch(console.error);
         return hookSuccess({ activityType: 'sleep', id: result.id, time: result.startTime.toISOString(), details: { type: sleepType, action: 'log', duration: sleepDuration, isActive: false } }, { familyId, babyId }, rl.headers);
       }
 
@@ -374,6 +385,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.note.create({
           data: { time, content, category: category || null, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'note', { caretakerId }, { content }).catch(console.error);
         return hookSuccess({ activityType: 'note', id: result.id, time: result.time.toISOString(), details: { content, category } }, { familyId, babyId }, rl.headers);
       }
 
@@ -406,6 +418,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
             where: { id: activePump.id },
             data: { endTime: time, duration: dur, leftAmount: left, rightAmount: right, totalAmount: total, unitAbbr: unitAbbr || null, pumpAction: pumpAction || 'STORED' },
           });
+          notifyActivityCreated(babyId, 'pump', { caretakerId }, { totalAmount: total, unitAbbr }).catch(console.error);
           return hookSuccess({ activityType: 'pump', id: result.id, time: result.startTime.toISOString(), details: { action: 'end', duration: dur, isActive: false } }, { familyId, babyId }, rl.headers);
         }
 
@@ -417,6 +430,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.pumpLog.create({
           data: { startTime: time, endTime, duration: pumpDuration || null, leftAmount: left, rightAmount: right, totalAmount: total, unitAbbr: unitAbbr || null, pumpAction: pumpAction || 'STORED', babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'pump', { caretakerId }, { totalAmount: total, unitAbbr }).catch(console.error);
         return hookSuccess({ activityType: 'pump', id: result.id, time: result.startTime.toISOString(), details: { action: 'log', duration: pumpDuration } }, { familyId, babyId }, rl.headers);
       }
 
@@ -425,6 +439,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.bathLog.create({
           data: { time, soapUsed: soapUsed !== false, shampooUsed: shampooUsed !== false, notes: notes || null, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'bath', { caretakerId }).catch(console.error);
         return hookSuccess({ activityType: 'bath', id: result.id, time: result.time.toISOString(), details: { soapUsed: result.soapUsed, shampooUsed: result.shampooUsed } }, { familyId, babyId }, rl.headers);
       }
 
@@ -466,6 +481,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.medicineLog.create({
           data: { time, doseAmount: amount ? parseFloat(amount) : 0, unitAbbr: unitAbbr || medicine.unitAbbr || null, medicineId: medicine.id, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'medicine', { caretakerId }, { medicineId: medicine.id, medicineName: medicine.name }).catch(console.error);
+        resetTimerNotificationState(babyId, 'medicine').catch(console.error);
         return hookSuccess({ activityType: 'medicine', id: result.id, time: result.time.toISOString(), details: { medicineName: medicine.name, doseAmount: result.doseAmount, unitAbbr: result.unitAbbr } }, { familyId, babyId }, rl.headers);
       }
 
@@ -494,6 +511,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.medicineLog.create({
           data: { time, doseAmount: amount ? parseFloat(amount) : 0, unitAbbr: unitAbbr || supplement.unitAbbr || null, medicineId: supplement.id, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'supplement', { caretakerId }, { medicineId: supplement.id, medicineName: supplement.name }).catch(console.error);
+        resetTimerNotificationState(babyId, 'medicine').catch(console.error);
         return hookSuccess({ activityType: 'supplement', id: result.id, time: result.time.toISOString(), details: { supplementName: supplement.name, doseAmount: result.doseAmount, unitAbbr: result.unitAbbr } }, { familyId, babyId }, rl.headers);
       }
 
@@ -506,6 +525,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         result = await prisma.playLog.create({
           data: { startTime: time, endTime, duration: playDuration || null, type: playType, notes: notes || null, activities: activities || null, babyId, caretakerId, familyId },
         });
+        notifyActivityCreated(babyId, 'play', { caretakerId }, { type: playType, activities }).catch(console.error);
         return hookSuccess({ activityType: 'play', id: result.id, time: result.startTime.toISOString(), details: { type: playType, duration: playDuration } }, { familyId, babyId }, rl.headers);
       }
 

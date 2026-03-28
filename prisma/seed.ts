@@ -135,7 +135,7 @@ async function updateUnits(unitData: UnitData[]): Promise<void> {
   
   // Create a map of existing unit abbreviations for faster lookups
   const existingUnitsMap = new Map(
-    existingUnits.map(unit => [unit.unitAbbr, { id: unit.id, activityTypes: unit.activityTypes }])
+    existingUnits.map((unit: typeof existingUnits[number]) => [unit.unitAbbr, { id: unit.id, activityTypes: unit.activityTypes }] as const)
   );
   
   // Filter out units that already exist

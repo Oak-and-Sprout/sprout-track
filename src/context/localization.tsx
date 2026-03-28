@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import enTranslations from '@/src/localization/translations/en.json';
-import supportedLanguagesJson from '@/src/localization/supported-languages.json';
+import { supportedLanguageCodes } from '@/src/localization/supported-languages-config';
 
 /**
  * Interface for the localization context
@@ -31,10 +31,6 @@ interface LocalizationContextType {
 
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
 
-const SUPPORTED_LANGUAGES = Array.isArray(supportedLanguagesJson)
-  ? supportedLanguagesJson
-  : ['en', 'es', 'fr'];
-
 /**
  * Provider component for localization context
  */
@@ -57,22 +53,15 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // NOTE: keep these as explicit imports so Next can bundle them.
-    const loaders: Record<string, () => Promise<Record<string, string>>> = {
-      es: async () => (await import('@/src/localization/translations/es.json')).default as Record<string, string>,
-      fr: async () => (await import('@/src/localization/translations/fr.json')).default as Record<string, string>
-    };
-
-    const supported = SUPPORTED_LANGUAGES.includes(lang);
-    const loader = supported ? loaders[lang] : undefined;
-    if (!loader) {
-      // Unknown language: fallback to English
+    const supported = supportedLanguageCodes.includes(lang);
+    if (!supported) {
       setTranslations(enTranslations as Record<string, string>);
       return;
     }
 
     try {
-      const loaded = await loader();
+      const mod = await import(`@/src/localization/translations/${lang}.json`);
+      const loaded = mod.default as Record<string, string>;
       setTranslations(loaded);
     } catch (error) {
       console.error('Error loading translations for language:', lang, error);
@@ -174,19 +163,24 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
    * Set language preference (updates both API and localStorage, or sessionStorage for system admins)
    */
   const setLanguage = useCallback(async (lang: string): Promise<void> => {
-    // Validate language code (basic check for ISO 639-1 format)
+    // Validate language code (ISO 639-1 + configured list)
     if (!lang || typeof lang !== 'string' || lang.length !== 2) {
       console.error('Invalid language code:', lang);
       return;
     }
+    const normalized = lang.toLowerCase();
+    if (!supportedLanguageCodes.includes(normalized)) {
+      console.error('Unsupported language code:', lang);
+      return;
+    }
 
     // Update state immediately (optimistic update)
-    setLanguageState(lang);
-    localStorage.setItem('language', lang);
+    setLanguageState(normalized);
+    localStorage.setItem('language', normalized);
 
     // Check if user is system admin - use sessionStorage instead of API
     if (typeof window !== 'undefined' && isSystemAdmin()) {
-      sessionStorage.setItem('sysadmin_language', lang);
+      sessionStorage.setItem('sysadmin_language', normalized);
       return;
     }
 
@@ -201,7 +195,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ language: lang })
+            body: JSON.stringify({ language: normalized })
           });
 
           if (!response.ok) {

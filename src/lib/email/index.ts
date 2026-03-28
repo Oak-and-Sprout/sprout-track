@@ -1,4 +1,4 @@
-import prisma from '../../../prisma/db';
+import prisma from '@/app/api/db';
 import { sendWithSendGrid } from './sendgrid';
 import { sendWithSmtp2goApi } from './smtp2go';
 import { sendWithSmtp } from './smtp';

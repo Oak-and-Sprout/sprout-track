@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { ShareButton } from '@/src/components/ui/share-button';
+import { Checkbox } from '@/src/components/ui/checkbox';
 import { useLocalization } from '@/src/context/localization';
 import { Settings } from '@/app/api/types';
 
@@ -286,21 +287,35 @@ export default function ConfigTab({
       <div className="border-t border-slate-200 pt-6">
         <h3 className="form-label mb-4">{t('Breast Milk Tracking')}</h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <label className="flex items-center justify-between cursor-pointer">
             <div>
-              <Label className="form-label">{t('Enable Breast Milk Inventory Tracking')}</Label>
+              <span className="form-label">{t('Enable Breast Milk Inventory Tracking')}</span>
               <p className="text-sm text-gray-500">{t('Track stored, fed, and discarded pump actions and breast milk inventory balance')}</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="enableBreastMilkTracking"
-                checked={(settings as any)?.enableBreastMilkTracking ?? true}
-                onChange={(e) => onSettingsChange({ enableBreastMilkTracking: e.target.checked } as any)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
+            <Checkbox
+              variant="primary"
+              checked={(settings as any)?.enableBreastMilkTracking ?? true}
+              onCheckedChange={(checked) => onSettingsChange({ enableBreastMilkTracking: checked } as any)}
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Feed Timer Settings */}
+      <div className="border-t border-slate-200 pt-6">
+        <h3 className="form-label mb-4">{t('Feed Timer')}</h3>
+        <div className="space-y-4">
+          <label className="flex items-center justify-between cursor-pointer">
+            <div>
+              <span className="form-label">{t('Include Solids in Feed Timer')}</span>
+              <p className="text-sm text-gray-500">{t('Include solid food feedings when calculating time since last feed')}</p>
             </div>
-          </div>
+            <Checkbox
+              variant="primary"
+              checked={(settings as any)?.includeSolidsInFeedTimer ?? true}
+              onCheckedChange={(checked) => onSettingsChange({ includeSolidsInFeedTimer: checked } as any)}
+            />
+          </label>
         </div>
       </div>
 

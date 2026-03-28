@@ -1,14 +1,17 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
-// Log levels for development
-const logLevels: Prisma.LogLevel[] = process.env.NODE_ENV === 'development' 
-  ? ['query', 'info', 'warn', 'error']
-  : ['error'];
+// Canonical Prisma singleton for the app. Uses a shared global key so that
+// prisma/db.ts (used by seed.ts which can't resolve @/ aliases) and this
+// file always resolve to the same PrismaClient instance.
+
+const GLOBAL_KEY = '__sprout_prisma';
+
+const logLevels: Prisma.LogLevel[] = ['warn', 'error'];
 
 let prisma: PrismaClient;
 
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
+if (!(global as any)[GLOBAL_KEY]) {
+  (global as any)[GLOBAL_KEY] = new PrismaClient({
     log: logLevels.map(level => ({
       emit: 'stdout',
       level,
@@ -19,22 +22,22 @@ if (process.env.NODE_ENV === 'production') {
       },
     },
   });
-} else {
-  // In development, use global singleton to prevent multiple instances
-  if (!(global as any).prisma) {
-    (global as any).prisma = new PrismaClient({
-      log: logLevels.map(level => ({
-        emit: 'stdout',
-        level,
-      })),
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
-    });
+}
+prisma = (global as any)[GLOBAL_KEY];
+
+/**
+ * Reconnects the Prisma singleton after a database restore.
+ * Ensures the in-process client uses the current DATABASE_URL and
+ * opens a fresh connection to the restored database.
+ */
+export async function reconnectPrisma() {
+  try {
+    await prisma.$disconnect();
+  } catch (e) {
+    // ignore disconnect errors
   }
-  prisma = (global as any).prisma;
+  await prisma.$connect();
+  console.log('✓ Prisma client reconnected');
 }
 
 // Handle graceful shutdown

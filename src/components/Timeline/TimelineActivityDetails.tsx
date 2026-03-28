@@ -43,7 +43,8 @@ const TimelineActivityDetails = ({
       { label: t('Medicine'), value: medName },
       { label: t('Amount'), value: dose },
       { label: t('Time'), value: medTime },
-      ...(notes ? [{ label: t('Notes'), value: notes }] : [])
+      ...(notes ? [{ label: t('Notes'), value: notes }] : []),
+      ...(activity.caretakerName ? [{ label: t('Caretaker'), value: activity.caretakerName }] : [])
     ];
   }
   const activityDetails = getActivityDetails(activity, settings, t);
