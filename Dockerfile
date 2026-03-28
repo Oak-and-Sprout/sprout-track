@@ -62,6 +62,8 @@ RUN mkdir -p /app/env && \
     echo "# Environment variables for Docker container" > /app/env/.env && \
     echo "DATABASE_PROVIDER=\"${DATABASE_PROVIDER}\"" >> /app/env/.env && \
     echo "ENABLE_LOG=\"false\"" >> /app/env/.env && \
+    echo "DATABASE_URL=\"file:/db/baby-tracker.db\"" >> /app/env/.env && \
+    echo "LOG_DATABASE_URL=\"file:/db/baby-tracker-logs.db\"" >> /app/env/.env && \
     echo "NODE_ENV=production" >> /app/env/.env && \
     echo "PORT=3000" >> /app/env/.env && \
     echo "TZ=UTC" >> /app/env/.env && \
