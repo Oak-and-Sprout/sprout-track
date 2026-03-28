@@ -1,5 +1,13 @@
 # Sprout Track Changelog
 
+## v1.2.2 - Hotfix Pass for Webhook Status, Report Card, and Timeline
+
+### Changes
+
+- Applied fix for status API to pull in sleep and count sleep minutes based on supplied timezone
+- Fixed report card only showing solids for feeding
+- Fixed and refactored timeline pulling in too much data in background
+
 ## v1.2.1 - Docker Build Fix
 
 ### Changes
