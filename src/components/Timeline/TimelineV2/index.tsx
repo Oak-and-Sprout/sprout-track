@@ -145,8 +145,17 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
       setDateFilteredActivities(result.activities);
       lastRefreshTimestamp.current = Date.now();
 
-      // Emit status from the full window of activities (covers yesterday/today/tomorrow)
-      emitLatestStatus(result.allActivities);
+      // Only emit status when today is within the fetched window (prevents stale status on past dates)
+      const todayKey = activityCache.toDateKey(new Date());
+      const dayBefore = new Date(date); dayBefore.setDate(dayBefore.getDate() - 1);
+      const dayAfter = new Date(date); dayAfter.setDate(dayAfter.getDate() + 1);
+      const windowIncludesToday = todayKey === activityCache.toDateKey(date)
+        || todayKey === activityCache.toDateKey(dayBefore)
+        || todayKey === activityCache.toDateKey(dayAfter);
+
+      if (windowIncludesToday) {
+        emitLatestStatus(result.allActivities);
+      }
     } catch (error) {
       console.error('Error fetching activities for date:', error);
       setDateFilteredActivities([]);
@@ -166,8 +175,12 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
       setDateFilteredActivities(activities);
       lastRefreshTimestamp.current = Date.now();
 
-      // Also emit status from the refreshed data
-      emitLatestStatus(activities);
+      // Only emit status when refreshing today's data
+      const todayKey = activityCache.toDateKey(new Date());
+      const selectedKey = activityCache.toDateKey(selectedDate);
+      if (todayKey === selectedKey) {
+        emitLatestStatus(activities);
+      }
     } catch (error) {
       console.error('Error refreshing current day:', error);
     }
