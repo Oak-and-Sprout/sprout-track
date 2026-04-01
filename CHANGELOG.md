@@ -1,6 +1,6 @@
 # Sprout Track Changelog
 
-## v1.2.4 - Dedicated Breast Feed Section for Report Card
+## v1.2.4 - Bugfixes for Timeline Refactor & Breast Feed Time Edits, Improved Weight Inputs
 
 ### Changes
 
