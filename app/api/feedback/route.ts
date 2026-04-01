@@ -8,6 +8,7 @@ import {
   sendFeedbackReplyAdminNotificationEmail,
   sendFeedbackReplyUserNotificationEmail,
 } from '../utils/feedback-emails';
+import { notifyFeedbackReply } from '@/src/lib/notifications/feedbackHook';
 
 /**
  * POST /api/feedback
@@ -169,6 +170,15 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
             // Don't fail the feedback submission if email fails
           }
         }
+
+        // Send push notification to the original user (fire and forget)
+        notifyFeedbackReply(
+          parentFeedback?.accountId ?? null,
+          parentFeedback?.caretakerId ?? null,
+          trimmedMessage
+        ).catch((err) => {
+          console.error('Error sending feedback push notification:', err);
+        });
       } else {
         // User replied - notify admin
         // Use the original subject from parentFeedback (already fetched earlier)
