@@ -1,5 +1,18 @@
 # Sprout Track Changelog
 
+## v1.2.4 - Bugfixes for Timeline Refactor & Breast Feed Time Edits, Improved Weight Inputs
+
+### Changes
+
+- Fixed night sleep records so they show over midnight
+- Fixed activity tray status bubbles so they correctly show time since last activity and not last activity on active log date
+- Overhauled measurement form to include lb/oz entry and enhanced data view in the activity timeline
+- Removed naps from the heatmap tab to consolidate into "Sleep" to match log entry heatmap
+- Fixed breast feed start time saving behavior when editing previous entries
+- Fixed feedback bugs when users submitted feedback showing as admin
+- Re-worked feedback view so users know when admins have reviewed messages
+- Added push notifications for admin messages if user has active web push subscription
+
 ## v1.2.3 - Dedicated Breast Feed Section for Report Card
 
 ### Changes

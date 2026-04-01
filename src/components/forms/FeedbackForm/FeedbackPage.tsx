@@ -126,21 +126,7 @@ export default function FeedbackPage({
             </div>
           </FormPageFooter>
         )}
-        {activeTab === 'new' && (
-          <FormPageFooter>
-            <div className="flex justify-end w-full">
-              <Button
-                onClick={() => {
-                  setShowNewFeedbackForm(false);
-                  setActiveTab('messages');
-                }}
-                variant="outline"
-              >
-                {t('Cancel')}
-              </Button>
-            </div>
-          </FormPageFooter>
-        )}
+{/* Footer for 'new' tab is rendered by the embedded FeedbackForm */}
       </FormPage>
     </>
   );

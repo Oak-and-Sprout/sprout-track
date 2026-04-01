@@ -1,7 +1,7 @@
 import { Baby as BabyIcon } from 'lucide-react';
 import { useRef, useMemo } from 'react';
 import { ActivityType, TimelineActivityListProps } from '../types';
-import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime } from '../utils';
+import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime, formatWeightDisplay } from '../utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/src/context/theme';
 import { Label } from '@/src/components/ui/label';
@@ -428,13 +428,11 @@ const TimelineV2ActivityList = ({
                                     }
                                     
                                     if ('value' in activity && 'unit' in activity) {
-                                      let unit = ('type' in activity && activity.type === 'TEMPERATURE') ? 
-                                        activity.unit : activity.unit.toLowerCase();
-                                      if ('type' in activity && activity.type !== 'TEMPERATURE' && activity.value >= 1) {
-                                        if (unit === 'lb') {
-                                          unit = 'lbs';
-                                        }
+                                      if ('type' in activity && activity.type === 'WEIGHT') {
+                                        return formatWeightDisplay(activity.value, activity.unit);
                                       }
+                                      let unit = ('type' in activity && activity.type === 'TEMPERATURE') ?
+                                        activity.unit : activity.unit.toLowerCase();
                                       return `${activity.value} ${unit}`;
                                     }
                                     

@@ -86,6 +86,10 @@ export default function MeasurementForm({
     notes: '',
   });
   
+  // Separate state for lb/oz dual input
+  const [weightLbs, setWeightLbs] = useState('');
+  const [weightOz, setWeightOz] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
@@ -107,7 +111,7 @@ export default function MeasurementForm({
             const settings = data.data;
             setDefaultUnits({
               height: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm',
-              weight: settings.defaultWeightUnit === 'LB' ? 'lb' : (settings.defaultWeightUnit === 'KG' ? 'kg' : 'oz'),
+              weight: settings.defaultWeightUnit === 'KG' ? 'kg' : 'lb',
               headCircumference: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm', // Using height unit for head circumference
               temperature: settings.defaultTempUnit === 'F' ? '°F' : '°C',
             });
@@ -123,8 +127,9 @@ export default function MeasurementForm({
     }
   }, [isOpen]);
 
-  // Update form data when default units change
+  // Update form data when default units change (only for new entries, not when editing)
   useEffect(() => {
+    if (activity) return; // Don't overwrite units set from the activity being edited
     setFormData(prev => ({
       ...prev,
       height: { ...prev.height, unit: defaultUnits.height },
@@ -132,7 +137,7 @@ export default function MeasurementForm({
       headCircumference: { ...prev.headCircumference, unit: defaultUnits.headCircumference },
       temperature: { ...prev.temperature, unit: defaultUnits.temperature },
     }));
-  }, [defaultUnits]);
+  }, [defaultUnits, activity]);
 
   // Handle date/time change
   const handleDateTimeChange = (date: Date) => {
@@ -188,7 +193,25 @@ export default function MeasurementForm({
             updatedFormData.height = { value: String(activity.value), unit: activity.unit };
             break;
           case 'WEIGHT':
-            updatedFormData.weight = { value: String(activity.value), unit: activity.unit };
+            if (activity.unit === 'kg') {
+              updatedFormData.weight = { value: String(activity.value), unit: 'kg' };
+            } else {
+              // Both 'lb' and legacy 'oz' use the lb/oz dual input
+              let lbs: number;
+              let oz: number;
+              if (activity.unit === 'oz') {
+                // Convert standalone ounces to lb + oz
+                lbs = Math.floor(activity.value / 16);
+                oz = Math.round(activity.value % 16);
+              } else {
+                // Decimal pounds to lb + oz
+                lbs = Math.floor(activity.value);
+                oz = Math.round((activity.value - lbs) * 16);
+              }
+              setWeightLbs(lbs > 0 ? String(lbs) : '');
+              setWeightOz(oz > 0 ? String(oz) : '');
+              updatedFormData.weight = { value: String(activity.value), unit: 'lb' };
+            }
             break;
           case 'HEAD_CIRCUMFERENCE':
             updatedFormData.headCircumference = { value: String(activity.value), unit: activity.unit };
@@ -233,8 +256,11 @@ export default function MeasurementForm({
       // Reset initialization flag and stored time when form closes
       setIsInitialized(false);
       setInitializedTime(null);
+      setWeightLbs('');
+      setWeightOz('');
     }
-  }, [isOpen, activity, initialTime, defaultUnits]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, activity, initialTime]);
 
   // Handle value change for a specific measurement type
   const handleValueChange = (type: keyof Omit<FormData, 'date' | 'notes'>, value: string) => {
@@ -249,6 +275,34 @@ export default function MeasurementForm({
 
   // Handle unit change for a specific measurement type
   const handleUnitChange = (type: keyof Omit<FormData, 'date' | 'notes'>, unit: string) => {
+    // When switching weight units, clear the lb/oz fields
+    if (type === 'weight') {
+      if (unit === 'lb') {
+        // Switching to lb — try to convert existing single value to lb/oz
+        const existing = parseFloat(formData.weight.value);
+        if (!isNaN(existing) && existing > 0) {
+          const lbs = Math.floor(existing);
+          const oz = Math.round((existing - lbs) * 16);
+          setWeightLbs(String(lbs));
+          setWeightOz(oz > 0 ? String(oz) : '');
+        } else {
+          setWeightLbs('');
+          setWeightOz('');
+        }
+      } else {
+        // Switching away from lb — convert lb/oz to single value
+        const lbs = parseFloat(weightLbs) || 0;
+        const oz = parseFloat(weightOz) || 0;
+        if (lbs > 0 || oz > 0) {
+          const total = lbs + (oz / 16);
+          setFormData(prev => ({
+            ...prev,
+            weight: { value: String(parseFloat(total.toFixed(4))), unit }
+          }));
+          return;
+        }
+      }
+    }
     setFormData(prev => ({
       ...prev,
       [type]: { ...prev[type], unit }
@@ -295,7 +349,22 @@ export default function MeasurementForm({
       }
       
       // Add weight measurement if value is provided
-      if (formData.weight.value) {
+      if (formData.weight.unit === 'lb') {
+        // For lb unit, combine lb + oz inputs into decimal pounds
+        const lbs = parseFloat(weightLbs) || 0;
+        const oz = parseFloat(weightOz) || 0;
+        if (lbs > 0 || oz > 0) {
+          const decimalLbs = lbs + (oz / 16);
+          measurements.push({
+            babyId,
+            date: utcDateString,
+            type: 'WEIGHT',
+            value: parseFloat(decimalLbs.toFixed(4)),
+            unit: 'lb',
+            notes: formData.notes || undefined,
+          });
+        }
+      } else if (formData.weight.value) {
         measurements.push({
           babyId,
           date: utcDateString,
@@ -489,6 +558,8 @@ export default function MeasurementForm({
       
       // Reset form data
       setSelectedDateTime(new Date(initialTime));
+      setWeightLbs('');
+      setWeightOz('');
       setFormData({
         date: initialTime,
         height: { value: '', unit: defaultUnits.height },
@@ -527,7 +598,7 @@ export default function MeasurementForm({
             </div>
             
             {/* Height Measurement */}
-            <div className="space-y-2">
+            {(!activity || activity.type === 'HEIGHT') && <div className="space-y-2">
               <Label htmlFor="height-value">{t('Height')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
@@ -563,22 +634,57 @@ export default function MeasurementForm({
                   </Button>
                 </div>
               </div>
-            </div>
-            
+            </div>}
+
             {/* Weight Measurement */}
-            <div className="space-y-2">
+            {(!activity || activity.type === 'WEIGHT') && <div className="space-y-2">
               <Label htmlFor="weight-value">{t('Weight')}</Label>
               <div className="flex items-center space-x-2">
-                <Input
-                  id="weight-value"
-                  type="text"
-                  inputMode="decimal"
-                  value={formData.weight.value}
-                  onChange={(e) => handleValueChange('weight', e.target.value)}
-                  className="flex-1"
-                  placeholder={t("Enter weight")}
-                  disabled={loading}
-                />
+                {formData.weight.unit === 'lb' ? (
+                  <div className="flex flex-1 items-center space-x-1">
+                    <Input
+                      id="weight-lbs"
+                      type="text"
+                      inputMode="decimal"
+                      value={weightLbs}
+                      onChange={(e) => {
+                        if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) {
+                          setWeightLbs(e.target.value);
+                        }
+                      }}
+                      className="flex-1"
+                      placeholder={t("lbs")}
+                      disabled={loading}
+                    />
+                    <span className="text-sm text-gray-500">{t('lb')}</span>
+                    <Input
+                      id="weight-oz"
+                      type="text"
+                      inputMode="decimal"
+                      value={weightOz}
+                      onChange={(e) => {
+                        if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) {
+                          setWeightOz(e.target.value);
+                        }
+                      }}
+                      className="flex-1"
+                      placeholder={t("oz")}
+                      disabled={loading}
+                    />
+                    <span className="text-sm text-gray-500">{t('oz')}</span>
+                  </div>
+                ) : (
+                  <Input
+                    id="weight-value"
+                    type="text"
+                    inputMode="decimal"
+                    value={formData.weight.value}
+                    onChange={(e) => handleValueChange('weight', e.target.value)}
+                    className="flex-1"
+                    placeholder={t("Enter weight")}
+                    disabled={loading}
+                  />
+                )}
                 <div className="flex space-x-1">
                   <Button
                     type="button"
@@ -588,7 +694,7 @@ export default function MeasurementForm({
                     disabled={loading}
                     className="px-2 py-1 h-9"
                   >
-                    lb
+                    lb/oz
                   </Button>
                   <Button
                     type="button"
@@ -600,22 +706,12 @@ export default function MeasurementForm({
                   >
                     kg
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={formData.weight.unit === 'oz' ? 'default' : 'outline'}
-                    onClick={() => handleUnitChange('weight', 'oz')}
-                    disabled={loading}
-                    className="px-2 py-1 h-9"
-                  >
-                    oz
-                  </Button>
                 </div>
               </div>
-            </div>
-            
+            </div>}
+
             {/* Head Circumference Measurement */}
-            <div className="space-y-2">
+            {(!activity || activity.type === 'HEAD_CIRCUMFERENCE') && <div className="space-y-2">
               <Label htmlFor="head-value">{t('Head Circumference')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
@@ -651,10 +747,10 @@ export default function MeasurementForm({
                   </Button>
                 </div>
               </div>
-            </div>
-            
+            </div>}
+
             {/* Temperature Measurement */}
-            <div className="space-y-2">
+            {(!activity || activity.type === 'TEMPERATURE') && <div className="space-y-2">
               <Label htmlFor="temp-value">{t('Temperature')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
@@ -690,7 +786,7 @@ export default function MeasurementForm({
                   </Button>
                 </div>
               </div>
-            </div>
+            </div>}
 
             {/* Notes */}
             <div className="space-y-2">

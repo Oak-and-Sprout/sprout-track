@@ -27,6 +27,16 @@ function bucketByDate(activities: ActivityType[]): Map<string, ActivityType[]> {
     const bucket = buckets.get(key) || [];
     bucket.push(activity);
     buckets.set(key, bucket);
+
+    // For overnight sleep, also add to the start-date bucket
+    if ('duration' in activity && 'startTime' in activity && 'endTime' in activity && activity.endTime) {
+      const startKey = toDateKey(new Date(activity.startTime as string));
+      if (startKey !== key) {
+        const startBucket = buckets.get(startKey) || [];
+        startBucket.push(activity);
+        buckets.set(startKey, startBucket);
+      }
+    }
   }
   return buckets;
 }

@@ -24,6 +24,18 @@ import {
   ActivityStyle 
 } from './types';
 
+export function formatWeightDisplay(value: number, unit: string): string {
+  if (unit.toLowerCase() === 'lb') {
+    const lbs = Math.floor(value);
+    const oz = Math.round((value - lbs) * 16);
+    if (oz === 16) return `${lbs + 1} lbs`;
+    if (lbs === 0) return `${oz} oz`;
+    if (oz === 0) return `${lbs} lbs`;
+    return `${lbs} lb ${oz} oz`;
+  }
+  return `${value} ${unit}`;
+}
+
 const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
 
 const isPlayActivity = (activity: any): boolean => {
@@ -591,10 +603,14 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       }
     };
 
+    const displayValue = ('type' in activity && activity.type === 'WEIGHT')
+      ? formatWeightDisplay(activity.value, activity.unit)
+      : `${activity.value} ${activity.unit}`;
+
     const measurementDetails = [
       { label: t('Date'), value: formatTime(activity.date, settings, true, t) },
       { label: t('Type'), value: formatMeasurementType(activity.type) },
-      { label: t('Value'), value: `${activity.value} ${activity.unit}` },
+      { label: t('Value'), value: displayValue },
     ];
 
     if (activity.notes) {
@@ -984,10 +1000,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     };
     
     const date = formatTime(activity.date, settings, true, t);
-    
+    const displayValue = ('type' in activity && activity.type === 'WEIGHT')
+      ? formatWeightDisplay(activity.value, activity.unit)
+      : `${activity.value} ${activity.unit}`;
+
     return {
       type: formatMeasurementType(activity.type),
-      details: `${date} - ${activity.value} ${activity.unit}`
+      details: `${date} - ${displayValue}`
     };
   }
   

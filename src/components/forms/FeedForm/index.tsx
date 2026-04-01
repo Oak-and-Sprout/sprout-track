@@ -653,8 +653,15 @@ export default function FeedForm({
                  formData.feedDuration);
       
       if (duration > 0) {
-        endTime = new Date(selectedDateTime);
-        startTime = new Date(selectedDateTime.getTime() - duration * 1000);
+        if (activity) {
+          // Editing: selectedDateTime is the start time (set during form init)
+          startTime = new Date(selectedDateTime);
+          endTime = new Date(selectedDateTime.getTime() + duration * 1000);
+        } else {
+          // New entry: selectedDateTime is the end time (current time)
+          endTime = new Date(selectedDateTime);
+          startTime = new Date(selectedDateTime.getTime() - duration * 1000);
+        }
       }
     }
     

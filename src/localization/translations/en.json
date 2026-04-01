@@ -1014,6 +1014,7 @@
   "notification.feed.breast.body": "{babyName} was breastfed ({side}){byActor}",
   "notification.feed.generic.body": "{babyName} was fed{byActor}",
   "notification.feed.solids.body": "{babyName} ate {food}{byActor}",
+  "notification.feedback.reply.title": "Sprout Track Admin Message",
   "notification.medicine.body": "Medicine given to {babyName}{byActor}",
   "notification.medicine.named.body": "{babyName} was given {medicineName}{byActor}",
   "notification.note.body": "Note for {babyName}{byActor}: {notePreview}",

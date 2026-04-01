@@ -25,7 +25,7 @@ const LANE_WIDTH = 20;
 const LANE_GAP = 2;
 
 const DISPLAYED_HEATMAP_TYPES: HeatmapType[] = [
-  'wakeTime', 'bedtime', 'naps', 'allSleep', 'feeds', 'diapers', 'pumps',
+  'wakeTime', 'bedtime', 'allSleep', 'feeds', 'diapers', 'pumps',
 ];
 
 const HEATMAP_ICONS: Record<HeatmapType, { icon: any; isLabIcon?: boolean }> = {

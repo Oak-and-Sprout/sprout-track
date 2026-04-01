@@ -1014,6 +1014,7 @@
   "notification.feed.breast.body": "{babyName} fue amamantado ({side}){byActor}",
   "notification.feed.generic.body": "{babyName} fue alimentado{byActor}",
   "notification.feed.solids.body": "{babyName} comió {food}{byActor}",
+  "notification.feedback.reply.title": "Mensaje del administrador de Sprout Track",
   "notification.medicine.body": "Se le dio medicina a {babyName}{byActor}",
   "notification.medicine.named.body": "Se le dio {medicineName} a {babyName}{byActor}",
   "notification.note.body": "Nota para {babyName}{byActor}: {notePreview}",

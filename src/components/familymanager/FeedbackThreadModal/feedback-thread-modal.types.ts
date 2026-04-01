@@ -12,5 +12,6 @@ export interface FeedbackThreadModalProps {
   formatDateTime: (dateString: string | null) => string;
   onReply?: (parentId: string, message: string) => Promise<void>;
   onRefresh?: () => void;
+  isAdminView?: boolean; // True when opened from admin/family-manager context
 }
 
