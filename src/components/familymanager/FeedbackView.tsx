@@ -238,6 +238,7 @@ export default function FeedbackView({
       formatDateTime={formatDateTime}
       onReply={handleReply}
       onRefresh={onRefresh}
+      isAdminView={true}
     />
     </>
   );

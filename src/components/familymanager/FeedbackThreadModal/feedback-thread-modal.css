@@ -82,3 +82,7 @@ html.dark .feedback-thread-form-label {
   color: #e5e7eb !important; /* gray-200 - matches table-cell-dark */
 }
 
+html.dark .feedback-thread-seen-indicator {
+  color: #4ade80 !important; /* green-400 - visible on dark backgrounds */
+}
+

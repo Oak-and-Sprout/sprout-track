@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
-import { Loader2, MessageSquare, Calendar, User, Reply } from 'lucide-react';
+import { Loader2, MessageSquare, Calendar, User, Reply, CheckCheck } from 'lucide-react';
 import { FeedbackResponse } from '@/app/api/types';
 import FeedbackThreadModal from '@/src/components/familymanager/FeedbackThreadModal';import { useLocalization } from '@/src/context/localization';
 
@@ -263,6 +263,12 @@ export default function FeedbackMessagesView({
                       <div className="flex items-center gap-1">
                         <Reply className="h-3 w-3" />
                         <span>{feedback.replies.length} {feedback.replies.length === 1 ? 'reply' : 'replies'}</span>
+                      </div>
+                    )}
+                    {feedback.viewed && (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <CheckCheck className="h-3 w-3" />
+                        <span>{t('Seen')}</span>
                       </div>
                     )}
                   </div>

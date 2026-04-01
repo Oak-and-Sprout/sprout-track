@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Calendar,
   User,
+  CheckCheck,
 } from "lucide-react";
 import { FeedbackThreadModalProps } from "./feedback-thread-modal.types";
 import { useLocalization } from '@/src/context/localization';
@@ -41,6 +42,7 @@ export default function FeedbackThreadModal({
   formatDateTime,
   onReply,
   onRefresh,
+  isAdminView = false,
 }: FeedbackThreadModalProps) {
   const { t } = useLocalization();
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -117,8 +119,8 @@ export default function FeedbackThreadModal({
   useEffect(() => {
     // Only run if modal is open, we have feedback, and we haven't already auto-marked
     if (isOpen && feedback && onUpdateFeedback && !hasAutoMarkedRef.current) {
-      // Mark admin replies as read when user opens the modal
-      if (!isAdmin && feedback.replies) {
+      // Mark admin replies as read when user opens the modal (user-facing view only)
+      if (!isAdminView && feedback.replies) {
         const unreadAdminReplies = feedback.replies.filter(
           reply => !reply.viewed && isAdminMessage(reply.submitterEmail, reply.submitterName)
         );
@@ -130,8 +132,8 @@ export default function FeedbackThreadModal({
         }
       }
       
-      // Mark user messages as read when admin opens the modal
-      if (isAdmin && feedback) {
+      // Mark user messages as read when admin opens the modal (admin view only)
+      if (isAdminView && feedback) {
         let shouldMark = false;
         
         // Check if original message needs to be marked
@@ -170,7 +172,7 @@ export default function FeedbackThreadModal({
         }
       }
     }
-  }, [isOpen, feedback?.id, isAdmin]); // Only depend on isOpen, feedback.id, and isAdmin - not onUpdateFeedback or feedback object itself
+  }, [isOpen, feedback?.id, isAdminView]); // Only depend on isOpen, feedback.id, and isAdminView - not onUpdateFeedback or feedback object itself
 
   const handleClose = () => {
     setShowReplyForm(false);
@@ -241,6 +243,12 @@ export default function FeedbackThreadModal({
                     <Calendar className="h-3 w-3 sm:h-4 sm:w-4 feedback-thread-replies-icon flex-shrink-0" />
                     <span className="break-words">{formatDateTime(feedback.submittedAt)}</span>
                   </div>
+                  {!isAdminView && feedback.viewed && !isAdminMessage(feedback.submitterEmail, feedback.submitterName) && (
+                    <div className="flex items-center gap-1 text-xs text-green-600 feedback-thread-seen-indicator">
+                      <CheckCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span>{t('Seen')}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Message Body */}
@@ -266,7 +274,7 @@ export default function FeedbackThreadModal({
                 const isRead = reply.viewed;
                 const isAdminMsg = isAdminMessage(reply.submitterEmail, reply.submitterName);
                 // Only admins can mark messages as read/unread, and only user messages (not admin's own messages)
-                const canMarkAsRead = isAdmin && !isAdminMsg;
+                const canMarkAsRead = isAdminView && !isAdminMsg;
 
                 return (
                   <Card
@@ -292,9 +300,15 @@ export default function FeedbackThreadModal({
                             <span className="feedback-thread-reply-date feedback-thread-meta-text text-xs text-gray-500 whitespace-nowrap">
                               {formatDateTime(reply.submittedAt)}
                             </span>
+                            {!isAdminView && isRead && !isAdminMsg && (
+                              <span className="flex items-center gap-0.5 text-xs text-green-600 feedback-thread-seen-indicator">
+                                <CheckCheck className="h-3 w-3" />
+                                {t('Seen')}
+                              </span>
+                            )}
                           </div>
                           {/* Only show read/unread button for admins viewing user messages */}
-                          {isAdmin && canMarkAsRead && (
+                          {isAdminView && canMarkAsRead && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -394,8 +408,8 @@ export default function FeedbackThreadModal({
 
         {/* Footer Actions */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2">
-          {/* Only show mark as read/unread button for admins */}
-          {isAdmin && (
+          {/* Only show mark as read/unread button for admins in admin view */}
+          {isAdminView && (
             <Button
               variant="outline"
               onClick={() => {

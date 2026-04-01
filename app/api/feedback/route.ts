@@ -48,7 +48,7 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
     if (parentId) {
       parentFeedback = await prisma.feedback.findUnique({
         where: { id: parentId },
-        select: { familyId: true, subject: true },
+        select: { familyId: true, subject: true, accountId: true, caretakerId: true },
       });
       
       if (!parentFeedback) {
@@ -72,35 +72,47 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
     let finalSubmitterEmail = submitterEmail || null;
 
     // If this is a reply from admin, use admin email from AppConfig
-    if (parentId && (authContext.isSysAdmin || authContext.caretakerRole === 'ADMIN')) {
-      const appConfig = await prisma.appConfig.findFirst();
-      if (appConfig?.adminEmail) {
-        finalSubmitterEmail = appConfig.adminEmail;
-        finalSubmitterName = 'Admin';
+    // But only if the admin is NOT replying to their own feedback thread
+    if (parentId && parentFeedback && (authContext.isSysAdmin || authContext.caretakerRole === 'ADMIN')) {
+      const isOwnFeedback =
+        (authContext.isAccountAuth && authContext.accountId && parentFeedback.accountId === authContext.accountId) ||
+        (authContext.caretakerId && parentFeedback.caretakerId === authContext.caretakerId);
+
+      if (!isOwnFeedback) {
+        const appConfig = await prisma.appConfig.findFirst();
+        if (appConfig?.adminEmail) {
+          finalSubmitterEmail = appConfig.adminEmail;
+          finalSubmitterName = 'Admin';
+        }
       }
-    } else if (authContext.isAccountAuth && authContext.accountId) {
-      accountId = authContext.accountId;
-      finalSubmitterEmail = authContext.accountEmail || finalSubmitterEmail;
-      
-      // If no submitter name provided, try to derive from email
-      if (!submitterName && authContext.accountEmail) {
-        finalSubmitterName = authContext.accountEmail.split('@')[0];
-      }
-    } else if (authContext.caretakerId) {
-      caretakerId = authContext.caretakerId;
-      
-      // For caretakers, try to get name from the database if not provided
-      if (!submitterName) {
-        try {
-          const caretaker = await prisma.caretaker.findUnique({
-            where: { id: authContext.caretakerId },
-            select: { name: true }
-          });
-          if (caretaker) {
-            finalSubmitterName = caretaker.name;
+    }
+
+    // Resolve user identity if not already set to 'Admin'
+    if (finalSubmitterName !== 'Admin') {
+      if (authContext.isAccountAuth && authContext.accountId) {
+        accountId = authContext.accountId;
+        finalSubmitterEmail = authContext.accountEmail || finalSubmitterEmail;
+
+        // If no submitter name provided, try to derive from email
+        if (!submitterName && authContext.accountEmail) {
+          finalSubmitterName = authContext.accountEmail.split('@')[0];
+        }
+      } else if (authContext.caretakerId) {
+        caretakerId = authContext.caretakerId;
+
+        // For caretakers, try to get name from the database if not provided
+        if (!submitterName) {
+          try {
+            const caretaker = await prisma.caretaker.findUnique({
+              where: { id: authContext.caretakerId },
+              select: { name: true }
+            });
+            if (caretaker) {
+              finalSubmitterName = caretaker.name;
+            }
+          } catch (error) {
+            console.error('Error fetching caretaker name:', error);
           }
-        } catch (error) {
-          console.error('Error fetching caretaker name:', error);
         }
       }
     }
