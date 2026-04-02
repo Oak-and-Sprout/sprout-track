@@ -1,5 +1,5 @@
 export interface ChatNewFeedbackProps {
-  onSubmit: (subject: string, message: string) => Promise<unknown>;
+  onSubmit: (subject: string, message: string, files?: File[]) => Promise<unknown>;
   onCancel: () => void;
   onBack?: () => void;
   showBackButton?: boolean;

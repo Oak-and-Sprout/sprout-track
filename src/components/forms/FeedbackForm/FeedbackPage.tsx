@@ -39,6 +39,7 @@ export default function FeedbackPage({
     fetchThreads,
     sendReply,
     sendNewFeedback,
+    deleteAttachment,
     markAsRead,
     formatDateTime,
     countUnreadMessages,
@@ -78,8 +79,8 @@ export default function FeedbackPage({
     setSelectedThreadId(null);
   }, []);
 
-  const handleNewSubmit = useCallback(async (subject: string, message: string) => {
-    await sendNewFeedback(subject, message);
+  const handleNewSubmit = useCallback(async (subject: string, message: string, files?: File[]) => {
+    await sendNewFeedback(subject, message, files);
     setViewState('list');
   }, [sendNewFeedback]);
 
@@ -136,6 +137,7 @@ export default function FeedbackPage({
           thread={selectedThread}
           isAdmin={false}
           onReply={sendReply}
+          onDeleteAttachment={deleteAttachment}
           onBack={handleBack}
           onMarkRead={markAsRead}
           formatDateTime={formatDateTime}

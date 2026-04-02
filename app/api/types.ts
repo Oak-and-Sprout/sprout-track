@@ -431,6 +431,14 @@ export interface BetaSubscriberUpdate {
 }
 
 // Feedback types
+export interface FeedbackAttachmentResponse {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
 export interface FeedbackResponse {
   id: string;
   subject: string;
@@ -442,6 +450,7 @@ export interface FeedbackResponse {
   familyId: string | null;
   familySlug: string | null;
   parentId: string | null;
+  attachments?: FeedbackAttachmentResponse[];
   replies?: FeedbackResponse[];
   createdAt: string;
   updatedAt: string;

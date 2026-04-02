@@ -18,4 +18,11 @@ export const chatNewFeedbackStyles = {
   sendButtonActive: "bg-emerald-500 text-white",
   sendButtonInactive: "bg-slate-200 text-gray-400 cursor-default",
   cancelButton: "px-3.5 py-2 bg-transparent text-gray-500 border border-slate-200 rounded-lg text-xs cursor-pointer",
+  // File upload
+  fileUploadArea: "mt-4",
+  fileUploadButton: "flex items-center gap-1.5 px-3 py-2 bg-white border border-dashed border-slate-300 rounded-lg text-[13px] text-gray-500 cursor-pointer hover:border-emerald-400 hover:text-emerald-600 transition-colors",
+  filePreviewGrid: "flex gap-2 flex-wrap mt-3",
+  filePreviewItem: "relative group w-16 h-16 rounded-lg overflow-hidden border border-slate-200",
+  filePreviewImage: "w-full h-full object-cover",
+  filePreviewDelete: "absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 flex items-center justify-center cursor-pointer border-none chat-new-feedback-preview-delete-btn transition-opacity",
 } as const;

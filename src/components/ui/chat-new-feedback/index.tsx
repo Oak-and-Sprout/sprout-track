@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useImperativeHandle, forwardRef, useEffect } from 'react';
+import React, { useState, useImperativeHandle, forwardRef, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/src/lib/utils';
-import { ChevronLeft, Send, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Send, CheckCircle, ImagePlus, X } from 'lucide-react';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { useTheme } from '@/src/context/theme';
@@ -25,25 +25,40 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
   const { t } = useLocalization();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canSend = !!(subject.trim() && message.trim() && !sending && !sent);
+  const canSend = !!(subject.trim() && (message.trim() || selectedFiles.length > 0) && !sending && !sent);
 
   useEffect(() => {
     onCanSendChange?.(canSend);
   }, [canSend, onCanSendChange]);
 
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
+    }
+    e.target.value = '';
+  }, []);
+
+  const removeFile = useCallback((index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleSend = async () => {
     if (!canSend) return;
     setSending(true);
     try {
-      await onSubmit(subject.trim(), message.trim());
+      await onSubmit(subject.trim(), message.trim(), selectedFiles.length > 0 ? selectedFiles : undefined);
       setSent(true);
       setTimeout(() => {
         setSent(false);
         setSubject('');
         setMessage('');
+        setSelectedFiles([]);
         onCancel();
       }, 1800);
     } catch (error) {
@@ -114,6 +129,47 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
             disabled={sending || sent}
             className="min-h-[160px]"
           />
+        </div>
+
+        {/* File upload */}
+        <div className={styles.fileUploadArea}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,image/gif"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || sent}
+            className={cn(styles.fileUploadButton, 'chat-new-feedback-upload-button')}
+          >
+            <ImagePlus className="h-4 w-4" />
+            {t('Attach images')}
+          </button>
+
+          {selectedFiles.length > 0 && (
+            <div className={styles.filePreviewGrid}>
+              {selectedFiles.map((file, idx) => (
+                <div key={idx} className={cn(styles.filePreviewItem, 'chat-new-feedback-preview-item')}>
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                    className={styles.filePreviewImage}
+                  />
+                  <button
+                    onClick={() => removeFile(idx)}
+                    className={styles.filePreviewDelete}
+                    aria-label={t('Remove image')}
+                  >
+                    <X className="h-2.5 w-2.5 text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

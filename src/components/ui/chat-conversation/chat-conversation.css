@@ -97,6 +97,34 @@ html.dark .chat-conversation-send-inactive {
   background-color: rgb(55, 65, 81);
 }
 
+html.dark .chat-conversation-attach-button {
+  background-color: rgb(55, 65, 81);
+}
+
+html.dark .chat-conversation-attach-button:hover {
+  background-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-conversation-preview-strip {
+  background-color: rgb(31, 41, 55);
+  border-color: rgb(75, 85, 99);
+}
+
+/* Attachment delete button: hover-only on desktop, always visible on touch */
+@media (hover: hover) {
+  .chat-conversation-attachment-delete-btn {
+    opacity: 0;
+  }
+  .group:hover .chat-conversation-attachment-delete-btn {
+    opacity: 1;
+  }
+}
+@media (hover: none) {
+  .chat-conversation-attachment-delete-btn {
+    opacity: 1;
+  }
+}
+
 html.dark .chat-conversation-empty {
   color: rgb(107, 114, 128);
 }

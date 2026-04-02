@@ -340,9 +340,17 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
         family: {
           select: { slug: true },
         },
+        attachments: {
+          orderBy: { createdAt: 'asc' },
+        },
         replies: {
           orderBy: {
             submittedAt: 'asc', // Order replies chronologically
+          },
+          include: {
+            attachments: {
+              orderBy: { createdAt: 'asc' },
+            },
           },
         },
       },
@@ -352,6 +360,15 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
       take: limit,
       skip: offset,
     });
+
+    const mapAttachments = (attachments: any[]) =>
+      attachments?.map((a: any) => ({
+        id: a.id,
+        originalName: a.originalName,
+        mimeType: a.mimeType,
+        fileSize: a.fileSize,
+        createdAt: a.createdAt.toISOString(),
+      })) || [];
 
     const response: FeedbackResponse[] = feedback.map((item: any) => ({
       id: item.id,
@@ -364,6 +381,7 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
       familyId: item.familyId,
       familySlug: item.family?.slug || null,
       parentId: item.parentId,
+      attachments: mapAttachments(item.attachments),
       replies: item.replies?.map((reply: any) => ({
         id: reply.id,
         subject: reply.subject,
@@ -375,6 +393,7 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
         familyId: reply.familyId,
         familySlug: item.family?.slug || null,
         parentId: reply.parentId,
+        attachments: mapAttachments(reply.attachments),
         createdAt: reply.createdAt.toISOString(),
         updatedAt: reply.updatedAt.toISOString(),
         deletedAt: reply.deletedAt ? reply.deletedAt.toISOString() : null,

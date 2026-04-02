@@ -1,4 +1,4 @@
-import { FeedbackResponse } from '@/app/api/types';
+import { FeedbackResponse, FeedbackAttachmentResponse } from '@/app/api/types';
 
 export interface ChatMessage {
   id: string;
@@ -7,12 +7,14 @@ export interface ChatMessage {
   date: string;
   text: string;
   viewed: boolean;
+  attachments?: FeedbackAttachmentResponse[];
 }
 
 export interface ChatConversationProps {
   thread: FeedbackResponse | null;
   isAdmin: boolean;
-  onReply: (parentId: string, message: string, subject?: string, familyId?: string | null) => Promise<unknown>;
+  onReply: (parentId: string, message: string, subject?: string, familyId?: string | null, files?: File[]) => Promise<unknown>;
+  onDeleteAttachment?: (attachmentId: string) => Promise<void>;
   onBack?: () => void;
   showBackButton?: boolean;
   onMarkRead?: (id: string) => Promise<void>;
@@ -28,6 +30,6 @@ export interface ChatReplyBarProps {
   threadId: string;
   subject: string;
   familyId: string | null;
-  onReply: (parentId: string, message: string, subject?: string, familyId?: string | null) => Promise<unknown>;
+  onReply: (parentId: string, message: string, subject?: string, familyId?: string | null, files?: File[]) => Promise<unknown>;
   className?: string;
 }

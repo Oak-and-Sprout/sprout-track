@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { FeedbackResponse } from '@/app/api/types';
+import { FeedbackResponse, FeedbackAttachmentResponse } from '@/app/api/types';
 import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
 
 export interface SubmitterInfo {
@@ -15,8 +15,10 @@ export interface UseFeedbackChatReturn {
   threads: FeedbackResponse[];
   loading: boolean;
   fetchThreads: () => Promise<void>;
-  sendReply: (parentId: string, message: string, subject?: string, familyId?: string | null) => Promise<FeedbackResponse>;
-  sendNewFeedback: (subject: string, message: string) => Promise<FeedbackResponse>;
+  sendReply: (parentId: string, message: string, subject?: string, familyId?: string | null, files?: File[]) => Promise<FeedbackResponse>;
+  sendNewFeedback: (subject: string, message: string, files?: File[]) => Promise<FeedbackResponse>;
+  uploadAttachments: (feedbackId: string, files: File[]) => Promise<FeedbackAttachmentResponse[]>;
+  deleteAttachment: (attachmentId: string) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAsUnread: (id: string) => Promise<void>;
   submitterInfo: SubmitterInfo;
@@ -130,11 +132,44 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
     };
   }, []);
 
+  const uploadAttachments = useCallback(async (
+    feedbackId: string,
+    files: File[],
+  ): Promise<FeedbackAttachmentResponse[]> => {
+    const results: FeedbackAttachmentResponse[] = [];
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('feedbackId', feedbackId);
+      const response = await authFetch('/api/feedback/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        results.push(data.data);
+      }
+    }
+    return results;
+  }, []);
+
+  const deleteAttachment = useCallback(async (attachmentId: string): Promise<void> => {
+    const response = await authFetch(`/api/feedback/file/${attachmentId}`, {
+      method: 'DELETE',
+    });
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete attachment');
+    }
+    await fetchThreads();
+  }, [fetchThreads]);
+
   const sendReply = useCallback(async (
     parentId: string,
     message: string,
     subject?: string,
     familyId?: string | null,
+    files?: File[],
   ): Promise<FeedbackResponse> => {
     const response = await authFetch('/api/feedback', {
       method: 'POST',
@@ -150,13 +185,18 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
     if (!data.success) {
       throw new Error(data.error || 'Failed to send reply');
     }
+    // Upload attachments if any
+    if (files && files.length > 0) {
+      await uploadAttachments(data.data.id, files);
+    }
     await fetchThreads();
     return data.data;
-  }, [fetchThreads]);
+  }, [fetchThreads, uploadAttachments]);
 
   const sendNewFeedback = useCallback(async (
     subject: string,
     message: string,
+    files?: File[],
   ): Promise<FeedbackResponse> => {
     const response = await authFetch('/api/feedback', {
       method: 'POST',
@@ -173,9 +213,13 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
     if (!data.success) {
       throw new Error(data.error || 'Failed to submit feedback');
     }
+    // Upload attachments if any
+    if (files && files.length > 0) {
+      await uploadAttachments(data.data.id, files);
+    }
     await fetchThreads();
     return data.data;
-  }, [fetchThreads, submitterInfo]);
+  }, [fetchThreads, submitterInfo, uploadAttachments]);
 
   const updateViewed = useCallback(async (id: string, viewed: boolean) => {
     const response = await authFetch(`/api/feedback?id=${id}`, {
@@ -233,6 +277,8 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
     fetchThreads,
     sendReply,
     sendNewFeedback,
+    uploadAttachments,
+    deleteAttachment,
     markAsRead,
     markAsUnread,
     submitterInfo,

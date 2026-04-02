@@ -23,6 +23,7 @@ export default function FeedbackPage() {
     loading,
     fetchThreads,
     sendReply,
+    deleteAttachment,
     markAsRead,
     formatDateTime,
     countUnreadMessages,
@@ -105,6 +106,7 @@ export default function FeedbackPage() {
       thread={selectedThread}
       isAdmin={true}
       onReply={sendReply}
+      onDeleteAttachment={deleteAttachment}
       onBack={isMobile ? handleMobileBack : undefined}
       showBackButton={isMobile}
       onMarkRead={markAsRead}
