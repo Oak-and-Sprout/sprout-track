@@ -6,7 +6,7 @@ These rules define the development patterns, conventions, and architecture for S
 
 - Next.js with App Router: Core framework for routing, server components, and API routes.
 - TypeScript: For type-safe code.
-- Prisma with SQLite: The ORM and database for data persistence.
+- Prisma ORM with support for both PostgreSQL and SQLite for data persistence. All queries and schema must be compatible with both database systems.
 - TailwindCSS: For utility-first styling (no CSS Modules, no Styled Components).
 - React Hooks (useState, useEffect, useContext): Used for all client-side state management, data fetching, and form handling.
 - PWA architecture with offline support, push notifications (VAPID), and Wake Lock API.
