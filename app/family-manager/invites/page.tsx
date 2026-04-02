@@ -8,8 +8,9 @@ import {
 } from "@/src/components/ui/table";
 import type { SortDirection } from "@/src/components/ui/table";
 import { Loader2 } from "lucide-react";
-import { ActiveInviteView } from '@/src/components/familymanager';
+import { ActiveInviteView, InviteMobileView, MobileSortButton } from '@/src/components/familymanager';
 import { useLocalization } from '@/src/context/localization';
+import { useIsMobile } from '@/src/hooks/useIsMobile';
 import { useAdminCounts } from '@/src/components/familymanager/admin-count-context';
 import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
 
@@ -27,9 +28,19 @@ interface FamilySetupInvite {
   family: { id: string; name: string; slug: string } | null;
 }
 
+const inviteSortOptions = [
+  { key: 'token', label: 'Token' },
+  { key: 'creator', label: 'Created By' },
+  { key: 'createdAt', label: 'Created' },
+  { key: 'expiresAt', label: 'Expires' },
+  { key: 'status', label: 'Status' },
+  { key: 'family', label: 'Family' },
+];
+
 export default function InvitesPage() {
   const { t } = useLocalization();
   const { updateCount } = useAdminCounts();
+  const isMobile = useIsMobile();
 
   const [invites, setInvites] = useState<FamilySetupInvite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +56,9 @@ export default function InvitesPage() {
   const handleSort = (column: string) => {
     if (sortColumn !== column) {
       setSortColumn(column);
-      setSortDirection('asc');
-    } else if (sortDirection === 'asc') {
       setSortDirection('desc');
+    } else if (sortDirection === 'desc') {
+      setSortDirection('asc');
     } else {
       setSortColumn(null);
       setSortDirection(null);
@@ -159,19 +170,40 @@ export default function InvitesPage() {
           onSearchChange={setSearchTerm}
           placeholder={t('Search invites by token, creator, or family...')}
         />
+        {isMobile && (
+          <MobileSortButton
+            options={inviteSortOptions}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
       </div>
 
       <div className="family-manager-table-area p-4">
-        <ActiveInviteView
-          paginatedData={paginatedData}
-          onDeleteInvite={deleteInvite}
-          deletingInviteId={deletingInviteId}
-          appConfig={appConfig}
-          formatDateTime={formatDateTime}
-          sortColumn={sortColumn}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
+        {isMobile ? (
+          <InviteMobileView
+            paginatedData={paginatedData}
+            onDeleteInvite={deleteInvite}
+            deletingInviteId={deletingInviteId}
+            appConfig={appConfig}
+            formatDateTime={formatDateTime}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            sortOptions={inviteSortOptions}
+          />
+        ) : (
+          <ActiveInviteView
+            paginatedData={paginatedData}
+            onDeleteInvite={deleteInvite}
+            deletingInviteId={deletingInviteId}
+            appConfig={appConfig}
+            formatDateTime={formatDateTime}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
 
         {paginatedData.length === 0 && (
           <div className="text-center py-8 text-gray-500">

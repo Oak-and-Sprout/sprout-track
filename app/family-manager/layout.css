@@ -36,11 +36,16 @@
   flex-shrink: 0;
   padding: 1rem;
   border-bottom: 1px solid #d1d5db; /* gray-300 */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Remove the default mb-6 from the search container inside family-manager */
-.family-manager-search > div {
+.family-manager-search > div:first-child {
   margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 html.dark .family-manager-search {

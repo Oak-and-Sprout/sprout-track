@@ -9,8 +9,9 @@ import {
 import type { SortDirection } from "@/src/components/ui/table";
 import { Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import { AccountView } from '@/src/components/familymanager';
+import { AccountView, AccountMobileView, MobileSortButton } from '@/src/components/familymanager';
 import { useLocalization } from '@/src/context/localization';
+import { useIsMobile } from '@/src/hooks/useIsMobile';
 import { useDeployment } from '@/app/context/deployment';
 import { useAdminCounts } from '@/src/components/familymanager/admin-count-context';
 import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
@@ -30,9 +31,19 @@ interface AccountData {
   family: { id: string; name: string; slug: string } | null;
 }
 
+const accountSortOptions = [
+  { key: 'email', label: 'Email' },
+  { key: 'name', label: 'Name' },
+  { key: 'createdAt', label: 'Created' },
+  { key: 'family', label: 'Family' },
+  { key: 'verified', label: 'Verified' },
+  { key: 'closed', label: 'Status' },
+];
+
 export default function AccountsPage() {
   const { t } = useLocalization();
   const { isSaasMode } = useDeployment();
+  const isMobile = useIsMobile();
   const router = useRouter();
   const { updateCount } = useAdminCounts();
 
@@ -49,9 +60,9 @@ export default function AccountsPage() {
   const handleSort = (column: string) => {
     if (sortColumn !== column) {
       setSortColumn(column);
-      setSortDirection('asc');
-    } else if (sortDirection === 'asc') {
       setSortDirection('desc');
+    } else if (sortDirection === 'desc') {
+      setSortDirection('asc');
     } else {
       setSortColumn(null);
       setSortDirection(null);
@@ -166,18 +177,38 @@ export default function AccountsPage() {
           onSearchChange={setSearchTerm}
           placeholder={t('Search accounts by email, name, or family...')}
         />
+        {isMobile && (
+          <MobileSortButton
+            options={accountSortOptions}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
       </div>
 
       <div className="family-manager-table-area p-4">
-        <AccountView
-          paginatedData={paginatedData}
-          onUpdateAccount={updateAccount}
-          updatingAccountId={updatingAccountId}
-          formatDateTime={formatDateTime}
-          sortColumn={sortColumn}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
+        {isMobile ? (
+          <AccountMobileView
+            paginatedData={paginatedData}
+            onUpdateAccount={updateAccount}
+            updatingAccountId={updatingAccountId}
+            formatDateTime={formatDateTime}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            sortOptions={accountSortOptions}
+          />
+        ) : (
+          <AccountView
+            paginatedData={paginatedData}
+            onUpdateAccount={updateAccount}
+            updatingAccountId={updatingAccountId}
+            formatDateTime={formatDateTime}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
 
         {paginatedData.length === 0 && (
           <div className="text-center py-8 text-gray-500">

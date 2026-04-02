@@ -18,8 +18,9 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import FamilyForm from '@/src/components/forms/FamilyForm';
 import AppConfigForm from '@/src/components/forms/AppConfigForm';
-import { FamilyView } from '@/src/components/familymanager';
+import { FamilyView, FamilyMobileView, MobileSortButton } from '@/src/components/familymanager';
 import { useLocalization } from '@/src/context/localization';
+import { useIsMobile } from '@/src/hooks/useIsMobile';
 import { useAdminCounts } from '@/src/components/familymanager/admin-count-context';
 import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
 
@@ -44,10 +45,21 @@ interface CaretakerData {
   inactive: boolean;
 }
 
+const familySortOptions = [
+  { key: 'name', label: 'Family Name' },
+  { key: 'slug', label: 'Link/Slug' },
+  { key: 'createdAt', label: 'Created' },
+  { key: 'lastEntryAt', label: 'Last Entry' },
+  { key: 'isActive', label: 'Status' },
+  { key: 'caretakerCount', label: 'Members' },
+  { key: 'babyCount', label: 'Babies' },
+];
+
 export default function FamiliesPage() {
   const { t } = useLocalization();
   const router = useRouter();
   const { updateCount } = useAdminCounts();
+  const isMobile = useIsMobile();
 
   const [families, setFamilies] = useState<FamilyData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,9 +86,9 @@ export default function FamiliesPage() {
   const handleSort = (column: string) => {
     if (sortColumn !== column) {
       setSortColumn(column);
-      setSortDirection('asc');
-    } else if (sortDirection === 'asc') {
       setSortDirection('desc');
+    } else if (sortDirection === 'desc') {
+      setSortDirection('asc');
     } else {
       setSortColumn(null);
       setSortDirection(null);
@@ -301,29 +313,59 @@ export default function FamiliesPage() {
           onSearchChange={setSearchTerm}
           placeholder={t('Search families by name or slug...')}
         />
+        {isMobile && (
+          <MobileSortButton
+            options={familySortOptions}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
       </div>
 
       <div className="family-manager-table-area p-4">
-        <FamilyView
-          families={families}
-          paginatedData={paginatedData}
-          onEdit={handleEdit}
-          onViewCaretakers={handleViewCaretakers}
-          onLogin={handleLogin}
-          onSave={saveFamily}
-          onCancelEdit={handleCancelEdit}
-          editingId={editingId}
-          editingData={editingData}
-          setEditingData={setEditingData}
-          saving={saving}
-          slugError={slugError}
-          checkingSlug={checkingSlug}
-          appConfig={appConfig}
-          formatDateTime={formatDateTime}
-          sortColumn={sortColumn}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
+        {isMobile ? (
+          <FamilyMobileView
+            families={families}
+            paginatedData={paginatedData}
+            onEdit={handleEdit}
+            onLogin={handleLogin}
+            onSave={saveFamily}
+            onCancelEdit={handleCancelEdit}
+            editingId={editingId}
+            editingData={editingData}
+            setEditingData={setEditingData}
+            saving={saving}
+            slugError={slugError}
+            checkingSlug={checkingSlug}
+            appConfig={appConfig}
+            formatDateTime={formatDateTime}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            sortOptions={familySortOptions}
+          />
+        ) : (
+          <FamilyView
+            families={families}
+            paginatedData={paginatedData}
+            onEdit={handleEdit}
+            onViewCaretakers={handleViewCaretakers}
+            onLogin={handleLogin}
+            onSave={saveFamily}
+            onCancelEdit={handleCancelEdit}
+            editingId={editingId}
+            editingData={editingData}
+            setEditingData={setEditingData}
+            saving={saving}
+            slugError={slugError}
+            checkingSlug={checkingSlug}
+            appConfig={appConfig}
+            formatDateTime={formatDateTime}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        )}
 
         {paginatedData.length === 0 && (
           <div className="text-center py-8 text-gray-500">
