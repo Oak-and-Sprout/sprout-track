@@ -32,6 +32,7 @@ interface FamilyData {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  lastEntryAt?: string | null;
   caretakerCount?: number;
   babyCount?: number;
 }
@@ -80,7 +81,7 @@ export default function FamilyView({
           <TableHead variant="bold">{t('Family Name')}</TableHead>
           <TableHead variant="bold">Link/Slug</TableHead>
           <TableHead variant="bold">{t('Created')}</TableHead>
-          <TableHead variant="bold">{t('Updated')}</TableHead>
+          <TableHead variant="bold">{t('Last Entry')}</TableHead>
           <TableHead variant="bold">{t('Status')}</TableHead>
           <TableHead variant="bold">{t('Members')}</TableHead>
           <TableHead variant="bold">{t('Babies')}</TableHead>
@@ -136,7 +137,7 @@ export default function FamilyView({
                   )}
                 </TableCell>
                 <TableCell className="text-sm">{formatDateTime(family.createdAt)}</TableCell>
-                <TableCell className="text-sm">{formatDateTime(family.updatedAt)}</TableCell>
+                <TableCell className="text-sm">{family.lastEntryAt ? formatDateTime(family.lastEntryAt) : t('No entries')}</TableCell>
                 <TableCell>
                   {isEditing ? (
                     <div className="flex items-center space-x-2">

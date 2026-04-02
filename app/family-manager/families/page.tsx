@@ -29,6 +29,7 @@ interface FamilyData {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  lastEntryAt?: string | null;
   caretakerCount?: number;
   babyCount?: number;
 }
