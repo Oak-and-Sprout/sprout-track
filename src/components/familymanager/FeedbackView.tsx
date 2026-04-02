@@ -115,12 +115,12 @@ export default function FeedbackView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{t('Subject')}</TableHead>
-          <TableHead>{t('Submitter')}</TableHead>
-          <TableHead>{t('Submitted')}</TableHead>
-          <TableHead>{t('Status')}</TableHead>
-          <TableHead>{t('Message Preview')}</TableHead>
-          <TableHead className="text-right">{t('Actions')}</TableHead>
+          <TableHead variant="bold">{t('Subject')}</TableHead>
+          <TableHead variant="bold">{t('Submitter')}</TableHead>
+          <TableHead variant="bold">{t('Submitted')}</TableHead>
+          <TableHead variant="bold">{t('Status')}</TableHead>
+          <TableHead variant="bold">{t('Message Preview')}</TableHead>
+          <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

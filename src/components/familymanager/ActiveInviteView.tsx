@@ -63,13 +63,13 @@ export default function ActiveInviteView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{t('Token')}</TableHead>
-          <TableHead>{t('Created By')}</TableHead>
-          <TableHead>{t('Created')}</TableHead>
-          <TableHead>{t('Expires')}</TableHead>
-          <TableHead>{t('Status')}</TableHead>
-          <TableHead>{t('Family')}</TableHead>
-          <TableHead className="text-right">{t('Actions')}</TableHead>
+          <TableHead variant="bold">{t('Token')}</TableHead>
+          <TableHead variant="bold">{t('Created By')}</TableHead>
+          <TableHead variant="bold">{t('Created')}</TableHead>
+          <TableHead variant="bold">{t('Expires')}</TableHead>
+          <TableHead variant="bold">{t('Status')}</TableHead>
+          <TableHead variant="bold">{t('Family')}</TableHead>
+          <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

@@ -8,14 +8,14 @@ import { ThemeProvider } from '@/src/context/theme';
 import { DeploymentProvider } from '../context/deployment';
 import { ToastProvider } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
+import { AdminCountProvider, useAdminCounts } from '@/src/components/familymanager/admin-count-context';
+import { AdminSideNav } from '@/src/components/familymanager/admin-side-nav';
+import { SideNavTrigger } from '@/src/components/ui/side-nav';
 import Image from 'next/image';
 import '../globals.css';
 import './layout.css';
-import SettingsForm from '@/src/components/forms/SettingsForm';
 import { DebugSessionTimer } from '@/src/components/debugSessionTimer';
 import { TimezoneDebug } from '@/src/components/debugTimezone';
-import ThemeToggle from '@/src/components/ui/theme-toggle';
-import { LogOut } from 'lucide-react';
 import { Inter as FontSans } from 'next/font/google';
 
 const fontSans = FontSans({
@@ -28,20 +28,32 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [sideNavOpen, setSideNavOpen] = useState(false);
+  const [isWideScreen, setIsWideScreen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Handle logout functionality (similar to side-nav)
+  // Screen size detection
+  const checkScreenWidth = useCallback(() => {
+    const isWide = window.innerWidth > 600;
+    setIsWideScreen(isWide);
+    if (isWide) setSideNavOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    checkScreenWidth();
+    window.addEventListener('resize', checkScreenWidth);
+    return () => window.removeEventListener('resize', checkScreenWidth);
+  }, [mounted, checkScreenWidth]);
+
   const handleLogout = useCallback(async () => {
     try {
       const authToken = localStorage.getItem('authToken');
-      
-      // Call logout API to invalidate the token
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -52,21 +64,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
-      // Clear all authentication data
       localStorage.removeItem('authToken');
       localStorage.removeItem('unlockTime');
       localStorage.removeItem('caretakerId');
-      
-      // Redirect to login
       router.push('/family-manager/login');
     }
   }, [router]);
 
-  // Check for sysadmin authentication
+  // Auth check
   useEffect(() => {
     if (!mounted) return;
-    
-    // Skip auth check for login page
     if (pathname === '/family-manager/login') {
       setAuthChecked(true);
       return;
@@ -80,8 +87,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
     try {
       const tokenPayload = JSON.parse(atob(authToken.split('.')[1]));
-      
-      // Check if token is expired
       const now = Date.now() / 1000;
       if (tokenPayload.exp < now) {
         localStorage.removeItem('authToken');
@@ -89,94 +94,168 @@ function AppContent({ children }: { children: React.ReactNode }) {
         router.push('/family-manager/login');
         return;
       }
-
-      // Check if user is system admin
       if (tokenPayload.isSysAdmin) {
         setIsAuthenticated(true);
       } else {
         router.push('/family-manager/login');
         return;
       }
-    } catch (error) {
-      // Invalid token
+    } catch {
       localStorage.removeItem('authToken');
       localStorage.removeItem('unlockTime');
       router.push('/family-manager/login');
       return;
     }
-    
+
     setAuthChecked(true);
   }, [mounted, pathname, router]);
 
+  const handleNavigate = useCallback((path: string) => {
+    router.push(path);
+    if (!isWideScreen) setSideNavOpen(false);
+  }, [router, isWideScreen]);
+
+  const handleAddFamily = useCallback(() => {
+    // Navigate to families page first if not already there
+    if (pathname !== '/family-manager/families') {
+      router.push('/family-manager/families');
+    }
+    // Dispatch event for the families page to handle
+    window.dispatchEvent(new Event('admin-add-family'));
+    if (!isWideScreen) setSideNavOpen(false);
+  }, [pathname, router, isWideScreen]);
+
+  const handleSettingsClick = useCallback(() => {
+    if (pathname !== '/family-manager/families') {
+      router.push('/family-manager/families');
+    }
+    window.dispatchEvent(new Event('admin-settings'));
+    if (!isWideScreen) setSideNavOpen(false);
+  }, [pathname, router, isWideScreen]);
+
   if (!mounted || !authChecked) return null;
-  
-  // Show login page content if on login route
+
+  // Login page - no side-nav layout
   if (pathname === '/family-manager/login') {
     return children;
   }
-  
-  // Show loading or redirect if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
+
+  if (!isAuthenticated) return null;
+
+  return (
+    <AppContentWithCounts
+      sideNavOpen={sideNavOpen}
+      setSideNavOpen={setSideNavOpen}
+      isWideScreen={isWideScreen}
+      pathname={pathname}
+      handleNavigate={handleNavigate}
+      handleLogout={handleLogout}
+      handleAddFamily={handleAddFamily}
+      handleSettingsClick={handleSettingsClick}
+      t={t}
+    >
+      {children}
+    </AppContentWithCounts>
+  );
+}
+
+function AppContentWithCounts({
+  children,
+  sideNavOpen,
+  setSideNavOpen,
+  isWideScreen,
+  pathname,
+  handleNavigate,
+  handleLogout,
+  handleAddFamily,
+  handleSettingsClick,
+  t,
+}: {
+  children: React.ReactNode;
+  sideNavOpen: boolean;
+  setSideNavOpen: (open: boolean) => void;
+  isWideScreen: boolean;
+  pathname: string;
+  handleNavigate: (path: string) => void;
+  handleLogout: () => void;
+  handleAddFamily: () => void;
+  handleSettingsClick: () => void;
+  t: (key: string) => string;
+}) {
+  const { counts } = useAdminCounts();
 
   return (
     <>
       <div className="family-manager-layout">
-        {/* Header */}
-        <header className="family-manager-header w-full bg-gradient-to-r from-teal-600 to-teal-700">
-          <div className="mx-auto py-2">
-            <div className="flex justify-between items-center h-16"> {/* Fixed height for consistency */}
-              <div className="flex items-center ml-4 sm:ml-6 lg:ml-8">
-                <Image
-                  src="/sprout-128.png"
-                  alt="Sprout Logo"
-                  width={64}
-                  height={64}
-                  className="object-contain mr-4"
-                  priority
-                />
-                <div className="flex flex-col">
-                  <h1 className="text-white text-lg font-bold">
-                    {t('Family Management')}
-                  </h1>
-                  <p className="text-white/80 text-xs">
-                    {t('View and manage all families in Sprout Track')}
-                  </p>
+        {isWideScreen ? (
+          /* Wide screen: side-nav + content side by side */
+          <div className="flex h-screen">
+            <div className="w-64 h-screen sticky top-0 flex-shrink-0">
+              <AdminSideNav
+                isOpen={true}
+                onClose={() => {}}
+                currentPath={pathname}
+                onNavigate={handleNavigate}
+                onLogout={handleLogout}
+                onAddFamily={handleAddFamily}
+                onSettingsClick={handleSettingsClick}
+                nonModal={true}
+                counts={counts}
+              />
+            </div>
+            <main className="family-manager-main w-[calc(100%-16rem)]">
+              {children}
+            </main>
+          </div>
+        ) : (
+          /* Small screen: header + modal side-nav */
+          <>
+            <header className="family-manager-header w-full bg-gradient-to-r from-teal-600 to-teal-700">
+              <div className="mx-auto py-2">
+                <div className="flex justify-between items-center h-16">
+                  <div className="flex items-center ml-4">
+                    <SideNavTrigger
+                      onClick={() => setSideNavOpen(!sideNavOpen)}
+                      isOpen={sideNavOpen}
+                    >
+                      <Image
+                        src="/sprout-128.png"
+                        alt="Sprout Logo"
+                        width={40}
+                        height={40}
+                        className="object-contain cursor-pointer"
+                        priority
+                      />
+                    </SideNavTrigger>
+                    <div className="flex flex-col ml-3">
+                      <h1 className="text-white text-sm font-bold">
+                        {t('Family Management')}
+                      </h1>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center mr-4 sm:mr-6 lg:mr-8">
-                <ThemeToggle variant="minimal" />
-              </div>
-            </div>
-          </div>
-        </header>
-        
-        {/* Main content area - scrollable */}
-        <main className="family-manager-main bg-gray-200">
-          {children}
-        </main>
-        
-        {/* Fixed footer with logout button */}
-        <footer className="family-manager-footer">
-          <button
-            onClick={handleLogout}
-            className="family-manager-logout-button"
-            aria-label="Logout from family manager"
-          >
-            <LogOut className="family-manager-logout-icon" />
-            {t('Logout')}
-          </button>
-        </footer>
+            </header>
+
+            <AdminSideNav
+              isOpen={sideNavOpen}
+              onClose={() => setSideNavOpen(false)}
+              currentPath={pathname}
+              onNavigate={handleNavigate}
+              onLogout={handleLogout}
+              onAddFamily={handleAddFamily}
+              onSettingsClick={handleSettingsClick}
+              nonModal={false}
+              counts={counts}
+            />
+
+            <main className="family-manager-main w-full">
+              {children}
+            </main>
+          </>
+        )}
       </div>
 
-      <SettingsForm
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        onBabyStatusChange={() => {}} // No special handling needed
-      />
-      
-      {/* Debug components - only visible in development mode */}
       <DebugSessionTimer />
       <TimezoneDebug />
     </>
@@ -186,7 +265,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 export default function AppLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <DeploymentProvider>
@@ -194,7 +273,9 @@ export default function AppLayout({
         <TimezoneProvider>
           <ThemeProvider>
             <ToastProvider>
-              <AppContent>{children}</AppContent>
+              <AdminCountProvider>
+                <AppContent>{children}</AppContent>
+              </AdminCountProvider>
             </ToastProvider>
           </ThemeProvider>
         </TimezoneProvider>

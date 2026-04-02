@@ -77,14 +77,14 @@ export default function FamilyView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{t('Family Name')}</TableHead>
-          <TableHead>Link/Slug</TableHead>
-          <TableHead>{t('Created')}</TableHead>
-          <TableHead>{t('Updated')}</TableHead>
-          <TableHead>{t('Status')}</TableHead>
-          <TableHead>{t('Members')}</TableHead>
-          <TableHead>{t('Babies')}</TableHead>
-          <TableHead className="text-right">{t('Actions')}</TableHead>
+          <TableHead variant="bold">{t('Family Name')}</TableHead>
+          <TableHead variant="bold">Link/Slug</TableHead>
+          <TableHead variant="bold">{t('Created')}</TableHead>
+          <TableHead variant="bold">{t('Updated')}</TableHead>
+          <TableHead variant="bold">{t('Status')}</TableHead>
+          <TableHead variant="bold">{t('Members')}</TableHead>
+          <TableHead variant="bold">{t('Babies')}</TableHead>
+          <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

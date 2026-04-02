@@ -97,12 +97,14 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
 TableRow.displayName = "TableRow";
 
 const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, variant = 'default', ...props }, ref) => {
     const { theme } = useTheme();
+    const headStyle = variant === 'bold' ? tableStyles.headBold : tableStyles.head;
+    const darkClass = variant === 'bold' ? 'table-head-bold-dark' : 'table-head-dark';
     return (
       <th
         ref={ref}
-        className={cn(tableStyles.head, className, "table-head-dark")}
+        className={cn(headStyle, className, darkClass)}
         {...props}
       />
     );

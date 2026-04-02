@@ -58,6 +58,11 @@ export interface TableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElem
    * Additional CSS classes
    */
   className?: string;
+
+  /**
+   * Visual variant for the header cell
+   */
+  variant?: 'default' | 'bold';
 }
 
 /**

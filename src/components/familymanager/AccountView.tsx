@@ -58,13 +58,13 @@ export default function AccountView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{t('Email')}</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>{t('Created')}</TableHead>
-          <TableHead>{t('Family')}</TableHead>
-          <TableHead>{t('Verified')}</TableHead>
-          <TableHead>{t('Status')}</TableHead>
-          <TableHead className="text-right">{t('Actions')}</TableHead>
+          <TableHead variant="bold">{t('Email')}</TableHead>
+          <TableHead variant="bold">{t('Name')}</TableHead>
+          <TableHead variant="bold">{t('Created')}</TableHead>
+          <TableHead variant="bold">{t('Family')}</TableHead>
+          <TableHead variant="bold">{t('Verified')}</TableHead>
+          <TableHead variant="bold">{t('Status')}</TableHead>
+          <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

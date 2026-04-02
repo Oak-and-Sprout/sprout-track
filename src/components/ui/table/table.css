@@ -40,6 +40,11 @@ html.dark .table-head-dark {
   color: #e5e7eb !important; /* gray-200 */
 }
 
+html.dark .table-head-bold-dark {
+  background-color: #0d9488 !important; /* teal-600 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
 html.dark .table-cell-dark {
   color: #e5e7eb !important; /* gray-200 - matches side-nav text */
 }

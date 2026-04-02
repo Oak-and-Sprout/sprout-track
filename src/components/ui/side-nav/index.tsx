@@ -116,6 +116,7 @@ export const SideNavItem: React.FC<SideNavItemProps> = ({
   isActive,
   onClick,
   className,
+  badge,
 }) => {
   return (
     <button
@@ -129,6 +130,7 @@ export const SideNavItem: React.FC<SideNavItemProps> = ({
     >
       {icon && <span className={sideNavStyles.navItemIcon}>{icon}</span>}
       <span className={sideNavStyles.navItemLabel}>{label}</span>
+      {badge && <span className="ml-auto">{badge}</span>}
     </button>
   );
 };

@@ -118,4 +118,9 @@ export interface SideNavItemProps {
    * Additional CSS classes to apply to the item
    */
   className?: string;
+
+  /**
+   * Optional badge element to display after the label (e.g., count indicator)
+   */
+  badge?: ReactNode;
 }
