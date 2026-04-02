@@ -1,0 +1,71 @@
+/* Dark mode overrides for chat-thread-list */
+html.dark .chat-thread-list-container {
+  background-color: rgba(31, 41, 55, 0.8);
+}
+
+html.dark .chat-thread-list-header {
+  border-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-thread-list-header-title {
+  color: rgb(229, 231, 235);
+}
+
+html.dark .chat-thread-list-toggle-active {
+  background-color: rgb(55, 65, 81);
+}
+
+html.dark .chat-thread-list-toggle-inactive:hover {
+  background-color: rgb(55, 65, 81);
+}
+
+html.dark .chat-thread-list-search {
+  border-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-thread-list-search-input {
+  background-color: rgb(31, 41, 55);
+  border-color: rgb(75, 85, 99);
+  color: rgb(229, 231, 235);
+}
+
+html.dark .chat-thread-list-search-input:focus {
+  border-color: rgb(52, 211, 153);
+}
+
+html.dark .chat-thread-list-search-input::placeholder {
+  color: rgb(156, 163, 175);
+}
+
+html.dark .chat-thread-list-item {
+  border-bottom-color: rgb(55, 65, 81);
+}
+
+html.dark .chat-thread-list-item:hover {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+html.dark .chat-thread-list-item-active {
+  background-color: rgb(31, 41, 55);
+}
+
+html.dark .chat-thread-list-subject {
+  color: rgb(229, 231, 235);
+}
+
+html.dark .chat-thread-list-meta {
+  color: rgb(156, 163, 175);
+}
+
+html.dark .chat-thread-list-meta-right {
+  color: rgb(107, 114, 128);
+}
+
+html.dark .chat-thread-list-empty {
+  color: rgb(107, 114, 128);
+}
+
+/* Border color for side-by-side layout (admin view) */
+html.dark .chat-admin-thread-list {
+  border-color: rgb(75, 85, 99);
+}

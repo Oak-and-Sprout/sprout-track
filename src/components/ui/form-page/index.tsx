@@ -21,11 +21,13 @@ export function FormPageHeader({
   title,
   description,
   onClose,
+  leadingAction,
   className
 }: FormPageHeaderProps) {
   const { theme } = useTheme();
   return (
     <div className={cn(formPageStyles.header, className, "form-page-header")}>
+      {leadingAction}
       <div className={formPageStyles.titleContainer}>
         <h2 className={cn(formPageStyles.title, "form-page-title")}>{title}</h2>
         {description && (
@@ -159,11 +161,13 @@ export function FormPage({
   onClose,
   title,
   description,
+  leadingAction,
   children,
   tabs,
   activeTab,
   onTabChange,
   defaultActiveTab,
+  fullContent,
   className,
 }: FormPageProps) {
   const { theme } = useTheme();
@@ -252,10 +256,11 @@ export function FormPage({
         aria-label="Form page"
         style={{ isolation: 'isolate' }} // Create a new stacking context
       >
-        <FormPageHeader 
-          title={title} 
-          description={description} 
-          onClose={onClose} 
+        <FormPageHeader
+          title={title}
+          description={description}
+          onClose={onClose}
+          leadingAction={leadingAction}
         />
         
         {/* Tab navigation (if tabs are provided) */}
@@ -270,25 +275,32 @@ export function FormPage({
         )}
         
         {/* Content area */}
-        <div className={cn(formPageStyles.content, "form-page-content")}>
-          {tabs && tabs.length > 0 ? (
-            // Render active tab content with proper padding
-            <div
-              role="tabpanel"
-              id={`tabpanel-${currentActiveTab}`}
-              aria-labelledby={`tab-${currentActiveTab}`}
-              className="p-2 pb-20" // Add padding and bottom space for footer
-            >
-              {activeTabContent}
-            </div>
-          ) : (
-            // Render children directly when no tabs
-            <div className={formPageStyles.formContent}>
-              {children}
-            </div>
-          )}
-        </div>
-        
+        {fullContent && !tabs ? (
+          // Full content mode: no padding, no max-width, flex column for children to fill
+          <div className={cn("flex-1 flex flex-col overflow-hidden pb-[60px]", "form-page-content")}>
+            {children}
+          </div>
+        ) : (
+          <div className={cn(formPageStyles.content, "form-page-content")}>
+            {tabs && tabs.length > 0 ? (
+              // Render active tab content with proper padding
+              <div
+                role="tabpanel"
+                id={`tabpanel-${currentActiveTab}`}
+                aria-labelledby={`tab-${currentActiveTab}`}
+                className="p-2 pb-20"
+              >
+                {activeTabContent}
+              </div>
+            ) : (
+              // Render children directly when no tabs
+              <div className={formPageStyles.formContent}>
+                {children}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Always render children when tabs are provided (for footer) */}
         {tabs && tabs.length > 0 && children}
       </div>

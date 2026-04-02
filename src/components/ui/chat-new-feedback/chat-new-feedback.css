@@ -1,0 +1,53 @@
+/* Dark mode overrides for chat-new-feedback */
+html.dark .chat-new-feedback-container {
+  background-color: rgb(31, 41, 55);
+}
+
+html.dark .chat-new-feedback-header {
+  background-color: rgb(31, 41, 55);
+  border-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-new-feedback-title {
+  color: rgb(229, 231, 235);
+}
+
+html.dark .chat-new-feedback-description {
+  color: rgb(107, 114, 128);
+}
+
+html.dark .chat-new-feedback-form-body {
+  background-color: rgba(17, 24, 39, 0.5);
+}
+
+html.dark .chat-new-feedback-success {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+html.dark .chat-new-feedback-success-text {
+  color: rgb(110, 231, 183);
+}
+
+html.dark .chat-new-feedback-label {
+  color: rgb(156, 163, 175);
+}
+
+html.dark .chat-new-feedback-footer {
+  background-color: rgb(31, 41, 55);
+  border-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-new-feedback-cancel {
+  border-color: rgb(75, 85, 99);
+  color: rgb(156, 163, 175);
+}
+
+html.dark .chat-new-feedback-cancel:hover {
+  background-color: rgb(55, 65, 81);
+}
+
+html.dark .chat-new-feedback-send-inactive {
+  background-color: rgb(55, 65, 81);
+  color: rgb(107, 114, 128);
+}

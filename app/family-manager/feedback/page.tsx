@@ -1,48 +1,39 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  TableSearch,
-  TablePagination,
-  TablePageSize,
-} from "@/src/components/ui/table";
-import type { SortDirection } from "@/src/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { FeedbackView } from '@/src/components/familymanager';
-import { FeedbackResponse } from '@/app/api/types';
 import { useLocalization } from '@/src/context/localization';
 import { useDeployment } from '@/app/context/deployment';
 import { useAdminCounts } from '@/src/components/familymanager/admin-count-context';
-import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
+import { useIsMobile } from '@/src/hooks/useIsMobile';
+import { useFeedbackChat } from '@/src/hooks/useFeedbackChat';
+import { ChatThreadList } from '@/src/components/ui/chat-thread-list';
+import { ChatConversation } from '@/src/components/ui/chat-conversation';
 
 export default function FeedbackPage() {
   const { t } = useLocalization();
   const { isSaasMode } = useDeployment();
   const router = useRouter();
   const { updateCount } = useAdminCounts();
+  const isMobile = useIsMobile();
 
-  const [feedback, setFeedback] = useState<FeedbackResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [updatingFeedbackId, setUpdatingFeedbackId] = useState<string | null>(null);
+  const {
+    threads,
+    loading,
+    fetchThreads,
+    sendReply,
+    markAsRead,
+    formatDateTime,
+    countUnreadMessages,
+    loadSubmitterInfo,
+    startPolling,
+    stopPolling,
+  } = useFeedbackChat(true);
 
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
-
-  const handleSort = (column: string) => {
-    if (sortColumn !== column) {
-      setSortColumn(column);
-      setSortDirection('asc');
-    } else if (sortDirection === 'asc') {
-      setSortDirection('desc');
-    } else {
-      setSortColumn(null);
-      setSortDirection(null);
-    }
-  };
 
   useEffect(() => {
     if (!isSaasMode) {
@@ -50,107 +41,54 @@ export default function FeedbackPage() {
     }
   }, [isSaasMode, router]);
 
-  const countUnreadUserMessages = useCallback((item: FeedbackResponse): number => {
-    if (!item.replies || item.replies.length === 0) {
-      return item.viewed ? 0 : 1;
-    }
-    const unreadUserReplies = item.replies.filter(reply => {
-      const isAdminMessage = reply.submitterName === 'Admin';
-      return !reply.viewed && !isAdminMessage;
-    });
-    const originalUnread = item.viewed ? 0 : 1;
-    return unreadUserReplies.length + originalUnread;
-  }, []);
-
-  const fetchFeedback = useCallback(async () => {
-    try {
-      const response = await authFetch('/api/feedback');
-      const data = await response.json();
-      if (data.success) {
-        setFeedback(data.data);
-        updateCount('feedback', data.data.filter((item: FeedbackResponse) => !item.viewed).length);
-      }
-    } catch (error) {
-      console.error('Error fetching feedback:', error);
-    }
-  }, [updateCount]);
-
-  const updateFeedback = async (id: string, viewed: boolean) => {
-    try {
-      setUpdatingFeedbackId(id);
-      const response = await authFetch(`/api/feedback?id=${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ viewed }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        fetchFeedback();
-      } else {
-        alert('Failed to update feedback: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error updating feedback:', error);
-      alert('Error updating feedback');
-    } finally {
-      setUpdatingFeedbackId(null);
-    }
-  };
-
   useEffect(() => {
     if (!isSaasMode) return;
-    const fetchData = async () => {
-      setLoading(true);
-      await fetchFeedback();
-      setLoading(false);
-    };
-    fetchData();
-  }, [isSaasMode, fetchFeedback]);
+    fetchThreads();
+    loadSubmitterInfo();
+    startPolling();
+    return () => stopPolling();
+  }, [isSaasMode, fetchThreads, loadSubmitterInfo, startPolling, stopPolling]);
 
-  const defaultSortedData = useMemo(() => {
-    return [...feedback].sort((a, b) => {
-      const aUnread = countUnreadUserMessages(a);
-      const bUnread = countUnreadUserMessages(b);
+  // Update admin counts when threads change
+  useEffect(() => {
+    if (threads.length > 0) {
+      const unreadCount = threads.filter(item => !item.viewed).length;
+      updateCount('feedback', unreadCount);
+    }
+  }, [threads, updateCount]);
+
+  // Sort threads: unread first, then by date
+  const sortedThreads = useMemo(() => {
+    return [...threads].sort((a, b) => {
+      const aUnread = countUnreadMessages(a);
+      const bUnread = countUnreadMessages(b);
       if (aUnread !== bUnread) return bUnread - aUnread;
       return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
     });
-  }, [feedback, countUnreadUserMessages]);
+  }, [threads, countUnreadMessages]);
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return defaultSortedData;
+  // Filter by search
+  const filteredThreads = useMemo(() => {
+    if (!searchTerm) return sortedThreads;
     const search = searchTerm.toLowerCase();
-    return defaultSortedData.filter(item =>
+    return sortedThreads.filter(item =>
       item.subject.toLowerCase().includes(search) ||
       item.message.toLowerCase().includes(search) ||
       item.submitterName?.toLowerCase().includes(search) ||
       item.submitterEmail?.toLowerCase().includes(search)
     );
-  }, [defaultSortedData, searchTerm]);
+  }, [sortedThreads, searchTerm]);
 
-  const sortedData = useMemo(() => {
-    if (!sortColumn || !sortDirection) return filteredData;
-    return [...filteredData].sort((a, b) => {
-      let aVal: string | number;
-      let bVal: string | number;
-      switch (sortColumn) {
-        case 'subject': aVal = a.subject.toLowerCase(); bVal = b.subject.toLowerCase(); break;
-        case 'submitterName': aVal = (a.submitterName || '').toLowerCase(); bVal = (b.submitterName || '').toLowerCase(); break;
-        case 'submittedAt': aVal = new Date(a.submittedAt).getTime(); bVal = new Date(b.submittedAt).getTime(); break;
-        case 'viewed': aVal = a.viewed ? 1 : 0; bVal = b.viewed ? 1 : 0; break;
-        default: return 0;
-      }
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [filteredData, sortColumn, sortDirection]);
+  const selectedThread = threads.find(t => t.id === selectedThreadId) || null;
 
-  const totalItems = sortedData.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
+  const handleSelectThread = useCallback((threadId: string) => {
+    setSelectedThreadId(threadId);
+    setMobileShowDetail(true);
+  }, []);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, pageSize, sortColumn, sortDirection]);
+  const handleMobileBack = useCallback(() => {
+    setMobileShowDetail(false);
+  }, []);
 
   if (!isSaasMode) return null;
 
@@ -162,41 +100,60 @@ export default function FeedbackPage() {
     );
   }
 
+  const conversationPanel = (
+    <ChatConversation
+      thread={selectedThread}
+      isAdmin={true}
+      onReply={sendReply}
+      onBack={isMobile ? handleMobileBack : undefined}
+      showBackButton={isMobile}
+      onMarkRead={markAsRead}
+      formatDateTime={formatDateTime}
+      className="flex-1"
+    />
+  );
+
   return (
-    <div className="family-manager-page">
-      <div className="family-manager-search">
-        <TableSearch
-          value={searchTerm}
-          onSearchChange={setSearchTerm}
-          placeholder={t('Search feedback by subject, message, or submitter...')}
-        />
-      </div>
-
-      <div className="family-manager-table-area p-4">
-        <FeedbackView
-          paginatedData={paginatedData}
-          onUpdateFeedback={updateFeedback}
-          updatingFeedbackId={updatingFeedbackId}
-          formatDateTime={formatDateTime}
-          onRefresh={fetchFeedback}
-          sortColumn={sortColumn}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
-
-        {paginatedData.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            {searchTerm ? t('No feedback found matching your search.') : t('No feedback found.')}
+    <div className="flex flex-row h-full overflow-hidden">
+      {/* Desktop: side-by-side layout */}
+      {!isMobile && (
+        <>
+          <div className="w-72 flex-shrink-0 border-r border-slate-200 chat-admin-thread-list min-h-0">
+            <ChatThreadList
+              threads={filteredThreads}
+              selectedThreadId={selectedThreadId}
+              onSelectThread={handleSelectThread}
+              hideNewButton={true}
+              isAdmin={true}
+              formatDateTime={formatDateTime}
+              countUnread={countUnreadMessages}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+            />
           </div>
-        )}
-      </div>
-
-      {totalItems >= 10 && (
-        <div className="family-manager-pagination flex items-center justify-between">
-          <TablePageSize pageSize={pageSize} onPageSizeChange={setPageSize} pageSizeOptions={[5, 10, 20, 50]} />
-          <TablePagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={setCurrentPage} />
-        </div>
+          <div className="flex-1 flex flex-col min-w-0">
+            {conversationPanel}
+          </div>
+        </>
       )}
+
+      {/* Mobile: stacked layout */}
+      {isMobile && !mobileShowDetail && (
+        <ChatThreadList
+          threads={filteredThreads}
+          selectedThreadId={selectedThreadId}
+          onSelectThread={handleSelectThread}
+          hideNewButton={true}
+          isAdmin={true}
+          formatDateTime={formatDateTime}
+          countUnread={countUnreadMessages}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          className="flex-1"
+        />
+      )}
+
+      {isMobile && mobileShowDetail && conversationPanel}
     </div>
   );
 }

@@ -142,7 +142,8 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
     // Send emails based on whether this is a new feedback or a reply
     if (parentId) {
       // This is a reply - determine if it's from admin or user
-      const isAdminReply = authContext.isSysAdmin || authContext.caretakerRole === 'ADMIN';
+      // Only treat as admin reply if the submitter was resolved to 'Admin' (not the thread author)
+      const isAdminReply = finalSubmitterName === 'Admin';
       
       if (isAdminReply) {
         // Admin replied - notify the original user
@@ -234,6 +235,16 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
       }
     }
 
+    // Look up family slug for the response
+    let postFamilySlug: string | null = null;
+    if (feedback.familyId) {
+      const fam = await prisma.family.findUnique({
+        where: { id: feedback.familyId },
+        select: { slug: true },
+      });
+      postFamilySlug = fam?.slug || null;
+    }
+
     const response: FeedbackResponse = {
       id: feedback.id,
       subject: feedback.subject,
@@ -243,6 +254,7 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
       submitterName: feedback.submitterName,
       submitterEmail: feedback.submitterEmail,
       familyId: feedback.familyId,
+      familySlug: postFamilySlug,
       parentId: feedback.parentId,
       createdAt: feedback.createdAt.toISOString(),
       updatedAt: feedback.updatedAt.toISOString(),
@@ -325,6 +337,9 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
     const feedback = await prisma.feedback.findMany({
       where,
       include: {
+        family: {
+          select: { slug: true },
+        },
         replies: {
           orderBy: {
             submittedAt: 'asc', // Order replies chronologically
@@ -347,6 +362,7 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
       submitterName: item.submitterName,
       submitterEmail: item.submitterEmail,
       familyId: item.familyId,
+      familySlug: item.family?.slug || null,
       parentId: item.parentId,
       replies: item.replies?.map((reply: any) => ({
         id: reply.id,
@@ -357,6 +373,7 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
         submitterName: reply.submitterName,
         submitterEmail: reply.submitterEmail,
         familyId: reply.familyId,
+        familySlug: item.family?.slug || null,
         parentId: reply.parentId,
         createdAt: reply.createdAt.toISOString(),
         updatedAt: reply.updatedAt.toISOString(),
@@ -472,6 +489,9 @@ async function handlePut(req: NextRequest, authContext: any): Promise<NextRespon
         viewed: viewed !== undefined ? viewed : undefined,
         updatedAt: new Date(),
       },
+      include: {
+        family: { select: { slug: true } },
+      },
     });
 
     const response: FeedbackResponse = {
@@ -483,6 +503,7 @@ async function handlePut(req: NextRequest, authContext: any): Promise<NextRespon
       submitterName: feedback.submitterName,
       submitterEmail: feedback.submitterEmail,
       familyId: feedback.familyId,
+      familySlug: (feedback as any).family?.slug || null,
       parentId: feedback.parentId,
       createdAt: feedback.createdAt.toISOString(),
       updatedAt: feedback.updatedAt.toISOString(),

@@ -440,6 +440,7 @@ export interface FeedbackResponse {
   submitterName: string | null;
   submitterEmail: string | null;
   familyId: string | null;
+  familySlug: string | null;
   parentId: string | null;
   replies?: FeedbackResponse[];
   createdAt: string;

@@ -64,7 +64,12 @@ export interface FormPageProps {
    * Optional description below the title
    */
   description?: string;
-  
+
+  /**
+   * Optional leading element rendered before the title in the header (e.g. back button)
+   */
+  leadingAction?: ReactNode;
+
   /**
    * Content of the form page (used when tabs are not provided)
    */
@@ -91,6 +96,13 @@ export interface FormPageProps {
   defaultActiveTab?: string;
   
   /**
+   * When true, children fill the entire content area without padding or max-width constraints.
+   * The content area becomes a flex column so children can use flex-1 to fill space.
+   * Footer still renders at the bottom as usual.
+   */
+  fullContent?: boolean;
+
+  /**
    * Additional CSS classes to apply to the form page
    */
   className?: string;
@@ -104,18 +116,23 @@ export interface FormPageHeaderProps {
    * Title of the form page
    */
   title: string;
-  
+
   /**
    * Optional description below the title
    */
   description?: string;
-  
+
   /**
    * Optional function to call when the form page should be closed
    * (Not used in the header anymore as we rely on footer buttons)
    */
   onClose?: () => void;
-  
+
+  /**
+   * Optional leading element rendered before the title (e.g. back button)
+   */
+  leadingAction?: ReactNode;
+
   /**
    * Additional CSS classes for the header
    */

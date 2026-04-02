@@ -453,8 +453,8 @@ export const SideNav: React.FC<SideNavProps> = ({
           version={packageInfo.version}
         />
 
-        {/* Feedback Page - only shown in SaaS mode and when feedback is requested */}
-        {isSaasMode && showFeedback && (
+        {/* Feedback Page - always mounted in SaaS mode so slide transition works */}
+        {isSaasMode && (
           <FeedbackPage
             isOpen={showFeedback}
             onClose={() => setShowFeedback(false)}
