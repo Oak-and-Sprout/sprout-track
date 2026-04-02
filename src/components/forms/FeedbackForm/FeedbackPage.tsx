@@ -79,9 +79,8 @@ export default function FeedbackPage({
   }, []);
 
   const handleNewSubmit = useCallback(async (subject: string, message: string) => {
-    const result = await sendNewFeedback(subject, message);
-    setSelectedThreadId(result.id);
-    setViewState('conversation');
+    await sendNewFeedback(subject, message);
+    setViewState('list');
   }, [sendNewFeedback]);
 
   const selectedThread = threads.find(t => t.id === selectedThreadId) || null;
