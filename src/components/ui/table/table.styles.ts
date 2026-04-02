@@ -19,6 +19,12 @@ export const tableStyles = {
 
   // Bold variant - solid teal with white text
   headBold: "h-12 px-4 text-left align-middle font-semibold text-white bg-teal-600 [&:has([role=checkbox])]:pr-0 first:pl-6 last:pr-6 transition-colors duration-200",
+
+  // Sortable header - adds cursor and prevents text selection
+  headSortable: "cursor-pointer select-none",
+
+  // Sort icon container
+  sortIcon: "ml-1 inline-flex items-center",
   
   // Table data cell (td)
   cell: "px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0 first:pl-6 last:pr-6 text-gray-700 transition-colors duration-200",

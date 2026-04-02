@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
+import type { SortDirection } from "@/src/components/ui/table";
 import { Button } from "@/src/components/ui/button";
 import { 
   Loader2,
@@ -48,6 +49,9 @@ interface ActiveInviteViewProps {
   deletingInviteId: string | null;
   appConfig: { rootDomain: string; enableHttps: boolean } | null;
   formatDateTime: (dateString: string | null) => string;
+  sortColumn: string | null;
+  sortDirection: SortDirection;
+  onSort: (column: string) => void;
 }
 
 export default function ActiveInviteView({
@@ -56,6 +60,9 @@ export default function ActiveInviteView({
   deletingInviteId,
   appConfig,
   formatDateTime,
+  sortColumn,
+  sortDirection,
+  onSort,
 }: ActiveInviteViewProps) {
   const { t } = useLocalization();
   
@@ -63,12 +70,12 @@ export default function ActiveInviteView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead variant="bold">{t('Token')}</TableHead>
-          <TableHead variant="bold">{t('Created By')}</TableHead>
-          <TableHead variant="bold">{t('Created')}</TableHead>
-          <TableHead variant="bold">{t('Expires')}</TableHead>
-          <TableHead variant="bold">{t('Status')}</TableHead>
-          <TableHead variant="bold">{t('Family')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'token' ? sortDirection : null} onSort={() => onSort('token')}>{t('Token')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'creator' ? sortDirection : null} onSort={() => onSort('creator')}>{t('Created By')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'createdAt' ? sortDirection : null} onSort={() => onSort('createdAt')}>{t('Created')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'expiresAt' ? sortDirection : null} onSort={() => onSort('expiresAt')}>{t('Expires')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'status' ? sortDirection : null} onSort={() => onSort('status')}>{t('Status')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'family' ? sortDirection : null} onSort={() => onSort('family')}>{t('Family')}</TableHead>
           <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>

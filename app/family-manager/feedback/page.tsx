@@ -6,6 +6,7 @@ import {
   TablePagination,
   TablePageSize,
 } from "@/src/components/ui/table";
+import type { SortDirection } from "@/src/components/ui/table";
 import { Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { FeedbackView } from '@/src/components/familymanager';
@@ -28,6 +29,20 @@ export default function FeedbackPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+
+  const handleSort = (column: string) => {
+    if (sortColumn !== column) {
+      setSortColumn(column);
+      setSortDirection('asc');
+    } else if (sortDirection === 'asc') {
+      setSortDirection('desc');
+    } else {
+      setSortColumn(null);
+      setSortDirection(null);
+    }
+  };
 
   useEffect(() => {
     if (!isSaasMode) {
@@ -92,7 +107,7 @@ export default function FeedbackPage() {
     fetchData();
   }, [isSaasMode, fetchFeedback]);
 
-  const sortedData = useMemo(() => {
+  const defaultSortedData = useMemo(() => {
     return [...feedback].sort((a, b) => {
       const aUnread = countUnreadUserMessages(a);
       const bUnread = countUnreadUserMessages(b);
@@ -102,22 +117,40 @@ export default function FeedbackPage() {
   }, [feedback, countUnreadUserMessages]);
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return sortedData;
+    if (!searchTerm) return defaultSortedData;
     const search = searchTerm.toLowerCase();
-    return sortedData.filter(item =>
+    return defaultSortedData.filter(item =>
       item.subject.toLowerCase().includes(search) ||
       item.message.toLowerCase().includes(search) ||
       item.submitterName?.toLowerCase().includes(search) ||
       item.submitterEmail?.toLowerCase().includes(search)
     );
-  }, [sortedData, searchTerm]);
+  }, [defaultSortedData, searchTerm]);
 
-  const totalItems = filteredData.length;
+  const sortedData = useMemo(() => {
+    if (!sortColumn || !sortDirection) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      switch (sortColumn) {
+        case 'subject': aVal = a.subject.toLowerCase(); bVal = b.subject.toLowerCase(); break;
+        case 'submitterName': aVal = (a.submitterName || '').toLowerCase(); bVal = (b.submitterName || '').toLowerCase(); break;
+        case 'submittedAt': aVal = new Date(a.submittedAt).getTime(); bVal = new Date(b.submittedAt).getTime(); break;
+        case 'viewed': aVal = a.viewed ? 1 : 0; bVal = b.viewed ? 1 : 0; break;
+        default: return 0;
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortColumn, sortDirection]);
+
+  const totalItems = sortedData.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
+  const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, pageSize]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, pageSize, sortColumn, sortDirection]);
 
   if (!isSaasMode) return null;
 
@@ -146,6 +179,9 @@ export default function FeedbackPage() {
           updatingFeedbackId={updatingFeedbackId}
           formatDateTime={formatDateTime}
           onRefresh={fetchFeedback}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          onSort={handleSort}
         />
 
         {paginatedData.length === 0 && (

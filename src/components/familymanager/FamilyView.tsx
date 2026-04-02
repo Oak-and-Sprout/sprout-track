@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
+import type { SortDirection } from "@/src/components/ui/table";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Checkbox } from "@/src/components/ui/checkbox";
@@ -53,6 +54,9 @@ interface FamilyViewProps {
   checkingSlug: boolean;
   appConfig: { rootDomain: string; enableHttps: boolean } | null;
   formatDateTime: (dateString: string | null) => string;
+  sortColumn: string | null;
+  sortDirection: SortDirection;
+  onSort: (column: string) => void;
 }
 
 export default function FamilyView({
@@ -71,6 +75,9 @@ export default function FamilyView({
   checkingSlug,
   appConfig,
   formatDateTime,
+  sortColumn,
+  sortDirection,
+  onSort,
 }: FamilyViewProps) {
   const { t } = useLocalization();
   
@@ -78,13 +85,13 @@ export default function FamilyView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead variant="bold">{t('Family Name')}</TableHead>
-          <TableHead variant="bold">Link/Slug</TableHead>
-          <TableHead variant="bold">{t('Created')}</TableHead>
-          <TableHead variant="bold">{t('Last Entry')}</TableHead>
-          <TableHead variant="bold">{t('Status')}</TableHead>
-          <TableHead variant="bold">{t('Members')}</TableHead>
-          <TableHead variant="bold">{t('Babies')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'name' ? sortDirection : null} onSort={() => onSort('name')}>{t('Family Name')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'slug' ? sortDirection : null} onSort={() => onSort('slug')}>Link/Slug</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'createdAt' ? sortDirection : null} onSort={() => onSort('createdAt')}>{t('Created')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'lastEntryAt' ? sortDirection : null} onSort={() => onSort('lastEntryAt')}>{t('Last Entry')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'isActive' ? sortDirection : null} onSort={() => onSort('isActive')}>{t('Status')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'caretakerCount' ? sortDirection : null} onSort={() => onSort('caretakerCount')}>{t('Members')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'babyCount' ? sortDirection : null} onSort={() => onSort('babyCount')}>{t('Babies')}</TableHead>
           <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>

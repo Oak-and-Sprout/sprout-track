@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
+import type { SortDirection } from "@/src/components/ui/table";
 import { Button } from "@/src/components/ui/button";
 import { 
   Loader2,
@@ -30,6 +31,9 @@ interface FeedbackViewProps {
   updatingFeedbackId: string | null;
   formatDateTime: (dateString: string | null) => string;
   onRefresh?: () => void;
+  sortColumn: string | null;
+  sortDirection: SortDirection;
+  onSort: (column: string) => void;
 }
 
 // Helper function to count unread messages from non-admin users
@@ -56,6 +60,9 @@ export default function FeedbackView({
   updatingFeedbackId,
   formatDateTime,
   onRefresh,
+  sortColumn,
+  sortDirection,
+  onSort,
 }: FeedbackViewProps) {
   const { t } = useLocalization();
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackResponse | null>(null);
@@ -115,10 +122,10 @@ export default function FeedbackView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead variant="bold">{t('Subject')}</TableHead>
-          <TableHead variant="bold">{t('Submitter')}</TableHead>
-          <TableHead variant="bold">{t('Submitted')}</TableHead>
-          <TableHead variant="bold">{t('Status')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'subject' ? sortDirection : null} onSort={() => onSort('subject')}>{t('Subject')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'submitterName' ? sortDirection : null} onSort={() => onSort('submitterName')}>{t('Submitter')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'submittedAt' ? sortDirection : null} onSort={() => onSort('submittedAt')}>{t('Submitted')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'viewed' ? sortDirection : null} onSort={() => onSort('viewed')}>{t('Status')}</TableHead>
           <TableHead variant="bold">{t('Message Preview')}</TableHead>
           <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>

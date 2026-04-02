@@ -131,4 +131,20 @@ html.dark .table-tab-badge-active-dark {
   color: #ffffff !important; /* white */
 }
 
- 
+/* Pagination chevron dark mode - active buttons should be white */
+html.dark .table-pagination-chevron-dark:not(:disabled) {
+  color: #e5e7eb !important; /* gray-200 - matches text */
+}
+
+/* Sortable header dark mode styles */
+html.dark .table-head-sortable-dark:hover {
+  background-color: #1f2937 !important; /* gray-800 - slightly darker on hover */
+}
+
+html.dark .table-head-bold-sortable-dark:hover {
+  background-color: #0f766e !important; /* teal-700 - darker teal on hover */
+}
+
+html.dark .table-sort-icon-active-dark {
+  color: #5eead4 !important; /* teal-300 - matches accent color */
+}

@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
+import type { SortDirection } from "@/src/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/src/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
@@ -67,6 +68,20 @@ export default function FamiliesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+
+  const handleSort = (column: string) => {
+    if (sortColumn !== column) {
+      setSortColumn(column);
+      setSortDirection('asc');
+    } else if (sortDirection === 'asc') {
+      setSortDirection('desc');
+    } else {
+      setSortColumn(null);
+      setSortDirection(null);
+    }
+  };
 
   const fetchAppConfig = async () => {
     try {
@@ -242,12 +257,33 @@ export default function FamiliesPage() {
     );
   }, [families, searchTerm]);
 
-  const totalItems = filteredData.length;
+  const sortedData = useMemo(() => {
+    if (!sortColumn || !sortDirection) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      switch (sortColumn) {
+        case 'name': aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
+        case 'slug': aVal = a.slug.toLowerCase(); bVal = b.slug.toLowerCase(); break;
+        case 'createdAt': aVal = new Date(a.createdAt).getTime(); bVal = new Date(b.createdAt).getTime(); break;
+        case 'lastEntryAt': aVal = a.lastEntryAt ? new Date(a.lastEntryAt).getTime() : 0; bVal = b.lastEntryAt ? new Date(b.lastEntryAt).getTime() : 0; break;
+        case 'isActive': aVal = a.isActive ? 1 : 0; bVal = b.isActive ? 1 : 0; break;
+        case 'caretakerCount': aVal = a.caretakerCount || 0; bVal = b.caretakerCount || 0; break;
+        case 'babyCount': aVal = a.babyCount || 0; bVal = b.babyCount || 0; break;
+        default: return 0;
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortColumn, sortDirection]);
+
+  const totalItems = sortedData.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
+  const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, pageSize]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, pageSize, sortColumn, sortDirection]);
 
   if (loading) {
     return (
@@ -284,6 +320,9 @@ export default function FamiliesPage() {
           checkingSlug={checkingSlug}
           appConfig={appConfig}
           formatDateTime={formatDateTime}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          onSort={handleSort}
         />
 
         {paginatedData.length === 0 && (

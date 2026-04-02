@@ -6,6 +6,7 @@ import {
   TablePagination,
   TablePageSize,
 } from "@/src/components/ui/table";
+import type { SortDirection } from "@/src/components/ui/table";
 import { Loader2 } from "lucide-react";
 import { ActiveInviteView } from '@/src/components/familymanager';
 import { useLocalization } from '@/src/context/localization';
@@ -38,6 +39,20 @@ export default function InvitesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+
+  const handleSort = (column: string) => {
+    if (sortColumn !== column) {
+      setSortColumn(column);
+      setSortDirection('asc');
+    } else if (sortDirection === 'asc') {
+      setSortDirection('desc');
+    } else {
+      setSortColumn(null);
+      setSortDirection(null);
+    }
+  };
 
   const fetchAppConfig = async () => {
     try {
@@ -101,12 +116,32 @@ export default function InvitesPage() {
     );
   }, [invites, searchTerm]);
 
-  const totalItems = filteredData.length;
+  const sortedData = useMemo(() => {
+    if (!sortColumn || !sortDirection) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      switch (sortColumn) {
+        case 'token': aVal = a.token.toLowerCase(); bVal = b.token.toLowerCase(); break;
+        case 'creator': aVal = (a.creator?.name || '').toLowerCase(); bVal = (b.creator?.name || '').toLowerCase(); break;
+        case 'createdAt': aVal = new Date(a.createdAt).getTime(); bVal = new Date(b.createdAt).getTime(); break;
+        case 'expiresAt': aVal = new Date(a.expiresAt).getTime(); bVal = new Date(b.expiresAt).getTime(); break;
+        case 'status': aVal = a.isUsed ? 2 : a.isExpired ? 1 : 0; bVal = b.isUsed ? 2 : b.isExpired ? 1 : 0; break;
+        case 'family': aVal = (a.family?.name || '').toLowerCase(); bVal = (b.family?.name || '').toLowerCase(); break;
+        default: return 0;
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortColumn, sortDirection]);
+
+  const totalItems = sortedData.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
+  const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, pageSize]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, pageSize, sortColumn, sortDirection]);
 
   if (loading) {
     return (
@@ -133,6 +168,9 @@ export default function InvitesPage() {
           deletingInviteId={deletingInviteId}
           appConfig={appConfig}
           formatDateTime={formatDateTime}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          onSort={handleSort}
         />
 
         {paginatedData.length === 0 && (
