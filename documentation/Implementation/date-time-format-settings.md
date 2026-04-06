@@ -20,27 +20,27 @@ Add family-level date and time format settings so an admin can configure how dat
 
 ---
 
-## Phase 1: Database & API Layer
+## Phase 1: Database & API Layer -- COMPLETED
 
-### 1.1 Prisma Schema
+### 1.1 Prisma Schema -- COMPLETED
 
-**File:** `prisma/schema.prisma` (Settings model, line ~488)
+**File:** `prisma/schema.prisma` (Settings model)
 
-Add two new fields after `includeSolidsInFeedTimer`:
+Added two new fields after `includeSolidsInFeedTimer`:
 
 ```prisma
 dateFormat          String   @default("MM/DD/YYYY") // "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD"
 timeFormat          String   @default("12h")         // "12h" | "24h"
 ```
 
-Run migration: `npx prisma migrate dev --name add_date_time_format_settings`
+Migration applied: `20260406153823_add_date_time_format_settings`
 
-### 1.2 Settings API Route
+### 1.2 Settings API Route -- COMPLETED
 
 **File:** `app/api/settings/route.ts`
 
-- **handleGet** (line 31-43): Add `dateFormat: 'MM/DD/YYYY'` and `timeFormat: '12h'` to the default `create` call
-- **handlePut** (line 111-116): Add `'dateFormat'` and `'timeFormat'` to the `adminOnlyFields` array
+- Added `dateFormat: 'MM/DD/YYYY'` and `timeFormat: '12h'` to the default `create` call in `handleGet`
+- Added `'dateFormat'` and `'timeFormat'` to the `adminOnlyFields` array in `handlePut`
 
 ---
 
@@ -209,53 +209,15 @@ These use `toLocaleDateString('en-CA')` for chart data aggregation keys (ISO for
 
 ---
 
-## Phase 4: Settings UI
+## Phase 4: Settings UI -- COMPLETED
 
-### 4.1 ConfigTab.tsx
+### 4.1 ConfigTab.tsx -- COMPLETED
 
 **File:** `src/components/forms/SettingsForm/ConfigTab.tsx`
 
-Add a new "Date & Time Format" section after "Feed Timer" and before "System Administration":
+Added "Date & Time Format" section after "Feed Timer" and before "System Administration" with two Select dropdowns for date format and time format. Will add `setDateTimeFormats()` call after TimezoneContext is extended in Phase 2.
 
-```tsx
-{/* Date & Time Format */}
-<div className="border-t border-slate-200 pt-6">
-  <h3 className="form-label mb-4">{t('Date & Time Format')}</h3>
-  <div className="space-y-4">
-    <div>
-      <Label className="form-label">{t('Date Format')}</Label>
-      <Select
-        value={settings?.dateFormat || 'MM/DD/YYYY'}
-        onValueChange={(value) => onSettingsChange({ dateFormat: value })}
-      >
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (04/06/2026)</SelectItem>
-          <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (06/04/2026)</SelectItem>
-          <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (2026-04-06)</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-    <div>
-      <Label className="form-label">{t('Time Format')}</Label>
-      <Select
-        value={settings?.timeFormat || '12h'}
-        onValueChange={(value) => onSettingsChange({ timeFormat: value })}
-      >
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="12h">{t('12-hour')} (1:30 PM)</SelectItem>
-          <SelectItem value="24h">{t('24-hour')} (13:30)</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  </div>
-</div>
-```
-
-After saving, also call `setDateTimeFormats()` from `useTimezone()` to update the context immediately (no page reload needed).
-
-### 4.2 Translation Keys
+### 4.2 Translation Keys -- COMPLETED
 
 Add to `src/localization/translations/en.json`:
 - `"Date & Time Format"`
