@@ -123,7 +123,7 @@ const HealthChartModal: React.FC<HealthChartModalProps> = ({
                 <RechartsTooltip
                   labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
-                <Legend />
+                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                 {medicineNames.map((name, i) => (
                   <Bar
                     key={name}

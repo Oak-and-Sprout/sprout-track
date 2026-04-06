@@ -291,19 +291,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={bottleData.data} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={bottleData.data} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="count"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
                       label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
@@ -313,6 +312,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -325,7 +325,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="count"
                       type="monotone"
@@ -363,19 +363,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={breastData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={breastData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="count"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
                       label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
@@ -385,6 +384,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => formatMinutes(value as number)}
                       label={{ value: t('Avg Duration'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
@@ -405,7 +405,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="count"
                       type="monotone"
@@ -448,19 +448,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={solidsData.data} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={solidsData.data} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="count"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
                       label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
@@ -470,6 +469,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -482,7 +482,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="count"
                       type="monotone"

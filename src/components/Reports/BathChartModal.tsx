@@ -247,14 +247,16 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                      tickMargin={6}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
+                      label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -287,20 +289,19 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={weeklyAvgData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={weeklyAvgData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(1)}
-                      label={{ value: t('Avg Baths per Week'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Avg Baths per Week'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -326,20 +327,19 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={soapShampooData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={soapShampooData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Count'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -351,7 +351,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Week:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Bar dataKey="soap" stackId="baths" fill="#6366f1" name={t('Soap Only')} />
                     <Bar dataKey="shampoo" stackId="baths" fill="#14b8a6" name={t('Shampoo Only')} />
                     <Bar dataKey="both" stackId="baths" fill="#f59e0b" name={t('Both')} />

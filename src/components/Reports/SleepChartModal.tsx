@@ -102,12 +102,14 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
                 <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                 <XAxis
                   dataKey="label"
-                  label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                  tickMargin={6}
+                  label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                   className="growth-chart-axis"
                 />
                 <YAxis
                   type="number"
                   domain={['auto', 'auto']}
+                  tickMargin={6}
                   tickFormatter={(value) =>
                     metric === 'nightWakings' ? value.toFixed(0) : formatMinutes(value)
                   }

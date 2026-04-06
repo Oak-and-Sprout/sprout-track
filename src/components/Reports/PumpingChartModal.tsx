@@ -353,14 +353,16 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                      tickMargin={6}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Count'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -397,14 +399,16 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                      tickMargin={6}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => formatMinutes(value as number)}
-                      label={{ value: t('Duration'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Duration'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -437,19 +441,18 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={amountData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={amountData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="total"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Total Amount'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
@@ -458,6 +461,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Avg Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -482,7 +486,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="total"
                       type="monotone"
@@ -545,19 +549,18 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={inventoryData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={inventoryData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="consumed"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Consumed'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
@@ -566,6 +569,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={['auto', 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Stored Balance'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -581,7 +585,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Bar
                       yAxisId="consumed"
                       dataKey="consumed"

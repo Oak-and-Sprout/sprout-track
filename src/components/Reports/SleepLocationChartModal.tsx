@@ -191,7 +191,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                   formatter={(value: any, name?: string) => [`${value}`, name || '']}
                   labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
-                <Legend />
+                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                 {locations.map((location, index) => (
                   <Bar
                     key={location.location}

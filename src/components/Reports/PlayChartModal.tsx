@@ -217,26 +217,25 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dailySessionData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={dailySessionData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       allowDecimals={false}
-                      label={{ value: t('Sessions'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Sessions'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     {dailySessionData.typeNames.map((type) => (
                       <Bar
                         key={type}
@@ -264,19 +263,18 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={avgDurationData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={avgDurationData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="name"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: t('Avg Duration (min)'), angle: -90, position: 'insideLeft' }}
+                      tickMargin={6}
+                      label={{ value: t('Avg Duration (min)'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -301,19 +299,18 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dailyDurationData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={dailyDurationData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: t('Duration (min)'), angle: -90, position: 'insideLeft' }}
+                      tickMargin={6}
+                      label={{ value: t('Duration (min)'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -324,6 +321,8 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Legend
+                      verticalAlign="top"
+                      wrapperStyle={{ paddingBottom: 4 }}
                       formatter={(value: string) => playTypeDisplayNames[value] || value}
                     />
                     {dailyDurationData.typeNames.map((type) => (

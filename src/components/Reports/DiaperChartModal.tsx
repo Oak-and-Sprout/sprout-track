@@ -108,14 +108,16 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
                 <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                 <XAxis
                   dataKey="label"
-                  label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                  tickMargin={6}
+                  label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                   className="growth-chart-axis"
                 />
                 <YAxis
                   type="number"
                   domain={[0, 'auto']}
+                  tickMargin={6}
                   tickFormatter={(value) => value.toFixed(0)}
-                  label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
+                  label={{ value: t('Count'), angle: -90, position: 'insideLeft', offset: -10 }}
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip
