@@ -32,6 +32,8 @@ import {
 import { Calendar } from '@/src/components/ui/calendar';
 import { cn } from '@/src/lib/utils';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateDisplay } from '@/src/utils/dateFormat';
 
 /**
  * FullLogFilter Component
@@ -51,7 +53,8 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
   enableBreastMilkTracking = true,
 }) => {
   const { t } = useLocalization();
-  
+  const { dateFormat } = useTimezone();
+
   // State for popover open/close
   const [calendarOpen, setCalendarOpen] = useState(false);
   
@@ -73,15 +76,7 @@ const FullLogFilter: React.FC<FullLogFilterProps> = ({
 
   // Format date range for display
   const formatDateRange = () => {
-    const formatDate = (date: Date) => {
-      return date.toLocaleDateString('en-US', { 
-        month: '2-digit', 
-        day: '2-digit',
-        year: 'numeric'
-      });
-    };
-    
-    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    return `${formatDateDisplay(startDate, dateFormat)} - ${formatDateDisplay(endDate, dateFormat)}`;
   };
 
   return (

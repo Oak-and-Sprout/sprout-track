@@ -2,12 +2,15 @@
 
 import React from 'react';
 import { cn } from '@/src/lib/utils';
+import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { formatDateShort } from '@/src/utils/dateFormat';
 import { reportCardStyles as s, milestoneBadgeColors } from './monthly-report-card.styles';
 import type { MilestonesSectionProps } from './monthly-report-card.types';
 
 const MilestonesSection: React.FC<MilestonesSectionProps> = ({ milestones }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
 
   return (
     <>
@@ -20,7 +23,7 @@ const MilestonesSection: React.FC<MilestonesSectionProps> = ({ milestones }) => 
           {milestones.map(m => {
             const badge = milestoneBadgeColors[m.category] || milestoneBadgeColors.CUSTOM;
             const categoryLabel = t(m.category.charAt(0) + m.category.slice(1).toLowerCase());
-            const dateStr = new Date(m.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const dateStr = formatDateShort(new Date(m.date), dateFormat);
             return (
               <div key={m.id} className={cn(s.milestoneRow, 'report-card-milestone-row')}>
                 <div

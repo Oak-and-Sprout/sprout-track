@@ -5,7 +5,9 @@ import './date-time-picker.css';
 import { Calendar } from '@/src/components/ui/calendar';
 import { TimeEntry } from '@/src/components/ui/time-entry';
 import { cn } from '@/src/lib/utils';
-import { format, isValid } from 'date-fns';
+import { isValid } from 'date-fns';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong, formatTimeDisplay } from '@/src/utils/dateFormat';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import {
@@ -45,6 +47,8 @@ export function DateTimePicker({
   disabled = false,
   placeholder = "Select date and time...",
 }: DateTimePickerProps) {
+  const { dateFormat, timeFormat } = useTimezone();
+
   // Allow for null date value
   const [date, setDate] = useState<Date | null>(() => {
     // Check if value is a valid Date
@@ -107,18 +111,18 @@ export function DateTimePicker({
   const formatDate = (date: Date | null): string => {
     if (!date || !isValid(date)) return 'Select date';
     try {
-      return format(date, 'MMM d, yyyy'); // e.g., "Apr 7, 2025"
+      return formatDateLong(date, dateFormat);
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Select date';
     }
   };
-  
+
   // Format the time for display
   const formatTime = (date: Date | null): string => {
     if (!date || !isValid(date)) return 'Select time';
     try {
-      return format(date, 'h:mm a'); // e.g., "1:55 PM"
+      return formatTimeDisplay(date, timeFormat);
     } catch (error) {
       console.error('Error formatting time:', error);
       return 'Select time';

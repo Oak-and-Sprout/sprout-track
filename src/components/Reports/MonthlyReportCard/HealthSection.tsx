@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { cn } from '@/src/lib/utils';
+import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { formatDateShort } from '@/src/utils/dateFormat';
 import { reportCardStyles as s } from './monthly-report-card.styles';
 import type { HealthSectionProps } from './monthly-report-card.types';
 
@@ -14,6 +16,7 @@ function complianceClass(pct: number): { style: string; darkClass: string } {
 
 const HealthSection: React.FC<HealthSectionProps> = ({ health }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
 
   const hasData = health.supplements.length > 0 || health.medicines.length > 0 || health.vaccines.length > 0;
 
@@ -59,7 +62,7 @@ const HealthSection: React.FC<HealthSectionProps> = ({ health }) => {
               <tr key={`vac-${i}`} className={cn(i < health.vaccines.length - 1 ? s.healthRow : s.healthRowLast, 'report-card-health-row')}>
                 <td className={cn(s.healthCellName, 'report-card-health-cell-name')}>{t('Vaccines')}</td>
                 <td className={cn(s.healthCellValue, 'report-card-health-cell-value')} colSpan={2}>
-                  {vac.name}{vac.doseNumber ? ` (${t('dose')} ${vac.doseNumber})` : ''} · {new Date(vac.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {vac.name}{vac.doseNumber ? ` (${t('dose')} ${vac.doseNumber})` : ''} · {formatDateShort(new Date(vac.date), dateFormat)}
                 </td>
               </tr>
             ))}

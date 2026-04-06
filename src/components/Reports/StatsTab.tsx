@@ -20,6 +20,7 @@ import PumpingStatsSection from './PumpingStatsSection';
 import BathStatsSection from './BathStatsSection';
 import PlayStatsSection from './PlayStatsSection';
 import { useLocalization } from '@/src/context/localization';
+import { formatDateShort } from '@/src/utils/dateFormat';
 
 /**
  * StatsTab Component
@@ -33,7 +34,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
   isLoading
 }) => {
   const { t } = useLocalization();
-  const { toLocalDate } = useTimezone();
+  const { toLocalDate, dateFormat } = useTimezone();
   const [enableBreastMilkTracking, setEnableBreastMilkTracking] = useState(true);
 
   useEffect(() => {
@@ -740,7 +741,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const avgNapDurationSeries = Object.entries(napDataByDay)
       .map(([date, data]) => ({
         date,
-        label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(date + 'T12:00:00'), dateFormat),
         value: data.count > 0 ? Math.round(data.totalMinutes / data.count) : 0,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -748,7 +749,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
     const dailyNapTotalSeries = Object.entries(napMinutesByDay)
       .map(([date, total]) => ({
         date,
-        label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(date + 'T12:00:00'), dateFormat),
         value: total,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -763,7 +764,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
       // The nightKey is the evening date (e.g., 7/12), but we display it as the morning date (7/13)
       const displayDate = new Date(nightKey + 'T12:00:00');
       displayDate.setDate(displayDate.getDate() + 1);
-      const label = displayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = formatDateShort(displayDate, dateFormat);
 
       // For night sleep, show total duration (not average per session)
       nightSleepSeries.push({

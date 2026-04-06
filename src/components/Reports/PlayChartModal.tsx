@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
 export type PlayChartMetric = 'totalByDay' | 'avgDurationByType' | 'dailyDuration';
 
@@ -55,6 +57,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
 
   const playTypeDisplayNames: Record<string, string> = {
     TUMMY_TIME: t('Tummy Time'),
@@ -95,7 +98,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     const current = new Date(startDate);
     while (current <= endDate) {
       const dayKey = current.toLocaleDateString('en-CA');
-      const label = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = formatDateShort(current, dateFormat);
       const row: Record<string, any> = { date: dayKey, label };
       for (const type of typeNames) {
         row[type] = byDay[dayKey]?.[type] || 0;
@@ -105,7 +108,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     }
 
     return { chartData: data, typeNames };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Average duration by type (single bar per type)
   const avgDurationData = useMemo(() => {
@@ -171,7 +174,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     const current = new Date(startDate);
     while (current <= endDate) {
       const dayKey = current.toLocaleDateString('en-CA');
-      const label = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = formatDateShort(current, dateFormat);
       const row: Record<string, any> = { date: dayKey, label };
       for (const type of typeNames) {
         row[type] = byDay[dayKey]?.[type] || 0;
@@ -181,7 +184,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     }
 
     return { chartData: data, typeNames };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   const getTitle = (): string => {
     switch (metric) {
@@ -198,7 +201,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   if (!metric) return null;

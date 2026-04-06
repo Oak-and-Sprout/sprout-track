@@ -20,6 +20,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
 export type FeedingChartMetric = 'bottle' | 'breast' | 'solids';
 
@@ -71,6 +73,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   // Calculate bottle feed data
   const bottleData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'bottle') {
@@ -122,7 +125,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const combinedData = sortedDays.map((dayKey) => {
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(dayKey + 'T00:00:00'), dateFormat),
         count: countsByDay[dayKey] || 0,
       };
       bottleTypes.forEach((type) => {
@@ -132,7 +135,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     });
 
     return { data: combinedData, bottleTypes, colors };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate breast feed data
   const breastData = useMemo(() => {
@@ -185,7 +188,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const sortedDays = Object.keys(countsByDay).sort();
     return sortedDays.map((dayKey) => ({
       date: dayKey,
-      label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      label: formatDateShort(new Date(dayKey + 'T00:00:00'), dateFormat),
       count: countsByDay[dayKey] || 0,
       leftAvg: leftDurationByDay[dayKey]?.count > 0 
         ? leftDurationByDay[dayKey].total / leftDurationByDay[dayKey].count 
@@ -194,7 +197,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
         ? rightDurationByDay[dayKey].total / rightDurationByDay[dayKey].count 
         : 0,
     }));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate solids feed data
   const solidsData = useMemo(() => {
@@ -245,7 +248,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const combinedData = sortedDays.map((dayKey) => {
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(dayKey + 'T00:00:00'), dateFormat),
         count: countsByDay[dayKey] || 0,
       };
       foodTypes.forEach((food) => {
@@ -255,7 +258,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     });
 
     return { data: combinedData, foodTypes, colors };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   const getTitle = (): string => {
     switch (metric) {
@@ -272,7 +275,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   if (!metric) return null;

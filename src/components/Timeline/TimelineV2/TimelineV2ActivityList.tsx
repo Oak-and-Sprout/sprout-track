@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/src/context/theme';
 import { Label } from '@/src/components/ui/label';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
 
 import '../timeline-activity-list.css';
 
@@ -19,8 +21,8 @@ const TimelineV2ActivityList = ({
 }: TimelineActivityListProps) => {
   
 
-  const { t } = useLocalization();  
-
+  const { t } = useLocalization();
+  const { dateFormat, timeFormat } = useTimezone();
   const { theme } = useTheme();
 
   const translateNotes = (notes: string): string => {
@@ -170,46 +172,22 @@ const TimelineV2ActivityList = ({
                               const endDateStr = endTime.toDateString();
                               const isOvernight = startDateStr !== endDateStr;
                               
-                              const startTimeStr = startTime.toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true,
-                              });
-                              
-                              const endTimeStr = endTime.toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true,
-                              });
-                              
+                              const startTimeStr = formatTimeDisplay(startTime, timeFormat);
+                              const endTimeStr = formatTimeDisplay(endTime, timeFormat);
+
                               if (isOvernight) {
                                 // Show dates for overnight entries
-                                const startDateFormatted = startTime.toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                });
-                                const endDateFormatted = endTime.toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                });
+                                const startDateFormatted = formatDateShort(startTime, dateFormat);
+                                const endDateFormatted = formatDateShort(endTime, dateFormat);
                                 timeStr = `${startDateFormatted} ${startTimeStr} - ${endDateFormatted} ${endTimeStr}`;
                               } else {
                                 timeStr = `${startTimeStr} - ${endTimeStr}`;
                               }
                             } else {
-                              const startTimeStr = startTime.toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true,
-                              });
-                              timeStr = startTimeStr;
+                              timeStr = formatTimeDisplay(startTime, timeFormat);
                             }
                           } else {
-                            timeStr = activityTime.toLocaleTimeString('en-US', {
-                              hour: 'numeric',
-                              minute: '2-digit',
-                              hour12: true,
-                            });
+                            timeStr = formatTimeDisplay(activityTime, timeFormat);
                           }
                           
                           const getActivityColor = (bgClass: string) => {

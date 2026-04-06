@@ -2,12 +2,15 @@
 
 import React from 'react';
 import { cn } from '@/src/lib/utils';
+import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { formatDateShort } from '@/src/utils/dateFormat';
 import { reportCardStyles as s } from './monthly-report-card.styles';
 import type { DiapersSectionProps } from './monthly-report-card.types';
 
 const DiapersSection: React.FC<DiapersSectionProps> = ({ diapers }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
 
   return (
     <>
@@ -38,7 +41,7 @@ const DiapersSection: React.FC<DiapersSectionProps> = ({ diapers }) => {
           <span className={s.doctorCalloutBold}>{t('Note for doctor:')}</span>{' '}
           {diapers.colorFlags.length} {t('instances of')}{' '}
           {Array.from(new Set(diapers.colorFlags.map(f => f.color.toLowerCase()))).join(', ')}-{t('colored stool logged')}{' '}
-          ({diapers.colorFlags.map(f => new Date(f.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })).join(', ')}).
+          ({diapers.colorFlags.map(f => formatDateShort(new Date(f.date), dateFormat)).join(', ')}).
         </div>
       )}
     </>

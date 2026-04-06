@@ -31,6 +31,8 @@ import { FilterType } from '../types';
 import { ActivityType } from '../types';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong } from '@/src/utils/dateFormat';
 import { convertVolume } from '@/src/utils/unit-conversion';
 
 import './TimelineV2DailyStats.css';
@@ -78,6 +80,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   enableBreastMilkTracking = true
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -636,12 +639,8 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     return tiles;
   }, [activities, date, t]);
 
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
+  const formatDateDisplay = (date: Date): string => {
+    return formatDateLong(date, dateFormat);
   };
 
   return (
@@ -667,7 +666,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
                   size="sm"
                   className="h-8 px-3 text-sm font-medium text-gray-800 hover:bg-gray-100 min-w-[140px]"
                 >
-                  {formatDate(date)}
+                  {formatDateDisplay(date)}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="p-0 w-auto" align="start">

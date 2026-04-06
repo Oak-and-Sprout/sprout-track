@@ -19,6 +19,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay, DateFormatSetting } from '@/src/utils/dateFormat';
 
 export type BathChartMetric = 'total' | 'avgPerWeek' | 'soapShampoo';
 
@@ -42,11 +44,11 @@ function getWeekKey(date: Date): string {
 }
 
 // Helper function to format week label
-function formatWeekLabel(weekKey: string): string {
+function formatWeekLabel(weekKey: string, dateFormat: DateFormatSetting): string {
   const date = new Date(weekKey + 'T00:00:00');
   const endDate = new Date(date);
   endDate.setDate(endDate.getDate() + 6); // Sunday of the week
-  return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  return `${formatDateShort(date, dateFormat)} - ${formatDateShort(endDate, dateFormat)}`;
 }
 
 /**
@@ -62,6 +64,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   // Calculate daily bath counts
   const dailyData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'total') {
@@ -90,11 +93,11 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
     return Object.entries(countsByDay)
       .map(([date, count]) => ({
         date,
-        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(date + 'T00:00:00'), dateFormat),
         value: count,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate weekly average bath counts
   const weeklyAvgData = useMemo(() => {
@@ -154,11 +157,11 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
       
       return {
         weekKey,
-        label: formatWeekLabel(weekKey),
+        label: formatWeekLabel(weekKey, dateFormat),
         value: avgPerWeek,
       };
     });
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate weekly soap/shampoo breakdown
   const soapShampooData = useMemo(() => {
@@ -202,12 +205,12 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
     const weekKeys = Object.keys(bathsByWeek).sort();
     return weekKeys.map((weekKey) => ({
       weekKey,
-      label: formatWeekLabel(weekKey),
+      label: formatWeekLabel(weekKey, dateFormat),
       soap: bathsByWeek[weekKey].soap,
       shampoo: bathsByWeek[weekKey].shampoo,
       both: bathsByWeek[weekKey].both,
     }));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   const getTitle = (): string => {
     switch (metric) {
@@ -224,7 +227,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   if (!metric) return null;

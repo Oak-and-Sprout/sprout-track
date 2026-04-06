@@ -16,6 +16,8 @@ import {
 } from 'recharts';
 import { DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateDisplay } from '@/src/utils/dateFormat';
 
 export type SleepChartMetric = 'avgNapDuration' | 'dailyNapTotal' | 'nightSleep' | 'nightWakings';
 
@@ -72,10 +74,11 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const title = getChartTitle(metric, t);
   const description =
     dateRange.from && dateRange.to
-      ? `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+      ? `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`
       : undefined;
 
   return (

@@ -4,6 +4,8 @@ import { CalendarEventItemProps } from './calendar-event-item.types';
 import { calendarEventItemStyles as styles } from './calendar-event-item.styles';
 import { CalendarEventType } from '@prisma/client';
 import { MapPin, Clock, RepeatIcon, Users } from 'lucide-react';
+import { useTimezone } from '@/app/context/timezone';
+import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
 import './calendar-event-item.css';
 
 /**
@@ -21,46 +23,39 @@ export const CalendarEventItem: React.FC<CalendarEventItemProps> = ({
   onClick,
   className,
 }) => {
+  const { dateFormat, timeFormat } = useTimezone();
+
   // Format time for display
   const formatEventTime = (startTimeStr: string, allDay: boolean, endTimeStr?: string | null) => {
     const startTime = new Date(startTimeStr);
     const endTime = endTimeStr ? new Date(endTimeStr) : undefined;
     if (allDay) return 'All day';
-    
-    const formatOptions: Intl.DateTimeFormatOptions = {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    };
-    
-    const startFormatted = startTime.toLocaleTimeString('en-US', formatOptions);
-    
+
+    const startFormatted = formatTimeDisplay(startTime, timeFormat);
+
     if (!endTime) return startFormatted;
-    
-    const endFormatted = endTime.toLocaleTimeString('en-US', formatOptions);
+
+    const endFormatted = formatTimeDisplay(endTime, timeFormat);
     return `${startFormatted} - ${endFormatted}`;
   };
-  
+
   // Format date for display
   const formatEventDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     // Check if the event is today or tomorrow
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     } else if (date.toDateString() === tomorrow.toDateString()) {
       return 'Tomorrow';
     }
-    
+
     // Otherwise, return the formatted date
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+    return `${weekday}, ${formatDateShort(date, dateFormat)}`;
   };
   
   // Get color indicator class based on event type
