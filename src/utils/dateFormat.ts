@@ -77,16 +77,18 @@ export function formatDateShort(
     case 'DD/MM/YYYY':
       return `${day} ${month}`;
     case 'YYYY-MM-DD': {
-      // Use numeric month for ISO-style short display
+      // Include year for ISO-style display since the year prefix is core to the format
       const numOptions: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         ...(timezone ? { timeZone: timezone } : {}),
       };
       const numParts = new Intl.DateTimeFormat('en-US', numOptions).formatToParts(date);
+      const numYear = numParts.find(p => p.type === 'year')?.value || '';
       const numMonth = numParts.find(p => p.type === 'month')?.value || '';
       const numDay = numParts.find(p => p.type === 'day')?.value || '';
-      return `${numMonth}-${numDay}`;
+      return `${numYear}-${numMonth}-${numDay}`;
     }
     case 'MM/DD/YYYY':
     default:

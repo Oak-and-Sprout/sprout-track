@@ -15,6 +15,8 @@ import {
 import { Switch } from '@/src/components/ui/switch';
 import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateTimeDisplay } from '@/src/utils/dateFormat';
 import {
   checkPushSupport,
   requestNotificationPermission,
@@ -75,6 +77,7 @@ export default function NotificationSettings({
   loading: parentLoading,
 }: NotificationSettingsProps) {
   const { t } = useLocalization();
+  const { dateFormat, timeFormat } = useTimezone();
   const { showToast } = useToast();
   const [subscriptions, setSubscriptions] = useState<PushSubscription[]>([]);
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
@@ -401,13 +404,13 @@ export default function NotificationSettings({
                     </Label>
                     <div className="text-sm text-gray-500">
                       {subscription.lastSuccessAt
-                        ? `${t('Last Success')}: ${new Date(
+                        ? `${t('Last Success')}: ${formatDateTimeDisplay(new Date(
                             subscription.lastSuccessAt
-                          ).toLocaleString()}`
+                          ), dateFormat, timeFormat)}`
                         : subscription.lastFailureAt
-                        ? `${t('Last Failure')}: ${new Date(
+                        ? `${t('Last Failure')}: ${formatDateTimeDisplay(new Date(
                             subscription.lastFailureAt
-                          ).toLocaleString()}`
+                          ), dateFormat, timeFormat)}`
                         : ''}
                       {subscription.failureCount > 0 && (
                         <span className="ml-2 text-red-600">

@@ -5,6 +5,8 @@ import { cn } from '@/src/lib/utils';
 import { ChevronLeft, Send, MessageSquare, X, ImagePlus } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatTimeDisplay, formatDateShort, type TimeFormatSetting, type DateFormatSetting } from '@/src/utils/dateFormat';
 import { chatConversationStyles as styles } from './chat-conversation.styles';
 import type { ChatConversationProps, ChatReplyBarProps, ChatMessage } from './chat-conversation.types';
 import type { FeedbackResponse } from '@/app/api/types';
@@ -73,14 +75,14 @@ function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-function formatTime(dateStr: string): string {
+function formatTime(dateStr: string, timeFormat: TimeFormatSetting): string {
   const date = new Date(dateStr);
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return formatTimeDisplay(date, timeFormat);
 }
 
-function formatDateLabel(dateStr: string): string {
+function formatDateLabel(dateStr: string, dateFormat: DateFormatSetting): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDateShort(date, dateFormat);
 }
 
 function isSameDay(d1: string, d2: string): boolean {
@@ -104,6 +106,7 @@ export function ChatConversation({
 }: ChatConversationProps) {
   const { theme } = useTheme();
   const { t } = useLocalization();
+  const { dateFormat, timeFormat } = useTimezone();
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -289,7 +292,7 @@ export function ChatConversation({
             <div key={msg.id}>
               {showDateBreak && (
                 <div className={cn(styles.dateBreak, 'chat-conversation-date-break')}>
-                  {formatDateLabel(msg.date)}
+                  {formatDateLabel(msg.date, dateFormat)}
                 </div>
               )}
               <div className={cn(
@@ -392,7 +395,7 @@ export function ChatConversation({
                   'chat-conversation-timestamp',
                   isMine ? styles.timestampMine : styles.timestampTheirs,
                 )}>
-                  {formatTime(msg.date)}
+                  {formatTime(msg.date, timeFormat)}
                 </span>
               </div>
             </div>

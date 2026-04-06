@@ -17,6 +17,8 @@ import {
 import { Badge } from '@/src/components/ui/badge';
 import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong } from '@/src/utils/dateFormat';
 
 interface ApiKeyDisplay {
   id: string;
@@ -38,6 +40,7 @@ interface ApiKeyManagerProps {
 
 export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const { showToast } = useToast();
   const [apiKeys, setApiKeys] = useState<ApiKeyDisplay[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,7 +211,7 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString();
+    return formatDateLong(new Date(dateStr), dateFormat);
   };
 
   return (

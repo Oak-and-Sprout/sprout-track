@@ -26,6 +26,8 @@ import { format } from 'date-fns';
 import { cn } from '@/src/lib/utils';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong } from '@/src/utils/dateFormat';
 
 import './FamilyForm.css';
 
@@ -64,6 +66,7 @@ export default function FamilyForm({
   onFamilyChange,
 }: FamilyFormProps) {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const router = useRouter();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -1038,7 +1041,7 @@ export default function FamilyForm({
                       disabled={loading}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {babyBirthDate ? format(babyBirthDate, "PPP") : t("Select date")}
+                      {babyBirthDate ? formatDateLong(babyBirthDate, dateFormat) : t("Select date")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-[200]" align="start">

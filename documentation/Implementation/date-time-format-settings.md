@@ -69,7 +69,7 @@ Created pure utility file with core formatting logic using `Intl.DateTimeFormat`
 
 ---
 
-## Phase 3: Update Formatting Call Sites
+## Phase 3: Update Formatting Call Sites -- COMPLETED
 
 ### Category A: Automatic Updates (27 files — NO code changes needed)
 
@@ -211,13 +211,37 @@ Run `node scripts/check-missing-translations.js` to propagate to other language 
 
 ---
 
-## Implementation Order
+## Additional Files Updated (discovered during implementation)
 
-1. **Phase 1** — Schema + API (foundation, everything depends on this)
-2. **Phase 2.1** — Create `src/utils/dateFormat.ts` (pure utility, no dependencies)
-3. **Phase 2.2** — Extend `TimezoneContext` (enables automatic updates for 27 files)
-4. **Phase 4** — Settings UI (allows testing the setting)
-5. **Phase 3** — Update hardcoded call sites (Category B files, by priority)
+Beyond the originally planned Category B files, these additional files were updated:
+
+**Forms:**
+- `src/components/forms/MedicineForm/ActiveDosesTab.tsx` — last dose date/time display
+- `src/components/forms/SettingsForm/ApiKeyManager.tsx` — API key date display
+- `src/components/forms/BabyForm/BabyForm.tsx` — birth date display (was using date-fns `PPP`)
+- `src/components/forms/FamilyForm/index.tsx` — birth date display (was using date-fns `PPP`)
+- `src/components/forms/AppConfigForm/index.tsx` — cron run and config timestamps
+- `src/components/forms/SettingsForm/NotificationSettings.tsx` — subscription timestamps
+
+**UI Components:**
+- `src/components/ui/calendar/index.tsx` — date display and aria-labels
+- `src/components/ui/chat-conversation/index.tsx` — message time and date labels
+- `src/components/ui/chat-thread-list/index.tsx` — last activity date
+- `src/components/ui/side-nav/index.tsx` — trial ending date
+
+**NOT changed (input value formats that must stay ISO):**
+- `type="datetime-local"` inputs in SleepModal, FeedModal, DiaperModal, NoteModal
+- `type="date"` inputs in BabyModal, ApiKeyManager, RecurrenceSelector
+- `format(date, "yyyy-MM-dd'T'HH:mm")` in CalendarEventForm (ISO for datetime-local value)
+- Console.log statements in PumpForm (debug only)
+
+## Implementation Order — COMPLETED
+
+1. **Phase 1** — Schema + API ✓
+2. **Phase 2.1** — Create `src/utils/dateFormat.ts` ✓
+3. **Phase 2.2** — Extend `TimezoneContext` ✓
+4. **Phase 4** — Settings UI ✓
+5. **Phase 3** — Update hardcoded call sites ✓
 
 ## Testing Checklist
 

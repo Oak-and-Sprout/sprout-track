@@ -5,6 +5,8 @@ import { cn } from '@/src/lib/utils';
 import { Plus, X, MessageSquare } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort } from '@/src/utils/dateFormat';
 import { chatThreadListStyles as styles } from './chat-thread-list.styles';
 import type { ChatThreadListProps } from './chat-thread-list.types';
 import './chat-thread-list.css';
@@ -26,6 +28,7 @@ export function ChatThreadList({
 }: ChatThreadListProps) {
   const { theme } = useTheme();
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
 
   const getLastSenderLabel = (thread: typeof threads[0]): string => {
     const replies = thread.replies || [];
@@ -58,7 +61,7 @@ export function ChatThreadList({
     if (diffMins < 60) return `${diffMins}m`;
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return formatDateShort(date, dateFormat);
   };
 
   return (

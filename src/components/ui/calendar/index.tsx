@@ -18,6 +18,8 @@ import { CalendarProps, CalendarPage } from './calendar.types';
 import { MonthSelectorPage } from './MonthSelectorPage';
 import { YearSelectorPage } from './YearSelectorPage';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong } from '@/src/utils/dateFormat';
 
 /**
  * Calendar component
@@ -74,6 +76,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
     ...props 
   }, ref) => {
     const { t } = useLocalization();
+    const { dateFormat } = useTimezone();
     
     // State for the currently displayed month
     const [month, setMonth] = React.useState(() => {
@@ -211,7 +214,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
     // Function to format date for display
     const formatDate = (date: Date | null | undefined) => {
       if (!date) return '';
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return formatDateLong(date, dateFormat);
     };
 
     // Function to handle month selection
@@ -412,7 +415,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                       day.isDisabled && "calendar-day-disabled",
                       day.isOutsideMonth && "calendar-day-outside"
                     )}
-                    aria-label={day.date.toLocaleDateString()}
+                    aria-label={formatDateLong(day.date, dateFormat)}
                     aria-selected={(day.isSelected || day.isRangeStart || day.isRangeEnd) ? "true" : undefined}
                     tabIndex={day.isSelected || day.isRangeStart || day.isRangeEnd || (initialFocus && index === 0) ? 0 : -1}
                   >
