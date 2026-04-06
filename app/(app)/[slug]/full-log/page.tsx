@@ -109,6 +109,7 @@ function FullLogPage() {
             startDate={startDate}
             endDate={endDate}
             onDateRangeChange={handleDateRangeChange}
+            babyId={selectedBaby?.id}
           />
         </div>
       ) : (
