@@ -1,6 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import {
+  DateFormatSetting,
+  TimeFormatSetting,
+  formatTimeDisplay,
+  formatDateLong,
+  formatDateTimeDisplay as formatDateTimeUtil,
+} from '@/src/utils/dateFormat';
 
 /**
  * Interface for the timezone context
@@ -97,6 +104,21 @@ interface TimezoneContextType {
    * Force refresh the timezone information
    */
   refreshTimezone: () => void;
+
+  /**
+   * The family's preferred date format setting
+   */
+  dateFormat: DateFormatSetting;
+
+  /**
+   * The family's preferred time format setting
+   */
+  timeFormat: TimeFormatSetting;
+
+  /**
+   * Update the date and time format settings (called from settings UI for immediate update)
+   */
+  setDateTimeFormats: (dateFormat: DateFormatSetting, timeFormat: TimeFormatSetting) => void;
 }
 
 const TimezoneContext = createContext<TimezoneContextType | undefined>(undefined);
@@ -108,6 +130,8 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userTimezone, setUserTimezone] = useState<string>('UTC');
   const [isDST, setIsDST] = useState<boolean>(false);
+  const [dateFormat, setDateFormat] = useState<DateFormatSetting>('MM/DD/YYYY');
+  const [timeFormat, setTimeFormat] = useState<TimeFormatSetting>('12h');
 
   /**
    * Detect and set the user's timezone and DST status
@@ -145,6 +169,38 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
     detectTimezone();
   }, [detectTimezone]);
   
+  // Fetch date/time format settings from the API
+  useEffect(() => {
+    const fetchFormatSettings = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        if (!token) return;
+
+        const response = await fetch('/api/settings', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+
+        const result = await response.json();
+        if (result.success && result.data) {
+          if (result.data.dateFormat) setDateFormat(result.data.dateFormat);
+          if (result.data.timeFormat) setTimeFormat(result.data.timeFormat);
+        }
+      } catch (error) {
+        console.error('Error fetching date/time format settings:', error);
+      }
+    };
+    fetchFormatSettings();
+  }, []);
+
+  /**
+   * Update the date and time format settings immediately (called from settings UI)
+   */
+  const setDateTimeFormats = useCallback((newDateFormat: DateFormatSetting, newTimeFormat: TimeFormatSetting) => {
+    setDateFormat(newDateFormat);
+    setTimeFormat(newTimeFormat);
+  }, []);
+
   // Refresh timezone when window gains focus (in case user changed system timezone)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -181,13 +237,19 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
    * Format an ISO date string in the user's timezone with specified format options
    */
   const formatDate = (
-    isoString: string | null | undefined, 
-    formatOptions: Intl.DateTimeFormatOptions = {
+    isoString: string | null | undefined,
+    formatOptions?: Intl.DateTimeFormatOptions
+  ): string => {
+    // Apply format-aware defaults when no explicit options are passed
+    const options: Intl.DateTimeFormatOptions = formatOptions ?? {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
+      hour12: timeFormat === '12h',
+    };
+    // If caller provided options with hour but not hour12, apply the setting
+    if (formatOptions && 'hour' in formatOptions && formatOptions.hour12 === undefined) {
+      options.hour12 = timeFormat === '12h';
     }
-  ): string => {
     if (!isoString) return '';
     
     try {
@@ -201,7 +263,7 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
       
       // Use the Intl.DateTimeFormat API which properly handles DST
       const formatter = new Intl.DateTimeFormat('en-US', {
-        ...formatOptions,
+        ...options,
         timeZone: userTimezone
       });
       
@@ -223,36 +285,42 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
    * Format a time-only representation of an ISO date string in the user's timezone
    */
   const formatTime = (isoString: string | null | undefined): string => {
-    return formatDate(isoString, {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return '';
+      return formatTimeDisplay(date, timeFormat, userTimezone);
+    } catch {
+      return '';
+    }
   };
 
   /**
    * Format a date-only representation of an ISO date string in the user's timezone
    */
   const formatDateOnly = (isoString: string | null | undefined): string => {
-    return formatDate(isoString, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return '';
+      return formatDateLong(date, dateFormat, userTimezone);
+    } catch {
+      return '';
+    }
   };
 
   /**
    * Format a date and time representation of an ISO date string in the user's timezone
    */
   const formatDateTime = (isoString: string | null | undefined): string => {
-    return formatDate(isoString, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return '';
+      return formatDateTimeUtil(date, dateFormat, timeFormat, userTimezone);
+    } catch {
+      return '';
+    }
   };
 
   /**
@@ -466,7 +534,10 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
       toLocalDate,
       toUTCString,
       getCurrentUTCString,
-      refreshTimezone
+      refreshTimezone,
+      dateFormat,
+      timeFormat,
+      setDateTimeFormats
     }}>
       {children}
     </TimezoneContext.Provider>

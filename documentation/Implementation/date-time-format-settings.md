@@ -44,47 +44,28 @@ Migration applied: `20260406153823_add_date_time_format_settings`
 
 ---
 
-## Phase 2: Central Formatting Utility
+## Phase 2: Central Formatting Utility -- COMPLETED
 
-### 2.1 Create `src/utils/dateFormat.ts`
+### 2.1 Create `src/utils/dateFormat.ts` -- COMPLETED
 
-New pure utility file (no React dependencies) with the core formatting logic:
+Created pure utility file with core formatting logic using `Intl.DateTimeFormat` with `formatToParts()`:
 
-```typescript
-export type DateFormatSetting = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
-export type TimeFormatSetting = '12h' | '24h';
+- `formatTimeDisplay()` — e.g. "1:30 PM" or "13:30"
+- `formatDateDisplay()` — e.g. "04/06/2026", "06/04/2026", "2026-04-06"
+- `formatDateShort()` — e.g. "Apr 6", "6 Apr", "04-06"
+- `formatDateLong()` — e.g. "Apr 6, 2026", "6 Apr 2026", "2026-04-06"
+- `formatDateTimeDisplay()` — combined date and time
 
-// Core formatting functions using Intl.DateTimeFormat with formatToParts()
-export function formatTimeDisplay(date: Date, timeFormat: TimeFormatSetting, timezone?: string): string
-export function formatDateDisplay(date: Date, dateFormat: DateFormatSetting, timezone?: string): string
-export function formatDateShort(date: Date, dateFormat: DateFormatSetting, timezone?: string): string
-export function formatDateTimeDisplay(date: Date, dateFormat: DateFormatSetting, timeFormat: TimeFormatSetting, timezone?: string): string
-```
-
-**Implementation approach:** Use `Intl.DateTimeFormat` with `formatToParts()` to extract day/month/year parts, then reorder according to the `dateFormat` setting. For time, use `hour12: true/false` based on `timeFormat`.
-
-### 2.2 Extend TimezoneContext
+### 2.2 Extend TimezoneContext -- COMPLETED
 
 **File:** `app/context/timezone.tsx`
 
-The `TimezoneProvider` already provides `formatDate()`, `formatTime()`, `formatDateOnly()`, and `formatDateTime()` to **27 components**. Extending it is the highest-leverage change.
-
-**Changes:**
-1. Add state for `dateFormat` and `timeFormat` (defaults: `'MM/DD/YYYY'`, `'12h'`)
-2. Fetch `/api/settings` on mount to get family format preferences (with auth token from localStorage)
-3. Expose `dateFormat`, `timeFormat`, and `setDateTimeFormats()` in context value
-4. Update existing formatting methods to respect format settings:
-   - `formatTime()` (line 225-231): Use `hour12: timeFormat === '12h'`
-   - `formatDateOnly()` (line 236-241): Use `formatDateDisplay()` from utility
-   - `formatDateTime()` (line 247-256): Use `formatDateTimeDisplay()` from utility
-   - `formatDate()` (line 183-220): When no explicit `formatOptions` passed, use format-aware defaults; when explicit options ARE passed, still apply `hour12` from `timeFormat`
-
-**New context interface additions:**
-```typescript
-dateFormat: DateFormatSetting;
-timeFormat: TimeFormatSetting;
-setDateTimeFormats: (dateFormat: DateFormatSetting, timeFormat: TimeFormatSetting) => void;
-```
+- Added `dateFormat`/`timeFormat` state with defaults
+- Fetches `/api/settings` on mount with auth token to get family preferences
+- Exposes `dateFormat`, `timeFormat`, `setDateTimeFormats()` in context
+- Updated `formatTime()`, `formatDateOnly()`, `formatDateTime()` to use utility functions
+- Updated `formatDate()` to apply `hour12` from `timeFormat` when not explicitly set
+- ConfigTab calls `setDateTimeFormats()` on change for immediate context update (no page reload)
 
 ---
 

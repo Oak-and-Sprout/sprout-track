@@ -18,7 +18,9 @@ import {
 import { ShareButton } from '@/src/components/ui/share-button';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
 import { Settings } from '@/app/api/types';
+import { DateFormatSetting, TimeFormatSetting } from '@/src/utils/dateFormat';
 
 interface FamilyData {
   id: string;
@@ -87,6 +89,7 @@ export default function ConfigTab({
 }: ConfigTabProps) {
   const { t } = useLocalization();
   const router = useRouter();
+  const { setDateTimeFormats } = useTimezone();
 
   return (
     <div className="space-y-6">
@@ -327,7 +330,10 @@ export default function ConfigTab({
             <Label className="form-label">{t('Date Format')}</Label>
             <Select
               value={(settings as any)?.dateFormat || 'MM/DD/YYYY'}
-              onValueChange={(value) => onSettingsChange({ dateFormat: value } as any)}
+              onValueChange={(value) => {
+                onSettingsChange({ dateFormat: value } as any);
+                setDateTimeFormats(value as DateFormatSetting, ((settings as any)?.timeFormat || '12h') as TimeFormatSetting);
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -343,7 +349,10 @@ export default function ConfigTab({
             <Label className="form-label">{t('Time Format')}</Label>
             <Select
               value={(settings as any)?.timeFormat || '12h'}
-              onValueChange={(value) => onSettingsChange({ timeFormat: value } as any)}
+              onValueChange={(value) => {
+                onSettingsChange({ timeFormat: value } as any);
+                setDateTimeFormats(((settings as any)?.dateFormat || 'MM/DD/YYYY') as DateFormatSetting, value as TimeFormatSetting);
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
