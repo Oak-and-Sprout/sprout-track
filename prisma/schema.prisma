@@ -486,6 +486,8 @@ model Settings {
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
   enableBreastMilkTracking Boolean @default(true) // Enable breast milk inventory tracking (stored/fed/discarded actions, adjustments, balance)
   includeSolidsInFeedTimer Boolean @default(true) // Include solid food feedings when calculating time since last feed
+  dateFormat          String   @default("MM/DD/YYYY") // "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD"
+  timeFormat          String   @default("12h") // "12h" | "24h"
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
