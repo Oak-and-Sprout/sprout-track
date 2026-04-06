@@ -1,5 +1,11 @@
 import { Settings } from '@prisma/client';
 import {
+  formatTimeDisplay,
+  formatDateShort,
+  DateFormatSetting,
+  TimeFormatSetting,
+} from '@/src/utils/dateFormat';
+import {
   Moon,
   Icon,
   Edit,
@@ -134,11 +140,10 @@ export const formatTime = (date: string, settings: Settings | null, includeDate:
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) return 'Invalid Date';
 
-    const timeStr = dateObj.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    const tf = ((settings as any)?.timeFormat || '12h') as TimeFormatSetting;
+    const df = ((settings as any)?.dateFormat || 'MM/DD/YYYY') as DateFormatSetting;
+
+    const timeStr = formatTimeDisplay(dateObj, tf);
 
     if (!includeDate) return timeStr;
 
@@ -153,10 +158,7 @@ export const formatTime = (date: string, settings: Settings | null, includeDate:
       ? (t ? t('Today') : 'Today')
       : isYesterday
       ? (t ? t('Yesterday') : 'Yesterday')
-      : dateObj.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        }).replace(/(\d+)$/, '$1,');
+      : formatDateShort(dateObj, df) + ',';
     return `${dateStr} ${timeStr}`;
   } catch (error) {
     console.error('Error formatting time:', error);

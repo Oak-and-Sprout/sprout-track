@@ -4,7 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FileDown, Loader2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useBaby } from '@/app/context/baby';
+import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { formatDateLong } from '@/src/utils/dateFormat';
 import { Button } from '@/src/components/ui/button';
 import { reportCardStyles as s } from './monthly-report-card.styles';
 import type { MonthlyReportCardProps, MonthlyReport } from './monthly-report-card.types';
@@ -24,6 +26,7 @@ import './monthly-report-card.css';
 
 const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const { selectedBaby } = useBaby();
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -255,7 +258,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
           </p>
           {reportData && (
             <p className={cn(s.headerAge, 'report-card-header-age')}>
-              {t('Born:')} {new Date(reportData.baby.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {t('Born:')} {formatDateLong(new Date(reportData.baby.birthDate), dateFormat)}
               {' · '}
               {reportData.baby.ageAtEndOfMonth.months < 1
                 ? `${Math.max(1, Math.round((reportData.baby.ageAtEndOfMonth.months * 4.33) + (reportData.baby.ageAtEndOfMonth.days / 7)))} ${t('weeks old')}`

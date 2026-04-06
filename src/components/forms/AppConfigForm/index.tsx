@@ -24,6 +24,8 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { EmailProviderType } from '@prisma/client';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateTimeDisplay } from '@/src/utils/dateFormat';
 
 interface AppConfigFormProps {
   isOpen: boolean;
@@ -81,6 +83,7 @@ export default function AppConfigForm({
   onClose 
 }: AppConfigFormProps) {
   const { t } = useLocalization();
+  const { dateFormat, timeFormat } = useTimezone();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [appConfig, setAppConfig] = useState<AppConfigData | null>(null);
@@ -1111,7 +1114,7 @@ export default function AppConfigForm({
                             {notificationStatus.lastCronRun ? (
                               <div className="flex items-center gap-1">
                                 <Badge variant={notificationStatus.lastCronRun.success ? 'success' : 'warning'}>
-                                  {new Date(notificationStatus.lastCronRun.timestamp!).toLocaleString()}
+                                  {formatDateTimeDisplay(new Date(notificationStatus.lastCronRun.timestamp!), dateFormat, timeFormat)}
                                 </Badge>
                                 {notificationStatus.lastCronRun.notificationsSent > 0 && (
                                   <Badge variant="info">
@@ -1169,7 +1172,7 @@ export default function AppConfigForm({
               {/* Last Updated Info */}
               {appConfig && (
                 <div className="text-xs text-gray-500 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  {t('Last updated:')} {new Date(appConfig.updatedAt).toLocaleString()}
+                  {t('Last updated:')} {formatDateTimeDisplay(new Date(appConfig.updatedAt), dateFormat, timeFormat)}
                 </div>
               )}
             </>

@@ -1,0 +1,65 @@
+/* Dark mode overrides for mobile card views */
+
+html.dark .mobile-card {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+  border-color: #374151 !important;
+}
+
+html.dark .mobile-card:hover {
+  background-color: rgba(31, 41, 55, 0.98) !important;
+}
+
+html.dark .mobile-card-name {
+  color: #e5e7eb !important;
+}
+
+html.dark .mobile-card-meta {
+  color: #9ca3af !important;
+}
+
+html.dark .mobile-detail-label {
+  color: #9ca3af !important;
+}
+
+html.dark .mobile-detail-value {
+  color: #e5e7eb !important;
+}
+
+/* Dark mode status badges */
+html.dark .mobile-status-badge {
+  opacity: 0.9;
+}
+
+/* Dark mode sort button - matches table-search-dark styles */
+html.dark .mobile-sort-button {
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #6b7280 !important; /* gray-500 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .mobile-sort-button:hover {
+  background-color: #4b5563 !important; /* gray-600 */
+  border-color: #9ca3af !important; /* gray-400 */
+}
+
+/* Dark mode confirmation banner */
+html.dark .mobile-confirm-banner {
+  background-color: rgba(127, 29, 29, 0.2) !important;
+  border-color: #991b1b !important;
+}
+
+html.dark .mobile-confirm-banner p {
+  color: #fca5a5 !important;
+}
+
+/* Dark mode sort badge on cards */
+html.dark .mobile-sort-badge {
+  border-color: #4b5563 !important;
+  color: #9ca3af !important;
+}
+
+/* Dark mode caretaker rows */
+html.dark .mobile-caretaker-row {
+  border-color: #374151 !important;
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}

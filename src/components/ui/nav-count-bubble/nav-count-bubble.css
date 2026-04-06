@@ -1,0 +1,10 @@
+/* Dark mode overrides for NavCountBubble */
+html.dark .nav-count-bubble-default {
+  background-color: #0d9488; /* teal-600 */
+  color: #ffffff;
+}
+
+html.dark .nav-count-bubble-accent {
+  background-color: #d97706; /* amber-600 */
+  color: #ffffff;
+}

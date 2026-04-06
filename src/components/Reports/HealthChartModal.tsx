@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import { MedicineLogActivity, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
 interface HealthChartModalProps {
   open: boolean;
@@ -41,6 +43,7 @@ const HealthChartModal: React.FC<HealthChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
 
   // Build chart data: one entry per day in range, stacked bars per medicine
   const { chartData, medicineNames } = useMemo(() => {
@@ -76,7 +79,7 @@ const HealthChartModal: React.FC<HealthChartModalProps> = ({
     const current = new Date(startDate);
     while (current <= endDate) {
       const dayKey = current.toLocaleDateString('en-CA');
-      const label = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = formatDateShort(current, dateFormat);
       const row: Record<string, any> = { date: dayKey, label };
       for (const name of nameList) {
         row[name] = byDay[dayKey]?.[name] || 0;
@@ -90,7 +93,7 @@ const HealthChartModal: React.FC<HealthChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   return (
@@ -123,7 +126,7 @@ const HealthChartModal: React.FC<HealthChartModalProps> = ({
                 <RechartsTooltip
                   labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
-                <Legend />
+                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                 {medicineNames.map((name, i) => (
                   <Bar
                     key={name}

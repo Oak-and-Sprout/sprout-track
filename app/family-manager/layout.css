@@ -4,10 +4,11 @@
 .family-manager-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* Header stays at top */
+/* Header stays at top (mobile only) */
 .family-manager-header {
   position: sticky;
   top: 0;
@@ -15,95 +16,86 @@
   flex-shrink: 0;
 }
 
-/* Main content area - scrollable between header and footer */
+/* Main content area */
 .family-manager-main {
   flex: 1;
-  overflow-y: auto;
-  padding-bottom: 80px; /* Space for fixed footer */
+  overflow: hidden; /* children manage their own scrolling */
+  background-color: #e5e7eb; /* gray-200 */
 }
 
-/* Main content area - scrollable between header and footer */
-html.dark .family-manager-main {
-  background-color: rgba(31, 41, 55, 0.95); /* gray-800 with opacity - matches card.css */
-}
-
-/* Fixed footer bar at bottom */
-.family-manager-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  background-color: white;
-  border-top: 1px solid #e5e7eb; /* gray-200 */
-  padding: 1rem;
-  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+/* Page container - fills available height */
+.family-manager-page {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
-/* Dark mode footer styles */
-html.dark .family-manager-footer {
-  background-color: #374151; /* gray-700 */
-  border-color: #4b5563; /* gray-600 */
-  color: #e5e7eb; /* gray-200 */
-}
-
-/* Logout button styles */
-.family-manager-logout-button {
+/* Search bar area */
+.family-manager-search {
+  flex-shrink: 0;
+  padding: 1rem;
+  border-bottom: 1px solid #d1d5db; /* gray-300 */
   display: flex;
   align-items: center;
-  padding: 0.75rem 1rem;
-  background-color: #dc2626; /* red-600 */
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background-color 0.2s ease-in-out;
-  cursor: pointer;
+  gap: 0.5rem;
 }
 
-.family-manager-logout-button:hover {
-  background-color: #b91c1c; /* red-700 */
+/* Remove the default mb-6 from the search container inside family-manager */
+.family-manager-search > div:first-child {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
 }
 
-.family-manager-logout-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+html.dark .family-manager-search {
+  border-bottom-color: #4b5563; /* gray-600 */
 }
 
-.family-manager-logout-icon {
-  margin-right: 0.5rem;
-  height: 1rem;
-  width: 1rem;
+/* Table area - scrollable both directions */
+.family-manager-table-area {
+  flex: 1;
+  overflow: auto;
+  min-height: 0; /* allows flex child to shrink below content size */
+}
+
+/* Pagination footer - stays visible */
+.family-manager-pagination {
+  flex-shrink: 0;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+html.dark .family-manager-pagination {
+  border-color: #4b5563; /* gray-600 */
+  background-color: #374151; /* gray-700 */
+}
+
+html.dark .family-manager-main {
+  background-color: rgba(31, 41, 55, 0.95); /* gray-800 with opacity */
 }
 
 /* Family Manager Login Page Dark Mode Styles */
 
-/* Override the gradient background for dark mode */
 html.dark .family-manager-login-background {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important; /* dark gray gradient */
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
 }
 
-/* Ensure login card text is visible in dark mode */
 html.dark .family-manager-login-card {
-  background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity */
-  border-color: #4b5563 !important; /* gray-600 */
-  color: #e5e7eb !important; /* gray-200 */
+  background-color: rgba(31, 41, 55, 0.95) !important;
+  border-color: #4b5563 !important;
+  color: #e5e7eb !important;
 }
 
-/* Login form error text */
 html.dark .family-manager-login-error {
-  color: #fca5a5 !important; /* red-300 for better contrast */
+  color: #fca5a5 !important;
 }
 
-/* Login form description text */
 html.dark .family-manager-login-description {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
-/* Login form border separator */
 html.dark .family-manager-login-separator {
-  border-color: #4b5563 !important; /* gray-600 */
+  border-color: #4b5563 !important;
 }

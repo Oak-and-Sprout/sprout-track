@@ -1,0 +1,83 @@
+/* Inner shadow for admin side-nav on large screens only */
+@media (min-width: 600px) {
+  .admin-side-nav {
+    box-shadow: inset -4px 0 6px -1px rgba(0, 0, 0, 0.1), inset -2px 0 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .admin-side-nav-header {
+    box-shadow: inset -4px 0 6px -1px rgba(0, 0, 0, 0.1), inset -2px 0 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Dark mode overrides */
+html.dark .admin-side-nav {
+  background-color: #4b5563; /* gray-600 */
+  color: #e5e7eb; /* gray-200 */
+}
+
+@media (min-width: 600px) {
+  html.dark .admin-side-nav {
+    box-shadow: none !important;
+    border-right: 1px solid #1f2937 !important;
+  }
+}
+
+/* Light mode border for header */
+.admin-side-nav-header .mx-auto {
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+}
+
+html.dark .admin-side-nav-header {
+  background-color: #4b5563; /* gray-600 */
+}
+
+html.dark .admin-side-nav-header .mx-auto {
+  border-bottom: 1px solid #6b7280; /* gray-500 */
+}
+
+html.dark .admin-side-nav-footer {
+  border-color: #6b7280; /* gray-500 */
+}
+
+html.dark .admin-side-nav-app-name {
+  color: #5eead4; /* teal-300 */
+}
+
+html.dark .admin-side-nav-close-button {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .admin-side-nav-close-button:hover {
+  color: #ffffff;
+}
+
+html.dark .admin-side-nav-item {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .admin-side-nav-item:hover {
+  background-color: #374151; /* gray-700 */
+  color: #9ca3af; /* gray-400 */
+}
+
+html.dark .admin-side-nav-item.active {
+  background-color: #1f2937; /* gray-800 */
+  color: #5eead4; /* teal-300 */
+}
+
+.admin-side-nav-footer-button {
+  margin-bottom: 8px;
+}
+
+.admin-side-nav-footer-button:last-child {
+  margin-bottom: 0;
+}
+
+html.dark .admin-side-nav-footer-button {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .admin-side-nav-footer-button:hover {
+  background-color: #374151; /* gray-700 */
+  color: #9ca3af; /* gray-400 */
+}

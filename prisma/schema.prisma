@@ -486,6 +486,8 @@ model Settings {
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
   enableBreastMilkTracking Boolean @default(true) // Enable breast milk inventory tracking (stored/fed/discarded actions, adjustments, balance)
   includeSolidsInFeedTimer Boolean @default(true) // Include solid food feedings when calculating time since last feed
+  dateFormat          String   @default("MM/DD/YYYY") // "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD"
+  timeFormat          String   @default("12h") // "12h" | "24h"
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -1174,6 +1176,9 @@ model Feedback {
   parent   Feedback?  @relation("FeedbackReplies", fields: [parentId], references: [id])
   replies  Feedback[] @relation("FeedbackReplies")
 
+  // Attachments (images)
+  attachments FeedbackAttachment[]
+
   @@index([submittedAt])
   @@index([viewed])
   @@index([familyId])
@@ -1181,6 +1186,22 @@ model Feedback {
   @@index([caretakerId])
   @@index([deletedAt])
   @@index([parentId])
+}
+
+// Feedback attachment model for images uploaded with feedback messages
+model FeedbackAttachment {
+  id           String   @id @default(uuid())
+  originalName String
+  storedName   String   // Encrypted filename (uuid.enc) in Files/feedback/
+  mimeType     String
+  fileSize     Int      // Size in bytes after compression
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  feedbackId String
+
+  @@index([feedbackId])
 }
 
 // Push notification subscription model

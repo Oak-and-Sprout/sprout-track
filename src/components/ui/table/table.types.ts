@@ -1,6 +1,11 @@
 import * as React from "react";
 
 /**
+ * Sort direction for sortable table columns
+ */
+export type SortDirection = 'asc' | 'desc' | null;
+
+/**
  * Props for the main Table component
  */
 export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {
@@ -58,6 +63,26 @@ export interface TableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElem
    * Additional CSS classes
    */
   className?: string;
+
+  /**
+   * Visual variant for the header cell
+   */
+  variant?: 'default' | 'bold';
+
+  /**
+   * Whether this column is sortable
+   */
+  sortable?: boolean;
+
+  /**
+   * Current sort direction (null = unsorted)
+   */
+  sortDirection?: SortDirection;
+
+  /**
+   * Callback when the sort header is clicked
+   */
+  onSort?: () => void;
 }
 
 /**

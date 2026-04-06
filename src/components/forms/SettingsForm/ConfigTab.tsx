@@ -18,7 +18,9 @@ import {
 import { ShareButton } from '@/src/components/ui/share-button';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
 import { Settings } from '@/app/api/types';
+import { DateFormatSetting, TimeFormatSetting } from '@/src/utils/dateFormat';
 
 interface FamilyData {
   id: string;
@@ -87,6 +89,7 @@ export default function ConfigTab({
 }: ConfigTabProps) {
   const { t } = useLocalization();
   const router = useRouter();
+  const { setDateTimeFormats } = useTimezone();
 
   return (
     <div className="space-y-6">
@@ -316,6 +319,50 @@ export default function ConfigTab({
               onCheckedChange={(checked) => onSettingsChange({ includeSolidsInFeedTimer: checked } as any)}
             />
           </label>
+        </div>
+      </div>
+
+      {/* Date & Time Format */}
+      <div className="border-t border-slate-200 pt-6">
+        <h3 className="form-label mb-4">{t('Date & Time Format')}</h3>
+        <div className="space-y-4">
+          <div>
+            <Label className="form-label">{t('Date Format')}</Label>
+            <Select
+              value={(settings as any)?.dateFormat || 'MM/DD/YYYY'}
+              onValueChange={(value) => {
+                onSettingsChange({ dateFormat: value } as any);
+                setDateTimeFormats(value as DateFormatSetting, ((settings as any)?.timeFormat || '12h') as TimeFormatSetting);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (04/06/2026)</SelectItem>
+                <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (06/04/2026)</SelectItem>
+                <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (2026-04-06)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="form-label">{t('Time Format')}</Label>
+            <Select
+              value={(settings as any)?.timeFormat || '12h'}
+              onValueChange={(value) => {
+                onSettingsChange({ timeFormat: value } as any);
+                setDateTimeFormats(((settings as any)?.dateFormat || 'MM/DD/YYYY') as DateFormatSetting, value as TimeFormatSetting);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12h">{t('12-hour')} (1:30 PM)</SelectItem>
+                <SelectItem value="24h">{t('24-hour')} (13:30)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

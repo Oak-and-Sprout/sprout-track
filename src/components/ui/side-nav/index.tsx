@@ -25,6 +25,8 @@ import Image from 'next/image';
 import { useTheme } from '@/src/context/theme';
 import { useDeployment } from '@/app/context/deployment';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong } from '@/src/utils/dateFormat';
 import { cn } from '@/src/lib/utils';
 import { sideNavStyles, triggerButtonVariants } from './side-nav.styles';
 import { SideNavProps, SideNavTriggerProps, SideNavItemProps } from './side-nav.types';
@@ -116,6 +118,7 @@ export const SideNavItem: React.FC<SideNavItemProps> = ({
   isActive,
   onClick,
   className,
+  badge,
 }) => {
   return (
     <button
@@ -129,6 +132,7 @@ export const SideNavItem: React.FC<SideNavItemProps> = ({
     >
       {icon && <span className={sideNavStyles.navItemIcon}>{icon}</span>}
       <span className={sideNavStyles.navItemLabel}>{label}</span>
+      {badge && <span className="ml-auto">{badge}</span>}
     </button>
   );
 };
@@ -159,6 +163,7 @@ export const SideNav: React.FC<SideNavProps> = ({
   const { theme } = useTheme();
   const { isSaasMode } = useDeployment();
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const [isSystemDarkMode, setIsSystemDarkMode] = useState<boolean>(false);
   const [showChangelog, setShowChangelog] = useState<boolean>(false);
   const [showFeedback, setShowFeedback] = useState<boolean>(false);
@@ -422,11 +427,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                     </div>
                     <div className="text-center">
                       <p className={cn("text-xs text-amber-600", "side-nav-trial-text")}>
-                        {t('Ending')}: {new Date(accountStatus.trialEnds).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
+                        {t('Ending')}: {formatDateLong(new Date(accountStatus.trialEnds), dateFormat)}
                       </p>
                     </div>
                     <Button
@@ -451,8 +452,8 @@ export const SideNav: React.FC<SideNavProps> = ({
           version={packageInfo.version}
         />
 
-        {/* Feedback Page - only shown in SaaS mode and when feedback is requested */}
-        {isSaasMode && showFeedback && (
+        {/* Feedback Page - always mounted in SaaS mode so slide transition works */}
+        {isSaasMode && (
           <FeedbackPage
             isOpen={showFeedback}
             onClose={() => setShowFeedback(false)}

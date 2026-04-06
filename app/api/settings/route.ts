@@ -38,6 +38,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           defaultTempUnit: 'F',
           enableBreastMilkTracking: true,
           includeSolidsInFeedTimer: true,
+          dateFormat: 'MM/DD/YYYY',
+          timeFormat: '12h',
           familyId: targetFamilyId,
         },
       });
@@ -113,6 +115,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       'enableDebugTimer', 'enableDebugTimezone',
       'enableBreastMilkTracking',
       'includeSolidsInFeedTimer',
+      'dateFormat', 'timeFormat',
     ];
 
     const isAdmin = authContext.caretakerRole === 'ADMIN' ||

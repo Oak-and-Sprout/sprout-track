@@ -32,6 +32,7 @@ interface ActiveDose {
 import { PillBottle, Pill, Clock, AlertCircle, Loader2, ChevronDown, Phone, Mail, Plus } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { useTimezone } from '@/app/context/timezone';
+import { formatDateTimeDisplay } from '@/src/utils/dateFormat';
 import { useLocalization } from '@/src/context/localization';
 
 /**
@@ -51,7 +52,7 @@ interface TodaySupplement {
 
 const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, onGiveMedicine, onGiveSupplement, refreshTrigger }) => {
   const { t } = useLocalization();
-  const { formatDate, calculateDurationMinutes } = useTimezone();
+  const { formatDate, calculateDurationMinutes, dateFormat, timeFormat } = useTimezone();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeDoses, setActiveDoses] = useState<ActiveDose[]>([]);
@@ -471,13 +472,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                       {dose.hasRecentDoses ? (
                         <>{t('Total in last 24h:')} {dose.totalIn24Hours} {dose.unitAbbr}</>
                       ) : (
-                        <>{t('Last Dose:')} {new Date(dose.time).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })} - {dose.doseAmount} {dose.unitAbbr}</>
+                        <>{t('Last Dose:')} {formatDateTimeDisplay(new Date(dose.time), dateFormat, timeFormat)} - {dose.doseAmount} {dose.unitAbbr}</>
                       )}
                     </div>
 

@@ -1,5 +1,32 @@
 # Sprout Track Changelog
 
+## v1.3.0 - Family Manager Overhaul, Date\Time Settings, Timeline Export
+
+### Changes
+
+#### Enhancements
+
+- Added date\time settings to the Settings > Config tab. This will allow family admins the ability to adjust date\time formats for the family
+- Overhauled family manager pages to be mobile friendly
+- Overhauled feedback forms to be a chat and include ability for users to upload screenshots
+- Added csv\xlsx export to the full log page
+
+#### Bugfixes
+
+- Fixed overlapping chart issues in some conditions
+
+### Changes
+
+- Fixed night sleep records so they show over midnight
+- Fixed activity tray status bubbles so they correctly show time since last activity and not last activity on active log date
+- Overhauled measurement form to include lb/oz entry and enhanced data view in the activity timeline
+- Removed naps from the heatmap tab to consolidate into "Sleep" to match log entry heatmap
+- Fixed breast feed start time saving behavior when editing previous entries
+- Fixed feedback bugs when users submitted feedback showing as admin
+- Re-worked feedback view so users know when admins have reviewed messages
+- Added push notifications for admin messages if user has active web push subscription
+
+
 ## v1.2.4 - Bugfixes for Timeline Refactor & Breast Feed Time Edits, Improved Weight Inputs
 
 ### Changes

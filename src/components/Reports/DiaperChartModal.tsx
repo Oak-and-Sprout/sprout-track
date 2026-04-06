@@ -16,6 +16,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
 export type DiaperChartMetric = 'wet' | 'poopy';
 
@@ -41,7 +43,8 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
-  
+  const { dateFormat } = useTimezone();
+
   // Calculate daily diaper counts
   const chartData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || !metric) {
@@ -80,16 +83,16 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
     return Object.entries(countsByDay)
       .map(([date, count]) => ({
         date,
-        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(date + 'T00:00:00'), dateFormat),
         value: count,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   const title = metric === 'wet' ? t('Wet Diapers Over Time') : t('Poopy Diapers Over Time');
   const description =
     dateRange.from && dateRange.to
-      ? `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+      ? `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`
       : undefined;
 
   return (
@@ -108,14 +111,16 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
                 <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                 <XAxis
                   dataKey="label"
-                  label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                  tickMargin={6}
+                  label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                   className="growth-chart-axis"
                 />
                 <YAxis
                   type="number"
                   domain={[0, 'auto']}
+                  tickMargin={6}
                   tickFormatter={(value) => value.toFixed(0)}
-                  label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
+                  label={{ value: t('Count'), angle: -90, position: 'insideLeft', offset: -10 }}
                   className="growth-chart-axis"
                 />
                 <RechartsTooltip

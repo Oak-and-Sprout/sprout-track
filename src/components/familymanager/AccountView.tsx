@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
+import type { SortDirection } from "@/src/components/ui/table";
 import { Button } from "@/src/components/ui/button";
 import { useLocalization } from '@/src/context/localization';
 
@@ -44,6 +45,9 @@ interface AccountViewProps {
   onUpdateAccount: (id: string, closed: boolean) => void;
   updatingAccountId: string | null;
   formatDateTime: (dateString: string | null) => string;
+  sortColumn: string | null;
+  sortDirection: SortDirection;
+  onSort: (column: string) => void;
 }
 
 export default function AccountView({
@@ -51,6 +55,9 @@ export default function AccountView({
   onUpdateAccount,
   updatingAccountId,
   formatDateTime,
+  sortColumn,
+  sortDirection,
+  onSort,
 }: AccountViewProps) {
   const { t } = useLocalization();
   
@@ -58,13 +65,13 @@ export default function AccountView({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{t('Email')}</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>{t('Created')}</TableHead>
-          <TableHead>{t('Family')}</TableHead>
-          <TableHead>{t('Verified')}</TableHead>
-          <TableHead>{t('Status')}</TableHead>
-          <TableHead className="text-right">{t('Actions')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'email' ? sortDirection : null} onSort={() => onSort('email')}>{t('Email')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'name' ? sortDirection : null} onSort={() => onSort('name')}>{t('Name')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'createdAt' ? sortDirection : null} onSort={() => onSort('createdAt')}>{t('Created')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'family' ? sortDirection : null} onSort={() => onSort('family')}>{t('Family')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'verified' ? sortDirection : null} onSort={() => onSort('verified')}>{t('Verified')}</TableHead>
+          <TableHead variant="bold" sortable sortDirection={sortColumn === 'closed' ? sortDirection : null} onSort={() => onSort('closed')}>{t('Status')}</TableHead>
+          <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

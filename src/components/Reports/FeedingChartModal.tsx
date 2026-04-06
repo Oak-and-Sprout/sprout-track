@@ -20,6 +20,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
 export type FeedingChartMetric = 'bottle' | 'breast' | 'solids';
 
@@ -71,6 +73,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   // Calculate bottle feed data
   const bottleData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'bottle') {
@@ -122,7 +125,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const combinedData = sortedDays.map((dayKey) => {
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(dayKey + 'T00:00:00'), dateFormat),
         count: countsByDay[dayKey] || 0,
       };
       bottleTypes.forEach((type) => {
@@ -132,7 +135,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     });
 
     return { data: combinedData, bottleTypes, colors };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate breast feed data
   const breastData = useMemo(() => {
@@ -185,7 +188,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const sortedDays = Object.keys(countsByDay).sort();
     return sortedDays.map((dayKey) => ({
       date: dayKey,
-      label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      label: formatDateShort(new Date(dayKey + 'T00:00:00'), dateFormat),
       count: countsByDay[dayKey] || 0,
       leftAvg: leftDurationByDay[dayKey]?.count > 0 
         ? leftDurationByDay[dayKey].total / leftDurationByDay[dayKey].count 
@@ -194,7 +197,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
         ? rightDurationByDay[dayKey].total / rightDurationByDay[dayKey].count 
         : 0,
     }));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate solids feed data
   const solidsData = useMemo(() => {
@@ -245,7 +248,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const combinedData = sortedDays.map((dayKey) => {
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(dayKey + 'T00:00:00'), dateFormat),
         count: countsByDay[dayKey] || 0,
       };
       foodTypes.forEach((food) => {
@@ -255,7 +258,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     });
 
     return { data: combinedData, foodTypes, colors };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   const getTitle = (): string => {
     switch (metric) {
@@ -272,7 +275,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   if (!metric) return null;
@@ -291,19 +294,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={bottleData.data} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={bottleData.data} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="count"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
                       label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
@@ -313,6 +315,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -325,7 +328,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="count"
                       type="monotone"
@@ -363,19 +366,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={breastData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={breastData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="count"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
                       label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
@@ -385,6 +387,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => formatMinutes(value as number)}
                       label={{ value: t('Avg Duration'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
@@ -405,7 +408,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="count"
                       type="monotone"
@@ -448,19 +451,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={solidsData.data} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={solidsData.data} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="count"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
                       label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
@@ -470,6 +472,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -482,7 +485,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="count"
                       type="monotone"

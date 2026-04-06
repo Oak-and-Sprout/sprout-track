@@ -1,0 +1,134 @@
+/* Dark mode overrides for chat-conversation */
+html.dark .chat-conversation-container {
+  background-color: rgb(31, 41, 55);
+}
+
+html.dark .chat-conversation-header {
+  background-color: rgb(31, 41, 55);
+  border-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-conversation-subject {
+  color: rgb(229, 231, 235);
+}
+
+html.dark .chat-conversation-meta {
+  color: rgb(107, 114, 128);
+}
+
+html.dark .chat-conversation-meta-divider {
+  color: rgb(75, 85, 99);
+}
+
+html.dark .chat-conversation-meta-name {
+  color: rgb(156, 163, 175);
+}
+
+html.dark .chat-conversation-messages {
+  background-color: rgba(17, 24, 39, 0.5);
+}
+
+html.dark .chat-conversation-date-break {
+  color: rgb(107, 114, 128);
+}
+
+html.dark .chat-conversation-bubble-theirs {
+  background-color: rgb(55, 65, 81);
+  border-color: rgb(75, 85, 99);
+  color: rgb(229, 231, 235);
+}
+
+html.dark .chat-conversation-bubble-mine {
+  background-color: rgb(5, 150, 105);
+}
+
+html.dark .chat-conversation-timestamp {
+  color: rgb(107, 114, 128);
+}
+
+html.dark .chat-conversation-avatar-mine {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: rgb(110, 231, 183);
+}
+
+html.dark .chat-conversation-avatar-admin {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: rgb(147, 197, 253);
+}
+
+html.dark .chat-conversation-avatar-user {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: rgb(252, 211, 77);
+}
+
+html.dark .chat-conversation-sender-mine {
+  color: rgb(110, 231, 183);
+}
+
+html.dark .chat-conversation-sender-theirs {
+  color: rgb(156, 163, 175);
+}
+
+html.dark .chat-conversation-family-tag {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: rgb(252, 211, 77);
+}
+
+html.dark .chat-conversation-reply-bar {
+  background-color: rgb(31, 41, 55);
+  border-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-conversation-reply-textarea {
+  background-color: rgb(17, 24, 39);
+  border-color: rgb(75, 85, 99);
+  color: rgb(229, 231, 235);
+}
+
+html.dark .chat-conversation-reply-textarea:focus {
+  border-color: rgb(52, 211, 153);
+}
+
+html.dark .chat-conversation-reply-textarea::placeholder {
+  color: rgb(107, 114, 128);
+}
+
+html.dark .chat-conversation-send-inactive {
+  background-color: rgb(55, 65, 81);
+}
+
+html.dark .chat-conversation-attach-button {
+  background-color: rgb(55, 65, 81);
+}
+
+html.dark .chat-conversation-attach-button:hover {
+  background-color: rgb(75, 85, 99);
+}
+
+html.dark .chat-conversation-preview-strip {
+  background-color: rgb(31, 41, 55);
+  border-color: rgb(75, 85, 99);
+}
+
+/* Attachment delete button: hover-only on desktop, always visible on touch */
+@media (hover: hover) {
+  .chat-conversation-attachment-delete-btn {
+    opacity: 0;
+  }
+  .group:hover .chat-conversation-attachment-delete-btn {
+    opacity: 1;
+  }
+}
+@media (hover: none) {
+  .chat-conversation-attachment-delete-btn {
+    opacity: 1;
+  }
+}
+
+html.dark .chat-conversation-empty {
+  color: rgb(107, 114, 128);
+}
+
+html.dark .chat-conversation-empty-icon {
+  stroke: rgb(75, 85, 99);
+}

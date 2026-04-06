@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange, LocationStat } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort } from '@/src/utils/dateFormat';
 
 interface SleepLocationChartModalProps {
   open: boolean;
@@ -59,6 +61,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   // Calculate daily counts by location
   const chartData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || !locations.length) {
@@ -132,7 +135,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
     return sortedDays.map((dayKey) => {
       const dayData: any = {
         date: dayKey,
-        label: new Date(dayKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(dayKey + 'T00:00:00'), dateFormat),
       };
 
       // Add count for each location
@@ -191,7 +194,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                   formatter={(value: any, name?: string) => [`${value}`, name || '']}
                   labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                 />
-                <Legend />
+                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                 {locations.map((location, index) => (
                   <Bar
                     key={location.location}

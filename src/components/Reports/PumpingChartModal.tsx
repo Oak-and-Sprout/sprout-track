@@ -19,6 +19,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 import { convertVolume } from '@/src/utils/unit-conversion';
 
 export type PumpingChartMetric = 'count' | 'duration' | 'amount' | 'inventory';
@@ -58,6 +60,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
   enableBreastMilkTracking = true,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   // Calculate pump count per day
   const countData = useMemo(() => {
     if (!activities.length || !dateRange.from || !dateRange.to || metric !== 'count') {
@@ -86,11 +89,11 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     return Object.entries(countsByDay)
       .map(([date, count]) => ({
         date,
-        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(date + 'T00:00:00'), dateFormat),
         value: count,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate average duration per day
   const durationData = useMemo(() => {
@@ -139,11 +142,11 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     return Object.entries(durationsByDay)
       .map(([date, data]) => ({
         date,
-        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(date + 'T00:00:00'), dateFormat),
         value: data.count > 0 ? data.total / data.count : 0,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate amount data (total and average per side)
   const amountData = useMemo(() => {
@@ -211,7 +214,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     return Object.entries(amountsByDay)
       .map(([date, data]) => ({
         date,
-        label: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: formatDateShort(new Date(date + 'T00:00:00'), dateFormat),
         dayTotal: data.dayTotal,
         leftTotal: data.leftTotal,
         rightTotal: data.rightTotal,
@@ -219,7 +222,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
         rightAvg: data.rightCount > 0 ? data.rightTotal / data.rightCount : 0,
       }))
       .sort((a, b) => (a.date < b.date ? -1 : 1));
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Calculate inventory data: daily consumed (breast milk bottle feeds) and actual stored balance
   const inventoryData = useMemo(() => {
@@ -303,7 +306,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
       if (day.consumed > 0) {
         result.push({
           date,
-          label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          label: formatDateShort(new Date(date + 'T12:00:00'), dateFormat),
           consumed: Math.round(day.consumed * 100) / 100,
           storedBalance: Math.round(runningBalance * 100) / 100,
         });
@@ -311,7 +314,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     }
 
     return result;
-  }, [activities, dateRange, metric, currentBalance]);
+  }, [activities, dateRange, metric, currentBalance, dateFormat]);
 
   const getTitle = (): string => {
     switch (metric) {
@@ -330,7 +333,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   if (!metric) return null;
@@ -353,14 +356,16 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                      tickMargin={6}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => value.toFixed(0)}
-                      label={{ value: t('Count'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Count'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -397,14 +402,16 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                      tickMargin={6}
+                      label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       tickFormatter={(value) => formatMinutes(value as number)}
-                      label={{ value: t('Duration'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Duration'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -437,19 +444,18 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={amountData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={amountData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="total"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Total Amount'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
@@ -458,6 +464,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Avg Amount'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -482,7 +489,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Line
                       yAxisId="total"
                       type="monotone"
@@ -545,19 +552,18 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={inventoryData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <ComposedChart data={inventoryData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       yAxisId="consumed"
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Consumed'), angle: -90, position: 'insideLeft' }}
                       className="growth-chart-axis"
                     />
@@ -566,6 +572,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       orientation="right"
                       type="number"
                       domain={['auto', 'auto']}
+                      tickMargin={6}
                       label={{ value: t('Stored Balance'), angle: -90, position: 'insideRight' }}
                       className="growth-chart-axis"
                     />
@@ -581,7 +588,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       }}
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     <Bar
                       yAxisId="consumed"
                       dataKey="consumed"

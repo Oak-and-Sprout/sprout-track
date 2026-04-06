@@ -15,18 +15,21 @@ function getEncryptionKey(): Buffer {
   return Buffer.from(hash, 'hex');
 }
 
-function ensureFilesDir(): void {
-  if (!fs.existsSync(FILES_DIR)) {
-    fs.mkdirSync(FILES_DIR, { recursive: true });
+function resolveDir(subdir?: string): string {
+  const dir = subdir ? path.join(FILES_DIR, subdir) : FILES_DIR;
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
+  return dir;
 }
 
 /**
  * Encrypt a buffer and write to disk as [IV (16)][AuthTag (16)][CipherText]
+ * @param subdir Optional subdirectory within Files/ (e.g. 'feedback')
  * Returns the stored filename (uuid.enc)
  */
-export function encryptAndStore(data: Buffer, storedName: string): string {
-  ensureFilesDir();
+export function encryptAndStore(data: Buffer, storedName: string, subdir?: string): string {
+  const dir = resolveDir(subdir);
   const key = getEncryptionKey();
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
@@ -35,7 +38,7 @@ export function encryptAndStore(data: Buffer, storedName: string): string {
   const authTag = cipher.getAuthTag();
 
   const output = Buffer.concat([iv, authTag, encrypted]);
-  const filePath = path.join(FILES_DIR, storedName);
+  const filePath = path.join(dir, storedName);
   fs.writeFileSync(filePath, output);
 
   return storedName;
@@ -43,11 +46,13 @@ export function encryptAndStore(data: Buffer, storedName: string): string {
 
 /**
  * Read an encrypted file from disk and decrypt it
+ * @param subdir Optional subdirectory within Files/ (e.g. 'feedback')
  * Returns the decrypted buffer
  */
-export function decryptFile(storedName: string): Buffer {
+export function decryptFile(storedName: string, subdir?: string): Buffer {
+  const dir = resolveDir(subdir);
   const key = getEncryptionKey();
-  const filePath = path.join(FILES_DIR, storedName);
+  const filePath = path.join(dir, storedName);
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`Encrypted file not found: ${storedName}`);
@@ -66,9 +71,11 @@ export function decryptFile(storedName: string): Buffer {
 
 /**
  * Delete an encrypted file from disk
+ * @param subdir Optional subdirectory within Files/ (e.g. 'feedback')
  */
-export function deleteEncryptedFile(storedName: string): void {
-  const filePath = path.join(FILES_DIR, storedName);
+export function deleteEncryptedFile(storedName: string, subdir?: string): void {
+  const dir = resolveDir(subdir);
+  const filePath = path.join(dir, storedName);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }

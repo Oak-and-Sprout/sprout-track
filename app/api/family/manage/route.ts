@@ -21,14 +21,46 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<Fa
       }
     });
 
+    // Get the most recent entry date per family across all log tables
+    // Uses Prisma queries for cross-database compatibility (SQLite + PostgreSQL)
+    const familyIds = families.map(f => f.id);
+    const logModels = [
+      prisma.sleepLog, prisma.feedLog, prisma.diaperLog, prisma.moodLog,
+      prisma.note, prisma.bathLog, prisma.pumpLog, prisma.playLog,
+      prisma.medicineLog, prisma.measurement,
+    ] as const;
+
+    const lastEntryPromises = familyIds.map(async (familyId) => {
+      const results = await Promise.all(
+        logModels.map((model) =>
+          (model as any).findFirst({
+            where: { familyId, deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true },
+          })
+        )
+      );
+      const dates = results
+        .filter((r: any) => r?.createdAt)
+        .map((r: any) => new Date(r.createdAt).getTime());
+      return { familyId, lastEntryAt: dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null };
+    });
+
+    const lastEntryResults = await Promise.all(lastEntryPromises);
+    const lastEntryMap = new Map<string, string>();
+    for (const { familyId, lastEntryAt } of lastEntryResults) {
+      if (lastEntryAt) lastEntryMap.set(familyId, lastEntryAt);
+    }
+
     // Convert to response format with counts
-    const familyResponses: (FamilyResponse & { caretakerCount: number; babyCount: number })[] = families.map((family) => ({
+    const familyResponses = families.map((family) => ({
       id: family.id,
       name: family.name,
       slug: family.slug,
       isActive: family.isActive,
       createdAt: family.createdAt.toISOString(),
       updatedAt: family.updatedAt.toISOString(),
+      lastEntryAt: lastEntryMap.get(family.id) || null,
       caretakerCount: family._count.caretakers,
       babyCount: family._count.babies,
     }));

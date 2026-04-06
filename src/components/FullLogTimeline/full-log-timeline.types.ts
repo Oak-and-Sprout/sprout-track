@@ -18,6 +18,7 @@ export interface FullLogTimelineProps {
   startDate: Date;
   endDate: Date;
   onDateRangeChange: (startDate: Date, endDate: Date) => void;
+  babyId?: string;
 }
 
 export interface FullLogFilterProps {

@@ -5,7 +5,7 @@ import { useTheme } from "@/src/context/theme";
 import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, ChevronUp, ChevronDown } from "lucide-react";
 import { useLocalization } from '@/src/context/localization';
 
 import "./table.css";
@@ -16,6 +16,7 @@ import {
   TableFooterProps,
   TableRowProps,
   TableHeadProps,
+  SortDirection,
   TableCellProps,
   TableCaptionProps,
   TableSearchProps,
@@ -97,14 +98,51 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
 TableRow.displayName = "TableRow";
 
 const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, variant = 'default', sortable, sortDirection, onSort, children, ...props }, ref) => {
     const { theme } = useTheme();
+    const headStyle = variant === 'bold' ? tableStyles.headBold : tableStyles.head;
+    const darkClass = variant === 'bold' ? 'table-head-bold-dark' : 'table-head-dark';
+    const sortDarkHoverClass = sortable
+      ? (variant === 'bold' ? 'table-head-bold-sortable-dark' : 'table-head-sortable-dark')
+      : '';
+
+    const sortIcon = sortable && sortDirection ? (
+      <span className={cn(tableStyles.sortIcon, 'table-sort-icon-active-dark')}>
+        {sortDirection === 'asc' ? (
+          <ChevronUp className="h-4 w-4" />
+        ) : (
+          <ChevronDown className="h-4 w-4" />
+        )}
+      </span>
+    ) : null;
+
     return (
       <th
         ref={ref}
-        className={cn(tableStyles.head, className, "table-head-dark")}
+        className={cn(
+          headStyle,
+          sortable && tableStyles.headSortable,
+          darkClass,
+          sortDarkHoverClass,
+          className
+        )}
+        onClick={sortable ? onSort : undefined}
+        aria-sort={
+          sortable
+            ? sortDirection === 'asc'
+              ? 'ascending'
+              : sortDirection === 'desc'
+                ? 'descending'
+                : 'none'
+            : undefined
+        }
         {...props}
-      />
+      >
+        <div className={sortable ? "flex items-center" : undefined}>
+          {children}
+          {sortIcon}
+        </div>
+      </th>
     );
   }
 );
@@ -247,20 +285,20 @@ const TablePagination = React.forwardRef<HTMLDivElement, TablePaginationProps>(
           <button
             onClick={() => onPageChange(1)}
             disabled={disabled || currentPage === 1}
-            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
-              color: disabled || currentPage === 1 ? '#9ca3af' : 'currentColor'
+              color: disabled || currentPage === 1 ? '#9ca3af' : undefined
             }}
           >
             <ChevronsLeft className="h-4 w-4" />
           </button>
-          
+
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={disabled || currentPage === 1}
-            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
-              color: disabled || currentPage === 1 ? '#9ca3af' : 'currentColor'
+              color: disabled || currentPage === 1 ? '#9ca3af' : undefined
             }}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -287,20 +325,20 @@ const TablePagination = React.forwardRef<HTMLDivElement, TablePaginationProps>(
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={disabled || currentPage === totalPages}
-            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
-              color: disabled || currentPage === totalPages ? '#9ca3af' : 'currentColor'
+              color: disabled || currentPage === totalPages ? '#9ca3af' : undefined
             }}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          
+
           <button
             onClick={() => onPageChange(totalPages)}
             disabled={disabled || currentPage === totalPages}
-            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+            className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
-              color: disabled || currentPage === totalPages ? '#9ca3af' : 'currentColor'
+              color: disabled || currentPage === totalPages ? '#9ca3af' : undefined
             }}
           >
             <ChevronsRight className="h-4 w-4" />
@@ -364,4 +402,6 @@ export {
   TableTabs,
   TablePagination,
   TablePageSize,
-}; 
+};
+
+export type { SortDirection }; 

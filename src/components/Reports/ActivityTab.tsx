@@ -9,6 +9,8 @@ import { ActivityTabProps, ActivityType } from './reports.types';
 import { getActivityDetails } from '@/src/components/Timeline/utils';
 import { ActivityType as TimelineActivityType } from '@/src/components/Timeline/types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort } from '@/src/utils/dateFormat';
 
 // Local helper to get activity time that works with reports ActivityType
 const getActivityTimeLocal = (activity: ActivityType): string => {
@@ -203,6 +205,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
   isLoading
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [hoveredActivity, setHoveredActivity] = useState<NormalizedActivity | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -365,15 +368,8 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
 
       return {
         date: day.date,
-        label: day.date.toLocaleDateString(undefined, {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-        }),
-        shortLabel: day.date.toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-        }),
+        label: `${day.date.toLocaleDateString(undefined, { weekday: 'short' })}, ${formatDateShort(day.date, dateFormat)}`,
+        shortLabel: formatDateShort(day.date, dateFormat),
         activities: activitiesWithLanes,
         maxLanes,
       };

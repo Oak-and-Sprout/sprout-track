@@ -21,6 +21,8 @@ import HeatmapsTab from './HeatmapsTab';
 import HealthTab from './HealthTab';
 import MonthlyReportCard from './MonthlyReportCard';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateDisplay } from '@/src/utils/dateFormat';
 
 import './reports.css';
 
@@ -33,6 +35,7 @@ import './reports.css';
 const Reports: React.FC<ReportsProps> = ({ className }) => {
 
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const { selectedBaby } = useBaby();
 
   // Tab state
@@ -135,8 +138,8 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
   // Format date range for display
   const formatDateRange = (): string => {
     if (!dateRange.from) return t('Select date range');
-    if (!dateRange.to) return dateRange.from.toLocaleDateString();
-    return `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`;
+    if (!dateRange.to) return formatDateDisplay(dateRange.from, dateFormat);
+    return `${formatDateDisplay(dateRange.from, dateFormat)} - ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   // Tab configuration

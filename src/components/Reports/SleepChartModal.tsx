@@ -16,6 +16,8 @@ import {
 } from 'recharts';
 import { DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateDisplay } from '@/src/utils/dateFormat';
 
 export type SleepChartMetric = 'avgNapDuration' | 'dailyNapTotal' | 'nightSleep' | 'nightWakings';
 
@@ -72,10 +74,11 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const title = getChartTitle(metric, t);
   const description =
     dateRange.from && dateRange.to
-      ? `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`
+      ? `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`
       : undefined;
 
   return (
@@ -102,12 +105,14 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
                 <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                 <XAxis
                   dataKey="label"
-                  label={{ value: t('Date'), position: 'insideBottom', offset: -5 }}
+                  tickMargin={6}
+                  label={{ value: t('Date'), position: 'insideBottom', offset: -10 }}
                   className="growth-chart-axis"
                 />
                 <YAxis
                   type="number"
                   domain={['auto', 'auto']}
+                  tickMargin={6}
                   tickFormatter={(value) =>
                     metric === 'nightWakings' ? value.toFixed(0) : formatMinutes(value)
                   }

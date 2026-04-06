@@ -25,6 +25,8 @@ import { babyFormStyles } from './baby-form.styles';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong } from '@/src/utils/dateFormat';
 
 interface BabyFormProps {
   isOpen: boolean;
@@ -52,6 +54,7 @@ export default function BabyForm({
   onBabyChange,
 }: BabyFormProps) {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
   const { showToast } = useToast();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,7 +188,7 @@ export default function BabyForm({
                   )}
                 >
                   <Calendar className="mr-2 h-4 w-4" />
-                  {formData.birthDate ? format(formData.birthDate, "PPP") : t("Select date")}
+                  {formData.birthDate ? formatDateLong(formData.birthDate, dateFormat) : t("Select date")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 z-[100]" align="start">

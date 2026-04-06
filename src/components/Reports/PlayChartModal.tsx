@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
 export type PlayChartMetric = 'totalByDay' | 'avgDurationByType' | 'dailyDuration';
 
@@ -55,6 +57,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
   dateRange,
 }) => {
   const { t } = useLocalization();
+  const { dateFormat } = useTimezone();
 
   const playTypeDisplayNames: Record<string, string> = {
     TUMMY_TIME: t('Tummy Time'),
@@ -95,7 +98,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     const current = new Date(startDate);
     while (current <= endDate) {
       const dayKey = current.toLocaleDateString('en-CA');
-      const label = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = formatDateShort(current, dateFormat);
       const row: Record<string, any> = { date: dayKey, label };
       for (const type of typeNames) {
         row[type] = byDay[dayKey]?.[type] || 0;
@@ -105,7 +108,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     }
 
     return { chartData: data, typeNames };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   // Average duration by type (single bar per type)
   const avgDurationData = useMemo(() => {
@@ -171,7 +174,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     const current = new Date(startDate);
     while (current <= endDate) {
       const dayKey = current.toLocaleDateString('en-CA');
-      const label = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = formatDateShort(current, dateFormat);
       const row: Record<string, any> = { date: dayKey, label };
       for (const type of typeNames) {
         row[type] = byDay[dayKey]?.[type] || 0;
@@ -181,7 +184,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
     }
 
     return { chartData: data, typeNames };
-  }, [activities, dateRange, metric]);
+  }, [activities, dateRange, metric, dateFormat]);
 
   const getTitle = (): string => {
     switch (metric) {
@@ -198,7 +201,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${dateRange.from.toLocaleDateString()} to ${dateRange.to.toLocaleDateString()}`;
+    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   if (!metric) return null;
@@ -217,26 +220,25 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dailySessionData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={dailySessionData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
+                      tickMargin={6}
                       allowDecimals={false}
-                      label={{ value: t('Sessions'), angle: -90, position: 'insideLeft' }}
+                      label={{ value: t('Sessions'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
-                    <Legend />
+                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 4 }} />
                     {dailySessionData.typeNames.map((type) => (
                       <Bar
                         key={type}
@@ -264,19 +266,18 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={avgDurationData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={avgDurationData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="name"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: t('Avg Duration (min)'), angle: -90, position: 'insideLeft' }}
+                      tickMargin={6}
+                      label={{ value: t('Avg Duration (min)'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -301,19 +302,18 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
             ) : (
               <div className={cn(growthChartStyles.chartWrapper, 'growth-chart-wrapper')}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dailyDurationData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 40 }}>
+                  <BarChart data={dailyDurationData.chartData} margin={{ top: 20, right: 24, left: 8, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
                     <XAxis
                       dataKey="label"
-                      angle={-30}
-                      textAnchor="end"
-                      height={60}
+                      tickMargin={6}
                       className="growth-chart-axis"
                     />
                     <YAxis
                       type="number"
                       domain={[0, 'auto']}
-                      label={{ value: t('Duration (min)'), angle: -90, position: 'insideLeft' }}
+                      tickMargin={6}
+                      label={{ value: t('Duration (min)'), angle: -90, position: 'insideLeft', offset: -10 }}
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
@@ -324,6 +324,8 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
                       labelFormatter={(label: any) => `${t('Date:')} ${label}`}
                     />
                     <Legend
+                      verticalAlign="top"
+                      wrapperStyle={{ paddingBottom: 4 }}
                       formatter={(value: string) => playTypeDisplayNames[value] || value}
                     />
                     {dailyDurationData.typeNames.map((type) => (

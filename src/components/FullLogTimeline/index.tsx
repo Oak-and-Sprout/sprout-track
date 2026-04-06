@@ -17,6 +17,7 @@ import FullLogFilter from './FullLogFilter';
 import FullLogSearchBar from './FullLogSearchBar';
 import FullLogActivityList from './FullLogActivityList';
 import FullLogActivityDetails from './FullLogActivityDetails';
+import FullLogExportButton from './FullLogExportButton';
 import { getActivityEndpoint, getActivityTime } from '@/src/components/Timeline/utils';
 import { PumpLogResponse, MedicineLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
 import { cn } from '@/src/lib/utils';
@@ -35,6 +36,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
   startDate,
   endDate,
   onDateRangeChange,
+  babyId,
 }) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
@@ -405,15 +407,27 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
     <div className={cn(styles.container, "full-log-timeline-container")}>
       {/* Header */}
       <CardHeader className="py-0 bg-gradient-to-r from-teal-600 to-teal-700 border-0 full-log-timeline-header">
-        <FullLogFilter
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-          startDate={startDate}
-          endDate={endDate}
-          onDateRangeChange={onDateRangeChange}
-          enableBreastMilkTracking={breastMilkTrackingEnabled}
-          onQuickFilter={handleQuickFilter}
-        />
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <FullLogFilter
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              startDate={startDate}
+              endDate={endDate}
+              onDateRangeChange={onDateRangeChange}
+              enableBreastMilkTracking={breastMilkTrackingEnabled}
+              onQuickFilter={handleQuickFilter}
+            />
+          </div>
+          {babyId && (
+            <FullLogExportButton
+              babyId={babyId}
+              startDate={startDate}
+              endDate={endDate}
+              activeFilter={activeFilter}
+            />
+          )}
+        </div>
       </CardHeader>
 
       {/* Search Bar */}
