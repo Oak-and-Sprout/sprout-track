@@ -42,7 +42,7 @@ next-env.d.ts
 scripts/port-config.sh
 
 # environment variables
-.env
+.env*
 
 # robots.txt and sitemap
 robots.txt
