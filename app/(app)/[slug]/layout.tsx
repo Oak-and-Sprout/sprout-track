@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { BabyProvider, useBaby } from '../../context/baby';
-import { TimezoneProvider } from '../../context/timezone';
+
 import { DeploymentProvider, useDeployment } from '../../context/deployment';
 import { LocalizationProvider } from '@/src/context/localization';
 import { ThemeProvider } from '@/src/context/theme';
@@ -1025,14 +1025,12 @@ export default function AppLayout({
       <LocalizationProvider>
         <FamilyProvider onLogout={handleLogout}>
           <BabyProvider>
-            <TimezoneProvider>
-              <ThemeProvider>
-                <ToastProvider>
-                  <DynamicTitle />
-                  <AppContent>{children}</AppContent>
-                </ToastProvider>
-              </ThemeProvider>
-            </TimezoneProvider>
+            <ThemeProvider>
+              <ToastProvider>
+                <DynamicTitle />
+                <AppContent>{children}</AppContent>
+              </ToastProvider>
+            </ThemeProvider>
           </BabyProvider>
         </FamilyProvider>
       </LocalizationProvider>

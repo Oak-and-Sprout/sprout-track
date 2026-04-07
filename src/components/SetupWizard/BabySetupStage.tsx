@@ -1,6 +1,7 @@
 import React from 'react';
-import { format } from 'date-fns';
 import { Calendar } from 'lucide-react';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateLong } from '@/src/utils/dateFormat';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import { Calendar as CalendarComponent } from '@/src/components/ui/calendar';
@@ -38,7 +39,8 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
   setDiaperWarningTime
 }) => {
   const { t } = useLocalization();
-  
+  const { dateFormat } = useTimezone();
+
   return (
     <div className={cn(styles.stageContainer, "setup-wizard-stage-container")}>
       <h2 className={cn(styles.stageTitle, "setup-wizard-stage-title")}>
@@ -101,7 +103,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
               )}
             >
               <Calendar className="mr-2 h-4 w-4" />
-              {babyBirthDate ? format(babyBirthDate, "PPP") : "Select date"}
+              {babyBirthDate ? formatDateLong(babyBirthDate, dateFormat) : "Select date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

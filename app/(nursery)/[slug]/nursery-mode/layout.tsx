@@ -4,7 +4,7 @@ import { DeploymentProvider } from '@/app/context/deployment';
 import { LocalizationProvider } from '@/src/context/localization';
 import { FamilyProvider } from '@/src/context/family';
 import { BabyProvider } from '@/app/context/baby';
-import { TimezoneProvider } from '@/app/context/timezone';
+
 import { ThemeProvider } from '@/src/context/theme';
 import { ToastProvider } from '@/src/components/ui/toast';
 
@@ -44,13 +44,11 @@ export default function NurseryLayout({
         <LocalizationProvider>
           <FamilyProvider onLogout={handleLogout}>
             <BabyProvider>
-              <TimezoneProvider>
-                <ThemeProvider>
-                  <ToastProvider>
-                    {children}
-                  </ToastProvider>
-                </ThemeProvider>
-              </TimezoneProvider>
+              <ThemeProvider>
+                <ToastProvider>
+                  {children}
+                </ToastProvider>
+              </ThemeProvider>
             </BabyProvider>
           </FamilyProvider>
         </LocalizationProvider>
