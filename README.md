@@ -4,8 +4,6 @@ v1.3.1 😁 - A self-hosted Next.js application for tracking baby activities, mi
 
 ![Docker Stars](https://img.shields.io/docker/stars/sprouttrack/sprout-track) ![Docker Image Size](https://img.shields.io/docker/image-size/sprouttrack/sprout-track) ![Docker Pulls](https://img.shields.io/docker/pulls/sprouttrack/sprout-track)
 
-<img src="public/st-header-image-readme.jpg" width="100%" alt="Sprout Track" style="border-radius: 12px;" />
-
 ## Live Demo
 
 Try out Sprout Track at our live demo: **[https://www.sprout-track.com/demo](https://www.sprout-track.com/demo)**
@@ -14,6 +12,106 @@ Try out Sprout Track at our live demo: **[https://www.sprout-track.com/demo](htt
 
 - ID: `01`
 - PIN: `111111`
+
+## Features
+
+### Activity Tracking & Daily Dashboard
+
+Track sleep, feeding, diapers, bath, measurements, medicine, activities, milestones, and more. The daily dashboard gives you an at-a-glance summary with real-time stats and active session tracking.
+
+<p>
+  <img src="public/readme/SproutTrackLogEntryView.png" width="500" alt="Daily Dashboard — Desktop" style="border-radius: 8px;" />
+&nbsp;&nbsp;
+  <img src="public/readme/SproutTrackLogEntryMobile.png" width="200" alt="Daily Dashboard — Mobile" style="border-radius: 8px;" />
+</p>
+
+### Calendar
+
+Browse activity history on a monthly calendar with color-coded indicators by activity type. Tap any day to see a detailed breakdown.
+
+<p>
+  <img src="public/readme/CalendarDesktop.png" width="500" alt="Calendar — Desktop" style="border-radius: 8px;" />
+  &nbsp;&nbsp;
+  <img src="public/readme/CalandarMobile.png" width="200" alt="Calendar — Mobile" style="border-radius: 8px;" />
+</p>
+
+### Reporting & Growth Charts
+
+Monthly reports with growth metrics, percentile curves, feeding stats, sleep analysis, and activity breakdowns. Export a monthly report card as a PDF.
+
+<p>
+  <img src="public/readme/ReportingMobile1.png" width="200" alt="Growth Report" style="border-radius: 8px;" />
+  &nbsp;
+  <img src="public/readme/ReportingMobile2.png" width="200" alt="Feeding & Sleep Report" style="border-radius: 8px;" />
+  &nbsp;
+  <img src="public/readme/ReportingMobile3.png" width="200" alt="Activity Report" style="border-radius: 8px;" />
+</p>
+<p>
+  <img src="public/readme/ReportCardPDF.png" width="500" alt="PDF Report Card" style="border-radius: 8px;" />
+</p>
+
+### Full Activity Log & Export
+
+Searchable, filterable activity log with pagination and data export to csv or xlsx.
+
+<p>
+  <img src="public/readme/FullLogExport.png" width="500" alt="Full Log & Export" style="border-radius: 8px;" />
+</p>
+
+### Nursery Mode
+
+A fullscreen, tap-friendly interface with large buttons — perfect for daycare providers and nighttime use. Configurable background colors and brightness.
+
+<p>
+  <img src="public/readme/NurseryMode.png" width="500" alt="Nursery Mode" style="border-radius: 8px;" />
+</p>
+
+### Dark Mode
+
+Full dark theme support across the entire application.
+
+<p>
+  <img src="public/readme/SproutTrackLogEntryDarkMode.png" width="200" alt="Dark Mode" style="border-radius: 8px;" />
+</p>
+
+### Multi-Language Support
+
+Available in English, Spanish, French, German, and Italian. Language preferences are saved per-user.
+
+<p>
+  <img src="public/readme/Localized.png" width="200" alt="Language Selection" style="border-radius: 8px;" />
+</p>
+
+### Push Notifications
+
+Real-time push notifications keep all caretakers informed when activities are logged.
+
+<p>
+  <img src="public/readme/Notification.png" width="200" alt="Push Notification" style="border-radius: 8px;" />
+</p>
+
+### API & Integrations
+
+API key management and webhook support for external integrations like Home Assistant, Grafana, and NFC tags.
+
+<p>
+  <img src="public/readme/API-Desktop.png" width="420" alt="Daily Dashboard — Desktop" style="border-radius: 8px;" />
+&nbsp;&nbsp;
+  <img src="public/readme/API-KeyMobile.png" width="200" alt="API & Integrations" style="border-radius: 8px;" />
+</p>
+
+### More
+
+- **PWA** — Install on any device with notifications, keep-awake mode, and fullscreen
+- **Multi-Family** - Setup separate family dashboards to allow friends and family to privately track their child
+- **Multi-Caretaker** — Each family uses individual PINs for parents, grandparents, babysitters, and daycare
+- **Family Accounts** — Track multiple babies in a shared family workspace
+- **SQLite or PostgreSQL** — Choose the database that fits your setup
+- **Self-Hosted** — Full control over your data with Docker deployment
+- **Backup & Restore** — Database backup and recovery built in
+- **Track Contacts** - Track shared contacts, and tie them to medications, calendar events, or have them readily accessible in app
+
+---
 
 ## Quick Start: Docker (SQLite)
 
@@ -99,8 +197,6 @@ See [Initial Setup](documentation/Admin-Documentation/initial-setup.md) for deta
 ## Tech Stack
 
 - Next.js with App Router
-- TypeScript
 - Prisma with SQLite or PostgreSQL
-- TailwindCSS
+- Tailwind
 - Docker
-- PWA with Push Notifications, Keep Awake, and Full Screen (on supported devices)
