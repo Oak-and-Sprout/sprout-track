@@ -42,7 +42,7 @@ export interface TimeEntryProps {
  */
 export interface TimeEntryState {
   /**
-   * The current hours value (1-12)
+   * The current hours value (1-12 in 12h mode, 0-23 in 24h mode)
    */
   hours: number;
   

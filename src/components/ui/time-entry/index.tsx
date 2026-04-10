@@ -5,6 +5,7 @@ import { cn } from '@/src/lib/utils';
 import { TimeEntryProps } from './time-entry.types';
 import { timeEntryStyles as styles } from './time-entry.styles';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
 
 import './time-entry.css';
 
@@ -29,21 +30,23 @@ export function TimeEntry({
   maxTime,
 }: TimeEntryProps) {
   const { t } = useLocalization();
-  
+  const { timeFormat } = useTimezone();
+  const is24h = timeFormat === '24h';
+
   // Extract initial time values
   const getInitialValues = () => {
     // Ensure value is a valid Date object
-    const date = value instanceof Date && !isNaN(value.getTime()) 
-      ? value 
+    const date = value instanceof Date && !isNaN(value.getTime())
+      ? value
       : new Date();
-    
+
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    
+
     return {
-      hours: hours > 12 ? hours - 12 : hours === 0 ? 12 : hours,
+      hours: is24h ? hours : (hours > 12 ? hours - 12 : hours === 0 ? 12 : hours),
       minutes,
-      isPM: hours >= 12,
+      isPM: is24h ? false : hours >= 12,
       mode: 'hours' as 'hours' | 'minutes',
     };
   };
@@ -51,6 +54,8 @@ export function TimeEntry({
   const [state, setState] = useState(getInitialValues);
   const clockFaceRef = useRef<HTMLDivElement>(null);
   const handRef = useRef<HTMLDivElement>(null);
+  const accumulatedAngleRef = useRef<number | null>(null);
+  const prevModeRef = useRef<'hours' | 'minutes'>(state.mode);
   
   // Dragging state
   const [isDragging, setIsDragging] = useState(false);
@@ -68,23 +73,23 @@ export function TimeEntry({
   // Update state when value prop changes, but preserve the current mode
   useEffect(() => {
     if (!value) return;
-    
+
     setState(prevState => {
-      const date = value instanceof Date && !isNaN(value.getTime()) 
-        ? value 
+      const date = value instanceof Date && !isNaN(value.getTime())
+        ? value
         : new Date();
-      
+
       const hours = date.getHours();
       const minutes = date.getMinutes();
-      
+
       return {
-        hours: hours > 12 ? hours - 12 : hours === 0 ? 12 : hours,
+        hours: is24h ? hours : (hours > 12 ? hours - 12 : hours === 0 ? 12 : hours),
         minutes,
-        isPM: hours >= 12,
+        isPM: is24h ? false : hours >= 12,
         mode: prevState.mode, // Preserve the current mode
       };
     });
-   }, [value]);
+   }, [value, is24h]);
    
    // Set up dragging functionality
    useEffect(() => {
@@ -123,63 +128,73 @@ export function TimeEntry({
       const baseDate = value instanceof Date && !isNaN(value.getTime()) ? new Date(value) : new Date();
       
       if (state.mode === 'hours') {
-        // Convert angle to hour (each hour is 30 degrees)
-        let hour = Math.round(angle / 30);
-        if (hour === 0 || hour > 12) hour = 12;
+        if (is24h) {
+          // 24h mode: determine inner/outer ring by distance from center
+          const dist = Math.sqrt(x * x + y * y);
+          const ringThreshold = Math.min(rect.width, rect.height) / 2 * 0.65;
+          let hour = Math.round(angle / 30);
+          if (hour === 0 || hour > 12) hour = 12;
 
-        // Detect crossing 12 o'clock and auto-flip AM/PM
-        let shouldFlipAmPm = false;
+          if (dist <= ringThreshold) {
+            // Inner ring: 13-23, 0
+            hour = hour === 12 ? 0 : hour + 12;
+          }
 
-        if (previousAngle !== null) {
-          const prevHour = Math.round(previousAngle / 30);
-          const prevHourNormalized = prevHour === 0 || prevHour > 12 ? 12 : prevHour;
+          setState(prev => ({ ...prev, hours: hour }));
+          baseDate.setHours(hour);
+          baseDate.setMinutes(state.minutes);
+        } else {
+          // 12h mode: original logic
+          // Convert angle to hour (each hour is 30 degrees)
+          let hour = Math.round(angle / 30);
+          if (hour === 0 || hour > 12) hour = 12;
 
-          // Calculate angle difference with proper wraparound handling
-          const angleDiff = angle - previousAngle;
-          let normalizedDiff = angleDiff;
+          // Detect crossing 12 o'clock and auto-flip AM/PM
+          let shouldFlipAmPm = false;
 
-          // Handle angle wraparound (crossing 0/360 degrees)
-          if (normalizedDiff > 180) normalizedDiff -= 360;
-          if (normalizedDiff < -180) normalizedDiff += 360;
+          if (previousAngle !== null) {
+            const prevHour = Math.round(previousAngle / 30);
+            const prevHourNormalized = prevHour === 0 || prevHour > 12 ? 12 : prevHour;
 
-          // Check if we crossed the 12 o'clock line (0 degrees)
-          // This happens when we cross from 11-12 or 12-1 zones
-          const crossed12Line = (
-            // Going from 11 to 12 (clockwise)
-            (prevHourNormalized === 11 && hour === 12) ||
-            // Going from 1 to 12 (counter-clockwise)
-            (prevHourNormalized === 1 && hour === 12) ||
-            // Going from 12 to 11 (counter-clockwise)
-            (prevHourNormalized === 12 && hour === 11) ||
-            // Going from 12 to 1 (clockwise)
-            (prevHourNormalized === 12 && hour === 1)
-          );
+            // Calculate angle difference with proper wraparound handling
+            const angleDiff = angle - previousAngle;
+            let normalizedDiff = angleDiff;
 
-          if (crossed12Line) {
-            // Determine if we should flip based on direction and current AM/PM
-            if (normalizedDiff > 0) {
-              // Clockwise movement: if AM, switch to PM
-              if (!state.isPM) shouldFlipAmPm = true;
-            } else if (normalizedDiff < 0) {
-              // Counter-clockwise movement: if PM, switch to AM
-              if (state.isPM) shouldFlipAmPm = true;
+            // Handle angle wraparound (crossing 0/360 degrees)
+            if (normalizedDiff > 180) normalizedDiff -= 360;
+            if (normalizedDiff < -180) normalizedDiff += 360;
+
+            // Check if we crossed the 12 o'clock line (0 degrees)
+            const crossed12Line = (
+              (prevHourNormalized === 11 && hour === 12) ||
+              (prevHourNormalized === 1 && hour === 12) ||
+              (prevHourNormalized === 12 && hour === 11) ||
+              (prevHourNormalized === 12 && hour === 1)
+            );
+
+            if (crossed12Line) {
+              if (normalizedDiff > 0) {
+                if (!state.isPM) shouldFlipAmPm = true;
+              } else if (normalizedDiff < 0) {
+                if (state.isPM) shouldFlipAmPm = true;
+              }
             }
           }
+
+          const newIsPM = shouldFlipAmPm ? !state.isPM : state.isPM;
+
+          setState(prev => ({
+            ...prev,
+            hours: hour,
+            isPM: newIsPM
+          }));
+
+          const newHours24 = newIsPM
+            ? (hour === 12 ? 12 : hour + 12)
+            : (hour === 12 ? 0 : hour);
+          baseDate.setHours(newHours24);
+          baseDate.setMinutes(state.minutes);
         }
-
-        const newIsPM = shouldFlipAmPm ? !state.isPM : state.isPM;
-
-        setState(prev => ({
-          ...prev,
-          hours: hour,
-          isPM: newIsPM
-        }));
-
-        const newHours24 = newIsPM
-          ? (hour === 12 ? 12 : hour + 12)
-          : (hour === 12 ? 0 : hour);
-        baseDate.setHours(newHours24);
-        baseDate.setMinutes(state.minutes);
       } else {
         // Convert angle to minute (each minute is 6 degrees)
         const minute = Math.round(angle / 6) % 60;
@@ -187,9 +202,11 @@ export function TimeEntry({
         setState(prev => ({ ...prev, minutes: minute }));
         setExactMinute(minute);
         
-        const newHours24 = state.isPM
-          ? (state.hours === 12 ? 12 : state.hours + 12)
-          : (state.hours === 12 ? 0 : state.hours);
+        const newHours24 = is24h
+          ? state.hours
+          : state.isPM
+            ? (state.hours === 12 ? 12 : state.hours + 12)
+            : (state.hours === 12 ? 0 : state.hours);
         baseDate.setHours(newHours24);
         baseDate.setMinutes(minute);
       }
@@ -277,32 +294,34 @@ export function TimeEntry({
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('touchcancel', handleTouchEnd);
     };
-   }, [disabled, state.mode, state.isPM, state.hours, state.minutes, onChange, isTimeValid, value]);
+   }, [disabled, state.mode, state.isPM, state.hours, state.minutes, onChange, isTimeValid, value, is24h]);
    
    // Handle hour selection
    const handleHourSelect = (hour: number) => {
      if (disabled) return;
- 
+
      const newState = {
        ...state,
        hours: hour,
        // Automatically switch to minutes mode after hour selection
        mode: 'minutes' as 'hours' | 'minutes',
      };
- 
+
      // Calculate new date based on the *intended* state
      const baseDate = value instanceof Date && !isNaN(value.getTime()) ? new Date(value) : new Date();
-     const newHours24 = newState.isPM
-       ? (newState.hours === 12 ? 12 : newState.hours + 12)
-       : (newState.hours === 12 ? 0 : newState.hours);
+     const newHours24 = is24h
+       ? newState.hours
+       : newState.isPM
+         ? (newState.hours === 12 ? 12 : newState.hours + 12)
+         : (newState.hours === 12 ? 0 : newState.hours);
      baseDate.setHours(newHours24);
-     baseDate.setMinutes(newState.minutes); // Use existing minutes from newState
+     baseDate.setMinutes(newState.minutes);
      baseDate.setSeconds(0);
      baseDate.setMilliseconds(0);
- 
+
      // Update state *after* calculating the date
      setState(newState);
- 
+
      if (isTimeValid(baseDate)) {
        onChange(baseDate);
      }
@@ -320,22 +339,23 @@ export function TimeEntry({
  
      // Calculate new date based on the *intended* state
      const baseDate = value instanceof Date && !isNaN(value.getTime()) ? new Date(value) : new Date();
-     const newHours24 = newState.isPM
-       ? (newState.hours === 12 ? 12 : newState.hours + 12)
-       : (newState.hours === 12 ? 0 : newState.hours); // Use existing hours from newState
+     const newHours24 = is24h
+       ? newState.hours
+       : newState.isPM
+         ? (newState.hours === 12 ? 12 : newState.hours + 12)
+         : (newState.hours === 12 ? 0 : newState.hours);
      baseDate.setHours(newHours24);
      baseDate.setMinutes(newState.minutes);
      baseDate.setSeconds(0);
      baseDate.setMilliseconds(0);
- 
-     // Update state *after* calculating the date
+
      setState(newState);
- 
+
      if (isTimeValid(baseDate)) {
        onChange(baseDate);
      }
    };
- 
+
    // Handle AM/PM toggle
    const handlePeriodToggle = (isPM: boolean) => {
      if (disabled) return;
@@ -382,16 +402,30 @@ export function TimeEntry({
      if (state.mode === 'hours') {
        let hour = Math.round(angle / 30);
        if (hour === 0 || hour > 12) hour = 12;
-       // Automatically switch to minutes mode after hour selection
-       newState = { ...state, hours: hour, mode: 'minutes' };
-       newHours24 = newState.isPM ? (hour === 12 ? 12 : hour + 12) : (hour === 12 ? 0 : hour);
+
+       if (is24h) {
+         // Determine inner/outer ring by distance from center
+         const dist = Math.sqrt(x * x + y * y);
+         const ringThreshold = Math.min(rect.width, rect.height) / 2 * 0.65;
+         if (dist <= ringThreshold) {
+           hour = hour === 12 ? 0 : hour + 12;
+         }
+         newState = { ...state, hours: hour, mode: 'minutes' };
+         newHours24 = hour;
+       } else {
+         newState = { ...state, hours: hour, mode: 'minutes' };
+         newHours24 = newState.isPM ? (hour === 12 ? 12 : hour + 12) : (hour === 12 ? 0 : hour);
+       }
        baseDate.setHours(newHours24);
-       baseDate.setMinutes(newState.minutes); // Use existing minutes from newState
+       baseDate.setMinutes(newState.minutes);
      } else {
        const minute = Math.round(angle / 6) % 60;
-       // Keep the mode as 'minutes' when in minute mode
        newState = { ...state, minutes: minute, mode: 'minutes' };
-       newHours24 = newState.isPM ? (newState.hours === 12 ? 12 : newState.hours + 12) : (newState.hours === 12 ? 0 : newState.hours); // Use existing hours from newState
+       newHours24 = is24h
+         ? newState.hours
+         : newState.isPM
+           ? (newState.hours === 12 ? 12 : newState.hours + 12)
+           : (newState.hours === 12 ? 0 : newState.hours);
        baseDate.setHours(newHours24);
        baseDate.setMinutes(minute);
      }
@@ -407,46 +441,71 @@ export function TimeEntry({
      }
    };
  
-   // Calculate hand angle for CSS rotation (0deg points up, 90deg points right)
+   // Calculate hand angle for CSS rotation, using accumulated rotation to avoid
+   // jumps at the 0°/360° boundary (e.g., hour 5→6, minute 29→30).
+   // Instead of snapping to an absolute 0-360 angle, we track the total rotation
+   // and always take the shortest path (±180°) so CSS transitions animate smoothly.
    const getHandAngle = () => {
+     let targetAngle: number;
      if (state.mode === 'hours') {
-       // For hours: each hour is 30 degrees (360/12)
-       // Convert hours to 0-11 range
        const hour = state.hours % 12;
-       
-       // Calculate hour angle with minute precision for smoother movement
-       // Formula adapted from standard clock drawing: (hour * 30) + (minutes / 2)
-       // This makes the hour hand gradually move between hour marks based on the minute value
-       // Add 180 degrees to correct the orientation (hand was pointing opposite)
-       const hourAngle = ((hour * 30) + 180) % 360;
-       
-       return hourAngle;
+       targetAngle = ((hour * 30) + 180) % 360;
      } else {
-       // For minutes: each minute is 6 degrees (360/60)
-       // Add 180 degrees to correct the orientation (hand was pointing opposite)
-       const minuteAngle = (state.minutes * 6 + 180) % 360;
-       
-       return minuteAngle;
+       targetAngle = (state.minutes * 6 + 180) % 360;
      }
+
+     // Reset accumulated angle on mode switch so the hand jumps directly
+     // to the new position rather than spinning across modes
+     if (prevModeRef.current !== state.mode) {
+       prevModeRef.current = state.mode;
+       accumulatedAngleRef.current = targetAngle;
+       return targetAngle;
+     }
+
+     if (accumulatedAngleRef.current === null) {
+       accumulatedAngleRef.current = targetAngle;
+       return targetAngle;
+     }
+
+     // Calculate shortest angular delta to avoid the long way around
+     const currentNormalized = ((accumulatedAngleRef.current % 360) + 360) % 360;
+     let delta = targetAngle - currentNormalized;
+     if (delta > 180) delta -= 360;
+     if (delta < -180) delta += 360;
+
+     accumulatedAngleRef.current += delta;
+     return accumulatedAngleRef.current;
    };
   
-  // Calculate hand length - make both hands the same length
+  // Calculate hand length - shorter for inner ring in 24h mode
   const getHandLength = () => {
-    return 80; // Same length for both hour and minute hands
+    if (is24h && state.mode === 'hours') {
+      const isInnerRing = state.hours === 0 || state.hours > 12;
+      return isInnerRing ? 50 : 80;
+    }
+    return 80;
+  };
+
+  // Get the selection circle radius (matches hand length positioning)
+  const getSelectionRadius = () => {
+    if (is24h && state.mode === 'hours') {
+      const isInnerRing = state.hours === 0 || state.hours > 12;
+      return isInnerRing ? 65 : 100;
+    }
+    return 100;
   };
   
   // Generate clock markers based on mode (hours or minutes)
   const renderClockMarkers = () => {
     if (state.mode === 'hours') {
-      // Generate hour markers (1-12)
-      const hours = Array.from({ length: 12 }, (_, i) => i + 1);
-      return hours.map(hour => {
+      // Generate outer ring hour markers (1-12)
+      const outerHours = Array.from({ length: 12 }, (_, i) => i + 1);
+      const markers = outerHours.map(hour => {
         const angle = ((hour % 12) * 30) - 90;
-        // Calculate position on the clock face
-        const radius = 100; // Distance from center (in pixels)
+        const radius = 100;
         const x = Math.cos(angle * (Math.PI / 180)) * radius;
         const y = Math.sin(angle * (Math.PI / 180)) * radius;
-        
+
         return (
           <div
             key={hour}
@@ -463,6 +522,37 @@ export function TimeEntry({
           </div>
         );
       });
+
+      // In 24h mode, add inner ring (13-23 and 0)
+      if (is24h) {
+        const innerHours = [0, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+        innerHours.forEach(hour => {
+          // 0 goes at 12-o'clock position, 13 at 1-o'clock, etc.
+          const clockPos = hour === 0 ? 0 : hour - 12;
+          const angle = ((clockPos % 12) * 30) - 90;
+          const radius = 65;
+          const x = Math.cos(angle * (Math.PI / 180)) * radius;
+          const y = Math.sin(angle * (Math.PI / 180)) * radius;
+
+          markers.push(
+            <div
+              key={`inner-${hour}`}
+              className={cn(
+                styles.hourMarkerInner,
+                'time-entry-hour-marker-inner'
+              )}
+              style={{
+                transform: `translate(${x}px, ${y}px)`,
+              }}
+              onClick={(e) => { e.stopPropagation(); handleHourSelect(hour); }}
+            >
+              {hour}
+            </div>
+          );
+        });
+      }
+
+      return markers;
     } else {
       // Generate minute markers (in 5-minute increments)
       const minuteMarkers = [];
@@ -516,14 +606,14 @@ export function TimeEntry({
       <div className={cn(styles.header, 'time-entry-header')}>
         <div className={cn(styles.timeDisplay, 'time-entry-time-display')}>
           {/* Clickable Hour */}
-          <span 
+          <span
             className={cn(
-              "cursor-pointer px-1 rounded", 
+              "cursor-pointer px-1 rounded",
               state.mode === 'hours' ? "bg-white/20 font-semibold" : "hover:bg-white/10"
             )}
             onClick={() => setState(prev => ({ ...prev, mode: 'hours' }))}
           >
-            {state.hours}
+            {is24h ? state.hours.toString().padStart(2, '0') : state.hours}
           </span>
           :
           {/* Clickable Minute */}
@@ -537,30 +627,32 @@ export function TimeEntry({
             {state.minutes.toString().padStart(2, '0')}
           </span>
         </div>
-        <div className={cn(styles.amPmDisplay, 'time-entry-ampm-display')}>
-          <div 
-            className={cn(
-              styles.amPmButton, 
-              !state.isPM && styles.amPmButtonSelected,
-              'time-entry-ampm-button',
-              !state.isPM && 'time-entry-ampm-button-selected'
-            )}
-            onClick={() => handlePeriodToggle(false)}
-          >
-            {t('AM')}
+        {!is24h && (
+          <div className={cn(styles.amPmDisplay, 'time-entry-ampm-display')}>
+            <div
+              className={cn(
+                styles.amPmButton,
+                !state.isPM && styles.amPmButtonSelected,
+                'time-entry-ampm-button',
+                !state.isPM && 'time-entry-ampm-button-selected'
+              )}
+              onClick={() => handlePeriodToggle(false)}
+            >
+              {t('AM')}
+            </div>
+            <div
+              className={cn(
+                styles.amPmButton,
+                state.isPM && styles.amPmButtonSelected,
+                'time-entry-ampm-button',
+                state.isPM && 'time-entry-ampm-button-selected'
+              )}
+              onClick={() => handlePeriodToggle(true)}
+            >
+              {t('PM')}
+            </div>
           </div>
-          <div 
-            className={cn(
-              styles.amPmButton, 
-              state.isPM && styles.amPmButtonSelected,
-              'time-entry-ampm-button',
-              state.isPM && 'time-entry-ampm-button-selected'
-            )}
-            onClick={() => handlePeriodToggle(true)}
-          >
-            {t('PM')}
-          </div>
-        </div>
+        )}
       </div>
       
       {/* Clock face */}
@@ -644,8 +736,8 @@ export function TimeEntry({
                  fontWeight: 'bold',
                  // Position the selection bubble at the same distance from center as clock numbers
                  // and follow the same positioning logic as the clock hand
-                 left: `calc(50% + ${Math.cos((getHandAngle() - 270) * (Math.PI / 180)) * 100}px)`,
-                 top: `calc(50% + ${Math.sin((getHandAngle() - 270) * (Math.PI / 180)) * 100}px)`,
+                 left: `calc(50% + ${Math.cos((getHandAngle() - 270) * (Math.PI / 180)) * getSelectionRadius()}px)`,
+                 top: `calc(50% + ${Math.sin((getHandAngle() - 270) * (Math.PI / 180)) * getSelectionRadius()}px)`,
                  transform: 'translate(-50%, -50%)',
                  zIndex: 25,
                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
@@ -667,7 +759,9 @@ export function TimeEntry({
                  setPreviousAngle(null);
                }}
              >
-               {state.mode === 'hours' ? state.hours : exactMinute !== null ? exactMinute : state.minutes}
+               {state.mode === 'hours'
+                 ? (is24h ? state.hours.toString().padStart(2, '0') : state.hours)
+                 : exactMinute !== null ? exactMinute : state.minutes}
              </div>
            )}
           

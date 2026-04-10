@@ -24,6 +24,7 @@ export const timeEntryStyles = {
   
   // Hour markers
   hourMarker: "absolute w-8 h-8 flex items-center justify-center text-gray-700 font-medium",
+  hourMarkerInner: "absolute w-7 h-7 flex items-center justify-center text-gray-500 text-xs font-medium",
   hourMarkerSelected: "bg-teal-600 text-white rounded-full",
   
   // Minute markers

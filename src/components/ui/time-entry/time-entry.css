@@ -17,6 +17,10 @@ html.dark .time-entry-minute-marker {
   color: #e5e7eb !important; /* gray-200 */
 }
 
+html.dark .time-entry-hour-marker-inner {
+  color: #9ca3af !important; /* gray-400 */
+}
+
 html.dark .time-entry-hour-marker-selected,
 html.dark .time-entry-minute-marker-selected {
   background-color: #0d9488 !important; /* teal-700 */
