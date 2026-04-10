@@ -86,7 +86,7 @@ const ENV_DEFAULTS = [
   },
   {
     key: 'APP_VERSION',
-    default: '1.3.1',
+    default: '1.3.2',
     comment: 'Application version'
   },
   {

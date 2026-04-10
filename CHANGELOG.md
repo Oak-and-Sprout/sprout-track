@@ -1,5 +1,20 @@
 # Sprout Track Changelog
 
+## v1.3.2 - Time Picker Updates, Keyboard bugfixes, PWA Theming
+
+### Changes
+
+#### Enhancements
+- Time picker now has a 24h version
+
+#### Bugfixes
+- Fixed graphical glitch in time picker when hour or minute hand passes 6
+- Fixed inconsistent keyboard entry on pin login pages
+- Fixed PWA graphics to properly show colors in top status bar for android and iOS
+
+#### Localization
+- Added Romanian language (thank you stefanhalus!)
+
 ## v1.3.1 - Timezone Context Error in Setup
 
 ### Changes
