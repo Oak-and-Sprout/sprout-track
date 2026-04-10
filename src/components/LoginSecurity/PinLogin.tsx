@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -31,6 +31,9 @@ export default function PinLogin({
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [goButtonClicks, setGoButtonClicks] = useState(0);
   const [clickTimer, setClickTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const loginIdInputRef = useRef<HTMLInputElement>(null);
+  const pinInputRef = useRef<HTMLInputElement>(null);
 
   // Reset form when component mounts and check for server-side IP lockout
   useEffect(() => {
@@ -100,10 +103,7 @@ export default function PinLogin({
               setActiveInput('pin');
               // Focus the PIN input for SYSTEM auth type
               setTimeout(() => {
-                const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
-                if (pinInput) {
-                  pinInput.focus();
-                }
+                pinInputRef.current?.focus();
               }, 0);
             }
           }
@@ -119,31 +119,10 @@ export default function PinLogin({
     checkAuthSettings();
   }, [familySlug]);
 
-  const handleLoginIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value.length <= 2) {
-      setLoginId(value);
-      setError('');
-    }
-    if (value.length === 2) {
-      setActiveInput('pin');
-      // Focus the PIN input after state update
-      setTimeout(() => {
-        const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
-        if (pinInput) {
-          pinInput.focus();
-        }
-      }, 0);
-    }
-  };
-
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 10) {
-      setPin(value);
-      setError('');
-    }
-  };
+  // No-op onChange handlers — all keyboard input is handled by handleKeyDown.
+  // Inputs are readOnly so onChange never fires, but React requires the prop on controlled inputs.
+  const handleLoginIdChange = () => {};
+  const handlePinChange = () => {};
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Determine which field is actually focused based on the target element
@@ -172,10 +151,7 @@ export default function PinLogin({
         if (newLoginId.length === 2) {
           setActiveInput('pin');
           setTimeout(() => {
-            const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
-            if (pinInput) {
-              pinInput.focus();
-            }
+            pinInputRef.current?.focus();
           }, 0);
         }
       } else if (isPinField && pin.length < 10) {
@@ -200,10 +176,7 @@ export default function PinLogin({
         // Switch back to login ID if PIN is empty and there's content in login ID
         setActiveInput('loginId');
         setTimeout(() => {
-          const loginInput = document.querySelector('input[placeholder="ID"]') as HTMLInputElement;
-          if (loginInput) {
-            loginInput.focus();
-          }
+          loginIdInputRef.current?.focus();
         }, 0);
       }
     }
@@ -214,18 +187,12 @@ export default function PinLogin({
       if (isLoginIdField) {
         setActiveInput('pin');
         setTimeout(() => {
-          const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
-          if (pinInput) {
-            pinInput.focus();
-          }
+          pinInputRef.current?.focus();
         }, 0);
       } else if (isPinField) {
         setActiveInput('loginId');
         setTimeout(() => {
-          const loginInput = document.querySelector('input[placeholder="ID"]') as HTMLInputElement;
-          if (loginInput) {
-            loginInput.focus();
-          }
+          loginIdInputRef.current?.focus();
         }, 0);
       }
     }
@@ -251,12 +218,8 @@ export default function PinLogin({
         // Automatically switch to PIN input when login ID is complete
         if (newLoginId.length === 2) {
           setActiveInput('pin');
-          // Focus the PIN input after state update
           setTimeout(() => {
-            const pinInput = document.querySelector('input[placeholder="PIN"]') as HTMLInputElement;
-            if (pinInput) {
-              pinInput.focus();
-            }
+            pinInputRef.current?.focus();
           }, 0);
         }
       }
@@ -445,10 +408,16 @@ export default function PinLogin({
 
   const handleFocusLoginId = () => {
     setActiveInput('loginId');
+    setTimeout(() => {
+      loginIdInputRef.current?.focus();
+    }, 0);
   };
 
   const handleFocusPin = () => {
     setActiveInput('pin');
+    setTimeout(() => {
+      pinInputRef.current?.focus();
+    }, 0);
   };
 
   // Handle secret admin mode activation
@@ -621,6 +590,7 @@ export default function PinLogin({
 
                 {/* Hidden inputs */}
                 <Input
+                  ref={loginIdInputRef}
                   value={loginId}
                   onChange={handleLoginIdChange}
                   onKeyDown={handleKeyDown}
@@ -628,11 +598,13 @@ export default function PinLogin({
                   placeholder="ID"
                   maxLength={2}
                   inputMode="none"
+                  readOnly
                   autoFocus={activeInput === 'loginId'}
                   onFocus={handleFocusLoginId}
                   disabled={!!lockoutTime}
                 />
                 <Input
+                  ref={pinInputRef}
                   type="password"
                   value={pin}
                   onChange={handlePinChange}
@@ -641,6 +613,7 @@ export default function PinLogin({
                   placeholder="PIN"
                   maxLength={10}
                   inputMode="none"
+                  readOnly
                   autoFocus={activeInput === 'pin'}
                   onFocus={handleFocusPin}
                   disabled={!!lockoutTime}
@@ -675,6 +648,7 @@ export default function PinLogin({
                   )}
                 </div>
                 <Input
+                  ref={pinInputRef}
                   type="password"
                   value={pin}
                   onChange={handlePinChange}
@@ -683,6 +657,7 @@ export default function PinLogin({
                   placeholder="PIN"
                   maxLength={10}
                   inputMode="none"
+                  readOnly
                   autoFocus={activeInput === 'pin'}
                   onFocus={handleFocusPin}
                   disabled={!!lockoutTime}

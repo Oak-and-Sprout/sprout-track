@@ -26,7 +26,7 @@ export const formPageStyles = {
   overlayClosed: "opacity-0 pointer-events-none",
   
   // Header section
-  header: "flex items-center p-4 border-b border-gray-200",
+  header: "flex items-center p-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-200",
   
   // Title container
   titleContainer: "flex flex-col",

@@ -277,7 +277,7 @@ export const SideNav: React.FC<SideNavProps> = ({
         aria-label="Main navigation"
       >
         {/* Header - matching the structure of the green bar in the main layout */}
-        <header className="w-full bg-white sticky top-0 z-40 side-nav-header">
+        <header className="w-full bg-white sticky top-0 z-40 side-nav-header pt-[env(safe-area-inset-top)]">
           <div className="mx-auto">
             <div className={cn("flex justify-between items-center min-h-20", sideNavStyles.header)}>
               <div className="flex items-center gap-3 flex-1">

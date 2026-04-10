@@ -792,7 +792,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           
           {/* Main content area */}
           <div className={`flex flex-col flex-1 min-h-screen ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
-            <header className="w-full bg-gradient-to-r from-teal-600 to-teal-700 sticky top-0 z-40">
+            <header className="w-full bg-gradient-to-r from-teal-600 to-teal-700 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
               <div className="mx-auto py-2">
                 <div className="flex justify-between items-center h-16"> {/* Fixed height for consistency */}
                   <div className={`flex items-center ${isWideScreen ? 'ml-8' : 'ml-4 sm:ml-6 lg:ml-8'}`}>
@@ -893,7 +893,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
       {/* Show page content without app UI when on root slug page and not authenticated */}
       {!shouldShowAppUI && (
-        <div className="min-h-screen bg-gradient-to-r from-teal-600 to-teal-700">
+        <div className="min-h-screen bg-gradient-to-r from-teal-600 to-teal-700 pt-[env(safe-area-inset-top)]">
           {children}
         </div>
       )}

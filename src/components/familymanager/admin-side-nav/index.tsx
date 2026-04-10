@@ -91,7 +91,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
         aria-label="Admin navigation"
       >
         {/* Header */}
-        <header className="w-full bg-white sticky top-0 z-40 admin-side-nav-header">
+        <header className="w-full bg-white sticky top-0 z-40 admin-side-nav-header pt-[env(safe-area-inset-top)]">
           <div className="mx-auto">
             <div className={cn("flex justify-between items-center min-h-20", adminSideNavStyles.header)}>
               <div className="flex items-center gap-3 flex-1">

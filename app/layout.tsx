@@ -9,6 +9,7 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover' as const,
+  themeColor: '#0d9488',
 };
 
 export const metadata: Metadata = {
@@ -70,6 +71,11 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: 'https://www.sprout-track.com',
+  },
+  manifest: '/manifest.json',
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
   },
   category: 'technology',
 };

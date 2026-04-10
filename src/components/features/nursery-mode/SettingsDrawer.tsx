@@ -55,6 +55,7 @@ export function SettingsDrawer({
           transform: open ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
           padding: 'clamp(1.5rem, 4vw, 2.5rem)',
+          paddingTop: 'calc(clamp(1.5rem, 4vw, 2.5rem) + env(safe-area-inset-top))',
           borderLeft: `1px solid ${colors.border}`,
         }}
       >
