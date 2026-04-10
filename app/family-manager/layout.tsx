@@ -210,7 +210,7 @@ function AppContentWithCounts({
         ) : (
           /* Small screen: header + modal side-nav */
           <>
-            <header className="family-manager-header w-full bg-gradient-to-r from-teal-600 to-teal-700">
+            <header className="family-manager-header w-full bg-gradient-to-r from-teal-600 to-teal-700 pt-[env(safe-area-inset-top)]">
               <div className="mx-auto py-2">
                 <div className="flex justify-between items-center h-16">
                   <div className="flex items-center ml-4">
