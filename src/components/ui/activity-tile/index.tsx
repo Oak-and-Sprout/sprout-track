@@ -1,4 +1,3 @@
-import React from 'react';
 import { cn } from "@/src/lib/utils";
 import { activityTileStyles as styles } from './activity-tile.styles';
 import { ActivityTileProps, ActivityType } from './activity-tile.types';
@@ -31,12 +30,12 @@ export function ActivityTile({
   variant: variantProp,
   className,
   isButton = false
-}: ActivityTileProps) {
-  const { theme } = useTheme();
+}: Readonly<ActivityTileProps>) {
+  useTheme();
   const variant = variantProp || getActivityVariant(activity);
-  
+
   return (
-    <div
+    <button
       className={cn(
         styles.base,
         isButton && styles.button.base,
@@ -51,7 +50,7 @@ export function ActivityTile({
             "relative overflow-visible flex items-center justify-center transition-transform duration-200 group-hover:scale-110 group-active:rotate-12",
             styles.iconContainer.base,
             styles.iconContainer.variants[variant]
-          )}>
+          )} aria-hidden="true">
             {icon || <ActivityTileIcon activity={activity} variant={variant} isButton={isButton} />}
           </div>
           {title && (
@@ -70,8 +69,8 @@ export function ActivityTile({
           />
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
-export type { ActivityTileProps, ActivityType };
+export {type ActivityTileProps, type ActivityType} from './activity-tile.types';

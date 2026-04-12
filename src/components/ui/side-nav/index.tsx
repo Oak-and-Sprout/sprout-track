@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
@@ -8,7 +8,7 @@ import { LanguageSelector } from './language-selector';
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
   () => import('@/src/components/account-manager/PaymentModal'),
-  { 
+  {
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center p-4">
@@ -97,7 +97,7 @@ export const SideNavTrigger: React.FC<SideNavTriggerProps> = ({
   children,
 }) => {
   return (
-    <div 
+    <div
       onClick={onClick}
       className={cn(triggerButtonVariants({ isOpen }), className)}
     >
@@ -170,7 +170,7 @@ export const SideNav: React.FC<SideNavProps> = ({
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
-  
+
   // Fetch account status if in SaaS mode and authenticated
   useEffect(() => {
     const fetchAccountStatus = async () => {
@@ -226,7 +226,7 @@ export const SideNav: React.FC<SideNavProps> = ({
       return () => darkModeMediaQuery.removeEventListener('change', handleChange);
     }
   }, []);
-  
+
   // Close the side nav when pressing Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -236,7 +236,7 @@ export const SideNav: React.FC<SideNavProps> = ({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    
+
     // Prevent scrolling when side nav is open in modal mode
     if (isOpen && !nonModal) {
       document.body.style.overflow = 'hidden';
@@ -250,55 +250,33 @@ export const SideNav: React.FC<SideNavProps> = ({
     };
   }, [isOpen, onClose, nonModal]);
 
-  return (
-    <>
-      {/* Overlay - only shown in modal mode */}
-      {!nonModal && (
-        <div 
-          className={cn(
-            sideNavStyles.overlay,
-            isOpen ? sideNavStyles.overlayOpen : sideNavStyles.overlayClosed
-          )}
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+  const shareButtonId = useId();
 
-      {/* Side Navigation Panel */}
-      <div
-        className={cn(
-          nonModal ? sideNavStyles.containerNonModal : sideNavStyles.container,
-          !nonModal && (isOpen ? sideNavStyles.containerOpen : sideNavStyles.containerClosed),
-          className,
-          "side-nav" // Add this class for direct CSS targeting
-        )}
-        role={nonModal ? "navigation" : "dialog"}
-        aria-modal={nonModal ? "false" : "true"}
-        aria-label="Main navigation"
-      >
-        {/* Header - matching the structure of the green bar in the main layout */}
-        <header className="w-full bg-white sticky top-0 z-40 side-nav-header pt-[env(safe-area-inset-top)]">
-          <div className="mx-auto">
-            <div className={cn("flex justify-between items-center min-h-20", sideNavStyles.header)}>
-              <div className="flex items-center gap-3 flex-1">
-                {/* Logo positioned to center between app name and family name */}
-                <div className="flex items-center">
-                  <Image
-                    src="/sprout-128.png"
-                    alt="Sprout Logo"
-                    width={40}
-                    height={40}
-                    className={sideNavStyles.logo}
-                    priority
-                  />
-                </div>
+  const appHeader = () => {
+    return (
+      <header className="w-full bg-white sticky top-0 z-40 side-nav-header pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto">
+          <div className={cn("flex justify-between items-center min-h-20", sideNavStyles.header)}>
+            <div className="flex items-center gap-3 flex-1">
+              {/* Logo positioned to center between app name and family name */}
+              <div className="flex items-center">
+                <Image
+                  src="/sprout-128.png"
+                  alt="Sprout Logo"
+                  width={40}
+                  height={40}
+                  className={sideNavStyles.logo}
+                  priority
+                />
+              </div>
 
-                {/* App name and family name container */}
-                <div className="flex flex-col justify-center flex-1">
+              {/* App name and family name container */}
+              <div className="flex flex-col justify-center flex-1">
+                <h1>
                   {isSaasMode ? (
                     <button
                       onClick={() => {
-                        window.location.href = '/';
+                        globalThis.location.href = '/';
                       }}
                       className="text-left cursor-pointer hover:opacity-80 transition-opacity"
                       aria-label="Go to home page"
@@ -308,95 +286,100 @@ export const SideNav: React.FC<SideNavProps> = ({
                   ) : (
                     <span className={cn(sideNavStyles.appName, "side-nav-app-name")}>{t('Sprout Track')}</span>
                   )}
+                </h1>
 
-                  {/* Family name with share button */}
-                  {familyName && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Label className="text-sm text-gray-600 truncate">
-                        {familyName}
-                      </Label>
-                      {familySlug && (
-                        <ShareButton
-                          familySlug={familySlug}
-                          familyName={familyName}
-                          variant="ghost"
-                          size="sm"
-                          showText={false}
-                          className="h-5 w-5 p-0"
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
+                {/* Family name with share button */}
+                {familyName && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label htmlFor={shareButtonId} className="text-sm text-gray-600 truncate">
+                      {familyName}
+                    </Label>
+                    {familySlug && (
+                      <ShareButton
+                        id={shareButtonId}
+                        familySlug={familySlug}
+                        familyName={familyName}
+                        variant="ghost"
+                        size="sm"
+                        showText={false}
+                        className="h-5 w-5 p-0"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
-
-              {/* Only show close button in modal mode */}
-              {!nonModal && (
-                <button
-                  onClick={onClose}
-                  className={cn(sideNavStyles.closeButton, "side-nav-close-button")}
-                  aria-label="Close navigation"
-                >
-                  <X size={20} />
-                </button>
-              )}
             </div>
           </div>
-        </header>
+        </div>
+      </header>
+    )
+  };
+
+  const appNavigation = () => {
+    return (
+      <nav className={sideNavStyles.navItems} aria-label="Main navigation">
+        <SideNavItem
+          path="/log-entry"
+          label={t('Log Entry')}
+          isActive={currentPath === '/log-entry'}
+          onClick={onNavigate}
+          className="side-nav-item"
+        />
+        <SideNavItem
+          path="/full-log"
+          label={t('Full Log')}
+          isActive={currentPath === '/full-log'}
+          onClick={onNavigate}
+          className="side-nav-item"
+        />
+        <SideNavItem
+          path="/calendar"
+          label={t('Calendar')}
+          isActive={currentPath === '/calendar'}
+          onClick={onNavigate}
+          className="side-nav-item"
+        />
+        <SideNavItem
+          path="/reports"
+          label={t('Reports')}
+          isActive={currentPath === '/reports'}
+          onClick={onNavigate}
+          className="side-nav-item"
+        />
+        <SideNavItem
+          path="/nursery-mode"
+          label={t('Nursery Mode')}
+          isActive={currentPath === '/nursery-mode'}
+          onClick={onNavigate}
+          className="side-nav-item"
+        />
+      </nav>
+    )
+  };
+
+  const dialogContent = () => {
+    return (
+      <>
+        {/* Header - matching the structure of the green bar in the main layout */}
+        {appHeader()}
 
         {/* Navigation Items */}
-        <nav className={sideNavStyles.navItems}>
-          <SideNavItem
-            path="/log-entry"
-            label={t('Log Entry')}
-            isActive={currentPath === '/log-entry'}
-            onClick={onNavigate}
-            className="side-nav-item"
-          />
-          <SideNavItem
-            path="/full-log"
-            label={t('Full Log')}
-            isActive={currentPath === '/full-log'}
-            onClick={onNavigate}
-            className="side-nav-item"
-          />
-          <SideNavItem
-            path="/calendar"
-            label={t('Calendar')}
-            isActive={currentPath === '/calendar'}
-            onClick={onNavigate}
-            className="side-nav-item"
-          />
-          <SideNavItem
-            path="/reports"
-            label={t('Reports')}
-            isActive={currentPath === '/reports'}
-            onClick={onNavigate}
-            className="side-nav-item"
-          />
-          <SideNavItem
-            path="/nursery-mode"
-            label={t('Nursery Mode')}
-            isActive={currentPath === '/nursery-mode'}
-            onClick={onNavigate}
-            className="side-nav-item"
-          />
-        </nav>
+        {appNavigation()}
 
         {/* Version display at bottom of nav items */}
         <div className="w-full text-center mb-4">
           <div className="flex items-center justify-center gap-2">
-            <span 
+            <button
               className="text-xs text-gray-500 cursor-pointer hover:text-teal-600 transition-colors"
               onClick={() => setShowChangelog(true)}
               aria-label="View changelog"
             >
               v{packageInfo.version}
-            </span>
+            </button>
             <span className="text-xs text-gray-400">•</span>
             <LanguageSelector />
           </div>
-          
+
           {/* Feedback link - only shown in SaaS mode */}
           {isSaasMode && (
             <div className="mt-2">
@@ -416,39 +399,39 @@ export const SideNav: React.FC<SideNavProps> = ({
             <>
               {/* Show trial info if user is in trial and not a beta participant */}
               {accountStatus.trialEnds &&
-               !accountStatus.subscriptionActive &&
-               !accountStatus.betaparticipant &&
-               accountStatus.accountStatus === 'trial' && (
-                <div className="mt-4 px-4">
-                  <div className={cn("bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2", "side-nav-trial-container")}>
-                    <div className={cn("flex items-center justify-center text-amber-700", "side-nav-trial-header")}>
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span className="text-xs font-medium">{t('Trial Version')}</span>
+                !accountStatus.subscriptionActive &&
+                !accountStatus.betaparticipant &&
+                accountStatus.accountStatus === 'trial' && (
+                  <div className="mt-4 px-4">
+                    <div className={cn("bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2", "side-nav-trial-container")}>
+                      <div className={cn("flex items-center justify-center text-amber-700", "side-nav-trial-header")}>
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-medium">{t('Trial Version')}</span>
+                      </div>
+                      <div className="text-center">
+                        <p className={cn("text-xs text-amber-600", "side-nav-trial-text")}>
+                          {t('Ending')}: {formatDateLong(new Date(accountStatus.trialEnds), dateFormat)}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white"
+                        onClick={() => setShowPaymentModal(true)}
+                      >
+                        <CreditCard className="h-3 w-3 mr-1" aria-hidden="true" />
+                        {t('Buy Now')}
+                      </Button>
                     </div>
-                    <div className="text-center">
-                      <p className={cn("text-xs text-amber-600", "side-nav-trial-text")}>
-                        {t('Ending')}: {formatDateLong(new Date(accountStatus.trialEnds), dateFormat)}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white"
-                      onClick={() => setShowPaymentModal(true)}
-                    >
-                      <CreditCard className="h-3 w-3 mr-1" />
-                      {t('Buy Now')}
-                    </Button>
                   </div>
-                </div>
-              )}
+                )}
             </>
           )}
         </div>
 
         {/* Changelog Modal */}
-        <ChangelogModal 
-          open={showChangelog} 
-          onClose={() => setShowChangelog(false)} 
+        <ChangelogModal
+          open={showChangelog}
+          onClose={() => setShowChangelog(false)}
           version={packageInfo.version}
         />
 
@@ -506,14 +489,14 @@ export const SideNav: React.FC<SideNavProps> = ({
         <div className={cn(sideNavStyles.footer, "side-nav-footer")}>
           {/* Theme Toggle Component */}
           <ThemeToggle className="mb-2" />
-          
+
           {/* Settings Button */}
           <FooterButton
             icon={<Settings />}
             label={t('Settings')}
             onClick={onSettingsClick}
           />
-          
+
           {/* Logout Button */}
           <FooterButton
             icon={<LogOut />}
@@ -521,7 +504,56 @@ export const SideNav: React.FC<SideNavProps> = ({
             onClick={onLogout}
           />
         </div>
-      </div>
+      </>
+    );
+  };
+
+  return (
+    <>
+      {/* Side Navigation Panel */}
+      {nonModal ? (
+        <div
+          className={cn(
+            nonModal ? sideNavStyles.containerNonModal : sideNavStyles.container,
+            !nonModal && (isOpen ? sideNavStyles.containerOpen : sideNavStyles.containerClosed),
+            className,
+            "side-nav" // Add this class for direct CSS targeting
+          )}
+        >
+          {dialogContent()}
+        </div>
+      ) : (
+        <>
+          {/* Overlay - only shown in modal mode */}
+          <div
+            className={cn(
+              sideNavStyles.overlay,
+              isOpen ? sideNavStyles.overlayOpen : sideNavStyles.overlayClosed
+            )}
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <dialog
+            className={cn(
+              nonModal ? sideNavStyles.containerNonModal : sideNavStyles.container,
+              !nonModal && (isOpen ? sideNavStyles.containerOpen : sideNavStyles.containerClosed),
+              className,
+              "side-nav" // Add this class for direct CSS targeting
+            )}
+            aria-modal="true"
+          >
+            {dialogContent()}
+            <button
+              type="button"
+              onClick={onClose}
+              className={cn(sideNavStyles.closeButton, "side-nav-close-button")}
+              aria-label="Close navigation"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          </dialog>
+        </>
+      )}
     </>
   );
 };
