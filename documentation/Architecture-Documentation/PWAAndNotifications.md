@@ -4,6 +4,28 @@
 
 Sprout Track is a Progressive Web App with push notification support, Wake Lock API integration, and a dedicated nursery mode designed for wall-mounted tablets. The PWA architecture enables offline-capable, app-like behavior on mobile and desktop browsers.
 
+## PWA Installation
+
+### Dynamic Manifest
+
+The PWA manifest is generated dynamically per family so that "Add to Home Screen" launches directly into the family's URL rather than the root page.
+
+- **Static manifest:** `public/manifest.json` — used for the root/marketing page (`start_url: "/"`)
+- **Dynamic manifest:** `GET /api/manifest/[slug]` — returns a manifest scoped to the family URL (`start_url` and `scope` set to `/{slug}/`)
+- **Server-side injection:** The `app/(app)/[slug]/layout.tsx` and `app/(nursery)/[slug]/layout.tsx` server component layouts use `generateMetadata` to set the `<link rel="manifest">` href to the dynamic endpoint. This ensures the correct manifest is in the HTML before any JavaScript runs, which is critical for Safari.
+
+### Browser Support
+
+| Feature | Chrome | Safari | Firefox |
+|---------|--------|--------|---------|
+| Standalone mode (`display: "standalone"`) | Full support | Full support | Not supported — opens with browser chrome |
+| App name from manifest | Yes | Yes | No — uses page title |
+| App icon from manifest | Yes | Yes | Unreliable |
+| Theme color (status bar) | Yes | Yes (`black-translucent`) | Not supported — stays white |
+| Scoped `start_url` | Yes | Yes | Partially — URL is correct but other manifest fields ignored |
+
+**Firefox limitation:** Firefox on Android does not fully implement the Web App Manifest spec. It creates bookmark-style home screen shortcuts rather than true PWA installations. The white status bar, missing icon, and incorrect app name in Firefox are known browser limitations and cannot be resolved on the application side. Chrome and Safari are the recommended browsers for PWA installation.
+
 ## Service Worker
 
 **File:** `public/sw.js`
@@ -186,6 +208,8 @@ When enabled:
 
 ## Key Files
 
+- `public/manifest.json` — Static PWA manifest (root/marketing page)
+- `app/api/manifest/[slug]/route.ts` — Dynamic family-scoped manifest endpoint
 - `public/sw.js` — Service worker (push events, notification clicks)
 - `src/lib/notifications/push.ts` — Push notification sending
 - `src/lib/notifications/activityHook.ts` — Activity-triggered notifications

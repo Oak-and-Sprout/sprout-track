@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import AppLayout from './client-layout';
 
 export async function generateMetadata({
   params,
@@ -17,10 +16,10 @@ export async function generateMetadata({
   };
 }
 
-export default function SlugLayout({
+export default function NurserySlugLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AppLayout>{children}</AppLayout>;
+  return <>{children}</>;
 }
