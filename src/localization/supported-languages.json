@@ -4,5 +4,6 @@
   { "code": "es", "name": "Español", "abbreviation": "ES" },
   { "code": "fr", "name": "Français", "abbreviation": "FR" },
   { "code": "it", "name": "Italiano", "abbreviation": "IT" },
+  { "code": "nl", "name": "Nederlands", "abbreviation": "NL" },
   { "code": "ro", "name": "Română", "abbreviation": "RO" }
 ]
