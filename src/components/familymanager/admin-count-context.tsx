@@ -20,7 +20,7 @@ interface AdminCountContextType {
 const AdminCountContext = createContext<AdminCountContextType | undefined>(undefined);
 
 export function AdminCountProvider({ children }: { children: React.ReactNode }) {
-  const { isSaasMode } = useDeployment();
+  const { isSaasMode, isLoading: deploymentLoading } = useDeployment();
   const [counts, setCounts] = useState<AdminCounts>({
     families: 0,
     invites: 0,
@@ -81,8 +81,9 @@ export function AdminCountProvider({ children }: { children: React.ReactNode }) 
   }, [isSaasMode]);
 
   useEffect(() => {
-    refreshCounts();
-  }, [refreshCounts]);
+    if (deploymentLoading) return;
+    void refreshCounts();
+  }, [deploymentLoading, refreshCounts]);
 
   return (
     <AdminCountContext.Provider value={{ counts, refreshCounts, updateCount }}>
