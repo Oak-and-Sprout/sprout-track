@@ -8,6 +8,7 @@ import { useTheme } from '@/src/context/theme';
 import { checkboxVariants } from './checkbox.styles';
 import { CheckboxProps } from './checkbox.types';
 import './checkbox.css';
+import { Label } from '../label';
 
 /**
  * Checkbox component
@@ -33,8 +34,8 @@ import './checkbox.css';
  */
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, variant, size, checked, onCheckedChange, ...props }, ref) => {
-    const { theme } = useTheme();
-    
+    useTheme();
+
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       if (onCheckedChange) {
         onCheckedChange(event.target.checked);
@@ -44,6 +45,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     return (
       <div className="relative inline-flex items-center">
         <input
+          id={props.id}
           type="checkbox"
           className="sr-only"
           ref={ref}
@@ -51,7 +53,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           onChange={handleChange}
           {...props}
         />
-        <div
+        <Label htmlFor={props.id}
           className={cn(
             checkboxVariants({ variant, size }),
             checked ? "" : "bg-white",
@@ -63,7 +65,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           onClick={() => onCheckedChange?.(!checked)}
         >
           {checked && <Check className="h-3.5 w-3.5 text-white checkbox-check" />}
-        </div>
+        </Label>
       </div>
     );
   }
@@ -71,6 +73,9 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
 
 Checkbox.displayName = 'Checkbox';
 
-export { Checkbox, checkboxVariants };
-export type { CheckboxProps };
+export { Checkbox, };
+
 export default Checkbox;
+
+export { checkboxVariants } from './checkbox.styles';
+export { type CheckboxProps } from './checkbox.types';

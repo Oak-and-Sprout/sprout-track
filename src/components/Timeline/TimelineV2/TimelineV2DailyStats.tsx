@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { 
+import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
@@ -46,11 +46,11 @@ interface TimelineV2DailyStatsProps {
   onDateChange: (days: number) => void;
   onDateSelection: (date: Date) => void;
   onFilterChange: (filter: FilterType) => void;
-   isHeatmapVisible: boolean;
-   onHeatmapToggle: () => void;
-   breastMilkBalance?: string;
-   defaultBottleUnit?: string;
-   enableBreastMilkTracking?: boolean;
+  isHeatmapVisible: boolean;
+  onHeatmapToggle: () => void;
+  breastMilkBalance?: string;
+  defaultBottleUnit?: string;
+  enableBreastMilkTracking?: boolean;
 }
 
 interface StatTile {
@@ -64,10 +64,10 @@ interface StatTile {
   bgActiveColor: string;
 }
 
-const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({ 
-  activities, 
+const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
+  activities,
   heatmapActivities,
-  date, 
+  date,
   isLoading = false,
   activeFilter,
   onDateChange,
@@ -95,10 +95,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   const statTiles = useMemo(() => {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
-    
+
     let totalSleepMinutes = 0;
     let wetCount = 0;
     let dirtyCount = 0;
@@ -139,22 +139,22 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
 
       // Sleep activities (exclude pump activities which also have duration and startTime)
       if ('duration' in activity && 'startTime' in activity &&
-          'type' in activity && // Sleep activities have type (NAP or NIGHT_SLEEP)
-          !('leftAmount' in activity || 'rightAmount' in activity)) { // Exclude pump activities
+        'type' in activity && // Sleep activities have type (NAP or NIGHT_SLEEP)
+        !('leftAmount' in activity || 'rightAmount' in activity)) { // Exclude pump activities
         const startTime = new Date(activity.startTime);
         const endTime = 'endTime' in activity && activity.endTime ? new Date(activity.endTime) : null;
-        
+
         if (endTime) {
           const overlapStart = Math.max(startTime.getTime(), startOfDay.getTime());
           const overlapEnd = Math.min(endTime.getTime(), endOfDay.getTime());
-          
+
           if (overlapEnd > overlapStart) {
             const overlapMinutes = Math.floor((overlapEnd - overlapStart) / (1000 * 60));
             totalSleepMinutes += overlapMinutes;
           }
         }
       }
-      
+
       // Feed activities - track all types together
       if ('amount' in activity && 'type' in activity) {
         const time = new Date(activity.time);
@@ -175,7 +175,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           }
         }
       }
-      
+
       // Breast feed activities - track duration separately for left and right
       if ('type' in activity && activity.type === 'BREAST') {
         const time = new Date(activity.time);
@@ -190,7 +190,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             // Amount is already in minutes for older records
             feedMinutes = activity.amount;
           }
-          
+
           // Track by side if available
           if ('side' in activity && activity.side) {
             if (activity.side === 'LEFT') {
@@ -203,7 +203,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           // The feed is still counted in totalFeedCount
         }
       }
-      
+
       // Diaper activities
       if ('condition' in activity && 'type' in activity) {
         const time = new Date(activity.time);
@@ -222,7 +222,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           }
         }
       }
-      
+
       // Medicine and supplement activities
       if ('doseAmount' in activity && 'medicineId' in activity) {
         const time = new Date(activity.time);
@@ -253,7 +253,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           }
         }
       }
-      
+
       // Note activities
       if ('content' in activity) {
         const time = new Date(activity.time);
@@ -261,7 +261,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           noteCount++;
         }
       }
-      
+
       // Bath activities
       if ('soapUsed' in activity) {
         const time = new Date(activity.time);
@@ -269,7 +269,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           bathCount++;
         }
       }
-      
+
       // Pump activities
       if ('leftAmount' in activity || 'rightAmount' in activity) {
         let time: Date | null = null;
@@ -287,7 +287,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           }
         }
       }
-      
+
       // Vaccine activities
       if ('vaccineName' in activity) {
         const time = new Date((activity as any).time);
@@ -304,7 +304,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           milestoneCount++;
         }
       }
-      
+
       // Measurement activities
       if ('value' in activity && 'unit' in activity) {
         const activityDate = new Date(activity.date);
@@ -318,10 +318,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     // Note: Must exclude pump activities which also have duration and startTime
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
-    
-    const activeSleep = activities.find(activity => 
-      'duration' in activity && 
-      'startTime' in activity && 
+
+    const activeSleep = activities.find(activity =>
+      'duration' in activity &&
+      'startTime' in activity &&
       'type' in activity && // Sleep activities have type (NAP or NIGHT_SLEEP)
       !('leftAmount' in activity || 'rightAmount' in activity) && // Exclude pump activities
       !('endTime' in activity && activity.endTime) &&
@@ -340,7 +340,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
 
     // Calculate awake time (elapsed time since start of day - sleep time)
     const referenceTime = isToday ? now : endOfDay;
-    
+
     const elapsedMinutes = Math.floor((referenceTime.getTime() - startOfDay.getTime()) / (1000 * 60));
     awakeMinutes = Math.max(0, elapsedMinutes - totalSleepMinutes);
 
@@ -380,12 +380,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       const formattedBottleAmounts = bottleFeedTotal > 0
         ? `${Math.round(bottleFeedTotal * 100) / 100} ${preferredUnit.toLowerCase()}`
         : '';
-      
+
       // Format solids amounts
       const formattedSolidsAmounts = Object.entries(solidsAmounts)
         .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
         .join(', ');
-      
+
       // Format breast feed amounts separately for left and right
       const breastFeedParts: string[] = [];
       if (leftBreastFeedMinutes > 0 && rightBreastFeedMinutes > 0) {
@@ -397,7 +397,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         breastFeedParts.push(`${t('Right:')} ${formatMinutes(rightBreastFeedMinutes)}`);
       }
       const formattedBreastFeed = breastFeedParts.length > 0 ? breastFeedParts.join(', ') : '';
-      
+
       // Build combined label
       const labelParts: string[] = [];
       if (formattedBottleAmounts) {
@@ -409,11 +409,11 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       if (formattedSolidsAmounts) {
         labelParts.push(formattedSolidsAmounts);
       }
-      
-      const combinedLabel = labelParts.length > 0 
+
+      const combinedLabel = labelParts.length > 0
         ? labelParts.join(' • ')
         : t('Feeds');
-      
+
       tiles.push({
         filter: 'feed',
         label: combinedLabel,
@@ -645,10 +645,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
 
   return (
     <div className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10">
-      <div className="px-5 py-1 relative z-10">
+      <section className="px-5 py-1 relative z-10" aria-label={t('Daily summary of activities')}>
         {/* Date Navigation Header */}
         <div className="flex items-center justify-center mb-2">
-          <div className="flex items-center gap-3">
+          <h2 className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -656,13 +656,13 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               className="h-8 w-8 text-gray-700 hover:bg-gray-100"
               aria-label={t('Previous day')}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
-            
+
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   className="h-8 px-3 text-sm font-medium text-gray-800 hover:bg-gray-100 min-w-[140px]"
                 >
@@ -683,7 +683,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
                 />
               </PopoverContent>
             </Popover>
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -691,9 +691,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               className="h-8 w-8 text-gray-700 hover:bg-gray-100"
               aria-label={t('Next day')}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
-          </div>
+          </h2>
         </div>
 
         {/* Daily Summary Title with Collapse Toggle + Heatmap Toggle */}
@@ -707,7 +707,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             {isCollapsed ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-4 w-4" aria-hidden="true" />
             )}
           </button>
 
@@ -720,12 +720,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             >
               {isHeatmapVisible ? (
                 <>
-                  <EyeOff className="h-3 w-3" />
+                  <EyeOff className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
-                  <Eye className="h-3 w-3" />
+                  <Eye className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Show heatmap')}</span>
                 </>
               )}
@@ -739,12 +739,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             >
               {isHeatmapVisible ? (
                 <>
-                  <EyeOff className="h-3 w-3" />
+                  <EyeOff className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
-                  <Eye className="h-3 w-3" />
+                  <Eye className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Show heatmap')}</span>
                 </>
               )}
@@ -769,11 +769,11 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
                     className={`relative rounded-xl text-left transition-all duration-200 overflow-hidden ${
                       // Never show awake time tile as selected, only show selected state for filterable tiles
                       tile.filter !== null && activeFilter === tile.filter
-                        ? 'bg-gray-100 cursor-pointer scale-105' 
+                        ? 'bg-gray-100 cursor-pointer scale-105'
                         : tile.filter !== null
-                        ? 'bg-transparent cursor-pointer'
-                        : 'bg-transparent cursor-default'
-                    }`}
+                          ? 'bg-transparent cursor-pointer'
+                          : 'bg-transparent cursor-default'
+                      }`}
                   >
                     {/* Horizontal layout: icon left, text right */}
                     <div className="flex items-center gap-2.5 px-2 py-1">
@@ -783,7 +783,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
                           {tile.icon}
                         </div>
                       </div>
-                      
+
                       {/* Content */}
                       <div className="flex flex-col min-w-0">
                         <div className="text-base font-bold text-gray-800 leading-tight">{tile.value}</div>
@@ -800,15 +800,14 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             )}
           </>
         )}
-      </div>
+      </section>
 
       {/* Mobile heatmap slide-out panel (right side, similar to FormPage) */}
-      <div className="fixed inset-0 z-40 md:hidden pointer-events-none">
+      <section className="fixed inset-0 z-40 md:hidden pointer-events-none" aria-label={t('Heatmap panel')}>
         {/* Overlay */}
         <div
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
-            isHeatmapVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${isHeatmapVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
           onClick={onHeatmapToggle}
         />
 
@@ -827,7 +826,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               className="text-xs inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
               onClick={onHeatmapToggle}
             >
-              <EyeOff className="h-3 w-3" />
+              <EyeOff className="h-3 w-3" aria-hidden="true" />
               <span>{t('Hide')}</span>
             </button>
           </div>
@@ -839,7 +838,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             />
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };
