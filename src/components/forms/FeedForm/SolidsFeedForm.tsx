@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
@@ -36,7 +35,7 @@ export default function SolidsFeedForm({
   return (
     <>
       <div>
-        <label className="form-label mb-6">{t('Amount (')}{unit})</label>
+        <label className="form-label mb-6">{t('Amount (')}{t(unit.toLowerCase())})</label>
         <div className="flex items-center justify-center mb-6">
           <Button
             type="button"

@@ -78,7 +78,7 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
   const title = getChartTitle(metric, t);
   const description =
     dateRange.from && dateRange.to
-      ? `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`
+      ? `${formatDateDisplay(dateRange.from, dateFormat)} -> ${formatDateDisplay(dateRange.to, dateFormat)}`
       : undefined;
 
   return (

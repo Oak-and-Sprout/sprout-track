@@ -230,7 +230,7 @@ const ShareButton = React.forwardRef<HTMLButtonElement, ShareButtonProps>(
           )}
           ref={ref}
           onClick={handleShare}
-          title={supportsNativeShare ? 'Share family login' : 'Copy link to clipboard'}
+          title={supportsNativeShare ? t('Share family login') : t('Copy link to clipboard')}
           {...props}
         >
           {copied ? (
@@ -242,7 +242,7 @@ const ShareButton = React.forwardRef<HTMLButtonElement, ShareButtonProps>(
           )}
           {showText && (
             <span className="ml-1">
-              {copied ? 'Copied!' : supportsNativeShare ? 'Share' : 'Copy'}
+              {copied ? t('Copied!') : supportsNativeShare ? t('Share') : t('Copy')}
             </span>
           )}
         </Comp>
