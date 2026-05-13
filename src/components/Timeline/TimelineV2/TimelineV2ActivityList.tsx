@@ -3,11 +3,11 @@ import { useRef, useMemo } from 'react';
 import { ActivityType, TimelineActivityListProps } from '../types';
 import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime, formatWeightDisplay } from '../utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '@/src/context/theme';
 import { Label } from '@/src/components/ui/label';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
+import { useUnit } from '@/src/hooks/useUnit';
 
 import '../timeline-activity-list.css';
 
@@ -20,10 +20,9 @@ const TimelineV2ActivityList = ({
   onActivitySelect,
 }: TimelineActivityListProps) => {
   
-
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const { dateFormat, timeFormat } = useTimezone();
-  const { theme } = useTheme();
 
   const translateNotes = (notes: string): string => {
     if (notes === 'Auto-created from pump session') return t('Auto-created from pump session');
@@ -415,7 +414,7 @@ const TimelineV2ActivityList = ({
                                     }
                                     
                                     if ('doseAmount' in activity && 'medicineId' in activity) {
-                                      const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
+                                      const unit = unitSymbol(activity.unitAbbr);
                                       const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
                                       let medName = t('Medicine');
                                       if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object') {

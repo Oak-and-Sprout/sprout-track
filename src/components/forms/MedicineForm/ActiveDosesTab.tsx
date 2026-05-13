@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/src/lib/utils';
 import { medicineFormStyles as styles } from './medicine-form.styles';
 import { ActiveDosesTabProps, MedicineLogWithDetails } from './medicine-form.types';
+import { PillBottle, Pill, Clock, AlertCircle, Loader2, ChevronDown, Phone, Mail, Plus } from 'lucide-react';
+import { Button } from '@/src/components/ui/button';
+import { useTimezone } from '@/app/context/timezone';
+import { formatDateTimeDisplay } from '@/src/utils/dateFormat';
+import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 // Contact interface
 interface Contact {
@@ -19,7 +25,7 @@ interface ActiveDose {
   id: string;
   medicineName: string;
   doseAmount: number;
-  unitAbbr?: string;
+  unit: string;
   time: string;
   nextDoseTime?: string;
   isSafe: boolean;
@@ -29,11 +35,6 @@ interface ActiveDose {
   hasRecentDoses: boolean; // Track if there are doses in the last 24 hours
   contacts?: Contact[]; // Add contacts to the ActiveDose interface
 }
-import { PillBottle, Pill, Clock, AlertCircle, Loader2, ChevronDown, Phone, Mail, Plus } from 'lucide-react';
-import { Button } from '@/src/components/ui/button';
-import { useTimezone } from '@/app/context/timezone';
-import { formatDateTimeDisplay } from '@/src/utils/dateFormat';
-import { useLocalization } from '@/src/context/localization';
 
 /**
  * ActiveDosesTab Component
@@ -46,12 +47,13 @@ interface TodaySupplement {
   id: string;
   supplementName: string;
   doseAmount: number;
-  unitAbbr?: string;
+  unit: string;
   time: string;
 }
 
 const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, onGiveMedicine, onGiveSupplement, refreshTrigger }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const { formatDate, calculateDurationMinutes, dateFormat, timeFormat } = useTimezone();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -236,7 +238,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
         id: latestLog.id,
         medicineName: latestLog.medicine.name,
         doseAmount: latestLog.doseAmount,
-        unitAbbr: latestLog.unitAbbr || latestLog.medicine.unitAbbr || undefined,
+        unit: unitSymbol(latestLog.unit?.unitAbbr || latestLog.medicine.unit?.unitAbbr),
         time: typeof latestLog.time === 'string' ? latestLog.time : new Date(latestLog.time).toISOString(),
         nextDoseTime: nextDoseTime || "",
         isSafe,
@@ -279,7 +281,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
         id: latest.id,
         supplementName: latest.medicine.name,
         doseAmount: latest.doseAmount,
-        unitAbbr: latest.unitAbbr || latest.medicine.unitAbbr || undefined,
+        unit: unitSymbol(latest.unit?.unitAbbr || latest.medicine.unit?.unitAbbr),
         time: typeof latest.time === 'string' ? latest.time : new Date(latest.time).toISOString(),
       };
     });
@@ -446,7 +448,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                         </h3>
                       </div>
                       <span className={cn(styles.doseAmount, "medicine-form-dose-amount")}>
-                        {dose.doseAmount} {dose.unitAbbr}
+                        {dose.doseAmount} {dose.unit}
                       </span>
                     </div>
 
@@ -470,9 +472,9 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
 
                     <div className={cn(styles.totalDose, "medicine-form-total-dose mt-2")}>
                       {dose.hasRecentDoses ? (
-                        <>{t('Total in last 24h:')} {dose.totalIn24Hours} {dose.unitAbbr}</>
+                        <>{t('Total in last 24h:')} {dose.totalIn24Hours} {dose.unit}</>
                       ) : (
-                        <>{t('Last Dose:')} {formatDateTimeDisplay(new Date(dose.time), dateFormat, timeFormat)} - {dose.doseAmount} {dose.unitAbbr}</>
+                        <>{t('Last Dose:')} {formatDateTimeDisplay(new Date(dose.time), dateFormat, timeFormat)} - {dose.doseAmount} {dose.unit}</>
                       )}
                     </div>
 
@@ -563,14 +565,14 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                         </h3>
                       </div>
                       <span className={cn(styles.doseAmount, "medicine-form-dose-amount")}>
-                        {supplement.doseAmount} {supplement.unitAbbr}
+                        {supplement.doseAmount} {supplement.unit}
                       </span>
                     </div>
                     <p className={cn(styles.doseTime, "medicine-form-dose-time")}>
                       {t('Last dose:')} {formatDate(supplement.time)}
                     </p>
                     <div className={cn(styles.totalDose, "medicine-form-total-dose mt-2")}>
-                      {supplement.doseAmount} {supplement.unitAbbr}
+                      {supplement.doseAmount} {supplement.unit}
                     </div>
                   </div>
                 ))}
