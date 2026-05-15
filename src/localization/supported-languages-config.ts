@@ -12,7 +12,7 @@ function normalizeEntry(
 ): SupportedLanguage | null {
   if (typeof item === 'string') {
     const code = item.toLowerCase();
-    if (code.length !== 2) return null;
+    if (!/^[a-z]{2}(-[a-z]{2})?$/.test(code)) return null;
     return {
       code,
       name: code.toUpperCase(),
@@ -23,7 +23,7 @@ function normalizeEntry(
     const o = item as Record<string, unknown>;
     const code = typeof o.code === 'string' ? o.code.toLowerCase().trim() : '';
     const name = typeof o.name === 'string' ? o.name.trim() : '';
-    if (code.length !== 2 || !name) return null;
+    if (!/^[a-z]{2}(-[a-z]{2})?$/.test(code) || !name) return null;
     const abbr =
       typeof o.abbreviation === 'string' && o.abbreviation.trim()
         ? o.abbreviation.trim().toUpperCase()
