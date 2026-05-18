@@ -84,6 +84,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [paymentAccountStatus, setPaymentAccountStatus] = useState<any>(null);
   const familySlug = params?.slug as string;
   const isRefreshingRef = useRef(false);
+  const selectedBabyRef = useRef(selectedBaby);
+  useEffect(() => { selectedBabyRef.current = selectedBaby; }, [selectedBaby]);
 
   // Refresh the access token using the HTTP-only refresh token cookie
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
@@ -252,14 +254,14 @@ function AppContent({ children }: { children: React.ReactNode }) {
           // Get selected baby from URL or select first baby if only one exists
           const urlParams = new URLSearchParams(window.location.search);
           const babyId = urlParams.get('babyId');
-          
-          // If current selected baby is inactive, clear selection
+
           const foundBaby = activeBabies.find((b: Baby) => b.id === babyId);
           if (foundBaby) {
             setSelectedBaby(foundBaby);
           } else if (activeBabies.length === 1) {
             setSelectedBaby(activeBabies[0]);
-          } else {
+          } else if (selectedBabyRef.current && !activeBabies.find((b: Baby) => b.id === selectedBabyRef.current?.id)) {
+            // Currently selected baby is no longer active — clear it
             setSelectedBaby(null);
           }
         }
