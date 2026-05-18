@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { GiveMedicineTabProps, MedicineWithContacts, MedicineLogFormData } from '../MedicineForm/medicine-form.types';
+import { MedicineWithContacts, MedicineLogFormData } from '../MedicineForm/medicine-form.types';
 import { Loader2, AlertCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -25,6 +25,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface GiveMedicineFormProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
 }) => {
 
   const { t } = useLocalization();
+  const { unitName, unitSymbol } = useUnit();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -423,7 +425,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                     <DropdownMenuContent>
                       {units.map(unit => (
                         <DropdownMenuItem key={unit.unitAbbr} onSelect={() => handleUnitChange(unit.unitAbbr)}>
-                          {unit.unitName} ({unit.unitAbbr})
+                          {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>

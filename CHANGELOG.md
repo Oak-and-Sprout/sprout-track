@@ -1,5 +1,21 @@
 # Sprout Track Changelog
 
+## v1.3.3 - QoL Bug Fixes for PWA, Activity Tiles, and Messages
+
+### Changes
+
+#### Enhancements
+- Updated to allow one decimal place for weight measurement
+- Added user facing feedback message bubble count for new messages
+
+#### Bugfixes
+- Fixed PWA Manifest to properly start on slug page
+- Fixed account counts on initial load in family-manager page
+- Fixed message ownership for both users and admin
+- Fixed log data loading properly on initial login
+- Fixed translation issues for breast feeding on activity log
+- Fixed text clipping in activity group for translated text
+
 ## v1.3.2 - Time Picker Updates, Keyboard bugfixes, PWA Theming, Romanian language addition
 
 ### Changes

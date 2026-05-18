@@ -164,7 +164,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
    */
   const setLanguage = useCallback(async (lang: string): Promise<void> => {
     // Validate language code (ISO 639-1 + configured list)
-    if (!lang || typeof lang !== 'string' || lang.length !== 2) {
+    if (!lang || typeof lang !== 'string' || !/^[a-z]{2}(-[a-z]{2})?$/i.test(lang)) {
       console.error('Invalid language code:', lang);
       return;
     }

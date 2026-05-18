@@ -205,7 +205,7 @@ export default function FamilyMobileView({
         <FormPage
           isOpen={true}
           onClose={handleClose}
-          title={isEditing ? t('Edit Family') : selectedFamily.name}
+          title={isEditing ? t('Edit family') : selectedFamily.name}
           description={isEditing ? undefined : `/${selectedFamily.slug}`}
         >
           <FormPageContent>

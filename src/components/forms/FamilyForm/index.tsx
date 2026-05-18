@@ -640,7 +640,7 @@ export default function FamilyForm({
     <FormPage
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? t('Edit Family') : t('Add New Family')}
+      title={isEditing ? t('Edit family') : t('Add New Family')}
       description={isEditing ? t('Edit family information') : t('Create a new family by choosing your preferred setup method')}
     >
       <FormPageContent>
@@ -853,7 +853,7 @@ export default function FamilyForm({
                           setSystemPin(value);
                         }
                       }}
-                      placeholder="Enter PIN"
+                      placeholder={t("Enter PIN")}
                       disabled={loading}
                       minLength={6}
                       maxLength={10}
@@ -870,7 +870,7 @@ export default function FamilyForm({
                           setConfirmSystemPin(value);
                         }
                       }}
-                      placeholder="Confirm PIN"
+                      placeholder={t("Confirm PIN")}
                       disabled={loading}
                       minLength={6}
                       maxLength={10}

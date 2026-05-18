@@ -450,6 +450,8 @@ export interface FeedbackResponse {
   familyId: string | null;
   familySlug: string | null;
   parentId: string | null;
+  accountId: string | null;
+  caretakerId: string | null;
   attachments?: FeedbackAttachmentResponse[];
   replies?: FeedbackResponse[];
   createdAt: string;

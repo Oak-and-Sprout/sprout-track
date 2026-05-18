@@ -76,7 +76,7 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
     // But only if the admin is NOT replying to their own feedback thread
     if (parentId && parentFeedback && (authContext.isSysAdmin || authContext.caretakerRole === 'ADMIN')) {
       const isOwnFeedback =
-        (authContext.isAccountAuth && authContext.accountId && parentFeedback.accountId === authContext.accountId) ||
+        (authContext.accountId && parentFeedback.accountId === authContext.accountId) ||
         (authContext.caretakerId && parentFeedback.caretakerId === authContext.caretakerId);
 
       if (!isOwnFeedback) {
@@ -88,32 +88,28 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
       }
     }
 
-    // Resolve user identity if not already set to 'Admin'
-    if (finalSubmitterName !== 'Admin') {
-      if (authContext.isAccountAuth && authContext.accountId) {
-        accountId = authContext.accountId;
+    // Always resolve sender identity from auth context
+    if (authContext.isAccountAuth && authContext.accountId) {
+      accountId = authContext.accountId;
+      if (finalSubmitterName !== 'Admin') {
         finalSubmitterEmail = authContext.accountEmail || finalSubmitterEmail;
-
-        // If no submitter name provided, try to derive from email
         if (!submitterName && authContext.accountEmail) {
           finalSubmitterName = authContext.accountEmail.split('@')[0];
         }
-      } else if (authContext.caretakerId) {
-        caretakerId = authContext.caretakerId;
-
-        // For caretakers, try to get name from the database if not provided
-        if (!submitterName) {
-          try {
-            const caretaker = await prisma.caretaker.findUnique({
-              where: { id: authContext.caretakerId },
-              select: { name: true }
-            });
-            if (caretaker) {
-              finalSubmitterName = caretaker.name;
-            }
-          } catch (error) {
-            console.error('Error fetching caretaker name:', error);
+      }
+    } else if (authContext.caretakerId) {
+      caretakerId = authContext.caretakerId;
+      if (finalSubmitterName !== 'Admin' && !submitterName) {
+        try {
+          const caretaker = await prisma.caretaker.findUnique({
+            where: { id: authContext.caretakerId },
+            select: { name: true }
+          });
+          if (caretaker) {
+            finalSubmitterName = caretaker.name;
           }
+        } catch (error) {
+          console.error('Error fetching caretaker name:', error);
         }
       }
     }
@@ -256,6 +252,8 @@ async function handlePost(req: NextRequest, authContext: any): Promise<NextRespo
       familyId: feedback.familyId,
       familySlug: postFamilySlug,
       parentId: feedback.parentId,
+      accountId: feedback.accountId,
+      caretakerId: feedback.caretakerId,
       createdAt: feedback.createdAt.toISOString(),
       updatedAt: feedback.updatedAt.toISOString(),
       deletedAt: feedback.deletedAt ? feedback.deletedAt.toISOString() : null,
@@ -381,6 +379,8 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
       familyId: item.familyId,
       familySlug: item.family?.slug || null,
       parentId: item.parentId,
+      accountId: item.accountId,
+      caretakerId: item.caretakerId,
       attachments: mapAttachments(item.attachments),
       replies: item.replies?.map((reply: any) => ({
         id: reply.id,
@@ -393,6 +393,8 @@ async function handleGet(req: NextRequest, authContext: any): Promise<NextRespon
         familyId: reply.familyId,
         familySlug: item.family?.slug || null,
         parentId: reply.parentId,
+        accountId: reply.accountId,
+        caretakerId: reply.caretakerId,
         attachments: mapAttachments(reply.attachments),
         createdAt: reply.createdAt.toISOString(),
         updatedAt: reply.updatedAt.toISOString(),
@@ -524,6 +526,8 @@ async function handlePut(req: NextRequest, authContext: any): Promise<NextRespon
       familyId: feedback.familyId,
       familySlug: (feedback as any).family?.slug || null,
       parentId: feedback.parentId,
+      accountId: feedback.accountId,
+      caretakerId: feedback.caretakerId,
       createdAt: feedback.createdAt.toISOString(),
       updatedAt: feedback.updatedAt.toISOString(),
       deletedAt: feedback.deletedAt ? feedback.deletedAt.toISOString() : null,

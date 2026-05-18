@@ -22,7 +22,7 @@ const SleepSection: React.FC<SleepSectionProps> = ({ sleep, isPdfExport }) => {
 
   // Location bar data
   const locationData = sleep.locationDistribution.map(loc => ({
-    name: loc.location,
+    name: t(loc.location),
     [t('Night')]: loc.nightCount,
     [t('Naps')]: loc.napCount,
   }));

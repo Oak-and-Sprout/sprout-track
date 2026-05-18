@@ -227,7 +227,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
 
   const getDescription = (): string => {
     if (!dateRange.from || !dateRange.to) return '';
-    return `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`;
+    return `${formatDateDisplay(dateRange.from, dateFormat)} -> ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   if (!metric) return null;

@@ -409,14 +409,17 @@ export function ActivityTileGroup({
     vaccine: t('Vaccines')
   };
 
+  const firstVisibleActivity = activityOrder.find(a => visibleActivities.has(a));
+
   // Function to render activity tile based on type
   const renderActivityTile = (activity: ActivityType) => {
     if (!visibleActivities.has(activity)) return null;
 
     switch (activity) {
-    case 'sleep':
+    case 'sleep': {
+      const isLeftmost = activity === firstVisibleActivity;
       return (
-        <div key="sleep" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+        <div key="sleep" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
           <ActivityTile
             activity={{
               type: 'NAP', // Using a valid SleepType enum value
@@ -445,8 +448,9 @@ export function ActivityTileGroup({
               !exceeds24Hours(sleepStartTime[selectedBaby.id]) && (
                 <StatusBubble
                   status="sleeping"
-                  className="overflow-visible z-40"
-                  durationInMinutes={0} // Fallback value
+                  className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
+                  screenEdgeAware={isLeftmost}
+                  durationInMinutes={0}
                   startTime={sleepStartTime[selectedBaby.id]?.toISOString()}
                 />
               )
@@ -454,23 +458,26 @@ export function ActivityTileGroup({
               !sleepStartTime[selectedBaby.id] && lastSleepEndTime[selectedBaby.id] && !exceeds24Hours(lastSleepEndTime[selectedBaby.id]) && (
                 <StatusBubble
                   status="awake"
-                  className="overflow-visible z-40"
+                  className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
+                  screenEdgeAware={isLeftmost}
                   durationInMinutes={calculateDurationMinutes(
                     lastSleepEndTime[selectedBaby.id].toISOString(),
                     new Date().toISOString()
                   )}
                   startTime={lastSleepEndTime[selectedBaby.id].toISOString()}
-                  activityType="sleep" // Explicitly specify this is for sleep activities only
+                  activityType="sleep"
                 />
               )
             )
           )}
           </div>
         );
+      }
       case 'feed': {
         const isBabyFeeding = selectedBaby?.id && feedingBabies?.has(selectedBaby.id);
+        const isLeftmost = activity === firstVisibleActivity;
         return (
-          <div key="feed" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="feed" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 type: 'BOTTLE',
@@ -497,14 +504,16 @@ export function ActivityTileGroup({
             {isBabyFeeding ? (
               <StatusBubble
                 status="feedActive"
-                className="overflow-visible z-40"
+                className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
+                screenEdgeAware={isLeftmost}
                 durationInMinutes={0}
               />
             ) : (
               selectedBaby?.id && lastFeedTime[selectedBaby.id] && !exceeds24Hours(lastFeedTime[selectedBaby.id]) && (
                 <StatusBubble
                   status="feed"
-                  className="overflow-visible z-40"
+                  className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
+                  screenEdgeAware={isLeftmost}
                   durationInMinutes={0}
                   startTime={lastFeedTime[selectedBaby.id].toISOString()}
                   warningTime={selectedBaby.feedWarningTime as string}
@@ -515,9 +524,10 @@ export function ActivityTileGroup({
           </div>
         );
       }
-      case 'diaper':
+      case 'diaper': {
+        const isLeftmost = activity === firstVisibleActivity;
         return (
-          <div key="diaper" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="diaper" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 type: 'WET',
@@ -542,18 +552,20 @@ export function ActivityTileGroup({
             {selectedBaby?.id && lastDiaperTime[selectedBaby.id] && !exceeds24Hours(lastDiaperTime[selectedBaby.id]) && (
               <StatusBubble
                 status="diaper"
-                className="overflow-visible z-40"
-                durationInMinutes={0} // Fallback value
+                className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
+                screenEdgeAware={isLeftmost}
+                durationInMinutes={0}
                 startTime={lastDiaperTime[selectedBaby.id].toISOString()}
                 warningTime={selectedBaby.diaperWarningTime as string}
-                activityType="diaper" // Explicitly specify this is for diaper activities only
+                activityType="diaper"
               />
             )}
           </div>
         );
+      }
       case 'note':
         return (
-          <div key="note" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="note" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'note-button',
@@ -578,7 +590,7 @@ export function ActivityTileGroup({
         );
       case 'bath':
         return (
-          <div key="bath" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="bath" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'bath-button',
@@ -606,7 +618,7 @@ export function ActivityTileGroup({
         );
       case 'pump':
         return (
-          <div key="pump" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="pump" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'pump-button',
@@ -636,7 +648,7 @@ export function ActivityTileGroup({
         );
       case 'measurement':
         return (
-          <div key="measurement" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="measurement" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'measurement-button',
@@ -663,7 +675,7 @@ export function ActivityTileGroup({
         );
       case 'milestone':
         return (
-          <div key="milestone" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="milestone" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'milestone-button',
@@ -689,7 +701,7 @@ export function ActivityTileGroup({
         );
       case 'play':
         return (
-          <div key="play" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="play" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'play-button',
@@ -718,7 +730,7 @@ export function ActivityTileGroup({
         );
       case 'medicine':
         return (
-          <div key="medicine" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="medicine" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'medicine-button',
@@ -753,7 +765,7 @@ export function ActivityTileGroup({
         );
       case 'vaccine':
         return (
-          <div key="vaccine" className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+          <div key="vaccine" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
               activity={{
                 id: 'vaccine-button',
@@ -790,7 +802,7 @@ export function ActivityTileGroup({
         {activityOrder.map(activity => renderActivityTile(activity))}
 
         {/* Configure Button for customizing activity tiles */}
-        <div className="relative w-[82px] h-24 flex-shrink-0 snap-center">
+        <div className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-full h-full bg-transparent border-0 cursor-pointer p-0 m-0">

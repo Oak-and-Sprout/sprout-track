@@ -1,5 +1,4 @@
-import { Metadata } from 'next';
-import AppLayout from './client-layout';
+'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname, useParams } from 'next/navigation';
@@ -31,7 +30,6 @@ import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
-
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
   () => import('@/src/components/account-manager/PaymentModal'),
@@ -86,6 +84,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [paymentAccountStatus, setPaymentAccountStatus] = useState<any>(null);
   const familySlug = params?.slug as string;
   const isRefreshingRef = useRef(false);
+  const selectedBabyRef = useRef(selectedBaby);
+  useEffect(() => { selectedBabyRef.current = selectedBaby; }, [selectedBaby]);
 
   // Refresh the access token using the HTTP-only refresh token cookie
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
@@ -128,11 +128,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
     const ageInYears = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
     
     if (ageInMonths < 6) {
-      return `${ageInWeeks} ${t('weeks')}`;
+      return `${ageInWeeks} weeks`;
     } else if (ageInMonths < 24) {
-      return `${ageInMonths} ${t('months')}`;
+      return `${ageInMonths} months`;
     } else {
-      return `${ageInYears} ${ageInYears === 1 ? t('year') : t('years')}`;
+      return `${ageInYears} ${ageInYears === 1 ? 'year' : 'years'}`;
     }
   };
 
@@ -251,18 +251,31 @@ function AppContent({ children }: { children: React.ReactNode }) {
             }
           }
           
-          // Get selected baby from URL or select first baby if only one exists
+          // Get selected baby from URL, localStorage, or auto-select if only one exists
           const urlParams = new URLSearchParams(window.location.search);
           const babyId = urlParams.get('babyId');
-          
-          // If current selected baby is inactive, clear selection
+
           const foundBaby = activeBabies.find((b: Baby) => b.id === babyId);
           if (foundBaby) {
             setSelectedBaby(foundBaby);
+          } else if (selectedBabyRef.current && activeBabies.find((b: Baby) => b.id === selectedBabyRef.current?.id)) {
+            // Current selection is still valid — keep it
           } else if (activeBabies.length === 1) {
             setSelectedBaby(activeBabies[0]);
-          } else {
-            setSelectedBaby(null);
+          } else if (family?.id) {
+            // Try to restore last-used baby from localStorage
+            const savedBabyJson = localStorage.getItem(`selectedBaby_${family.id}`);
+            if (savedBabyJson) {
+              try {
+                const savedBaby = JSON.parse(savedBabyJson);
+                const matchingBaby = activeBabies.find((b: Baby) => b.id === savedBaby.id);
+                if (matchingBaby) {
+                  setSelectedBaby(matchingBaby);
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
           }
         }
       }
@@ -758,26 +771,283 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
     
     return `/${familySlug}/${path}`;
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-
-  return {
-    manifest: `/api/manifest/${encodeURIComponent(slug)}`,
-    other: {
-      'apple-mobile-web-app-capable': 'yes',
-      'apple-mobile-web-app-status-bar-style': 'black-translucent',
-    },
   };
+
+  // Check if we're on the root slug page and not authenticated
+  // In this case, show only the page content (login UI) without app UI (header, side nav)
+  const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
+  const shouldShowAppUI = (isUnlocked || process.env.NODE_ENV === 'development') && !(isRootSlugPage && !isUnlocked);
+
+  return (
+    <>
+      {shouldShowAppUI && (
+        <div className="min-h-screen flex">
+          {/* Side Navigation - non-modal on wide screens */}
+          {isWideScreen && (
+            <SideNav
+              isOpen={true}
+              nonModal={true}
+              onClose={() => {}}
+              currentPath={window.location.pathname}
+              onNavigate={(path) => {
+                // Add family slug to navigation paths
+                router.push(withFamilySlug(path));
+              }}
+              onSettingsClick={() => {
+                setSettingsOpen(true);
+              }}
+              onLogout={handleLogout}
+              isAdmin={isAdmin}
+              className="h-screen sticky top-0"
+              familySlug={familySlug}
+              familyName={family?.name || familyName}
+            />
+          )}
+          
+          {/* Main content area */}
+          <div className={`flex flex-col flex-1 min-h-screen ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
+            <header className="w-full bg-gradient-to-r from-teal-600 to-teal-700 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+              <div className="mx-auto py-2">
+                <div className="flex justify-between items-center h-16"> {/* Fixed height for consistency */}
+                  <div className={`flex items-center ${isWideScreen ? 'ml-8' : 'ml-4 sm:ml-6 lg:ml-8'}`}>
+                    {/* Only show Sprout button on small screens */}
+                    {!isWideScreen ? (
+                      <SideNavTrigger
+                        onClick={() => setSideNavOpen(true)}
+                        isOpen={sideNavOpen}
+                        className="w-16 h-16 flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-110 mr-4"
+                      >
+                        <Image
+                          src="/sprout-128.png"
+                          alt="Sprout Logo"
+                          width={64}
+                          height={64}
+                          className="object-contain"
+                          priority
+                        />
+                      </SideNavTrigger>
+                    ) : null}
+                    <div className="flex flex-col">
+                      {/* Show caretaker name for PIN-based authentication */}
+                      {!isAccountAuth && caretakerName && caretakerName !== 'system' && (
+                        <span className="text-white text-xs opacity-80">
+                          {t('Hi,')} {caretakerName}
+                        </span>
+                      )}
+                      {/* Show AccountButton for account-based authentication */}
+                      {isAccountAuth && (
+                        <div className="mb-1">
+                          <AccountButton
+                            variant="white"
+                            className="h-8 px-2 text-xs origin-left"
+                            showIcon={false}
+                            hideFamilyDashboardLink={true}
+                            onAccountManagerOpen={() => setShowAccountManager(true)}
+                          />
+                        </div>
+                      )}
+                      <span className="text-white text-sm font-medium">
+                        {family?.name || familyName} - {pathname?.includes('/log-entry')
+                          ? t('Log Entry')
+                          : pathname?.includes('/calendar')
+                          ? t('Calendar')
+                          : pathname?.includes('/reports')
+                          ? t('Reports')
+                          : t('Full Log')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center mr-4 sm:mr-6 lg:mr-8">
+                    {babies.length > 0 && (
+                      <BabySelector
+                        selectedBaby={selectedBaby}
+                        onBabySelect={(baby) => setSelectedBaby(baby)}
+                        babies={babies}
+                        sleepingBabies={sleepingBabies}
+                        calculateAge={calculateAge}
+                        onOpenQuickStats={() => setQuickStatsOpen(true)}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </header>
+            
+            {/* Account Expiration Banner - shows for both account users and caretakers */}
+            <AccountExpirationBanner isAccountAuth={isAccountAuth} />
+            
+            <main className="flex-1 relative z-0">
+              {children}
+            </main>
+          </div>
+
+          {/* Modal Side Navigation - only for small screens */}
+          {!isWideScreen && (
+            <SideNav
+              isOpen={sideNavOpen}
+              onClose={() => setSideNavOpen(false)}
+              currentPath={window.location.pathname}
+              onNavigate={(path) => {
+                // Add family slug to navigation paths
+                router.push(withFamilySlug(path));
+                setSideNavOpen(false);
+              }}
+              onSettingsClick={() => {
+                setSettingsOpen(true);
+                setSideNavOpen(false);
+              }}
+              onLogout={handleLogout}
+              isAdmin={isAdmin}
+              familySlug={familySlug}
+              familyName={family?.name || familyName}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Show page content without app UI when on root slug page and not authenticated */}
+      {!shouldShowAppUI && (
+        <div className="min-h-screen bg-gradient-to-r from-teal-600 to-teal-700 pt-[env(safe-area-inset-top)]">
+          {children}
+        </div>
+      )}
+
+      <SettingsForm
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onBabySelect={(id: string) => {
+          const baby = babies.find((b: Baby) => b.id === id);
+          if (baby) {
+            setSelectedBaby(baby);
+          }
+        }}
+        onBabyStatusChange={fetchData}
+        selectedBabyId={selectedBaby?.id || ''}
+        familyId={family?.id}
+        isAdmin={isAdmin}
+      />
+      
+      {/* Baby Quick Info Form */}
+      <BabyQuickInfo
+        isOpen={quickStatsOpen}
+        onClose={() => setQuickStatsOpen(false)}
+        selectedBaby={selectedBaby}
+        calculateAge={calculateAge}
+      />
+      
+      {/* Debug components - only visible in development mode */}
+      <DebugSessionTimer />
+      <TimezoneDebug />
+
+      {/* Account Manager */}
+      <AccountManager
+        isOpen={showAccountManager}
+        onClose={() => setShowAccountManager(false)}
+      />
+
+      {/* Payment Modal - can be opened from toast or other components (only in SaaS mode) */}
+      {isSaasMode && isAccountAuth && paymentAccountStatus && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          accountStatus={paymentAccountStatus}
+          onPaymentSuccess={() => {
+            setShowPaymentModal(false);
+            // Refresh page to get updated subscription status
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {/* Notification Splash Modal */}
+      <NotificationSplashModal
+        open={showNotificationSplash}
+        onClose={() => setShowNotificationSplash(false)}
+        babies={babies}
+      />
+    </>
+  );
 }
 
-export default function SlugLayout({
+export default function AppLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  return <AppLayout>{children}</AppLayout>;
+  // Define handleLogout function within the layout scope
+  const handleLogout = async () => {
+    // Get the token to invalidate it server-side
+    const token = localStorage.getItem('authToken');
+    const currentCaretakerId = localStorage.getItem('caretakerId');
+
+    // Check if this is an account holder
+    let isAccountAuth = false;
+    if (token) {
+      try {
+        const payload = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        isAccountAuth = decodedPayload.isAccountAuth || false;
+      } catch (error) {
+        console.error('Error parsing JWT token during logout:', error);
+      }
+    }
+
+    // Call the logout API to clear server-side cookies and invalidate the token
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+
+    // Clear all client-side authentication data including JWT token
+    localStorage.removeItem('unlockTime');
+    localStorage.removeItem('caretakerId');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('accountUser'); // Clear account user info
+    localStorage.removeItem('attempts');
+    localStorage.removeItem('lockoutTime');
+
+    // Dispatch a custom event to notify components about caretaker change
+    if (currentCaretakerId) {
+      const caretakerChangedEvent = new CustomEvent('caretakerChanged', {
+        detail: { caretakerId: null }
+      });
+      window.dispatchEvent(caretakerChangedEvent);
+    }
+
+    // Redirect to home page for account holders or family root (which shows login UI) for PIN users
+    if (isAccountAuth) {
+      window.location.href = '/';
+    } else {
+      const familySlug = window.location.pathname.split('/')[1];
+      if (familySlug) {
+        window.location.href = `/${familySlug}`;
+      } else {
+        window.location.href = '/login';
+      }
+    }
+  };
+
+  return (
+    <DeploymentProvider>
+      <LocalizationProvider>
+        <FamilyProvider onLogout={handleLogout}>
+          <BabyProvider>
+            <ThemeProvider>
+              <ToastProvider>
+                <DynamicTitle />
+                <AppContent>{children}</AppContent>
+              </ToastProvider>
+            </ThemeProvider>
+          </BabyProvider>
+        </FamilyProvider>
+      </LocalizationProvider>
+    </DeploymentProvider>
+  );
 }

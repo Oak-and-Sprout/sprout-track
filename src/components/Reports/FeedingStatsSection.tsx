@@ -14,6 +14,7 @@ import { styles } from './reports.styles';
 import { FeedingStats, ActivityType, DateRange } from './reports.types';
 import FeedingChartModal, { FeedingChartMetric } from './FeedingChartModal';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface FeedingStatsSectionProps {
   stats: FeedingStats;
@@ -38,6 +39,7 @@ const formatMinutes = (minutes: number): string => {
  */
 const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activities, dateRange }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const [chartModalOpen, setChartModalOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<FeedingChartMetric | null>(null);
 
@@ -61,12 +63,12 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.bottleFeeds.count}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Bottle Feeds')}</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Bottle Feeds')} ({t('avg')})</div>
                 {stats.bottleFeeds.avgByType.length > 0 && (
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
                     {stats.bottleFeeds.avgByType.map((bt, idx) => (
                       <span key={bt.type}>
-                        {bt.type}: {bt.avgAmount.toFixed(1)} {bt.unit} avg
+                        {bt.type}: {bt.avgAmount.toFixed(1)} {unitSymbol(bt.unit)} avg
                         {idx < stats.bottleFeeds.avgByType.length - 1 ? ', ' : ''}
                       </span>
                     ))}
@@ -86,10 +88,10 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.breastFeeds.count}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Breast Feeds')}</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Breast Feeds')} ({t('avg')})</div>
                 {(stats.breastFeeds.leftCount > 0 || stats.breastFeeds.rightCount > 0) && (
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                    {t('L:')} {formatMinutes(stats.breastFeeds.avgLeftMinutes)} {t('avg, R:')} {formatMinutes(stats.breastFeeds.avgRightMinutes)} avg
+                    {t('L:')} {formatMinutes(stats.breastFeeds.avgLeftMinutes)} {t('R:')} {formatMinutes(stats.breastFeeds.avgRightMinutes)}
                   </div>
                 )}
               </CardContent>
@@ -106,12 +108,12 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
                   {stats.solidsFeeds.count}
                 </div>
-                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Solids')}</div>
+                <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Solids')} ({t('avg')})</div>
                 {stats.solidsFeeds.avgByFood.length > 0 && (
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
                     {stats.solidsFeeds.avgByFood.slice(0, 3).map((sf, idx) => (
                       <span key={sf.food}>
-                        {sf.food}: {sf.avgAmount.toFixed(1)} {sf.unit} avg
+                        {sf.food}: {sf.avgAmount.toFixed(1)} {unitSymbol(sf.unit)} avg
                         {idx < Math.min(stats.solidsFeeds.avgByFood.length, 3) - 1 ? ', ' : ''}
                       </span>
                     ))}

@@ -21,6 +21,7 @@ import {
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 /**
  * GiveMedicineTab Component
@@ -37,6 +38,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
 }) => {
 
   const { t } = useLocalization();
+  const { unitName, unitSymbol } = useUnit();
   const { toUTCString } = useTimezone();
   const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
@@ -343,7 +345,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
                   <DropdownMenuContent>
                     {units.map(unit => (
                       <DropdownMenuItem key={unit.unitAbbr} onSelect={() => handleUnitChange(unit.unitAbbr)}>
-                        {unit.unitName} ({unit.unitAbbr})
+                        {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>

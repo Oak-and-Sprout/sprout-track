@@ -18,6 +18,7 @@ import { Switch } from '@/src/components/ui/switch';
 import { Label } from '@/src/components/ui/label';
 import MedicineForm from './MedicineForm';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 /**
  * ManageSupplementsTab Component
@@ -27,6 +28,7 @@ import { useLocalization } from '@/src/context/localization';
  */
 const ManageSupplementsTab: React.FC<ManageSupplementsTabProps> = ({ refreshData, onGiveSupplement }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
 
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
@@ -234,7 +236,7 @@ const ManageSupplementsTab: React.FC<ManageSupplementsTabProps> = ({ refreshData
                   <div className={cn(styles.medicineListContent)}>
                     <p className={cn(styles.medicineListName, "medicine-form-medicine-list-name")}>{supplement.name}</p>
                     <p className={cn(styles.medicineListDose, "medicine-form-medicine-list-dose")}>
-                      {t('Typical dose:')} {supplement.typicalDoseSize} {supplement.unitAbbr}
+                      {t('Typical dose:')} {supplement.typicalDoseSize} {unitSymbol(supplement.unit?.unitAbbr)}
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditSupplement(supplement); }}>

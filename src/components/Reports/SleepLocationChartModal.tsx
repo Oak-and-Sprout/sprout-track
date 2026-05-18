@@ -199,6 +199,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                   <Bar
                     key={location.location}
                     dataKey={location.location}
+                    name={t(location.location)}
                     stackId="locations"
                     fill={colors[index]}
                   />

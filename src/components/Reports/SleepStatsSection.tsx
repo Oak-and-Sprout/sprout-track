@@ -157,7 +157,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                       setLocationChartModalOpen(true);
                     }}
                   >
-                    <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
+                    <span className={cn(styles.locationName, "reports-location-name")}>{t(loc.location)}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
                       {loc.count}{t('x (')}{formatMinutes(loc.totalMinutes)})
                     </span>
@@ -192,7 +192,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                       setLocationChartModalOpen(true);
                     }}
                   >
-                    <span className={cn(styles.locationName, "reports-location-name")}>{loc.location}</span>
+                    <span className={cn(styles.locationName, "reports-location-name")}>{t(loc.location)}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
                       {loc.count}{t('x (')}{formatMinutes(loc.totalMinutes)})
                     </span>

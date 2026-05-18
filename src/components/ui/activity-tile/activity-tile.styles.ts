@@ -10,7 +10,7 @@ export const activityTileStyles = {
   
   // Button styles for each variant when used as a button
   button: {
-    base: "h-24 relative cursor-pointer rounded-lg drop-shadow-lg overflow-hidden hover:transition-all duration-200",
+    base: "min-h-24 relative cursor-pointer rounded-lg drop-shadow-lg overflow-hidden hover:transition-all duration-200",
     variants: {
       sleep: "",
       feed: "",

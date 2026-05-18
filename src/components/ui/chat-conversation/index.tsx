@@ -42,7 +42,7 @@ function AuthImage({ src, alt, className, onClick }: { src: string; alt: string;
   return <img src={blobUrl} alt={alt} className={className} loading="lazy" onClick={onClick} />;
 }
 
-function flattenMessages(thread: FeedbackResponse, isAdmin: boolean): ChatMessage[] {
+function flattenMessages(thread: FeedbackResponse): ChatMessage[] {
   const messages: ChatMessage[] = [];
   const isAdminMsg = thread.submitterName === 'Admin';
   messages.push({
@@ -52,6 +52,8 @@ function flattenMessages(thread: FeedbackResponse, isAdmin: boolean): ChatMessag
     date: thread.submittedAt,
     text: thread.message,
     viewed: thread.viewed,
+    accountId: thread.accountId,
+    caretakerId: thread.caretakerId,
     attachments: thread.attachments,
   });
   if (thread.replies) {
@@ -64,11 +66,30 @@ function flattenMessages(thread: FeedbackResponse, isAdmin: boolean): ChatMessag
         date: reply.submittedAt,
         text: reply.message,
         viewed: reply.viewed,
+        accountId: reply.accountId,
+        caretakerId: reply.caretakerId,
         attachments: reply.attachments,
       });
     }
   }
   return messages;
+}
+
+function isMessageMine(
+  msg: ChatMessage,
+  isAdmin: boolean,
+  viewerAccountId?: string | null,
+  viewerCaretakerId?: string | null,
+): boolean {
+  if (viewerAccountId && msg.accountId) return msg.accountId === viewerAccountId;
+  if (viewerCaretakerId && msg.caretakerId) return msg.caretakerId === viewerCaretakerId;
+  return isAdmin ? msg.from === 'admin' : msg.from === 'user';
+}
+
+function sameSender(a: ChatMessage, b: ChatMessage): boolean {
+  if (a.accountId && b.accountId) return a.accountId === b.accountId;
+  if (a.caretakerId && b.caretakerId) return a.caretakerId === b.caretakerId;
+  return a.from === b.from;
 }
 
 function getInitials(name: string): string {
@@ -94,6 +115,8 @@ function isSameDay(d1: string, d2: string): boolean {
 export function ChatConversation({
   thread,
   isAdmin,
+  viewerAccountId,
+  viewerCaretakerId,
   onReply,
   onDeleteAttachment,
   onBack,
@@ -136,11 +159,10 @@ export function ChatConversation({
     if (markedReadRef.current === thread.id) return;
     markedReadRef.current = thread.id;
 
-    const messages = flattenMessages(thread, isAdmin);
+    const messages = flattenMessages(thread);
     const unreadFromOther = messages.filter(msg => {
       if (!msg.viewed) {
-        if (isAdmin) return msg.from === 'user';
-        return msg.from === 'admin';
+        return !isMessageMine(msg, isAdmin, viewerAccountId, viewerCaretakerId);
       }
       return false;
     });
@@ -218,7 +240,7 @@ export function ChatConversation({
     );
   }
 
-  const messages = flattenMessages(thread, isAdmin);
+  const messages = flattenMessages(thread);
   const totalMessages = messages.length;
 
   return (
@@ -253,9 +275,9 @@ export function ChatConversation({
       {/* Messages */}
       <div className={cn(styles.messagesArea, 'chat-conversation-messages')}>
         {messages.map((msg, idx) => {
-          const isMine = isAdmin ? msg.from === 'admin' : msg.from === 'user';
+          const isMine = isMessageMine(msg, isAdmin, viewerAccountId, viewerCaretakerId);
           const showDateBreak = idx === 0 || !isSameDay(messages[idx - 1].date, msg.date);
-          const sameSenderAsPrev = idx > 0 && messages[idx - 1].from === msg.from && !showDateBreak;
+          const sameSenderAsPrev = idx > 0 && sameSender(messages[idx - 1], msg) && !showDateBreak;
 
           // Avatar and name styling
           let avatarClass: string;
