@@ -9,6 +9,8 @@ export interface SubmitterInfo {
   email: string;
   familyId: string | null;
   familyName: string | null;
+  accountId: string | null;
+  caretakerId: string | null;
 }
 
 export interface UseFeedbackChatReturn {
@@ -37,6 +39,8 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
     email: '',
     familyId: null,
     familyName: null,
+    accountId: null,
+    caretakerId: null,
   });
   const isFetchingRef = useRef(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -51,12 +55,16 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
 
       let name = 'User';
       let email = '';
+      let accountId: string | null = null;
+      let caretakerId: string | null = null;
 
       if (decoded.isAccountAuth) {
         name = decoded.accountEmail ? decoded.accountEmail.split('@')[0] : 'Account User';
         email = decoded.accountEmail || '';
+        accountId = decoded.accountId || null;
       } else {
         name = decoded.name || 'User';
+        caretakerId = decoded.isSysAdmin ? null : (decoded.id || null);
       }
 
       let familyId: string | null = decoded.familyId || null;
@@ -79,10 +87,10 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
         }
       }
 
-      setSubmitterInfo({ name, email, familyId, familyName });
+      setSubmitterInfo({ name, email, familyId, familyName, accountId, caretakerId });
     } catch (error) {
       console.error('Error parsing auth token:', error);
-      setSubmitterInfo({ name: 'User', email: '', familyId: null, familyName: null });
+      setSubmitterInfo({ name: 'User', email: '', familyId: null, familyName: null, accountId: null, caretakerId: null });
     }
   }, []);
 
@@ -256,20 +264,24 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
     await updateViewed(id, false);
   }, [updateViewed]);
 
+  const isMessageFromViewer = useCallback((msg: { accountId?: string | null; caretakerId?: string | null; submitterName?: string | null }): boolean => {
+    if (submitterInfo.accountId && msg.accountId) return msg.accountId === submitterInfo.accountId;
+    if (submitterInfo.caretakerId && msg.caretakerId) return msg.caretakerId === submitterInfo.caretakerId;
+    return isAdmin ? msg.submitterName === 'Admin' : msg.submitterName !== 'Admin';
+  }, [isAdmin, submitterInfo]);
+
   const countUnreadMessages = useCallback((thread: FeedbackResponse): number => {
     if (isAdmin) {
-      // Admin counts unread user messages
-      let count = thread.viewed ? 0 : 1;
+      let count = (!thread.viewed && !isMessageFromViewer(thread)) ? 1 : 0;
       if (thread.replies) {
-        count += thread.replies.filter(r => !r.viewed && r.submitterName !== 'Admin').length;
+        count += thread.replies.filter(r => !r.viewed && !isMessageFromViewer(r)).length;
       }
       return count;
     } else {
-      // User counts unread admin replies
       if (!thread.replies) return 0;
-      return thread.replies.filter(r => !r.viewed && r.submitterName === 'Admin').length;
+      return thread.replies.filter(r => !r.viewed && !isMessageFromViewer(r)).length;
     }
-  }, [isAdmin]);
+  }, [isAdmin, isMessageFromViewer]);
 
   return {
     threads,

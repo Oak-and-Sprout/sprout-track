@@ -43,6 +43,7 @@ export default function FeedbackPage({
     markAsRead,
     formatDateTime,
     countUnreadMessages,
+    submitterInfo,
     loadSubmitterInfo,
     startPolling,
     stopPolling,
@@ -136,6 +137,8 @@ export default function FeedbackPage({
         <ChatConversation
           thread={selectedThread}
           isAdmin={false}
+          viewerAccountId={submitterInfo.accountId}
+          viewerCaretakerId={submitterInfo.caretakerId}
           onReply={sendReply}
           onDeleteAttachment={deleteAttachment}
           onBack={handleBack}

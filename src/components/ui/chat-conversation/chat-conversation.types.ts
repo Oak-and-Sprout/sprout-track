@@ -7,12 +7,16 @@ export interface ChatMessage {
   date: string;
   text: string;
   viewed: boolean;
+  accountId?: string | null;
+  caretakerId?: string | null;
   attachments?: FeedbackAttachmentResponse[];
 }
 
 export interface ChatConversationProps {
   thread: FeedbackResponse | null;
   isAdmin: boolean;
+  viewerAccountId?: string | null;
+  viewerCaretakerId?: string | null;
   onReply: (parentId: string, message: string, subject?: string, familyId?: string | null, files?: File[]) => Promise<unknown>;
   onDeleteAttachment?: (attachmentId: string) => Promise<void>;
   onBack?: () => void;
