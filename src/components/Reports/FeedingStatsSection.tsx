@@ -14,6 +14,7 @@ import { styles } from './reports.styles';
 import { FeedingStats, ActivityType, DateRange } from './reports.types';
 import FeedingChartModal, { FeedingChartMetric } from './FeedingChartModal';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface FeedingStatsSectionProps {
   stats: FeedingStats;
@@ -38,6 +39,7 @@ const formatMinutes = (minutes: number): string => {
  */
 const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activities, dateRange }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const [chartModalOpen, setChartModalOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<FeedingChartMetric | null>(null);
 
@@ -66,7 +68,7 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
                     {stats.bottleFeeds.avgByType.map((bt, idx) => (
                       <span key={bt.type}>
-                        {bt.type}: {bt.avgAmount.toFixed(1)} {bt.unit} avg
+                        {bt.type}: {bt.avgAmount.toFixed(1)} {unitSymbol(bt.unit)} avg
                         {idx < stats.bottleFeeds.avgByType.length - 1 ? ', ' : ''}
                       </span>
                     ))}
@@ -111,7 +113,7 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
                     {stats.solidsFeeds.avgByFood.slice(0, 3).map((sf, idx) => (
                       <span key={sf.food}>
-                        {sf.food}: {sf.avgAmount.toFixed(1)} {sf.unit} avg
+                        {sf.food}: {sf.avgAmount.toFixed(1)} {unitSymbol(sf.unit)} avg
                         {idx < Math.min(stats.solidsFeeds.avgByFood.length, 3) - 1 ? ', ' : ''}
                       </span>
                     ))}

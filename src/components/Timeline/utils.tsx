@@ -19,7 +19,6 @@ import {
   PillBottle,
   Pill,
   Baby,
-  Activity,
   Syringe
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
@@ -29,6 +28,7 @@ import {
   ActivityDescription, 
   ActivityStyle 
 } from './types';
+import { getSymbol } from '@/src/hooks/useUnit';
 
 // Split decimal pounds into whole pounds and ounces (to 1 decimal place).
 // Rolls over when ounces round up to 16.
@@ -671,7 +671,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
         medName = (activity.medicine as { name?: string }).name || medName;
       }
     }
-    const dose = activity.doseAmount ? `${activity.doseAmount} ${activity.unitAbbr || ''}`.trim() : '';
+    const dose = activity.doseAmount ? `${activity.doseAmount} ${getSymbol(activity.unitAbbr, t)}`.trim() : '';
     const medTime = formatTime(activity.time, settings, true, t);
     let notes = activity.notes ? activity.notes : '';
     if (notes.length > 50) notes = notes.substring(0, 50) + '...';
@@ -892,7 +892,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
   // Breast milk adjustment description
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
     const amt = (activity as any).amount;
-    const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
+    const unit = getSymbol((activity as any).unitAbbr || 'oz', t);
     const reason = (activity as any).reason ? ` (${t((activity as any).reason)})` : '';
     const time = formatTime((activity as any).time, settings, true, t);
     return {

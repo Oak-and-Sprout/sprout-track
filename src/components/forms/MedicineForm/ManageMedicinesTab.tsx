@@ -19,6 +19,7 @@ import { Switch } from '@/src/components/ui/switch';
 import { Label } from '@/src/components/ui/label';
 import MedicineForm from './MedicineForm';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 /**
  * ManageMedicinesTab Component
@@ -28,6 +29,7 @@ import { useLocalization } from '@/src/context/localization';
  */
 const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   
   // Helper function to format doseMinTime from DD:HH:MM to user-friendly format
   const formatDoseMinTimeDisplay = (doseMinTime: string): string => {
@@ -257,7 +259,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
                   <div className={cn(styles.medicineListContent)}>
                     <p className={cn(styles.medicineListName, "medicine-form-medicine-list-name")}>{medicine.name}</p>
                     <p className={cn(styles.medicineListDose, "medicine-form-medicine-list-dose")}>
-                      {t('Typical dose:')} {medicine.typicalDoseSize} {medicine.unitAbbr}
+                      {t('Typical dose:')} {medicine.typicalDoseSize} {unitSymbol(medicine.unit?.unitAbbr)}
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditMedicine(medicine); }}>

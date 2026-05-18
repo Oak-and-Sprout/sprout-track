@@ -14,6 +14,7 @@ import { PumpStats, ActivityType, DateRange } from './reports.types';
 import PumpingChartModal, { PumpingChartMetric } from './PumpingChartModal';
 import { useLocalization } from '@/src/context/localization';
 import { useBaby } from '@/app/context/baby';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface PumpingStatsSectionProps {
   stats: PumpStats;
@@ -39,6 +40,7 @@ const formatMinutes = (minutes: number): string => {
  */
 const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activities, dateRange, enableBreastMilkTracking = true }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const { selectedBaby } = useBaby();
   const [chartModalOpen, setChartModalOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<PumpingChartMetric | null>(null);
@@ -126,10 +128,10 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
             >
               <CardContent className="p-4">
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                  {t('Left:')} {stats.avgLeftAmount.toFixed(1)} {stats.unit}
+                  {t('Left:')} {stats.avgLeftAmount.toFixed(1)} {unitSymbol(stats.unit)}
                 </div>
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                  {t('Right:')} {stats.avgRightAmount.toFixed(1)} {stats.unit}
+                  {t('Right:')} {stats.avgRightAmount.toFixed(1)} {unitSymbol(stats.unit)}
                 </div>
                 <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Amount per Side')}</div>
               </CardContent>
