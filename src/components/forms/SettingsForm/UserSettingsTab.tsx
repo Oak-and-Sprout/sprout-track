@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { Unit } from '@prisma/client';
 import { Settings } from '@/app/api/types';
 import { Label } from '@/src/components/ui/label';
@@ -14,6 +13,7 @@ import {
 import { useLocalization } from '@/src/context/localization';
 import NotificationSettings from './NotificationSettings';
 import { Baby } from '@prisma/client';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface UserSettingsTabProps {
   settings: Settings | null;
@@ -33,6 +33,7 @@ export default function UserSettingsTab({
   onSettingsChange,
 }: UserSettingsTabProps) {
   const { t } = useLocalization();
+  const { unitName, unitSymbol } = useUnit();
 
   return (
     <div className="space-y-6">
@@ -56,7 +57,7 @@ export default function UserSettingsTab({
                     .filter(unit => ['OZ', 'ML'].includes(unit.unitAbbr))
                     .map((unit) => (
                       <SelectItem key={unit.unitAbbr} value={unit.unitAbbr}>
-                        {unit.unitName} ({unit.unitAbbr})
+                        {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -79,7 +80,7 @@ export default function UserSettingsTab({
                     .filter(unit => ['TBSP', 'G'].includes(unit.unitAbbr))
                     .map((unit) => (
                       <SelectItem key={unit.unitAbbr} value={unit.unitAbbr}>
-                        {unit.unitName} ({unit.unitAbbr})
+                        {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -102,7 +103,7 @@ export default function UserSettingsTab({
                     .filter(unit => ['IN', 'CM'].includes(unit.unitAbbr))
                     .map((unit) => (
                       <SelectItem key={unit.unitAbbr} value={unit.unitAbbr}>
-                        {unit.unitName} ({unit.unitAbbr})
+                        {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -125,7 +126,7 @@ export default function UserSettingsTab({
                     .filter(unit => ['LB', 'KG', 'G'].includes(unit.unitAbbr))
                     .map((unit) => (
                       <SelectItem key={unit.unitAbbr} value={unit.unitAbbr}>
-                        {unit.unitName} ({unit.unitAbbr})
+                        {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -148,7 +149,7 @@ export default function UserSettingsTab({
                     .filter(unit => ['F', 'C'].includes(unit.unitAbbr))
                     .map((unit) => (
                       <SelectItem key={unit.unitAbbr} value={unit.unitAbbr}>
-                        {unit.unitName} ({unit.unitAbbr})
+                        {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                       </SelectItem>
                     ))}
                 </SelectContent>

@@ -5,9 +5,11 @@ import { cn } from '@/src/lib/utils';
 import { useLocalization } from '@/src/context/localization';
 import { reportCardStyles as s, chartColors } from './monthly-report-card.styles';
 import type { FeedingSectionProps } from './monthly-report-card.types';
+import { useUnit } from '@/src/hooks/useUnit';
 
 const FeedingSection: React.FC<FeedingSectionProps> = ({ feeding }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
 
   const deltaText = feeding.dailyIntakeDelta
     ? `${feeding.dailyIntakeDelta.direction === 'up' ? '↑' : feeding.dailyIntakeDelta.direction === 'down' ? '↓' : '→'} ${Math.abs(feeding.dailyIntakeDelta.value)} ${feeding.avgDailyIntake.unit} ${t('from last month')}`
@@ -31,13 +33,13 @@ const FeedingSection: React.FC<FeedingSectionProps> = ({ feeding }) => {
           <p className={cn(s.metricLabel, 'report-card-metric-label')}>{t('Avg bottles/day')}</p>
           <p className={cn(s.metricValue, 'report-card-metric-value')}>{feeding.avgBottlesPerDay}</p>
           <p className={cn(s.metricSub, s.metricSubNeutral, 'report-card-metric-sub-neutral')}>
-            {t('avg')} {feeding.avgBottleSize.value} {feeding.avgBottleSize.unit} {t('each')}
+            {t('avg')} {feeding.avgBottleSize.value} {unitSymbol(feeding.avgBottleSize.unit)} {t('each')}
           </p>
         </div>
 
         <div className={cn(s.metricCard, 'report-card-metric')}>
           <p className={cn(s.metricLabel, 'report-card-metric-label')}>{t('Daily intake')}</p>
-          <p className={cn(s.metricValue, 'report-card-metric-value')}>{feeding.avgDailyIntake.value} {feeding.avgDailyIntake.unit}</p>
+          <p className={cn(s.metricValue, 'report-card-metric-value')}>{feeding.avgDailyIntake.value} {unitSymbol(feeding.avgDailyIntake.unit)}</p>
           {deltaText && (
             <p className={cn(s.metricSub, deltaClass, `report-card-metric-sub-${feeding.dailyIntakeDelta?.direction === 'up' ? 'positive' : feeding.dailyIntakeDelta?.direction === 'down' ? 'warning' : 'neutral'}`)}>
               {deltaText}

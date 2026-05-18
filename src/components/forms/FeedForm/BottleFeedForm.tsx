@@ -1,9 +1,9 @@
-import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface BottleFeedFormProps {
   amount: string;
@@ -49,6 +49,7 @@ export default function BottleFeedForm({
   onFormulaDecrement,
 }: BottleFeedFormProps) {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const bottleTypes = ['Formula', 'Breast Milk', 'Formula\\Breast', 'Milk', 'Other'];
   
   return (
@@ -71,7 +72,7 @@ export default function BottleFeedForm({
       {bottleType === 'Formula\\Breast' ? (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="form-label mb-2">{t('Breast Milk Amount')} ({t(unit.toLowerCase())})</label>
+            <label className="form-label mb-2">{t('Breast Milk Amount')} ({unitSymbol(unit)})</label>
             <div className="flex items-center justify-center">
               <Button
                 type="button"
@@ -105,7 +106,7 @@ export default function BottleFeedForm({
             </div>
           </div>
           <div>
-            <label className="form-label mb-2">{t('Formula Amount')} ({t(unit.toLowerCase())})</label>
+            <label className="form-label mb-2">{t('Formula Amount')} ({unitSymbol(unit)})</label>
             <div className="flex items-center justify-center">
               <Button
                 type="button"
@@ -141,7 +142,7 @@ export default function BottleFeedForm({
         </div>
       ) : (
         <>
-          <label className="form-label mb-6">{t('Amount (')}{t(unit.toLowerCase())})</label>
+          <label className="form-label mb-6">{t('Amount (')}{unitSymbol(unit)})</label>
           <div className="flex items-center justify-center mb-6">
             <Button
               type="button"

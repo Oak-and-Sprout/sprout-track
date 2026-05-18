@@ -3,6 +3,7 @@ import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Plus, Minus } from 'lucide-react';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface SolidsFeedFormProps {
   amount: string;
@@ -32,10 +33,12 @@ export default function SolidsFeedForm({
   onDecrement,
 }: SolidsFeedFormProps) {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
+
   return (
     <>
       <div>
-        <label className="form-label mb-6">{t('Amount (')}{t(unit.toLowerCase())})</label>
+        <label className="form-label mb-6">{t('Amount (')}{unitSymbol(unit)})</label>
         <div className="flex items-center justify-center mb-6">
           <Button
             type="button"

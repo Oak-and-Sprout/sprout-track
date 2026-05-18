@@ -7,6 +7,7 @@ import { Label } from '@/src/components/ui/label';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
+import { useUnit } from '@/src/hooks/useUnit';
 
 import '../timeline-activity-list.css';
 
@@ -20,6 +21,7 @@ const TimelineV2ActivityList = ({
 }: TimelineActivityListProps) => {
   
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const { dateFormat, timeFormat } = useTimezone();
 
   const translateNotes = (notes: string): string => {
@@ -303,7 +305,7 @@ const TimelineV2ActivityList = ({
                                     
                                     if ('amount' in activity) {
                                       if (activity.type === 'BREAST') {
-                                        const side = activity.side ? activity.side.charAt(0) + activity.side.slice(1).toLowerCase() : '';
+                                        const side = activity.side ? t(activity.side.charAt(0) + activity.side.slice(1).toLowerCase()) : '';
                                         let duration = '';
                                         if (activity.feedDuration) {
                                           const minutes = Math.floor(activity.feedDuration / 60);
@@ -412,7 +414,7 @@ const TimelineV2ActivityList = ({
                                     }
                                     
                                     if ('doseAmount' in activity && 'medicineId' in activity) {
-                                      const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
+                                      const unit = unitSymbol(activity.unitAbbr);
                                       const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
                                       let medName = t('Medicine');
                                       if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object') {
