@@ -54,7 +54,7 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
       : t('Total night sleep time by location for the selected date range.');
 
   const chartData = locations.map((loc) => ({
-    name: loc.location,
+    name: t(loc.location),
     minutes: loc.totalMinutes,
   }));
 

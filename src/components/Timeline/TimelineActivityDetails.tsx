@@ -7,8 +7,8 @@ import {
 } from '@/src/components/ui/form-page';
 import { TimelineActivityDetailsProps } from './types';
 import { getActivityDetails, formatTime } from './utils';
-import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 import './timeline-activity-details.css';
 
@@ -21,11 +21,9 @@ const TimelineActivityDetails = ({
   onEdit,
 }: TimelineActivityDetailsProps) => {
   
+  const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
 
-  const { t } = useLocalization();  
-
-  const { theme } = useTheme();
-  
   if (!activity) return null;
 
   // Special medicine details rendering
@@ -35,7 +33,7 @@ const TimelineActivityDetails = ({
     if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {
       medName = (activity.medicine as { name?: string }).name || medName;
     }
-    const dose = activity.doseAmount ? `${activity.doseAmount} ${activity.unitAbbr || ''}`.trim() : '';
+    const dose = activity.doseAmount ? `${activity.doseAmount} ${unitSymbol(activity.unitAbbr)}`.trim() : '';
     const medTime = activity.time ? formatTime(activity.time, settings, true, t) : '';
     let notes = activity.notes ? activity.notes : '';
     if (notes.length > 50) notes = notes.substring(0, 50) + '...';

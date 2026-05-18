@@ -3,11 +3,11 @@ import { useRef, useMemo } from 'react';
 import { ActivityType, TimelineActivityListProps } from '../types';
 import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime, formatWeightDisplay } from '../utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '@/src/context/theme';
 import { Label } from '@/src/components/ui/label';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
+import { useUnit } from '@/src/hooks/useUnit';
 
 import '../timeline-activity-list.css';
 
@@ -20,10 +20,9 @@ const TimelineV2ActivityList = ({
   onActivitySelect,
 }: TimelineActivityListProps) => {
   
-
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const { dateFormat, timeFormat } = useTimezone();
-  const { theme } = useTheme();
 
   const translateNotes = (notes: string): string => {
     if (notes === 'Auto-created from pump session') return t('Auto-created from pump session');
@@ -287,7 +286,7 @@ const TimelineV2ActivityList = ({
                                     if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
                                       const parts = [];
                                       if ((activity as any).duration) parts.push(`${(activity as any).duration} ${t('min')}`);
-                                      if ((activity as any).activities) parts.push((activity as any).activities);
+                                      if ((activity as any).activities) parts.push(t((activity as any).activities));
                                       return parts.length > 0 ? parts.join(' • ') : t('Activity');
                                     }
 
@@ -298,7 +297,7 @@ const TimelineV2ActivityList = ({
                                         ).join(' ') : '';
                                       const duration = activity.duration ? `${Math.floor(activity.duration / 60)}h ${activity.duration % 60}m` : '';
                                       const parts = [];
-                                      if (location) parts.push(location);
+                                      if (location) parts.push(t(location));
                                       if (duration) parts.push(duration);
                                       if (!('endTime' in activity)) parts.push(t('Still asleep'));
                                       return parts.length > 0 ? parts.join(' • ') : t('Sleep');
@@ -306,7 +305,7 @@ const TimelineV2ActivityList = ({
                                     
                                     if ('amount' in activity) {
                                       if (activity.type === 'BREAST') {
-                                        const side = activity.side ? activity.side.charAt(0) + activity.side.slice(1).toLowerCase() : '';
+                                        const side = activity.side ? t(activity.side.charAt(0) + activity.side.slice(1).toLowerCase()) : '';
                                         let duration = '';
                                         if (activity.feedDuration) {
                                           const minutes = Math.floor(activity.feedDuration / 60);
@@ -315,7 +314,7 @@ const TimelineV2ActivityList = ({
                                         } else if (activity.amount) {
                                           duration = `${activity.amount} ${t('min')}`;
                                         }
-                                        const parts = [side ? `${side} ${t('Side')}` : '', duration].filter(Boolean);
+                                        const parts = [side ? t(`${side} Side`) : '', duration].filter(Boolean);
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
@@ -357,10 +356,10 @@ const TimelineV2ActivityList = ({
                                     if ('condition' in activity) {
                                       const details = [];
                                       if (activity.condition) {
-                                        details.push(activity.condition.charAt(0) + activity.condition.slice(1).toLowerCase());
+                                        details.push(t(activity.condition.charAt(0) + activity.condition.slice(1).toLowerCase()));
                                       }
                                       if (activity.color) {
-                                        details.push(activity.color.charAt(0) + activity.color.slice(1).toLowerCase());
+                                        details.push(t(activity.color.charAt(0) + activity.color.slice(1).toLowerCase()));
                                       }
                                       if (activity.blowout) {
                                         details.push(t('Blowout/Leakage'));
@@ -415,7 +414,7 @@ const TimelineV2ActivityList = ({
                                     }
                                     
                                     if ('doseAmount' in activity && 'medicineId' in activity) {
-                                      const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
+                                      const unit = unitSymbol(activity.unitAbbr);
                                       const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
                                       let medName = t('Medicine');
                                       if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object') {

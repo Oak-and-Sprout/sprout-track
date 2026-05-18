@@ -139,7 +139,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
   const formatDateRange = (): string => {
     if (!dateRange.from) return t('Select date range');
     if (!dateRange.to) return formatDateDisplay(dateRange.from, dateFormat);
-    return `${formatDateDisplay(dateRange.from, dateFormat)} - ${formatDateDisplay(dateRange.to, dateFormat)}`;
+    return `${formatDateDisplay(dateRange.from, dateFormat)} -> ${formatDateDisplay(dateRange.to, dateFormat)}`;
   };
 
   // Tab configuration

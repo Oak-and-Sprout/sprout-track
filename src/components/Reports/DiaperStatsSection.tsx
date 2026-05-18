@@ -53,7 +53,7 @@ const DiaperStatsSection: React.FC<DiaperStatsSectionProps> = ({ stats, activiti
                 </div>
                 <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Wet Diapers')}</div>
                 <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                  {stats.avgWetPerDay}/day avg
+                  {stats.avgWetPerDay}/{t('day')} ({t('avg')})
                 </div>
               </CardContent>
             </Card>
@@ -71,7 +71,7 @@ const DiaperStatsSection: React.FC<DiaperStatsSectionProps> = ({ stats, activiti
                 </div>
                 <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Poopy Diapers')}</div>
                 <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
-                  {stats.avgPoopPerDay}/day avg
+                  {stats.avgPoopPerDay}/{t('day')} ({t('avg')})
                 </div>
               </CardContent>
             </Card>

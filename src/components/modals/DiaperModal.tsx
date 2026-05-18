@@ -163,7 +163,7 @@ export default function DiaperModal({
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t("Select type")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="WET">{t('Wet')}</SelectItem>
@@ -185,7 +185,7 @@ export default function DiaperModal({
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select condition" />
+                  <SelectValue placeholder={t("Select condition")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NORMAL">{t('Normal')}</SelectItem>
@@ -204,7 +204,7 @@ export default function DiaperModal({
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select color" />
+                  <SelectValue placeholder={t("Select color")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="YELLOW">{t('Yellow')}</SelectItem>
