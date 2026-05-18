@@ -281,19 +281,12 @@ export function BabyProvider({ children }: BabyProviderProps) {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentFamily]);
 
-  // Persist selected baby (family-specific)
+  // Persist selected baby (family-specific).
+  // Only write on selection, never remove — so the last-used baby is remembered across logouts.
   useEffect(() => {
-    if (currentFamily?.id) {
+    if (currentFamily?.id && selectedBaby && selectedBaby.familyId === currentFamily.id) {
       const familyBabyKey = getFamilySpecificKey('selectedBaby', currentFamily.id);
-      
-      if (selectedBaby) {
-        // Only persist if baby belongs to current family
-        if (selectedBaby.familyId === currentFamily.id) {
-          localStorage.setItem(familyBabyKey, JSON.stringify(selectedBaby));
-        }
-      } else {
-        localStorage.removeItem(familyBabyKey);
-      }
+      localStorage.setItem(familyBabyKey, JSON.stringify(selectedBaby));
     }
   }, [selectedBaby, currentFamily]);
 

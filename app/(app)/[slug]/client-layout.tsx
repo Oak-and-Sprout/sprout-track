@@ -251,18 +251,31 @@ function AppContent({ children }: { children: React.ReactNode }) {
             }
           }
           
-          // Get selected baby from URL or select first baby if only one exists
+          // Get selected baby from URL, localStorage, or auto-select if only one exists
           const urlParams = new URLSearchParams(window.location.search);
           const babyId = urlParams.get('babyId');
 
           const foundBaby = activeBabies.find((b: Baby) => b.id === babyId);
           if (foundBaby) {
             setSelectedBaby(foundBaby);
+          } else if (selectedBabyRef.current && activeBabies.find((b: Baby) => b.id === selectedBabyRef.current?.id)) {
+            // Current selection is still valid — keep it
           } else if (activeBabies.length === 1) {
             setSelectedBaby(activeBabies[0]);
-          } else if (selectedBabyRef.current && !activeBabies.find((b: Baby) => b.id === selectedBabyRef.current?.id)) {
-            // Currently selected baby is no longer active — clear it
-            setSelectedBaby(null);
+          } else if (family?.id) {
+            // Try to restore last-used baby from localStorage
+            const savedBabyJson = localStorage.getItem(`selectedBaby_${family.id}`);
+            if (savedBabyJson) {
+              try {
+                const savedBaby = JSON.parse(savedBabyJson);
+                const matchingBaby = activeBabies.find((b: Baby) => b.id === savedBaby.id);
+                if (matchingBaby) {
+                  setSelectedBaby(matchingBaby);
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
           }
         }
       }
