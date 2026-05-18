@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Baby } from '@prisma/client';
+import { useFamily } from '@/src/context/family';
 
 interface AccountStatus {
   accountId: string;
@@ -43,6 +44,7 @@ interface BabyProviderProps {
 }
 
 export function BabyProvider({ children }: BabyProviderProps) {
+  const { family: contextFamily } = useFamily();
   const [selectedBaby, setSelectedBaby] = useState<Baby | null>(null);
   const [sleepingBabies, setSleepingBabies] = useState<Set<string>>(() => {
     if (typeof window !== 'undefined') {
@@ -198,26 +200,23 @@ export function BabyProvider({ children }: BabyProviderProps) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Load family-specific baby selection from localStorage
+  // Load family-specific baby selection from localStorage, driven by FamilyProvider's family context
   useEffect(() => {
-    const family = getCurrentFamily();
-    
-    // If family changed, clear current selection and load family-specific data
-    if (family && (!currentFamily || currentFamily.id !== family.id)) {
+    if (contextFamily?.id && (!currentFamily || currentFamily.id !== contextFamily.id)) {
+      const previousFamily = currentFamily;
+      const family = { id: contextFamily.id, slug: contextFamily.slug };
       setCurrentFamily(family);
-      
+
       // Load family-specific selected baby
       const familyBabyKey = getFamilySpecificKey('selectedBaby', family.id);
       const saved = localStorage.getItem(familyBabyKey);
-      
+
       if (saved) {
         try {
           const baby = JSON.parse(saved);
-          // Validate that the baby belongs to the current family
           if (baby.familyId === family.id) {
             setSelectedBaby(baby);
           } else {
-            // Baby doesn't belong to current family, clear selection
             setSelectedBaby(null);
             localStorage.removeItem(familyBabyKey);
           }
@@ -225,10 +224,13 @@ export function BabyProvider({ children }: BabyProviderProps) {
           console.error('Error parsing saved baby:', e);
           setSelectedBaby(null);
         }
-      } else {
+      } else if (previousFamily !== null) {
+        // Only clear when switching between families, not on initial mount.
+        // On initial mount (previousFamily is null), leave selectedBaby as-is
+        // so fetchData's auto-selection isn't overwritten.
         setSelectedBaby(null);
       }
-      
+
       // Load family-specific sleeping babies
       const familySleepingKey = getFamilySpecificKey('sleepingBabies', family.id);
       const savedSleeping = localStorage.getItem(familySleepingKey);
@@ -256,14 +258,14 @@ export function BabyProvider({ children }: BabyProviderProps) {
       } else {
         setFeedingBabies(new Set());
       }
-    } else if (!family && currentFamily) {
+    } else if (!contextFamily?.id && currentFamily) {
       // No family context, clear everything
       setCurrentFamily(null);
       setSelectedBaby(null);
       setSleepingBabies(new Set());
       setFeedingBabies(new Set());
     }
-  }, [currentFamily]);
+  }, [contextFamily?.id]);
 
   // Monitor for family changes via URL changes
   useEffect(() => {
@@ -279,19 +281,12 @@ export function BabyProvider({ children }: BabyProviderProps) {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentFamily]);
 
-  // Persist selected baby (family-specific)
+  // Persist selected baby (family-specific).
+  // Only write on selection, never remove — so the last-used baby is remembered across logouts.
   useEffect(() => {
-    if (currentFamily?.id) {
+    if (currentFamily?.id && selectedBaby && selectedBaby.familyId === currentFamily.id) {
       const familyBabyKey = getFamilySpecificKey('selectedBaby', currentFamily.id);
-      
-      if (selectedBaby) {
-        // Only persist if baby belongs to current family
-        if (selectedBaby.familyId === currentFamily.id) {
-          localStorage.setItem(familyBabyKey, JSON.stringify(selectedBaby));
-        }
-      } else {
-        localStorage.removeItem(familyBabyKey);
-      }
+      localStorage.setItem(familyBabyKey, JSON.stringify(selectedBaby));
     }
   }, [selectedBaby, currentFamily]);
 
@@ -323,7 +318,12 @@ export function BabyProvider({ children }: BabyProviderProps) {
   // Enhanced setSelectedBaby function that validates family membership
   const setSelectedBabyWithValidation = (baby: Baby | null) => {
     if (baby && currentFamily?.id && baby.familyId !== currentFamily.id) {
-      // Baby doesn't belong to current family, don't select it
+      // currentFamily may be stale — re-check from FamilyProvider context
+      if (contextFamily?.id && baby.familyId === contextFamily.id) {
+        setCurrentFamily({ id: contextFamily.id, slug: contextFamily.slug });
+        setSelectedBaby(baby);
+        return;
+      }
       console.warn('Attempted to select baby from different family:', baby.familyId, 'vs', currentFamily.id);
       return;
     }

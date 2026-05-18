@@ -182,7 +182,11 @@ function AppContentWithCounts({
   handleSettingsClick: () => void;
   t: (key: string) => string;
 }) {
-  const { counts } = useAdminCounts();
+  const { counts, refreshCounts } = useAdminCounts();
+
+  useEffect(() => {
+    void refreshCounts();
+  }, [refreshCounts]);
 
   return (
     <>

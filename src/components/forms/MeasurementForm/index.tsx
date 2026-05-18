@@ -16,6 +16,7 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { lbToLbOz } from '@/src/components/Timeline/utils';
 
 interface MeasurementFormProps {
   isOpen: boolean;
@@ -197,17 +198,8 @@ export default function MeasurementForm({
               updatedFormData.weight = { value: String(activity.value), unit: 'kg' };
             } else {
               // Both 'lb' and legacy 'oz' use the lb/oz dual input
-              let lbs: number;
-              let oz: number;
-              if (activity.unit === 'oz') {
-                // Convert standalone ounces to lb + oz
-                lbs = Math.floor(activity.value / 16);
-                oz = Math.round(activity.value % 16);
-              } else {
-                // Decimal pounds to lb + oz
-                lbs = Math.floor(activity.value);
-                oz = Math.round((activity.value - lbs) * 16);
-              }
+              const decimalLbs = activity.unit === 'oz' ? activity.value / 16 : activity.value;
+              const { lbs, oz } = lbToLbOz(decimalLbs);
               setWeightLbs(lbs > 0 ? String(lbs) : '');
               setWeightOz(oz > 0 ? String(oz) : '');
               updatedFormData.weight = { value: String(activity.value), unit: 'lb' };
@@ -281,8 +273,7 @@ export default function MeasurementForm({
         // Switching to lb — try to convert existing single value to lb/oz
         const existing = parseFloat(formData.weight.value);
         if (!isNaN(existing) && existing > 0) {
-          const lbs = Math.floor(existing);
-          const oz = Math.round((existing - lbs) * 16);
+          const { lbs, oz } = lbToLbOz(existing);
           setWeightLbs(String(lbs));
           setWeightOz(oz > 0 ? String(oz) : '');
         } else {

@@ -3,6 +3,7 @@ import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
 import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2 } from 'lucide-react';
+import NavCountBubble from '@/src/components/ui/nav-count-bubble';
 import { LanguageSelector } from './language-selector';
 
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
@@ -170,7 +171,41 @@ export const SideNav: React.FC<SideNavProps> = ({
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
-  
+  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState<number>(0);
+
+  // Fetch unread feedback count (admin replies the user hasn't read)
+  useEffect(() => {
+    if (!isSaasMode) return;
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/feedback', {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success && data.data) {
+          let count = 0;
+          for (const thread of data.data) {
+            if (thread.replies) {
+              count += thread.replies.filter(
+                (r: { viewed: boolean; submitterName: string | null }) =>
+                  !r.viewed && r.submitterName === 'Admin'
+              ).length;
+            }
+          }
+          setUnreadFeedbackCount(count);
+        }
+      } catch {
+        // Non-critical
+      }
+    };
+
+    fetchUnreadCount();
+  }, [isSaasMode, showFeedback]);
+
   // Fetch account status if in SaaS mode and authenticated
   useEffect(() => {
     const fetchAccountStatus = async () => {
@@ -407,6 +442,13 @@ export const SideNav: React.FC<SideNavProps> = ({
               >
                 <MessageSquare className="h-3 w-3 mr-1" />
                 {t('Send Feedback')}
+                {unreadFeedbackCount > 0 && (
+                  <NavCountBubble
+                    count={unreadFeedbackCount}
+                    variant="accent"
+                    className="ml-1.5 scale-90"
+                  />
+                )}
               </button>
             </div>
           )}

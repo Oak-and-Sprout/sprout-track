@@ -30,11 +30,22 @@ import {
   ActivityStyle 
 } from './types';
 
+// Split decimal pounds into whole pounds and ounces (to 1 decimal place).
+// Rolls over when ounces round up to 16.
+export function lbToLbOz(value: number): { lbs: number; oz: number } {
+  let lbs = Math.floor(value);
+  let oz = Math.round((value - lbs) * 16 * 10) / 10;
+  if (oz >= 16) {
+    lbs += 1;
+    oz -= 16;
+  }
+  return { lbs, oz };
+}
+
 export function formatWeightDisplay(value: number, unit: string): string {
   if (unit.toLowerCase() === 'lb') {
-    const lbs = Math.floor(value);
-    const oz = Math.round((value - lbs) * 16);
-    if (oz === 16) return `${lbs + 1} lbs`;
+    const { lbs, oz } = lbToLbOz(value);
+    if (lbs === 0 && oz === 0) return `0 lbs`;
     if (lbs === 0) return `${oz} oz`;
     if (oz === 0) return `${lbs} lbs`;
     return `${lbs} lb ${oz} oz`;
