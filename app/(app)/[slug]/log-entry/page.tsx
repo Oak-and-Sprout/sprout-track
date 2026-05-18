@@ -493,7 +493,7 @@ function HomeContent(): React.ReactElement {
 
       {/* Timeline Section */}
       {selectedBaby?.id && (
-        <Card className="overflow-hidden border-0 relative z-0">
+        <Card className="overflow-hidden border-0 shadow-none backdrop-blur-none relative z-0">
           <TimelineV2
             babyId={selectedBaby.id}
             refreshTrigger={refreshTrigger}

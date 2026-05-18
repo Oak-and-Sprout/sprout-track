@@ -97,7 +97,6 @@
 /* Dark mode - uses !important to override Tailwind v4 CSS layer priority in Safari */
 html.dark .active-feed-banner {
   background-color: #1f2937 !important; /* gray-800 - matches ActivityTileGroup dark */
-  border-top-color: #374151 !important; /* gray-700 */
 }
 
 html.dark .banner-inner-active {

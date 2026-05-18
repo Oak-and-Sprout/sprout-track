@@ -49,7 +49,7 @@ export function StatusBubble({
 
     window.addEventListener('resize', checkPosition);
     return () => window.removeEventListener('resize', checkPosition);
-  }, [screenEdgeAware]);
+  }, [screenEdgeAware, status]);
   
   const updateDuration = useCallback(() => {
     if (startTime) {
