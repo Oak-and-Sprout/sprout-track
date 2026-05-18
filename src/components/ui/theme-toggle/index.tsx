@@ -70,10 +70,10 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
     return theme === 'light' ? <Sun size={iconSize} /> : <Moon size={iconSize} />;
   };
 
-  const getCurrentThemeLabel = () => {
-    if (!isHydrated) return 'Light'; // Default to Light during SSR
-    if (useSystemTheme) return 'System';
-    return theme === 'light' ? 'Light' : 'Dark';
+  const getCurrentTheme = () => {
+    if (!isHydrated) return 'light'; // Default to light during SSR
+    if (useSystemTheme) return 'system';
+    return theme;
   };
 
   // Render light or minimal variant
@@ -87,8 +87,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           isMinimal ? "theme-toggle-button-minimal" : "theme-toggle-button-light",
           className
         )}
-        aria-label={`Switch to ${getNextTheme()} mode`}
-        title={`Switch to ${getNextTheme()} mode`}
+        aria-label={t(`Switch to {mode} mode`).replace('{mode}', t(getNextTheme()))}
+        title={t(`Switch to {mode} mode`).replace('{mode}', t(getNextTheme()))}
         {...props}
       >
         <span className="theme-icon-container-light">
@@ -97,7 +97,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           </span>
         </span>
         <span className="theme-info-light">
-          <span className={isMinimal ? "current-theme-minimal" : "current-theme-light"}>{getCurrentThemeLabel()}</span>
+          <span className={isMinimal ? "current-theme-minimal" : "current-theme-light"}>{t(getCurrentTheme())}</span>
         </span>
       </button>
     );
@@ -114,8 +114,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             "theme-toggle-button",
             className
           )}
-          aria-label={`Switch to ${getNextTheme()} mode`}
-          title={`Switch to ${getNextTheme()} mode`}
+          aria-label={t(`Switch to {mode} mode`).replace('{mode}', t(getNextTheme()))}
+          title={t(`Switch to {mode} mode`).replace('{mode}', t(getNextTheme()))}
           {...props}
         >
           <span className="theme-icon-container">
@@ -130,8 +130,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             </span>
           </span>
           <span className="theme-info">
-            <span className="current-theme">{getCurrentThemeLabel()}</span>
-            <span className="next-theme">{t('Switch to')} {getNextTheme()}</span>
+            <span className="current-theme">{t(getCurrentTheme())}</span>
+            <span className="next-theme">{t('Switch to')} {t(getNextTheme())}</span>
           </span>
         </button>
       </div>

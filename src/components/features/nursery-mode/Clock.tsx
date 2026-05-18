@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { NurseryColors } from '@/src/hooks/useNurseryColors';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay } from '@/src/utils/dateFormat';
+import { useLocalization } from '@/src/context/localization';
 
 interface ClockProps {
   colors: NurseryColors;
@@ -13,6 +14,7 @@ interface ClockProps {
 export function Clock({ colors, compact }: ClockProps) {
   const [now, setNow] = useState(new Date());
   const { timeFormat } = useTimezone();
+  const { language } = useLocalization();
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -21,7 +23,7 @@ export function Clock({ colors, compact }: ClockProps) {
 
   const time = formatTimeDisplay(now, timeFormat).toLowerCase();
 
-  const date = now.toLocaleDateString('en-US', {
+  const date = now.toLocaleDateString(language || 'en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',

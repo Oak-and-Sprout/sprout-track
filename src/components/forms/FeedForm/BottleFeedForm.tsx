@@ -65,7 +65,7 @@ export default function BottleFeedForm({
             onClick={() => onBottleTypeChange(type)}
             disabled={loading}
           >
-            {type.replace('\\', '/')}
+            {t(type.replace('\\', '/'))}
           </Button>
         ))}
       </div>

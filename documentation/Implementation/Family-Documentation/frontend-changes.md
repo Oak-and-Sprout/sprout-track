@@ -843,7 +843,7 @@ export default function FamilyDetailPage() {
                     variant="outline" 
                     onClick={() => setIsEditing(true)}
                   >
-                    Edit Family
+                    Edit family
                   </Button>
                   <Button 
                     variant="destructive" 

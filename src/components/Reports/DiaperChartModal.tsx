@@ -92,7 +92,7 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
   const title = metric === 'wet' ? t('Wet Diapers Over Time') : t('Poopy Diapers Over Time');
   const description =
     dateRange.from && dateRange.to
-      ? `${t('From')} ${formatDateDisplay(dateRange.from, dateFormat)} to ${formatDateDisplay(dateRange.to, dateFormat)}`
+      ? `${formatDateDisplay(dateRange.from, dateFormat)} -> ${formatDateDisplay(dateRange.to, dateFormat)}`
       : undefined;
 
   return (

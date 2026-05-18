@@ -176,7 +176,7 @@ export function SleepTile({ colors, log, onLog, onActiveChange, animating, babyI
           {LOCATIONS.map(loc => (
             <SubButton
               key={loc}
-              label={loc}
+              label={t(loc)}
               onClick={() => startSleep(loc)}
               colors={colors}
               disabled={submitting}
