@@ -1,6 +1,6 @@
 # Sprout Track Changelog
 
-## v1.3.3 - Time Picker Updates, Keyboard bugfixes, PWA Theming, Romanian language addition
+## v1.3.3 - QoL Bug Fixes for PWA, Activity Tiles, and Messages
 
 ### Changes
 
