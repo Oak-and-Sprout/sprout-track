@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { Moon, Sun, Icon } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { cn } from "@/src/lib/utils";
@@ -18,17 +18,38 @@ const getWarningMinutes = (time: string): number => {
 /**
  * A component that displays the current status and duration in a stylized bubble
  */
-export function StatusBubble({ 
-  status, 
-  durationInMinutes, 
-  warningTime, 
+export function StatusBubble({
+  status,
+  durationInMinutes,
+  warningTime,
   className,
-  startTime, // Add startTime prop
-  activityType // Add activityType prop
+  screenEdgeAware,
+  startTime,
+  activityType
 }: StatusBubbleProps & { startTime?: string }) {
   const { userTimezone, calculateDurationMinutes, formatDuration } = useTimezone();
   const { t } = useLocalization();
   const [calculatedDuration, setCalculatedDuration] = useState(durationInMinutes);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!screenEdgeAware || !bubbleRef.current) return;
+
+    const checkPosition = () => {
+      const el = bubbleRef.current;
+      if (!el) return;
+      el.style.transform = '';
+      const rect = el.getBoundingClientRect();
+      if (rect.left < 2) {
+        el.style.transform = `translateX(${Math.ceil(Math.abs(rect.left) + 2)}px)`;
+      }
+    };
+
+    checkPosition();
+
+    window.addEventListener('resize', checkPosition);
+    return () => window.removeEventListener('resize', checkPosition);
+  }, [screenEdgeAware]);
   
   const updateDuration = useCallback(() => {
     if (startTime) {
@@ -126,6 +147,7 @@ export function StatusBubble({
 
   return (
     <div
+      ref={screenEdgeAware ? bubbleRef : undefined}
       className={cn(
         styles.base,
         bgColor,

@@ -12,6 +12,8 @@ export interface StatusBubbleProps {
   warningTime?: string;
   /** Additional CSS classes */
   className?: string;
+  /** Dynamically reposition bubble if it would clip the left screen edge */
+  screenEdgeAware?: boolean;
   /** Type of activity this status bubble is for (used to filter relevant activities) */
   activityType?: 'sleep' | 'feed' | 'diaper' | 'pump';
 }

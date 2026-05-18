@@ -3,7 +3,6 @@
 .active-feed-banner {
   background-color: white;
   margin: 0;
-  border-top: 1px solid #e5e7eb; /* gray-200 */
 }
 
 /* Inner card - the highlighted content area */
