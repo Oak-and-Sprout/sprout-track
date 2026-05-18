@@ -4,6 +4,7 @@
   { "code": "es", "name": "Español", "abbreviation": "ES" },
   { "code": "fr", "name": "Français", "abbreviation": "FR" },
   { "code": "it", "name": "Italiano", "abbreviation": "IT" },
+  { "code": "pt-PT", "name": "Português (Portugal)", "abbreviation": "PT-PT" },
   { "code": "pt", "name": "Português", "abbreviation": "PT" },
   { "code": "ro", "name": "Română", "abbreviation": "RO" }
 ]

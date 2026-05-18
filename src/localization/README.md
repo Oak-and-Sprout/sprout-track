@@ -42,7 +42,7 @@ Translations are stored in **per-language JSON files** under `src/localization/t
 ]
 ```
 
-- `code` (required): ISO 639-1 code; must match `translations/{code}.json` (except `en`, which is bundled eagerly).
+- `code` (required): ISO 639-1 code (e.g., `en`, `es`) or locale code (e.g., `pt-PT`, `pt-BR`); must match `translations/{code}.json` (except `en`, which is bundled eagerly). Code is normalized to lowercase internally.
 - `name` (required): label shown in the language selector.
 - `abbreviation` (optional): short label on the trigger; defaults to `code` in uppercase if omitted.
 
@@ -112,7 +112,7 @@ A simpler sort-only script is also available: `node scripts/sort-translation-fil
 
 To add support for a new language:
 
-1. Determine the ISO 639-1 language code (e.g., `de` for German).
+1. Determine the language code (e.g., `de` for German, `pt-PT` for Portuguese/Portugal).
 2. Add an entry to `src/localization/supported-languages.json` with `code`, `name`, and optionally `abbreviation`.
 3. Add `src/localization/translations/{code}.json` with keys/values (mirror `en.json` over time):
 
