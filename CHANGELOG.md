@@ -5,10 +5,10 @@
 ### Changes
 
 #### Enhancements
-- Updated contrast to main activity log - Thank you Crunchy244!
-- Added Portuguese (Brazil and Portugal) - Thank you Philx and Crunchy244!
-- Added Dutch - Thank you Tionkje!
-- Improved language translations and sentence conversion - Thank you Crunchy244!
+- Updated contrast to main activity log - Thank you **Crunchy244**!
+- Added Portuguese (Brazil and Portugal) - Thank you **Philx** and **Crunchy244**!
+- Added Dutch - Thank you **Tionkje**!
+- Improved language translations and sentence conversion - Thank you **Crunchy244**!
 - Added notifications for updates when upgrades occur at the user level
 
 ## v1.3.3 - QoL Bug Fixes for PWA, Activity Tiles, and Messages
