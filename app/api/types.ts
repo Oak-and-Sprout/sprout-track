@@ -72,6 +72,7 @@ export interface BabyCreate {
   inactive?: boolean;
   feedWarningTime?: string;
   diaperWarningTime?: string;
+  feedTimerFrom?: string;
 }
 
 export interface BabyUpdate extends Partial<BabyCreate> {

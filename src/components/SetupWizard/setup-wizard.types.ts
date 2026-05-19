@@ -223,4 +223,14 @@ export interface BabySetupStageProps {
    * Function to update diaper warning time
    */
   setDiaperWarningTime: (value: string) => void;
+
+  /**
+   * Feed timer counts from start or end of feeding
+   */
+  feedTimerFrom: string;
+  
+  /**
+   * Function to update feed timer from
+   */
+  setFeedTimerFrom: (value: string) => void;
 }

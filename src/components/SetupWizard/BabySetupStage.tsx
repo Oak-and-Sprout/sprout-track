@@ -36,7 +36,9 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
   feedWarningTime,
   setFeedWarningTime,
   diaperWarningTime,
-  setDiaperWarningTime
+  setDiaperWarningTime,
+  feedTimerFrom,
+  setFeedTimerFrom
 }) => {
   const { t } = useLocalization();
   const { dateFormat } = useTimezone();
@@ -189,6 +191,30 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className={cn(styles.formGroup, "setup-wizard-form-group")}>
+        <label 
+          className={cn(styles.formLabel, "setup-wizard-form-label")}
+          htmlFor="feedTimerFrom"
+        >
+          {t('Feed timer counts from')}
+        </label>
+        <Select
+          value={feedTimerFrom}
+          onValueChange={setFeedTimerFrom}
+        >
+          <SelectTrigger 
+            id="feedTimerFrom"
+            className={cn(styles.formSelect, "setup-wizard-form-select")}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="start">{t('Start of feeding')}</SelectItem>
+            <SelectItem value="end">{t('End of feeding')}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

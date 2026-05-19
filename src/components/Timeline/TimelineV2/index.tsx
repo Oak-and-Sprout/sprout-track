@@ -63,6 +63,9 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         ? String(feedAny.startTime)
         : feedAny.time;
       status.lastFeedTime = new Date(feedTime);
+      if (feedAny.type === 'BREAST' && feedAny.time) {
+        status.lastFeedEndTime = new Date(feedAny.time);
+      }
     }
 
     // Find last diaper time

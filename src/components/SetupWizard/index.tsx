@@ -74,6 +74,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
   const [babyGender, setBabyGender] = useState<Gender | ''>('');
   const [feedWarningTime, setFeedWarningTime] = useState('02:00');
   const [diaperWarningTime, setDiaperWarningTime] = useState('03:00');
+  const [feedTimerFrom, setFeedTimerFrom] = useState('start');
   
   // Error handling
   const [error, setError] = useState('');
@@ -316,6 +317,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             gender: babyGender,
             feedWarningTime,
             diaperWarningTime,
+            feedTimerFrom,
             familyId: createdFamily?.id,
           }),
         });
@@ -567,6 +569,8 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             setFeedWarningTime={setFeedWarningTime}
             diaperWarningTime={diaperWarningTime}
             setDiaperWarningTime={setDiaperWarningTime}
+            feedTimerFrom={feedTimerFrom}
+            setFeedTimerFrom={setFeedTimerFrom}
           />
         )}
 

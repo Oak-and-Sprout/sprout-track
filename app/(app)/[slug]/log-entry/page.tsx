@@ -50,6 +50,7 @@ function HomeContent(): React.ReactElement {
   const [sleepStartTime, setSleepStartTime] = useState<Record<string, Date>>({});
   const [lastSleepEndTime, setLastSleepEndTime] = useState<Record<string, Date>>({});
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
+  const [lastFeedEndTime, setLastFeedEndTime] = useState<Record<string, Date>>({});
   const [lastDiaperTime, setLastDiaperTime] = useState<Record<string, Date>>({});
   const [includeSolidsInFeedTimer, setIncludeSolidsInFeedTimer] = useState(true);
   const includeSolidsRef = useRef(true);
@@ -402,6 +403,9 @@ function HomeContent(): React.ReactElement {
     if (data.lastFeedTime) {
       setLastFeedTime(prev => ({ ...prev, [selectedBaby.id]: data.lastFeedTime! }));
     }
+    if (data.lastFeedEndTime) {
+      setLastFeedEndTime(prev => ({ ...prev, [selectedBaby.id]: data.lastFeedEndTime! }));
+    }
     if (data.lastDiaperTime) {
       setLastDiaperTime(prev => ({ ...prev, [selectedBaby.id]: data.lastDiaperTime! }));
     }
@@ -445,6 +449,7 @@ function HomeContent(): React.ReactElement {
           sleepStartTime={sleepStartTime}
           lastSleepEndTime={lastSleepEndTime}
           lastFeedTime={lastFeedTime}
+          lastFeedEndTime={lastFeedEndTime}
           lastDiaperTime={lastDiaperTime}
           feedStartTime={feedStartTime}
           updateUnlockTimer={updateUnlockTimer}

@@ -13,6 +13,7 @@ const CreateBabySchema = z.object({
   gender: z.nativeEnum(Gender),
   feedWarningTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   diaperWarningTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
+  feedTimerFrom: z.enum(['start', 'end']).optional(),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<Baby>>> {

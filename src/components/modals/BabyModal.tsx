@@ -33,6 +33,7 @@ const defaultFormData = {
   inactive: false,
   feedWarningTime: '03:00',
   diaperWarningTime: '02:00',
+  feedTimerFrom: 'start',
 };
 
 export default function BabyModal({
@@ -60,6 +61,7 @@ export default function BabyModal({
         inactive: baby.inactive || false,
         feedWarningTime: baby.feedWarningTime || '03:00',
         diaperWarningTime: baby.diaperWarningTime || '02:00',
+        feedTimerFrom: (baby as any).feedTimerFrom || 'start',
       });
     } else if (!open) {
       setFormData(defaultFormData);
@@ -201,6 +203,23 @@ export default function BabyModal({
                 required
               />
             </div>
+          </div>
+          <div>
+            <label className="form-label">{t('Feed timer counts from')}</label>
+            <Select
+              value={formData.feedTimerFrom}
+              onValueChange={(value) =>
+                setFormData({ ...formData, feedTimerFrom: value })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="start">{t('Start of feeding')}</SelectItem>
+                <SelectItem value="end">{t('End of feeding')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {isEditing && (
             <div className="flex items-center gap-3">
