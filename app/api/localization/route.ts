@@ -10,7 +10,7 @@ const supportedSet = new Set(supportedLanguageCodes);
  * Validates if a language code is allowed (configured in supported-languages.json)
  */
 function isValidLanguageCode(lang: string): boolean {
-  if (!lang || typeof lang !== 'string' || lang.length !== 2 || !/^[a-z]{2}$/i.test(lang)) {
+  if (!lang || typeof lang !== 'string' || !/^[a-z]{2}(-[a-z]{2})?$/i.test(lang)) {
     return false;
   }
   return supportedSet.has(lang.toLowerCase());

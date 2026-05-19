@@ -159,7 +159,7 @@ export function NurseryModeContainer() {
               BREAST: 'Breast', BOTTLE: 'Bottle', FOOD: 'Food',
               FORMULA: 'Formula', PUMPED_BOTTLE: 'Pumped Bottle',
             };
-            newLogs.feed = { last: time, note: typeLabels[latest.type] || latest.type };
+            newLogs.feed = { last: time, note: t(typeLabels[latest.type]) || latest.type };
           }
         }
 
@@ -173,7 +173,7 @@ export function NurseryModeContainer() {
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
               .toLowerCase();
             const typeLabels: Record<string, string> = { WET: 'Wet', DIRTY: 'Dirty', BOTH: 'Both' };
-            newLogs.diaper = { last: time, note: typeLabels[latest.type] || latest.type };
+            newLogs.diaper = { last: time, note: t(typeLabels[latest.type]) || latest.type };
           }
         }
 
@@ -188,7 +188,7 @@ export function NurseryModeContainer() {
                 .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                 .toLowerCase();
               const dur = latest.duration ? `${latest.duration} min` : '';
-              newLogs.sleep = { last: time, note: dur ? `${latest.location || 'Sleep'} — ${dur}` : (latest.location || 'Sleep') };
+              newLogs.sleep = { last: time, note: [t(latest.location || 'Sleep'), dur].filter(Boolean).join(' — ') };
             }
           }
         }
@@ -203,7 +203,7 @@ export function NurseryModeContainer() {
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
               .toLowerCase();
             const actionLabels: Record<string, string> = { STORED: 'Stored', FED: 'Fed', DISCARDED: 'Discarded' };
-            newLogs.pump = { last: time, note: actionLabels[latest.pumpAction] || latest.pumpAction };
+            newLogs.pump = { last: time, note: t(actionLabels[latest.pumpAction]) || latest.pumpAction };
           }
         }
 

@@ -21,14 +21,25 @@ const chartTypeConfig: { type: ChartType; label: string; icon: React.ReactNode; 
 
 // Percentile line colors matching GrowthChart.tsx
 const percentileLines = [
-  { dataKey: 'p3', name: '3rd', stroke: '#94a3b8', width: 1, dash: '2 2' },
-  { dataKey: 'p10', name: '10th', stroke: '#64748b', width: 1, dash: '4 2' },
-  { dataKey: 'p25', name: '25th', stroke: '#475569', width: 1.5, dash: '' },
-  { dataKey: 'p50', name: '50th', stroke: '#14b8a6', width: 2, dash: '' },
-  { dataKey: 'p75', name: '75th', stroke: '#475569', width: 1.5, dash: '' },
-  { dataKey: 'p90', name: '90th', stroke: '#64748b', width: 1, dash: '4 2' },
-  { dataKey: 'p97', name: '97th', stroke: '#94a3b8', width: 1, dash: '2 2' },
-];
+  { dataKey: 'p3', stroke: '#94a3b8', width: 1, dash: '2 2' },
+  { dataKey: 'p10', stroke: '#64748b', width: 1, dash: '4 2' },
+  { dataKey: 'p25', stroke: '#475569', width: 1.5, dash: '' },
+  { dataKey: 'p50', stroke: '#14b8a6', width: 2, dash: '' },
+  { dataKey: 'p75', stroke: '#475569', width: 1.5, dash: '' },
+  { dataKey: 'p90', stroke: '#64748b', width: 1, dash: '4 2' },
+  { dataKey: 'p97', stroke: '#94a3b8', width: 1, dash: '2 2' },
+] as const;
+
+function p(percentile: `p${number}`) {
+  return +percentile.slice(1);
+}
+
+function ordinal(percentile: string) {
+  if (percentile.endsWith('1')) return 'st';
+  if (percentile.endsWith('2')) return 'nd';
+  if (percentile.endsWith('3')) return 'rd';
+  return 'th';
+}
 
 function formatTrend(trend: 'up' | 'down' | 'stable'): string {
   if (trend === 'up') return '↑';
@@ -47,7 +58,7 @@ function MetricCard({ label, metric }: { label: string; metric: GrowthMetric | n
     );
   }
   const ordinal = metric.percentile === 1 ? 'st' : metric.percentile === 2 ? 'nd' : metric.percentile === 3 ? 'rd' : 'th';
-  const pctText = `${metric.percentile}${ordinal} ${t('percentile')} ${formatTrend(metric.trend)}`;
+  const pctText = `${metric.percentile}${t(ordinal)} ${t('percentile')} ${formatTrend(metric.trend)}`;
   return (
     <div className={cn(s.metricCard, 'report-card-metric')}>
       <p className={cn(s.metricLabel, 'report-card-metric-label')}>{label}</p>
@@ -184,7 +195,7 @@ function GrowthChartCard({
                 key={line.dataKey}
                 type="monotone"
                 dataKey={line.dataKey}
-                name={line.name}
+                name={`${p(line.dataKey)}${t(ordinal(line.dataKey))}`}
                 stroke={line.stroke}
                 strokeWidth={line.width}
                 strokeDasharray={line.dash || undefined}

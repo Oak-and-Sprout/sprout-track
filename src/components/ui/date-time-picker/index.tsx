@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import './date-time-picker.css';
 import { Calendar } from '@/src/components/ui/calendar';
 import { TimeEntry } from '@/src/components/ui/time-entry';
@@ -15,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/src/components/ui/popover';
+import { useLocalization } from '@/src/context/localization';
 
 // Import types and styles
 import { DateTimePickerProps } from './date-time-picker.types';
@@ -48,6 +49,7 @@ export function DateTimePicker({
   placeholder = "Select date and time...",
 }: DateTimePickerProps) {
   const { dateFormat, timeFormat } = useTimezone();
+  const { t } = useLocalization();
 
   // Allow for null date value
   const [date, setDate] = useState<Date | null>(() => {
@@ -109,23 +111,23 @@ export function DateTimePicker({
   
   // Format the date for display
   const formatDate = (date: Date | null): string => {
-    if (!date || !isValid(date)) return 'Select date';
+    if (!date || !isValid(date)) return t('Select date');
     try {
       return formatDateLong(date, dateFormat);
     } catch (error) {
       console.error('Error formatting date:', error);
-      return 'Select date';
+      return t('Select date');
     }
   };
 
   // Format the time for display
   const formatTime = (date: Date | null): string => {
-    if (!date || !isValid(date)) return 'Select time';
+    if (!date || !isValid(date)) return t('Select time');
     try {
       return formatTimeDisplay(date, timeFormat);
     } catch (error) {
       console.error('Error formatting time:', error);
-      return 'Select time';
+      return t('Select time');
     }
   };
   

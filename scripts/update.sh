@@ -89,6 +89,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Reset changelog seen status so all users see "New Updates" badge
+echo "Resetting changelog seen status..."
+node "$SCRIPT_DIR/reset-changelog-seen.js"
+if [ $? -ne 0 ]; then
+    echo "Warning: Failed to reset changelog seen status. Continuing deployment."
+fi
+
 # Build the application
 echo "Building the application..."
 npm run build

@@ -616,7 +616,7 @@ export default function SleepForm({
                           checked={!hiddenLocations.includes(location)}
                           onCheckedChange={() => toggleLocationVisibility(location)}
                         />
-                        {location}
+                        {t(location)}
                       </label>
                     ))}
                     {customLocations.length > 0 && (
@@ -658,7 +658,7 @@ export default function SleepForm({
                   <SelectContent>
                     {visibleDefaultLocations.map((location) => (
                       <SelectItem key={location} value={location}>
-                        {location}
+                        {t(location)}
                       </SelectItem>
                     ))}
                     <SelectItem value="Custom">{t('Custom')}</SelectItem>

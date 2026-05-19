@@ -20,6 +20,7 @@ import {
 import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
 import ContactSelector from './ContactSelector';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 interface MedicineFormProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
 }) => {
 
   const { t } = useLocalization();
+  const { unitName, unitSymbol } = useUnit();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -482,7 +484,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   <SelectContent>
                     {units.map((unit) => (
                       <SelectItem key={unit.unitAbbr} value={unit.unitAbbr}>
-                        {unit.unitName} ({unit.unitAbbr})
+                        {unitName(unit.unitName)} ({unitSymbol(unit.unitAbbr)})
                       </SelectItem>
                     ))}
                   </SelectContent>

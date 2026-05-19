@@ -120,7 +120,14 @@ export function PumpTile({ colors, log, onLog, onActiveChange, animating, babyId
           FED: t('Fed'),
           DISCARDED: t('Discarded'),
         };
-        onLog('pump', `${activeSide} — ${formatDuration(elapsed)} — ${actionLabels[pumpAction] || pumpAction}`);
+        const sideLabels: Record<PumpSide, string> = {
+          both: t('Both'),
+          left: t('Left'),
+          right: t('Right'),
+        };
+        const action = actionLabels[pumpAction] || pumpAction;
+        const side = sideLabels[activeSide] || activeSide;
+        onLog('pump', [side, formatDuration(elapsed), action].join(' — '));
       }
     } catch (err) {
       console.error('Error logging pump:', err);

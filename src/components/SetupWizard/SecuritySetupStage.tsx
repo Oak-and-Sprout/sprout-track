@@ -31,7 +31,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
   newCaretaker,
   setNewCaretaker,
   addCaretaker,
-  removeCaretaker
+  removeCaretaker,
 }) => {
   const { t } = useLocalization();
   
@@ -93,17 +93,17 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
     }
     
     if (!/^\d+$/.test(loginId)) {
-      setLoginIdError('Login ID must contain only digits');
+      setLoginIdError(t('Login ID must contain only digits'));
       return false;
     }
     
     if (loginId === '00') {
-      setLoginIdError('Login ID "00" is reserved for system use');
+      setLoginIdError(t('Login ID "00" is reserved for system use'));
       return false;
     }
     
     if (caretakers.some(c => c.loginId === loginId)) {
-      setLoginIdError('This Login ID is already taken');
+      setLoginIdError(t('This Login ID is already taken'));
       return false;
     }
     
@@ -168,7 +168,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
             htmlFor="systemPin" 
             className={cn(styles.formRadioLabel, "setup-wizard-form-radio-label")}
           >
-            {isAccountAuth ? "Use a simple system-wide PIN" : "Use system-wide PIN"}
+            {isAccountAuth ? t("Use a simple system-wide PIN") : t("Use system-wide PIN")}
           </label>
         </div>
         
@@ -184,14 +184,14 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
             htmlFor="caretakers" 
             className={cn(styles.formRadioLabel, "setup-wizard-form-radio-label")}
           >
-            {isAccountAuth ? "Create personal login credentials" : "Add caretakers with individual PINs"}
+            {isAccountAuth ? t("Create personal login credentials") : t("Add caretakers with individual PINs")}
           </label>
         </div>
         
         <div className={cn(styles.formHelperText, "setup-wizard-form-helper-text", "mt-2")}>
           {isAccountAuth 
-            ? "System-wide PIN: everyone uses the same PIN. Personal credentials: better tracking and individual access."
-            : "Individual PINs provide better activity tracking and access control."
+            ? t("System-wide PIN: everyone uses the same PIN. Personal credentials: better tracking and individual access.")
+            : t("Individual PINs provide better activity tracking and access control.")
           }
         </div>
       </div>
@@ -203,7 +203,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
               className={cn(styles.formLabel, "setup-wizard-form-label")}
               htmlFor="systemPin"
             >
-              {isAccountAuth ? "System-wide PIN (6-10 digits)" : "System PIN (6-10 digits)"}
+              {isAccountAuth ? t("System-wide PIN (6-10 digits)") : t("System PIN (6-10 digits)")}
             </label>
             <Input
               id="systemPin"
@@ -215,7 +215,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   setSystemPin(value);
                 }
               }}
-              placeholder={isAccountAuth ? "Enter system-wide PIN" : "Enter PIN"}
+              placeholder={isAccountAuth ? t("Enter system-wide PIN") : t("Enter PIN")}
               className={cn(styles.formInput, "setup-wizard-form-input")}
               minLength={6}
               maxLength={10}
@@ -238,7 +238,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   setConfirmSystemPin(value);
                 }
               }}
-              placeholder={isAccountAuth ? "Confirm system-wide PIN" : "Confirm PIN"}
+              placeholder={isAccountAuth ? t("Confirm system-wide PIN") : t("Confirm PIN")}
               className={cn(styles.formInput, "setup-wizard-form-input")}
               minLength={6}
               maxLength={10}
@@ -249,7 +249,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
         <div className={cn(styles.securityPinContainer, "setup-wizard-security-pin-container")}>
           <div className={cn(styles.caretakerContainer, "setup-wizard-caretaker-container")}>
             <h3 className={cn(styles.caretakerTitle, "setup-wizard-caretaker-title")}>
-              {isAccountAuth && !accountOwnerAdded ? "Your Personal Profile" : isAccountAuth && accountOwnerAdded ? "Add Additional Caretaker" : "Add Caretaker"}
+              {isAccountAuth && !accountOwnerAdded ? t("Your Personal Profile") : isAccountAuth && accountOwnerAdded ? t("Add Additional Caretaker") : t("Add Caretaker")}
             </h3>
             {isAccountAuth && !accountOwnerAdded && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
@@ -264,14 +264,14 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   className={cn(styles.formLabel, "setup-wizard-form-label")}
                   htmlFor="loginId"
                 >
-                  {isAccountAuth && !accountOwnerAdded ? "Your Login ID" : "Login ID (2 digits)"}
+                  {isAccountAuth && !accountOwnerAdded ? t("Your Login ID") : t("Login ID (2 digits)")}
                 </label>
                 <div className="space-y-1">
                   <Input
                     id="loginId"
                     value={newCaretaker.loginId}
                     onChange={(e) => handleLoginIdChange(e.target.value)}
-                    placeholder={isAccountAuth ? "Enter 2-digit ID" : "e.g., 01, 12, 99"}
+                    placeholder={isAccountAuth ? t("Enter 2-digit ID") : t("e.g., 01, 12, 99")}
                     className={cn(
                       styles.formInput, 
                       "setup-wizard-form-input",
@@ -287,8 +287,8 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   )}
                   <p className={cn(styles.formHelperText, "setup-wizard-form-helper-text")}>
                     {isAccountAuth 
-                      ? "Choose a unique 2-digit ID (01-99) for your login."
-                      : "Use digits only (01-99). Cannot use \"00\" (reserved for system)."
+                      ? t("Choose a unique 2-digit ID (01-99) for your login.")
+                      : t('Use digits only (01-99). Cannot use "00" (reserved for system).')
                     }
                   </p>
                 </div>
@@ -315,7 +315,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                       id="role"
                       className={cn(styles.formSelect, "setup-wizard-form-select")}
                     >
-                      <SelectValue placeholder="Select role" />
+                      <SelectValue placeholder={t("Select role")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ADMIN">{t('Admin')}</SelectItem>
@@ -336,7 +336,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   className={cn(styles.formLabel, "setup-wizard-form-label")}
                   htmlFor="name"
                 >
-                  Name
+                  {t("Name")}
                 </label>
                 <Input
                   id="name"
@@ -344,7 +344,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   onChange={(e) => 
                     setNewCaretaker({ ...newCaretaker, name: e.target.value })
                   }
-                  placeholder="Full name"
+                  placeholder={t("Full name")}
                   className={cn(styles.formInput, "setup-wizard-form-input")}
                 />
               </div>
@@ -355,7 +355,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   className={cn(styles.formLabel, "setup-wizard-form-label")}
                   htmlFor="securityPin"
                 >
-                  {isAccountAuth && !accountOwnerAdded ? "Your Personal PIN (6-10 digits)" : isAccountAuth && accountOwnerAdded ? "New Caretaker PIN (6-10 digits)" : "PIN (6-10 digits)"}
+                  {isAccountAuth && !accountOwnerAdded ? t("Your Personal PIN (6-10 digits)") : isAccountAuth && accountOwnerAdded ? t("New Caretaker PIN (6-10 digits)") : t("PIN (6-10 digits)")}
                 </label>
                 <Input
                   id="securityPin"
@@ -367,7 +367,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                       setNewCaretaker({ ...newCaretaker, securityPin: value });
                     }
                   }}
-                  placeholder="PIN"
+                  placeholder={t("PIN")}
                   className={cn(styles.formInput, "setup-wizard-form-input")}
                   minLength={6}
                   maxLength={10}
@@ -387,7 +387,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                     onChange={(e) => 
                       setNewCaretaker({ ...newCaretaker, type: e.target.value })
                     }
-                    placeholder="Parent, Nanny, etc."
+                    placeholder={t("Parent, Nanny, etc.")}
                     className={cn(styles.formInput, "setup-wizard-form-input")}
                   />
                 </div>
@@ -397,7 +397,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
               onClick={handleAddCaretaker}
               className="w-full mt-4"
             >
-              {isAccountAuth && !accountOwnerAdded ? "Create Your Profile" : isAccountAuth && accountOwnerAdded ? "Add Additional Caretaker" : "Add Caretaker"}
+              {isAccountAuth && !accountOwnerAdded ? t("Create Your Profile") : isAccountAuth && accountOwnerAdded ? t("Add Additional Caretaker") : t("Add Caretaker")}
             </Button>
           </div>
           

@@ -1,12 +1,12 @@
-import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
-import { Baby as BabyIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Baby as BabyIcon } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ActivityType, TimelineActivityListProps, FilterType } from './types';
 import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime } from './utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
+import { useUnit } from '@/src/hooks/useUnit';
 
 import './timeline-activity-list.css';
 
@@ -25,9 +25,9 @@ const TimelineActivityList = ({
   onSwipeLeft,
   onSwipeRight,
 }: TimelineActivityListProps) => {
-  
 
-  const { t } = useLocalization();  
+  const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
 
   // Extract activeFilter from props if available
   const activeFilter = (onSwipeLeft as any)?.activeFilter as FilterType | undefined;
@@ -542,7 +542,7 @@ const TimelineActivityList = ({
                                           
                                           if ('doseAmount' in activity && 'medicineId' in activity) {
                                             // Medicine activity
-                                            const unit = activity.unitAbbr ? activity.unitAbbr.toLowerCase() : '';
+                                            const unit = unitSymbol(activity.unitAbbr);
                                             const dose = activity.doseAmount ? `${activity.doseAmount} ${unit}`.trim() : '';
                                             let medName = 'Medicine';
                                             if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'name' in activity.medicine) {

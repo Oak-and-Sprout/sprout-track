@@ -131,7 +131,10 @@ model Account {
   trialEnds        DateTime?
 
   // Localization preference
-  language String? @default("en") // ISO 639-1 language code (e.g., "en", "es", "fr")
+  language String? @default("en") // language or locale code (e.g., "en", "pt-PT", "zh-CN")
+
+  // Changelog notification
+  lastSeenVersion String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -261,7 +264,8 @@ model Caretaker {
   role        UserRole  @default(USER) // User role for authentication permissions
   inactive    Boolean   @default(false)
   securityPin String
-  language    String?   @default("en") // ISO 639-1 language code (e.g., "en", "es", "fr")
+  language    String?   @default("en") // language or locale code (e.g., "en", "pt-PT", "zh-CN")
+  lastSeenVersion String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?

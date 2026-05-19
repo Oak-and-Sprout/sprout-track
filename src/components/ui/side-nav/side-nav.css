@@ -120,3 +120,24 @@ html.dark .side-nav-language-item:hover {
   background-color: #374151; /* gray-700 */
   color: #9ca3af; /* gray-400 */
 }
+
+/* New Updates badge animation */
+.new-updates-badge {
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+html.dark .new-updates-badge {
+  background-color: #0d9488; /* teal-600 */
+  color: #ffffff;
+}
