@@ -19,6 +19,8 @@ import {
   PillBottle,
   Pill,
   Baby,
+  Plus,
+  Minus,
   Syringe
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
@@ -62,7 +64,7 @@ const isPlayActivity = (activity: any): boolean => {
 export const getActivityIcon = (activity: ActivityType) => {
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
-    return <Baby className="h-4 w-4 text-white" />;
+    return <Baby className="h-4 w-4 text-black" />;
   }
   if ('doseAmount' in activity && 'medicineId' in activity) {
     // Medicine or supplement log
@@ -74,11 +76,14 @@ export const getActivityIcon = (activity: ActivityType) => {
   // Check for breast milk adjustment BEFORE pump (both have amount)
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
     const amt = (activity as any).amount;
-    return <span className="text-sm font-bold text-white">{amt >= 0 ? '+' : '−'}</span>;
+    if (amt < 0) {
+      return <Minus className="h-4 w-4 text-black" />;
+    }
+    return <Plus className="h-4 w-4 text-black" />;
   }
   // Check for pump activities FIRST (before sleep) since they also have duration and startTime
   if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return <LampWallDown className="h-4 w-4 text-white" />; // Pump activity
+    return <LampWallDown className="h-4 w-4 text-black" />; // Pump activity
   }
   if ('type' in activity) {
     if ('duration' in activity) {
@@ -98,7 +103,7 @@ export const getActivityIcon = (activity: ActivityType) => {
     return <Bath className="h-4 w-4 text-white" />; // Bath activity
   }
   if ('vaccineName' in activity) {
-    return <Syringe className="h-4 w-4" style={{ color: '#EF4444' }} />;
+    return <Syringe className="h-4 w-4 text-red-500" />;
   }
   if ('title' in activity && 'category' in activity) {
     return <Trophy className="h-4 w-4 text-white" />; // Milestone activity
