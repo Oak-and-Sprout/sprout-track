@@ -507,6 +507,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           type: selectedCaretaker.type || null,
           role: selectedCaretaker.role as any,
           language: (selectedCaretaker as any).language || 'en',
+          lastSeenVersion: (selectedCaretaker as any).lastSeenVersion || null,
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,

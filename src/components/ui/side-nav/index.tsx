@@ -4,6 +4,7 @@ import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
 import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2 } from 'lucide-react';
 import NavCountBubble from '@/src/components/ui/nav-count-bubble';
+import { Badge } from '@/src/components/ui/badge';
 import { LanguageSelector } from './language-selector';
 
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
@@ -172,6 +173,30 @@ export const SideNav: React.FC<SideNavProps> = ({
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
   const [unreadFeedbackCount, setUnreadFeedbackCount] = useState<number>(0);
+  const [hasNewUpdates, setHasNewUpdates] = useState<boolean>(false);
+
+  // Check if user has seen the current version's changelog
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+
+    const checkForUpdates = async () => {
+      try {
+        const response = await fetch('/api/changelog/seen', {
+          headers: { 'Authorization': `Bearer ${authToken}` },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success && data.data) {
+          setHasNewUpdates(data.data.hasNewUpdates);
+        }
+      } catch {
+        // Non-critical
+      }
+    };
+
+    checkForUpdates();
+  }, []);
 
   // Fetch unread feedback count (admin replies the user hasn't read)
   useEffect(() => {
@@ -421,13 +446,23 @@ export const SideNav: React.FC<SideNavProps> = ({
         {/* Version display at bottom of nav items */}
         <div className="w-full text-center mb-4">
           <div className="flex items-center justify-center gap-2">
-            <span 
-              className="text-xs text-gray-500 cursor-pointer hover:text-teal-600 transition-colors"
-              onClick={() => setShowChangelog(true)}
-              aria-label="View changelog"
-            >
-              v{packageInfo.version}
-            </span>
+            {hasNewUpdates ? (
+              <Badge
+                variant="default"
+                className="new-updates-badge cursor-pointer text-[10px] px-1.5 py-0"
+                onClick={() => setShowChangelog(true)}
+              >
+                {t('New Updates')}: v{packageInfo.version}
+              </Badge>
+            ) : (
+              <span
+                className="text-xs text-gray-500 cursor-pointer hover:text-teal-600 transition-colors"
+                onClick={() => setShowChangelog(true)}
+                aria-label="View changelog"
+              >
+                v{packageInfo.version}
+              </span>
+            )}
             <span className="text-xs text-gray-400">•</span>
             <LanguageSelector />
           </div>
@@ -488,9 +523,24 @@ export const SideNav: React.FC<SideNavProps> = ({
         </div>
 
         {/* Changelog Modal */}
-        <ChangelogModal 
-          open={showChangelog} 
-          onClose={() => setShowChangelog(false)} 
+        <ChangelogModal
+          open={showChangelog}
+          onClose={() => {
+            setShowChangelog(false);
+            if (hasNewUpdates) {
+              const authToken = localStorage.getItem('authToken');
+              if (authToken) {
+                fetch('/api/changelog/seen', {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ version: packageInfo.version }),
+                }).then(() => setHasNewUpdates(false)).catch(() => {});
+              }
+            }
+          }}
           version={packageInfo.version}
         />
 

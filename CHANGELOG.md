@@ -1,5 +1,16 @@
 # Sprout Track Changelog
 
+## v1.3.4 - Community Language additions and better translations
+
+### Changes
+
+#### Enhancements
+- Updated contrast to main activity log - Thank you Crunchy244!
+- Added Portugese (Brazil and Portugal) - Thank you Philx and Crunchy244!
+- Added Dutch - Thank you Tionkje!
+- Improved language translations and sentence conversion - Thank you Crunchy244!
+- Added notifications for updates for sprout-track.com users
+
 ## v1.3.3 - QoL Bug Fixes for PWA, Activity Tiles, and Messages
 
 ### Changes

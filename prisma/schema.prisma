@@ -133,6 +133,9 @@ model Account {
   // Localization preference
   language String? @default("en") // language or locale code (e.g., "en", "pt-PT", "zh-CN")
 
+  // Changelog notification
+  lastSeenVersion String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -262,6 +265,7 @@ model Caretaker {
   inactive    Boolean   @default(false)
   securityPin String
   language    String?   @default("en") // language or locale code (e.g., "en", "pt-PT", "zh-CN")
+  lastSeenVersion String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
