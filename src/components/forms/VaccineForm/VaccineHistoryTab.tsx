@@ -12,10 +12,13 @@ import {
   Paperclip,
   Download,
   FileSpreadsheet,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 /**
  * VaccineHistoryTab Component
@@ -30,6 +33,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
 }) => {
   const { t } = useLocalization();
   const { formatDateTime } = useTimezone();
+  const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vaccineRecords, setVaccineRecords] = useState<VaccineLogResponse[]>([]);
@@ -147,6 +151,42 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
       console.error('Error exporting vaccine records:', error);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleDeleteRecord = async (recordId: string) => {
+    if (!confirm(t('Are you sure you want to delete this vaccine record?'))) return;
+
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/vaccine-log?id=${recordId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          const { isExpirationError } = await handleExpirationError(response, showToast, 'deleting vaccine record');
+          if (isExpirationError) return;
+        }
+        throw new Error('Failed to delete vaccine record');
+      }
+
+      setVaccineRecords(prev => prev.filter(r => r.id !== recordId));
+      showToast({
+        variant: 'success',
+        title: t('Success'),
+        message: t('Vaccine record deleted successfully'),
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error deleting vaccine record:', error);
+      showToast({
+        variant: 'error',
+        title: t('Error'),
+        message: t('Failed to delete vaccine record'),
+        duration: 5000,
+      });
     }
   };
 
@@ -297,6 +337,23 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
                         </div>
                       </div>
                     )}
+
+                    {/* Delete button */}
+                    <div className="mt-2 pt-2 border-t border-gray-100 vaccine-history-detail-separator">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 vaccine-history-delete-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRecord(record.id);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        {t('Delete')}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

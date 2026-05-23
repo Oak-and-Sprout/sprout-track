@@ -134,6 +134,20 @@ html.dark .vaccine-history-detail-row {
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
+/* Delete button in history items */
+html.dark .vaccine-history-detail-separator {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .vaccine-history-delete-button {
+  color: #ef4444 !important;
+}
+
+html.dark .vaccine-history-delete-button:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important;
+}
+
 /* Icon container */
 html.dark .vaccine-form-icon-container {
   background-color: rgba(45, 212, 191, 0.2) !important;
