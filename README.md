@@ -200,3 +200,128 @@ See [Initial Setup](documentation/Admin-Documentation/initial-setup.md) for deta
 - Prisma with SQLite or PostgreSQL
 - Tailwind
 - Docker
+
+
+
+
+# Local switch hosting from original to fork
+
+Perfect! Let's set up automatic Git-based updates using GitHub Container Registry (GHCR) + Podman's native auto-update. This way, when you push to your fork's main branch, the server auto-pulls and restarts.
+🎯 Architecture Overview
+1234567
+📦 Step 1: Publish Your Fork to GHCR
+Option A: Quick Manual Push (Test First)
+bash
+123456789101112131415161718
+Option B: Automated GitHub Actions (Recommended)
+Create .github/workflows/publish.yml in your fork:
+yaml
+12345678910111213141516171819202122232425262728293031323334353637383940414243444546474849
+🔐 Secrets: No extra setup needed — GITHUB_TOKEN is auto-provided. Ensure your repo allows Actions (Settings → Actions → Enable).
+⚙️ Step 2: Update Your Systemd Service for Auto-Update
+Edit your existing service file:
+bash
+1
+Update the ExecStart line:
+ini
+1234567891011121314151617
+✅ Key changes:
+Image: ghcr.io/stefanhalus/sprout-track:latest (instead of docker.io or localhost)
+Added --label "io.containers.autoupdate=registry" — this tells Podman to auto-update from registry
+Optional: -e FORK_SOURCE=... for easy identification in logs
+🔄 Step 3: Enable Podman Auto-Update
+bash
+1234567891011
+Check auto-update logs:
+bash
+1
+🧪 Step 4: Test the Full Flow
+Simulate an update:
+bash
+123456789101112131415161718
+Verify your accessibility improvements:
+bash
+1234
+🔐 GHCR Authentication on Server (One-Time Setup)
+Podman needs to authenticate to pull from GHCR:
+bash
+1234567891011
+💡 Security Tip: Use a fine-scoped GitHub PAT (Settings → Developer settings → Personal access tokens → Fine-grained tokens) with only:
+Repository: stefanhalus/sprout-track
+Permissions: Contents: read, Packages: read
+📋 Auto-Update Configuration Summary
+Component
+Setting
+Purpose
+GitHub Actions
+publish.yml workflow
+Builds & pushes image on git push
+Image Label
+io.containers.autoupdate=registry
+Tells Podman to auto-update from registry
+Systemd Timer
+podman-auto-update.timer
+Checks for updates hourly
+Container Label
+--label "io.containers.autoupdate=registry"
+Marks container for auto-update
+Auth
+~/.config/containers/auth.json
+Allows Podman to pull from GHCR
+🚨 Troubleshooting Auto-Updates
+Container not updating?
+bash
+12345678910
+GitHub Actions failing?
+Check Actions tab in your fork for build logs
+Ensure GITHUB_TOKEN has package write permissions
+Verify Dockerfile builds locally first: podman build -t test .
+🔄 Update Frequency Control
+By default, podman-auto-update.timer runs hourly. To customize:
+bash
+12
+Add:
+ini
+1234
+Then reload:
+bash
+12
+✅ Final Checklist
+Task
+Command
+Done
+✅ Publish first image to GHCR
+podman push ghcr.io/stefanhalus/sprout-track:latest
+☐
+✅ Add io.containers.autoupdate=registry label to image & container
+podman inspect ...
+☐
+✅ Update systemd ExecStart to use GHCR image
+grep ExecStart /etc/systemd/system/container-sprouttrack.service
+☐
+✅ Enable auto-update timer
+systemctl is-active podman-auto-update.timer
+☐
+✅ Test push → auto-deploy flow
+Push small change, watch logs
+☐
+✅ Verify accessibility improvements live
+Browser test at baby.halus.eu
+☐
+💡 Bonus: Add Update Notifications
+Want to know when an auto-update happens? Add a webhook to your GitHub Actions:
+yaml
+1234567
+Set DEPLOY_WEBHOOK in repo secrets (e.g., Discord, Slack, or a simple logging endpoint).
+Your setup will now:
+✅ Auto-build on git push
+✅ Auto-deploy via Podman
+✅ Preserve all data (volumes untouched)
+✅ Keep your accessibility improvements always up-to-date
+Let me know if you'd like help:
+Drafting the GitHub Actions workflow file
+Setting up fine-grained GitHub PAT permissions
+Adding a healthcheck endpoint to verify post-update success
+
+
+https://chat.qwen.ai/s/t_3b4bff5a-22e7-4bbf-b4e1-affb973f9284?fev=0.2.45

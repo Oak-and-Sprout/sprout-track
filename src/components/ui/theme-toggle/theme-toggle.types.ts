@@ -21,4 +21,9 @@ export interface ThemeToggleProps
    * - "light": Simplified version with just icon, label, and hover effects
    */
   variant?: "default" | "light" | "minimal";
+
+  /**
+   * Whether the theme toggle should be rendered in a collapsed/compact format
+   */
+  isCollapsed?: boolean;
 }

@@ -58,6 +58,16 @@ export interface SideNavProps {
    * The family name to display
    */
   familyName?: string;
+
+  /**
+   * Whether the sidebar is collapsed (desktop only)
+   */
+  isCollapsed?: boolean;
+
+  /**
+   * Function to call when toggling the sidebar collapse state
+   */
+  onToggleCollapse?: () => void;
 }
 
 /**
