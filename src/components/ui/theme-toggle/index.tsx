@@ -19,6 +19,7 @@ import './theme-toggle.css';
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({ 
   className,
   variant = "default",
+  isCollapsed = false,
   ...props
 }) => {
   const { theme, toggleTheme, useSystemTheme, toggleUseSystemTheme } = useTheme();
@@ -64,7 +65,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
 
   // Get the appropriate icon and label for the current theme
   const getCurrentThemeIcon = () => {
-    const iconSize = (variant === 'light' || variant === 'minimal') ? 14 : 16;
+    const iconSize = (variant === 'light' || variant === 'minimal' || isCollapsed) ? 16 : 16;
     if (!isHydrated) return <Sun size={iconSize} />; // Default to Sun icon during SSR
     if (useSystemTheme) return <Monitor size={iconSize} />;
     return theme === 'light' ? <Sun size={iconSize} /> : <Moon size={iconSize} />;
@@ -75,6 +76,26 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
     if (useSystemTheme) return 'system';
     return theme;
   };
+
+  if (isCollapsed) {
+    return (
+      <button
+        onClick={cycleTheme}
+        className={cn(
+          "flex items-center justify-center w-full px-2 py-3 text-gray-700 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-200 rounded-lg mb-2",
+          "side-nav-settings-button",
+          className
+        )}
+        aria-label={`${t('Switch to')} ${t(getNextTheme())}`}
+        title={`${t('Switch to')} ${t(getNextTheme())}`}
+        {...props}
+      >
+        <span className="flex items-center justify-center h-5 w-5 mr-0">
+          {getCurrentThemeIcon()}
+        </span>
+      </button>
+    );
+  }
 
   // Render light or minimal variant
   if (variant === 'light' || variant === 'minimal') {

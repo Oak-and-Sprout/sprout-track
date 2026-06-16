@@ -34,7 +34,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
     isExpired: boolean;
     isTrialExpired: boolean;
     expirationDate?: string;
-    betaparticipant: boolean;
+    betaParticipant: boolean;
   } | null>(null);
   const [checkingAccountStatus, setCheckingAccountStatus] = useState(false);
   const [fontSizeAdjusted, setFontSizeAdjusted] = useState(false);
@@ -125,38 +125,38 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
 
     const adjustFontSize = () => {
       if (cancelled) return;
-      
+
       const element = familyNameRef.current;
       if (!element) return;
 
       // Make element visible for accurate measurement
       element.style.visibility = 'hidden';
       element.style.opacity = '1';
-      
+
       // Reset to default size first
       element.style.fontSize = '';
-      
+
       // Force reflow
       void element.getBoundingClientRect();
 
       // Get computed styles at default size (text-xl = 20px, line-height = 28px in Tailwind)
-      const computedStyle = window.getComputedStyle(element);
-      let currentFontSize = parseFloat(computedStyle.fontSize) || 20;
-      const lineHeight = parseFloat(computedStyle.lineHeight) || 28;
-      
+      const computedStyle = globalThis.getComputedStyle(element);
+      let currentFontSize = Number.parseFloat(computedStyle.fontSize) || 20;
+      const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 28;
+
       // Max height for 2 rows (line-height * 2 plus small buffer)
       const maxTwoRowsHeight = lineHeight * 2 + 4;
-      
+
       // Get current height
       let currentHeight = element.getBoundingClientRect().height;
-      
+
       // Only adjust if we have valid measurements and text exceeds 2 rows
       if (currentHeight > 0 && lineHeight > 0) {
         // Shrink font until text fits in 2 rows or hits minimum
         const minFontSize = 12;
         let iterations = 0;
         const maxIterations = 20; // Safety limit
-        
+
         while (currentHeight > maxTwoRowsHeight && currentFontSize > minFontSize && iterations < maxIterations) {
           currentFontSize = Math.max(minFontSize, currentFontSize - 1);
           element.style.fontSize = `${currentFontSize}px`;
@@ -165,11 +165,11 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
           iterations++;
         }
       }
-      
+
       // Show the element - keep inline opacity:1 until React re-renders
       element.style.visibility = '';
       element.style.opacity = '1';
-      
+
       if (!cancelled) {
         setFontSizeAdjusted(true);
       }
@@ -185,10 +185,10 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
       } catch (e) {
         // Ignore font loading errors
       }
-      
+
       // Give the layout time to stabilize
       await new Promise(resolve => setTimeout(resolve, 50));
-      
+
       if (!cancelled) {
         requestAnimationFrame(adjustFontSize);
       }
@@ -202,7 +202,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
       adjustFontSize();
     };
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       cancelled = true;
       window.removeEventListener('resize', handleResize);
@@ -233,10 +233,10 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
                 priority
               />
             </div>
-            <h2 
+            <h2
               ref={familyNameRef}
               className="text-xl login-title flex-1 min-w-0"
-              style={{ 
+              style={{
                 opacity: (fontSizeAdjusted || !familyName) ? 1 : 0,
                 transition: 'opacity 0.15s ease-in'
               }}

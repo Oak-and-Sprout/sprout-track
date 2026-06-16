@@ -1,8 +1,8 @@
 export const adminSideNavStyles = {
   container: "fixed inset-y-0 left-0 z-50 flex flex-col bg-white transform transition-all duration-300 ease-in-out w-64",
   containerNonModal: "flex flex-col bg-white w-64 min-h-screen h-full transition-all duration-300 ease-in-out",
-  containerOpen: "translate-x-0",
-  containerClosed: "-translate-x-full",
+  containerOpen: "translate-x-0 visible",
+  containerClosed: "-translate-x-full invisible pointer-events-none",
   overlay: "fixed inset-0 bg-black/30 z-40 transition-opacity duration-300",
   overlayOpen: "opacity-100",
   overlayClosed: "opacity-0 pointer-events-none",
