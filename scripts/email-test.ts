@@ -18,7 +18,7 @@ async function runTest() {
 
     rl.close();
 
-    console.log(`Sending email to: ${to} from: ${from}...`);
+    console.log(`Sending email to: ${to} from: ${from}…`);
 
     const result = await sendEmail({
       to,

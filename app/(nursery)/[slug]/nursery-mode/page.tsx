@@ -8,7 +8,7 @@ export default function NurseryModePage() {
     <Suspense
       fallback={
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0a1a]">
-          <div className="text-white/50 text-sm">Loading...</div>
+          <div className="text-white/50 text-sm">Loading…</div>
         </div>
       }
     >

@@ -37,7 +37,7 @@ function FamilySlugPageContent() {
         
         // If family doesn't exist, redirect to home
         if (!data.success || !data.data) {
-          console.log(`Family slug "${familySlug}" not found, redirecting to home...`);
+          console.log(`Family slug "${familySlug}" not found, redirecting to home…`);
           router.push('/');
           return;
         }
@@ -195,7 +195,7 @@ function FamilySlugPageContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
           <p className="text-gray-500">
-            {!slugValidated ? t('Validating family...') : t('Checking authentication...')}
+            {!slugValidated ? t('Validating family…') : t('Checking authentication…')}
           </p>
         </div>
       </div>
@@ -209,7 +209,7 @@ function FamilySlugPageContent() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">{t('Loading')}...</p>
+          <p className="text-gray-500">{t('Loading')}…</p>
         </div>
       </div>
     );
@@ -257,7 +257,7 @@ export default function FamilySlugPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p>{t('Loading')}...</p>
+          <p>{t('Loading')}…</p>
         </div>
       </div>
     }>

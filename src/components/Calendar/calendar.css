@@ -38,7 +38,7 @@ html.dark .main-calendar-day-today {
 
 html.dark .main-calendar-day-other-month {
   background-color: rgba(17, 24, 39, 0.5) !important; /* gray-900/50 */
-  color: #4b5563 !important; /* gray-600 */
+  color: #9ba5b3 !important; /* gray-600 */
 }
 
 html.dark .main-calendar-day-current-month {

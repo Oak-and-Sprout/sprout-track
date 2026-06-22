@@ -59,7 +59,7 @@ function CalendarPage() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center animate-pulse">
                 <BabyIcon className="h-8 w-8 text-indigo-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Loading')}...</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Loading')}…</h3>
               <p className="text-sm text-gray-500">
                 {t('Checking your account status')}
               </p>

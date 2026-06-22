@@ -116,13 +116,13 @@ html.dark .activity-banner-btn-pause:hover {
 }
 
 html.dark .activity-banner-btn-stop {
-  background-color: #374151 !important; /* gray-700 */
-  border: 1px solid #5eead4 !important; /* teal-300 */
-  color: #f87171 !important; /* red-400 */
+  background-color: #273141 !important; 
+  border: 1px solid #5eead4 !important; 
+  color: #f88181 !important; 
 }
 
 html.dark .activity-banner-btn-stop:hover {
-  background-color: #4b5563 !important; /* gray-600 */
+  background-color: #4b5563 !important;
 }
 
 html.dark .activity-banner-btn-resume {

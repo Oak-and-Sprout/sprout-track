@@ -240,17 +240,17 @@
 /* Transition Section with Concave Circle */
 .saas-transition-section {
   height: 300px;
-  background-color: #ffffff; /* White background to contrast with the shape */
+  background-color: #ffffff;
   position: relative;
   z-index: 1;
-  margin-top: -180px; /* 60% offset behind demo div */
+  margin-top: -180px;
   overflow: hidden;
 }
 
 .saas-transition-content {
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, #ecfdf5, #f9fafb); /* Light green to gray gradient */
+  background: linear-gradient(to bottom, #ecfdf5, #f9fafb);
   clip-path: ellipse(120% 80% at 50% 100%);
 }
 
@@ -605,7 +605,8 @@
 /* CTA Section */
 .saas-cta {
   padding: 5rem 1rem;
-  background: linear-gradient(to bottom, #f9fafb, #ffffff); /* Light gray to white gradient */
+  background: linear-gradient(to bottom, #f9fafb, #ffffff);
+  /* Light gray to white gradient */
   color: #111827;
 }
 
@@ -629,7 +630,7 @@
 
 .saas-cta-button {
   background-color: #ffffff;
-  color: #0d9488;
+  color: #0d8478;
   border: none;
   font-weight: 600;
 }
@@ -715,72 +716,72 @@
   .saas-nav-links {
     display: none;
   }
-  
+
   .saas-hero-title {
     font-size: 2.5rem;
   }
-  
+
   .saas-hero-animated-word {
     min-width: 150px;
   }
-  
+
   .saas-hero-actions {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .saas-main-demo::before {
     right: 0;
   }
-  
+
   .saas-feature-content {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
-  
+
   .saas-feature-reverse .saas-feature-text {
     order: 1;
   }
-  
+
   .saas-feature-reverse .saas-feature-video {
     order: 2;
   }
-  
+
   .saas-feature-title {
     font-size: 2rem;
   }
-  
+
   .saas-feature-stats {
     justify-content: center;
   }
-  
+
   .saas-features-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .saas-testimonials-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .saas-footer-content {
     grid-template-columns: 1fr;
     text-align: center;
     gap: 2rem;
   }
-  
+
   .saas-footer-brand {
     text-align: center;
   }
-  
+
   .saas-footer-brand .saas-logo {
     justify-content: center;
   }
-  
+
   .saas-footer-demo {
     align-items: center;
     text-align: center;
   }
-  
+
   .saas-footer-links {
     grid-template-columns: 1fr;
   }
@@ -813,15 +814,15 @@ html.dark .saas-account-btn {
 
 html.dark .saas-account-btn:hover {
   background: rgba(55, 65, 81, 0.6);
-  border-color: #5eead4;
+  border-color: #3ecab4;
   color: #5eead4;
   box-shadow: 0 4px 12px -2px rgba(94, 234, 212, 0.2);
 }
 
 html.dark .saas-hero-badge {
-  background-color: rgba(13, 148, 136, 0.1);
-  color: #5eead4;
-  border-color: rgba(13, 148, 136, 0.3);
+  background-color: rgba(3, 84, 75, 0.9);
+  color: #8efaf4;
+  border-color: rgba(3, 84, 75, 0.3);
 }
 
 html.dark .saas-hero-title {
@@ -1000,11 +1001,11 @@ html.dark #mobile-first .saas-stat-label {
 
 /* Dark Mode Transition Section */
 html.dark .saas-transition-section {
-  background-color: #111827; /* Dark background to contrast with the shape */
+  background-color: #111827;
 }
 
 html.dark .saas-transition-content {
-  background: linear-gradient(135deg, #0f2027 0%, #203a43 100%); /* Gradient for the concave shape */
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 100%);
 }
 
 /* Privacy notice styles */
@@ -1242,7 +1243,7 @@ html.dark .saas-demo-phone-video {
   position: absolute;
   top: 0;
   right: 0;
-  background-color: #0d9488;
+  background-color: #0d8478;
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
@@ -1340,7 +1341,7 @@ html.dark .saas-pricing-card-check {
 .saas-pricing-card-on-gradient.saas-pricing-card-highlighted {
   border: 2px solid rgba(255, 255, 255, 0.6);
   background-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 
+  box-shadow:
     0 10px 25px rgba(0, 0, 0, 0.2),
     inset 0 0 0 2px #0d9488;
 }
@@ -1370,7 +1371,7 @@ html.dark .saas-pricing-card-check {
 }
 
 .saas-pricing-card-badge-on-gradient {
-  background-color: #0d9488;
+  background-color: #0d8478;
   color: #ffffff;
 }
 
@@ -1383,7 +1384,7 @@ html.dark .saas-pricing-card-on-gradient {
 html.dark .saas-pricing-card-on-gradient.saas-pricing-card-highlighted {
   border-color: rgba(255, 255, 255, 0.4);
   background-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 
+  box-shadow:
     0 10px 25px rgba(0, 0, 0, 0.3),
     inset 0 0 0 2px #14b8a6;
 }
@@ -1414,5 +1415,5 @@ html.dark .saas-pricing-card-check-on-gradient {
 
 html.dark .saas-pricing-card-badge-on-gradient {
   background-color: rgba(255, 255, 255, 0.9);
-  color: #0d9488;
+  color: #0d8478;
 }

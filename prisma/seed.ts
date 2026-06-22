@@ -17,8 +17,8 @@ async function main() {
   let defaultFamilyId: string;
 
   if (familyCount === 0) {
-    console.log('No families found. Creating initial family and system caretaker...');
-    
+    console.log('No families found. Creating initial family and system caretaker…');
+
     // Create the default family
     const defaultFamily = await prisma.family.create({
       data: {
@@ -27,10 +27,10 @@ async function main() {
         isActive: true
       }
     });
-    
+
     defaultFamilyId = defaultFamily.id;
     console.log(`Created default family: ${defaultFamily.name} (${defaultFamily.slug})`);
-    
+
     // Create the system caretaker associated with the default family
     const systemCaretaker = await prisma.caretaker.create({
       data: {
@@ -44,7 +44,7 @@ async function main() {
         deletedAt: null
       }
     });
-    
+
     console.log(`Created system caretaker with loginId: ${systemCaretaker.loginId}`);
   } else {
     // Get the first family's ID for settings
@@ -126,25 +126,25 @@ async function main() {
  * @param unitData Array of unit data objects with unitAbbr, unitName, and activityTypes
  */
 async function updateUnits(unitData: UnitData[]): Promise<void> {
-  console.log('Checking for missing units and updating activity types...');
-  
+  console.log('Checking for missing units and updating activity types…');
+
   // Get existing units from the database
   const existingUnits = await prisma.unit.findMany({
     select: { id: true, unitAbbr: true, activityTypes: true }
   });
-  
+
   // Create a map of existing unit abbreviations for faster lookups
   const existingUnitsMap = new Map(
     existingUnits.map((unit: typeof existingUnits[number]) => [unit.unitAbbr, { id: unit.id, activityTypes: unit.activityTypes }] as const)
   );
-  
+
   // Filter out units that already exist
   const missingUnits = unitData.filter(unit => !existingUnitsMap.has(unit.unitAbbr));
-  
+
   // Create the missing units
   if (missingUnits.length > 0) {
     console.log(`Adding ${missingUnits.length} missing units: ${missingUnits.map(u => u.unitAbbr).join(', ')}`);
-    
+
     for (const unit of missingUnits) {
       await prisma.unit.create({
         data: {
@@ -155,7 +155,7 @@ async function updateUnits(unitData: UnitData[]): Promise<void> {
   } else {
     console.log('All units already exist in the database.');
   }
-  
+
   // Update activity types for all existing units
   const unitsToUpdate = [];
   for (const unit of unitData) {
@@ -168,10 +168,10 @@ async function updateUnits(unitData: UnitData[]): Promise<void> {
       });
     }
   }
-  
+
   if (unitsToUpdate.length > 0) {
     console.log(`Updating activity types for ${unitsToUpdate.length} units: ${unitsToUpdate.map(u => u.unitAbbr).join(', ')}`);
-    
+
     for (const unit of unitsToUpdate) {
       console.log(`Setting ${unit.unitAbbr} activity types to: ${unit.activityTypes}`);
       await prisma.unit.update({
@@ -182,7 +182,7 @@ async function updateUnits(unitData: UnitData[]): Promise<void> {
   } else {
     console.log('No units need activity types updated.');
   }
-  
+
   console.log('Units update completed successfully.');
 }
 
@@ -191,7 +191,7 @@ async function updateUnits(unitData: UnitData[]): Promise<void> {
  * Idempotent — only creates on first run.
  */
 async function seedNotificationConfig(): Promise<void> {
-  console.log('Checking for notification configuration...');
+  console.log('Checking for notification configuration…');
 
   const existing = await prisma.notificationConfig.findFirst();
   if (existing) {
@@ -286,7 +286,7 @@ function parseCdcCsvFile(filePath: string): CdcGrowthRecord[] {
  * Only inserts data if it doesn't already exist in each table
  */
 async function seedCdcGrowthChartData(): Promise<void> {
-  console.log('Checking for CDC growth chart data...');
+  console.log('Checking for CDC growth chart data…');
 
   const documentationDir = path.join(__dirname, '..', 'documentation');
 
@@ -296,7 +296,7 @@ async function seedCdcGrowthChartData(): Promise<void> {
     const weightFilePath = path.join(documentationDir, 'wtageinf.csv');
     if (fs.existsSync(weightFilePath)) {
       const weightData = parseCdcCsvFile(weightFilePath);
-      console.log(`Inserting ${weightData.length} records for weight-for-age...`);
+      console.log(`Inserting ${weightData.length} records for weight-for-age…`);
       await prisma.cdcWeightForAge.createMany({ data: weightData });
     } else {
       console.warn('Warning: wtageinf.csv not found');
@@ -311,7 +311,7 @@ async function seedCdcGrowthChartData(): Promise<void> {
     const lengthFilePath = path.join(documentationDir, 'lenageinf.csv');
     if (fs.existsSync(lengthFilePath)) {
       const lengthData = parseCdcCsvFile(lengthFilePath);
-      console.log(`Inserting ${lengthData.length} records for length-for-age...`);
+      console.log(`Inserting ${lengthData.length} records for length-for-age…`);
       // Insert one by one to avoid createMany issues
       for (const record of lengthData) {
         await prisma.cdcLengthForAge.create({ data: record });
@@ -329,7 +329,7 @@ async function seedCdcGrowthChartData(): Promise<void> {
     const hcFilePath = path.join(documentationDir, 'hcageinf.csv');
     if (fs.existsSync(hcFilePath)) {
       const hcData = parseCdcCsvFile(hcFilePath);
-      console.log(`Inserting ${hcData.length} records for head-circumference-for-age...`);
+      console.log(`Inserting ${hcData.length} records for head-circumference-for-age…`);
       // Insert one by one to avoid createMany issues
       for (const record of hcData) {
         await prisma.cdcHeadCircumferenceForAge.create({ data: record });

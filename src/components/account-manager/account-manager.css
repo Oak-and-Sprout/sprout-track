@@ -2,256 +2,256 @@
 
 /* Loading and error states */
 html.dark .account-manager-loading-text {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 html.dark .account-manager-error-text {
-  color: #ef4444 !important; /* red-500 */
+  color: #ef4444 !important;
 }
 
 /* Section styling */
 html.dark .account-manager-section-title {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
 }
 
 html.dark .account-manager-section-border {
-  background-color: #1f2937 !important; /* gray-800 */
-  border-color: #374151 !important; /* gray-700 */
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
 }
 
 /* Card styling */
 html.dark .account-manager-card {
-  background-color: #1f2937 !important; /* gray-800 */
-  border-color: #374151 !important; /* gray-700 */
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
 }
 
 html.dark .account-manager-card:hover {
-  background-color: #374151 !important; /* gray-700 */
+  background-color: #374151 !important;
 }
 
 html.dark .account-manager-card-title {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
 }
 
 html.dark .account-manager-card-subtitle {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 html.dark .account-manager-card-content {
-  color: #d1d5db !important; /* gray-300 */
+  color: #d1d5db !important;
 }
 
 /* Badge styling for dark mode */
 html.dark .account-manager-badge-active {
-  background-color: rgba(34, 197, 94, 0.2) !important; /* green with opacity */
-  color: #4ade80 !important; /* green-400 */
+  background-color: rgba(14, 157, 54, 0.2) !important;
+  color: #7afeB0 !important;
 }
 
 html.dark .account-manager-badge-inactive {
-  background-color: rgba(239, 68, 68, 0.2) !important; /* red with opacity */
-  color: #f87171 !important; /* red-400 */
+  background-color: rgba(209, 48, 48, 0.2) !important;
+  color: #f88181 !important;
 }
 
 html.dark .account-manager-badge-role {
-  background-color: rgba(59, 130, 246, 0.2) !important; /* blue with opacity */
-  color: #60a5fa !important; /* blue-400 */
+  background-color: rgba(19, 80, 176, 0.2) !important;
+  color: #70b5fa !important;
 }
 
 /* Empty state */
 html.dark .account-manager-empty-state {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 /* Download section */
 html.dark .account-manager-download-section {
-  border-color: #374151 !important; /* gray-700 */
+  border-color: #374151 !important;
 }
 
 /* Account closure section */
 html.dark .account-manager-closure-section {
-  background-color: rgba(239, 68, 68, 0.1) !important; /* red with low opacity */
-  border-color: #dc2626 !important; /* red-600 */
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-color: #dc2626 !important;
 }
 
 html.dark .account-manager-closure-warning {
-  color: #f87171 !important; /* red-400 */
+  color: #f87171 !important;
 }
 
 /* Form field styling */
 html.dark .account-manager-form-field label {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 /* Edit mode styling */
 html.dark .account-manager-edit-container {
-  background-color: #1f2937 !important; /* gray-800 */
-  border-color: #374151 !important; /* gray-700 */
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
 }
 
 /* Success/error messages */
 html.dark .account-manager-success-message {
-  color: #4ade80 !important; /* green-400 */
+  color: #4ade80 !important;
 }
 
 html.dark .account-manager-error-message {
-  color: #f87171 !important; /* red-400 */
+  color: #f87171 !important;
 }
 
 /* Info text */
 html.dark .account-manager-info-text {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 /* Validation error styling */
 html.dark .account-manager-validation-error {
-  color: #f87171 !important; /* red-400 */
+  color: #f87171 !important;
 }
 
 /* Loading spinner in dark mode */
 html.dark .account-manager-loading-container .animate-spin {
-  color: #5eead4 !important; /* teal-300 */
+  color: #5eead4 !important;
 }
 
 /* Payment History Component */
 html.dark .payment-history-title {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
 }
 
 html.dark .payment-history-error {
-  background-color: rgba(239, 68, 68, 0.1) !important; /* red with low opacity */
-  border-color: #dc2626 !important; /* red-600 */
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-color: #dc2626 !important;
 }
 
 html.dark .payment-history-error-text {
-  color: #f87171 !important; /* red-400 */
+  color: #f87171 !important;
 }
 
 html.dark .payment-history-error-description {
-  color: #f87171 !important; /* red-400 */
+  color: #f87171 !important;
 }
 
 html.dark .payment-history-loading {
-  color: #5eead4 !important; /* teal-300 */
+  color: #5eead4 !important;
 }
 
 html.dark .payment-history-empty {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 html.dark .payment-history-table-container {
-  border-color: #374151 !important; /* gray-700 */
+  border-color: #374151 !important;
 }
 
 html.dark .payment-history-footer {
-  border-color: #374151 !important; /* gray-700 */
+  border-color: #374151 !important;
 }
 
 /* Payment Modal Component */
 html.dark .payment-modal-title {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
 }
 
 html.dark .payment-modal-description {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 html.dark .payment-modal-error {
-  background-color: rgba(239, 68, 68, 0.1) !important; /* red with low opacity */
-  border-color: #dc2626 !important; /* red-600 */
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-color: #dc2626 !important;
 }
 
 html.dark .payment-modal-error-text {
-  color: #f87171 !important; /* red-400 */
+  color: #f87171 !important;
 }
 
 html.dark .payment-modal-error-description {
-  color: #f87171 !important; /* red-400 */
+  color: #f87171 !important;
 }
 
 html.dark .payment-modal-loading {
-  color: #5eead4 !important; /* teal-300 */
+  color: #5eead4 !important;
 }
 
 html.dark .payment-modal-footer {
-  border-color: #374151 !important; /* gray-700 */
+  border-color: #374151 !important;
 }
 
 /* Payment Modal - Active Subscription */
 html.dark .payment-modal-active-subscription {
-  background: linear-gradient(to right, rgba(20, 184, 166, 0.15), rgba(59, 130, 246, 0.15)) !important; /* teal to blue gradient with opacity */
-  border-color: #14b8a6 !important; /* teal-500 */
+  background: linear-gradient(to right, rgba(20, 184, 166, 0.15), rgba(59, 130, 246, 0.15)) !important;
+  border-color: #14b8a6 !important;
 }
 
 html.dark .payment-modal-subscription-title {
-  color: #5eead4 !important; /* teal-300 */
+  color: #5eead4 !important;
 }
 
 html.dark .payment-modal-subscription-info {
-  color: #5eead4 !important; /* teal-300 */
+  color: #5eead4 !important;
 }
 
 html.dark .payment-modal-lifetime-text {
-  color: #5eead4 !important; /* teal-300 */
+  color: #5eead4 !important;
 }
 
 html.dark .payment-modal-cancelled-warning {
-  background-color: rgba(245, 158, 11, 0.1) !important; /* amber with low opacity */
-  border-color: #f59e0b !important; /* amber-500 */
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border-color: #f59e0b !important;
 }
 
 html.dark .payment-modal-cancelled-warning-text {
-  color: #fbbf24 !important; /* amber-400 */
+  color: #fbbf24 !important;
 }
 
 html.dark .payment-modal-cancelled-warning-description {
-  color: #fbbf24 !important; /* amber-400 */
+  color: #fbbf24 !important;
 }
 
 /* Payment Modal - Upgrade Section */
 html.dark .payment-modal-upgrade-section {
-  background: linear-gradient(to right, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15)) !important; /* purple to pink gradient with opacity */
-  border-color: #a855f7 !important; /* purple-500 */
+  background: linear-gradient(to right, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15)) !important;
+  border-color: #a855f7 !important;
 }
 
 html.dark .payment-modal-upgrade-title {
-  color: #c084fc !important; /* purple-400 */
+  color: #c084fc !important;
 }
 
 html.dark .payment-modal-upgrade-description {
-  color: #c084fc !important; /* purple-400 */
+  color: #c084fc !important;
 }
 
 html.dark .payment-modal-upgrade-list {
-  color: #c084fc !important; /* purple-400 */
+  color: #c084fc !important;
 }
 
 /* Payment Modal - Pricing Plans */
 html.dark .payment-modal-plan {
-  background-color: #1f2937 !important; /* gray-800 */
-  border-color: #374151 !important; /* gray-700 */
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
 }
 
 html.dark .payment-modal-plan-highlighted {
-  background-color: rgba(20, 184, 166, 0.1) !important; /* teal with low opacity */
-  border-color: #14b8a6 !important; /* teal-500 */
+  background-color: rgba(20, 184, 166, 0.1) !important;
+  border-color: #14b8a6 !important;
 }
 
 html.dark .payment-modal-plan-name {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
 }
 
 html.dark .payment-modal-plan-description {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 html.dark .payment-modal-plan-price {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
 }
 
 html.dark .payment-modal-plan-interval {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 html.dark .payment-modal-plan-feature {
-  color: #d1d5db !important; /* gray-300 */
+  color: #d1d5db !important;
 }

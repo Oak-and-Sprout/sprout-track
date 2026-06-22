@@ -469,7 +469,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       
       // If family doesn't exist, redirect to home
       if (!data.success || !data.data) {
-        console.log(`Family slug "${slug}" not found, redirecting to home...`);
+        console.log(`Family slug "${slug}" not found, redirecting to home…`);
         router.push('/');
         return false;
       }
@@ -551,10 +551,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
           if (expiresAt < now) {
             // Token already expired — try refresh before logging out
-            console.log('JWT token has expired, attempting refresh...');
+            console.log('JWT token has expired, attempting refresh…');
             refreshAccessToken().then(success => {
               if (!success) {
-                console.log('Refresh failed, logging out...');
+                console.log('Refresh failed, logging out…');
                 handleLogout();
               }
             });
@@ -567,7 +567,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         
         // Check if user's family slug matches the current URL slug
         if (decodedPayload.familySlug && familySlug && decodedPayload.familySlug !== familySlug) {
-          console.log('User trying to access different family. Redirecting to correct family...');
+          console.log('User trying to access different family. Redirecting to correct family…');
           // Redirect to the user's actual family
           const currentPath = pathname?.split('/').slice(2).join('/') || 'log-entry'; // Remove family slug from path
           router.push(`/${decodedPayload.familySlug}/${currentPath}`);
@@ -590,7 +590,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         const idleTimeSeconds = parseInt(localStorage.getItem('idleTimeSeconds') || '1800', 10);
         if (Date.now() - lastActivity > idleTimeSeconds * 1000) {
           // Session expired due to inactivity, redirect to login
-          console.log('Session expired due to inactivity, logging out...');
+          console.log('Session expired due to inactivity, logging out…');
           handleLogout();
         }
       }

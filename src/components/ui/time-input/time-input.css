@@ -1,49 +1,47 @@
 /* Dark mode overrides for TimeInput component */
 html.dark .time-input-dark {
-  background-color: #1f2937 !important; /* gray-800 */
-  border-color: #4b5563 !important; /* gray-600 */
-  color: #e5e7eb !important; /* gray-200 */
+  background-color: #1f2937 !important;
+  border-color: #4b5563 !important;
+  color: #e5e7eb !important;
 }
 
 html.dark .time-input-dark::placeholder {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
 html.dark .time-input-dark:hover {
-  background-color: #374151 !important; /* gray-700 */
-  border-color: #6b7280 !important; /* gray-500 */
+  background-color: #374151 !important;
+  border-color: #6b7280 !important;
 }
 
 html.dark .time-input-dark:focus {
-  border-color: #6366f1 !important; /* indigo-500 */
-  background-color: #1f2937 !important; /* gray-800 */
-  ring-color: rgba(99, 102, 241, 0.2) !important; /* indigo-500 with opacity */
+  border-color: #6366f1 !important;
+  background-color: #1f2937 !important;
+  box-shadow: 0 0 2px 4px rgba(99, 102, 241, 0.2) !important;
 }
 
 html.dark .time-input-dark:disabled {
-  background-color: #374151 !important; /* gray-700 */
-  border-color: #4b5563 !important; /* gray-600 */
-  color: #9ca3af !important; /* gray-400 */
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #acb3bf !important;
 }
 
-/* Error state in dark mode */
 html.dark .time-input-error {
-  border-color: #ef4444 !important; /* red-500 */
+  border-color: #ef4444 !important;
 }
 
 html.dark .time-input-error:hover,
 html.dark .time-input-error:focus {
-  border-color: #dc2626 !important; /* red-600 */
-  ring-color: rgba(239, 68, 68, 0.2) !important; /* red-500 with opacity */
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 2px 4px rgba(239, 68, 68, 0.2) !important;
 }
 
-/* Valid state in dark mode */
 html.dark .time-input-valid {
-  border-color: #10b981 !important; /* green-500 */
+  border-color: #10b981 !important;
 }
 
 html.dark .time-input-valid:hover,
 html.dark .time-input-valid:focus {
-  border-color: #059669 !important; /* green-600 */
-  ring-color: rgba(16, 185, 129, 0.2) !important; /* green-500 with opacity */
+  border-color: #059669 !important;
+  box-shadow: 0 0 2px 4px rgba(16, 185, 129, 0.2) !important;
 }

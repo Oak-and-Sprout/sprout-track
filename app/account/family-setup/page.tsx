@@ -153,7 +153,7 @@ export default function AccountFamilySetupPage() {
               {t('Checking Account Status')}
             </h2>
             <p className="text-slate-600 dark:text-slate-400">
-              {t('Please wait while we verify your account...')}
+              {t('Please wait while we verify your account…')}
             </p>
           </div>
         </div>

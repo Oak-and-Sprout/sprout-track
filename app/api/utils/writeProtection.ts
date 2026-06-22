@@ -24,7 +24,7 @@ export type WriteProtectionResponse = {
  *   if (!writeCheck.allowed) {
  *     return writeCheck.response; // Returns 403 with expiration info
  *   }
- *   // ... rest of endpoint
+ *   // … rest of endpoint
  * }
  * ```
  */

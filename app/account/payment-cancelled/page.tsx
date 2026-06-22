@@ -65,7 +65,7 @@ export default function PaymentCancelledPage() {
           {/* Countdown */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-gray-700 font-medium">
-              {t('Redirecting to your account in')} {countdown} {countdown !== 1 ? t('seconds') : t('second')}...
+              {t('Redirecting to your account in')} {countdown} {countdown !== 1 ? t('seconds') : t('second')}…
             </p>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
               <div

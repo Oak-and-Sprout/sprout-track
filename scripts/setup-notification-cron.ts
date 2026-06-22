@@ -117,7 +117,7 @@ function checkCronService(): boolean {
 }
 
 function main(): void {
-  console.log('Setting up notification cron job...');
+  console.log('Setting up notification cron job…');
   
   // Note: NOTIFICATION_CRON_SECRET is auto-generated at container startup if missing.
   // The cron script checks the DB-backed enabled flag via API before proceeding.
@@ -147,7 +147,7 @@ function main(): void {
   }
   
   // Add cron job
-  console.log('Adding notification cron job to crontab...');
+  console.log('Adding notification cron job to crontab…');
   const updatedCrontab = addCronJob(crontab);
   
   // Install updated crontab
