@@ -238,7 +238,7 @@ export default function FamilyManagerLoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('Authenticating...')}
+                  {t('Authenticating…')}
                 </>
               ) : (
                 t('Login as Administrator')

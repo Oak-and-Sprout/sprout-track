@@ -1,88 +1,95 @@
-/* Dark mode overrides for FamilySelect component */
-
 html.dark .family-select-container {
-  background-color: #1f2937 !important; /* gray-800 - override gradient */
-  background-image: none !important; /* Remove gradient in dark mode */
-  color: #e5e7eb; /* gray-200 */
+  background-color: #1f2937 !important;
+  background-image: none !important;
+  color: #e5e7eb;
 }
 
 html.dark .family-select-title {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
 }
 
 html.dark .family-select-description {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
 }
 
-/* Search input styling */
 html.dark .family-select-input {
   background-color: transparent !important;
-  border-color: #374151 !important; /* gray-700 */
-  color: #e5e7eb; /* gray-200 */
+  border-color: #374151 !important;
+  color: #e5e7eb;
 }
 
-/* Search icon styling */
 html.dark .family-select-search-icon {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
+  /* gray-400 */
 }
 
 html.dark .family-select-input::placeholder {
-  color: #9ca3af; /* gray-400 */
+  color: #9ca3af;
 }
 
 html.dark .family-select-input:hover {
-  border-color: #4b5563 !important; /* gray-600 */
+  border-color: #4b5563 !important;
 }
 
 html.dark .family-select-input:focus {
-  border-color: #5eead4 !important; /* teal-300 */
-  outline: none !important;
-  ring-color: rgba(94, 234, 212, 0.5) !important; /* teal-300 with opacity */
+  border-color: #5eead4 !important;
+  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.2) !important;
 }
 
 /* Dropdown icon styling */
 html.dark .family-select-dropdown-icon {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
+  /* gray-400 */
 }
 
 /* Dropdown container */
 html.dark .family-select-dropdown {
-  background-color: #1f2937; /* gray-800 */
-  border-color: #374151; /* gray-700 */
+  background-color: #1f2937;
+  /* gray-800 */
+  border-color: #374151;
+  /* gray-700 */
 }
 
 /* Dropdown items */
 html.dark .family-select-dropdown-item {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
+  /* gray-200 */
 }
 
 html.dark .family-select-dropdown-item:hover {
-  background-color: #374151 !important; /* gray-700 */
+  background-color: #374151 !important;
+  /* gray-700 */
 }
 
 /* Dropdown item family names and slugs */
 html.dark .family-select-dropdown-family-name {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
+  /* gray-200 */
 }
 
 html.dark .family-select-dropdown-family-slug {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
+  /* gray-400 */
 }
 
 /* No families found text */
 html.dark .family-select-no-families {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
+  /* gray-400 */
 }
 
 /* Back button styling */
 html.dark .family-select-back-button {
-  border-color: #374151; /* gray-700 */
+  border-color: #374151;
+  /* gray-700 */
   background-color: transparent;
-  color: #e5e7eb; /* gray-200 */
+  color: #e5e7eb;
+  /* gray-200 */
 }
 
 html.dark .family-select-back-button:hover {
-  background-color: #374151; /* gray-700 */
+  background-color: #374151;
+  /* gray-700 */
 }
 
 /* Light mode styles */
@@ -92,51 +99,62 @@ html.dark .family-select-back-button:hover {
 
 /* Family section title in dark mode */
 html.dark .family-select-section-title {
-  color: #5eead4 !important; /* teal-300 - matches LoginSecurity accent */
+  color: #5eead4 !important;
+  /* teal-300 - matches LoginSecurity accent */
 }
 
-/* Family section icon in dark mode */  
+/* Family section icon in dark mode */
 html.dark .family-select-section-icon {
-  color: #5eead4 !important; /* teal-300 - matches LoginSecurity accent */
+  color: #5eead4 !important;
+  /* teal-300 - matches LoginSecurity accent */
 }
 
 /* Loading text in dark mode */
 html.dark .family-select-loading-text {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
+  /* gray-400 */
 }
 
 /* Selected family card text in dark mode */
 html.dark .family-select-selected-family-name {
-  color: #e5e7eb !important; /* gray-200 */
+  color: #e5e7eb !important;
+  /* gray-200 */
 }
 
 html.dark .family-select-selected-family-slug {
-  color: #9ca3af !important; /* gray-400 */
+  color: #9ca3af !important;
+  /* gray-400 */
 }
 
 html.dark .family-select-selected-label {
-  color: #5eead4 !important; /* teal-300 */
+  color: #5eead4 !important;
+  /* teal-300 */
 }
 
 /* Dropdown item highlighted state in dark mode */
 html.dark .family-select-dropdown-item-highlighted {
-  background-color: rgba(94, 234, 212, 0.2) !important; /* teal-300 with opacity */
+  background-color: rgba(94, 234, 212, 0.2) !important;
+  /* teal-300 with opacity */
 }
 
 /* Selected family card styling in dark mode */
 html.dark .family-select-selected-card {
-  background-color: rgba(94, 234, 212, 0.2) !important; /* teal-300 with opacity */
-  border-color: #5eead4 !important; /* teal-300 */
+  background-color: rgba(94, 234, 212, 0.2) !important;
+  /* teal-300 with opacity */
+  border-color: #5eead4 !important;
+  /* teal-300 */
 }
 
 /* Selected family icon container in dark mode */
 html.dark .family-select-selected-icon-container {
-  background-color: #5eead4 !important; /* teal-300 */
+  background-color: #5eead4 !important;
+  /* teal-300 */
 }
 
 /* Selected family icon in dark mode */
 html.dark .family-select-selected-icon {
-  color: #1f2937 !important; /* gray-800 - dark background for contrast */
+  color: #1f2937 !important;
+  /* gray-800 - dark background for contrast */
 }
 
 .family-select-input {
@@ -145,7 +163,8 @@ html.dark .family-select-selected-icon {
 }
 
 .family-select-input:focus {
-  border-color: #0d9488; /* teal-600 */
+  border-color: #0d9488;
+  /* teal-600 */
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
 }
 
@@ -178,6 +197,7 @@ html.dark .family-select-selected-icon {
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -194,6 +214,7 @@ html.dark .family-select-selected-icon {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -226,9 +247,12 @@ html.dark .family-select-selected-icon {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }

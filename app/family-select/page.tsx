@@ -218,7 +218,7 @@ export default function FamilySelectPage() {
               priority
             />
           </div>
-          <p className="text-gray-500 family-select-loading-text">{t('Loading families...')}</p>
+          <p className="text-gray-500 family-select-loading-text">{t('Loading families…')}</p>
         </div>
       </div>
     );
@@ -268,7 +268,7 @@ export default function FamilySelectPage() {
                       onFocus={handleSearchFocus}
                       onKeyDown={handleKeyDown}
                       className="w-full pl-10 pr-10 family-select-input"
-                      placeholder="Search for your family..."
+                      placeholder="Search for your family…"
                       disabled={loading}
                     />
                     <ChevronDown 

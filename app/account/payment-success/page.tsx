@@ -123,7 +123,7 @@ function PaymentSuccessContent() {
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
-                {t('Verifying Payment...')}
+                {t('Verifying Payment…')}
               </Label>
               <p className="text-lg text-gray-600 mb-6">
                 {t('Please wait while we confirm your payment.')}
@@ -231,7 +231,7 @@ export default function PaymentSuccessPage() {
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
-                {t('Loading...')}
+                {t('Loading…')}
               </Label>
             </CardContent>
           </Card>

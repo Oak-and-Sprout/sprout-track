@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "target": "es2017",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "lib": ["es2017", "esnext.asynciterable"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "rootDir": "..",
     "outDir": "dist"
   },
   "include": ["*.ts"],

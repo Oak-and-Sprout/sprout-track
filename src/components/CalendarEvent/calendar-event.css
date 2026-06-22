@@ -18,8 +18,8 @@ html.dark .calendar-event-title {
 }
 
 html.dark .calendar-event-type {
-  background-color: rgba(13, 148, 136, 0.3) !important; /* teal-900/30 */
-  color: #5eead4 !important; /* teal-300 */
+  background-color: rgba(3, 108, 96, 0.3) !important; /* teal-900/30 */
+  color: #7efaf4 !important; /* teal-300 */
 }
 
 html.dark .calendar-event-icon {

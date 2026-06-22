@@ -122,7 +122,7 @@ export default function HomePage() {
 
   // Return loading state while checking deployment mode
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">{t('Loading...')}</div>;
+    return <div className="flex items-center justify-center h-screen">{t('Loading…')}</div>;
   }
   
   // If SaaS mode, render the SaaS homepage directly

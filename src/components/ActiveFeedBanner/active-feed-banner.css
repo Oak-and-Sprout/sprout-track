@@ -146,9 +146,9 @@ html.dark .banner-btn-pause:hover {
 }
 
 html.dark .banner-btn-stop {
-  background-color: #374151 !important; /* gray-700 */
+  background-color: #273141 !important; /* gray-700 */
   border: 1px solid #5eead4 !important; /* teal-300 - matches banner */
-  color: #f87171 !important; /* red-400 */
+  color: #f89191 !important; /* red-400 */
 }
 
 html.dark .banner-btn-stop:hover {

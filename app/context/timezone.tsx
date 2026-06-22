@@ -138,7 +138,7 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
    */
   const detectTimezone = useCallback(() => {
     setIsLoading(true);
-    console.log('Detecting timezone...');
+    console.log('Detecting timezone…');
     
     try {
       // Detect timezone synchronously if possible

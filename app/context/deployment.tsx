@@ -89,7 +89,7 @@ export function DeploymentProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      console.log('Fetching deployment configuration...');
+      console.log('Fetching deployment configuration…');
       
       const response = await fetch('/api/deployment-config', {
         method: 'GET',

@@ -37,6 +37,16 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    ".next/dev/static",
+    ".vscode",
+    "db",
+    "public",
+    "scripts",
+    "tests",
+    "documentation",
+    "prisma",
+    "st-guardian"
   ]
 }
