@@ -29,6 +29,7 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
+import { PwaServiceWorker } from '@/src/components/PwaServiceWorker';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
@@ -1041,6 +1042,7 @@ export default function AppLayout({
           <BabyProvider>
             <ThemeProvider>
               <ToastProvider>
+                <PwaServiceWorker />
                 <DynamicTitle />
                 <AppContent>{children}</AppContent>
               </ToastProvider>

@@ -23,7 +23,7 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       appConfig = await prisma.appConfig.create({
         data: {
           adminPass: encrypt('admin'), // Default encrypted password
-          rootDomain: 'localhost',
+          rootDomain: 'localhost:3000',
           enableHttps: false,
         },
       });
