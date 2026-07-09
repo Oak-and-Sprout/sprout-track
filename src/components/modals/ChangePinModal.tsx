@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/src/components/ui/button';
 import {
   Dialog,
@@ -16,14 +16,12 @@ import { useLocalization } from '@/src/context/localization';
 interface ChangePinModalProps {
   open: boolean;
   onClose: () => void;
-  currentPin: string;
   onPinChange: (newPin: string) => void;
 }
 
 export default function ChangePinModal({
   open,
   onClose,
-  currentPin,
   onPinChange,
 }: ChangePinModalProps) {
   const { t } = useLocalization();
@@ -32,57 +30,39 @@ export default function ChangePinModal({
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
-  const [hasCaretakers, setHasCaretakers] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
 
-  // Check if any caretakers exist when modal opens
-  useEffect(() => {
-    if (open) {
-      const checkCaretakers = async () => {
-        try {
-          setLoading(true);
-          const response = await fetch('/api/caretaker');
-          if (response.ok) {
-            const data = await response.json();
-            const hasActiveCaretakers = data.success && Array.isArray(data.data) && data.data.length > 0;
-            setHasCaretakers(hasActiveCaretakers);
-            
-            if (hasActiveCaretakers) {
-              setError('System PIN changes are disabled when caretakers exist. Use caretaker authentication instead.');
-            }
-          }
-        } catch (error) {
-          console.error('Error checking caretakers:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      checkCaretakers();
-    }
-  }, [open]);
+  const handleVerifyPin = async () => {
+    // Verify the current PIN server-side — the client never receives the actual PIN.
+    try {
+      setVerifying(true);
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+      const response = await fetch('/api/settings/verify-pin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ pin: verifyPin }),
+      });
+      const data = await response.json();
 
-  const handleVerifyPin = () => {
-    if (hasCaretakers) {
-      setError('System PIN changes are disabled when caretakers exist. Use caretaker authentication instead.');
-      return;
-    }
-    
-    if (verifyPin === currentPin) {
-      setStep('new');
-      setError('');
-    } else {
-      setError('Incorrect PIN');
-      setVerifyPin('');
+      if (response.ok && data.success && data.data?.valid) {
+        setStep('new');
+        setError('');
+      } else {
+        setError('Incorrect PIN');
+        setVerifyPin('');
+      }
+    } catch (err) {
+      console.error('Error verifying PIN:', err);
+      setError('Unable to verify PIN. Please try again.');
+    } finally {
+      setVerifying(false);
     }
   };
 
   const handleNewPin = () => {
-    if (hasCaretakers) {
-      setError('System PIN changes are disabled when caretakers exist. Use caretaker authentication instead.');
-      return;
-    }
-    
     if (newPin.length < 6) {
       setError('PIN must be at least 6 digits');
       return;
@@ -96,11 +76,6 @@ export default function ChangePinModal({
   };
 
   const handleConfirmPin = () => {
-    if (hasCaretakers) {
-      setError('System PIN changes are disabled when caretakers exist. Use caretaker authentication instead.');
-      return;
-    }
-    
     if (newPin === confirmPin) {
       onPinChange(newPin);
       handleClose();
@@ -145,13 +120,10 @@ export default function ChangePinModal({
                 onChange={(e) => {
                   const value = e.target.value.replace(/\D/g, '');
                   setVerifyPin(value);
-                  if (!hasCaretakers) {
-                    setError('');
-                  }
+                  setError('');
                 }}
                 placeholder="Enter current PIN"
                 pattern="\d*"
-                disabled={hasCaretakers || loading}
               />
             </div>
           )}
@@ -166,16 +138,13 @@ export default function ChangePinModal({
                   const value = e.target.value.replace(/\D/g, '');
                   if (value.length <= 10) {
                     setNewPin(value);
-                    if (!hasCaretakers) {
-                      setError('');
-                    }
+                    setError('');
                   }
                 }}
                 placeholder="Enter new PIN"
                 minLength={6}
                 maxLength={10}
                 pattern="\d*"
-                disabled={hasCaretakers}
               />
               <p className="text-sm text-gray-500">{t('PIN must be between 6 and 10 digits')}</p>
             </div>
@@ -191,16 +160,13 @@ export default function ChangePinModal({
                   const value = e.target.value.replace(/\D/g, '');
                   if (value.length <= 10) {
                     setConfirmPin(value);
-                    if (!hasCaretakers) {
-                      setError('');
-                    }
+                    setError('');
                   }
                 }}
                 placeholder="Confirm new PIN"
                 minLength={6}
                 maxLength={10}
                 pattern="\d*"
-                disabled={hasCaretakers}
               />
             </div>
           )}
@@ -219,7 +185,7 @@ export default function ChangePinModal({
                 else if (step === 'new') handleNewPin();
                 else if (step === 'confirm') handleConfirmPin();
               }}
-              disabled={hasCaretakers || loading}
+              disabled={verifying}
             >
               {step === 'verify' && 'Verify'}
               {step === 'new' && 'Next'}

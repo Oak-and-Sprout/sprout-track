@@ -1,5 +1,21 @@
 # Sprout Track Changelog
 
+## v1.3.5 - Security and Privacy Patch
+
+### Changes
+
+#### Security & Privacy
+- Fixed security vulnerability that allowed users to forge authentication - **thank you myoann**
+- Strengthened authentication and session security across the app
+- Improved protection of sensitive information in system pages - PINs, and configuration secrets are no longer sent to the browser
+- Sensitive fields (PINs, passwords, API keys) are now hidden when editing; leave them blank to keep the current value, or enter a new value to change it
+- Tightened access controls on administrative and family-management features
+- Added extra logging for administrative actions
+- Self-hosted deployments now automatically generate a unique JWT security key during setup and upgrades
+
+#### Bugfixes
+- Fixed an issue that prevented the family System PIN from being changed while individual caretakers were configured
+
 ## v1.3.4 - Community Language additions and Better Translations
 
 ### Changes

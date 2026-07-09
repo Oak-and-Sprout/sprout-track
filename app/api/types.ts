@@ -189,7 +189,9 @@ export interface NoteCreate {
 }
 
 // Caretaker types
-export type CaretakerResponse = Omit<Caretaker, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+// securityPin is intentionally omitted: caretaker PINs must never be included in any
+// API response. Use toCaretakerResponse() (app/api/utils/caretaker.ts) to build these.
+export type CaretakerResponse = Omit<Caretaker, 'createdAt' | 'updatedAt' | 'deletedAt' | 'securityPin'> & {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
