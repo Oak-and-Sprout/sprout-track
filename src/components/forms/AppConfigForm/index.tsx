@@ -53,6 +53,10 @@ interface EmailConfigData {
   enableTls: boolean;
   allowSelfSignedCert: boolean;
   updatedAt: string;
+  // Secrets are never sent from the API; these flags indicate whether one is configured.
+  hasSendGridApiKey?: boolean;
+  hasSmtp2goApiKey?: boolean;
+  hasPassword?: boolean;
 }
 
 interface NotificationConfigData {
@@ -62,6 +66,8 @@ interface NotificationConfigData {
   vapidPrivateKey: string | null;
   vapidSubject: string | null;
   logRetentionDays: number;
+  // The private key is never sent from the API; this flag indicates whether one is configured.
+  hasVapidPrivateKey?: boolean;
   updatedAt: string;
 }
 
@@ -121,7 +127,7 @@ export default function AppConfigForm({
   const [verifyPassword, setVerifyPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [originalPassword, setOriginalPassword] = useState('');
+  const [verifyingPassword, setVerifyingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -173,21 +179,23 @@ export default function AppConfigForm({
       if (data.success) {
         setAppConfig(data.data.appConfig);
         setEmailConfig(data.data.emailConfig);
-        setOriginalPassword(data.data.appConfig?.adminPass || '');
+        // Secrets (adminPass, API keys, SMTP password, VAPID private key) are never
+        // returned by the API — the fields start blank and a blank value on save means
+        // "keep the current value". Configured state is shown via the has* flags.
         setFormData({
-          adminPass: data.data.appConfig?.adminPass || '',
+          adminPass: '',
           rootDomain: data.data.appConfig?.rootDomain || '',
           enableHttps: data.data.appConfig?.enableHttps || false,
           adminEmail: data.data.appConfig?.adminEmail || '',
         });
         setEmailFormData({
           providerType: data.data.emailConfig?.providerType || 'SENDGRID',
-          sendGridApiKey: data.data.emailConfig?.sendGridApiKey || '',
-          smtp2goApiKey: data.data.emailConfig?.smtp2goApiKey || '',
+          sendGridApiKey: '',
+          smtp2goApiKey: '',
           serverAddress: data.data.emailConfig?.serverAddress || '',
           port: data.data.emailConfig?.port || 587,
           username: data.data.emailConfig?.username || '',
-          password: data.data.emailConfig?.password || '',
+          password: '',
           enableTls: data.data.emailConfig?.enableTls !== false,
           allowSelfSignedCert: data.data.emailConfig?.allowSelfSignedCert || false,
         });
@@ -195,7 +203,7 @@ export default function AppConfigForm({
         setNotificationFormData({
           enabled: data.data.notificationConfig?.enabled || false,
           vapidPublicKey: data.data.notificationConfig?.vapidPublicKey || '',
-          vapidPrivateKey: data.data.notificationConfig?.vapidPrivateKey || '',
+          vapidPrivateKey: '',
           vapidSubject: data.data.notificationConfig?.vapidSubject || '',
           logRetentionDays: data.data.notificationConfig?.logRetentionDays || 30,
         });
@@ -341,14 +349,34 @@ export default function AppConfigForm({
     }
   };
 
-  // Handle password step changes
-  const handleVerifyPassword = () => {
-    if (verifyPassword === originalPassword) {
-      setPasswordStep('new');
-      setError(null);
-    } else {
-      setError('Incorrect current password');
-      setVerifyPassword('');
+  // Handle password step changes — verify the current password server-side
+  // (the client never receives the actual admin password).
+  const handleVerifyPassword = async () => {
+    try {
+      setVerifyingPassword(true);
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/app-config/verify-admin-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ password: verifyPassword }),
+      });
+      const data = await response.json();
+
+      if (response.ok && data.success && data.data?.valid) {
+        setPasswordStep('new');
+        setError(null);
+      } else {
+        setError('Incorrect current password');
+        setVerifyPassword('');
+      }
+    } catch (err) {
+      console.error('Error verifying admin password:', err);
+      setError(t('Unable to verify password. Please try again.'));
+    } finally {
+      setVerifyingPassword(false);
     }
   };
 
@@ -388,11 +416,10 @@ export default function AppConfigForm({
         }
 
         if (data.success) {
-          // Update local state with new password data
+          // Update local state; the API never returns the password, so keep the field blank.
           setAppConfig(data.data.appConfig);
-          setFormData(prev => ({ ...prev, adminPass: data.data.appConfig.adminPass }));
-          setOriginalPassword(data.data.appConfig.adminPass);
-          
+          setFormData(prev => ({ ...prev, adminPass: '' }));
+
           // Reset password form for potential next change
           setShowPasswordChange(false);
           setPasswordStep('verify');
@@ -429,11 +456,8 @@ export default function AppConfigForm({
 
   // Validate form
   const validateForm = (): boolean => {
-    if (!formData.adminPass.trim()) {
-      setError(t('Admin password is required'));
-      return false;
-    }
-
+    // adminPass is intentionally not required here: it's never pre-filled, and a blank
+    // value means "keep the current password" (changed via the dedicated verify flow).
     if (!formData.rootDomain.trim()) {
       setError(t('Root domain is required'));
       return false;
@@ -616,10 +640,10 @@ export default function AppConfigForm({
                                 placeholder={t("Enter current password")}
                                 autoComplete="current-password"
                               />
-                              <Button 
-                                type="button" 
+                              <Button
+                                type="button"
                                 onClick={handleVerifyPassword}
-                                disabled={!verifyPassword.trim()}
+                                disabled={!verifyPassword.trim() || verifyingPassword}
                               >
                                 Continue
                               </Button>
@@ -808,7 +832,7 @@ export default function AppConfigForm({
                         name="sendGridApiKey"
                         value={emailFormData.sendGridApiKey}
                         onChange={handleEmailInputChange}
-                        placeholder={t("Enter SendGrid API Key")}
+                        placeholder={emailConfig?.hasSendGridApiKey ? t("Configured — leave blank to keep current") : t("Enter SendGrid API Key")}
                       />
                     </div>
                   )}
@@ -825,7 +849,7 @@ export default function AppConfigForm({
                         name="smtp2goApiKey"
                         value={emailFormData.smtp2goApiKey}
                         onChange={handleEmailInputChange}
-                        placeholder="Enter SMTP2GO API Key"
+                        placeholder={emailConfig?.hasSmtp2goApiKey ? t("Configured — leave blank to keep current") : "Enter SMTP2GO API Key"}
                       />
                     </div>
                   )}
@@ -883,6 +907,7 @@ export default function AppConfigForm({
                           value={emailFormData.password}
                           onChange={handleEmailInputChange}
                           autoComplete="new-password"
+                          placeholder={emailConfig?.hasPassword ? t("Configured — leave blank to keep current") : undefined}
                         />
                       </div>
                       <div className="flex items-center space-x-2">
@@ -986,7 +1011,7 @@ export default function AppConfigForm({
                         name="vapidPrivateKey"
                         value={notificationFormData.vapidPrivateKey}
                         onChange={handleNotificationInputChange}
-                        placeholder={t('No private key configured')}
+                        placeholder={notificationConfig?.hasVapidPrivateKey ? t('Configured — leave blank to keep current') : t('No private key configured')}
                       />
                     </div>
                     <p className="text-xs text-gray-500">

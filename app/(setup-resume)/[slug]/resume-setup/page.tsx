@@ -14,13 +14,12 @@ interface SetupStatusData {
     name: string;
     slug: string;
     authType: string | null;
-    securityPin: string | null;
+    hasSecurityPin: boolean;
     caretakers: Array<{
       loginId: string;
       name: string;
       type: string;
       role: 'ADMIN' | 'USER';
-      securityPin: string;
     }>;
   };
 }

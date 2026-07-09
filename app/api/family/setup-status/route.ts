@@ -12,13 +12,12 @@ interface SetupStatusData {
     name: string;
     slug: string;
     authType: string | null;
-    securityPin: string | null;
+    hasSecurityPin: boolean;
     caretakers: Array<{
       loginId: string;
       name: string;
       type: string;
       role: 'ADMIN' | 'USER';
-      securityPin: string;
     }>;
   };
 }
@@ -92,7 +91,6 @@ async function getHandler(req: NextRequest, authContext: AuthResult): Promise<Ne
         name: true,
         type: true,
         role: true,
-        securityPin: true,
       },
     });
 
@@ -110,13 +108,14 @@ async function getHandler(req: NextRequest, authContext: AuthResult): Promise<Ne
           name: family.name,
           slug: family.slug,
           authType: settings?.authType ?? null,
-          securityPin: settings?.securityPin ?? null,
+          // Never return the actual PIN — only whether one is set. The resume wizard
+          // re-collects the PIN rather than reading it back.
+          hasSecurityPin: !!settings?.securityPin,
           caretakers: caretakers.map(c => ({
             loginId: c.loginId,
             name: c.name,
             type: c.type || '',
             role: c.role as 'ADMIN' | 'USER',
-            securityPin: c.securityPin,
           })),
         },
       },

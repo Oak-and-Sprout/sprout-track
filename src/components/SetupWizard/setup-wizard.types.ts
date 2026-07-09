@@ -37,13 +37,13 @@ export interface SetupWizardProps {
     name: string;
     slug: string;
     authType: string | null;
-    securityPin: string | null;
+    // Only whether a family PIN is already set — the actual PIN is never sent to the client.
+    hasSecurityPin: boolean;
     caretakers: Array<{
       loginId: string;
       name: string;
       type: string;
       role: 'ADMIN' | 'USER';
-      securityPin: string;
     }>;
   };
 }
