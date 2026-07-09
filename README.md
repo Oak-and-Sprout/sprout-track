@@ -1,6 +1,6 @@
 # Sprout Track
 
-v1.3.4 😁 - A self-hosted Next.js application for tracking baby activities, milestones, and development.
+A self-hosted Next.js application for tracking baby activities, milestones, and development.
 
 ![Docker Image Size](https://img.shields.io/docker/image-size/sprouttrack/sprout-track) ![Docker Pulls](https://img.shields.io/docker/pulls/sprouttrack/sprout-track)
 
