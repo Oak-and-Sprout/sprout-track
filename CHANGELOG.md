@@ -5,7 +5,7 @@
 ### Changes
 
 #### Security & Privacy
-- Fixed security vulnerability that allowed users to forge authentication - Thank you **myoann**
+- Fixed security vulnerability that allowed users to forge authentication - Thank you **myoann**!
 - Strengthened authentication and session security across the app
 - Improved protection of sensitive information in system pages - PINs, and configuration secrets are no longer sent to the browser
 - Sensitive fields (PINs, passwords, API keys) are now hidden when editing; leave them blank to keep the current value, or enter a new value to change it
