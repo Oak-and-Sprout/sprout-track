@@ -5,7 +5,7 @@
  *
  * Single source of truth for all environment variable defaults.
  * Creates the .env file if missing, adds any missing vars with correct defaults,
- * generates secrets (ENC_HASH, NOTIFICATION_CRON_SECRET) when needed,
+ * generates secrets (ENC_HASH, JWT_SECRET, NOTIFICATION_CRON_SECRET) when needed,
  * and never overwrites existing values.
  *
  * Usage:
@@ -86,7 +86,7 @@ const ENV_DEFAULTS = [
   },
   {
     key: 'APP_VERSION',
-    default: '1.3.4',
+    default: '1.3.5',
     comment: 'Application version'
   },
   {
@@ -105,6 +105,13 @@ const ENV_DEFAULTS = [
     generate: true,
     protected: true,
     comment: 'Encryption hash for data encryption (auto-generated, do not change)',
+    quoted: true
+  },
+  {
+    key: 'JWT_SECRET',
+    generate: true,
+    protected: true,
+    comment: 'Secret for signing JWT auth tokens (auto-generated, do not change or share)',
     quoted: true
   },
   {

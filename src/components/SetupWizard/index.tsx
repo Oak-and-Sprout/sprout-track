@@ -42,23 +42,20 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
     familyData ? { id: familyData.id, name: familyData.name, slug: familyData.slug } : null
   );
 
-  // Stage 2: Security setup — pre-fill from familyData when resuming
+  // Stage 2: Security setup. PINs are never sent back from the server, so on resume the
+  // PIN fields start blank and must be re-entered (they can't be pre-filled).
   const [useSystemPin, setUseSystemPin] = useState(
     familyData ? (familyData.authType !== 'CARETAKER') : true
   );
-  const [systemPin, setSystemPin] = useState(
-    familyData?.securityPin && familyData.authType !== 'CARETAKER' ? familyData.securityPin : ''
-  );
-  const [confirmSystemPin, setConfirmSystemPin] = useState(
-    familyData?.securityPin && familyData.authType !== 'CARETAKER' ? familyData.securityPin : ''
-  );
+  const [systemPin, setSystemPin] = useState('');
+  const [confirmSystemPin, setConfirmSystemPin] = useState('');
   const [caretakers, setCaretakers] = useState<Array<{
     loginId: string;
     name: string;
     type: string;
     role: 'ADMIN' | 'USER';
     securityPin: string;
-  }>>(familyData?.caretakers || []);
+  }>>((familyData?.caretakers || []).map(c => ({ ...c, securityPin: '' })));
   const [newCaretaker, setNewCaretaker] = useState({
     loginId: '',
     name: '',

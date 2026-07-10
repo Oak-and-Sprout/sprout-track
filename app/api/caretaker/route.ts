@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse, CaretakerCreate, CaretakerUpdate, CaretakerResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
-import { formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
+import { toCaretakerResponse } from '../utils/caretaker';
 
 async function postHandler(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -94,12 +94,7 @@ async function postHandler(req: NextRequest, authContext: AuthResult) {
       });
     }
 
-    const response: CaretakerResponse = {
-      ...caretaker,
-      createdAt: formatForResponse(caretaker.createdAt) || '',
-      updatedAt: formatForResponse(caretaker.updatedAt) || '',
-      deletedAt: formatForResponse(caretaker.deletedAt),
-    };
+    const response: CaretakerResponse = toCaretakerResponse(caretaker);
 
     return NextResponse.json<ApiResponse<CaretakerResponse>>({
       success: true,
@@ -138,6 +133,13 @@ async function putHandler(req: NextRequest, authContext: AuthResult) {
     const requestBody = await req.json();
     const { familyId: bodyFamilyId, id, ...updateData } = requestBody;
     const body: CaretakerUpdate = { id, ...updateData };
+
+    // A blank/absent securityPin means "keep the existing PIN". Responses no longer
+    // return PINs, so edit forms submit a blank field when the PIN is unchanged — never
+    // overwrite the stored PIN with an empty value (which would break that caretaker's login).
+    if (updateData.securityPin === '' || updateData.securityPin === undefined || updateData.securityPin === null) {
+      delete updateData.securityPin;
+    }
 
     // For system administrators, setup auth, and account auth, require familyId to be passed as query parameter or in body
     let targetFamilyId = userFamilyId;
@@ -206,12 +208,7 @@ async function putHandler(req: NextRequest, authContext: AuthResult) {
       },
     });
 
-    const response: CaretakerResponse = {
-      ...caretaker,
-      createdAt: formatForResponse(caretaker.createdAt) || '',
-      updatedAt: formatForResponse(caretaker.updatedAt) || '',
-      deletedAt: formatForResponse(caretaker.deletedAt),
-    };
+    const response: CaretakerResponse = toCaretakerResponse(caretaker);
 
     return NextResponse.json<ApiResponse<CaretakerResponse>>({
       success: true,
@@ -387,12 +384,7 @@ async function getHandler(req: NextRequest, authContext: AuthResult) {
         );
       }
 
-      const response: CaretakerResponse = {
-        ...caretaker,
-        createdAt: formatForResponse(caretaker.createdAt) || '',
-        updatedAt: formatForResponse(caretaker.updatedAt) || '',
-        deletedAt: formatForResponse(caretaker.deletedAt),
-      };
+      const response: CaretakerResponse = toCaretakerResponse(caretaker);
 
       return NextResponse.json<ApiResponse<CaretakerResponse>>({ success: true, data: response });
     }
@@ -408,12 +400,7 @@ async function getHandler(req: NextRequest, authContext: AuthResult) {
       },
     });
 
-    const response: CaretakerResponse[] = caretakers.map(caretaker => ({
-      ...caretaker,
-      createdAt: formatForResponse(caretaker.createdAt) || '',
-      updatedAt: formatForResponse(caretaker.updatedAt) || '',
-      deletedAt: formatForResponse(caretaker.deletedAt),
-    }));
+    const response: CaretakerResponse[] = caretakers.map(toCaretakerResponse);
 
     return NextResponse.json<ApiResponse<CaretakerResponse[]>>({
       success: true,

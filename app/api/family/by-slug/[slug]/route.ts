@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/app/api/db';
 import { ApiResponse } from '@/app/api/utils/auth';
 import { validateSlug } from '@/app/api/utils/slug-validation';
-import { Family } from '@prisma/client';
 
-interface FamilyWithAccountStatus extends Family {
+// This endpoint is unauthenticated (used for slug resolution/availability before login),
+// so it returns only the fields callers actually use: identity for the family context and
+// slug-uniqueness checks, plus the derived account status. No timestamps, setupStage,
+// accountId, or raw account record are exposed.
+interface PublicFamily {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
   accountStatus?: {
     isExpired: boolean;
     isTrialExpired: boolean;
@@ -17,7 +24,7 @@ interface FamilyWithAccountStatus extends Family {
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
-): Promise<NextResponse<ApiResponse<FamilyWithAccountStatus | null>>> {
+): Promise<NextResponse<ApiResponse<PublicFamily | null>>> {
   try {
     const { slug } = await params;
     
@@ -42,10 +49,13 @@ export async function GET(
       where: {
         slug: slug,
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        isActive: true,
         account: {
           select: {
-            id: true,
             betaparticipant: true,
             trialEnds: true,
             planType: true,
@@ -61,8 +71,13 @@ export async function GET(
       return NextResponse.json({ success: false, data: null }, { status: 200 });
     }
 
-    // Add account status if family has an account
-    let familyWithStatus: FamilyWithAccountStatus = { ...family };
+    // Build the public response with only the exposed fields (drops the raw account record)
+    let familyWithStatus: PublicFamily = {
+      id: family.id,
+      name: family.name,
+      slug: family.slug,
+      isActive: family.isActive,
+    };
 
     if (family.account) {
       const account = family.account;

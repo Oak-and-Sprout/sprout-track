@@ -5,10 +5,7 @@ import jwt from 'jsonwebtoken';
 import { verifyPassword } from '../../utils/password-utils';
 import { checkIpLockout, recordFailedAttempt, resetFailedAttempts } from '../../utils/ip-lockout';
 import { logApiCall, getClientInfo } from '../../utils/api-logger';
-import { ACCESS_TOKEN_LIFE, createRefreshToken, setRefreshTokenCookie } from '../../utils/auth';
-
-// Secret key for JWT signing - in production, use environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
+import { ACCESS_TOKEN_LIFE, createRefreshToken, setRefreshTokenCookie, getJwtSecret } from '../../utils/auth';
 const TOKEN_EXPIRATION = ACCESS_TOKEN_LIFE;
 
 interface AccountLoginRequest {
@@ -231,7 +228,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<A
       trialEnds: account.trialEnds?.toISOString(),
       planExpires: account.planExpires?.toISOString(),
       planType: account.planType,
-    }, JWT_SECRET, { expiresIn: `${TOKEN_EXPIRATION}s` });
+    }, getJwtSecret(), { expiresIn: `${TOKEN_EXPIRATION}s` });
 
     const response: AccountLoginResponse = {
       success: true,

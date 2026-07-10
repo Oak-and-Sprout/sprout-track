@@ -31,6 +31,24 @@ Logs are stored in a separate database file: `db/api-logs.db`
 - `requestBody` - JSON request body (optional)
 - `responseBody` - JSON response body (optional)
 
+### Automatic audit logging for privileged routes
+
+Every route wrapped in `withSysAdminAuth` or `withAdminAuth` is audited automatically —
+no per-route code required. This records a security audit trail of privileged access:
+
+- **Allowed calls** are logged with their response status.
+- **Denied attempts** are logged too (`401` unauthenticated, `403` unauthorized), including
+  the authenticated caretaker/family that was rejected — useful for spotting probing.
+
+These audit entries are **metadata only** (method, path, status, duration, IP, user-agent,
+`caretakerId`, `familyId`). Request and response bodies are deliberately **not** captured,
+because sensitive routes (`app-config`, `database`, `accounts/manage`, `family/manage`)
+return secrets and PII that must not be copied into the log database.
+
+Like all logging, this is gated by `ENABLE_LOG=true` and is fire-and-forget. Do **not** add a
+separate `withLogging` wrapper to these routes — they are already audited, and a body-capturing
+wrapper would reintroduce the secret-leak risk.
+
 ### Usage
 
 #### Manual Logging
