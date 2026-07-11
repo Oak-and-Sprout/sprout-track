@@ -10,6 +10,8 @@ import { FullLogActivityDetailsProps } from './full-log-timeline.types';
 import { getActivityDetails, formatTime } from '@/src/components/Timeline/utils';
 import { useLocalization } from '@/src/context/localization';
 import { useUnit } from '@/src/hooks/useUnit';
+import { FeedLogResponse } from '@/app/api/types';
+import LinkedFeedsSection from '@/src/components/forms/FeedForm/LinkedFeedsSection';
 
 import './full-log-timeline.css';
 
@@ -100,6 +102,13 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
                 <span className="text-sm text-gray-900 full-log-timeline-details-value">{detail.value}</span>
               </div>
             ))
+          )}
+          {'amount' in activity && 'type' in activity && activity.type === 'BREAST' && 'babyId' in activity && (
+            <LinkedFeedsSection
+              activity={activity as FeedLogResponse}
+              babyId={activity.babyId}
+              readOnly
+            />
           )}
         </div>
       </FormPageContent>

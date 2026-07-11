@@ -3,6 +3,7 @@ import prisma from '../../../../../db';
 import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth';
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
+import { groupBreastFeedSessions, SESSION_TOLERANCE_MS } from '@/src/utils/feedSessionUtils';
 
 function minutesAgo(date: Date): number {
   return Math.floor((Date.now() - date.getTime()) / 60000);
@@ -81,8 +82,10 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   ]);
 
   // Fetch daily counts in parallel
-  const [feedCount, diapers, sleepLogs, bathCount, medicineCount, supplementCount] = await Promise.all([
-    prisma.feedLog.count({ where: { babyId, deletedAt: null, time: { gte: today } } }),
+  const [todaysFeeds, diapers, sleepLogs, bathCount, medicineCount, supplementCount] = await Promise.all([
+    // Pre-buffered so a breast session straddling midnight groups with its
+    // pre-midnight sibling row (and is then attributed to yesterday)
+    prisma.feedLog.findMany({ where: { babyId, deletedAt: null, time: { gte: new Date(today.getTime() - SESSION_TOLERANCE_MS) } }, select: { type: true, time: true, side: true } }),
     prisma.diaperLog.findMany({ where: { babyId, deletedAt: null, time: { gte: today } }, select: { type: true } }),
     prisma.sleepLog.findMany({
       where: {
@@ -195,7 +198,10 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     lastActivities,
     dailyCounts: {
       date: localDateString(today, timezone),
-      feeds: feedCount,
+      // A left+right nursing session is stored as two rows but is one feed;
+      // sessions belong to the day they started
+      feeds: todaysFeeds.filter(f => f.type !== 'BREAST' && f.time >= today).length +
+        groupBreastFeedSessions(todaysFeeds).filter(s => s.time >= today).length,
       diapers: diapers.length,
       diapersByType,
       sleepMinutes,

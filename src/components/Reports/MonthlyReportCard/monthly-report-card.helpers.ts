@@ -110,6 +110,34 @@ export function getElapsedDays(year: number, month: number): number {
 }
 
 /**
+ * Get the number of days in the reporting month covered by the baby's life:
+ * elapsed days for the current month (or full month for past months), with the
+ * window start clamped to the birth date when birth falls inside that month.
+ * Returns 0 when the baby was born after the reporting window.
+ */
+export function getEffectiveDays(
+  year: number,
+  month: number,
+  birthDate?: Date | null,
+  now: Date = new Date()
+): number {
+  const isCurrentMonth = now.getFullYear() === year && now.getMonth() + 1 === month;
+  const lastDay = isCurrentMonth ? now.getDate() : getDaysInMonth(year, month);
+
+  if (!birthDate) return lastDay;
+
+  const birthYear = birthDate.getUTCFullYear();
+  const birthMonth = birthDate.getUTCMonth() + 1;
+
+  // Born after the reporting month: no covered days
+  if (birthYear > year || (birthYear === year && birthMonth > month)) return 0;
+  // Born before the reporting month: whole window counts
+  if (birthYear < year || birthMonth < month) return lastDay;
+  // Born inside the reporting month: count from the birth day (inclusive)
+  return Math.max(0, lastDay - birthDate.getUTCDate() + 1);
+}
+
+/**
  * Normal stool colors that should not be flagged
  */
 const NORMAL_COLORS = new Set([

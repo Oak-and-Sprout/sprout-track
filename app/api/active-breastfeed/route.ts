@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import prisma from '../db';
 import { ApiResponse, ActiveBreastFeedResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
@@ -264,6 +265,8 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
     // Last-fed side gets +1s startTime so it sorts first in lists
     const baseStartTime = session.sessionStartTime;
     const lastSideStartTime = new Date(baseStartTime.getTime() + 10);
+    // Both rows share a sessionId so they always count as one nursing session
+    const sessionId = randomUUID();
     const feedLogs = [];
 
     if (leftDur > 0) {
@@ -276,6 +279,7 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
           startTime: session.activeSide === 'LEFT' ? lastSideStartTime : baseStartTime,
           endTime: now,
           feedDuration: leftDur,
+          sessionId,
           caretakerId: caretakerId,
           familyId: userFamilyId,
         },
@@ -293,6 +297,7 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
           startTime: session.activeSide === 'RIGHT' ? lastSideStartTime : baseStartTime,
           endTime: now,
           feedDuration: rightDur,
+          sessionId,
           caretakerId: caretakerId,
           familyId: userFamilyId,
         },

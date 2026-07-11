@@ -34,12 +34,15 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
 import { convertVolume } from '@/src/utils/unit-conversion';
+import { groupBreastFeedSessions, BreastFeedLike } from '@/src/utils/feedSessionUtils';
 import { useUnit } from '@/src/hooks/useUnit';
 
 import './TimelineV2DailyStats.css';
 
 interface TimelineV2DailyStatsProps {
   activities: ActivityType[];
+  /** Activities from the surrounding days too, so breast-feed sessions that span midnight group correctly. Falls back to activities. */
+  windowActivities?: ActivityType[];
   heatmapActivities: ActivityType[];
   date: Date;
   isLoading?: boolean;
@@ -65,10 +68,11 @@ interface StatTile {
   bgActiveColor: string;
 }
 
-const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({ 
-  activities, 
+const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
+  activities,
+  windowActivities,
   heatmapActivities,
-  date, 
+  date,
   isLoading = false,
   activeFilter,
   onDateChange,
@@ -175,34 +179,6 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             }
             solidsAmounts[unit] += activity.amount || 0;
           }
-        }
-      }
-      
-      // Breast feed activities - track duration separately for left and right
-      if ('type' in activity && activity.type === 'BREAST') {
-        const time = new Date(activity.time);
-        if (time >= startOfDay && time <= endOfDay) {
-          totalFeedCount++;
-          // Track duration: prefer feedDuration (in seconds), fall back to amount (in minutes)
-          let feedMinutes = 0;
-          if ('feedDuration' in activity && activity.feedDuration) {
-            // Convert seconds to minutes
-            feedMinutes = Math.floor(activity.feedDuration / 60);
-          } else if ('amount' in activity && activity.amount) {
-            // Amount is already in minutes for older records
-            feedMinutes = activity.amount;
-          }
-          
-          // Track by side if available
-          if ('side' in activity && activity.side) {
-            if (activity.side === 'LEFT') {
-              leftBreastFeedMinutes += feedMinutes;
-            } else if (activity.side === 'RIGHT') {
-              rightBreastFeedMinutes += feedMinutes;
-            }
-          }
-          // Note: If no side specified, we don't track it separately to avoid inaccuracy
-          // The feed is still counted in totalFeedCount
         }
       }
       
@@ -315,6 +291,19 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         }
       }
     });
+
+    // Breast feeds: group per-side rows into nursing sessions (issue #198). The
+    // grouping window spans midnight, so use the surrounding days' activities
+    // and attribute each session (count and minutes) to the day it started.
+    const breastRows = ((windowActivities ?? activities) as unknown as BreastFeedLike[])
+      .filter(a => a && 'type' in a && a.type === 'BREAST');
+    for (const session of groupBreastFeedSessions(breastRows)) {
+      if (session.time >= startOfDay && session.time <= endOfDay) {
+        totalFeedCount++;
+        leftBreastFeedMinutes += Math.floor(session.leftDuration / 60);
+        rightBreastFeedMinutes += Math.floor(session.rightDuration / 60);
+      }
+    }
 
     // Check for active sleep (sleep without endTime)
     // Note: Must exclude pump activities which also have duration and startTime
@@ -639,7 +628,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     }
 
     return tiles;
-  }, [activities, date, t]);
+  }, [activities, windowActivities, date, t]);
 
   const formatDateDisplay = (date: Date): string => {
     return formatDateLong(date, dateFormat);

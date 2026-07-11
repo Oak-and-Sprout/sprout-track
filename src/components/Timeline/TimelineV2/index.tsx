@@ -29,6 +29,8 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
 
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
+  // Selected day ±1 so daily stats can group breast-feed sessions across midnight
+  const [windowActivities, setWindowActivities] = useState<ActivityType[]>([]);
   const [heatmapActivities, setHeatmapActivities] = useState<ActivityType[]>([]);
 
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
@@ -143,6 +145,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     try {
       const result = await activityCache.fetchWindow(babyId, date, 1);
       setDateFilteredActivities(result.activities);
+      setWindowActivities(result.allActivities);
       lastRefreshTimestamp.current = Date.now();
 
       // Only emit status when today is within the fetched window (prevents stale status on past dates)
@@ -159,6 +162,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     } catch (error) {
       console.error('Error fetching activities for date:', error);
       setDateFilteredActivities([]);
+      setWindowActivities([]);
     } finally {
       if (isAnimated) {
         setIsLoadingActivities(false);
@@ -173,6 +177,14 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     try {
       const activities = await activityCache.refreshDate(babyId, selectedDate);
       setDateFilteredActivities(activities);
+      // Rebuild the ±1 day window from cache around the refreshed day
+      const prevDay = new Date(selectedDate); prevDay.setDate(prevDay.getDate() - 1);
+      const nextDay = new Date(selectedDate); nextDay.setDate(nextDay.getDate() + 1);
+      setWindowActivities([
+        ...(activityCache.getActivitiesForDate(activityCache.toDateKey(prevDay)) || []),
+        ...activities,
+        ...(activityCache.getActivitiesForDate(activityCache.toDateKey(nextDay)) || []),
+      ]);
       lastRefreshTimestamp.current = Date.now();
 
       // Only emit status when refreshing today's data
@@ -412,6 +424,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
       {/* Daily Stats with Integrated Date Navigation */}
       <TimelineV2DailyStats
         activities={dateFilteredActivities}
+        windowActivities={windowActivities}
         heatmapActivities={heatmapActivities}
         date={selectedDate}
         isLoading={isLoadingActivities}

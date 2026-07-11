@@ -22,6 +22,7 @@ import { Clock, Moon, Sun, Utensils, Droplet, Loader2 } from 'lucide-react';
 import { diaper } from '@lucide/lab';
 import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
+import { countBreastFeedSessions } from '@/src/utils/feedSessionUtils';
 
 /**
  * BabyQuickStats Component
@@ -360,11 +361,13 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
         nightSleepByNight[nightKey] += sleepDurationMinutes;
       });
 
-      // Count feedings
-      const feedingsForDay = dayActivities.filter(a => 
-        ('type' in a && (a.type === 'BOTTLE' || a.type === 'BREAST' || a.type === 'SOLIDS'))
-      ).length;
-      
+      // Count feedings — a left+right nursing session is two rows but one feed
+      const feedingsForDay = dayActivities.filter(a =>
+        ('type' in a && (a.type === 'BOTTLE' || a.type === 'SOLIDS'))
+      ).length + countBreastFeedSessions(
+        dayActivities.filter(a => 'type' in a && a.type === 'BREAST') as any
+      );
+
       feedingCount += feedingsForDay;
 
       // Calculate feed amounts

@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
@@ -152,6 +153,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const leftDurationByDay: Record<string, { total: number; count: number }> = {};
     const rightDurationByDay: Record<string, { total: number; count: number }> = {};
 
+    // Sessions per day: linked/paired side entries count once, attributed to
+    // the day the session started (issue #198)
+    const breastRows = activities.filter(
+      (a) => 'type' in a && 'time' in a && (a as any).type === 'BREAST'
+    );
+    groupBreastFeedSessions(breastRows as any).forEach((session) => {
+      if (session.time >= startDate && session.time <= endDate) {
+        const dayKey = session.time.toLocaleDateString('en-CA').split('T')[0];
+        countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
+      }
+    });
+
     activities.forEach((activity) => {
       if ('type' in activity && 'time' in activity) {
         const activityType = (activity as any).type;
@@ -162,8 +175,6 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
         const dayKey = feedTime.toLocaleDateString('en-CA').split('T')[0];
 
         if (feedTime >= startDate && feedTime <= endDate) {
-          countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
-
           // Duration is in seconds, convert to minutes
           const durationSeconds = feedActivity.feedDuration || 0;
           const durationMinutes = Math.floor(durationSeconds / 60);

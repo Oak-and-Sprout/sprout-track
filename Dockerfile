@@ -56,14 +56,18 @@ RUN if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then \
     fi
 
 # Create env directory and base .env file (ENC_HASH and JWT_SECRET are generated at container startup)
-# DATABASE_URL is set at runtime via environment variables
+# DATABASE_URL is set at runtime via environment variables; SQLite file paths are
+# only baked in for sqlite builds so a stale env volume can't clobber a
+# PostgreSQL deployment (issue #171)
 RUN mkdir -p /app/env && \
     echo "Creating base .env file..." && \
     echo "# Environment variables for Docker container" > /app/env/.env && \
     echo "DATABASE_PROVIDER=\"${DATABASE_PROVIDER}\"" >> /app/env/.env && \
     echo "ENABLE_LOG=\"false\"" >> /app/env/.env && \
-    echo "DATABASE_URL=\"file:/db/baby-tracker.db\"" >> /app/env/.env && \
-    echo "LOG_DATABASE_URL=\"file:/db/baby-tracker-logs.db\"" >> /app/env/.env && \
+    if [ "$DATABASE_PROVIDER" = "sqlite" ]; then \
+      echo "DATABASE_URL=\"file:/db/baby-tracker.db\"" >> /app/env/.env && \
+      echo "LOG_DATABASE_URL=\"file:/db/baby-tracker-logs.db\"" >> /app/env/.env; \
+    fi && \
     echo "NODE_ENV=production" >> /app/env/.env && \
     echo "PORT=3000" >> /app/env/.env && \
     echo "TZ=UTC" >> /app/env/.env && \
@@ -76,6 +80,12 @@ RUN mkdir -p /app/env && \
     echo "Base .env file created (ENC_HASH and JWT_SECRET are generated at startup)" && \
     # Create symlink so Next.js can find the env file at build time and runtime
     ln -sf /app/env/.env /app/.env
+
+# Build-time placeholder database URLs (also the runtime SQLite defaults).
+# docker-startup.sh treats these exact values as placeholders, so runtime env
+# and the persisted env file always win over them.
+ENV DATABASE_URL="file:/db/baby-tracker.db"
+ENV LOG_DATABASE_URL="file:/db/baby-tracker-logs.db"
 
 # Build the application
 RUN npm run build
@@ -90,10 +100,6 @@ ENV TZ=UTC
 
 # Set notification environment variable from build arg
 ENV ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS}
-
-# Default database URLs (SQLite) — overridden at runtime for PostgreSQL
-ENV DATABASE_URL="file:/db/baby-tracker.db"
-ENV LOG_DATABASE_URL="file:/db/baby-tracker-logs.db"
 
 # Create volume mount points
 VOLUME /db

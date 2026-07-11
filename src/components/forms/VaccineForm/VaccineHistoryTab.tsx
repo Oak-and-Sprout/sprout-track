@@ -12,10 +12,13 @@ import {
   Paperclip,
   Download,
   FileSpreadsheet,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 /**
  * VaccineHistoryTab Component
@@ -30,11 +33,13 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
 }) => {
   const { t } = useLocalization();
   const { formatDateTime } = useTimezone();
+  const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vaccineRecords, setVaccineRecords] = useState<VaccineLogResponse[]>([]);
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
 
   // Fetch vaccine records
   const fetchVaccineRecords = useCallback(async () => {
@@ -114,6 +119,53 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading document:', error);
+    }
+  };
+
+  // Delete a vaccine record (and its attached documents)
+  const handleDeleteRecord = async (record: VaccineLogResponse) => {
+    if (!confirm(t('This will permanently delete the vaccine record and any attached documents. Continue?'))) {
+      return;
+    }
+
+    setDeletingRecordId(record.id);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/vaccine-log?id=${record.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          const { isExpirationError } = await handleExpirationError(
+            response,
+            showToast,
+            'deleting vaccine record'
+          );
+          if (isExpirationError) return;
+        }
+        throw new Error(t('Failed to delete vaccine record'));
+      }
+
+      showToast({
+        variant: 'success',
+        title: t('Success'),
+        message: t('Vaccine record deleted successfully'),
+        duration: 3000,
+      });
+      setExpandedRecordId(null);
+      fetchVaccineRecords();
+    } catch (error) {
+      console.error('Error deleting vaccine record:', error);
+      showToast({
+        variant: 'error',
+        title: t('Error'),
+        message: t('Failed to delete vaccine record'),
+        duration: 5000,
+      });
+    } finally {
+      setDeletingRecordId(null);
     }
   };
 
@@ -297,6 +349,27 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
                         </div>
                       </div>
                     )}
+
+                    {/* Delete record */}
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRecord(record);
+                        }}
+                        disabled={deletingRecordId === record.id}
+                      >
+                        {deletingRecordId === record.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        )}
+                        {t('Delete')}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

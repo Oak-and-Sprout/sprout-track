@@ -305,7 +305,7 @@ const TimelineV2ActivityList = ({
                                     
                                     if ('amount' in activity) {
                                       if (activity.type === 'BREAST') {
-                                        const side = activity.side ? t(activity.side.charAt(0) + activity.side.slice(1).toLowerCase()) : '';
+                                        const side = activity.side ? t(activity.side === 'LEFT' ? 'Left Side' : 'Right Side') : '';
                                         let duration = '';
                                         if (activity.feedDuration) {
                                           const minutes = Math.floor(activity.feedDuration / 60);
@@ -314,7 +314,7 @@ const TimelineV2ActivityList = ({
                                         } else if (activity.amount) {
                                           duration = `${activity.amount} ${t('min')}`;
                                         }
-                                        const parts = [side ? t(`${side} Side`) : '', duration].filter(Boolean);
+                                        const parts = [side, duration].filter(Boolean);
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;

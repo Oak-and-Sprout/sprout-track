@@ -16,10 +16,12 @@ import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { newFeedSessionId } from '@/src/utils/feedSessionUtils';
 import './feed-form.css';
 
 // Import subcomponents
 import BreastFeedForm from './BreastFeedForm';
+import LinkedFeedsSection from './LinkedFeedsSection';
 import BottleFeedForm from './BottleFeedForm';
 import SolidsFeedForm from './SolidsFeedForm';
 import { useLocalization } from '@/src/context/localization';
@@ -628,19 +630,22 @@ export default function FeedForm({
     const leftDuration = leftDur ?? formData.leftDuration;
     const rightDuration = rightDur ?? formData.rightDuration;
 
+    // When both sides are logged together they are one nursing session
+    const sessionId = leftDuration > 0 && rightDuration > 0 ? newFeedSessionId() : undefined;
+
     // Create left side entry
     if (leftDuration > 0) {
-      await createSingleFeedEntry('LEFT', leftDuration);
+      await createSingleFeedEntry('LEFT', leftDuration, sessionId);
     }
 
     // Create right side entry
     if (rightDuration > 0) {
-      await createSingleFeedEntry('RIGHT', rightDuration);
+      await createSingleFeedEntry('RIGHT', rightDuration, sessionId);
     }
   };
 
   // Helper function to create a single feed entry
-  const createSingleFeedEntry = async (breastSide?: BreastSide, durationOverride?: number) => {
+  const createSingleFeedEntry = async (breastSide?: BreastSide, durationOverride?: number, sessionId?: string) => {
     // For breast feeding, use the provided side or the form data side
     const side = formData.type === 'BREAST' ? (breastSide || formData.side) : undefined;
 
@@ -677,10 +682,11 @@ export default function FeedForm({
       babyId,
       time: utcTimeString, // Send the UTC ISO string instead of local time
       type: formData.type,
-      ...(formData.type === 'BREAST' && side && { 
+      ...(formData.type === 'BREAST' && side && {
         side,
         ...(startTime && { startTime: toUTCString(startTime) }),
         ...(endTime && { endTime: toUTCString(endTime) }),
+        ...(sessionId && { sessionId }),
         feedDuration: duration
       }),
       ...((formData.type === 'BOTTLE' || formData.type === 'SOLIDS') && {
@@ -1356,7 +1362,15 @@ export default function FeedForm({
                 getCurrentDurations={getCurrentDurationsRef}
               />
             )}
-            
+
+            {formData.type === 'BREAST' && activity && babyId && (
+              <LinkedFeedsSection
+                activity={activity}
+                babyId={babyId}
+                disabled={loading}
+              />
+            )}
+
             {formData.type === 'BOTTLE' && (
               <BottleFeedForm
                 amount={formData.amount}

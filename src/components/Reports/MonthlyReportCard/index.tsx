@@ -20,7 +20,7 @@ import MilestonesSection from './MilestonesSection';
 import HealthSection from './HealthSection';
 import CaretakerSection from './CaretakerSection';
 import ReportFooter from './ReportFooter';
-import { getElapsedDays } from './monthly-report-card.helpers';
+import { getEffectiveDays } from './monthly-report-card.helpers';
 
 import './monthly-report-card.css';
 
@@ -246,7 +246,11 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
     daysTracked: 0,
     isCurrentMonth: selectedMonth.getFullYear() === new Date().getFullYear() && selectedMonth.getMonth() === new Date().getMonth(),
   };
-  const elapsedDays = getElapsedDays(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1);
+  const elapsedDays = getEffectiveDays(
+    selectedMonth.getFullYear(),
+    selectedMonth.getMonth() + 1,
+    reportData ? new Date(reportData.baby.birthDate) : null
+  );
 
   return (
     <div className={cn(s.container, className, 'report-card-container')} ref={reportRef}>

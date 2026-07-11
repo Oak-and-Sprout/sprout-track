@@ -121,6 +121,7 @@ export interface FeedLogCreate {
   notes?: string;
   bottleType?: string;
   breastMilkAmount?: number;
+  sessionId?: string; // Links breast feeds belonging to the same nursing session
 }
 
 // Active breastfeed session types
