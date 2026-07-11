@@ -18,12 +18,14 @@ interface ActivityTileGroupProps {
     id: string;
     feedWarningTime?: string | number;
     diaperWarningTime?: string | number;
+    feedTimerFrom?: string;
   } | null;
   sleepingBabies: Set<string>;
   feedingBabies?: Set<string>;
   sleepStartTime: Record<string, Date>;
   lastSleepEndTime: Record<string, Date>;
   lastFeedTime: Record<string, Date>;
+  lastFeedEndTime?: Record<string, Date>;
   lastDiaperTime: Record<string, Date>;
   feedStartTime?: Record<string, Date>;
   updateUnlockTimer: () => void;
@@ -56,6 +58,7 @@ export function ActivityTileGroup({
   sleepStartTime,
   lastSleepEndTime,
   lastFeedTime,
+  lastFeedEndTime,
   lastDiaperTime,
   feedStartTime,
   updateUnlockTimer,
@@ -509,17 +512,25 @@ export function ActivityTileGroup({
                 durationInMinutes={0}
               />
             ) : (
-              selectedBaby?.id && lastFeedTime[selectedBaby.id] && !exceeds24Hours(lastFeedTime[selectedBaby.id]) && (
-                <StatusBubble
-                  status="feed"
-                  className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
-                  screenEdgeAware={isLeftmost}
-                  durationInMinutes={0}
-                  startTime={lastFeedTime[selectedBaby.id].toISOString()}
-                  warningTime={selectedBaby.feedWarningTime as string}
-                  activityType="feed"
-                />
-              )
+              (() => {
+                const feedEndTime = lastFeedEndTime?.[selectedBaby.id!];
+                const feedStartTimeVal = lastFeedTime[selectedBaby.id!];
+                const effectiveFeedTime = selectedBaby?.feedTimerFrom === 'end' && feedEndTime
+                  ? feedEndTime
+                  : feedStartTimeVal;
+
+                return selectedBaby?.id && effectiveFeedTime && !exceeds24Hours(effectiveFeedTime) && (
+                  <StatusBubble
+                    status="feed"
+                    className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
+                    screenEdgeAware={isLeftmost}
+                    durationInMinutes={0}
+                    startTime={effectiveFeedTime.toISOString()}
+                    warningTime={selectedBaby.feedWarningTime as string}
+                    activityType="feed"
+                  />
+                );
+              })()
             )}
           </div>
         );

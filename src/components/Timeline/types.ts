@@ -15,6 +15,7 @@ export type FilterType = 'sleep' | 'feed' | 'diaper' | 'poop' | 'medicine' | 'no
 
 export interface LatestStatusData {
   lastFeedTime?: Date;
+  lastFeedEndTime?: Date;
   lastDiaperTime?: Date;
   lastSleepEndTime?: Date;
   ongoingSleep?: SleepLogResponse;

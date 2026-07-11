@@ -493,7 +493,8 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
-          familyId: familyData.id
+          familyId: familyData.id,
+          feedTimerFrom: (selectedBaby as any).feedTimerFrom || 'start',
         } : null}
         onBabyChange={handleBabyFormClose}
       />
