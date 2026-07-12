@@ -1,15 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../db';
 import { ApiResponse, CaretakerResponse } from '../../../types';
-import { formatForResponse } from '../../../utils/timezone';
+import { withSysAdminAuth } from '../../../utils/auth';
+import { toCaretakerResponse } from '../../../utils/caretaker';
 
-// GET - Get all caretakers for a specific family
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+/**
+ * Parse the family id from the URL path.
+ * Expected pattern: /api/family/{id}/caretakers
+ * The auth wrapper only forwards `req` (not the Next.js route `params` context),
+ * so the id is read from the URL — matching the pattern used by other authenticated
+ * dynamic routes in this codebase.
+ */
+function parseFamilyId(req: NextRequest): string | null {
+  const segments = new URL(req.url).pathname.split('/');
+  const familyIdx = segments.indexOf('family');
+  if (familyIdx === -1 || familyIdx + 1 >= segments.length) return null;
+  return segments[familyIdx + 1] || null;
+}
+
+// GET - Get all caretakers for a specific family.
+// System administrators only: this returns caretakers across any family for the
+// family-manager console, so it must not be reachable without sysadmin auth.
+async function handleGet(
+  req: NextRequest
 ): Promise<NextResponse<ApiResponse<CaretakerResponse[]>>> {
   try {
-    const { id: familyId } = await params;
+    const familyId = parseFamilyId(req);
 
     if (!familyId) {
       return NextResponse.json({
@@ -41,13 +57,8 @@ export async function GET(
       ]
     });
 
-    // Format response
-    const caretakerResponses: CaretakerResponse[] = caretakers.map((caretaker) => ({
-      ...caretaker,
-      createdAt: formatForResponse(caretaker.createdAt) || '',
-      updatedAt: formatForResponse(caretaker.updatedAt) || '',
-      deletedAt: formatForResponse(caretaker.deletedAt),
-    }));
+    // toCaretakerResponse strips securityPin, so PINs are never sent to the client
+    const caretakerResponses: CaretakerResponse[] = caretakers.map(toCaretakerResponse);
 
     return NextResponse.json({
       success: true,
@@ -60,4 +71,6 @@ export async function GET(
       error: 'Failed to fetch caretakers',
     }, { status: 500 });
   }
-} 
+}
+
+export const GET = withSysAdminAuth(handleGet);

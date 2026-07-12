@@ -5,6 +5,12 @@ import { Settings } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
 
+// The family securityPin (login PIN) must never be returned to the client.
+type SettingsResponse = Omit<Settings, 'securityPin'>;
+function toSettingsResponse({ securityPin: _securityPin, ...rest }: Settings): SettingsResponse {
+  return rest;
+}
+
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
     const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
@@ -45,13 +51,13 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       });
     }
 
-    return NextResponse.json<ApiResponse<Settings>>({
+    return NextResponse.json<ApiResponse<SettingsResponse>>({
       success: true,
-      data: settings,
+      data: toSettingsResponse(settings),
     });
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json<ApiResponse<Settings>>(
+    return NextResponse.json<ApiResponse<SettingsResponse>>(
       {
         success: false,
         error: 'Failed to fetch settings',
@@ -128,17 +134,22 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
+        // A blank securityPin means "keep the existing PIN" — never overwrite the
+        // family login PIN with an empty value (responses no longer return it).
+        if (field === 'securityPin' && (body[field] === '' || body[field] === null)) {
+          continue;
+        }
         (data as any)[field] = body[field];
       }
     }
-    
+
     const settings = await prisma.settings.update({
       where: { id: existingSettings.id },
       data,
     });
 
-    // If securityPin was updated, also update system caretaker's pin
-    if (body.securityPin !== undefined) {
+    // If a non-empty securityPin was provided, also update system caretaker's pin to match
+    if (body.securityPin) {
       try {
         const systemCaretaker = await prisma.caretaker.findFirst({
           where: { 
@@ -162,13 +173,13 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       }
     }
 
-    return NextResponse.json<ApiResponse<Settings>>({
+    return NextResponse.json<ApiResponse<SettingsResponse>>({
       success: true,
-      data: settings,
+      data: toSettingsResponse(settings),
     });
   } catch (error) {
     console.error('Error updating settings:', error);
-    return NextResponse.json<ApiResponse<Settings>>(
+    return NextResponse.json<ApiResponse<SettingsResponse>>(
       {
         success: false,
         error: 'Failed to update settings',

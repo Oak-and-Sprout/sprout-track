@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../db';
 import { ApiResponse, CaretakerResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
-import { formatForResponse } from '../../utils/timezone';
+import { toCaretakerResponse } from '../../utils/caretaker';
 
 async function getSystemCaretaker(req: NextRequest, authContext: AuthResult) {
   try {
@@ -38,12 +38,7 @@ async function getSystemCaretaker(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    const response: CaretakerResponse = {
-      ...systemCaretaker,
-      createdAt: formatForResponse(systemCaretaker.createdAt) || '',
-      updatedAt: formatForResponse(systemCaretaker.updatedAt) || '',
-      deletedAt: formatForResponse(systemCaretaker.deletedAt),
-    };
+    const response: CaretakerResponse = toCaretakerResponse(systemCaretaker);
 
     return NextResponse.json<ApiResponse<CaretakerResponse>>({ success: true, data: response });
   } catch (error) {

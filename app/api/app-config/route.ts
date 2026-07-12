@@ -2,15 +2,49 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse } from '../types';
 import { AppConfig, EmailConfig, NotificationConfig } from '@prisma/client';
-import { encrypt, decrypt, isEncrypted } from '../utils/encryption';
+import { encrypt } from '../utils/encryption';
 import { withSysAdminAuth } from '../utils/auth';
 import { clearNotificationConfigCache, resetWebPushState } from '../../../src/lib/notifications/config';
 import * as crypto from 'crypto';
 
 /**
+ * Builds the client-safe config response. Secret fields (adminPass, email API keys,
+ * SMTP password, VAPID private key) are NEVER returned — they are blanked and paired
+ * with has* booleans so the editor can show a "configured" state and a
+ * "leave blank to keep current" input. The client never receives these secrets.
+ */
+function toSafeConfigResponse(
+  appConfig: AppConfig,
+  emailConfig: EmailConfig,
+  notificationConfig: NotificationConfig
+) {
+  return {
+    appConfig: {
+      ...appConfig,
+      adminPass: '',
+    },
+    emailConfig: {
+      ...emailConfig,
+      sendGridApiKey: '',
+      smtp2goApiKey: '',
+      password: '',
+      hasSendGridApiKey: !!emailConfig.sendGridApiKey,
+      hasSmtp2goApiKey: !!emailConfig.smtp2goApiKey,
+      hasPassword: !!emailConfig.password,
+    },
+    notificationConfig: {
+      ...notificationConfig,
+      // vapidPublicKey is public and returned as-is; the private key is never returned.
+      vapidPrivateKey: '',
+      hasVapidPrivateKey: !!notificationConfig.vapidPrivateKey,
+    },
+  };
+}
+
+/**
  * GET handler for AppConfig
- * Returns the current app configuration with decrypted adminPass
- * Requires system administrator authentication
+ * Returns the current app configuration with all secrets stripped (see toSafeConfigResponse).
+ * Requires system administrator authentication.
  */
 async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<any>>> {
   try {
@@ -49,41 +83,9 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       });
     }
 
-    // Decrypt sensitive fields for the response
-    // If adminPass is blank/empty, use default "admin" password
-    let decryptedAdminPass: string;
-    if (!appConfig.adminPass || appConfig.adminPass.trim() === '') {
-      decryptedAdminPass = 'admin';
-    } else {
-      decryptedAdminPass = isEncrypted(appConfig.adminPass) ? decrypt(appConfig.adminPass) : appConfig.adminPass;
-    }
-
-    const decryptedAppConfig = {
-      ...appConfig,
-      adminPass: decryptedAdminPass,
-    };
-
-    const decryptedEmailConfig = {
-      ...emailConfig,
-      sendGridApiKey: emailConfig.sendGridApiKey && isEncrypted(emailConfig.sendGridApiKey) ? decrypt(emailConfig.sendGridApiKey) : emailConfig.sendGridApiKey,
-      smtp2goApiKey: emailConfig.smtp2goApiKey && isEncrypted(emailConfig.smtp2goApiKey) ? decrypt(emailConfig.smtp2goApiKey) : emailConfig.smtp2goApiKey,
-      password: emailConfig.password && isEncrypted(emailConfig.password) ? decrypt(emailConfig.password) : emailConfig.password,
-    };
-
-    const decryptedNotificationConfig = {
-      ...notificationConfig,
-      vapidPrivateKey: notificationConfig.vapidPrivateKey && isEncrypted(notificationConfig.vapidPrivateKey)
-        ? decrypt(notificationConfig.vapidPrivateKey)
-        : notificationConfig.vapidPrivateKey,
-    };
-
-    return NextResponse.json<ApiResponse<{ appConfig: any; emailConfig: any; notificationConfig: any }>>({
+    return NextResponse.json<ApiResponse<any>>({
       success: true,
-      data: {
-        appConfig: decryptedAppConfig,
-        emailConfig: decryptedEmailConfig,
-        notificationConfig: decryptedNotificationConfig,
-      },
+      data: toSafeConfigResponse(appConfig, emailConfig, notificationConfig),
     });
   } catch (error) {
     console.error('Error fetching app config:', error);
@@ -122,7 +124,13 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail'];
       for (const field of allowedAppFields) {
         if (appConfigData[field] !== undefined) {
-          (data as any)[field] = field === 'adminPass' ? encrypt(appConfigData[field]) : appConfigData[field];
+          if (field === 'adminPass') {
+            // Blank means "keep the current password" — never overwrite with an empty value.
+            if (!appConfigData[field]) continue;
+            (data as any)[field] = encrypt(appConfigData[field]);
+          } else {
+            (data as any)[field] = appConfigData[field];
+          }
         }
       }
       updatedAppConfig = await prisma.appConfig.update({ where: { id: existingAppConfig.id }, data });
@@ -143,7 +151,13 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
 
       for (const field of allowedEmailFields) {
         if (emailConfigData[field] !== undefined) {
-          (data as any)[field] = encryptedFields.includes(field) && emailConfigData[field] ? encrypt(emailConfigData[field]) : emailConfigData[field];
+          if (encryptedFields.includes(field)) {
+            // Blank means "keep the current secret" — never overwrite with an empty value.
+            if (!emailConfigData[field]) continue;
+            (data as any)[field] = encrypt(emailConfigData[field]);
+          } else {
+            (data as any)[field] = emailConfigData[field];
+          }
         }
       }
       updatedEmailConfig = await prisma.emailConfig.update({ where: { id: existingEmailConfig.id }, data });
@@ -167,7 +181,9 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
           if (field === 'logRetentionDays') {
             const days = parseInt(notificationConfigData[field], 10);
             (data as any)[field] = Math.max(1, Math.min(365, isNaN(days) ? 30 : days));
-          } else if (encryptedNotificationFields.includes(field) && notificationConfigData[field]) {
+          } else if (encryptedNotificationFields.includes(field)) {
+            // Blank means "keep the current private key" — never overwrite with an empty value.
+            if (!notificationConfigData[field]) continue;
             (data as any)[field] = encrypt(notificationConfigData[field]);
           } else {
             (data as any)[field] = notificationConfigData[field];
@@ -181,46 +197,16 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       resetWebPushState();
     }
 
-    // Fetch updated configs to return decrypted data
+    // Re-fetch and return the client-safe (secret-free) config
     const finalAppConfig = await prisma.appConfig.findFirst();
     const finalEmailConfig = await prisma.emailConfig.findFirst();
-
-    // Decrypt the final app config, using default "admin" if password is blank
-    const decryptedAppConfig = finalAppConfig ? (() => {
-      let decryptedAdminPass: string;
-      if (!finalAppConfig.adminPass || finalAppConfig.adminPass.trim() === '') {
-        decryptedAdminPass = 'admin';
-      } else {
-        decryptedAdminPass = isEncrypted(finalAppConfig.adminPass) ? decrypt(finalAppConfig.adminPass) : finalAppConfig.adminPass;
-      }
-      return {
-        ...finalAppConfig,
-        adminPass: decryptedAdminPass,
-      };
-    })() : null;
-
-    const decryptedEmailConfig = finalEmailConfig ? {
-      ...finalEmailConfig,
-      sendGridApiKey: finalEmailConfig.sendGridApiKey && isEncrypted(finalEmailConfig.sendGridApiKey) ? decrypt(finalEmailConfig.sendGridApiKey) : finalEmailConfig.sendGridApiKey,
-      smtp2goApiKey: finalEmailConfig.smtp2goApiKey && isEncrypted(finalEmailConfig.smtp2goApiKey) ? decrypt(finalEmailConfig.smtp2goApiKey) : finalEmailConfig.smtp2goApiKey,
-      password: finalEmailConfig.password && isEncrypted(finalEmailConfig.password) ? decrypt(finalEmailConfig.password) : finalEmailConfig.password,
-    } : null;
-
     const finalNotificationConfig = await prisma.notificationConfig.findFirst();
-    const decryptedNotificationConfig = finalNotificationConfig ? {
-      ...finalNotificationConfig,
-      vapidPrivateKey: finalNotificationConfig.vapidPrivateKey && isEncrypted(finalNotificationConfig.vapidPrivateKey)
-        ? decrypt(finalNotificationConfig.vapidPrivateKey)
-        : finalNotificationConfig.vapidPrivateKey,
-    } : null;
 
     return NextResponse.json<ApiResponse<any>>({
       success: true,
-      data: {
-        appConfig: decryptedAppConfig,
-        emailConfig: decryptedEmailConfig,
-        notificationConfig: decryptedNotificationConfig,
-      },
+      data: finalAppConfig && finalEmailConfig && finalNotificationConfig
+        ? toSafeConfigResponse(finalAppConfig, finalEmailConfig, finalNotificationConfig)
+        : null,
     });
   } catch (error) {
     console.error('Error updating app config:', error);
