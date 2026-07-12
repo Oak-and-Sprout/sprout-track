@@ -193,10 +193,18 @@ curl -s \
       },
       "diaper": { "time": "...", "minutesAgo": 45, "type": "WET" },
       "sleep": { "startTime": "...", "endTime": "...", "minutesAgo": 120, "duration": 90, "type": "NAP", "isActive": false },
-      "bath": { "time": "...", "minutesAgo": 300 },
+      "bath": { "time": "...", "minutesAgo": 300, "bathType": "Full Bath" },
       "medicine": { "time": "...", "minutesAgo": 480, "medicineName": "Infant Tylenol" },
       "supplement": { "time": "...", "minutesAgo": 600, "supplementName": "Vitamin D Drops" },
       "pump": { "startTime": "...", "minutesAgo": 200, "duration": 15, "isActive": false }
+    },
+    "activeFeed": {
+      "sessionStartTime": "2026-03-12T15:10:00.000Z",
+      "minutesAgo": 8,
+      "activeSide": "LEFT",
+      "isPaused": false,
+      "leftDuration": 480,
+      "rightDuration": 0
     },
     "dailyCounts": {
       "date": "2026-03-12",
@@ -220,6 +228,8 @@ curl -s \
 ```
 
 Any `lastActivities` field is `null` if no record exists for that type today.
+
+`activeFeed` reflects an in-progress breastfeeding timer session (started from the app or via the API) and is `null` when none is active. `leftDuration`/`rightDuration` are accrued seconds including time currently accruing on the active side.
 
 ---
 
@@ -307,6 +317,66 @@ Create a new activity record.
 | `other` | Auto-sets BOTTLE + bottleType "other" |
 
 Optional fields: `amount`, `unitAbbr`, `side` (LEFT/RIGHT/BOTH), `food`, `notes`, `bottleType`
+
+**Log a completed breastfeed with known duration:**
+```json
+{
+  "type": "feed",
+  "feedType": "BREAST",
+  "side": "LEFT",
+  "duration": 15
+}
+```
+
+`duration` is in minutes (matching sleep and pump). The entry is created with `startTime = time`, `endTime = time + duration`, and `feedDuration` (seconds), so it appears as a timed feed in the app.
+
+##### Breastfeeding timer (start/stop)
+
+Breastfeeds also support timer actions backed by the same live session as the in-app timer — a feed started via the API shows as active in the app (and vice versa), and can be controlled from either surface.
+
+**Start a session (requires `side`):**
+```json
+{
+  "type": "feed",
+  "feedType": "BREAST",
+  "action": "start",
+  "side": "LEFT"
+}
+```
+
+**Switch sides / pause / resume the active session:**
+```json
+{ "type": "feed", "feedType": "BREAST", "action": "switch" }
+{ "type": "feed", "feedType": "BREAST", "action": "pause" }
+{ "type": "feed", "feedType": "BREAST", "action": "resume", "side": "RIGHT" }
+```
+
+`resume` optionally accepts a `side`; without it the previously active side resumes.
+
+**End the session:**
+```json
+{
+  "type": "feed",
+  "feedType": "BREAST",
+  "action": "end"
+}
+```
+
+Ending creates one `FeedLog` per side that accrued time (with `startTime`, `endTime`, `feedDuration` in seconds, linked by a shared `sessionId` so they count as one nursing session) and returns the created log ids and durations.
+
+**action:** `start`, `switch`, `pause`, `resume`, `end`, or `log` (default when omitted)
+
+Timer action responses include the live session state: `activeSide`, `isPaused`, `leftDuration`/`rightDuration` (seconds), and `isActive`.
+
+**Feed-specific error codes:**
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `INVALID_ACTION` | 400 | Unknown action, or a timer action used with a non-BREAST feedType |
+| `SIDE_REQUIRED` | 400 | `action: "start"` without a LEFT/RIGHT side |
+| `FEED_ALREADY_ACTIVE` | 409 | `start` while a session is already active for this baby |
+| `NO_ACTIVE_FEED` | 400 | `switch`/`pause`/`resume`/`end` with no active session |
+| `INVALID_DURATION` | 400 | `duration` is not a positive number of minutes |
 
 #### Diaper
 
@@ -402,13 +472,14 @@ Optional fields: `leftAmount`, `rightAmount`, `unitAbbr`, `pumpAction` (STORED/U
 ```json
 {
   "type": "bath",
+  "bathType": "Sponge Bath",
   "soapUsed": true,
   "shampooUsed": false,
   "notes": "Quick sponge bath"
 }
 ```
 
-All fields optional. `soapUsed` and `shampooUsed` default to `true`.
+All fields optional. `soapUsed` and `shampooUsed` default to `true`. `bathType` is a free-form string (the app's defaults are `Full Bath`, `Sponge Bath`, and `Wipe Down`, but any custom value used in the app is valid).
 
 #### Measurement
 

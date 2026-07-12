@@ -441,6 +441,8 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   if ('soapUsed' in activity) {
     const bathDetails = [
       { label: t('Time'), value: formatTime(activity.time, settings, true, t) },
+      // Custom bath types pass through t() unchanged; defaults get translated
+      ...((activity as any).bathType ? [{ label: t('Bath Type'), value: t((activity as any).bathType) }] : []),
       { label: t('Soap Used'), value: activity.soapUsed ? t('Yes') : t('No') },
       { label: t('Shampoo Used'), value: activity.shampooUsed ? t('Yes') : t('No') },
     ];
@@ -862,9 +864,11 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       notes = notes.slice(0, 30) + '...';
     }
     
+    const bathType = (activity as any).bathType ? t((activity as any).bathType) : '';
+
     return {
       type: t('Bath'),
-      details: [time, bath, notes].filter(Boolean).join(' • ')
+      details: [time, bathType, bath, notes].filter(Boolean).join(' • ')
     };
   }
   

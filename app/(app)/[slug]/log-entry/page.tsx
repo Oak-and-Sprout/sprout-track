@@ -249,6 +249,23 @@ function HomeContent(): React.ReactElement {
     }
   };
 
+  const handleFeedSwap = async () => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=swap`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkFeedStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error correcting feed side:', error);
+    }
+  };
+
   const handleFeedPause = async () => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
@@ -614,6 +631,7 @@ function HomeContent(): React.ReactElement {
         onSwitch={handleFeedSwitch}
         onPause={handleFeedPause}
         onResume={handleFeedResume}
+        onSwap={handleFeedSwap}
         onSuccess={async () => {
           if (selectedBaby?.id) {
             triggerRefresh();

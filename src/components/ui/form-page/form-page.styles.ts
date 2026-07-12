@@ -41,7 +41,9 @@ export const formPageStyles = {
   closeButton: "text-gray-500 hover:text-gray-700 transition-colors duration-200 p-2 rounded-full hover:bg-slate-100/80",
   
   // Content container (scrollable area)
-  content: "flex-1 overflow-y-auto p-4 pb-20", // Added bottom padding to ensure content doesn't get hidden behind fixed footer
+  // scrollbar-gutter keeps the scrollbar's space reserved so form fields don't
+  // resize when an open dropdown's scroll-lock hides/restores the scrollbar
+  content: "flex-1 overflow-y-auto [scrollbar-gutter:stable] p-4 pb-20", // Added bottom padding to ensure content doesn't get hidden behind fixed footer
   
   // Form content alignment for mobile and desktop
   formContent: "flex flex-col space-y-6 mx-auto max-w-md sm:mx-0",

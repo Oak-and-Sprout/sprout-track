@@ -39,6 +39,7 @@ interface FeedFormProps {
   onSwitch?: () => void;
   onPause?: () => void;
   onResume?: (side: 'LEFT' | 'RIGHT') => void;
+  onSwap?: () => void;
 }
 
 export default function FeedForm({
@@ -54,6 +55,7 @@ export default function FeedForm({
   onSwitch,
   onPause,
   onResume,
+  onSwap,
 }: FeedFormProps) {
   const { t } = useLocalization();
   const { formatDate, toUTCString } = useTimezone();
@@ -1187,6 +1189,19 @@ export default function FeedForm({
                       </>
                     )}
                   </div>
+                  {onSwap && (
+                    <div className="flex justify-center mt-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onSwap}
+                        title={t('Reassign the time recorded so far to the other side')}
+                      >
+                        {t('Started on the wrong side? Fix it')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1346,7 +1361,18 @@ export default function FeedForm({
                 activeBreast={formData.activeBreast}
                 isTimerRunning={isTimerRunning}
                 loading={loading}
-                onSideChange={(side) => setFormData({ ...formData, side })}
+                onSideChange={(side) => setFormData(prev => {
+                  if (!side || side === prev.side) return { ...prev, side };
+                  // Move the entered duration to the newly selected side
+                  const total = prev.leftDuration + prev.rightDuration;
+                  return {
+                    ...prev,
+                    side,
+                    leftDuration: side === 'LEFT' ? total : 0,
+                    rightDuration: side === 'RIGHT' ? total : 0,
+                    feedDuration: total,
+                  };
+                })}
                 onTimerStart={startTimer}
                 onTimerStop={stopTimer}
                 onDurationChange={(breast, seconds) => {

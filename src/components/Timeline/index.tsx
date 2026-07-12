@@ -300,7 +300,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-192px)]">
+    <div className="flex flex-col h-[calc(100vh-199px)]">
       {/* Header */}
       <CardHeader className="bg-gradient-to-r from-teal-600 to-teal-700 p-0">
         <TimelineFilter

@@ -90,10 +90,12 @@ The component dynamically shows different fields based on the selected feeding t
 
 ### Breast Feeding (BreastFeedForm)
 - **Side**: Which breast was used (Left or Right) (required)
+  - Editable when editing an existing record: a Left/Right toggle changes the recorded side, and the entered duration follows the newly selected side
 - **Duration**: Timer for tracking feeding duration with:
   - Start/pause controls for real-time tracking
   - Editable hours, minutes, and seconds fields for manual adjustment
   - Separate tracking for each breast's feeding time
+- **Active session side correction**: while a live session is running (or paused), a "Started on the wrong side? Fix it" button reassigns the time accrued so far to the other side via `PUT /api/active-breastfeed?action=swap` (distinct from Switch Side, which changes which side accrues time going forward)
 
 ### Bottle Feeding (BottleFeedForm)
 - **Amount**: Amount of milk/formula (with increment/decrement buttons)

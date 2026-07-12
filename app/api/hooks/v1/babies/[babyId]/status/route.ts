@@ -71,7 +71,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   const today = startOfTodayInTimezone(timezone);
 
   // Fetch last activities in parallel
-  const [lastFeed, lastDiaper, lastSleep, lastBath, lastMedicine, lastSupplement, lastPump] = await Promise.all([
+  const [lastFeed, lastDiaper, lastSleep, lastBath, lastMedicine, lastSupplement, lastPump, activeBreastFeed] = await Promise.all([
     prisma.feedLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { caretaker: { select: { name: true } }, unit: { select: { unitAbbr: true } } } }),
     prisma.diaperLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { time: 'desc' }, include: { caretaker: { select: { name: true } } } }),
     prisma.sleepLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { startTime: 'desc' }, include: { caretaker: { select: { name: true } } } }),
@@ -79,6 +79,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     prisma.medicineLog.findFirst({ where: { babyId, deletedAt: null, medicine: { isSupplement: false } }, orderBy: { time: 'desc' }, include: { medicine: { select: { name: true } } } }),
     prisma.medicineLog.findFirst({ where: { babyId, deletedAt: null, medicine: { isSupplement: true } }, orderBy: { time: 'desc' }, include: { medicine: { select: { name: true } } } }),
     prisma.pumpLog.findFirst({ where: { babyId, deletedAt: null }, orderBy: { startTime: 'desc' } }),
+    prisma.activeBreastFeed.findUnique({ where: { babyId } }),
   ]);
 
   // Fetch daily counts in parallel
@@ -169,6 +170,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     bath: lastBath ? {
       time: lastBath.time.toISOString(),
       minutesAgo: minutesAgo(lastBath.time),
+      bathType: lastBath.bathType,
     } : null,
     medicine: lastMedicine ? {
       time: lastMedicine.time.toISOString(),
@@ -189,6 +191,11 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     } : null,
   };
 
+  // Live breastfeed timer state (fold in time accruing on the active side)
+  const activeFeedElapsed = activeBreastFeed && activeBreastFeed.currentSideStartTime && !activeBreastFeed.isPaused
+    ? Math.floor((Date.now() - activeBreastFeed.currentSideStartTime.getTime()) / 1000)
+    : 0;
+
   const data = {
     baby: {
       id: baby!.id,
@@ -196,6 +203,14 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
       ageInDays,
     },
     lastActivities,
+    activeFeed: activeBreastFeed ? {
+      sessionStartTime: activeBreastFeed.sessionStartTime.toISOString(),
+      minutesAgo: minutesAgo(activeBreastFeed.sessionStartTime),
+      activeSide: activeBreastFeed.activeSide,
+      isPaused: activeBreastFeed.isPaused,
+      leftDuration: activeBreastFeed.leftDuration + (activeBreastFeed.activeSide === 'LEFT' ? activeFeedElapsed : 0),
+      rightDuration: activeBreastFeed.rightDuration + (activeBreastFeed.activeSide === 'RIGHT' ? activeFeedElapsed : 0),
+    } : null,
     dailyCounts: {
       date: localDateString(today, timezone),
       // A left+right nursing session is stored as two rows but is one feed;

@@ -437,7 +437,9 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-192px)]">
+    // app header (80px + 1px border) + activity tile row (117px) + 1px rounding margin —
+    // undershooting this budget gives the whole page a scrollbar
+    <div className="flex flex-col h-[calc(100vh-199px)]">
       {/* Daily Stats with Integrated Date Navigation */}
       <TimelineV2DailyStats
         activities={dateFilteredActivities}

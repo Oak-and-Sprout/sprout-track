@@ -228,6 +228,15 @@ export default function ApiGuide({ babies }: ApiGuideProps) {
                 type: 'sleep', sleepType: 'NAP', action: 'start',
               })}
             />
+            <div className="mt-2">
+              <p className="text-xs text-gray-400 mb-1">Feed timer actions (BREAST only): start, switch, pause, resume, end. Or log a completed feed with duration (minutes).</p>
+            </div>
+            <CopyableCodeBlock
+              label={t('Breastfeed Timer Example')}
+              code={buildCurl('POST', `/babies/${sampleBabyId}/activities`, {
+                type: 'feed', feedType: 'BREAST', action: 'start', side: 'LEFT',
+              })}
+            />
           </AccordionContent>
         </AccordionItem>
 

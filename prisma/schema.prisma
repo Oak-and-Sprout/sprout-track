@@ -487,6 +487,7 @@ model Settings {
   defaultTempUnit     String   @default("F") // Default unit for temperature
   activitySettings    String? // JSON string for activity order and visibility settings
   sleepLocationSettings String? // JSON string for hidden sleep locations
+  bathTypeSettings    String? // JSON string for hidden bath types
   nurseryModeSettings String? // JSON string for nursery mode settings per caretaker
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
@@ -631,6 +632,7 @@ model PlayLog {
 model BathLog {
   id          String    @id @default(uuid())
   time        DateTime // Single time when the bath occurred
+  bathType    String? // e.g. "Full Bath", "Sponge Bath", "Wipe Down", or custom value
   soapUsed    Boolean   @default(true)
   shampooUsed Boolean   @default(true)
   notes       String?

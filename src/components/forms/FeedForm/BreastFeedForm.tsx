@@ -272,7 +272,36 @@ export default function BreastFeedForm({
   if (isEditing) {
     return (
       <div className="feed-form-container">
-                <Label className="form-label">{t('Duration -')} {side === 'LEFT' ? t('Left') : t('Right')} {t('Side')}</Label>
+        <Label className="form-label">{t('Side')}</Label>
+        <div className="flex gap-4 justify-center py-2">
+          <Button
+            type="button"
+            variant={side === 'LEFT' ? 'default' : 'outline'}
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              if (side !== 'LEFT') onSideChange('LEFT');
+            }}
+            disabled={loading || isTimerRunning}
+            className="flex-1 max-w-xs"
+          >
+            {t('Left Side')}
+          </Button>
+          <Button
+            type="button"
+            variant={side === 'RIGHT' ? 'default' : 'outline'}
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              if (side !== 'RIGHT') onSideChange('RIGHT');
+            }}
+            disabled={loading || isTimerRunning}
+            className="flex-1 max-w-xs"
+          >
+            {t('Right Side')}
+          </Button>
+        </div>
+        <Label className="form-label">{t('Duration -')} {side === 'LEFT' ? t('Left') : t('Right')} {t('Side')}</Label>
         <div className="flex flex-col items-center space-y-4 py-4">
           {side === 'LEFT' ? (
             <TimerInput
