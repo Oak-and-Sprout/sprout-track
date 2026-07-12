@@ -403,9 +403,17 @@ function HomeContent(): React.ReactElement {
     if (data.lastFeedTime) {
       setLastFeedTime(prev => ({ ...prev, [selectedBaby.id]: data.lastFeedTime! }));
     }
-    if (data.lastFeedEndTime) {
-      setLastFeedEndTime(prev => ({ ...prev, [selectedBaby.id]: data.lastFeedEndTime! }));
-    }
+    // Always sync (set or clear) so a stale end time from an older breast feed
+    // doesn't linger after a feed with no end time (e.g. bottle) becomes the latest
+    setLastFeedEndTime(prev => {
+      const next = { ...prev };
+      if (data.lastFeedEndTime) {
+        next[selectedBaby.id] = data.lastFeedEndTime;
+      } else {
+        delete next[selectedBaby.id];
+      }
+      return next;
+    });
     if (data.lastDiaperTime) {
       setLastDiaperTime(prev => ({ ...prev, [selectedBaby.id]: data.lastDiaperTime! }));
     }
