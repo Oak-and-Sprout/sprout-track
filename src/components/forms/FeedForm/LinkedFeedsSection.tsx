@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { FeedLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
@@ -44,6 +44,8 @@ export default function LinkedFeedsSection({
 }: LinkedFeedsSectionProps) {
   const { t } = useLocalization();
   const { formatDateTime } = useTimezone();
+  const sessionLabelId = useId();
+  const nearbyLabelId = useId();
   const { showToast } = useToast();
   const [nearbyFeeds, setNearbyFeeds] = useState<FeedLogResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -194,17 +196,17 @@ export default function LinkedFeedsSection({
 
   return (
     <div className="mt-4 linked-feeds-section">
-      <Label className="form-label">{t('Nursing Session')}</Label>
+      <Label className="form-label" id={sessionLabelId}>{t('Nursing Session')}</Label>
       <p className="text-xs text-gray-500 mb-2 linked-feeds-hint">
         {t('Feeds linked into this session count as one feeding.')}
       </p>
-      <div className="space-y-1">
+      <div className="space-y-1" role="group" aria-labelledby={sessionLabelId}>
         {members.map(m => renderRow(m, true))}
       </div>
       {!readOnly && (feedBefore || feedAfter) && (
         <>
-          <Label className="form-label mt-3 block">{t('Nearby feeds')}</Label>
-          <div className="space-y-1">
+          <Label className="form-label mt-3 block" id={nearbyLabelId}>{t('Nearby feeds')}</Label>
+          <div className="space-y-1" role="group" aria-labelledby={nearbyLabelId}>
             {feedBefore && renderRow(feedBefore, false)}
             {feedAfter && renderRow(feedAfter, false)}
           </div>

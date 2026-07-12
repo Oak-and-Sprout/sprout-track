@@ -469,9 +469,11 @@ export function NurseryModeContainer() {
                 </button>
                 {babySwitcherOpen && babies.length > 1 && (
                   <>
-                    <div
-                      className="fixed inset-0 z-[100]"
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-[100] bg-transparent border-none p-0 cursor-default"
                       onClick={() => setBabySwitcherOpen(false)}
+                      aria-label={t('Close')}
                     />
                     <div
                       className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
@@ -561,9 +563,11 @@ export function NurseryModeContainer() {
                 </button>
                 {babySwitcherOpen && babies.length > 1 && (
                   <>
-                    <div
-                      className="fixed inset-0 z-[100]"
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-[100] bg-transparent border-none p-0 cursor-default"
                       onClick={() => setBabySwitcherOpen(false)}
+                      aria-label={t('Close')}
                     />
                     <div
                       className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"

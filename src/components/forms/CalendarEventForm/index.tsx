@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { cn } from '@/src/lib/utils';
 import { CalendarEventFormProps, CalendarEventFormData, CalendarEventFormErrors } from './calendar-event-form.types';
 import { Baby, Caretaker, Contact } from '@/src/components/CalendarEvent/calendar-event.types';
@@ -46,7 +46,8 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
 }) => {
   const { t } = useLocalization();
   const { showToast } = useToast();
-  
+  const formId = useId();
+
   // Helper function to get initial form data
   const getInitialFormData = (
     eventData: CalendarEventFormData | undefined, 
@@ -451,13 +452,13 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
 
               {/* Event type */}
               <div className={styles.fieldGroup}>
-                <Label htmlFor="type">
+                <Label htmlFor={`${formId}-type`} id={`${formId}-type-label`}>
                   {t('Event Type')}
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
+                    <Button id={`${formId}-type`} aria-labelledby={`${formId}-type-label ${formId}-type`} variant="outline" className="w-full justify-between">
                       {formData.type.charAt(0) + formData.type.slice(1).toLowerCase().replace('_', ' ')}
                     </Button>
                   </DropdownMenuTrigger>

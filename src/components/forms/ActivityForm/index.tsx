@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { PlayLogResponse, ActiveActivityResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -77,6 +77,7 @@ export default function ActivityForm({
   prefillData,
 }: ActivityFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -524,8 +525,9 @@ export default function ActivityForm({
 
             {/* Duration */}
             <div>
-              <label className="form-label">{t('Duration (minutes)')}</label>
+              <label htmlFor={`${formId}-duration`} className="form-label">{t('Duration (minutes)')}</label>
               <Input
+                id={`${formId}-duration`}
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
@@ -539,11 +541,12 @@ export default function ActivityForm({
             {/* Sub-Category (not for Tummy Time) */}
             {playType !== 'TUMMY_TIME' && (
               <div>
-                <label className="form-label">{t('Sub-Category')}</label>
+                <label htmlFor={`${formId}-subcategory`} className="form-label">{t('Sub-Category')}</label>
                 <div className="relative">
                   <div className="relative w-full">
                     <div className="flex items-center w-full">
                       <Input
+                        id={`${formId}-subcategory`}
                         ref={inputRef}
                         value={subCategory}
                         onChange={handleCategoryInputChange}
@@ -607,8 +610,9 @@ export default function ActivityForm({
 
             {/* Notes */}
             <div>
-              <label className="form-label">{t('Notes')}</label>
+              <label htmlFor={`${formId}-notes`} className="form-label">{t('Notes')}</label>
               <Textarea
+                id={`${formId}-notes`}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full min-h-[80px]"

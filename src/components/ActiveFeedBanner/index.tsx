@@ -88,18 +88,22 @@ export default function ActiveFeedBanner({
       {/* Active state */}
       {!activeFeed.isPaused && (
         <div className="flex items-center justify-between">
-          <div className="flex flex-col min-w-0">
+          <button
+            type="button"
+            className="flex flex-col min-w-0 text-left"
+            onClick={(e) => { e.stopPropagation(); onOpenForm(); }}
+          >
             <span className="text-xs font-medium banner-label">
               {activeFeed.activeSide === 'LEFT' ? t('Left Side') : t('Right Side')}
             </span>
             <span className="text-2xl font-mono font-bold banner-timer">
               {formatDuration(activeSideTotal)}
             </span>
-            <div className="flex gap-3 text-xs banner-subtimes mt-0.5">
+            <span className="flex gap-3 text-xs banner-subtimes mt-0.5">
               <span>L: {formatDuration(leftTotal)}</span>
               <span>R: {formatDuration(rightTotal)}</span>
-            </div>
-          </div>
+            </span>
+          </button>
           <div className="flex gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -132,15 +136,19 @@ export default function ActiveFeedBanner({
       {/* Paused state */}
       {activeFeed.isPaused && (
         <div className="flex items-center justify-between">
-          <div className="flex flex-col min-w-0">
+          <button
+            type="button"
+            className="flex flex-col min-w-0 text-left"
+            onClick={(e) => { e.stopPropagation(); onOpenForm(); }}
+          >
             <span className="text-xs font-medium banner-paused-label">
               {t('Breastfeeding Paused')}
             </span>
-            <div className="flex gap-3 text-sm font-mono font-semibold banner-subtimes mt-0.5">
+            <span className="flex gap-3 text-sm font-mono font-semibold banner-subtimes mt-0.5">
               <span>L: {formatDuration(leftTotal)}</span>
               <span>R: {formatDuration(rightTotal)}</span>
-            </div>
-          </div>
+            </span>
+          </button>
           <div className="flex gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"

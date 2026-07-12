@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { BreastSide } from '@prisma/client';
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
@@ -66,6 +66,7 @@ export default function BreastFeedForm({
 }: BreastFeedFormProps) {
 
   const { t } = useLocalization();
+  const notesId = useId();
   const [isEditingLeft, setIsEditingLeft] = useState(false);
   const [isEditingRight, setIsEditingRight] = useState(false);
   
@@ -453,9 +454,9 @@ export default function BreastFeedForm({
       </div>
       {onNotesChange && (
         <div className="mt-6">
-          <label className="form-label">{t('Notes')}</label>
+          <label htmlFor={notesId} className="form-label">{t('Notes')}</label>
           <Textarea
-            id="notes"
+            id={notesId}
             name="notes"
             placeholder={t("Enter any notes about the feeding")}
             value={notes}

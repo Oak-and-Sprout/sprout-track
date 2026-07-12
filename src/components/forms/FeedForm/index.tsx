@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { FeedType, BreastSide } from '@prisma/client';
 import { FeedLogResponse, ActiveBreastFeedResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -58,6 +58,7 @@ export default function FeedForm({
   onSwap,
 }: FeedFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -956,8 +957,8 @@ export default function FeedForm({
             )}
 
             {/* Time Selection - Full width on all screens */}
-            <div>
-              <label className="form-label">{t('Time')}</label>
+            <div role="group" aria-labelledby={`${formId}-time-label`}>
+              <label id={`${formId}-time-label`} className="form-label">{t('Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -968,8 +969,8 @@ export default function FeedForm({
             
             {/* Feed Type Selection - Full width on all screens */}
             <div>
-              <label className="form-label">{t('Type')}</label>
-              <div className="flex justify-between items-center gap-3 mt-2">
+              <label id={`${formId}-type-label`} className="form-label">{t('Type')}</label>
+              <div className="flex justify-between items-center gap-3 mt-2" role="group" aria-labelledby={`${formId}-type-label`}>
                   {/* Breast Feed Button */}
                   <button
                     type="button"
@@ -1045,10 +1046,12 @@ export default function FeedForm({
                   <h3 className="text-sm font-medium mb-3 active-breast-session-title">{t('Active Breastfeed Session')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className={`text-center p-3 rounded-lg ${activeFeedData.activeSide === 'LEFT' && !activeFeedData.isPaused ? 'timer-active-side border-2' : ''}`}>
-                      <label className="form-label text-xs">{t('Left')}</label>
+                      <label htmlFor={activeFeedData.isPaused ? `${formId}-session-left-min` : undefined} className="form-label text-xs">{t('Left')}</label>
                       {activeFeedData.isPaused ? (
                         <div className="flex items-center justify-center gap-1 mt-1">
                           <Input
+                            id={`${formId}-session-left-min`}
+                            aria-label={t('Left minutes')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1068,6 +1071,7 @@ export default function FeedForm({
                           />
                           <span className="text-lg font-mono active-breast-session-title">:</span>
                           <Input
+                            aria-label={t('Left seconds')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1093,10 +1097,12 @@ export default function FeedForm({
                       )}
                     </div>
                     <div className={`text-center p-3 rounded-lg ${activeFeedData.activeSide === 'RIGHT' && !activeFeedData.isPaused ? 'timer-active-side border-2' : ''}`}>
-                      <label className="form-label text-xs">{t('Right')}</label>
+                      <label htmlFor={activeFeedData.isPaused ? `${formId}-session-right-min` : undefined} className="form-label text-xs">{t('Right')}</label>
                       {activeFeedData.isPaused ? (
                         <div className="flex items-center justify-center gap-1 mt-1">
                           <Input
+                            id={`${formId}-session-right-min`}
+                            aria-label={t('Right minutes')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1116,6 +1122,7 @@ export default function FeedForm({
                           />
                           <span className="text-lg font-mono active-breast-session-title">:</span>
                           <Input
+                            aria-label={t('Right seconds')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1209,8 +1216,8 @@ export default function FeedForm({
             {formData.type === 'BREAST' && !isFeeding && !activity && !manualEntry && (
               /* Start Feed mode - side selector + start button */
               <div className="space-y-4">
-                <label className="form-label">{t('Select Side to Start')}</label>
-                <div className="flex gap-4 justify-center">
+                <label id={`${formId}-side-label`} className="form-label">{t('Select Side to Start')}</label>
+                <div className="flex gap-4 justify-center" role="group" aria-labelledby={`${formId}-side-label`}>
                   <Button
                     type="button"
                     variant="outline"
@@ -1264,9 +1271,11 @@ export default function FeedForm({
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-3 rounded-lg">
-                      <label className="form-label text-xs">{t('Left')}</label>
+                      <label htmlFor={`${formId}-manual-left-min`} className="form-label text-xs">{t('Left')}</label>
                       <div className="flex items-center justify-center gap-1 mt-1">
                         <Input
+                          id={`${formId}-manual-left-min`}
+                          aria-label={t('Left minutes')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"
@@ -1286,6 +1295,7 @@ export default function FeedForm({
                         />
                         <span className="text-lg font-mono active-breast-session-title">:</span>
                         <Input
+                          aria-label={t('Left seconds')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"
@@ -1306,9 +1316,11 @@ export default function FeedForm({
                       </div>
                     </div>
                     <div className="text-center p-3 rounded-lg">
-                      <label className="form-label text-xs">{t('Right')}</label>
+                      <label htmlFor={`${formId}-manual-right-min`} className="form-label text-xs">{t('Right')}</label>
                       <div className="flex items-center justify-center gap-1 mt-1">
                         <Input
+                          id={`${formId}-manual-right-min`}
+                          aria-label={t('Right minutes')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"
@@ -1328,6 +1340,7 @@ export default function FeedForm({
                         />
                         <span className="text-lg font-mono active-breast-session-title">:</span>
                         <Input
+                          aria-label={t('Right seconds')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { MedicineWithContacts, MedicineLogFormData } from '../MedicineForm/medicine-form.types';
 import { Loader2, AlertCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
@@ -56,6 +56,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
 }) => {
 
   const { t } = useLocalization();
+  const formId = useId();
   const { unitName, unitSymbol } = useUnit();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
@@ -378,7 +379,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                 <Label htmlFor="medicine">{isSupplement ? t('Supplement') : t('Medicine')}</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
+                    <Button variant="outline" className="w-full justify-between" aria-invalid={errors.medicineId ? true : undefined} aria-describedby={errors.medicineId ? `${formId}-medicineId-error` : undefined}>
                       {selectedMedicine ? selectedMedicine.name : (isSupplement ? t('Select a supplement') : t('Select a medicine'))}
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
@@ -393,20 +394,20 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                {errors.medicineId && <p className="text-sm text-red-500 mt-1">{errors.medicineId}</p>}
+                {errors.medicineId && <p id={`${formId}-medicineId-error`} role="alert" className="text-sm text-red-500 mt-1">{errors.medicineId}</p>}
               </div>
 
               <div>
                 <Label htmlFor="time">{t('Time')}</Label>
                 <DateTimePicker value={selectedDateTime} onChange={handleDateTimeChange} />
-                {errors.time && <p className="text-sm text-red-500 mt-1">{errors.time}</p>}
+                {errors.time && <p id={`${formId}-time-error`} role="alert" className="text-sm text-red-500 mt-1">{errors.time}</p>}
               </div>
 
               <div>
-                <Label htmlFor="dose">{t('Dose')}</Label>
+                <Label htmlFor={`${formId}-doseAmount`}>{t('Dose')}</Label>
                 <div className="flex items-center space-x-2">
                   <Input
-                    id="doseAmount"
+                    id={`${formId}-doseAmount`}
                     name="doseAmount"
                     type="text"
                     inputMode="decimal"
@@ -415,10 +416,12 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                     onBlur={handleNumberBlur}
                     className="flex-1"
                     placeholder={t("Enter dose amount")}
+                    aria-invalid={errors.doseAmount ? true : undefined}
+                    aria-describedby={errors.doseAmount ? `${formId}-doseAmount-error` : undefined}
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="min-w-[70px]">
+                      <Button variant="outline" className="min-w-[70px]" aria-invalid={errors.unitAbbr ? true : undefined} aria-describedby={errors.unitAbbr ? `${formId}-unitAbbr-error` : undefined}>
                         {formData.unitAbbr || t('Unit')}
                       </Button>
                     </DropdownMenuTrigger>
@@ -431,15 +434,15 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                {errors.doseAmount && <p className="text-sm text-red-500 mt-1">{errors.doseAmount}</p>}
-                {errors.unitAbbr && <p className="text-sm text-red-500 mt-1">{errors.unitAbbr}</p>}
+                {errors.doseAmount && <p id={`${formId}-doseAmount-error`} role="alert" className="text-sm text-red-500 mt-1">{errors.doseAmount}</p>}
+                {errors.unitAbbr && <p id={`${formId}-unitAbbr-error`} role="alert" className="text-sm text-red-500 mt-1">{errors.unitAbbr}</p>}
               </div>
 
               <div>
-                <Label htmlFor="notes">{t('Notes (optional)')}</Label>
-                <Textarea 
-                  id="notes" 
-                  name="notes" 
+                <Label htmlFor={`${formId}-notes`}>{t('Notes (optional)')}</Label>
+                <Textarea
+                  id={`${formId}-notes`}
+                  name="notes"
                   value={formData.notes} 
                   onChange={handleChange}
                   placeholder={t("Enter any additional notes about this medicine administration")}

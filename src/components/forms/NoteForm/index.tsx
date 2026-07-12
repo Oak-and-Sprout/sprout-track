@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { NoteResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -76,6 +76,10 @@ export default function NoteForm({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const formId = useId();
+  const timeLabelId = `${formId}-time-label`;
+  const categoryInputId = `${formId}-category`;
+  const contentInputId = `${formId}-content`;
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -396,8 +400,8 @@ export default function NoteForm({
           <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* Time Selection - Full width on all screens */}
-            <div>
-              <label className="form-label">{t('Time')}</label>
+            <div role="group" aria-labelledby={timeLabelId}>
+              <label className="form-label" id={timeLabelId}>{t('Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -408,12 +412,13 @@ export default function NoteForm({
             
             {/* Category Selection - Full width on all screens */}
             <div>
-              <label className="form-label">{t('Category')}</label>
+              <label className="form-label" htmlFor={categoryInputId}>{t('Category')}</label>
               <div className="relative">
                 <div className="relative w-full">
                   <div className="flex items-center w-full">
                     <Input
                       ref={inputRef}
+                      id={categoryInputId}
                       value={formData.category}
                       onChange={handleCategoryInputChange}
                       onFocus={handleCategoryInputFocus}
@@ -474,8 +479,9 @@ export default function NoteForm({
               </div>
             </div>
             <div>
-              <label className="form-label">{t('Note')}</label>
+              <label className="form-label" htmlFor={contentInputId}>{t('Note')}</label>
               <Textarea
+                id={contentInputId}
                 value={formData.content}
                 onChange={(e) =>
                   setFormData({ ...formData, content: e.target.value })

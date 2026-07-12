@@ -447,7 +447,7 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
         className={cn(dailyStatsStyles.header, "cursor-pointer")}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className={dailyStatsStyles.title}>{t('Daily Stats')}</h3>
+        <h2 className={dailyStatsStyles.title}>{t('Daily Stats')}</h2>
         
         {!isExpanded && !isLoading && activities.length > 0 && (
           <StatsTicker 
@@ -494,8 +494,17 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
           />
         )}
         
-        <button className={dailyStatsStyles.toggle}>
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <button
+          type="button"
+          className={dailyStatsStyles.toggle}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? t('Collapse daily stats') : t('Expand daily stats')}
+        >
+          {isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
         </button>
       </div>
       

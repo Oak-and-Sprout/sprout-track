@@ -27,7 +27,7 @@ import './calendar.css';
  */
 export function Calendar({
  selectedBabyId, userTimezone, onDateSelect }: CalendarProps) {
-  const { t } = useLocalization();
+  const { t, language } = useLocalization();
   
   // Component state
   const [state, setState] = useState<CalendarState>({
@@ -386,7 +386,7 @@ export function Calendar({
       <div className="flex flex-col flex-grow overflow-hidden relative mt-1">
         {showUpArrow && (
           <div className="text-center h-4">
-            <ChevronUp className="h-4 w-4 mx-auto text-gray-400 cursor-pointer" onClick={(e) => handleEventScroll(e, date, 'up')} />
+            <ChevronUp aria-hidden="true" className="h-4 w-4 mx-auto text-gray-400 cursor-pointer" onClick={(e) => handleEventScroll(e, date, 'up')} />
           </div>
         )}
         <div className="flex-grow space-y-1 my-1">
@@ -421,7 +421,7 @@ export function Calendar({
         </div>
         {showDownArrow && (
           <div className="text-center h-4">
-            <ChevronDown className="h-4 w-4 mx-auto text-gray-400 cursor-pointer" onClick={(e) => handleEventScroll(e, date, 'down')} />
+            <ChevronDown aria-hidden="true" className="h-4 w-4 mx-auto text-gray-400 cursor-pointer" onClick={(e) => handleEventScroll(e, date, 'down')} />
           </div>
         )}
       </div>
@@ -505,16 +505,18 @@ export function Calendar({
               style={{ '--calendar-row-count': calendarRowCount } as React.CSSProperties}
             >
               {calendarDays.map((date, index) => (
-                <div 
-                  key={index} 
-                  className={`${getDayClass(date)} cursor-pointer`}
+                <button
+                  type="button"
+                  key={index}
+                  className={`${getDayClass(date)} cursor-pointer w-full text-left appearance-none`}
                   onClick={() => handleDayClick(date)}
+                  aria-label={date.toLocaleDateString(language, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 >
                   <span className={`text-xs ${isToday(date) ? 'font-bold text-teal-700 main-calendar-today-text' : ''}`}>
                     {date.getDate()}
                   </span>
                   {renderDayEvents(date)}
-                </div>
+                </button>
               ))}
             </div>
           </div>

@@ -35,9 +35,10 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
               const style = getActivityStyle(activity);
               const description = getActivityDescription(activity, settings, t);
               return (
-                <div
+                <button
+                  type="button"
                   key={activity.id}
-                  className={cn(styles.activityItem, "full-log-timeline-activity-item")}
+                  className={cn(styles.activityItem, "block w-full text-left", "full-log-timeline-activity-item")}
                   onClick={() => onActivitySelect(activity)}
                 >
                   <div className={cn(styles.activityContent, "full-log-timeline-activity-content")}>
@@ -55,7 +56,7 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })
           ) : !isLoading && (

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { formPageStyles, tabStyles } from './form-page.styles';
 import { useTheme } from '@/src/context/theme';
+import { useLocalization } from '@/src/context/localization';
 import './form-page.css';
 import { 
   FormPageProps, 
@@ -11,6 +13,12 @@ import {
   FormPageFooterProps,
   FormPageTab
 } from './form-page.types';
+
+// Stack of currently open form page panels; only the topmost traps focus
+const openPanelStack: HTMLElement[] = [];
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * FormPageHeader component
@@ -22,18 +30,33 @@ export function FormPageHeader({
   description,
   onClose,
   leadingAction,
+  titleId,
   className
 }: FormPageHeaderProps) {
   const { theme } = useTheme();
+  const { t } = useLocalization();
   return (
     <div className={cn(formPageStyles.header, className, "form-page-header")}>
       {leadingAction}
       <div className={formPageStyles.titleContainer}>
-        <h2 className={cn(formPageStyles.title, "form-page-title")}>{title}</h2>
+        <h2 id={titleId} className={cn(formPageStyles.title, "form-page-title")}>{title}</h2>
         {description && (
           <p className={cn(formPageStyles.description, "form-page-description")}>{description}</p>
         )}
       </div>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t('Close')}
+          className={cn(
+            formPageStyles.closeButton,
+            "form-page-close-button absolute right-2 top-[calc(50%+env(safe-area-inset-top)/2)] -translate-y-1/2"
+          )}
+        >
+          <X className="h-5 w-5" aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }
@@ -171,7 +194,9 @@ export function FormPage({
   className,
 }: FormPageProps) {
   const { theme } = useTheme();
-  
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
   // State to track if we're in a browser environment
   const [mounted, setMounted] = useState(false);
   
@@ -225,6 +250,56 @@ export function FormPage({
     };
   }, [isOpen, onClose]);
 
+  // Focus management: move focus into the panel on open, trap Tab within the
+  // topmost open panel, and restore focus on close
+  useEffect(() => {
+    if (!isOpen || !mounted) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    openPanelStack.push(panel);
+    panel.focus({ preventScroll: true });
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || e.defaultPrevented) return;
+      if (openPanelStack[openPanelStack.length - 1] !== panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((el) => el.offsetParent !== null);
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const inPanel = panel.contains(active);
+      // Focus inside portaled content (Radix popover/select/date picker) belongs
+      // to the form interaction — leave Tab handling to the portal
+      if (!inPanel && active !== document.body) return;
+      if (e.shiftKey) {
+        if (active === first || !inPanel) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !inPanel) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => {
+      document.removeEventListener('keydown', handleTabKey);
+      const index = openPanelStack.indexOf(panel);
+      if (index !== -1) openPanelStack.splice(index, 1);
+      if (previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus({ preventScroll: true });
+      }
+    };
+  }, [isOpen, mounted]);
+
   // Find the active tab content
   const activeTabContent = tabs?.find(tab => tab.id === currentActiveTab)?.content;
 
@@ -245,6 +320,8 @@ export function FormPage({
 
       {/* Form Page Panel */}
       <div
+        ref={panelRef}
+        tabIndex={-1}
         className={cn(
           formPageStyles.container,
           isOpen ? formPageStyles.containerOpen : formPageStyles.containerClosed,
@@ -253,7 +330,7 @@ export function FormPage({
         )}
         role="dialog"
         aria-modal="true"
-        aria-label="Form page"
+        aria-labelledby={titleId}
         style={{ isolation: 'isolate' }} // Create a new stacking context
       >
         <FormPageHeader
@@ -261,6 +338,7 @@ export function FormPage({
           description={description}
           onClose={onClose}
           leadingAction={leadingAction}
+          titleId={titleId}
         />
         
         {/* Tab navigation (if tabs are provided) */}

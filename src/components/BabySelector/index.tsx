@@ -54,9 +54,11 @@ export const BabySelector: React.FC<BabySelectorProps> = ({
   return (
     <div className={babySelectorContainer(selectedBaby?.gender)}>
       {/* Baby info section (clickable for quick stats) */}
-      <div 
+      <button
+        type="button"
         className={babySelectorContent()}
         onClick={onOpenQuickStats}
+        aria-label={selectedBaby ? `${selectedBaby.firstName}${t("'s Quick Stats")}` : undefined}
       >
         <div className={babySelectorNameContainer()}>
           <span className={babySelectorName()}>
@@ -71,7 +73,7 @@ export const BabySelector: React.FC<BabySelectorProps> = ({
             {calculateAge(selectedBaby.birthDate)}
           </span>
         )}
-      </div>
+      </button>
       
       {/* Dropdown button (separate from the main content) */}
       <DropdownMenu>

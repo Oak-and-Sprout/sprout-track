@@ -124,7 +124,7 @@ export interface FormPageHeaderProps {
 
   /**
    * Optional function to call when the form page should be closed
-   * (Not used in the header anymore as we rely on footer buttons)
+   * (renders a visible close button in the header when provided)
    */
   onClose?: () => void;
 
@@ -132,6 +132,11 @@ export interface FormPageHeaderProps {
    * Optional leading element rendered before the title (e.g. back button)
    */
   leadingAction?: ReactNode;
+
+  /**
+   * Optional id applied to the title heading (used for aria-labelledby)
+   */
+  titleId?: string;
 
   /**
    * Additional CSS classes for the header

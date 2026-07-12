@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { BathLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -51,6 +51,9 @@ export default function BathForm({
   const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
+  const formId = useId();
+  const bathTypeId = `${formId}-bath-type`;
+  const notesId = `${formId}-notes`;
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     try {
       // Try to parse the initialTime
@@ -380,7 +383,7 @@ export default function BathForm({
             {/* Bath Type */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>{t('Bath Type')}</Label>
+                <Label htmlFor={bathTypeId}>{t('Bath Type')}</Label>
                 <button
                   type="button"
                   onClick={() => setShowBathTypeManager(!showBathTypeManager)}
@@ -437,7 +440,7 @@ export default function BathForm({
                 }}
                 disabled={loading}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id={bathTypeId} className="w-full">
                   <SelectValue placeholder={t("Select bath type")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -498,9 +501,9 @@ export default function BathForm({
             
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">{t('Notes')}</Label>
+              <Label htmlFor={notesId}>{t('Notes')}</Label>
               <Textarea
-                id="notes"
+                id={notesId}
                 name="notes"
                 placeholder={t("Enter any notes about the bath")}
                 value={formData.notes}

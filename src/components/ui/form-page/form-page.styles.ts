@@ -8,7 +8,7 @@ import { cva } from "class-variance-authority";
  */
 export const formPageStyles = {
   // Main container
-  container: "fixed inset-y-0 right-0 z-[99] flex flex-col bg-white/95 backdrop-blur-sm transform transition-transform duration-300 ease-in-out w-full sm:max-w-lg md:max-w-xl border-l border-slate-200 overflow-hidden",
+  container: "fixed inset-y-0 right-0 z-[99] flex flex-col bg-white/95 backdrop-blur-sm transform transition-transform duration-300 ease-in-out w-full sm:max-w-lg md:max-w-xl border-l border-slate-200 overflow-hidden outline-none",
   
   // Container when open
   containerOpen: "translate-x-0",
@@ -26,10 +26,10 @@ export const formPageStyles = {
   overlayClosed: "opacity-0 pointer-events-none",
   
   // Header section
-  header: "flex items-center p-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-200",
+  header: "relative flex items-center p-4 pt-[calc(1rem+env(safe-area-inset-top))] border-b border-gray-200",
   
-  // Title container
-  titleContainer: "flex flex-col",
+  // Title container (right padding keeps long titles clear of the absolutely-positioned close button)
+  titleContainer: "flex flex-col pr-12",
   
   // Title
   title: "text-lg font-semibold text-slate-800",

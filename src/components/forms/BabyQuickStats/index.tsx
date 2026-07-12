@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useId } from 'react';
 import { BabyQuickStatsProps, TimePeriod } from './baby-quick-stats.types';
 import {
   quickStatsContainer,
@@ -132,7 +132,9 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   }, [selectedBaby, family?.id]);
 
   const { t } = useLocalization();
-  
+  const mainPeriodLabelId = useId();
+  const comparePeriodLabelId = useId();
+
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
 
@@ -466,8 +468,8 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               {/* Time period selectors */}
               <div className={timePeriodSelectorContainer()}>
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>{t('Main Period:')}</Label>
-                  <div className={timePeriodButtonGroup()}>
+                  <Label id={mainPeriodLabelId} className={timePeriodSelectorLabel()}>{t('Main Period:')}</Label>
+                  <div className={timePeriodButtonGroup()} role="group" aria-labelledby={mainPeriodLabelId}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
                         key={`main-${period}`}
@@ -482,8 +484,8 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                 </div>
                 
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>{t('Compare Period:')}</Label>
-                  <div className={timePeriodButtonGroup()}>
+                  <Label id={comparePeriodLabelId} className={timePeriodSelectorLabel()}>{t('Compare Period:')}</Label>
+                  <div className={timePeriodButtonGroup()} role="group" aria-labelledby={comparePeriodLabelId}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
                         key={`compare-${period}`}

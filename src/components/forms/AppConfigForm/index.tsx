@@ -585,7 +585,7 @@ export default function AppConfigForm({
                 <div className="space-y-4">
                   {/* Password Change Section */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">
+                    <Label htmlFor={!showPasswordChange ? 'adminPassword' : undefined} className="text-sm font-medium">
                       {t('Admin Password')}
                     </Label>
                     
@@ -593,6 +593,7 @@ export default function AppConfigForm({
                       <div className="flex gap-2">
                         <Input
                           type="password"
+                          id="adminPassword"
                           disabled
                           value="••••••"
                           className="flex-1 font-mono"
@@ -801,7 +802,7 @@ export default function AppConfigForm({
                     </Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
+                        <Button id="providerType" variant="outline" className="w-full justify-between">
                           <span>{emailFormData.providerType.replace('_', ' ')}</span>
                           <ChevronDown className="h-4 w-4" />
                         </Button>

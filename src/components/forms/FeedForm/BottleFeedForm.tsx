@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
@@ -50,6 +51,7 @@ export default function BottleFeedForm({
 }: BottleFeedFormProps) {
   const { t } = useLocalization();
   const { unitSymbol } = useUnit();
+  const formId = useId();
   const bottleTypes = ['Formula', 'Breast Milk', 'Formula\\Breast', 'Milk', 'Other'];
   
   return (
@@ -72,7 +74,7 @@ export default function BottleFeedForm({
       {bottleType === 'Formula\\Breast' ? (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="form-label mb-2">{t('Breast Milk Amount')} ({unitSymbol(unit)})</label>
+            <label htmlFor={`${formId}-breast-milk-amount`} className="form-label mb-2">{t('Breast Milk Amount')} ({unitSymbol(unit)})</label>
             <div className="flex items-center justify-center">
               <Button
                 type="button"
@@ -85,6 +87,7 @@ export default function BottleFeedForm({
                 <Minus className="h-4 w-4 text-white" />
               </Button>
               <Input
+                id={`${formId}-breast-milk-amount`}
                 type="text"
                 value={breastMilkAmount || ''}
                 onChange={(e) => onBreastMilkAmountChange?.(e.target.value)}
@@ -106,7 +109,7 @@ export default function BottleFeedForm({
             </div>
           </div>
           <div>
-            <label className="form-label mb-2">{t('Formula Amount')} ({unitSymbol(unit)})</label>
+            <label htmlFor={`${formId}-formula-amount`} className="form-label mb-2">{t('Formula Amount')} ({unitSymbol(unit)})</label>
             <div className="flex items-center justify-center">
               <Button
                 type="button"
@@ -119,6 +122,7 @@ export default function BottleFeedForm({
                 <Minus className="h-4 w-4 text-white" />
               </Button>
               <Input
+                id={`${formId}-formula-amount`}
                 type="text"
                 value={formulaAmount || ''}
                 onChange={(e) => onFormulaAmountChange?.(e.target.value)}
@@ -142,7 +146,7 @@ export default function BottleFeedForm({
         </div>
       ) : (
         <>
-          <label className="form-label mb-6">{t('Amount (')}{unitSymbol(unit)})</label>
+          <label htmlFor={`${formId}-amount`} className="form-label mb-6">{t('Amount (')}{unitSymbol(unit)})</label>
           <div className="flex items-center justify-center mb-6">
             <Button
               type="button"
@@ -155,6 +159,7 @@ export default function BottleFeedForm({
               <Minus className="h-5 w-5 text-white" />
             </Button>
             <Input
+              id={`${formId}-amount`}
               type="text"
               value={amount}
               onChange={(e) => onAmountChange(e.target.value)}
@@ -197,9 +202,9 @@ export default function BottleFeedForm({
         </Button>
       </div>
       <div className="mt-6">
-        <label className="form-label">{t('Notes')}</label>
+        <label htmlFor={`${formId}-notes`} className="form-label">{t('Notes')}</label>
         <Textarea
-          id="notes"
+          id={`${formId}-notes`}
           name="notes"
                     placeholder={t("Enter any notes about the feeding")}
           value={notes}

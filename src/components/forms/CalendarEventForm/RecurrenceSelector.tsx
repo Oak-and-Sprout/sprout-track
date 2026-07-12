@@ -38,6 +38,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
 }) => {
 
   const { t } = useLocalization();
+  const recurrencePatternLabelId = React.useId();
   // Format date for input
   const formatDateForInput = (date?: Date) => {  
 
@@ -75,11 +76,11 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
         <>
           {/* Recurrence pattern */}
           <div className={styles.fieldGroup}>
-            <label className="form-label">
+            <label id={recurrencePatternLabelId} className="form-label">
               {t('Recurrence Pattern')}
               <span className={styles.fieldRequired}>*</span>
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div role="group" aria-labelledby={recurrencePatternLabelId} className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {Object.values(RecurrencePattern).map((pattern) => (
                 <Button
                   key={pattern}

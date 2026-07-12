@@ -456,8 +456,14 @@ export default function NotificationSettings({
                   {/* Activity Created Preference */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm">{t('Activity Created')}</Label>
+                      <Label
+                        className="text-sm"
+                        htmlFor={`activity-created-${subscription.id}-${baby.id}`}
+                      >
+                        {t('Activity Created')}
+                      </Label>
                       <Switch
+                        id={`activity-created-${subscription.id}-${baby.id}`}
                         checked={
                           getPreference(
                             subscription.id,
@@ -558,8 +564,14 @@ export default function NotificationSettings({
                   {/* Feed Timer Expired Preference */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm">{t('Feed Timer Expired')}</Label>
+                      <Label
+                        className="text-sm"
+                        htmlFor={`feed-timer-expired-${subscription.id}-${baby.id}`}
+                      >
+                        {t('Feed Timer Expired')}
+                      </Label>
                       <Switch
+                        id={`feed-timer-expired-${subscription.id}-${baby.id}`}
                         checked={
                           getPreference(
                             subscription.id,
@@ -623,8 +635,14 @@ export default function NotificationSettings({
                   {/* Diaper Timer Expired Preference */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm">{t('Diaper Timer Expired')}</Label>
+                      <Label
+                        className="text-sm"
+                        htmlFor={`diaper-timer-expired-${subscription.id}-${baby.id}`}
+                      >
+                        {t('Diaper Timer Expired')}
+                      </Label>
                       <Switch
+                        id={`diaper-timer-expired-${subscription.id}-${baby.id}`}
                         checked={
                           getPreference(
                             subscription.id,
@@ -688,8 +706,14 @@ export default function NotificationSettings({
                   {/* Medicine Timer Expired Preference */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm">{t('Medicine Timer Expired')}</Label>
+                      <Label
+                        className="text-sm"
+                        htmlFor={`medicine-timer-expired-${subscription.id}-${baby.id}`}
+                      >
+                        {t('Medicine Timer Expired')}
+                      </Label>
                       <Switch
+                        id={`medicine-timer-expired-${subscription.id}-${baby.id}`}
                         checked={
                           getPreference(
                             subscription.id,

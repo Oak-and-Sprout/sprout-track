@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { Baby } from '@prisma/client';
 import { Key, Plus, Copy, Check, Trash2, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/src/components/ui/card';
@@ -40,6 +40,7 @@ interface ApiKeyManagerProps {
 
 export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) {
   const { t } = useLocalization();
+  const idPrefix = useId();
   const { dateFormat } = useTimezone();
   const { showToast } = useToast();
   const [apiKeys, setApiKeys] = useState<ApiKeyDisplay[]>([]);
@@ -222,11 +223,12 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
       {/* Created key success banner */}
       {createdKey && (
         <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-          <p className="text-sm font-medium text-emerald-800 mb-2">{t('API Key Created')}</p>
+          <p id={`${idPrefix}-created-key-label`} className="text-sm font-medium text-emerald-800 mb-2">{t('API Key Created')}</p>
           <p className="text-xs text-emerald-600 mb-3">{t('Copy this key now. It will not be shown again.')}</p>
           <div className="flex gap-2">
             <Input
               readOnly
+              aria-labelledby={`${idPrefix}-created-key-label`}
               value={createdKey}
               className="flex-1 font-mono text-xs bg-white"
             />
@@ -255,8 +257,9 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
         <Card className="mb-4">
         <CardContent className="p-4 space-y-3">
           <div>
-            <Label className="form-label">{t('Key Name')}</Label>
+            <Label htmlFor={`${idPrefix}-key-name`} className="form-label">{t('Key Name')}</Label>
             <Input
+              id={`${idPrefix}-key-name`}
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
               placeholder="e.g. Home Assistant, Nursery Button"
@@ -265,8 +268,8 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           </div>
 
           <div>
-            <Label className="form-label">{t('Scopes')}</Label>
-            <div className="flex gap-4 mt-1">
+            <Label id={`${idPrefix}-scopes-label`} className="form-label">{t('Scopes')}</Label>
+            <div role="group" aria-labelledby={`${idPrefix}-scopes-label`} className="flex gap-4 mt-1">
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -289,9 +292,9 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           </div>
 
           <div>
-            <Label className="form-label">{t('Baby Restriction')}</Label>
+            <Label htmlFor={`${idPrefix}-baby-restriction`} className="form-label">{t('Baby Restriction')}</Label>
             <Select value={newKeyBabyId} onValueChange={setNewKeyBabyId}>
-              <SelectTrigger className="mt-1">
+              <SelectTrigger id={`${idPrefix}-baby-restriction`} className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -306,15 +309,17 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           </div>
 
           <div>
-            <Label className="form-label">{t('Expiration')}</Label>
+            <Label htmlFor={`${idPrefix}-expiration`} className="form-label">{t('Expiration')}</Label>
             <Input
+              id={`${idPrefix}-expiration`}
               type="date"
               value={newKeyExpiration}
               onChange={(e) => setNewKeyExpiration(e.target.value)}
               className="mt-1"
               placeholder={t('Never')}
+              aria-describedby={`${idPrefix}-expiration-hint`}
             />
-            <p className="text-xs text-gray-500 mt-1">{t('Leave blank for no expiration')}</p>
+            <p id={`${idPrefix}-expiration-hint`} className="text-xs text-gray-500 mt-1">{t('Leave blank for no expiration')}</p>
           </div>
 
           <div className="flex gap-2 pt-2">

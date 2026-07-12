@@ -635,7 +635,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   };
 
   return (
-    <div className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10">
+    <section aria-label={t('Daily Summary')} className="overflow-hidden border-0 bg-white timeline-v2-daily-stats relative z-10">
       <div className="px-5 py-1 relative z-10">
         {/* Date Navigation Header */}
         <div className="flex items-center justify-center mb-2">
@@ -831,7 +831,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

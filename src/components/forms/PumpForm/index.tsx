@@ -620,13 +620,13 @@ export default function PumpForm({
 
                 {/* Amount */}
                 <div className="space-y-2">
-                  <Label>{t('Amount')}</Label>
+                  <Label htmlFor="adjustAmount">{t('Amount')}</Label>
                   <div className="flex items-center">
                     <Button type="button" variant="outline" size="icon" onClick={decrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
                       <Minus className="h-4 w-4 text-white" />
                     </Button>
                     <div className="flex mx-2">
-                      <Input type="text" inputMode="decimal" placeholder={t("0.0")} value={adjustAmount} onChange={(e) => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setAdjustAmount(e.target.value); }} className="rounded-r-none text-center text-lg w-24" />
+                      <Input id="adjustAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={adjustAmount} onChange={(e) => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setAdjustAmount(e.target.value); }} className="rounded-r-none text-center text-lg w-24" />
                       <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{unitSymbol(adjustUnit)}</div>
                     </div>
                     <Button type="button" variant="outline" size="icon" onClick={incrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
@@ -649,8 +649,8 @@ export default function PumpForm({
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <Label>{t('Notes')}</Label>
-                  <Textarea placeholder={t("Enter any notes")} value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} rows={3} disabled={loading} />
+                  <Label htmlFor="adjustNotes">{t('Notes')}</Label>
+                  <Textarea id="adjustNotes" placeholder={t("Enter any notes")} value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} rows={3} disabled={loading} />
                 </div>
               </div>
             </form>

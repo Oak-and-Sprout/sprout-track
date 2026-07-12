@@ -782,6 +782,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
     <>
       {shouldShowAppUI && (
         <div className="min-h-screen flex">
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-teal-700 focus:shadow-md"
+          >
+            {t('Skip to main content')}
+          </a>
           {/* Side Navigation - non-modal on wide screens */}
           {isWideScreen && (
             <SideNav
@@ -846,7 +852,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                           />
                         </div>
                       )}
-                      <span className="text-white text-sm font-medium">
+                      <h1 className="text-white text-sm font-medium">
                         {family?.name || familyName} - {pathname?.includes('/log-entry')
                           ? t('Log Entry')
                           : pathname?.includes('/calendar')
@@ -854,7 +860,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                           : pathname?.includes('/reports')
                           ? t('Reports')
                           : t('Full Log')}
-                      </span>
+                      </h1>
                     </div>
                   </div>
                   <div className="flex items-center mr-4 sm:mr-6 lg:mr-8">
@@ -876,7 +882,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             {/* Account Expiration Banner - shows for both account users and caretakers */}
             <AccountExpirationBanner isAccountAuth={isAccountAuth} />
             
-            <main className="flex-1 relative z-0">
+            <main id="main-content" className="flex-1 relative z-0">
               {children}
             </main>
           </div>
