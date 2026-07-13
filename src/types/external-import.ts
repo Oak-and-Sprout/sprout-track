@@ -88,4 +88,37 @@ export interface ExternalImportNoteRecord {
 export type ExternalImportRecord =
   | ExternalImportBabyRecord
   | ExternalImportSleepRecord
-  | ExternalImportNoteRecord;
+  | ExternalImportNoteRecord
+  | ExternalImportFeedRecord
+  | ExternalImportDiaperRecord;
+
+export interface ExternalImportFeedRecord {
+  readonly targetType: 'feed';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly time: string;
+  readonly type: 'BREAST' | 'BOTTLE' | 'SOLIDS';
+  readonly startTime?: string;
+  readonly endTime?: string;
+  readonly feedDuration?: number;
+  readonly side?: 'LEFT' | 'RIGHT';
+  readonly amount?: number;
+  readonly unitAbbr?: 'ML' | 'OZ';
+  readonly food?: string;
+  readonly notes?: string;
+  readonly bottleType?: 'Formula' | 'Breast Milk' | 'Other';
+}
+
+export interface ExternalImportDiaperRecord {
+  readonly targetType: 'diaper';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly time: string;
+  readonly type: 'WET' | 'DIRTY' | 'BOTH';
+  readonly color?: 'YELLOW' | 'BROWN' | 'GREEN' | 'BLACK';
+}
+
+export type ExternalImportFeedingAmountUnit =
+  | 'ML'
+  | 'OZ'
+  | 'SKIP';

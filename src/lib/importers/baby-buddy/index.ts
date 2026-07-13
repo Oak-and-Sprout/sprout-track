@@ -47,3 +47,8 @@ export {
   mapBabyBuddyRows,
   mapBabyBuddySleep,
 } from './map';
+
+export {
+  mapBabyBuddyDiaperChange,
+  mapBabyBuddyFeeding,
+} from './map';

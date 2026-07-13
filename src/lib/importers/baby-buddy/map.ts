@@ -1,5 +1,8 @@
 import {
   ExternalImportBabyRecord,
+  ExternalImportDiaperRecord,
+  ExternalImportFeedRecord,
+  ExternalImportFeedingAmountUnit,
   ExternalImportNoteRecord,
   ExternalImportRecord,
   ExternalImportSleepRecord,
@@ -105,7 +108,179 @@ export function mapBabyBuddyRows(
     case 'note':
       return rows.map(mapBabyBuddyNote);
 
+    case 'diaper-change':
+      return rows.map(mapBabyBuddyDiaperChange);
+
     default:
       return [];
   }
+}
+
+function optionalNumber(
+  row: BabyBuddyCsvRow,
+  field: string,
+): number | undefined {
+  const value = row[field]?.trim();
+
+  if (!value) {
+    return undefined;
+  }
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    throw new Error(`Invalid number in field ${field}: ${value}`);
+  }
+
+  return number;
+}
+
+function durationSeconds(
+  startTime: string,
+  endTime: string,
+): number {
+  const start = new Date(`${startTime}Z`);
+  const end = new Date(`${endTime}Z`);
+  const duration = Math.round(
+    (end.getTime() - start.getTime()) / 1000,
+  );
+
+  if (!Number.isFinite(duration) || duration < 0) {
+    throw new Error('Feeding end time must not be before start time');
+  }
+
+  return duration;
+}
+
+export function mapBabyBuddyFeeding(
+  row: BabyBuddyCsvRow,
+  amountUnit: ExternalImportFeedingAmountUnit = 'SKIP',
+): ExternalImportFeedRecord {
+  const sourceChildId = required(row, 'child_id');
+  const startTime = toUtcInput(required(row, 'start'));
+  const endTime = toUtcInput(required(row, 'end'));
+  const method = required(row, 'method');
+  const sourceType = required(row, 'type');
+  const notes = row.notes?.trim() || undefined;
+
+  const base = {
+    targetType: 'feed' as const,
+    source: {
+      providerId: 'baby-buddy',
+      entityType: 'feeding',
+      recordId: required(row, 'id'),
+      childId: sourceChildId,
+    },
+    sourceChildId,
+    time: endTime,
+    notes,
+  };
+
+  if (
+    method === 'left breast' ||
+    method === 'right breast' ||
+    method === 'both breasts'
+  ) {
+    return {
+      ...base,
+      type: 'BREAST',
+      startTime,
+      endTime,
+      feedDuration: durationSeconds(startTime, endTime),
+      side:
+        method === 'left breast'
+          ? 'LEFT'
+          : method === 'right breast'
+            ? 'RIGHT'
+            : undefined,
+    };
+  }
+
+  const amount = optionalNumber(row, 'amount');
+  const importAmount =
+    amount !== undefined && amountUnit !== 'SKIP';
+
+  if (sourceType === 'solid food') {
+    return {
+      ...base,
+      type: 'SOLIDS',
+      ...(importAmount && {
+        amount,
+        unitAbbr: amountUnit,
+      }),
+    };
+  }
+
+  if (method === 'bottle') {
+    const bottleType =
+      sourceType === 'formula'
+        ? 'Formula'
+        : sourceType === 'breast milk'
+          ? 'Breast Milk'
+          : 'Other';
+
+    return {
+      ...base,
+      type: 'BOTTLE',
+      bottleType,
+      ...(importAmount && {
+        amount,
+        unitAbbr: amountUnit,
+      }),
+    };
+  }
+
+  throw new Error(
+    `Unsupported Baby Buddy feeding combination: ${sourceType} / ${method}`,
+  );
+}
+
+export function mapBabyBuddyDiaperChange(
+  row: BabyBuddyCsvRow,
+): ExternalImportDiaperRecord {
+  const sourceChildId = required(row, 'child_id');
+  const wet = required(row, 'wet') === '1';
+  const solid = required(row, 'solid') === '1';
+
+  if (!wet && !solid) {
+    throw new Error(
+      'Baby Buddy diaper change must be wet, solid, or both',
+    );
+  }
+
+  const type = wet && solid
+    ? 'BOTH'
+    : wet
+      ? 'WET'
+      : 'DIRTY';
+
+  const rawColor = row.color?.trim().toUpperCase();
+  const supportedColors = [
+    'YELLOW',
+    'BROWN',
+    'GREEN',
+    'BLACK',
+  ] as const;
+
+  const color =
+    solid &&
+    supportedColors.includes(
+      rawColor as typeof supportedColors[number],
+    )
+      ? rawColor as typeof supportedColors[number]
+      : undefined;
+
+  return {
+    targetType: 'diaper',
+    source: {
+      providerId: 'baby-buddy',
+      entityType: 'diaper-change',
+      recordId: required(row, 'id'),
+      childId: sourceChildId,
+    },
+    sourceChildId,
+    time: toUtcInput(required(row, 'time')),
+    type,
+    color,
+  };
 }
