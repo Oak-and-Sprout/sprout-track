@@ -32,11 +32,21 @@ export default function PhotoLibraryTab({ babyId, onOpenPhoto, refreshTrigger, o
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     fetchPhotos({ babyId })
-      .then((data) => setPhotos(data.photos))
-      .catch(() => setPhotos([]))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setPhotos(data.photos);
+      })
+      .catch(() => {
+        if (!cancelled) setPhotos([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [babyId, refreshTrigger]);
 
   const filtered = useMemo(
@@ -48,11 +58,11 @@ export default function PhotoLibraryTab({ babyId, onOpenPhoto, refreshTrigger, o
     [photos, query]
   );
 
-  // Group by taken date (day) - newest first
+  // Group by taken date (local day) - newest first
   const byDay = useMemo(() => {
     const groups = new Map<string, typeof filtered>();
     for (const photo of filtered) {
-      const day = photo.takenAt.slice(0, 10);
+      const day = new Date(photo.takenAt).toDateString();
       if (!groups.has(day)) groups.set(day, []);
       groups.get(day)!.push(photo);
     }
@@ -60,8 +70,12 @@ export default function PhotoLibraryTab({ babyId, onOpenPhoto, refreshTrigger, o
   }, [filtered]);
 
   const handleToggleFavorite = async (photoId: string) => {
-    const isFavorite = await togglePhotoFavorite(photoId);
-    setPhotos((prev) => prev.map((p) => (p.id === photoId ? { ...p, isFavorite } : p)));
+    try {
+      const isFavorite = await togglePhotoFavorite(photoId);
+      setPhotos((prev) => prev.map((p) => (p.id === photoId ? { ...p, isFavorite } : p)));
+    } catch (err) {
+      console.error('Failed to toggle photo favorite', err);
+    }
   };
 
   const openGallery = () => {
@@ -86,7 +100,7 @@ export default function PhotoLibraryTab({ babyId, onOpenPhoto, refreshTrigger, o
       {byDay.map(([day, dayPhotos]) => (
         <div key={day}>
           <div className="mt-4 mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
-            {formatDateLong(new Date(day + 'T00:00:00'), dateFormat)}
+            {formatDateLong(new Date(dayPhotos[0].takenAt), dateFormat)}
           </div>
           {dayPhotos.map((photo) => (
             <div
@@ -95,7 +109,12 @@ export default function PhotoLibraryTab({ babyId, onOpenPhoto, refreshTrigger, o
               role="button"
               tabIndex={0}
               onClick={() => onOpenPhoto?.(photo.id)}
-              onKeyDown={(e) => e.key === 'Enter' && onOpenPhoto?.(photo.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onOpenPhoto?.(photo.id);
+                }
+              }}
             >
               <LibraryThumb photoId={photo.id} />
               <span className="min-w-0 flex-1">
@@ -112,10 +131,10 @@ export default function PhotoLibraryTab({ babyId, onOpenPhoto, refreshTrigger, o
                   e.stopPropagation();
                   handleToggleFavorite(photo.id);
                 }}
-                aria-label={t('Favorite')}
+                aria-label={photo.isFavorite ? t('Remove from favorites') : t('Favorite')}
                 aria-pressed={photo.isFavorite}
               >
-                <Heart className="h-4.5 w-4.5" fill={photo.isFavorite ? 'currentColor' : 'none'} />
+                <Heart size={18} fill={photo.isFavorite ? 'currentColor' : 'none'} />
               </button>
               <ChevronRight className="h-4 w-4 text-gray-300" />
             </div>
