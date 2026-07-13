@@ -14,6 +14,7 @@ import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, Alert
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
 import { BackupRestore } from '@/src/components/BackupRestore';
+import ExternalImport from '@/src/components/ExternalImport';
 import { GuardianUpdate } from '@/src/components/GuardianUpdate';
 import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 import {
@@ -89,6 +90,7 @@ export default function AppConfigForm({
   onClose 
 }: AppConfigFormProps) {
   const { t } = useLocalization();
+  const [showExternalImport, setShowExternalImport] = useState(false);
   const { dateFormat, timeFormat } = useTimezone();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -558,7 +560,8 @@ export default function AppConfigForm({
   };
 
   return (
-    <FormPage 
+    <>
+      <FormPage
       isOpen={isOpen} 
       onClose={handleClose}
       title={t("App Configuration")}
@@ -1176,6 +1179,17 @@ export default function AppConfigForm({
                 onAdminResetAcknowledged={handleAdminResetAcknowledged}
               />
 
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => setShowExternalImport(true)}
+                  disabled={loading || saving}
+                >
+                  {t('Import from another platform')}
+                </Button>
+              </div>
+
               {/* Status Messages */}
               {error && (
                 <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
@@ -1242,6 +1256,12 @@ export default function AppConfigForm({
         onOpenChange={setShowPasswordResetModal}
         onConfirm={handlePasswordResetConfirm}
       />
-    </FormPage>
+      </FormPage>
+
+      <ExternalImport
+        isOpen={showExternalImport}
+        onClose={() => setShowExternalImport(false)}
+      />
+    </>
   );
 } 
