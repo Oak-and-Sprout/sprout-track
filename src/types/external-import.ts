@@ -160,3 +160,22 @@ export interface ExternalImportPlayRecord {
   readonly type: 'TUMMY_TIME';
   readonly notes?: string;
 }
+
+export type ExternalImportGender = 'MALE' | 'FEMALE';
+
+export type ExternalImportChildDestination =
+  | {
+      readonly mode: 'existing';
+      readonly targetBabyId: string;
+    }
+  | {
+      readonly mode: 'new';
+      readonly gender: ExternalImportGender;
+    };
+
+export interface ExternalImportExecutionConfiguration {
+  readonly sourceTimezone: string;
+  readonly childDestinations: Readonly<
+    Record<string, ExternalImportChildDestination>
+  >;
+}
