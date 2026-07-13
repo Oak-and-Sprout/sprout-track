@@ -14,10 +14,11 @@ import {
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
-import { uploadPhotos, createPhotoLog, fetchPhotoLog, updatePhotoLog, deletePhotoLog, unlinkPhoto } from '@/src/utils/photoClientApi';
+import { uploadPhotos, createPhotoLog, fetchPhotoLog, updatePhotoLog, updatePhoto, deletePhotoLog } from '@/src/utils/photoClientApi';
 import { MilestoneResponse, PhotoResponse } from '@/app/api/types';
 
 interface AddPhotoTabProps {
+  isOpen: boolean;
   babyId: string | undefined;
   initialTime: string;
   activity?: { photoLogId: string };
@@ -26,7 +27,7 @@ interface AddPhotoTabProps {
   refreshTrigger: number;
 }
 
-export default function AddPhotoTab({ babyId, initialTime, activity, onClose, onSuccess }: AddPhotoTabProps) {
+export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onClose, onSuccess }: AddPhotoTabProps) {
   const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -35,24 +36,50 @@ export default function AddPhotoTab({ babyId, initialTime, activity, onClose, on
   const [userTouchedTime, setUserTouchedTime] = useState(false);
   const [caption, setCaption] = useState('');
   const [milestoneId, setMilestoneId] = useState('');
+  const [initialCaption, setInitialCaption] = useState('');
+  const [initialMilestoneId, setInitialMilestoneId] = useState('');
   const [milestones, setMilestones] = useState<MilestoneResponse[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileErrors, setFileErrors] = useState<{ fileName: string; error: string }[]>([]);
   const takenAtDate = useMemo(() => new Date(takenAt), [takenAt]);
 
-  // Edit mode: load the existing photo log
+  // Reset/load state whenever the drawer opens, for both new and edit mode.
+  // FormPage keeps this tree mounted, so without this the previous open's
+  // state (pending files, caption, etc.) would leak into the next open.
   useEffect(() => {
-    if (!activity) return;
-    fetchPhotoLog(activity.photoLogId)
-      .then((log) => {
-        setExistingPhotos(log.photos);
-        setTakenAt(log.time);
-        setCaption(log.photos[0]?.caption || '');
-        setMilestoneId(log.photos[0]?.milestoneId || '');
-      })
-      .catch(() => setError(t('Failed to load photo entry')));
-  }, [activity]);
+    if (!isOpen) return;
+    if (activity) {
+      fetchPhotoLog(activity.photoLogId)
+        .then((log) => {
+          setExistingPhotos(log.photos);
+          setTakenAt(log.time);
+          setUserTouchedTime(false);
+          const loadedCaption = (log.photos[0]?.caption || '').trim();
+          const loadedMilestoneId = log.photos[0]?.milestoneId || '';
+          setCaption(loadedCaption);
+          setMilestoneId(loadedMilestoneId);
+          setInitialCaption(loadedCaption);
+          setInitialMilestoneId(loadedMilestoneId);
+          setPendingFiles([]);
+          setFileErrors([]);
+          setError(null);
+          setSaving(false);
+        })
+        .catch(() => setError(t('Failed to load photo entry')));
+    } else {
+      setPendingFiles([]);
+      setExistingPhotos([]);
+      setTakenAt(initialTime);
+      setUserTouchedTime(false);
+      setCaption('');
+      setMilestoneId('');
+      setInitialCaption('');
+      setInitialMilestoneId('');
+      setFileErrors([]);
+      setError(null);
+    }
+  }, [isOpen, activity?.photoLogId]);
 
   // Milestone options for this baby (match the endpoint MilestoneForm uses)
   useEffect(() => {
@@ -71,6 +98,7 @@ export default function AddPhotoTab({ babyId, initialTime, activity, onClose, on
     setFileErrors([]);
     try {
       let photoIds = existingPhotos.map((p) => p.id);
+      let uploadErrors: { fileName: string; error: string }[] = [];
       if (pendingFiles.length > 0) {
         const result = await uploadPhotos(pendingFiles, {
           babyId,
@@ -79,6 +107,7 @@ export default function AddPhotoTab({ babyId, initialTime, activity, onClose, on
           caption: caption.trim() || undefined,
           milestoneId: milestoneId || undefined,
         });
+        uploadErrors = result.errors;
         setFileErrors(result.errors);
         photoIds = [...photoIds, ...result.photos.map((p) => p.id)];
         if (photoIds.length === 0) {
@@ -90,12 +119,36 @@ export default function AddPhotoTab({ babyId, initialTime, activity, onClose, on
         setError(t('Add at least one photo'));
         return;
       }
+      let patchError: string | null = null;
       if (activity) {
         await updatePhotoLog(activity.photoLogId, { time: takenAt, photoIds });
+        // updatePhotoLog only carries time/photoIds, so caption/milestone
+        // edits on pre-existing photos must be patched separately. Newly
+        // uploaded photos already got the caption/milestone at upload time.
+        const trimmedCaption = caption.trim();
+        if (trimmedCaption !== initialCaption || milestoneId !== initialMilestoneId) {
+          try {
+            await Promise.all(
+              existingPhotos.map((p) =>
+                updatePhoto(p.id, { caption: trimmedCaption || null, milestoneId: milestoneId || null })
+              )
+            );
+          } catch (err) {
+            patchError = err instanceof Error ? err.message : t('Failed to update photo details');
+          }
+        }
       } else {
         await createPhotoLog({ babyId, time: userTouchedTime ? takenAt : initialTime, photoIds });
       }
       onSuccess?.();
+      if (uploadErrors.length > 0) {
+        setError(t('Saved, but some photos failed to upload'));
+        return;
+      }
+      if (patchError) {
+        setError(patchError);
+        return;
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('Failed to save photo entry'));

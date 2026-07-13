@@ -40,7 +40,7 @@ export default function PhotoForm({ isOpen, onClose, babyId, initialTime, activi
       content: (
         <>
           {quota && <PhotoQuotaMeter usedBytes={quota.usedBytes} totalBytes={quota.totalBytes} className="mb-4" />}
-          <AddPhotoTab babyId={babyId} initialTime={initialTime} activity={activity} onClose={onClose} onSuccess={handleSuccess} refreshTrigger={refreshTrigger} />
+          <AddPhotoTab isOpen={isOpen} babyId={babyId} initialTime={initialTime} activity={activity} onClose={onClose} onSuccess={handleSuccess} refreshTrigger={refreshTrigger} />
         </>
       ),
     },
