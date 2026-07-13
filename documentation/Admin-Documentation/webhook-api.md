@@ -227,7 +227,7 @@ curl -s \
 }
 ```
 
-Any `lastActivities` field is `null` if no record exists for that type today.
+Each `lastActivities` field reflects the most recent record of that type (regardless of date) and is `null` if no record exists.
 
 `activeFeed` reflects an in-progress breastfeeding timer session (started from the app or via the API) and is `null` when none is active. `leftDuration`/`rightDuration` are accrued seconds including time currently accruing on the active side.
 
@@ -268,7 +268,10 @@ curl -s \
           "bottleType": "formula",
           "side": null,
           "food": null,
-          "notes": null
+          "notes": null,
+          "startTime": null,
+          "endTime": null,
+          "feedDuration": null
         },
         "caretakerName": "Mom"
       }

@@ -15,6 +15,8 @@ ENABLE_LOG=true
 LOG_DATABASE_URL="file:../db/api-logs.db"
 ```
 
+The `LOG_DATABASE_URL` shown above is the local deployment default. In Docker deployments the default is `file:/db/baby-tracker-logs.db` (inside the `sprout-track-db` volume).
+
 Restart the application after changing these values.
 
 ## Log Database Management
@@ -53,6 +55,7 @@ Each log entry captures:
 - Client IP and user agent
 - Caretaker and family context (if authenticated)
 - Error details (if applicable)
+- Request and response bodies (be aware of this when sharing log exports)
 
 ## Related Documentation
 
