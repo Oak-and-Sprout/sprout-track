@@ -3,6 +3,7 @@ import prisma from '../db';
 import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse, VaccineLogResponse, PhotoLogResponse, TimelinePhotoInfo } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
+import { buildLinkTargets, groupPhotoLinks } from './timeline-photo-links';
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
@@ -389,14 +390,14 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     console.log(`Results - sleepLogs: ${sleepLogs.length}, feedLogs: ${feedLogs.length}, diaperLogs: ${diaperLogs.length}, noteLogs: ${noteLogs.length}, bathLogs: ${bathLogs.length}, pumpLogs: ${pumpLogs.length}`);
 
     // Batch-load photo attachments for every activity on this page (no N+1)
-    const linkTargets: { activityType: string; ids: string[] }[] = [
-      { activityType: 'feed', ids: feedLogs.map((l: any) => l.id) },
-      { activityType: 'bath', ids: bathLogs.map((l: any) => l.id) },
-      { activityType: 'play', ids: playLogs.map((l: any) => l.id) },
-      { activityType: 'milestone', ids: milestoneLogs.map((l: any) => l.id) },
-      { activityType: 'measurement', ids: measurementLogs.map((l: any) => l.id) },
-      { activityType: 'photo', ids: photoLogs.map((l: any) => l.id) },
-    ].filter((t) => t.ids.length > 0);
+    const linkTargets = buildLinkTargets({
+      feed: feedLogs.map((l: any) => l.id),
+      bath: bathLogs.map((l: any) => l.id),
+      play: playLogs.map((l: any) => l.id),
+      milestone: milestoneLogs.map((l: any) => l.id),
+      measurement: measurementLogs.map((l: any) => l.id),
+      photo: photoLogs.map((l: any) => l.id),
+    });
 
     const photoLinks = linkTargets.length > 0
       ? await prisma.photoLink.findMany({
@@ -409,12 +410,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         })
       : [];
 
-    const photosByActivity = new Map<string, TimelinePhotoInfo[]>();
-    for (const link of photoLinks) {
-      const key = `${link.activityType}:${link.activityId}`;
-      if (!photosByActivity.has(key)) photosByActivity.set(key, []);
-      photosByActivity.get(key)!.push({ id: link.photo.id, caption: link.photo.caption });
-    }
+    const photosByActivity = groupPhotoLinks(photoLinks);
     const photosFor = (activityType: string, activityId: string) => photosByActivity.get(`${activityType}:${activityId}`);
 
     // Format the responses with caretaker information
