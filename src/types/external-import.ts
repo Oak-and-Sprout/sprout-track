@@ -193,3 +193,23 @@ export interface ExternalImportExecutionPlan {
     ExternalImportBabyRecord
   >[];
 }
+
+export type ExternalImportResultStatus =
+  | 'created'
+  | 'duplicate';
+
+export interface ExternalImportRecordResult {
+  readonly providerId: string;
+  readonly sourceEntityType: string;
+  readonly sourceRecordId: string;
+  readonly targetEntityType: string;
+  readonly targetRecordId: string;
+  readonly status: ExternalImportResultStatus;
+}
+
+export interface ExternalImportExecutionResult {
+  readonly created: number;
+  readonly duplicates: number;
+  readonly records: readonly ExternalImportRecordResult[];
+  readonly babyMappings: Readonly<Record<string, string>>;
+}
