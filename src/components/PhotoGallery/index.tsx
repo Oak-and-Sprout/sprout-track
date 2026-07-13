@@ -5,13 +5,15 @@ import { Camera } from 'lucide-react';
 import { PhotoResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { useLocalization } from '@/src/context/localization';
-import { fetchPhotos, togglePhotoFavorite } from '@/src/utils/photoClientApi';
+import { fetchPhotos, togglePhotoFavorite, trashPhoto, downloadPhoto, bulkPhotoAction } from '@/src/utils/photoClientApi';
 import { filterGalleryPhotos, groupByMonth, groupByMilestone } from '@/src/utils/photoGalleryUtils';
 import { PhotoQuotaMeter } from '@/src/components/ui/photo-quota-meter';
 import PhotoForm from '@/src/components/forms/PhotoForm';
-import PhotoDetail from '@/src/components/PhotoDetail';
 import GalleryToolbar from './GalleryToolbar';
 import PhotoGrid from './PhotoGrid';
+import Lightbox from './Lightbox';
+import SelectionBar from './SelectionBar';
+import TrashView from './TrashView';
 import { DEFAULT_GALLERY_STATE, GalleryState, PhotoGalleryProps } from './photo-gallery.types';
 import './photo-gallery.css';
 
@@ -115,6 +117,16 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
 
   const hasActiveFilters = !!state.query || state.typeFilter !== 'all' || state.favoritesOnly;
 
+  // The lightbox normally navigates across the filtered list. If the open
+  // photo has been filtered out from under it (e.g. opened from the Photo
+  // Library tab while a search/type filter is active), fall back to a
+  // single-item list so it still renders instead of going stuck-invisible.
+  const lightboxPhotos = useMemo(() => {
+    if (!state.lightboxPhotoId || filtered.some((p) => p.id === state.lightboxPhotoId)) return filtered;
+    const fallback = photos.find((p) => p.id === state.lightboxPhotoId);
+    return fallback ? [fallback] : filtered;
+  }, [filtered, photos, state.lightboxPhotoId]);
+
   const handleToggleSelect = useCallback((id: string) => {
     setState((prev) => {
       const next = new Set(prev.selectedIds);
@@ -150,10 +162,55 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
     onStateChange({ query: '', typeFilter: 'all', favoritesOnly: false });
   }, [onStateChange]);
 
-  const detailPhoto = useMemo(
-    () => photos.find((p) => p.id === state.lightboxPhotoId) ?? null,
-    [photos, state.lightboxPhotoId]
+  // Deleting the currently open lightbox photo advances to its neighbor in
+  // the filtered list (or closes the lightbox if it was the last one left).
+  const handleLightboxDelete = useCallback(
+    async (id: string) => {
+      const idx = lightboxPhotos.findIndex((p) => p.id === id);
+      const fallbackId = idx < 0 ? null : lightboxPhotos[idx + 1]?.id ?? lightboxPhotos[idx - 1]?.id ?? null;
+      try {
+        await trashPhoto(id);
+        onStateChange({ lightboxPhotoId: fallbackId });
+        await loadPhotos(true);
+      } catch (error) {
+        console.error('Error deleting photo:', error);
+      }
+    },
+    [lightboxPhotos, onStateChange, loadPhotos]
   );
+
+  const handleLightboxDownload = useCallback(async (photo: PhotoResponse) => {
+    try {
+      await downloadPhoto(photo.id, photo.originalName);
+    } catch (error) {
+      console.error('Error downloading photo:', error);
+    }
+  }, []);
+
+  const handleBulkDownload = useCallback(async () => {
+    for (const id of Array.from(state.selectedIds)) {
+      const photo = photos.find((p) => p.id === id);
+      if (!photo) continue;
+      try {
+        await downloadPhoto(photo.id, photo.originalName);
+      } catch (error) {
+        console.error('Error downloading photo:', error);
+      }
+    }
+  }, [state.selectedIds, photos]);
+
+  const handleBulkDelete = useCallback(async () => {
+    const ids = Array.from(state.selectedIds);
+    if (ids.length === 0) return;
+    try {
+      await bulkPhotoAction('trash', ids);
+    } catch (error) {
+      console.error('Error deleting photos:', error);
+    } finally {
+      onStateChange({ selectMode: false, selectedIds: new Set() });
+      await loadPhotos(true);
+    }
+  }, [state.selectedIds, onStateChange, loadPhotos]);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -173,70 +230,80 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
       </div>
 
       <div className="space-y-6 p-4">
-        <GalleryToolbar state={state} onStateChange={onStateChange} trashCount={trashCount} />
-
-        {state.selectMode && (
-          <p className="text-xs font-medium text-gray-500">
-            {state.selectedIds.size} {t('Selected')}
-          </p>
-        )}
-
-        {isLoading && photos.length === 0 ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" aria-hidden="true" />
-            <span className="sr-only">{t('Loading')}...</span>
-          </div>
-        ) : loadError ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm text-gray-500">{loadError}</p>
-            <Button type="button" variant="outline" onClick={() => loadPhotos(true)}>
-              {t('Retry')}
-            </Button>
-          </div>
-        ) : photos.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-full bg-gray-100 photo-gallery-empty-icon">
-              <Camera className="h-8 w-8 text-gray-400" aria-hidden="true" />
-            </div>
-            <p className="text-sm text-gray-500">{t('No photos yet — capture your first moment!')}</p>
-            <Button type="button" onClick={() => setShowAddPhotos(true)}>
-              {t('Add Photos')}
-            </Button>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm text-gray-500">{t('No photos match')}</p>
-            <Button type="button" variant="outline" onClick={clearFilters} disabled={!hasActiveFilters}>
-              {t('Clear filters')}
-            </Button>
-          </div>
+        {state.view === 'trash' ? (
+          <TrashView
+            babyId={babyId}
+            onBack={() => onStateChange({ view: 'gallery' })}
+            onChanged={() => loadPhotos(true)}
+          />
         ) : (
           <>
-            {groups.map((group) => (
-              <section key={group.key}>
-                {group.heading && (
-                  <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500 photo-gallery-month-heading">
-                    {group.heading}
-                  </h2>
-                )}
-                <PhotoGrid
-                  photos={group.photos}
-                  selectMode={state.selectMode}
-                  selectedIds={state.selectedIds}
-                  onToggleSelect={handleToggleSelect}
-                  onOpen={handleOpen}
-                  onToggleFavorite={handleToggleFavorite}
-                  showCaptions={state.showCaptions}
-                />
-              </section>
-            ))}
+            <GalleryToolbar state={state} onStateChange={onStateChange} trashCount={trashCount} />
 
-            {nextCursor && (
-              <div className="flex justify-center pt-2">
-                <Button type="button" variant="outline" onClick={() => loadPhotos(false)} disabled={isLoadingMore}>
-                  {t('Load more')}
+            {state.selectMode && (
+              <p className="text-xs font-medium text-gray-500">
+                {state.selectedIds.size} {t('Selected')}
+              </p>
+            )}
+
+            {isLoading && photos.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" aria-hidden="true" />
+                <span className="sr-only">{t('Loading')}...</span>
+              </div>
+            ) : loadError ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <p className="text-sm text-gray-500">{loadError}</p>
+                <Button type="button" variant="outline" onClick={() => loadPhotos(true)}>
+                  {t('Retry')}
                 </Button>
               </div>
+            ) : photos.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <div className="grid h-16 w-16 place-items-center rounded-full bg-gray-100 photo-gallery-empty-icon">
+                  <Camera className="h-8 w-8 text-gray-400" aria-hidden="true" />
+                </div>
+                <p className="text-sm text-gray-500">{t('No photos yet — capture your first moment!')}</p>
+                <Button type="button" onClick={() => setShowAddPhotos(true)}>
+                  {t('Add Photos')}
+                </Button>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <p className="text-sm text-gray-500">{t('No photos match')}</p>
+                <Button type="button" variant="outline" onClick={clearFilters} disabled={!hasActiveFilters}>
+                  {t('Clear filters')}
+                </Button>
+              </div>
+            ) : (
+              <>
+                {groups.map((group) => (
+                  <section key={group.key}>
+                    {group.heading && (
+                      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500 photo-gallery-month-heading">
+                        {group.heading}
+                      </h2>
+                    )}
+                    <PhotoGrid
+                      photos={group.photos}
+                      selectMode={state.selectMode}
+                      selectedIds={state.selectedIds}
+                      onToggleSelect={handleToggleSelect}
+                      onOpen={handleOpen}
+                      onToggleFavorite={handleToggleFavorite}
+                      showCaptions={state.showCaptions}
+                    />
+                  </section>
+                ))}
+
+                {nextCursor && (
+                  <div className="flex justify-center pt-2">
+                    <Button type="button" variant="outline" onClick={() => loadPhotos(false)} disabled={isLoadingMore}>
+                      {t('Load more')}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -261,12 +328,26 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
         }}
       />
 
-      <PhotoDetail
-        isOpen={!!state.lightboxPhotoId}
-        onClose={() => onStateChange({ lightboxPhotoId: null })}
-        photo={detailPhoto}
-        onChanged={() => loadPhotos(true)}
-      />
+      {state.lightboxPhotoId && (
+        <Lightbox
+          photos={lightboxPhotos}
+          photoId={state.lightboxPhotoId}
+          onClose={() => onStateChange({ lightboxPhotoId: null })}
+          onNavigate={(photoId) => onStateChange({ lightboxPhotoId: photoId })}
+          onToggleFavorite={handleToggleFavorite}
+          onDelete={handleLightboxDelete}
+          onDownload={handleLightboxDownload}
+        />
+      )}
+
+      {state.selectMode && state.selectedIds.size > 0 && (
+        <SelectionBar
+          count={state.selectedIds.size}
+          onDownload={handleBulkDownload}
+          onDelete={handleBulkDelete}
+          onCancel={() => onStateChange({ selectMode: false, selectedIds: new Set() })}
+        />
+      )}
     </div>
   );
 }

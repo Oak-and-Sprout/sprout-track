@@ -71,10 +71,9 @@ export default function GalleryToolbar({ state, onStateChange, trashCount }: Gal
 
         <button
           type="button"
-          disabled
-          aria-disabled="true"
           title={t('Trash')}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-400 opacity-60 photo-gallery-chip"
+          className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 photo-gallery-chip"
+          onClick={() => onStateChange({ view: 'trash', selectMode: false, selectedIds: new Set() })}
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
           {t('Trash')}

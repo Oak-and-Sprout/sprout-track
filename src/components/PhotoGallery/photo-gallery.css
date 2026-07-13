@@ -1,4 +1,24 @@
-/* Dark mode overrides for the PhotoGallery feature (page, toolbar, grid). */
+/* Layout + dark mode overrides for the PhotoGallery feature (page, toolbar,
+   grid, lightbox, trash view). Dark mode uses html.dark selectors here
+   rather than Tailwind `dark:` classes per project convention. */
+
+/* Lightbox: image + metadata side by side on wide screens, stacked with a
+   height-capped image on narrow screens/short viewports. */
+.photo-gallery-lightbox {
+  flex-direction: row;
+}
+
+@media (max-width: 940px) {
+  .photo-gallery-lightbox {
+    flex-direction: column;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .photo-gallery-lightbox-media {
+    max-height: 42vh;
+  }
+}
 
 html.dark .photo-gallery-header {
   background: linear-gradient(to right, #0f766e, #115e59); /* teal-700 -> teal-800 */
@@ -48,4 +68,44 @@ html.dark .photo-gallery-chip.active {
 html.dark .photo-gallery-trash-badge {
   background-color: #334155; /* slate-700 */
   color: #e2e8f0; /* slate-200 */
+}
+
+/* Lightbox metadata panel */
+html.dark .photo-gallery-lightbox {
+  background-color: #1e293b; /* slate-800 */
+}
+
+html.dark .photo-gallery-lightbox-caption {
+  color: #f1f5f9; /* slate-100 */
+}
+
+html.dark .photo-gallery-lightbox-caption.italic {
+  color: #64748b; /* slate-500 */
+}
+
+html.dark .photo-gallery-lightbox-row-label {
+  color: #94a3b8; /* slate-400 */
+}
+
+html.dark .photo-gallery-lightbox-row-value {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .photo-gallery-lightbox-milestone-chip {
+  background-color: rgba(20, 184, 166, 0.15); /* teal-500/15 */
+  color: #5eead4; /* teal-300 */
+}
+
+html.dark .photo-gallery-lightbox-close {
+  background-color: rgba(15, 23, 42, 0.85); /* slate-900/85 */
+  color: #e2e8f0; /* slate-200 */
+}
+
+/* Trash view */
+html.dark .photo-gallery-trash-hint {
+  color: #64748b; /* slate-500 */
+}
+
+html.dark .photo-gallery-trash-actions {
+  background-color: #1e293b; /* slate-800 */
 }
