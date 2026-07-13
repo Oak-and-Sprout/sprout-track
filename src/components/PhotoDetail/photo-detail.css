@@ -1,0 +1,29 @@
+/* Dark mode overrides for PhotoDetail. Light mode uses Tailwind utilities
+   directly in index.tsx; dark mode overrides live here via html.dark
+   selectors (not Tailwind `dark:` classes) per project convention. */
+
+html.dark .photo-detail-row-label {
+  color: #94a3b8; /* slate-400 */
+}
+
+html.dark .photo-detail-row-value {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .photo-detail-hint {
+  color: #64748b; /* slate-500 */
+}
+
+html.dark .photo-detail-image-wrap,
+html.dark .photo-detail-image-skeleton {
+  background-color: #1e293b; /* slate-800 */
+}
+
+html.dark .photo-detail-favorite-overlay {
+  background-color: rgba(15, 23, 42, 0.85); /* slate-900/85 */
+}
+
+html.dark .photo-detail-milestone-chip {
+  background-color: rgba(20, 184, 166, 0.15); /* teal-500/15 */
+  color: #5eead4; /* teal-300 */
+}
