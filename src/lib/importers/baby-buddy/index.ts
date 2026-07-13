@@ -10,9 +10,24 @@ export const babyBuddyImportProvider: ExternalImportProvider = {
   supportsMultipleFiles: true,
 };
 
-export { babyBuddyDetector, babyBuddyPreviewer };
+export {
+  analyseBabyBuddyFiles,
+} from './analyse';
+
+export {
+  babyBuddyDetector,
+  babyBuddyPreviewer,
+};
+
 export {
   parseBabyBuddyCsv,
   type BabyBuddyCsvRow,
   type BabyBuddyParsedCsv,
 } from './parse';
+
+export type {
+  BabyBuddyPreviewChild,
+  BabyBuddyPreviewDetails,
+  BabyBuddyUnitRequirement,
+  BabyBuddyUnitRequirementType,
+} from './types';
