@@ -1,5 +1,37 @@
 # Sprout Track Changelog
 
+## v1.4.0 - Screen Reader Accessibility, Bath Types, and Feed Timer Controls
+
+### Changes
+
+#### Accessibility
+- Overhauled the app for screen reader and keyboard accessibility. Thank you **stefanhalus** for kicking this off!
+- Logging activities, reviewing timelines, filling out forms, and logging in now work fully with VoiceOver and other screen readers
+- The time picker, calendar, and activity tile reordering are now fully keyboard operable
+- Report charts now include screen reader friendly data tables
+
+#### Enhancements
+- Added bath types to bath tracking (full bath, sponge bath, wipe down, or your own custom types)
+- Added a per baby setting to count the feed timer from the start or the end of the previous feeding. Thank you **philzx**!
+- Breast feeds in the same nursing session are now linked together in the log, with link and unlink controls in the edit form
+- Started a breast feed on the wrong side? Active sessions now have a fix it button to swap sides
+
+#### Bugfixes
+- Report card averages now divide by days since birth instead of calendar days for babies born mid month
+- Left plus right nursing sessions now count as one feed everywhere (stats, charts, heatmaps, report card, and daily stats)
+- Fixed French breastfeeding side labels
+- Added a delete button to the vaccine tracker history
+- Fixed PostgreSQL Docker deployments so runtime database settings are respected
+- Fixed pump average per side showing a broken unit label
+
+#### Webhook API
+- The breastfeed timer can now be controlled through the API (start, switch, pause, resume, end) and stays in sync with the in app timer
+- Feed entries returned by the API now include start time, end time, and duration; bath entries include the bath type
+
+#### Localization
+- Added Norwegian. Thank you **Andlar94**!
+- Filled in missing translations across all supported languages
+
 ## v1.3.5 - Security and Privacy Patch
 
 ### Changes
