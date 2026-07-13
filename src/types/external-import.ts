@@ -90,7 +90,10 @@ export type ExternalImportRecord =
   | ExternalImportSleepRecord
   | ExternalImportNoteRecord
   | ExternalImportFeedRecord
-  | ExternalImportDiaperRecord;
+  | ExternalImportDiaperRecord
+  | ExternalImportMeasurementRecord
+  | ExternalImportPumpRecord
+  | ExternalImportPlayRecord;
 
 export interface ExternalImportFeedRecord {
   readonly targetType: 'feed';
@@ -122,3 +125,38 @@ export type ExternalImportFeedingAmountUnit =
   | 'ML'
   | 'OZ'
   | 'SKIP';
+
+
+export interface ExternalImportMeasurementRecord {
+  readonly targetType: 'measurement';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly date: string;
+  readonly type: 'HEIGHT' | 'WEIGHT' | 'HEAD_CIRCUMFERENCE' | 'TEMPERATURE';
+  readonly value: number;
+  readonly unit: 'cm' | 'in' | 'kg' | 'lb' | '°C' | '°F';
+  readonly notes?: string;
+}
+
+export interface ExternalImportPumpRecord {
+  readonly targetType: 'pump';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly duration: number;
+  readonly totalAmount: number;
+  readonly unitAbbr: 'ML' | 'OZ';
+  readonly pumpAction: 'STORED';
+  readonly notes?: string;
+}
+
+export interface ExternalImportPlayRecord {
+  readonly targetType: 'play';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly startTime: string;
+  readonly duration: number;
+  readonly type: 'TUMMY_TIME';
+  readonly notes?: string;
+}

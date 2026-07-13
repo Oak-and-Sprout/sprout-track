@@ -52,3 +52,9 @@ export {
   mapBabyBuddyDiaperChange,
   mapBabyBuddyFeeding,
 } from './map';
+
+export {
+  mapBabyBuddyMeasurement,
+  mapBabyBuddyPumping,
+  mapBabyBuddyTummyTime,
+} from './remaining-map';
