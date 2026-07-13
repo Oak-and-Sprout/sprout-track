@@ -1,4 +1,5 @@
 import { ExternalImportProvider } from '@/src/types/external-import';
+import { babyBuddyDetector } from './detect';
 
 export const babyBuddyImportProvider: ExternalImportProvider = {
   id: 'baby-buddy',
@@ -7,3 +8,5 @@ export const babyBuddyImportProvider: ExternalImportProvider = {
   acceptedExtensions: ['.csv'],
   supportsMultipleFiles: true,
 };
+
+export { babyBuddyDetector };
