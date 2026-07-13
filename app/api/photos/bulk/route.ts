@@ -36,7 +36,12 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       });
       count = result.count;
     } else if (body.action === 'purge') {
-      count = await purgePhotosPermanently(body.ids, familyId!);
+      // Delete Forever only applies to photos already in Trash
+      const trashed = await prisma.photo.findMany({
+        where: { id: { in: body.ids }, familyId, deletedAt: { not: null } },
+        select: { id: true },
+      });
+      count = await purgePhotosPermanently(trashed.map((p) => p.id), familyId!);
     } else {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid bulk action' }, { status: 400 });
     }

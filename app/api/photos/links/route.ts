@@ -69,9 +69,14 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       where: { photoId: body.photoId, activityType: body.activityType, activityId: body.activityId },
     });
     if (!duplicate) {
-      await prisma.photoLink.create({
-        data: { photoId: body.photoId, activityType: body.activityType, activityId: body.activityId },
-      });
+      try {
+        await prisma.photoLink.create({
+          data: { photoId: body.photoId, activityType: body.activityType, activityId: body.activityId },
+        });
+      } catch (error: any) {
+        // Unique-violation race with a concurrent identical request — duplicate links are tolerated
+        if (error?.code !== 'P2002') throw error;
+      }
     }
 
     const data: PhotoLinkInfo = { activityType: body.activityType, activityId: body.activityId };
