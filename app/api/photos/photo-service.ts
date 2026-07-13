@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import prisma from '../db';
-import { ApiResponse } from '../types';
+import { ApiResponse, PhotoResponse } from '../types';
 import { deleteEncryptedFile } from '@/src/lib/file-encryption';
 import { getEffectiveQuotaMb, mbToBytes, isPurgeEligible, TRASH_RETENTION_DAYS } from '@/src/utils/photoUtils';
+import { formatForResponse } from '../utils/timezone';
+import { AuthResult } from '../utils/auth';
 
 export function photoSubdir(familyId: string): string {
   return `photos/${familyId}`;
@@ -72,4 +74,44 @@ export async function purgeExpiredPhotos(familyId: string): Promise<number> {
   });
   const eligibleIds = expired.filter((p) => isPurgeEligible(p.deletedAt, new Date())).map((p) => p.id);
   return purgePhotosPermanently(eligibleIds, familyId);
+}
+
+/** Standard Prisma include for building a PhotoResponse. */
+export const PHOTO_INCLUDE = {
+  links: { select: { activityType: true, activityId: true } },
+  favorites: true,
+  milestone: { select: { title: true } },
+} as const;
+
+type PhotoWithRelations = {
+  id: string; originalName: string; mimeType: string; fileSize: number; thumbSize: number;
+  takenAt: Date; caption: string | null; babyId: string; caretakerId: string | null;
+  milestoneId: string | null; createdAt: Date; updatedAt: Date; deletedAt: Date | null;
+  links: { activityType: string; activityId: string }[];
+  favorites: { caretakerId: string | null; accountId: string | null }[];
+  milestone: { title: string } | null;
+};
+
+export function toPhotoResponse(photo: PhotoWithRelations, authContext: AuthResult): PhotoResponse {
+  const isFavorite = photo.favorites.some((fav) =>
+    authContext.caretakerId ? fav.caretakerId === authContext.caretakerId : (!!authContext.accountId && fav.accountId === authContext.accountId)
+  );
+  return {
+    id: photo.id,
+    originalName: photo.originalName,
+    mimeType: photo.mimeType,
+    fileSize: photo.fileSize,
+    thumbSize: photo.thumbSize,
+    takenAt: formatForResponse(photo.takenAt) || '',
+    caption: photo.caption,
+    babyId: photo.babyId,
+    caretakerId: photo.caretakerId,
+    milestoneId: photo.milestoneId,
+    milestoneTitle: photo.milestone?.title ?? null,
+    isFavorite,
+    links: photo.links,
+    createdAt: formatForResponse(photo.createdAt) || '',
+    updatedAt: formatForResponse(photo.updatedAt) || '',
+    deletedAt: formatForResponse(photo.deletedAt),
+  };
 }

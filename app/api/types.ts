@@ -436,6 +436,67 @@ export interface VaccineLogCreate {
   contactIds?: string[];
 }
 
+// Photo types
+export interface PhotoLinkInfo {
+  activityType: string; // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement'
+  activityId: string;
+}
+
+export interface PhotoResponse {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+  thumbSize: number;
+  takenAt: string;
+  caption: string | null;
+  babyId: string;
+  caretakerId: string | null;
+  milestoneId: string | null;
+  milestoneTitle: string | null;
+  isFavorite: boolean;
+  links: PhotoLinkInfo[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface PhotoListResponse {
+  photos: PhotoResponse[];
+  nextCursor: string | null;
+  trashCount: number;
+  quota: { usedBytes: number; totalBytes: number };
+}
+
+export interface PhotoUploadResult {
+  photos: PhotoResponse[];
+  errors: { fileName: string; error: string }[];
+  quota: { usedBytes: number; totalBytes: number };
+}
+
+export interface PhotoLogCreate {
+  babyId: string;
+  time: string;
+  photoIds: string[]; // 1-4
+}
+
+export interface PhotoLogResponse {
+  id: string;
+  time: string;
+  babyId: string;
+  caretakerId: string | null;
+  familyId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  photos: PhotoResponse[];
+}
+
+export interface TimelinePhotoInfo {
+  id: string;
+  caption: string | null;
+}
+
 // Beta Subscriber types
 export interface BetaSubscriberResponse {
   id: string;
