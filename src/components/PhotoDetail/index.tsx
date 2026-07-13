@@ -101,9 +101,11 @@ export default function PhotoDetail({ isOpen, onClose, photo, onChanged }: Photo
   const handleCaptionKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       e.currentTarget.blur();
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       skipCaptionSaveRef.current = true;
       e.currentTarget.blur();
     }
@@ -157,7 +159,7 @@ export default function PhotoDetail({ isOpen, onClose, photo, onChanged }: Photo
   // tag already gets its own row and a bare 'photo' link (library-only
   // entry) isn't a "linked activity".
   const primaryLink = photo.links[0];
-  const typeLabel = primaryLink ? t(TYPE_LABEL_KEYS[primaryLink.activityType] ?? primaryLink.activityType) : '—';
+  const typeLabel = primaryLink ? t(TYPE_LABEL_KEYS[primaryLink.activityType] ?? primaryLink.activityType) : t('Photo');
   const crossLink = photo.links.find((l) => l.activityType !== 'photo' && l.activityType !== 'milestone');
   const linkedActivityLabel = crossLink ? t(TYPE_LABEL_KEYS[crossLink.activityType] ?? crossLink.activityType) : '—';
 
