@@ -7,11 +7,11 @@ import { checkWritePermission } from '../utils/writeProtection';
 import { isPhotosEnabled, photosDisabledResponse, toPhotoResponse, PHOTO_INCLUDE } from '../photos/photo-service';
 import { MAX_PHOTOS_PER_ACTIVITY } from '@/src/utils/photoUtils';
 
-/** Load the photos linked to a photo log, newest-link-first. */
+/** Load the photos linked to a photo log, in link-creation order (stable). */
 async function getLinkedPhotos(photoLogId: string, authContext: AuthResult) {
   const links = await prisma.photoLink.findMany({
     where: { activityType: 'photo', activityId: photoLogId, photo: { deletedAt: null } },
-    orderBy: { createdAt: 'asc' },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     include: { photo: { include: PHOTO_INCLUDE } },
   });
   return links.map((link) => toPhotoResponse(link.photo, authContext));
@@ -35,8 +35,9 @@ async function toPhotoLogResponse(photoLog: { id: string; time: Date; babyId: st
 async function validatePhotoIds(photoIds: string[], familyId: string): Promise<string | null> {
   if (!Array.isArray(photoIds) || photoIds.length === 0) return 'At least one photo is required';
   if (photoIds.length > MAX_PHOTOS_PER_ACTIVITY) return `A maximum of ${MAX_PHOTOS_PER_ACTIVITY} photos can be attached`;
+  if (new Set(photoIds).size !== photoIds.length) return 'Duplicate photos in request';
   const count = await prisma.photo.count({ where: { id: { in: photoIds }, familyId, deletedAt: null } });
-  if (count !== new Set(photoIds).size) return 'One or more photos were not found';
+  if (count !== photoIds.length) return 'One or more photos were not found';
   return null;
 }
 
@@ -59,11 +60,14 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: photoError }, { status: 400 });
     }
 
-    const photoLog = await prisma.photoLog.create({
-      data: { babyId: body.babyId, time: toUTC(body.time), caretakerId, familyId },
-    });
-    await prisma.photoLink.createMany({
-      data: body.photoIds.map((photoId) => ({ photoId, activityType: 'photo', activityId: photoLog.id })),
+    const photoLog = await prisma.$transaction(async (tx) => {
+      const created = await tx.photoLog.create({
+        data: { babyId: body.babyId, time: toUTC(body.time), caretakerId, familyId },
+      });
+      await tx.photoLink.createMany({
+        data: body.photoIds.map((photoId) => ({ photoId, activityType: 'photo', activityId: created.id })),
+      });
+      return created;
     });
 
     return NextResponse.json<ApiResponse<PhotoLogResponse>>({
@@ -124,16 +128,21 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       if (photoError) {
         return NextResponse.json<ApiResponse<null>>({ success: false, error: photoError }, { status: 400 });
       }
-      // Replace the linked photo set
-      await prisma.photoLink.deleteMany({ where: { activityType: 'photo', activityId: id } });
-      await prisma.photoLink.createMany({
-        data: body.photoIds.map((photoId) => ({ photoId, activityType: 'photo', activityId: id })),
-      });
     }
 
-    const photoLog = await prisma.photoLog.update({
-      where: { id },
-      data: { ...(body.time && { time: toUTC(body.time) }) },
+    const photoLog = await prisma.$transaction(async (tx) => {
+      if (body.photoIds) {
+        // Replace the linked photo set
+        await tx.photoLink.deleteMany({ where: { activityType: 'photo', activityId: id } });
+        await tx.photoLink.createMany({
+          data: body.photoIds.map((photoId) => ({ photoId, activityType: 'photo', activityId: id })),
+        });
+      }
+
+      return tx.photoLog.update({
+        where: { id },
+        data: { ...(body.time && { time: toUTC(body.time) }) },
+      });
     });
 
     return NextResponse.json<ApiResponse<PhotoLogResponse>>({
@@ -157,7 +166,7 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
     if (!id) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Photo log ID is required' }, { status: 400 });
     }
-    const existing = await prisma.photoLog.findFirst({ where: { id, familyId: authContext.familyId } });
+    const existing = await prisma.photoLog.findFirst({ where: { id, familyId: authContext.familyId, deletedAt: null } });
     if (!existing) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Photo log not found' }, { status: 404 });
     }
