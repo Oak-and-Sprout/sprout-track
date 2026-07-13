@@ -19,6 +19,7 @@ export type FamilyResponse = Omit<Family, 'createdAt' | 'updatedAt'> & {
 export type FamilyManagementResponse = FamilyResponse & {
   caretakerCount: number;
   babyCount: number;
+  photoQuotaMB: number | null;
 };
 
 export interface FamilyCreate {

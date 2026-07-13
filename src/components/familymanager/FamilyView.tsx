@@ -36,6 +36,7 @@ interface FamilyData {
   lastEntryAt?: string | null;
   caretakerCount?: number;
   babyCount?: number;
+  photoQuotaMB?: number | null;
 }
 
 interface FamilyViewProps {
@@ -92,13 +93,14 @@ export default function FamilyView({
           <TableHead variant="bold" sortable sortDirection={sortColumn === 'isActive' ? sortDirection : null} onSort={() => onSort('isActive')}>{t('Status')}</TableHead>
           <TableHead variant="bold" sortable sortDirection={sortColumn === 'caretakerCount' ? sortDirection : null} onSort={() => onSort('caretakerCount')}>{t('Members')}</TableHead>
           <TableHead variant="bold" sortable sortDirection={sortColumn === 'babyCount' ? sortDirection : null} onSort={() => onSort('babyCount')}>{t('Babies')}</TableHead>
+          <TableHead variant="bold">{t('Photo storage quota (MB)')}</TableHead>
           <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+            <TableCell colSpan={9} className="text-center py-8 text-gray-500">
               {t('No families found.')}
             </TableCell>
           </TableRow>
@@ -168,6 +170,20 @@ export default function FamilyView({
                 </TableCell>
                 <TableCell>{family.caretakerCount || 0}</TableCell>
                 <TableCell>{family.babyCount || 0}</TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder={t('Default')}
+                      value={editingData.photoQuotaMB ?? ''}
+                      onChange={(e) => setEditingData(prev => ({ ...prev, photoQuotaMB: e.target.value === '' ? null : parseInt(e.target.value, 10) }))}
+                      className="min-w-[100px]"
+                    />
+                  ) : (
+                    family.photoQuotaMB ?? t('Default')
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     {isEditing ? (

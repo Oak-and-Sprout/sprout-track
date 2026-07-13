@@ -34,6 +34,7 @@ interface FamilyData {
   lastEntryAt?: string | null;
   caretakerCount?: number;
   babyCount?: number;
+  photoQuotaMB?: number | null;
 }
 
 interface CaretakerData {
@@ -194,6 +195,20 @@ export default function FamiliesPage() {
       });
       const data = await response.json();
       if (data.success) {
+        // photoQuotaMB lives on the family's Settings record, not the Family record,
+        // so it's saved via a separate call. Omitting the field from the request
+        // body leaves the existing value untouched.
+        if (editingData.photoQuotaMB !== undefined) {
+          const settingsResponse = await authFetch(`/api/settings?familyId=${family.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photoQuotaMB: editingData.photoQuotaMB }),
+          });
+          const settingsData = await settingsResponse.json();
+          if (!settingsData.success) {
+            alert('Failed to save photo quota: ' + settingsData.error);
+          }
+        }
         await fetchFamilies();
         setEditingId(null);
         setEditingData({});
@@ -211,7 +226,7 @@ export default function FamiliesPage() {
 
   const handleEdit = (family: FamilyData) => {
     setEditingId(family.id);
-    setEditingData({ name: family.name, slug: family.slug, isActive: family.isActive });
+    setEditingData({ name: family.name, slug: family.slug, isActive: family.isActive, photoQuotaMB: family.photoQuotaMB ?? null });
     setSlugError('');
   };
 
