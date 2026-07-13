@@ -4,7 +4,7 @@ import { ApiResponse, PhotoUploadResult, PhotoResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { toUTC } from '../../utils/timezone';
 import { checkWritePermission } from '../../utils/writeProtection';
-import { encryptAndStore, generateStoredName } from '@/src/lib/file-encryption';
+import { encryptAndStore, generateStoredName, deleteEncryptedFile } from '@/src/lib/file-encryption';
 import { processPhoto } from '../photo-processing';
 import {
   isPhotosEnabled,
@@ -74,6 +74,8 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         errors.push({ fileName: file.name, error: validation.error! });
         continue;
       }
+      let storedName: string | undefined;
+      let thumbStoredName: string | undefined;
       try {
         const rawBuffer = Buffer.from(await file.arrayBuffer());
         const processed = await processPhoto(rawBuffer, file.type.toLowerCase());
@@ -83,8 +85,8 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
           continue;
         }
 
-        const storedName = generateStoredName();
-        const thumbStoredName = generateStoredName();
+        storedName = generateStoredName();
+        thumbStoredName = generateStoredName();
         encryptAndStore(processed.display.data, storedName, photoSubdir(familyId!));
         encryptAndStore(processed.thumbnail.data, thumbStoredName, photoSubdir(familyId!));
 
@@ -92,36 +94,54 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
           ? toUTC(takenAtRaw)
           : resolveTakenAt(null, processed.exifTakenAt, new Date());
 
-        const photo = await prisma.photo.create({
-          data: {
-            originalName: file.name,
-            storedName,
-            thumbStoredName,
-            mimeType: processed.display.mimeType,
-            fileSize: processed.display.data.length,
-            thumbSize: processed.thumbnail.data.length,
-            takenAt,
-            caption,
-            babyId,
-            caretakerId,
-            milestoneId,
-            familyId,
-          },
-          include: PHOTO_INCLUDE,
-        });
-
-        // Auto-link milestone-tagged photos to the milestone entry (spec section 3)
-        if (milestoneId) {
-          await prisma.photoLink.create({
-            data: { photoId: photo.id, activityType: 'milestone', activityId: milestoneId },
+        const photo = await prisma.$transaction(async (tx) => {
+          const created = await tx.photo.create({
+            data: {
+              originalName: file.name,
+              storedName: storedName!,
+              thumbStoredName: thumbStoredName!,
+              mimeType: processed.display.mimeType,
+              fileSize: processed.display.data.length,
+              thumbSize: processed.thumbnail.data.length,
+              takenAt,
+              caption,
+              babyId,
+              caretakerId,
+              milestoneId,
+              familyId,
+            },
+            include: PHOTO_INCLUDE,
           });
-          photo.links.push({ activityType: 'milestone', activityId: milestoneId });
-        }
+
+          // Auto-link milestone-tagged photos to the milestone entry (spec section 3)
+          if (milestoneId) {
+            await tx.photoLink.create({
+              data: { photoId: created.id, activityType: 'milestone', activityId: milestoneId },
+            });
+            created.links.push({ activityType: 'milestone', activityId: milestoneId });
+          }
+
+          return created;
+        });
 
         runningUsed += incomingBytes;
         photos.push(toPhotoResponse(photo, authContext));
       } catch (error) {
         console.error(`Error processing photo ${file.name}:`, error);
+        if (storedName) {
+          try {
+            deleteEncryptedFile(storedName, photoSubdir(familyId!));
+          } catch (cleanupError) {
+            console.error(`Failed to clean up orphaned file ${storedName}:`, cleanupError);
+          }
+        }
+        if (thumbStoredName) {
+          try {
+            deleteEncryptedFile(thumbStoredName, photoSubdir(familyId!));
+          } catch (cleanupError) {
+            console.error(`Failed to clean up orphaned thumbnail ${thumbStoredName}:`, cleanupError);
+          }
+        }
         errors.push({ fileName: file.name, error: 'Failed to process photo' });
       }
     }

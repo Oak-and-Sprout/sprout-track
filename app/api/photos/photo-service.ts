@@ -92,9 +92,23 @@ type PhotoWithRelations = {
   milestone: { title: string } | null;
 };
 
+/**
+ * The identity a favorite is keyed to. Caretaker identity wins when present
+ * so PIN logins and account logins of the same person share favorites;
+ * accounts with no linked caretaker fall back to accountId.
+ * Used by BOTH favorite reads (toPhotoResponse) and writes (favorite route)
+ * so the two can never diverge.
+ */
+export function favoriteOwnerFilter(authContext: AuthResult): { caretakerId: string } | { accountId: string } | null {
+  if (authContext.caretakerId) return { caretakerId: authContext.caretakerId };
+  if (authContext.accountId) return { accountId: authContext.accountId };
+  return null;
+}
+
 export function toPhotoResponse(photo: PhotoWithRelations, authContext: AuthResult): PhotoResponse {
-  const isFavorite = photo.favorites.some((fav) =>
-    authContext.caretakerId ? fav.caretakerId === authContext.caretakerId : (!!authContext.accountId && fav.accountId === authContext.accountId)
+  const owner = favoriteOwnerFilter(authContext);
+  const isFavorite = !!owner && photo.favorites.some((fav) =>
+    'caretakerId' in owner ? fav.caretakerId === owner.caretakerId : fav.accountId === owner.accountId
   );
   return {
     id: photo.id,
