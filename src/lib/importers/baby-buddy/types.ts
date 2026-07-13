@@ -25,3 +25,21 @@ export interface BabyBuddyPreviewDetails {
   readonly children: readonly BabyBuddyPreviewChild[];
   readonly unitRequirements: readonly BabyBuddyUnitRequirement[];
 }
+
+export type BabyBuddyWarningCode =
+  | 'birth-time-unsupported'
+  | 'tags-unsupported'
+  | 'bmi-unsupported'
+  | 'both-breasts-without-side'
+  | 'wet-diaper-colour-unsupported'
+  | 'breast-feed-amount-unsupported'
+  | 'sleep-notes-unsupported'
+  | 'diaper-notes-unsupported'
+  | 'diaper-amount-unsupported'
+  | 'pumping-defaults-to-stored';
+
+export interface BabyBuddyImportWarning {
+  readonly code: BabyBuddyWarningCode;
+  readonly entityType: string;
+  readonly affectedRows: number;
+}

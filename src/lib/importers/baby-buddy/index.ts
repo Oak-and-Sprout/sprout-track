@@ -31,3 +31,12 @@ export type {
   BabyBuddyUnitRequirement,
   BabyBuddyUnitRequirementType,
 } from './types';
+
+export {
+  collectBabyBuddyWarnings,
+} from './warnings';
+
+export type {
+  BabyBuddyImportWarning,
+  BabyBuddyWarningCode,
+} from './types';
