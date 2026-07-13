@@ -1,0 +1,22 @@
+/* Dark mode overrides for BathForm settings gear */
+html.dark .bath-settings-button {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .bath-settings-button:hover {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Dark mode overrides for BathForm bath type manager */
+html.dark .bath-type-manager {
+  background-color: rgba(31, 41, 55, 0.5) !important; /* gray-800/50 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .bath-type-manager p {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .bath-type-manager label {
+  color: #e5e7eb !important; /* gray-200 */
+}

@@ -18,6 +18,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
@@ -382,6 +383,17 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'date', label: t('Date') },
+                    { key: 'value', label: t('Pumps') },
+                  ]}
+                  rows={countData.map((point) => ({
+                    date: point.label,
+                    value: point.value,
+                  }))}
+                />
               </div>
             )}
           </>
@@ -428,6 +440,17 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'date', label: t('Date') },
+                    { key: 'value', label: t('Avg Duration') },
+                  ]}
+                  rows={durationData.map((point) => ({
+                    date: point.label,
+                    value: formatMinutes(point.value),
+                  }))}
+                />
               </div>
             )}
           </>
@@ -536,6 +559,25 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'date', label: t('Date') },
+                    { key: 'dayTotal', label: t('Total') },
+                    { key: 'leftTotal', label: t('Left Total') },
+                    { key: 'rightTotal', label: t('Right Total') },
+                    { key: 'leftAvg', label: t('Left Avg') },
+                    { key: 'rightAvg', label: t('Right Avg') },
+                  ]}
+                  rows={amountData.map((point) => ({
+                    date: point.label,
+                    dayTotal: point.dayTotal.toFixed(1),
+                    leftTotal: point.leftTotal.toFixed(1),
+                    rightTotal: point.rightTotal.toFixed(1),
+                    leftAvg: point.leftAvg.toFixed(1),
+                    rightAvg: point.rightAvg.toFixed(1),
+                  }))}
+                />
               </div>
             )}
           </>
@@ -607,6 +649,19 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'date', label: t('Date') },
+                    { key: 'consumed', label: t('Consumed') },
+                    { key: 'storedBalance', label: t('Stored Balance') },
+                  ]}
+                  rows={inventoryData.map((point) => ({
+                    date: point.label,
+                    consumed: `${point.consumed.toFixed(1)} oz`,
+                    storedBalance: `${point.storedBalance.toFixed(1)} oz`,
+                  }))}
+                />
               </div>
             )}
           </>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { MilestoneCategory } from '@prisma/client';
 import { MilestoneResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -42,6 +42,7 @@ export default function MilestoneForm({
   onSuccess,
 }: MilestoneFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
   const { formatDate, toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
@@ -285,7 +286,7 @@ export default function MilestoneForm({
             
             {/* Category - Full width on all screens */}
             <div>
-              <label className="form-label">{t('Category')}</label>
+              <label className="form-label" htmlFor={`${formId}-category`}>{t('Category')}</label>
               <Select
                 value={formData.category || ''}
                 onValueChange={(value: MilestoneCategory) =>
@@ -293,7 +294,7 @@ export default function MilestoneForm({
                 }
                 disabled={loading}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id={`${formId}-category`} className="w-full">
                   <SelectValue placeholder={t("Select category")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -307,8 +308,9 @@ export default function MilestoneForm({
             </div>
             
             <div>
-              <label className="form-label">{t('Title')}</label>
+              <label className="form-label" htmlFor={`${formId}-title`}>{t('Title')}</label>
               <Input
+                id={`${formId}-title`}
                 type="text"
                 value={formData.title}
                 onChange={(e) =>
@@ -322,8 +324,9 @@ export default function MilestoneForm({
             </div>
 
             <div>
-              <label className="form-label">{t('Description (Optional)')}</label>
+              <label className="form-label" htmlFor={`${formId}-description`}>{t('Description (Optional)')}</label>
               <Textarea
+                id={`${formId}-description`}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })

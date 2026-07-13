@@ -107,11 +107,11 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
       : '';
 
     const sortIcon = sortable && sortDirection ? (
-      <span className={cn(tableStyles.sortIcon, 'table-sort-icon-active-dark')}>
+      <span className={cn(tableStyles.sortIcon, 'table-sort-icon-active-dark')} aria-hidden="true">
         {sortDirection === 'asc' ? (
-          <ChevronUp className="h-4 w-4" />
+          <ChevronUp className="h-4 w-4" aria-hidden="true" />
         ) : (
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="h-4 w-4" aria-hidden="true" />
         )}
       </span>
     ) : null;
@@ -126,7 +126,17 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
           sortDarkHoverClass,
           className
         )}
-        onClick={sortable ? onSort : undefined}
+        onClick={
+          sortable
+            ? (e: React.MouseEvent<HTMLTableCellElement>) => {
+                // Preserve the original th-wide click target (e.g. cell padding);
+                // clicks on the inner button are handled by the button itself.
+                if (e.target === e.currentTarget) {
+                  onSort?.();
+                }
+              }
+            : undefined
+        }
         aria-sort={
           sortable
             ? sortDirection === 'asc'
@@ -138,10 +148,21 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
         }
         {...props}
       >
-        <div className={sortable ? "flex items-center" : undefined}>
-          {children}
-          {sortIcon}
-        </div>
+        {sortable ? (
+          <button
+            type="button"
+            onClick={onSort}
+            className={cn(tableStyles.headSortButton, 'table-sort-button-dark')}
+          >
+            {children}
+            {sortIcon}
+          </button>
+        ) : (
+          <div>
+            {children}
+            {sortIcon}
+          </div>
+        )}
       </th>
     );
   }
@@ -182,7 +203,7 @@ const TableSearch = React.forwardRef<HTMLInputElement, TableSearchProps>(
     return (
       <div className={cn(tableStyles.searchContainer, className)}>
         <div className={cn("relative", tableStyles.searchInput)}>
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
           <Input
             ref={ref}
             type="text"
@@ -283,33 +304,39 @@ const TablePagination = React.forwardRef<HTMLDivElement, TablePaginationProps>(
         
         <div className={tableStyles.paginationControls}>
           <button
+            type="button"
             onClick={() => onPageChange(1)}
             disabled={disabled || currentPage === 1}
+            aria-label={t('First page')}
             className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
               color: disabled || currentPage === 1 ? '#9ca3af' : undefined
             }}
           >
-            <ChevronsLeft className="h-4 w-4" />
+            <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={disabled || currentPage === 1}
+            aria-label={t('Previous page')}
             className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
               color: disabled || currentPage === 1 ? '#9ca3af' : undefined
             }}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           
           {pageNumbers.map((page) => (
             <button
               key={page}
+              type="button"
               onClick={() => onPageChange(page)}
               disabled={disabled}
               data-current={page === currentPage}
+              aria-current={page === currentPage ? 'page' : undefined}
               className={cn(
                 "h-9 w-9 flex items-center justify-center rounded text-sm font-medium border table-page-btn",
                 page === currentPage 
@@ -323,25 +350,29 @@ const TablePagination = React.forwardRef<HTMLDivElement, TablePaginationProps>(
           ))}
           
           <button
+            type="button"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={disabled || currentPage === totalPages}
+            aria-label={t('Next page')}
             className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
               color: disabled || currentPage === totalPages ? '#9ca3af' : undefined
             }}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={() => onPageChange(totalPages)}
             disabled={disabled || currentPage === totalPages}
+            aria-label={t('Last page')}
             className="h-9 w-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded table-pagination-chevron-dark"
             style={{
               color: disabled || currentPage === totalPages ? '#9ca3af' : undefined
             }}
           >
-            <ChevronsRight className="h-4 w-4" />
+            <ChevronsRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

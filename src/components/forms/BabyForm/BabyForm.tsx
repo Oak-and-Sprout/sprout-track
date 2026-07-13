@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from 'lucide-react';
 import { Baby, Gender } from '@prisma/client';
@@ -44,6 +44,7 @@ const defaultFormData = {
   inactive: false,
   feedWarningTime: '03:00',
   diaperWarningTime: '02:00',
+  feedTimerFrom: 'start',
 };
 
 export default function BabyForm({
@@ -58,6 +59,7 @@ export default function BabyForm({
   const { showToast } = useToast();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const formId = useId();
 
   // Reset form when form opens/closes or baby changes
   useEffect(() => {
@@ -74,6 +76,7 @@ export default function BabyForm({
         inactive: baby.inactive || false,
         feedWarningTime: baby.feedWarningTime || '03:00',
         diaperWarningTime: baby.diaperWarningTime || '02:00',
+        feedTimerFrom: (baby as any).feedTimerFrom || 'start',
       });
     } else if (!isOpen && !isSubmitting) {
       setFormData(defaultFormData);
@@ -152,8 +155,9 @@ export default function BabyForm({
         <FormPageContent className={babyFormStyles.content}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">{t('First Name')}</label>
+              <label htmlFor={`${formId}-first-name`} className="form-label">{t('First Name')}</label>
               <Input
+                id={`${formId}-first-name`}
                 value={formData.firstName}
                 onChange={(e) =>
                   setFormData({ ...formData, firstName: e.target.value })
@@ -164,8 +168,9 @@ export default function BabyForm({
               />
             </div>
             <div>
-              <label className="form-label">{t('Last Name')}</label>
+              <label htmlFor={`${formId}-last-name`} className="form-label">{t('Last Name')}</label>
               <Input
+                id={`${formId}-last-name`}
                 value={formData.lastName}
                 onChange={(e) =>
                   setFormData({ ...formData, lastName: e.target.value })
@@ -177,17 +182,18 @@ export default function BabyForm({
             </div>
           </div>
           <div>
-            <label className="form-label">{t('Birth Date')}</label>
+            <label htmlFor={`${formId}-birth-date`} className="form-label">{t('Birth Date')}</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
+                  id={`${formId}-birth-date`}
                   variant="input"
                   className={cn(
                     "w-full justify-start text-left font-normal",
                     !formData.birthDate && "text-muted-foreground"
                   )}
                 >
-                  <Calendar className="mr-2 h-4 w-4" />
+                  <Calendar className="mr-2 h-4 w-4" aria-hidden="true" />
                   {formData.birthDate ? formatDateLong(formData.birthDate, dateFormat) : t("Select date")}
                 </Button>
               </PopoverTrigger>
@@ -203,14 +209,14 @@ export default function BabyForm({
             </Popover>
           </div>
           <div>
-            <label className="form-label">{t('Gender')}</label>
+            <label htmlFor={`${formId}-gender`} className="form-label">{t('Gender')}</label>
             <Select
               value={formData.gender}
               onValueChange={(value) =>
                 setFormData({ ...formData, gender: value })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id={`${formId}-gender`} className="w-full">
                 <SelectValue placeholder={t("Select gender")} />
               </SelectTrigger>
               <SelectContent>
@@ -221,8 +227,9 @@ export default function BabyForm({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="form-label">{t('Feed Warning Time (hh:mm)')}</label>
+              <label htmlFor={`${formId}-feed-warning-time`} className="form-label">{t('Feed Warning Time (hh:mm)')}</label>
               <Input
+                id={`${formId}-feed-warning-time`}
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
                 value={formData.feedWarningTime}
@@ -235,8 +242,9 @@ export default function BabyForm({
               />
             </div>
             <div>
-              <label className="form-label">{t('Diaper Warning Time (hh:mm)')}</label>
+              <label htmlFor={`${formId}-diaper-warning-time`} className="form-label">{t('Diaper Warning Time (hh:mm)')}</label>
               <Input
+                id={`${formId}-diaper-warning-time`}
                 type="text"
                 pattern="[0-9]{2}:[0-9]{2}"
                 value={formData.diaperWarningTime}
@@ -248,6 +256,23 @@ export default function BabyForm({
                 required
               />
             </div>
+          </div>
+          <div>
+            <label htmlFor={`${formId}-feed-timer-from`} className="form-label">{t('Feed timer counts from')}</label>
+            <Select
+              value={formData.feedTimerFrom}
+              onValueChange={(value) =>
+                setFormData({ ...formData, feedTimerFrom: value })
+              }
+            >
+              <SelectTrigger id={`${formId}-feed-timer-from`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="start">{t('Start of feeding')}</SelectItem>
+                <SelectItem value="end">{t('End of feeding')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {isEditing && (
             <div className="flex items-center space-x-2 mt-4">

@@ -160,7 +160,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
   if (isLoading) {
     return (
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-teal-600" />
         <p className={cn(styles.loadingText, "reports-loading-text")}>{t('Loading milestones...')}</p>
       </div>
     );
@@ -179,7 +179,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
   if (!milestones.length) {
     return (
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
-        <Trophy className="h-12 w-12 text-gray-300 mb-4" />
+        <Trophy aria-hidden="true" className="h-12 w-12 text-gray-300 mb-4" />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
           {t('No milestones recorded yet.')}
         </p>
@@ -196,7 +196,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
         {groupedMilestones.map((group) => (
           <AccordionItem key={group.ageInMonths} value={`month-${group.ageInMonths}`}>
             <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-              <Trophy className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-milestone")} />
+              <Trophy aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-milestone")} />
               <span className={cn("text-gray-700", "reports-age-title")}>
                 {group.label}
                 <span className={cn("text-sm text-gray-500 ml-2", "reports-milestone-count")}>
@@ -218,7 +218,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
                         </p>
                       )}
                       <div className={cn("flex items-center gap-1 mt-2 text-xs text-gray-500", "reports-milestone-date")}>
-                        <Calendar className="h-3 w-3" />
+                        <Calendar aria-hidden="true" className="h-3 w-3" />
                         <span>{formatDate(milestone.date)}</span>
                         {milestone.category && (
                           <>

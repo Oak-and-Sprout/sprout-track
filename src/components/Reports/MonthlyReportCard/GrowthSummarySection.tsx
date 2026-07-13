@@ -14,9 +14,9 @@ import type { GrowthMetric, GrowthChartData } from '@/app/api/types';
 type ChartType = 'weight' | 'length' | 'headCircumference';
 
 const chartTypeConfig: { type: ChartType; label: string; icon: React.ReactNode; cdcLabel: string }[] = [
-  { type: 'weight', label: 'Weight', icon: <Scale className="h-4 w-4" />, cdcLabel: 'Weight-for-age (CDC)' },
-  { type: 'length', label: 'Length', icon: <Ruler className="h-4 w-4" />, cdcLabel: 'Length-for-age (CDC)' },
-  { type: 'headCircumference', label: 'Head', icon: <CircleDot className="h-4 w-4" />, cdcLabel: 'Head circ.-for-age (CDC)' },
+  { type: 'weight', label: 'Weight', icon: <Scale aria-hidden="true" className="h-4 w-4" />, cdcLabel: 'Weight-for-age (CDC)' },
+  { type: 'length', label: 'Length', icon: <Ruler aria-hidden="true" className="h-4 w-4" />, cdcLabel: 'Length-for-age (CDC)' },
+  { type: 'headCircumference', label: 'Head', icon: <CircleDot aria-hidden="true" className="h-4 w-4" />, cdcLabel: 'Head circ.-for-age (CDC)' },
 ];
 
 // Percentile line colors matching GrowthChart.tsx

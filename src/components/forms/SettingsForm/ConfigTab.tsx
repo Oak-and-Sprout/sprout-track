@@ -90,6 +90,11 @@ export default function ConfigTab({
   const { t } = useLocalization();
   const router = useRouter();
   const { setDateTimeFormats } = useTimezone();
+  const id = React.useId();
+  const familyNameId = `${id}-family-name`;
+  const familySlugId = `${id}-family-slug`;
+  const dateFormatId = `${id}-date-format`;
+  const timeFormatId = `${id}-time-format`;
 
   return (
     <div className="space-y-6">
@@ -98,11 +103,12 @@ export default function ConfigTab({
         <h3 className="form-label mb-4">{t('Family Information')}</h3>
 
         <div>
-          <Label className="form-label">{t('Family Name')}</Label>
+          <Label className="form-label" htmlFor={familyNameId}>{t('Family Name')}</Label>
           <div className="flex gap-2">
             {editingFamily ? (
               <>
                 <Input
+                  id={familyNameId}
                   value={familyEditData.name || ''}
                   onChange={(e) => onFamilyEditDataChange({ ...familyEditData, name: e.target.value })}
                   placeholder={t("Enter family name")}
@@ -113,9 +119,10 @@ export default function ConfigTab({
                   variant="outline"
                   onClick={onFamilySave}
                   disabled={savingFamily || !!slugError || checkingSlug || !familyEditData.name || !familyEditData.slug}
+                  aria-label={t('Save')}
                 >
                   {savingFamily ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   ) : (
                     t('Save')
                   )}
@@ -131,6 +138,7 @@ export default function ConfigTab({
             ) : (
               <>
                 <Input
+                  id={familyNameId}
                   disabled
                   value={family?.name || ''}
                   className="flex-1"
@@ -140,7 +148,7 @@ export default function ConfigTab({
                   onClick={onFamilyEdit}
                   disabled={loading}
                 >
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Edit')}
                 </Button>
               </>
@@ -149,12 +157,13 @@ export default function ConfigTab({
         </div>
 
         <div>
-          <Label className="form-label">{t('Link/Slug')}</Label>
+          <Label className="form-label" htmlFor={familySlugId}>{t('Link/Slug')}</Label>
           <div className="flex gap-2">
             {editingFamily ? (
               <div className="flex-1 space-y-1">
                 <div className="relative">
                   <Input
+                    id={familySlugId}
                     value={familyEditData.slug || ''}
                     onChange={(e) => onFamilyEditDataChange({ ...familyEditData, slug: e.target.value })}
                     placeholder={t("Enter family slug")}
@@ -162,12 +171,12 @@ export default function ConfigTab({
                     disabled={savingFamily}
                   />
                   {checkingSlug && (
-                    <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                    <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" aria-hidden="true" />
                   )}
                 </div>
                 {slugError && (
                   <div className="flex items-center gap-1 text-red-600 text-xs">
-                    <AlertCircle className="h-3 w-3" />
+                    <AlertCircle className="h-3 w-3" aria-hidden="true" />
                     {slugError}
                   </div>
                 )}
@@ -175,6 +184,7 @@ export default function ConfigTab({
             ) : (
               <>
                 <Input
+                  id={familySlugId}
                   disabled
                   value={family?.slug || ''}
                   className="flex-1 font-mono"
@@ -231,11 +241,11 @@ export default function ConfigTab({
                 onBabyFormOpen(baby || null, true);
               }}
             >
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Edit')}
             </Button>
             <Button variant="outline" onClick={() => onBabyFormOpen(null, false)}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Add')}
             </Button>
           </div>
@@ -272,14 +282,14 @@ export default function ConfigTab({
               disabled={!selectedContact}
               onClick={() => onContactFormOpen(true)}
             >
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Edit')}
             </Button>
             <Button variant="outline" onClick={() => {
               onSelectedContactChange(null);
               onContactFormOpen(false);
             }}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Add')}
             </Button>
           </div>
@@ -327,7 +337,7 @@ export default function ConfigTab({
         <h3 className="form-label mb-4">{t('Date & Time Format')}</h3>
         <div className="space-y-4">
           <div>
-            <Label className="form-label">{t('Date Format')}</Label>
+            <Label className="form-label" htmlFor={dateFormatId}>{t('Date Format')}</Label>
             <Select
               value={(settings as any)?.dateFormat || 'MM/DD/YYYY'}
               onValueChange={(value) => {
@@ -335,7 +345,7 @@ export default function ConfigTab({
                 setDateTimeFormats(value as DateFormatSetting, ((settings as any)?.timeFormat || '12h') as TimeFormatSetting);
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger id={dateFormatId}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -346,7 +356,7 @@ export default function ConfigTab({
             </Select>
           </div>
           <div>
-            <Label className="form-label">{t('Time Format')}</Label>
+            <Label className="form-label" htmlFor={timeFormatId}>{t('Time Format')}</Label>
             <Select
               value={(settings as any)?.timeFormat || '12h'}
               onValueChange={(value) => {
@@ -354,7 +364,7 @@ export default function ConfigTab({
                 setDateTimeFormats(((settings as any)?.dateFormat || 'MM/DD/YYYY') as DateFormatSetting, value as TimeFormatSetting);
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger id={timeFormatId}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -377,7 +387,7 @@ export default function ConfigTab({
               className="w-full"
               disabled={loading}
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
+              <ExternalLink className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Open Family Manager')}
             </Button>
             <p className="text-sm text-gray-500">

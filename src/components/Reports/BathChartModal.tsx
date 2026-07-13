@@ -18,6 +18,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay, DateFormatSetting } from '@/src/utils/dateFormat';
@@ -276,6 +277,17 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'date', label: t('Date') },
+                    { key: 'value', label: t('Baths') },
+                  ]}
+                  rows={dailyData.map((point) => ({
+                    date: point.label,
+                    value: point.value,
+                  }))}
+                />
               </div>
             )}
           </>
@@ -314,6 +326,17 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                     <Bar dataKey="value" fill="#6366f1" />
                   </BarChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'week', label: t('Week') },
+                    { key: 'value', label: t('Avg Baths') },
+                  ]}
+                  rows={weeklyAvgData.map((point) => ({
+                    week: point.label,
+                    value: point.value.toFixed(1),
+                  }))}
+                />
               </div>
             )}
           </>
@@ -360,6 +383,21 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                     <Bar dataKey="both" stackId="baths" fill="#f59e0b" name={t('Both')} />
                   </BarChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'week', label: t('Week') },
+                    { key: 'soap', label: t('Soap Only') },
+                    { key: 'shampoo', label: t('Shampoo Only') },
+                    { key: 'both', label: t('Both') },
+                  ]}
+                  rows={soapShampooData.map((point) => ({
+                    week: point.label,
+                    soap: point.soap,
+                    shampoo: point.shampoo,
+                    both: point.both,
+                  }))}
+                />
               </div>
             )}
           </>

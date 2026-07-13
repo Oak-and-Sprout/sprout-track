@@ -19,6 +19,7 @@ interface ApiGuideProps {
 }
 
 function CopyableCodeBlock({ code, label }: { code: string; label?: string }) {
+  const { t } = useLocalization();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -48,8 +49,9 @@ function CopyableCodeBlock({ code, label }: { code: string; label?: string }) {
           size="sm"
           className="absolute top-1 right-1 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={handleCopy}
+          aria-label={t('Copy to clipboard')}
         >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          {copied ? <Check className="h-3 w-3" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
         </Button>
       </div>
     </div>
@@ -125,11 +127,12 @@ export default function ApiGuide({ babies }: ApiGuideProps) {
                   size="sm"
                   className="h-7 w-7 p-0 flex-shrink-0"
                   onClick={() => handleCopyBabyId(baby.id)}
+                  aria-label={t('Copy Baby ID') + ' - ' + baby.firstName + ' ' + baby.lastName}
                 >
                   {copiedBabyId === baby.id ? (
-                    <Check className="h-3 w-3 text-green-600" />
+                    <Check className="h-3 w-3 text-green-600" aria-hidden="true" />
                   ) : (
-                    <Copy className="h-3 w-3" />
+                    <Copy className="h-3 w-3" aria-hidden="true" />
                   )}
                 </Button>
               </div>
@@ -226,6 +229,15 @@ export default function ApiGuide({ babies }: ApiGuideProps) {
               label={t('Sleep Example')}
               code={buildCurl('POST', `/babies/${sampleBabyId}/activities`, {
                 type: 'sleep', sleepType: 'NAP', action: 'start',
+              })}
+            />
+            <div className="mt-2">
+              <p className="text-xs text-gray-400 mb-1">Feed timer actions (BREAST only): start, switch, pause, resume, end. Or log a completed feed with duration (minutes).</p>
+            </div>
+            <CopyableCodeBlock
+              label={t('Breastfeed Timer Example')}
+              code={buildCurl('POST', `/babies/${sampleBabyId}/activities`, {
+                type: 'feed', feedType: 'BREAST', action: 'start', side: 'LEFT',
               })}
             />
           </AccordionContent>

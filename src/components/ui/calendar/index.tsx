@@ -96,6 +96,15 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       return Math.floor(month.getFullYear() / 12) * 12;
     });
 
+    // Roving-focus state for keyboard navigation of the day grid
+    const [focusedDate, setFocusedDate] = React.useState<Date | null>(null);
+    const dayButtonRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map());
+    // Flag so DOM focus only moves in response to keyboard navigation, never pointer use
+    const isKeyboardNavRef = React.useRef(false);
+
+    // Stable key for the day-button ref map
+    const dateKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
     // Update month when monthProp changes
     React.useEffect(() => {
       if (monthProp) {
@@ -247,6 +256,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
     const handleDateSelect = (date: Date) => {
       if (isDisabled(date)) return;
 
+      // Keep the roving tabindex on the last-interacted cell
+      setFocusedDate(date);
+
       if (mode === "single") {
         if (onSelect) onSelect(date);
       } else if (mode === "range" && onRangeChange) {
@@ -282,6 +294,113 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
         }
       }
     };
+
+    // Add days to a date without mutating it
+    const addDays = (from: Date, amount: number) =>
+      new Date(from.getFullYear(), from.getMonth(), from.getDate() + amount);
+
+    // Starting at `start`, walk in `step`-day increments until an enabled day is
+    // found. Bounded so a fully-disabled direction cannot loop forever.
+    const findEnabledDate = (start: Date, step: number): Date | null => {
+      let candidate = start;
+      for (let i = 0; i < 366; i++) {
+        if (!isDisabled(candidate)) return candidate;
+        candidate = addDays(candidate, step);
+      }
+      return null;
+    };
+
+    // Arrow-key navigation between day cells (roving tabindex pattern).
+    // Targets are always resolved to an enabled day: disabled days are stepped
+    // over (arrows), clamped back toward the focused day (Home/End), or searched
+    // within the target month (PageUp/PageDown). If no enabled day exists the
+    // key is swallowed and focus stays where it is.
+    const handleDayKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, date: Date) => {
+      let target: Date | null = null;
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          target = findEnabledDate(addDays(date, -1), -1);
+          break;
+        case 'ArrowRight':
+          target = findEnabledDate(addDays(date, 1), 1);
+          break;
+        case 'ArrowUp':
+          target = findEnabledDate(addDays(date, -7), -7);
+          break;
+        case 'ArrowDown':
+          target = findEnabledDate(addDays(date, 7), 7);
+          break;
+        case 'Home':
+        case 'End': {
+          // Start/end of the focused week, clamped to the nearest enabled day
+          // between there and the focused day
+          const step = event.key === 'Home' ? 1 : -1;
+          let candidate = addDays(date, event.key === 'Home' ? -date.getDay() : 6 - date.getDay());
+          while (!isSameDay(candidate, date) && isDisabled(candidate)) {
+            candidate = addDays(candidate, step);
+          }
+          target = isDisabled(candidate) ? null : candidate;
+          break;
+        }
+        case 'PageUp':
+        case 'PageDown': {
+          // Previous/next month, preserving the day of month where possible
+          const monthDelta = event.key === 'PageUp' ? -1 : 1;
+          const targetMonthFirst = new Date(date.getFullYear(), date.getMonth() + monthDelta, 1);
+          const daysInTargetMonth = new Date(targetMonthFirst.getFullYear(), targetMonthFirst.getMonth() + 1, 0).getDate();
+          let candidate: Date | null = new Date(
+            targetMonthFirst.getFullYear(),
+            targetMonthFirst.getMonth(),
+            Math.min(date.getDate(), daysInTargetMonth)
+          );
+          // If that day is disabled, find the nearest enabled day within the same
+          // month: backward for PageDown (past maxDate), forward for PageUp
+          // (before minDate). A fully-disabled month yields no target.
+          const step = event.key === 'PageDown' ? -1 : 1;
+          while (candidate && isDisabled(candidate)) {
+            const next = addDays(candidate, step);
+            candidate = next.getMonth() === targetMonthFirst.getMonth() ? next : null;
+          }
+          target = candidate;
+          break;
+        }
+        default:
+          // Do not preventDefault on unhandled keys (e.g. Tab must reach the focus trap untouched)
+          return;
+      }
+
+      // Handled key: always swallow it, even when no enabled target exists
+      event.preventDefault();
+      if (!target) return;
+
+      isKeyboardNavRef.current = true;
+      setFocusedDate(target);
+
+      // If the target date is outside the visible month, navigate the calendar to
+      // it — unless the target cell is already rendered in the current 42-cell
+      // grid (Home/End can land on rendered outside-month cells without a month change)
+      if (target.getMonth() !== month.getMonth() || target.getFullYear() !== month.getFullYear()) {
+        if (event.key === 'Home' || event.key === 'End') {
+          const gridStart = new Date(month.getFullYear(), month.getMonth(), 1 - daysFromPrevMonth);
+          const gridEnd = new Date(month.getFullYear(), month.getMonth(), daysInMonth + daysFromNextMonth);
+          if (target >= gridStart && target <= gridEnd) return;
+        }
+        setMonth(new Date(target.getFullYear(), target.getMonth(), 1));
+      }
+    };
+
+    // After keyboard navigation, move DOM focus to the newly focused cell once it has rendered.
+    // Skipped for pointer interactions (flag). Keyboard targets are always resolved to enabled
+    // days, so the disabled check here is purely defensive.
+    React.useEffect(() => {
+      if (!isKeyboardNavRef.current || !focusedDate) return;
+      isKeyboardNavRef.current = false;
+      const button = dayButtonRefs.current.get(dateKey(focusedDate));
+      if (button && !button.disabled) {
+        button.focus();
+      }
+    }, [focusedDate, month]);
 
     // Generate days for the calendar
     const days = React.useMemo(() => {
@@ -343,6 +462,27 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
       return result;
     }, [month, selected, rangeFrom, rangeTo, disabledDates, minDate, maxDate, isDateDisabled, mode, rangeSelectionState]);
 
+    // Index of the single day cell that carries tabIndex=0 (roving tabindex).
+    // Only honors focusedDate while it is rendered in the visible grid; otherwise
+    // falls back to the selection-based logic so the calendar stays Tab-reachable.
+    // A disabled cell must never be the Tab stop (disabled buttons are unfocusable
+    // and the grid would lose its Tab stop entirely), so a disabled candidate
+    // falls back to the first enabled cell of the grid.
+    const tabbableDayIndex = React.useMemo(() => {
+      const focusedIndex = focusedDate !== null
+        ? days.findIndex(day => isSameDay(day.date, focusedDate))
+        : -1;
+      const candidateIndex = focusedIndex !== -1
+        ? focusedIndex
+        : days.findIndex((day, index) =>
+            day.isSelected || day.isRangeStart || day.isRangeEnd || (!!initialFocus && index === 0)
+          );
+      if (candidateIndex === -1) return -1;
+      if (!days[candidateIndex].isDisabled) return candidateIndex;
+      return days.findIndex(day => !day.isDisabled);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [days, focusedDate, initialFocus]);
+
     // Day names for the calendar header
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -389,8 +529,17 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                 {days.map((day, index) => (
                   <button
                     key={`${day.date.toISOString()}-${index}`}
+                    ref={(el) => {
+                      const key = dateKey(day.date);
+                      if (el) {
+                        dayButtonRefs.current.set(key, el);
+                      } else {
+                        dayButtonRefs.current.delete(key);
+                      }
+                    }}
                     type="button"
                     onClick={() => handleDateSelect(day.date)}
+                    onKeyDown={(e) => handleDayKeyDown(e, day.date)}
                     disabled={day.isDisabled}
                     className={cn(
                       calendarDayVariants({
@@ -417,7 +566,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                     )}
                     aria-label={formatDateLong(day.date, dateFormat)}
                     aria-selected={(day.isSelected || day.isRangeStart || day.isRangeEnd) ? "true" : undefined}
-                    tabIndex={day.isSelected || day.isRangeStart || day.isRangeEnd || (initialFocus && index === 0) ? 0 : -1}
+                    tabIndex={index === tabbableDayIndex ? 0 : -1}
                   >
                     {day.dayOfMonth}
                   </button>
@@ -460,10 +609,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
               "calendar-nav-button",
               currentPage === 'months' && "opacity-50 cursor-not-allowed"
             )}
-            aria-label={currentPage === 'years' ? "Previous years" : "Previous month"}
-            tabIndex={-1} // Prevent default focus
+            aria-label={currentPage === 'years' ? t('Previous years') : t('Previous month')}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           
           <div className="flex items-center gap-1">
@@ -474,7 +622,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                 calendarMonthSelectVariants({ variant }), 
                 "calendar-month-select px-2 py-1 rounded cursor-pointer"
               )}
-              aria-label="Select month"
+              aria-label={t('Select month')}
             >
               {month.toLocaleDateString('en-US', { month: 'long' })}
             </button>
@@ -486,7 +634,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                 calendarMonthSelectVariants({ variant }), 
                 "calendar-year-select px-2 py-1 rounded cursor-pointer"
               )}
-              aria-label="Select year"
+              aria-label={t('Select year')}
             >
               {month.getFullYear()}
             </button>
@@ -501,10 +649,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
               "calendar-nav-button",
               currentPage === 'months' && "opacity-50 cursor-not-allowed"
             )}
-            aria-label={currentPage === 'years' ? "Next years" : "Next month"}
-            tabIndex={-1} // Prevent default focus
+            aria-label={currentPage === 'years' ? t('Next years') : t('Next month')}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
         

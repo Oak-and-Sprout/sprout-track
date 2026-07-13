@@ -129,7 +129,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
           {/* Loading state */}
           {isLoading && (
             <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
               <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading...')}</p>
             </div>
           )}
@@ -138,7 +138,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
           {error && (
             <div className={cn(styles.errorContainer, "account-manager-error-container")}>
               <div className="flex items-center gap-2 text-red-600 mb-2">
-                <AlertTriangle className="h-5 w-5" />
+                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
                 <p className="font-medium">{t('Error')}</p>
               </div>
               <p className={cn("text-red-500 mb-4", "account-manager-error-text")}>{error}</p>
@@ -176,7 +176,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
           {/* Loading state */}
           {isLoading && (
             <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
               <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading...')}</p>
             </div>
           )}
@@ -185,7 +185,7 @@ const AccountManager: React.FC<AccountManagerProps> = ({
           {error && (
             <div className={cn(styles.errorContainer, "account-manager-error-container")}>
               <div className="flex items-center gap-2 text-red-600 mb-2">
-                <AlertTriangle className="h-5 w-5" />
+                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
                 <p className="font-medium">{t('Error')}</p>
               </div>
               <p className={cn("text-red-500 mb-4", "account-manager-error-text")}>{error}</p>

@@ -245,11 +245,11 @@ export function AccountButton({
             {showIcon && (
               <>
                 {!accountStatus.verified ? (
-                  <AlertCircle className="w-4 h-4 mr-2" />
+                  <AlertCircle className="w-4 h-4 mr-2" aria-hidden="true" />
                 ) : !accountStatus.hasFamily ? (
-                  <Users className="w-4 h-4 mr-2" />
+                  <Users className="w-4 h-4 mr-2" aria-hidden="true" />
                 ) : (
-                  <User className="w-4 h-4 mr-2" />
+                  <User className="w-4 h-4 mr-2" aria-hidden="true" />
                 )}
               </>
             )}
@@ -293,7 +293,7 @@ export function AccountButton({
           {!accountStatus.verified && (
             <>
               <DropdownMenuItem onClick={handleResendVerification}>
-                <Mail className="w-4 h-4 mr-2" />
+                <Mail className="w-4 h-4 mr-2" aria-hidden="true" />
                 {t('Resend Verification Email')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -307,7 +307,7 @@ export function AccountButton({
                 onClick={handleFamilySetup}
                 className="family-setup-gradient focus:family-setup-gradient"
               >
-                <Users className="w-4 h-4 mr-2" />
+                <Users className="w-4 h-4 mr-2" aria-hidden="true" />
                 {t('Set up your family')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -318,13 +318,13 @@ export function AccountButton({
           <DropdownMenuItem onClick={() => {
             onAccountManagerOpen?.();
           }}>
-            <Settings className="w-4 h-4 mr-2" />
+            <Settings className="w-4 h-4 mr-2" aria-hidden="true" />
             {t('Account Settings')}
           </DropdownMenuItem>
           
           {/* Feedback option */}
           <DropdownMenuItem onClick={() => setShowFeedback(true)}>
-            <MessageSquare className="w-4 h-4 mr-2" />
+            <MessageSquare className="w-4 h-4 mr-2" aria-hidden="true" />
             {t('Send Feedback')}
           </DropdownMenuItem>
           
@@ -333,7 +333,7 @@ export function AccountButton({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleFamilyLink}>
-                <Home className="w-4 h-4 mr-2" />
+                <Home className="w-4 h-4 mr-2" aria-hidden="true" />
                 {t('Go to Family Dashboard')}
               </DropdownMenuItem>
             </>
@@ -341,7 +341,7 @@ export function AccountButton({
           
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut className="w-4 h-4 mr-2" aria-hidden="true" />
             {t('Log out')}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -377,7 +377,7 @@ export function AccountButton({
           }
         }}
       >
-        {showIcon && <User className="w-4 h-4 mr-2" />}
+        {showIcon && <User className="w-4 h-4 mr-2" aria-hidden="true" />}
         {displayLabel}
       </Button>
       

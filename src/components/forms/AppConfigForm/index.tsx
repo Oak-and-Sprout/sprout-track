@@ -568,7 +568,7 @@ export default function AppConfigForm({
         <FormPageContent className="space-y-6 overflow-y-auto flex-1 pb-24">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
               <span className="ml-2 text-gray-600">{t('Loading configuration...')}</span>
             </div>
           ) : (
@@ -576,7 +576,7 @@ export default function AppConfigForm({
               {/* System Settings Section */}
               <div className="space-y-4">
                                  <div className="flex items-center space-x-2">
-                   <Settings className="h-5 w-5 text-teal-600" />
+                   <Settings className="h-5 w-5 text-teal-600" aria-hidden="true" />
                    <Label className="text-lg font-semibold">
                      {t('System Settings')}
                    </Label>
@@ -585,7 +585,7 @@ export default function AppConfigForm({
                 <div className="space-y-4">
                   {/* Password Change Section */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">
+                    <Label htmlFor={!showPasswordChange ? 'adminPassword' : undefined} className="text-sm font-medium">
                       {t('Admin Password')}
                     </Label>
                     
@@ -593,6 +593,7 @@ export default function AppConfigForm({
                       <div className="flex gap-2">
                         <Input
                           type="password"
+                          id="adminPassword"
                           disabled
                           value="••••••"
                           className="flex-1 font-mono"
@@ -708,7 +709,7 @@ export default function AppConfigForm({
                               >
                                 {saving ? (
                                   <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                                     {t('Updating...')}
                                   </>
                                 ) : (
@@ -788,7 +789,7 @@ export default function AppConfigForm({
               {/* Email Configuration Section */}
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Mail className="h-5 w-5 text-teal-600" />
+                  <Mail className="h-5 w-5 text-teal-600" aria-hidden="true" />
                   <Label className="text-lg font-semibold">
                     {t('Email Configuration')}
                   </Label>
@@ -801,9 +802,9 @@ export default function AppConfigForm({
                     </Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
+                        <Button id="providerType" variant="outline" className="w-full justify-between">
                           <span>{emailFormData.providerType.replace('_', ' ')}</span>
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
@@ -938,7 +939,7 @@ export default function AppConfigForm({
               {/* Push Notifications Configuration Section */}
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Bell className="h-5 w-5 text-teal-600" />
+                  <Bell className="h-5 w-5 text-teal-600" aria-hidden="true" />
                   <Label className="text-lg font-semibold">
                     {t('Push Notifications')}
                   </Label>
@@ -978,12 +979,12 @@ export default function AppConfigForm({
                       >
                         {generatingVapid ? (
                           <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" aria-hidden="true" />
                             {t('Generating...')}
                           </>
                         ) : (
                           <>
-                            <Key className="h-3 w-3 mr-1" />
+                            <Key className="h-3 w-3 mr-1" aria-hidden="true" />
                             {t('Generate New Keys')}
                           </>
                         )}
@@ -1076,7 +1077,7 @@ export default function AppConfigForm({
               {notificationStatus && (
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
-                    <Bell className="h-5 w-5 text-teal-600" />
+                    <Bell className="h-5 w-5 text-teal-600" aria-hidden="true" />
                     <Label className="text-lg font-semibold">
                       {t('Notification System Status')}
                     </Label>
@@ -1085,7 +1086,7 @@ export default function AppConfigForm({
                     <CardContent className="p-4 space-y-3">
                       {notificationStatusLoading ? (
                         <div className="flex items-center justify-center py-4">
-                          <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                          <Loader2 className="h-5 w-5 animate-spin text-teal-600" aria-hidden="true" />
                           <Label className="ml-2 text-sm text-gray-600">{t('Loading...')}</Label>
                         </div>
                       ) : (
@@ -1179,7 +1180,7 @@ export default function AppConfigForm({
               {error && (
                 <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                   <div className="flex items-center">
-                    <X className="h-4 w-4 text-red-500 mr-2" />
+                    <X className="h-4 w-4 text-red-500 mr-2" aria-hidden="true" />
                     <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
                   </div>
                 </div>
@@ -1188,7 +1189,7 @@ export default function AppConfigForm({
               {success && (
                 <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
                   <div className="flex items-center">
-                    <Save className="h-4 w-4 text-green-500 mr-2" />
+                    <Save className="h-4 w-4 text-green-500 mr-2" aria-hidden="true" />
                     <span className="text-sm text-green-700 dark:text-green-300">{success}</span>
                   </div>
                 </div>
@@ -1221,12 +1222,12 @@ export default function AppConfigForm({
             >
               {saving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                   {t('Saving...')}
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Save Configuration')}
                 </>
               )}

@@ -378,7 +378,7 @@ const DebugSessionTimer: React.FC<DebugSessionTimerProps> = () => {
           onClick={() => setIsVisible(false)}
           aria-label="Close debug timer"
         >
-          <X size={16} />
+          <X size={16} aria-hidden="true" />
         </button>
       </div>
       <div className={debugTimerContent()}>

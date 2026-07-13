@@ -16,6 +16,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange, LocationStat } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort } from '@/src/utils/dateFormat';
@@ -206,6 +207,17 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                 ))}
               </BarChart>
             </ResponsiveContainer>
+            <ChartDataTable
+              caption={title}
+              columns={[
+                { key: 'label', label: t('Date') },
+                ...locations.map((location) => ({
+                  key: location.location,
+                  label: t(location.location),
+                })),
+              ]}
+              rows={chartData}
+            />
           </div>
         )}
       </ModalContent>

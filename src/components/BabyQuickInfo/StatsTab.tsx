@@ -17,6 +17,7 @@ import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
 import CardVisual from '@/src/components/reporting/CardVisual';
 import { useLocalization } from '@/src/context/localization';
+import { countBreastFeedSessions } from '@/src/utils/feedSessionUtils';
 
 /**
  * StatsTab Component
@@ -313,11 +314,13 @@ const StatsTab: React.FC<StatsTabProps> = ({
         nightSleepByNight[nightKey] += sleepDurationMinutes;
       });
 
-      // Count feedings
-      const feedingsForDay = dayActivities.filter(a => 
-        ('type' in a && (a.type === 'BOTTLE' || a.type === 'BREAST' || a.type === 'SOLIDS'))
-      ).length;
-      
+      // Count feedings — a left+right nursing session is two rows but one feed
+      const feedingsForDay = dayActivities.filter(a =>
+        ('type' in a && (a.type === 'BOTTLE' || a.type === 'SOLIDS'))
+      ).length + countBreastFeedSessions(
+        dayActivities.filter(a => 'type' in a && a.type === 'BREAST') as any
+      );
+
       feedingCount += feedingsForDay;
 
       // Calculate feed amounts
@@ -459,7 +462,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
       {/* Stats cards */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" aria-hidden="true" />
           <p className="text-gray-600">{t('Loading statistics...')}</p>
         </div>
       ) : error ? (

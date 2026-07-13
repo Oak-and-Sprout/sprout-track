@@ -34,42 +34,59 @@ export function ActivityTile({
 }: ActivityTileProps) {
   const { theme } = useTheme();
   const variant = variantProp || getActivityVariant(activity);
-  
+
+  const tileClassName = cn(
+    styles.base,
+    isButton && styles.button.base,
+    isButton && styles.button.variants[variant],
+    className
+  );
+
+  const content = isButton ? (
+    <div className="flex flex-col items-center justify-center h-full w-full">
+      <div
+        aria-hidden="true"
+        className={cn(
+          "relative overflow-visible flex items-center justify-center transition-transform duration-200 group-hover:scale-110 group-active:rotate-12",
+          styles.iconContainer.base,
+          styles.iconContainer.variants[variant]
+        )}
+      >
+        {icon || <ActivityTileIcon activity={activity} variant={variant} isButton={isButton} />}
+      </div>
+      {title && (
+        <span className="text-xs font-medium mt-1 text-center activity-tile-title">
+          {title}
+        </span>
+      )}
+    </div>
+  ) : (
+    <div className={styles.container}>
+      {icon || <ActivityTileIcon activity={activity} variant={variant} isButton={isButton} />}
+      <ActivityTileContent
+        activity={activity}
+        title={title}
+        description={description}
+      />
+    </div>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        aria-label={title}
+        className={cn("block w-full appearance-none text-left scroll-mx-2", tileClassName)}
+        onClick={onClick}
+      >
+        {content}
+      </button>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        styles.base,
-        isButton && styles.button.base,
-        isButton && styles.button.variants[variant],
-        className
-      )}
-      onClick={onClick}
-    >
-      {isButton ? (
-        <div className="flex flex-col items-center justify-center h-full w-full">
-          <div className={cn(
-            "relative overflow-visible flex items-center justify-center transition-transform duration-200 group-hover:scale-110 group-active:rotate-12",
-            styles.iconContainer.base,
-            styles.iconContainer.variants[variant]
-          )}>
-            {icon || <ActivityTileIcon activity={activity} variant={variant} isButton={isButton} />}
-          </div>
-          {title && (
-            <span className="text-xs font-medium mt-1 text-center activity-tile-title">
-              {title}
-            </span>
-          )}
-        </div>
-      ) : (
-        <div className={styles.container}>
-          {icon || <ActivityTileIcon activity={activity} variant={variant} isButton={isButton} />}
-          <ActivityTileContent
-            activity={activity}
-            title={title}
-            description={description}
-          />
-        </div>
-      )}
+    <div className={tileClassName}>
+      {content}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
 import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
+import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession } from '../../../../../utils/activeBreastFeed';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -59,7 +60,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
           activityType: 'feed',
           id: r.id,
           time: r.time.toISOString(),
-          details: { type: r.type, amount: r.amount, unitAbbr: r.unit?.unitAbbr || r.unitAbbr, bottleType: r.bottleType, side: r.side, food: r.food, notes: r.notes },
+          details: { type: r.type, amount: r.amount, unitAbbr: r.unit?.unitAbbr || r.unitAbbr, bottleType: r.bottleType, side: r.side, food: r.food, notes: r.notes, startTime: r.startTime?.toISOString() || null, endTime: r.endTime?.toISOString() || null, feedDuration: r.feedDuration },
           caretakerName: r.caretaker?.name || null,
         }));
       })
@@ -154,7 +155,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
           activityType: 'bath',
           id: r.id,
           time: r.time.toISOString(),
-          details: { soapUsed: r.soapUsed, shampooUsed: r.shampooUsed, notes: r.notes },
+          details: { bathType: r.bathType, soapUsed: r.soapUsed, shampooUsed: r.shampooUsed, notes: r.notes },
           caretakerName: r.caretaker?.name || null,
         }));
       })
@@ -284,7 +285,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
 
     switch (type as ActivityType) {
       case 'feed': {
-        let { feedType, amount, unitAbbr, side, food, notes, bottleType } = body;
+        let { feedType, amount, unitAbbr, side, food, notes, bottleType, action, duration } = body;
         // Map friendly names to DB enum + bottleType
         const FEED_ALIASES: Record<string, { feedType: string; bottleType?: string }> = {
           'BREAST': { feedType: 'BREAST' },
@@ -305,12 +306,86 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         feedType = alias.feedType;
         if (alias.bottleType && !bottleType) bottleType = alias.bottleType;
 
+        // Timer actions (BREAST only) — backed by the same ActiveBreastFeed
+        // session as the in-app timer, so both surfaces stay in sync
+        const TIMER_ACTIONS = ['start', 'switch', 'pause', 'resume', 'end'];
+        if (action && !TIMER_ACTIONS.includes(action) && action !== 'log') {
+          return hookError('INVALID_ACTION', 'action must be start, switch, pause, resume, end, or log', 400, rl.headers);
+        }
+        if (action && action !== 'log' && feedType !== 'BREAST') {
+          return hookError('INVALID_ACTION', `Timer actions are only supported for feedType BREAST, got '${feedType}'`, 400, rl.headers);
+        }
+
+        if (feedType === 'BREAST' && action && action !== 'log') {
+          if (action === 'start') {
+            if (!side || !['LEFT', 'RIGHT'].includes(side)) {
+              return hookError('SIDE_REQUIRED', 'side (LEFT or RIGHT) is required for action "start"', 400, rl.headers);
+            }
+            const existing = await prisma.activeBreastFeed.findUnique({ where: { babyId } });
+            if (existing) {
+              return hookError('FEED_ALREADY_ACTIVE', 'An active breastfeed session already exists for this baby', 409, rl.headers);
+            }
+            let session;
+            try {
+              session = await startBreastfeedSession({ babyId, side, familyId, caretakerId });
+            } catch (e: any) {
+              // Concurrent starts race on the babyId unique constraint
+              if (e?.code === 'P2002') {
+                return hookError('FEED_ALREADY_ACTIVE', 'An active breastfeed session already exists for this baby', 409, rl.headers);
+              }
+              throw e;
+            }
+            return hookSuccess({ activityType: 'feed', id: session.id, time: session.sessionStartTime.toISOString(), details: { type: 'BREAST', action: 'start', activeSide: session.activeSide, isActive: true } }, { familyId, babyId }, rl.headers);
+          }
+
+          const session = await prisma.activeBreastFeed.findUnique({ where: { babyId } });
+          if (!session || session.familyId !== familyId) {
+            return hookError('NO_ACTIVE_FEED', 'No active breastfeed session found for this baby', 400, rl.headers);
+          }
+
+          if (action === 'end') {
+            const { feedLogs, leftDuration, rightDuration } = await endBreastfeedSession(session, { familyId, caretakerId });
+            return hookSuccess({
+              activityType: 'feed',
+              time: session.sessionStartTime.toISOString(),
+              details: { type: 'BREAST', action: 'end', leftDuration, rightDuration, isActive: false, feedLogs },
+            }, { familyId, babyId }, rl.headers);
+          }
+
+          // switch / pause / resume
+          if ((action === 'resume' || action === 'switch') && side && !['LEFT', 'RIGHT'].includes(side)) {
+            return hookError('INVALID_SIDE', 'side must be LEFT or RIGHT', 400, rl.headers);
+          }
+          const updated = await updateBreastfeedSession(session, action, action === 'resume' ? side : undefined);
+          return hookSuccess({
+            activityType: 'feed',
+            id: updated!.id,
+            time: updated!.sessionStartTime.toISOString(),
+            details: { type: 'BREAST', action, activeSide: updated!.activeSide, isPaused: updated!.isPaused, leftDuration: updated!.leftDuration, rightDuration: updated!.rightDuration, isActive: true },
+          }, { familyId, babyId }, rl.headers);
+        }
+
+        // action === 'log' or omitted: create a completed feed entry.
+        // For BREAST an optional duration (minutes, like sleep/pump) produces
+        // a timed entry: startTime = time, endTime = time + duration.
+        let timedFields: any = {};
+        if (feedType === 'BREAST' && duration !== undefined && duration !== null) {
+          if (typeof duration !== 'number' || duration <= 0) {
+            return hookError('INVALID_DURATION', 'duration must be a positive number of minutes', 400, rl.headers);
+          }
+          timedFields = {
+            startTime: time,
+            endTime: new Date(time.getTime() + duration * 60000),
+            feedDuration: Math.round(duration * 60), // stored in seconds
+          };
+        }
+
         result = await prisma.feedLog.create({
-          data: { time, type: feedType, amount: amount ? parseFloat(amount) : null, unitAbbr: unitAbbr || null, side: side || null, food: food || null, notes: notes || null, bottleType: bottleType || null, babyId, caretakerId, familyId },
+          data: { time, type: feedType, amount: amount ? parseFloat(amount) : null, unitAbbr: unitAbbr || null, side: side || null, food: food || null, notes: notes || null, bottleType: bottleType || null, ...timedFields, babyId, caretakerId, familyId },
         });
         notifyActivityCreated(babyId, 'feed', { caretakerId }, { type: feedType, amount, unitAbbr, food, side }).catch(console.error);
         resetTimerNotificationState(babyId, 'feed').catch(console.error);
-        return hookSuccess({ activityType: 'feed', id: result.id, time: result.time.toISOString(), details: { type: feedType, amount, unitAbbr, bottleType, side, food } }, { familyId, babyId }, rl.headers);
+        return hookSuccess({ activityType: 'feed', id: result.id, time: result.time.toISOString(), details: { type: feedType, amount, unitAbbr, bottleType, side, food, ...(result.feedDuration ? { duration, feedDuration: result.feedDuration } : {}) } }, { familyId, babyId }, rl.headers);
       }
 
       case 'diaper': {
@@ -435,12 +510,12 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
       }
 
       case 'bath': {
-        const { soapUsed, shampooUsed, notes } = body;
+        const { bathType, soapUsed, shampooUsed, notes } = body;
         result = await prisma.bathLog.create({
-          data: { time, soapUsed: soapUsed !== false, shampooUsed: shampooUsed !== false, notes: notes || null, babyId, caretakerId, familyId },
+          data: { time, bathType: bathType || null, soapUsed: soapUsed !== false, shampooUsed: shampooUsed !== false, notes: notes || null, babyId, caretakerId, familyId },
         });
         notifyActivityCreated(babyId, 'bath', { caretakerId }).catch(console.error);
-        return hookSuccess({ activityType: 'bath', id: result.id, time: result.time.toISOString(), details: { soapUsed: result.soapUsed, shampooUsed: result.shampooUsed } }, { familyId, babyId }, rl.headers);
+        return hookSuccess({ activityType: 'bath', id: result.id, time: result.time.toISOString(), details: { bathType: result.bathType, soapUsed: result.soapUsed, shampooUsed: result.shampooUsed } }, { familyId, babyId }, rl.headers);
       }
 
       case 'measurement': {

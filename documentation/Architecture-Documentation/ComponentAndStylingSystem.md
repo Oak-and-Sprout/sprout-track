@@ -2,7 +2,7 @@
 
 ## Overview
 
-Sprout Track's UI is built from 34 base UI primitives in `src/components/ui/`, composed into feature components and forms. Styling uses TailwindCSS with Class Variance Authority (CVA) for light mode variants and plain CSS with `html.dark` selectors for dark mode. This dual-file approach is intentional and must not be replaced with Tailwind's `dark:` classes.
+Sprout Track's UI is built from 39 base UI primitives in `src/components/ui/`, composed into feature components and forms. Styling uses TailwindCSS with Class Variance Authority (CVA) for light mode variants and plain CSS with `html.dark` selectors for dark mode. This dual-file approach is intentional and must not be replaced with Tailwind's `dark:` classes.
 
 ## Component File Structure
 
@@ -18,7 +18,7 @@ src/components/ui/button/
 ```
 
 ### `index.tsx` — Component Implementation
-Imports CVA variants from styles, applies dark mode CSS classes alongside CVA classes:
+Imports CVA variants from styles, applies dark mode CSS classes alongside CVA classes (simplified — the real component maps only the variants that need dark overrides):
 
 ```typescript
 import { buttonVariants } from './button.styles';
@@ -39,7 +39,7 @@ const Button = ({ variant, size, className, ...props }) => {
 ```
 
 ### `*.styles.ts` — CVA Variant Definitions
-Defines light mode styles using Tailwind utility classes:
+Defines light mode styles using Tailwind utility classes (simplified example):
 
 ```typescript
 import { cva } from 'class-variance-authority';
@@ -116,7 +116,7 @@ module.exports = {
 
 ## UI Primitive Inventory
 
-34 components in `src/components/ui/`:
+39 components in `src/components/ui/`:
 
 | Component | Purpose |
 |-----------|---------|
@@ -125,9 +125,13 @@ module.exports = {
 | `account-expiration-banner` | Subscription expiration notice |
 | `activity-tile` | Activity indicator tile (with timer) |
 | `badge` | Status/label badge |
-| `button` | Primary button (9 variants, 5 sizes) |
+| `button` | Primary button (12 variants, 5 sizes) |
 | `calendar` | Monthly calendar grid |
 | `card` | Content card container |
+| `chart-data-table` | Screen-reader-only data table alternative for charts (`sr-only`) |
+| `chat-conversation` | Feedback chat conversation view |
+| `chat-new-feedback` | New feedback submission form |
+| `chat-thread-list` | Feedback thread list |
 | `checkbox` | Checkbox input |
 | `date-time-picker` | Date/time selection |
 | `dialog` | Dialog/modal (Radix UI based) |
@@ -139,7 +143,8 @@ module.exports = {
 | `input-button` | Input with integrated button |
 | `label` | Form label |
 | `mobile-menu` | Mobile navigation hamburger menu |
-| `modal` | Modal overlay (Radix UI based) |
+| `modal` | Modal overlay (built on `dialog`) |
+| `nav-count-bubble` | Count badge for navigation items |
 | `no-baby-selected` | Empty state when no baby selected |
 | `popover` | Popover container (Radix UI based) |
 | `progress` | Progress bar |
@@ -169,13 +174,19 @@ Feature components live at the root of `src/components/` in named folders. They 
 | `DailyStats/` | Daily statistics dashboard |
 | `BabySelector/` | Baby selection dropdown |
 | `SetupWizard/` | 3-step family setup (Family → Security → Baby) |
+| `ActiveActivityBanner/` | Shows active timed activity with pause/stop controls |
 | `ActiveFeedBanner/` | Shows active breastfeeding session |
+| `ActivityTileGroup/` | Dashboard grid of activity tiles with status bubbles |
+| `BabyQuickInfo/` | Baby quick-info panel (contacts, upcoming events) |
+| `CalendarEvent/`, `CalendarEventItem/` | Calendar event display components |
+| `ExpiredAccountMessage/` | Account expiration notice |
 | `BackupRestore/` | Database backup and restore |
 | `GuardianUpdate/` | Guardian update section |
 | `LoginSecurity/` | Login security settings |
 | `account-manager/` | Account management components |
 | `familymanager/` | System admin family management |
 | `features/nursery-mode/` | Nursery mode for tablets |
+| `reporting/` | Report visuals (e.g., `CardVisual`) |
 
 ## Form Components
 
@@ -201,6 +212,34 @@ app/(app)/[slug]/page.tsx          ← Container: fetches data, manages state
         └── src/components/ui/     ← Primitives: pure UI elements
 ```
 
+## Localization
+
+All user-facing text in components goes through the localization system — never hardcode strings, including `aria-label` values:
+
+```typescript
+import { useLocalization } from '@/src/context/localization';
+
+const { t } = useLocalization();
+// ...
+<Button aria-label={t('Close')}>{t('Save Changes')}</Button>
+```
+
+- Translation keys are the exact English text (`t('Log Entry')` renders "Log Entry" in English)
+- Per-language JSON files live in `src/localization/translations/` (10 languages; `en.json` is the fallback)
+- After adding keys to `en.json`, run `node scripts/check-missing-translations.js` to propagate and sort keys across all language files
+
+## Accessibility Conventions
+
+Standard patterns applied across UI primitives, forms, and feature components (from the issue #186 accessibility program):
+
+- **Semantic buttons** — all interactive elements are real `<button>` elements, not clickable `div`/`span`
+- **Decorative icons** — lucide icons that convey no information get `aria-hidden="true"`
+- **Label association** — form inputs are linked to labels via `htmlFor` with `useId`-generated ids
+- **Inline errors** — validation messages use `role="alert"` so screen readers announce them
+- **Focus trap** — `form-page` traps Tab within the topmost open panel, moves focus in on open, and restores it on close
+- **Screen-reader-only content** — Tailwind `sr-only` for non-visual alternatives (e.g., `ui/chart-data-table` provides a hidden data table for charts)
+- **Zero visual change** — accessibility fixes must not alter rendered appearance; when changing an element's tag, check the component's `.css` file for tag-qualified selectors (e.g., `div.foo`) that would stop matching
+
 ## Responsive Design
 
 - Tailwind breakpoints for responsive layouts
@@ -215,4 +254,5 @@ app/(app)/[slug]/page.tsx          ← Container: fetches data, manages state
 - `src/components/ui/form-page/` — Form layout wrapper used by all form components
 - `src/components/ui/toast/` — Toast notification system
 - `src/context/theme.tsx` — ThemeProvider that controls `html.dark` class
+- `src/context/localization.tsx` — LocalizationProvider and `useLocalization` hook
 - `tailwind.config.js` — Tailwind configuration with `darkMode: 'class'`

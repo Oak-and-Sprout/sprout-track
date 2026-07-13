@@ -34,7 +34,7 @@ const BathStatsSection: React.FC<BathStatsSectionProps> = ({ stats, activities, 
     <>
       <AccordionItem value="baths">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <Bath className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-bath")} />
+          <Bath aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-bath")} />
           <span>{t('Bath Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>

@@ -145,8 +145,9 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
             type="button"
             onClick={() => setSearchTerm('')}
             className="contact-selector-clear-button absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+            aria-label={t('Clear search')}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -173,7 +174,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
                 >
                   <div className="flex-shrink-0 w-4 mt-1">
                     {selectedContactIds.includes(contact.id) && (
-                      <Check className="contact-selector-check-icon h-4 w-4 text-teal-600" />
+                      <Check aria-hidden="true" className="contact-selector-check-icon h-4 w-4 text-teal-600" />
                     )}
                   </div>
                   <div className="ml-2 text-sm text-gray-700 contact-selector-contact-info">
@@ -181,13 +182,13 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
                     <div className="contact-selector-contact-details text-xs text-gray-500 flex flex-wrap gap-2">
                       {contact.phone && (
                         <span className="flex items-center">
-                          <Phone className="h-3 w-3 mr-1" />
+                          <Phone className="h-3 w-3 mr-1" aria-hidden="true" />
                           {contact.phone}
                         </span>
                       )}
                       {contact.email && (
                         <span className="flex items-center">
-                          <Mail className="h-3 w-3 mr-1" />
+                          <Mail className="h-3 w-3 mr-1" aria-hidden="true" />
                           {contact.email}
                         </span>
                       )}
@@ -205,7 +206,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
                     className="contact-selector-edit-button p-1 text-gray-400 hover:text-gray-600"
                     aria-label={t('Edit') + ' ' + contact.name}
                   >
-                    <Edit className="h-3.5 w-3.5" />
+                    <Edit className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -240,7 +241,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
         <div className="flex flex-wrap gap-2 mt-2">
           {selectedContacts.map(contact => (
             <div key={contact.id} className="contact-selector-selected-tag flex items-center rounded-full bg-teal-100 px-2 py-1 text-xs text-teal-800">
-              <User className="contact-selector-selected-tag-icon h-3 w-3 mr-1 text-teal-600" />
+              <User className="contact-selector-selected-tag-icon h-3 w-3 mr-1 text-teal-600" aria-hidden="true" />
               <span>{contact.name}</span>
               <button
                 type="button"
@@ -249,8 +250,9 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
                   removeContact(contact.id);
                 }}
                 className="contact-selector-remove-tag-button ml-1 h-3 w-3 text-teal-600 hover:text-teal-800"
+                aria-label={t('Remove') + ' ' + contact.name}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -270,7 +272,7 @@ const ContactSelector: React.FC<ContactSelectorProps> = ({
             className="w-full"
             size="sm"
           >
-            <Plus className="h-4 w-4 mr-1.5" />
+            <Plus className="h-4 w-4 mr-1.5" aria-hidden="true" />
             {t('Add New Contact')}
           </Button>
         </div>

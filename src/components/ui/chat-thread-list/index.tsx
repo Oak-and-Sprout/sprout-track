@@ -84,8 +84,8 @@ export function ChatThreadList({
               )}
             >
               {showNewActive
-                ? <X className="h-3.5 w-3.5 text-gray-600" />
-                : <Plus className="h-3.5 w-3.5 text-emerald-500" />
+                ? <X className="h-3.5 w-3.5 text-gray-600" aria-hidden="true" />
+                : <Plus className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
               }
             </button>
           )}
@@ -109,7 +109,7 @@ export function ChatThreadList({
       <div className={styles.list}>
         {threads.length === 0 ? (
           <div className={cn(styles.emptyState, 'chat-thread-list-empty')}>
-            <MessageSquare className="h-8 w-8" />
+            <MessageSquare className="h-8 w-8" aria-hidden="true" />
             <span>{t('No messages yet')}</span>
           </div>
         ) : (

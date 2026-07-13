@@ -305,7 +305,7 @@ const TimelineV2ActivityList = ({
                                     
                                     if ('amount' in activity) {
                                       if (activity.type === 'BREAST') {
-                                        const side = activity.side ? t(activity.side.charAt(0) + activity.side.slice(1).toLowerCase()) : '';
+                                        const side = activity.side ? t(activity.side === 'LEFT' ? 'Left Side' : 'Right Side') : '';
                                         let duration = '';
                                         if (activity.feedDuration) {
                                           const minutes = Math.floor(activity.feedDuration / 60);
@@ -314,7 +314,7 @@ const TimelineV2ActivityList = ({
                                         } else if (activity.amount) {
                                           duration = `${activity.amount} ${t('min')}`;
                                         }
-                                        const parts = [side ? t(`${side} Side`) : '', duration].filter(Boolean);
+                                        const parts = [side, duration].filter(Boolean);
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
@@ -450,7 +450,7 @@ const TimelineV2ActivityList = ({
             <div className="absolute inset-0 flex items-center justify-center h-full">
               <div className="text-center p-6">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <BabyIcon className="h-8 w-8 text-indigo-600" />
+                  <BabyIcon className="h-8 w-8 text-indigo-600" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">{t('No activities recorded')}</h3>
                 <p className="text-sm text-gray-500 timeline-empty-description">

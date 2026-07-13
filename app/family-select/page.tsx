@@ -250,7 +250,7 @@ export default function FamilySelectPage() {
             {/* Family Search Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-center space-x-2 text-teal-600 mb-4">
-                <Users className="w-5 h-5 family-select-section-icon" />
+                <Users className="w-5 h-5 family-select-section-icon" aria-hidden="true" />
                 <span className="text-lg font-semibold family-select-section-title">{t('Family Selection')}</span>
               </div>
               
@@ -259,7 +259,7 @@ export default function FamilySelectPage() {
                 <div className="relative w-full">
                   <div className="flex items-center w-full">
                     <div className="absolute left-3 z-10">
-                      <Search className="h-4 w-4 text-gray-500 family-select-search-icon" />
+                      <Search className="h-4 w-4 text-gray-500 family-select-search-icon" aria-hidden="true" />
                     </div>
                     <Input
                       ref={inputRef}
@@ -271,7 +271,8 @@ export default function FamilySelectPage() {
                       placeholder="Search for your family..."
                       disabled={loading}
                     />
-                    <ChevronDown 
+                    <ChevronDown
+                      aria-hidden="true"
                       className="absolute right-3 h-4 w-4 text-gray-500 family-select-dropdown-icon"
                       onClick={() => {
                         const willOpen = !dropdownOpen;
@@ -313,7 +314,7 @@ export default function FamilySelectPage() {
                                     /{family.slug}
                                   </div>
                                 </div>
-                                <Users className="w-4 h-4 text-gray-400" />
+                                <Users className="w-4 h-4 text-gray-400" aria-hidden="true" />
                               </div>
                             </div>
                           ))}
@@ -335,7 +336,7 @@ export default function FamilySelectPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center family-select-selected-icon-container">
-                      <Users className="w-4 h-4 text-teal-600 family-select-selected-icon" />
+                      <Users className="w-4 h-4 text-teal-600 family-select-selected-icon" aria-hidden="true" />
                     </div>
                     <div>
                       <div className="font-medium text-gray-900 family-select-selected-family-name">
@@ -363,7 +364,7 @@ export default function FamilySelectPage() {
             >
               <span className="flex items-center justify-center space-x-2">
                 <span>{t('Continue to Login')}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </span>
             </Button>
           </div>

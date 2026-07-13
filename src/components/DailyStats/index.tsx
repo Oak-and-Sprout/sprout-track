@@ -447,46 +447,46 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
         className={cn(dailyStatsStyles.header, "cursor-pointer")}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className={dailyStatsStyles.title}>{t('Daily Stats')}</h3>
+        <h2 className={dailyStatsStyles.title}>{t('Daily Stats')}</h2>
         
         {!isExpanded && !isLoading && activities.length > 0 && (
           <StatsTicker 
             stats={[
-              ...(awakeTime !== '0h 0m' ? [{ icon: <Sun className="h-3 w-3 text-amber-500" />, label: "Awake", value: awakeTime }] : []),
-              ...(sleepTime !== '0h 0m' ? [{ icon: <Moon className="h-3 w-3 text-gray-700" />, label: "Sleep", value: sleepTime }] : []),
-              ...(totalConsumed !== 'None' ? [{ icon: <Icon iconNode={bottleBaby} className="h-3 w-3 text-sky-600" />, label: "Bottle", value: totalConsumed }] : []),
-              ...(diaperChanges !== '0' ? [{ icon: <Icon iconNode={diaper} className="h-3 w-3 text-teal-600" />, label: "Diapers", value: diaperChanges }] : []),
-              ...(poopCount !== '0' ? [{ icon: <Icon iconNode={diaper} className="h-3 w-3 text-amber-700" />, label: "Poops", value: poopCount }] : []),
-              ...(solidsConsumed !== 'None' ? [{ icon: <Utensils className="h-3 w-3 text-green-600" />, label: "Solids", value: solidsConsumed }] : []),
-              ...(leftBreastTime !== '0h 0m' ? [{ icon: <Droplet className="h-3 w-3 text-blue-500" />, label: "Left", value: leftBreastTime }] : []),
-              ...(rightBreastTime !== '0h 0m' ? [{ icon: <Droplet className="h-3 w-3 text-red-500" />, label: "Right", value: rightBreastTime }] : []),
-              ...(noteCount !== '0' ? [{ icon: <StickyNote className="h-3 w-3 text-yellow-500" />, label: "Notes", value: noteCount }] : []),
-              ...(bathCount !== '0' ? [{ icon: <Bath className="h-3 w-3 text-orange-500" />, label: "Baths", value: bathCount }] : []),
-              ...(milestoneCount !== '0' ? [{ icon: <Trophy className="h-3 w-3 text-blue-500" />, label: "Milestones", value: milestoneCount }] : []),
-              ...(pumpTotals !== 'None' ? [{ icon: <LampWallDown className="h-3 w-3 text-purple-500" />, label: "Pumped", value: pumpTotals }] : []),
-              ...(breastMilkBalance ? [{ icon: <LampWallDown className="h-3 w-3 text-purple-500" />, label: t('Breast Milk Stored'), value: breastMilkBalance }] : []),
+              ...(awakeTime !== '0h 0m' ? [{ icon: <Sun className="h-3 w-3 text-amber-500" aria-hidden="true" />, label: "Awake", value: awakeTime }] : []),
+              ...(sleepTime !== '0h 0m' ? [{ icon: <Moon className="h-3 w-3 text-gray-700" aria-hidden="true" />, label: "Sleep", value: sleepTime }] : []),
+              ...(totalConsumed !== 'None' ? [{ icon: <Icon iconNode={bottleBaby} className="h-3 w-3 text-sky-600" aria-hidden="true" />, label: "Bottle", value: totalConsumed }] : []),
+              ...(diaperChanges !== '0' ? [{ icon: <Icon iconNode={diaper} className="h-3 w-3 text-teal-600" aria-hidden="true" />, label: "Diapers", value: diaperChanges }] : []),
+              ...(poopCount !== '0' ? [{ icon: <Icon iconNode={diaper} className="h-3 w-3 text-amber-700" aria-hidden="true" />, label: "Poops", value: poopCount }] : []),
+              ...(solidsConsumed !== 'None' ? [{ icon: <Utensils className="h-3 w-3 text-green-600" aria-hidden="true" />, label: "Solids", value: solidsConsumed }] : []),
+              ...(leftBreastTime !== '0h 0m' ? [{ icon: <Droplet className="h-3 w-3 text-blue-500" aria-hidden="true" />, label: "Left", value: leftBreastTime }] : []),
+              ...(rightBreastTime !== '0h 0m' ? [{ icon: <Droplet className="h-3 w-3 text-red-500" aria-hidden="true" />, label: "Right", value: rightBreastTime }] : []),
+              ...(noteCount !== '0' ? [{ icon: <StickyNote className="h-3 w-3 text-yellow-500" aria-hidden="true" />, label: "Notes", value: noteCount }] : []),
+              ...(bathCount !== '0' ? [{ icon: <Bath className="h-3 w-3 text-orange-500" aria-hidden="true" />, label: "Baths", value: bathCount }] : []),
+              ...(milestoneCount !== '0' ? [{ icon: <Trophy className="h-3 w-3 text-blue-500" aria-hidden="true" />, label: "Milestones", value: milestoneCount }] : []),
+              ...(pumpTotals !== 'None' ? [{ icon: <LampWallDown className="h-3 w-3 text-purple-500" aria-hidden="true" />, label: "Pumped", value: pumpTotals }] : []),
+              ...(breastMilkBalance ? [{ icon: <LampWallDown className="h-3 w-3 text-purple-500" aria-hidden="true" />, label: t('Breast Milk Stored'), value: breastMilkBalance }] : []),
               ...(medicineCounts.length > 0 ? medicineCounts.map(med => ({ 
-                icon: <PillBottle className="h-3 w-3 text-green-600" />, 
+                icon: <PillBottle className="h-3 w-3 text-green-600" aria-hidden="true" />, 
                 label: med.name, 
                 value: med.display 
               })) : []),
               ...(lastMeasurements['HEIGHT'] ? [{ 
-                icon: <Ruler className="h-3 w-3 text-red-500" />, 
+                icon: <Ruler className="h-3 w-3 text-red-500" aria-hidden="true" />, 
                 label: "Height", 
                 value: `${lastMeasurements['HEIGHT'].value} ${lastMeasurements['HEIGHT'].unit}` 
               }] : []),
               ...(lastMeasurements['WEIGHT'] ? [{ 
-                icon: <Scale className="h-3 w-3 text-red-500" />, 
+                icon: <Scale className="h-3 w-3 text-red-500" aria-hidden="true" />, 
                 label: "Weight", 
                 value: `${lastMeasurements['WEIGHT'].value} ${lastMeasurements['WEIGHT'].unit}` 
               }] : []),
               ...(lastMeasurements['HEAD_CIRCUMFERENCE'] ? [{ 
-                icon: <RotateCw className="h-3 w-3 text-red-500" />, 
+                icon: <RotateCw className="h-3 w-3 text-red-500" aria-hidden="true" />, 
                 label: "Head", 
                 value: `${lastMeasurements['HEAD_CIRCUMFERENCE'].value} ${lastMeasurements['HEAD_CIRCUMFERENCE'].unit}` 
               }] : []),
               ...(lastMeasurements['TEMPERATURE'] ? [{ 
-                icon: <Thermometer className="h-3 w-3 text-red-500" />, 
+                icon: <Thermometer className="h-3 w-3 text-red-500" aria-hidden="true" />, 
                 label: "Temp", 
                 value: `${lastMeasurements['TEMPERATURE'].value} ${lastMeasurements['TEMPERATURE'].unit}` 
               }] : [])
@@ -494,8 +494,17 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
           />
         )}
         
-        <button className={dailyStatsStyles.toggle}>
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <button
+          type="button"
+          className={dailyStatsStyles.toggle}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? t('Collapse daily stats') : t('Expand daily stats')}
+        >
+          {isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
         </button>
       </div>
       
@@ -512,88 +521,88 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
           ) : (
             <>
               <StatItem 
-                icon={<Sun className="h-4 w-4 text-amber-500" />} 
+                icon={<Sun className="h-4 w-4 text-amber-500" aria-hidden="true" />} 
                 label="Awake Time" 
                 value={awakeTime} 
               />
               <StatItem 
-                icon={<Moon className="h-4 w-4 text-gray-700" />} 
+                icon={<Moon className="h-4 w-4 text-gray-700" aria-hidden="true" />} 
                 label="Sleep Time" 
                 value={sleepTime} 
               />
               {totalConsumed !== 'None' && (
                 <StatItem 
-                  icon={<Icon iconNode={bottleBaby} className="h-4 w-4 text-sky-600" />} 
+                  icon={<Icon iconNode={bottleBaby} className="h-4 w-4 text-sky-600" aria-hidden="true" />} 
                   label="Bottle" 
                   value={totalConsumed} 
                 />
               )}
               {diaperChanges !== '0' && (
                 <StatItem 
-                  icon={<Icon iconNode={diaper} className="h-4 w-4 text-teal-600" />} 
+                  icon={<Icon iconNode={diaper} className="h-4 w-4 text-teal-600" aria-hidden="true" />} 
                   label="Diaper Changes" 
                   value={diaperChanges} 
                 />
               )}
               {poopCount !== '0' && (
                 <StatItem 
-                  icon={<Icon iconNode={diaper} className="h-4 w-4 text-amber-700" />} 
+                  icon={<Icon iconNode={diaper} className="h-4 w-4 text-amber-700" aria-hidden="true" />} 
                   label="Poops" 
                   value={poopCount} 
                 />
               )}
               {solidsConsumed !== 'None' && (
                 <StatItem 
-                  icon={<Utensils className="h-4 w-4 text-green-600" />} 
+                  icon={<Utensils className="h-4 w-4 text-green-600" aria-hidden="true" />} 
                   label="Solids" 
                   value={solidsConsumed} 
                 />
               )}
               {leftBreastTime !== '0h 0m' && (
                 <StatItem 
-                  icon={<Droplet className="h-4 w-4 text-blue-500" />} 
+                  icon={<Droplet className="h-4 w-4 text-blue-500" aria-hidden="true" />} 
                   label="Left Breast" 
                   value={leftBreastTime} 
                 />
               )}
               {rightBreastTime !== '0h 0m' && (
                 <StatItem 
-                  icon={<Droplet className="h-4 w-4 text-red-500" />} 
+                  icon={<Droplet className="h-4 w-4 text-red-500" aria-hidden="true" />} 
                   label="Right Breast" 
                   value={rightBreastTime} 
                 />
               )}
               {noteCount !== '0' && (
                 <StatItem 
-                  icon={<StickyNote className="h-4 w-4 text-yellow-500" />} 
+                  icon={<StickyNote className="h-4 w-4 text-yellow-500" aria-hidden="true" />} 
                   label="Notes" 
                   value={noteCount} 
                 />
               )}
               {bathCount !== '0' && (
                 <StatItem 
-                  icon={<Bath className="h-4 w-4 text-orange-500" />} 
+                  icon={<Bath className="h-4 w-4 text-orange-500" aria-hidden="true" />} 
                   label="Baths" 
                   value={bathCount} 
                 />
               )}
               {milestoneCount !== '0' && (
                 <StatItem 
-                  icon={<Trophy className="h-4 w-4 text-blue-500" />} 
+                  icon={<Trophy className="h-4 w-4 text-blue-500" aria-hidden="true" />} 
                   label="Milestones" 
                   value={milestoneCount} 
                 />
               )}
               {pumpTotals !== 'None' && (
                 <StatItem
-                  icon={<LampWallDown className="h-4 w-4 text-purple-500" />}
+                  icon={<LampWallDown className="h-4 w-4 text-purple-500" aria-hidden="true" />}
                   label="Pumped"
                   value={pumpTotals}
                 />
               )}
               {breastMilkBalance && (
                 <StatItem
-                  icon={<LampWallDown className="h-4 w-4 text-purple-500" />}
+                  icon={<LampWallDown className="h-4 w-4 text-purple-500" aria-hidden="true" />}
                   label={t('Breast Milk Stored')}
                   value={breastMilkBalance}
                 />
@@ -601,35 +610,35 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
               {medicineCounts.length > 0 && medicineCounts.map((med, index) => (
                 <StatItem 
                   key={`med-${index}`}
-                  icon={<PillBottle className="h-4 w-4 text-green-600" />} 
+                  icon={<PillBottle className="h-4 w-4 text-green-600" aria-hidden="true" />} 
                   label={med.name} 
                   value={med.display} 
                 />
               ))}
               {lastMeasurements['HEIGHT'] && (
                 <StatItem 
-                  icon={<Ruler className="h-4 w-4 text-red-500" />} 
+                  icon={<Ruler className="h-4 w-4 text-red-500" aria-hidden="true" />} 
                   label="Height" 
                   value={`${lastMeasurements['HEIGHT'].value} ${lastMeasurements['HEIGHT'].unit}`} 
                 />
               )}
               {lastMeasurements['WEIGHT'] && (
                 <StatItem 
-                  icon={<Scale className="h-4 w-4 text-red-500" />} 
+                  icon={<Scale className="h-4 w-4 text-red-500" aria-hidden="true" />} 
                   label="Weight" 
                   value={`${lastMeasurements['WEIGHT'].value} ${lastMeasurements['WEIGHT'].unit}`} 
                 />
               )}
               {lastMeasurements['HEAD_CIRCUMFERENCE'] && (
                 <StatItem 
-                  icon={<RotateCw className="h-4 w-4 text-red-500" />} 
+                  icon={<RotateCw className="h-4 w-4 text-red-500" aria-hidden="true" />} 
                   label="Head Circ." 
                   value={`${lastMeasurements['HEAD_CIRCUMFERENCE'].value} ${lastMeasurements['HEAD_CIRCUMFERENCE'].unit}`} 
                 />
               )}
               {lastMeasurements['TEMPERATURE'] && (
                 <StatItem 
-                  icon={<Thermometer className="h-4 w-4 text-red-500" />} 
+                  icon={<Thermometer className="h-4 w-4 text-red-500" aria-hidden="true" />} 
                   label="Temperature" 
                   value={`${lastMeasurements['TEMPERATURE'].value} ${lastMeasurements['TEMPERATURE'].unit}`} 
                 />

@@ -14,10 +14,15 @@ A modular form component for creating and editing bath records for a baby. This 
 - Create new bath records
 - Edit existing bath records
 - Track bath details including:
+  - Bath type (Full Bath, Sponge Bath, Wipe Down, or a custom value)
   - Whether soap and/or shampoo was used
   - Water temperature
   - Bath duration
   - Additional notes
+- GUI-managed bath type list (same pattern as SleepForm locations):
+  - Default types can be shown/hidden via the gear icon manager (persisted per family in `Settings.bathTypeSettings` via `/api/bath-type-settings`)
+  - Custom types previously used by the family are fetched from `/api/bath-log?bathTypes=true` and offered in the dropdown
+  - A "Custom" option allows free-text entry of a new type
 - Form validation for required fields
 - Responsive design
 - Multi-family support with family ID association
@@ -71,6 +76,7 @@ function MyComponent() {
 The component includes the following fields:
 
 - **Time**: Date and time of the bath (required)
+- **Bath Type**: Optional dropdown (Full Bath, Sponge Bath, Wipe Down, previously used custom types, or Custom free-text entry). Existing records without a type simply show no type.
 - **Bath Options**:
   - **Soap Used**: Checkbox to indicate if soap was used
   - **Shampoo Used**: Checkbox to indicate if shampoo was used

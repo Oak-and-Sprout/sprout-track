@@ -45,7 +45,7 @@ const SupplementStatsSection: React.FC<SupplementStatsSectionProps> = ({
     <>
       <AccordionItem value="supplements">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <Pill className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-supplement")} />
+          <Pill aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-supplement")} />
           <span>{t('Supplement Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>

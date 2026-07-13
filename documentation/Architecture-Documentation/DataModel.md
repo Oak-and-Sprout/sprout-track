@@ -2,7 +2,7 @@
 
 ## Overview
 
-Sprout Track uses Prisma ORM with SQLite. The schema defines 40+ models centered around the Family entity. Every piece of user data — babies, caretakers, activity logs, settings — is scoped to a family. The database file lives at `db/baby-tracker.db`.
+Sprout Track uses Prisma ORM with SQLite by default; PostgreSQL is also supported — `scripts/prisma-provider.js` rewrites the datasource provider in place based on the `DATABASE_PROVIDER` env var, so all schema and queries must remain compatible with both. The schema defines 40+ models centered around the Family entity. Every piece of user data — babies, caretakers, activity logs, settings — is scoped to a family. The default SQLite database file lives at `db/baby-tracker.db`. A second schema, `prisma/log-schema.prisma`, defines a separate API logging database with a single `ApiLog` model (URL from `LOG_DATABASE_URL`).
 
 ## Entity Relationship Overview
 
@@ -74,6 +74,7 @@ The subject of all activity tracking.
 | `inactive` | Soft-disable (graduated/grown) |
 | `feedWarningTime` | Timer threshold for feed alerts (default "03:00") |
 | `diaperWarningTime` | Timer threshold for diaper alerts (default "02:00") |
+| `feedTimerFrom` | Count feed timer from "start" or "end" of feeding (default "start") |
 | `familyId` | Family scope |
 
 ## The Activity Log Pattern
@@ -99,9 +100,9 @@ All activity tracking models share a common structure. This consistency is criti
 | Model | Time Pattern | Key Fields |
 |-------|-------------|------------|
 | `SleepLog` | start/end/duration | `type` (NAP, NIGHT_SLEEP), `quality`, `location` |
-| `FeedLog` | time + optional start/end | `type` (BREAST, BOTTLE, SOLIDS), `amount`, `unitAbbr`, `side`, `food`, `bottleType`, `breastMilkAmount` |
+| `FeedLog` | time + optional start/end | `type` (BREAST, BOTTLE, SOLIDS), `amount`, `unitAbbr`, `side`, `food`, `bottleType`, `breastMilkAmount`, `sessionId` (groups breast feeds into one nursing session) |
 | `DiaperLog` | time | `type` (WET, DIRTY, BOTH), `condition`, `color`, `blowout`, `creamApplied` |
-| `BathLog` | time | `soapUsed`, `shampooUsed` |
+| `BathLog` | time | `bathType` ("Full Bath", "Sponge Bath", "Wipe Down", or custom), `soapUsed`, `shampooUsed` |
 | `PlayLog` | start/end/duration | `type` (TUMMY_TIME, INDOOR_PLAY, OUTDOOR_PLAY, WALK, CUSTOM) |
 | `PumpLog` | start/end/duration | `leftAmount`, `rightAmount`, `totalAmount`, `unitAbbr`, `pumpAction` |
 | `MoodLog` | time | `mood` (HAPPY, CALM, FUSSY, CRYING), `intensity` (1-5) |
@@ -112,10 +113,13 @@ All activity tracking models share a common structure. This consistency is criti
 | `VaccineLog` | time | `vaccineName`, `doseNumber`, has `VaccineDocument[]` |
 
 ### Breast Milk Inventory
-Two models work together for breast milk tracking:
+Three models work together for breast milk tracking:
 - `PumpLog` — Records pumping sessions with `pumpAction` (STORED, FED, DISCARDED)
 - `BreastMilkAdjustment` — Manual inventory changes (initial stock, expired, spilled, donated)
 - `ActiveBreastFeed` — Persistent breastfeeding session state (one per baby, tracks side, duration, pause state)
+
+### Active Play Sessions
+- `ActiveActivity` — Persistent play session state (one per baby, tracks play type, duration, pause state), the play-activity counterpart of `ActiveBreastFeed`
 
 ## Supporting Entities
 
@@ -142,7 +146,9 @@ Measurement unit definitions with `unitAbbr` (unique), `unitName`, and `activity
 ### Settings (per-family)
 - `familyName`, `securityPin` (for system caretaker auth)
 - Default units: `defaultBottleUnit`, `defaultSolidsUnit`, `defaultHeightUnit`, `defaultWeightUnit`, `defaultTempUnit`
-- JSON config strings: `activitySettings`, `sleepLocationSettings`, `nurseryModeSettings`
+- JSON config strings: `activitySettings`, `sleepLocationSettings`, `bathTypeSettings`, `nurseryModeSettings`
+- Feature toggles: `enableBreastMilkTracking`, `includeSolidsInFeedTimer`
+- Display formats: `dateFormat` (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD), `timeFormat` (12h/24h)
 - Debug flags: `enableDebugTimer`, `enableDebugTimezone`
 
 ### AppConfig (global, single row)
@@ -187,8 +193,16 @@ Token-based family creation invitations:
 - `token` (unique), `password` (hashed), `expiresAt`
 - Links `createdBy` caretaker to resulting family
 
+## Feedback and Platform Models
+
+- `Feedback` / `FeedbackAttachment` — User feedback and support threads (replies via self-relation `parentId`), with image attachments stored encrypted
+- `DemoTracker` — Tracks the auto-regenerated demo family
+- `BetaSubscriber`, `BetaCampaign`, `BetaCampaignEmail` — Beta signup and email campaign tracking
+
 ## Key Files
 
 - `prisma/schema.prisma` — Complete schema definition
+- `prisma/log-schema.prisma` — Separate schema for the API logging database (`ApiLog` model)
+- `scripts/prisma-provider.js` — Switches datasource provider between SQLite and PostgreSQL
 - `app/api/db.ts` — Prisma client singleton
 - `app/api/types.ts` — API request/response type definitions for all models

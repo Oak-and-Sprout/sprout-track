@@ -11,7 +11,7 @@ import { cva } from "class-variance-authority"
  * @see https://cva.style/docs for more information on class-variance-authority
  */
 export const checkboxVariants = cva(
-  "h-5 w-5 rounded border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+  "h-5 w-5 rounded border flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2",
   {
     variants: {
       variant: {

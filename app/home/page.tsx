@@ -386,7 +386,7 @@ const home = () => {
             <div className="order-1 lg:order-2 relative overflow-visible">
               {/* Background icon - offset to bottom right */}
               <div className="absolute bottom-16 -right-12 z-0">
-                <Users size={200} className="text-teal-500 opacity-20" />
+                <Users size={200} className="text-teal-500 opacity-20" aria-hidden="true" />
               </div>
               {/* Caretaker Demo Videos */}
               <div className="relative z-10 max-w-sm mx-auto">
@@ -426,7 +426,7 @@ const home = () => {
             <div className="relative overflow-visible">
               {/* Background icon - offset to bottom left */}
               <div className="absolute bottom-16 -left-12 z-0">
-                <TrendingUp size={200} className="text-emerald-500 opacity-20" />
+                <TrendingUp size={200} className="text-emerald-500 opacity-20" aria-hidden="true" />
               </div>
               {/* Baby Info Demo Video */}
               <div className="relative z-10 max-w-sm mx-auto">
@@ -503,7 +503,7 @@ const home = () => {
             <div className="order-1 lg:order-2 relative overflow-visible">
               {/* Background icon - offset to bottom right */}
               <div className="absolute bottom-16 -right-12 z-0">
-                <BarChart3 size={200} className="text-teal-600 opacity-20" />
+                <BarChart3 size={200} className="text-teal-600 opacity-20" aria-hidden="true" />
               </div>
               {/* Daily Stats Demo Video */}
               <div className="relative z-10 max-w-sm mx-auto">
@@ -536,7 +536,7 @@ const home = () => {
             <div className="relative overflow-visible">
               {/* Background icon - offset to bottom left */}
               <div className="absolute bottom-16 -left-12 z-0">
-                <Calendar size={200} className="text-teal-600 opacity-20" />
+                <Calendar size={200} className="text-teal-600 opacity-20" aria-hidden="true" />
               </div>
               {/* Calendar Demo Video */}
               <div className="relative z-10 max-w-sm mx-auto">
@@ -767,8 +767,9 @@ const home = () => {
               target="_blank" 
               rel="noopener noreferrer"
               className="saas-github-link"
+              aria-label={t('GitHub')}
             >
-              <Github size={16} />
+              <Github size={16} aria-hidden="true" />
             </a>
           </Button>
         </div>

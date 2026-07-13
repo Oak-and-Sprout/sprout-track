@@ -179,7 +179,7 @@ export default function FamilyMobileView({
                     >
                       {family.isActive ? t('Active') : t('Inactive')}
                     </span>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
                   </div>
                 </div>
               </CardHeader>
@@ -236,12 +236,12 @@ export default function FamilyMobileView({
                         className={slugError ? 'border-red-500' : ''}
                       />
                       {checkingSlug && (
-                        <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                        <Loader2 aria-hidden="true" className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
                       )}
                     </div>
                     {slugError && (
                       <div className="flex items-center gap-1 text-red-600 text-xs">
-                        <AlertCircle className="h-3 w-3" />
+                        <AlertCircle className="h-3 w-3" aria-hidden="true" />
                         {slugError}
                       </div>
                     )}
@@ -288,7 +288,7 @@ export default function FamilyMobileView({
                       onClick={() => handleConfirmSave(selectedFamily)}
                       disabled={saving}
                     >
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" /> : null}
                       {t('Confirm')}
                     </Button>
                     <Button
@@ -334,8 +334,9 @@ export default function FamilyMobileView({
                   <label className="text-sm font-medium text-gray-700 mobile-detail-label">{t('Caretakers')}</label>
                   <div className="mt-2">
                     {loadingCaretakers ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                      <div role="status" className="flex items-center justify-center py-4">
+                        <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin text-gray-400" />
+                        <span className="sr-only">{t('Loading...')}</span>
                       </div>
                     ) : caretakers.length > 0 ? (
                       <div className="space-y-2">
@@ -381,9 +382,9 @@ export default function FamilyMobileView({
                   disabled={saving || !!slugError || checkingSlug}
                 >
                   {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" />
                   ) : (
-                    <Check className="h-4 w-4 mr-1" />
+                    <Check className="h-4 w-4 mr-1" aria-hidden="true" />
                   )}
                   {t('Save')}
                 </Button>
@@ -393,7 +394,7 @@ export default function FamilyMobileView({
                   onClick={() => { setShowDeactivateConfirm(false); onCancelEdit(); }}
                   disabled={saving}
                 >
-                  <X className="h-4 w-4 mr-1" />
+                  <X className="h-4 w-4 mr-1" aria-hidden="true" />
                   {t('Cancel')}
                 </Button>
               </>
@@ -404,7 +405,7 @@ export default function FamilyMobileView({
                   size="sm"
                   onClick={() => onEdit(selectedFamily)}
                 >
-                  <Edit className="h-4 w-4 mr-1" />
+                  <Edit className="h-4 w-4 mr-1" aria-hidden="true" />
                   {t('Edit')}
                 </Button>
                 <ShareButton
@@ -420,7 +421,7 @@ export default function FamilyMobileView({
                   size="sm"
                   onClick={() => onLogin(selectedFamily)}
                 >
-                  <LogIn className="h-4 w-4 mr-1" />
+                  <LogIn className="h-4 w-4 mr-1" aria-hidden="true" />
                   {t('Login')}
                 </Button>
                 <Button

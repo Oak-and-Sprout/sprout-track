@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { PlayLogResponse, ActiveActivityResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -77,6 +77,7 @@ export default function ActivityForm({
   prefillData,
 }: ActivityFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -480,7 +481,7 @@ export default function ActivityForm({
                     className={cn(dateTimePickerButtonStyles, "date-time-picker-button whitespace-nowrap")}
                     disabled={loading}
                   >
-                    <Timer className="h-4 w-4" />
+                    <Timer className="h-4 w-4" aria-hidden="true" />
                     {duration ? t('Resume Timer') : t('Start Timer')}
                   </Button>
                 )}
@@ -497,7 +498,7 @@ export default function ActivityForm({
                         className="banner-btn activity-banner-btn-pause"
                         title={t('Pause Activity')}
                       >
-                        <Pause className="h-4 w-4" />
+                        <Pause className="h-4 w-4" aria-hidden="true" />
                       </button>
                     ) : (
                       <button
@@ -506,7 +507,7 @@ export default function ActivityForm({
                         className="banner-btn activity-banner-btn-resume"
                         title={t('Resume Activity')}
                       >
-                        <Play className="h-4 w-4" />
+                        <Play className="h-4 w-4" aria-hidden="true" />
                       </button>
                     )}
                     <button
@@ -515,7 +516,7 @@ export default function ActivityForm({
                       className="banner-btn activity-banner-btn-stop"
                       title={t('End Activity')}
                     >
-                      <Square className="h-4 w-4" />
+                      <Square className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 )}
@@ -524,8 +525,9 @@ export default function ActivityForm({
 
             {/* Duration */}
             <div>
-              <label className="form-label">{t('Duration (minutes)')}</label>
+              <label htmlFor={`${formId}-duration`} className="form-label">{t('Duration (minutes)')}</label>
               <Input
+                id={`${formId}-duration`}
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
@@ -539,11 +541,12 @@ export default function ActivityForm({
             {/* Sub-Category (not for Tummy Time) */}
             {playType !== 'TUMMY_TIME' && (
               <div>
-                <label className="form-label">{t('Sub-Category')}</label>
+                <label htmlFor={`${formId}-subcategory`} className="form-label">{t('Sub-Category')}</label>
                 <div className="relative">
                   <div className="relative w-full">
                     <div className="flex items-center w-full">
                       <Input
+                        id={`${formId}-subcategory`}
                         ref={inputRef}
                         value={subCategory}
                         onChange={handleCategoryInputChange}
@@ -554,6 +557,7 @@ export default function ActivityForm({
                         disabled={loading}
                       />
                       <ChevronDown
+                        aria-hidden="true"
                         className="absolute right-3 h-4 w-4 text-gray-500 activity-form-dropdown-icon"
                         onClick={() => {
                           setDropdownOpen(!dropdownOpen);
@@ -607,8 +611,9 @@ export default function ActivityForm({
 
             {/* Notes */}
             <div>
-              <label className="form-label">{t('Notes')}</label>
+              <label htmlFor={`${formId}-notes`} className="form-label">{t('Notes')}</label>
               <Textarea
+                id={`${formId}-notes`}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full min-h-[80px]"

@@ -13,7 +13,7 @@ html.dark .checkbox-check {
   color: #1f2937 !important; /* gray-800 */
 }
 
-html.dark .checkbox:focus-visible {
+html.dark .checkbox-input:focus-visible + .checkbox {
   outline: 2px solid #5eead4 !important; /* teal-300 */
   outline-offset: 2px !important;
 }

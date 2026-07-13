@@ -50,6 +50,7 @@ function HomeContent(): React.ReactElement {
   const [sleepStartTime, setSleepStartTime] = useState<Record<string, Date>>({});
   const [lastSleepEndTime, setLastSleepEndTime] = useState<Record<string, Date>>({});
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
+  const [lastFeedEndTime, setLastFeedEndTime] = useState<Record<string, Date>>({});
   const [lastDiaperTime, setLastDiaperTime] = useState<Record<string, Date>>({});
   const [includeSolidsInFeedTimer, setIncludeSolidsInFeedTimer] = useState(true);
   const includeSolidsRef = useRef(true);
@@ -248,6 +249,23 @@ function HomeContent(): React.ReactElement {
     }
   };
 
+  const handleFeedSwap = async () => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=swap`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkFeedStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error correcting feed side:', error);
+    }
+  };
+
   const handleFeedPause = async () => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
@@ -402,6 +420,17 @@ function HomeContent(): React.ReactElement {
     if (data.lastFeedTime) {
       setLastFeedTime(prev => ({ ...prev, [selectedBaby.id]: data.lastFeedTime! }));
     }
+    // Always sync (set or clear) so a stale end time from an older breast feed
+    // doesn't linger after a feed with no end time (e.g. bottle) becomes the latest
+    setLastFeedEndTime(prev => {
+      const next = { ...prev };
+      if (data.lastFeedEndTime) {
+        next[selectedBaby.id] = data.lastFeedEndTime;
+      } else {
+        delete next[selectedBaby.id];
+      }
+      return next;
+    });
     if (data.lastDiaperTime) {
       setLastDiaperTime(prev => ({ ...prev, [selectedBaby.id]: data.lastDiaperTime! }));
     }
@@ -445,6 +474,7 @@ function HomeContent(): React.ReactElement {
           sleepStartTime={sleepStartTime}
           lastSleepEndTime={lastSleepEndTime}
           lastFeedTime={lastFeedTime}
+          lastFeedEndTime={lastFeedEndTime}
           lastDiaperTime={lastDiaperTime}
           feedStartTime={feedStartTime}
           updateUnlockTimer={updateUnlockTimer}
@@ -511,7 +541,7 @@ function HomeContent(): React.ReactElement {
           {isCheckingAccountStatus ? (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-192px)] text-center bg-white border-t border-gray-200">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center animate-pulse">
-                <BabyIcon className="h-8 w-8 text-indigo-600" />
+                <BabyIcon className="h-8 w-8 text-indigo-600" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Loading')}...</h3>
               <p className="text-sm text-gray-500">
@@ -521,7 +551,7 @@ function HomeContent(): React.ReactElement {
           ) : isAccountAuth && accountStatus && !accountStatus.hasFamily ? (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-192px)] text-center bg-white border-t border-gray-200">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                <BabyIcon className="h-8 w-8 text-green-600" />
+                <BabyIcon className="h-8 w-8 text-green-600" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Family Setup Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
@@ -537,7 +567,7 @@ function HomeContent(): React.ReactElement {
           ) : isAccountAuth && accountStatus && !accountStatus.verified ? (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-192px)] text-center bg-white border-t border-gray-200">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 flex items-center justify-center">
-                <BabyIcon className="h-8 w-8 text-yellow-600" />
+                <BabyIcon className="h-8 w-8 text-yellow-600" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Email Verification Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
@@ -601,6 +631,7 @@ function HomeContent(): React.ReactElement {
         onSwitch={handleFeedSwitch}
         onPause={handleFeedPause}
         onResume={handleFeedResume}
+        onSwap={handleFeedSwap}
         onSuccess={async () => {
           if (selectedBaby?.id) {
             triggerRefresh();

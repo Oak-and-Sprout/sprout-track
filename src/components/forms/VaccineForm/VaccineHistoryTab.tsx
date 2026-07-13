@@ -12,10 +12,13 @@ import {
   Paperclip,
   Download,
   FileSpreadsheet,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { useToast } from '@/src/components/ui/toast';
+import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 
 /**
  * VaccineHistoryTab Component
@@ -30,11 +33,13 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
 }) => {
   const { t } = useLocalization();
   const { formatDateTime } = useTimezone();
+  const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vaccineRecords, setVaccineRecords] = useState<VaccineLogResponse[]>([]);
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
 
   // Fetch vaccine records
   const fetchVaccineRecords = useCallback(async () => {
@@ -117,6 +122,53 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
     }
   };
 
+  // Delete a vaccine record (and its attached documents)
+  const handleDeleteRecord = async (record: VaccineLogResponse) => {
+    if (!confirm(t('This will permanently delete the vaccine record and any attached documents. Continue?'))) {
+      return;
+    }
+
+    setDeletingRecordId(record.id);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/vaccine-log?id=${record.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          const { isExpirationError } = await handleExpirationError(
+            response,
+            showToast,
+            'deleting vaccine record'
+          );
+          if (isExpirationError) return;
+        }
+        throw new Error(t('Failed to delete vaccine record'));
+      }
+
+      showToast({
+        variant: 'success',
+        title: t('Success'),
+        message: t('Vaccine record deleted successfully'),
+        duration: 3000,
+      });
+      setExpandedRecordId(null);
+      fetchVaccineRecords();
+    } catch (error) {
+      console.error('Error deleting vaccine record:', error);
+      showToast({
+        variant: 'error',
+        title: t('Error'),
+        message: t('Failed to delete vaccine record'),
+        duration: 5000,
+      });
+    } finally {
+      setDeletingRecordId(null);
+    }
+  };
+
   // Export to Excel
   const handleExport = async () => {
     if (!babyId) return;
@@ -163,9 +215,9 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
           disabled={isExporting || vaccineRecords.length === 0}
         >
           {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
           ) : (
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            <FileSpreadsheet className="h-4 w-4 mr-2" aria-hidden="true" />
           )}
           {t('Export to Excel')}
         </Button>
@@ -174,7 +226,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
       {/* Loading state */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-8 vaccine-form-loading-container">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
           <p className="mt-2 text-gray-600">{t('Loading vaccine records...')}</p>
         </div>
       )}
@@ -182,7 +234,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
       {/* Error state */}
       {error && (
         <div className="flex flex-col items-center justify-center py-8 vaccine-form-error-container">
-          <AlertCircle className="h-8 w-8 text-red-500" />
+          <AlertCircle className="h-8 w-8 text-red-500" aria-hidden="true" />
           <p className="mt-2 text-red-500">{error}</p>
           <Button
             variant="outline"
@@ -197,7 +249,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
       {/* Empty state */}
       {!isLoading && !error && vaccineRecords.length === 0 && (
         <div className="flex flex-col items-center justify-center py-8 vaccine-form-empty-state">
-          <Syringe className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+          <Syringe className="h-12 w-12 mx-auto mb-2 text-gray-400" aria-hidden="true" />
           <p className="text-gray-500">{t('No vaccines recorded')}</p>
         </div>
       )}
@@ -222,7 +274,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
                 >
                   <div className="flex items-center flex-1 min-w-0">
                     <div className="flex-shrink-0 vaccine-form-icon-container rounded-full bg-teal-100 p-1.5">
-                      <Syringe className="h-3.5 w-3.5 text-teal-600" />
+                      <Syringe className="h-3.5 w-3.5 text-teal-600" aria-hidden="true" />
                     </div>
                     <div className="ml-2 min-w-0 flex-1">
                       <div className="font-medium text-sm truncate vaccine-history-item-name">
@@ -236,9 +288,9 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {hasDocuments && (
-                      <Paperclip className="h-3.5 w-3.5 text-gray-400" />
+                      <Paperclip aria-hidden="true" className="h-3.5 w-3.5 text-gray-400" />
                     )}
-                    <ChevronDown className={cn(
+                    <ChevronDown aria-hidden="true" className={cn(
                       "h-4 w-4 text-gray-500 transition-transform duration-200",
                       isExpanded && "rotate-180"
                     )} />
@@ -290,13 +342,34 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
                                 }}
                                 title={t('Download')}
                               >
-                                <Download className="h-3.5 w-3.5 text-teal-600" />
+                                <Download className="h-3.5 w-3.5 text-teal-600" aria-hidden="true" />
                               </Button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
+
+                    {/* Delete record */}
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRecord(record);
+                        }}
+                        disabled={deletingRecordId === record.id}
+                      >
+                        {deletingRecordId === record.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" aria-hidden="true" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                        )}
+                        {t('Delete')}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

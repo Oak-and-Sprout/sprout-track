@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { cn } from '@/src/lib/utils';
 import { medicineFormStyles as styles } from './medicine-form.styles';
 import { GiveMedicineTabProps, MedicineWithContacts, MedicineLogFormData } from './medicine-form.types';
@@ -38,6 +38,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
 }) => {
 
   const { t } = useLocalization();
+  const formId = useId();
   const { unitName, unitSymbol } = useUnit();
   const { toUTCString } = useTimezone();
   const { theme } = useTheme();
@@ -282,25 +283,32 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
       <div className="flex-1 overflow-y-auto p-1">
         {isFetching ? (
           <div className={cn(styles.loadingContainer, "medicine-form-loading-container")}>
-            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
             <p className="mt-2 text-gray-600">{t('Loading form data...')}</p>
           </div>
         ) : (
           <div className="space-y-4">
             {error && (
-              <div className={cn(styles.errorContainer, "medicine-form-error-container flex items-center text-red-500 p-2 bg-red-50 rounded-md")}>
-                <AlertCircle className="mr-2 h-4 w-4" />
+              <div role="alert" className={cn(styles.errorContainer, "medicine-form-error-container flex items-center text-red-500 p-2 bg-red-50 rounded-md")}>
+                <AlertCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                 <span>{error}</span>
               </div>
             )}
             
             <div className={cn(styles.formGroup, "medicine-form-group")}>
-              <Label>{t('Medicine')}</Label>
+              <Label id={`${formId}-medicineId-label`} htmlFor={`${formId}-medicineId`}>{t('Medicine')}</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
+                  <Button
+                    id={`${formId}-medicineId`}
+                    variant="outline"
+                    className="w-full justify-between"
+                    aria-labelledby={`${formId}-medicineId-label ${formId}-medicineId`}
+                    aria-invalid={errors.medicineId ? true : undefined}
+                    aria-describedby={errors.medicineId ? `${formId}-medicineId-error` : undefined}
+                  >
                     {selectedMedicine ? selectedMedicine.name : t('Select a medicine')}
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                    <ChevronDown className="ml-2 h-4 w-4" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
@@ -313,20 +321,20 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-              {errors.medicineId && <p className={cn(styles.formError, "medicine-form-error")}>{errors.medicineId}</p>}
+              {errors.medicineId && <p id={`${formId}-medicineId-error`} role="alert" className={cn(styles.formError, "medicine-form-error")}>{errors.medicineId}</p>}
             </div>
 
             <div className={cn(styles.formGroup, "medicine-form-group")}>
               <Label>{t('Time')}</Label>
               <DateTimePicker value={selectedDateTime} onChange={handleDateTimeChange} />
-              {errors.time && <p className={cn(styles.formError, "medicine-form-error")}>{errors.time}</p>}
+              {errors.time && <p role="alert" className={cn(styles.formError, "medicine-form-error")}>{errors.time}</p>}
             </div>
 
             <div className={cn(styles.formGroup, "medicine-form-group")}>
-              <Label>{t('Dose')}</Label>
+              <Label htmlFor={`${formId}-doseAmount`}>{t('Dose')}</Label>
               <div className="flex items-center space-x-2">
                 <Input
-                  id="doseAmount"
+                  id={`${formId}-doseAmount`}
                   name="doseAmount"
                   type="text"
                   inputMode="decimal"
@@ -335,10 +343,17 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
                   onBlur={handleNumberBlur}
                   className="flex-1"
                   placeholder={t("Enter dose amount")}
+                  aria-invalid={errors.doseAmount ? true : undefined}
+                  aria-describedby={errors.doseAmount ? `${formId}-doseAmount-error` : undefined}
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="min-w-[70px]">
+                    <Button
+                      variant="outline"
+                      className="min-w-[70px]"
+                      aria-invalid={errors.unitAbbr ? true : undefined}
+                      aria-describedby={errors.unitAbbr ? `${formId}-unitAbbr-error` : undefined}
+                    >
                       {formData.unitAbbr || 'Unit'}
                     </Button>
                   </DropdownMenuTrigger>
@@ -351,13 +366,13 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              {errors.doseAmount && <p className={cn(styles.formError, "medicine-form-error")}>{errors.doseAmount}</p>}
-              {errors.unitAbbr && <p className={cn(styles.formError, "medicine-form-error")}>{errors.unitAbbr}</p>}
+              {errors.doseAmount && <p id={`${formId}-doseAmount-error`} role="alert" className={cn(styles.formError, "medicine-form-error")}>{errors.doseAmount}</p>}
+              {errors.unitAbbr && <p id={`${formId}-unitAbbr-error`} role="alert" className={cn(styles.formError, "medicine-form-error")}>{errors.unitAbbr}</p>}
             </div>
 
             <div className={cn(styles.formGroup, "medicine-form-group")}>
-              <Label>{t('Notes (optional)')}</Label>
-              <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} />
+              <Label htmlFor={`${formId}-notes`}>{t('Notes (optional)')}</Label>
+              <Textarea id={`${formId}-notes`} name="notes" value={formData.notes} onChange={handleChange} />
             </div>
           </div>
         )}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
@@ -7,16 +7,23 @@ import NavCountBubble from '@/src/components/ui/nav-count-bubble';
 import { Badge } from '@/src/components/ui/badge';
 import { LanguageSelector } from './language-selector';
 
+// Loading fallback is a component so it can use the localization hook
+const PaymentModalLoading = () => {
+  const { t } = useLocalization();
+  return (
+    <div role="status" className="flex items-center justify-center p-4">
+      <Loader2 className="h-6 w-6 animate-spin text-teal-600" aria-hidden="true" />
+      <span className="sr-only">{t('Loading...')}</span>
+    </div>
+  );
+};
+
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
   () => import('@/src/components/account-manager/PaymentModal'),
-  { 
+  {
     ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
-      </div>
-    )
+    loading: () => <PaymentModalLoading />
   }
 );
 import { Button } from '@/src/components/ui/button';
@@ -98,13 +105,17 @@ export const SideNavTrigger: React.FC<SideNavTriggerProps> = ({
   className,
   children,
 }) => {
+  const { t } = useLocalization();
   return (
-    <div 
+    <button
+      type="button"
       onClick={onClick}
       className={cn(triggerButtonVariants({ isOpen }), className)}
+      aria-label={t('Open navigation menu')}
+      aria-expanded={isOpen}
     >
       {children}
-    </div>
+    </button>
   );
 };
 
@@ -174,6 +185,20 @@ export const SideNav: React.FC<SideNavProps> = ({
   const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
   const [unreadFeedbackCount, setUnreadFeedbackCount] = useState<number>(0);
   const [hasNewUpdates, setHasNewUpdates] = useState<boolean>(false);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  // Restore focus to the element that opened the nav when it closes (modal mode)
+  useEffect(() => {
+    if (nonModal) return;
+    if (isOpen) {
+      returnFocusRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    } else if (returnFocusRef.current) {
+      returnFocusRef.current.focus();
+      returnFocusRef.current = null;
+    }
+  }, [isOpen, nonModal]);
 
   // Check if user has seen the current version's changelog
   useEffect(() => {
@@ -397,7 +422,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                   className={cn(sideNavStyles.closeButton, "side-nav-close-button")}
                   aria-label="Close navigation"
                 >
-                  <X size={20} />
+                  <X size={20} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -447,21 +472,27 @@ export const SideNav: React.FC<SideNavProps> = ({
         <div className="w-full text-center mb-4">
           <div className="flex items-center justify-center gap-2">
             {hasNewUpdates ? (
-              <Badge
-                variant="default"
-                className="new-updates-badge cursor-pointer text-[10px] px-1.5 py-0"
+              <button
+                type="button"
+                className="inline-flex cursor-pointer"
                 onClick={() => setShowChangelog(true)}
               >
-                {t('New Updates')}: v{packageInfo.version}
-              </Badge>
+                <Badge
+                  variant="default"
+                  className="new-updates-badge text-[10px] px-1.5 py-0"
+                >
+                  {t('New Updates')}: v{packageInfo.version}
+                </Badge>
+              </button>
             ) : (
-              <span
+              <button
+                type="button"
                 className="text-xs text-gray-500 cursor-pointer hover:text-teal-600 transition-colors"
                 onClick={() => setShowChangelog(true)}
-                aria-label="View changelog"
+                aria-label={t('View changelog')}
               >
                 v{packageInfo.version}
-              </span>
+              </button>
             )}
             <span className="text-xs text-gray-400">•</span>
             <LanguageSelector />
@@ -473,15 +504,15 @@ export const SideNav: React.FC<SideNavProps> = ({
               <button
                 className="flex items-center justify-center w-full text-xs text-gray-500 hover:text-emerald-600 transition-colors cursor-pointer"
                 onClick={() => setShowFeedback(true)}
-                aria-label={t('Send Feedback')}
               >
-                <MessageSquare className="h-3 w-3 mr-1" />
+                <MessageSquare className="h-3 w-3 mr-1" aria-hidden="true" />
                 {t('Send Feedback')}
                 {unreadFeedbackCount > 0 && (
                   <NavCountBubble
                     count={unreadFeedbackCount}
                     variant="accent"
                     className="ml-1.5 scale-90"
+                    label={t('unread')}
                   />
                 )}
               </button>
@@ -499,7 +530,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 <div className="mt-4 px-4">
                   <div className={cn("bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2", "side-nav-trial-container")}>
                     <div className={cn("flex items-center justify-center text-amber-700", "side-nav-trial-header")}>
-                      <Clock className="h-4 w-4 mr-1" />
+                      <Clock className="h-4 w-4 mr-1" aria-hidden="true" />
                       <span className="text-xs font-medium">{t('Trial Version')}</span>
                     </div>
                     <div className="text-center">
@@ -512,7 +543,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                       className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white"
                       onClick={() => setShowPaymentModal(true)}
                     >
-                      <CreditCard className="h-3 w-3 mr-1" />
+                      <CreditCard className="h-3 w-3 mr-1" aria-hidden="true" />
                       {t('Buy Now')}
                     </Button>
                   </div>
@@ -601,14 +632,14 @@ export const SideNav: React.FC<SideNavProps> = ({
           
           {/* Settings Button */}
           <FooterButton
-            icon={<Settings />}
+            icon={<Settings aria-hidden="true" />}
             label={t('Settings')}
             onClick={onSettingsClick}
           />
           
           {/* Logout Button */}
           <FooterButton
-            icon={<LogOut />}
+            icon={<LogOut aria-hidden="true" />}
             label={t('Logout')}
             onClick={onLogout}
           />

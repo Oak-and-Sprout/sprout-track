@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { LocationStat } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 
 interface SleepLocationsChartModalProps {
@@ -101,6 +102,17 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
                 <Bar dataKey="minutes" fill="#6366f1" />
               </BarChart>
             </ResponsiveContainer>
+            <ChartDataTable
+              caption={title}
+              columns={[
+                { key: 'location', label: t('Location') },
+                { key: 'totalSleep', label: t('Total Sleep') },
+              ]}
+              rows={chartData.map((point) => ({
+                location: point.name,
+                totalSleep: formatMinutes(point.minutes),
+              }))}
+            />
           </div>
         )}
       </ModalContent>

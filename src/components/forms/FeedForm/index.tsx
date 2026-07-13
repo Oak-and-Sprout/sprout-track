@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { FeedType, BreastSide } from '@prisma/client';
 import { FeedLogResponse, ActiveBreastFeedResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -16,10 +16,12 @@ import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
+import { newFeedSessionId } from '@/src/utils/feedSessionUtils';
 import './feed-form.css';
 
 // Import subcomponents
 import BreastFeedForm from './BreastFeedForm';
+import LinkedFeedsSection from './LinkedFeedsSection';
 import BottleFeedForm from './BottleFeedForm';
 import SolidsFeedForm from './SolidsFeedForm';
 import { useLocalization } from '@/src/context/localization';
@@ -37,6 +39,7 @@ interface FeedFormProps {
   onSwitch?: () => void;
   onPause?: () => void;
   onResume?: (side: 'LEFT' | 'RIGHT') => void;
+  onSwap?: () => void;
 }
 
 export default function FeedForm({
@@ -52,8 +55,10 @@ export default function FeedForm({
   onSwitch,
   onPause,
   onResume,
+  onSwap,
 }: FeedFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -628,19 +633,22 @@ export default function FeedForm({
     const leftDuration = leftDur ?? formData.leftDuration;
     const rightDuration = rightDur ?? formData.rightDuration;
 
+    // When both sides are logged together they are one nursing session
+    const sessionId = leftDuration > 0 && rightDuration > 0 ? newFeedSessionId() : undefined;
+
     // Create left side entry
     if (leftDuration > 0) {
-      await createSingleFeedEntry('LEFT', leftDuration);
+      await createSingleFeedEntry('LEFT', leftDuration, sessionId);
     }
 
     // Create right side entry
     if (rightDuration > 0) {
-      await createSingleFeedEntry('RIGHT', rightDuration);
+      await createSingleFeedEntry('RIGHT', rightDuration, sessionId);
     }
   };
 
   // Helper function to create a single feed entry
-  const createSingleFeedEntry = async (breastSide?: BreastSide, durationOverride?: number) => {
+  const createSingleFeedEntry = async (breastSide?: BreastSide, durationOverride?: number, sessionId?: string) => {
     // For breast feeding, use the provided side or the form data side
     const side = formData.type === 'BREAST' ? (breastSide || formData.side) : undefined;
 
@@ -677,10 +685,11 @@ export default function FeedForm({
       babyId,
       time: utcTimeString, // Send the UTC ISO string instead of local time
       type: formData.type,
-      ...(formData.type === 'BREAST' && side && { 
+      ...(formData.type === 'BREAST' && side && {
         side,
         ...(startTime && { startTime: toUTCString(startTime) }),
         ...(endTime && { endTime: toUTCString(endTime) }),
+        ...(sessionId && { sessionId }),
         feedDuration: duration
       }),
       ...((formData.type === 'BOTTLE' || formData.type === 'SOLIDS') && {
@@ -948,8 +957,8 @@ export default function FeedForm({
             )}
 
             {/* Time Selection - Full width on all screens */}
-            <div>
-              <label className="form-label">{t('Time')}</label>
+            <div role="group" aria-labelledby={`${formId}-time-label`}>
+              <label id={`${formId}-time-label`} className="form-label">{t('Time')}</label>
               <DateTimePicker
                 value={selectedDateTime}
                 onChange={handleDateTimeChange}
@@ -960,8 +969,8 @@ export default function FeedForm({
             
             {/* Feed Type Selection - Full width on all screens */}
             <div>
-              <label className="form-label">{t('Type')}</label>
-              <div className="flex justify-between items-center gap-3 mt-2">
+              <label id={`${formId}-type-label`} className="form-label">{t('Type')}</label>
+              <div className="flex justify-between items-center gap-3 mt-2" role="group" aria-labelledby={`${formId}-type-label`}>
                   {/* Breast Feed Button */}
                   <button
                     type="button"
@@ -979,7 +988,7 @@ export default function FeedForm({
                     <span className="text-xs font-medium mt-1">{t('Breast')}</span>
                     {formData.type === 'BREAST' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" />
+                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -1001,7 +1010,7 @@ export default function FeedForm({
                     <span className="text-xs font-medium mt-1">{t('Bottle')}</span>
                     {formData.type === 'BOTTLE' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" />
+                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -1023,7 +1032,7 @@ export default function FeedForm({
                     <span className="text-xs font-medium mt-1">{t('Solids')}</span>
                     {formData.type === 'SOLIDS' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" />
+                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -1037,10 +1046,12 @@ export default function FeedForm({
                   <h3 className="text-sm font-medium mb-3 active-breast-session-title">{t('Active Breastfeed Session')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className={`text-center p-3 rounded-lg ${activeFeedData.activeSide === 'LEFT' && !activeFeedData.isPaused ? 'timer-active-side border-2' : ''}`}>
-                      <label className="form-label text-xs">{t('Left')}</label>
+                      <label htmlFor={activeFeedData.isPaused ? `${formId}-session-left-min` : undefined} className="form-label text-xs">{t('Left')}</label>
                       {activeFeedData.isPaused ? (
                         <div className="flex items-center justify-center gap-1 mt-1">
                           <Input
+                            id={`${formId}-session-left-min`}
+                            aria-label={t('Left minutes')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1060,6 +1071,7 @@ export default function FeedForm({
                           />
                           <span className="text-lg font-mono active-breast-session-title">:</span>
                           <Input
+                            aria-label={t('Left seconds')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1085,10 +1097,12 @@ export default function FeedForm({
                       )}
                     </div>
                     <div className={`text-center p-3 rounded-lg ${activeFeedData.activeSide === 'RIGHT' && !activeFeedData.isPaused ? 'timer-active-side border-2' : ''}`}>
-                      <label className="form-label text-xs">{t('Right')}</label>
+                      <label htmlFor={activeFeedData.isPaused ? `${formId}-session-right-min` : undefined} className="form-label text-xs">{t('Right')}</label>
                       {activeFeedData.isPaused ? (
                         <div className="flex items-center justify-center gap-1 mt-1">
                           <Input
+                            id={`${formId}-session-right-min`}
+                            aria-label={t('Right minutes')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1108,6 +1122,7 @@ export default function FeedForm({
                           />
                           <span className="text-lg font-mono active-breast-session-title">:</span>
                           <Input
+                            aria-label={t('Right seconds')}
                             type="text"
                             inputMode="numeric"
                             className="w-12 text-center px-1 session-duration-input"
@@ -1144,7 +1159,7 @@ export default function FeedForm({
                           onClick={onSwitch}
                           title={t('Switch Side')}
                         >
-                          <ArrowLeftRight className="h-5 w-5" />
+                          <ArrowLeftRight className="h-5 w-5" aria-hidden="true" />
                         </Button>
                         <Button
                           type="button"
@@ -1153,7 +1168,7 @@ export default function FeedForm({
                           onClick={onPause}
                           title={t('Pause Feed')}
                         >
-                          <Pause className="h-5 w-5" />
+                          <Pause className="h-5 w-5" aria-hidden="true" />
                         </Button>
                       </>
                     ) : (
@@ -1165,7 +1180,7 @@ export default function FeedForm({
                           onClick={() => onResume?.('LEFT')}
                           title={t('Resume Left')}
                         >
-                          <Play className="h-4 w-4 mr-0.5" />
+                          <Play className="h-4 w-4 mr-0.5" aria-hidden="true" />
                           <span className="text-xs font-semibold">L</span>
                         </Button>
                         <Button
@@ -1175,12 +1190,25 @@ export default function FeedForm({
                           onClick={() => onResume?.('RIGHT')}
                           title={t('Resume Right')}
                         >
-                          <Play className="h-4 w-4 mr-0.5" />
+                          <Play className="h-4 w-4 mr-0.5" aria-hidden="true" />
                           <span className="text-xs font-semibold">R</span>
                         </Button>
                       </>
                     )}
                   </div>
+                  {onSwap && (
+                    <div className="flex justify-center mt-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onSwap}
+                        title={t('Reassign the time recorded so far to the other side')}
+                      >
+                        {t('Started on the wrong side? Fix it')}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1188,8 +1216,8 @@ export default function FeedForm({
             {formData.type === 'BREAST' && !isFeeding && !activity && !manualEntry && (
               /* Start Feed mode - side selector + start button */
               <div className="space-y-4">
-                <label className="form-label">{t('Select Side to Start')}</label>
-                <div className="flex gap-4 justify-center">
+                <label id={`${formId}-side-label`} className="form-label">{t('Select Side to Start')}</label>
+                <div className="flex gap-4 justify-center" role="group" aria-labelledby={`${formId}-side-label`}>
                   <Button
                     type="button"
                     variant="outline"
@@ -1243,9 +1271,11 @@ export default function FeedForm({
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-3 rounded-lg">
-                      <label className="form-label text-xs">{t('Left')}</label>
+                      <label htmlFor={`${formId}-manual-left-min`} className="form-label text-xs">{t('Left')}</label>
                       <div className="flex items-center justify-center gap-1 mt-1">
                         <Input
+                          id={`${formId}-manual-left-min`}
+                          aria-label={t('Left minutes')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"
@@ -1265,6 +1295,7 @@ export default function FeedForm({
                         />
                         <span className="text-lg font-mono active-breast-session-title">:</span>
                         <Input
+                          aria-label={t('Left seconds')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"
@@ -1285,9 +1316,11 @@ export default function FeedForm({
                       </div>
                     </div>
                     <div className="text-center p-3 rounded-lg">
-                      <label className="form-label text-xs">{t('Right')}</label>
+                      <label htmlFor={`${formId}-manual-right-min`} className="form-label text-xs">{t('Right')}</label>
                       <div className="flex items-center justify-center gap-1 mt-1">
                         <Input
+                          id={`${formId}-manual-right-min`}
+                          aria-label={t('Right minutes')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"
@@ -1307,6 +1340,7 @@ export default function FeedForm({
                         />
                         <span className="text-lg font-mono active-breast-session-title">:</span>
                         <Input
+                          aria-label={t('Right seconds')}
                           type="text"
                           inputMode="numeric"
                           className="w-12 text-center px-1 session-duration-input"
@@ -1340,7 +1374,18 @@ export default function FeedForm({
                 activeBreast={formData.activeBreast}
                 isTimerRunning={isTimerRunning}
                 loading={loading}
-                onSideChange={(side) => setFormData({ ...formData, side })}
+                onSideChange={(side) => setFormData(prev => {
+                  if (!side || side === prev.side) return { ...prev, side };
+                  // Move the entered duration to the newly selected side
+                  const total = prev.leftDuration + prev.rightDuration;
+                  return {
+                    ...prev,
+                    side,
+                    leftDuration: side === 'LEFT' ? total : 0,
+                    rightDuration: side === 'RIGHT' ? total : 0,
+                    feedDuration: total,
+                  };
+                })}
                 onTimerStart={startTimer}
                 onTimerStop={stopTimer}
                 onDurationChange={(breast, seconds) => {
@@ -1356,7 +1401,15 @@ export default function FeedForm({
                 getCurrentDurations={getCurrentDurationsRef}
               />
             )}
-            
+
+            {formData.type === 'BREAST' && activity && babyId && (
+              <LinkedFeedsSection
+                activity={activity}
+                babyId={babyId}
+                disabled={loading}
+              />
+            )}
+
             {formData.type === 'BOTTLE' && (
               <BottleFeedForm
                 amount={formData.amount}

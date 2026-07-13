@@ -458,6 +458,7 @@ export function NurseryModeContainer() {
                   {babies.length > 1 && (
                     <ChevronDown
                       size={14}
+                      aria-hidden="true"
                       style={{
                         color: colors.text,
                         opacity: 0.6,
@@ -469,9 +470,11 @@ export function NurseryModeContainer() {
                 </button>
                 {babySwitcherOpen && babies.length > 1 && (
                   <>
-                    <div
-                      className="fixed inset-0 z-[100]"
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-[100] bg-transparent border-none p-0 cursor-default"
                       onClick={() => setBabySwitcherOpen(false)}
+                      aria-label={t('Close')}
                     />
                     <div
                       className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
@@ -550,6 +553,7 @@ export function NurseryModeContainer() {
                   {babies.length > 1 && (
                     <ChevronDown
                       size={18}
+                      aria-hidden="true"
                       style={{
                         color: colors.text,
                         opacity: 0.6,
@@ -561,9 +565,11 @@ export function NurseryModeContainer() {
                 </button>
                 {babySwitcherOpen && babies.length > 1 && (
                   <>
-                    <div
-                      className="fixed inset-0 z-[100]"
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-[100] bg-transparent border-none p-0 cursor-default"
                       onClick={() => setBabySwitcherOpen(false)}
+                      aria-label={t('Close')}
                     />
                     <div
                       className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"

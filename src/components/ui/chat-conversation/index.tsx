@@ -233,7 +233,7 @@ export function ChatConversation({
     return (
       <div className={cn(styles.container, 'chat-conversation-container', className)}>
         <div className={cn(styles.emptyState, 'chat-conversation-empty')}>
-          <MessageSquare className="h-8 w-8 chat-conversation-empty-icon" strokeWidth={1.5} />
+          <MessageSquare className="h-8 w-8 chat-conversation-empty-icon" strokeWidth={1.5} aria-hidden="true" />
           <span>{t('Select a conversation')}</span>
         </div>
       </div>
@@ -250,7 +250,7 @@ export function ChatConversation({
         <div className={cn(styles.header, 'chat-conversation-header')}>
           {showBackButton && onBack && (
             <button onClick={onBack} className={styles.backButton} aria-label={t('Back')}>
-              <ChevronLeft className="h-[18px] w-[18px]" />
+              <ChevronLeft className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           )}
           <div className={styles.headerContent}>
@@ -403,7 +403,7 @@ export function ChatConversation({
                               className={cn(styles.attachmentDeleteButton, 'chat-conversation-attachment-delete')}
                               aria-label={t('Remove image')}
                             >
-                              <X className="h-3 w-3 text-white" />
+                              <X className="h-3 w-3 text-white" aria-hidden="true" />
                             </button>
                           )}
                         </div>
@@ -441,7 +441,7 @@ export function ChatConversation({
                 className={styles.replyPreviewDelete}
                 aria-label={t('Remove image')}
               >
-                <X className="h-2.5 w-2.5 text-white" />
+                <X className="h-2.5 w-2.5 text-white" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -464,7 +464,7 @@ export function ChatConversation({
             className={cn(styles.replyAttachButton, 'chat-conversation-attach-button')}
             aria-label={t('Attach images')}
           >
-            <ImagePlus className="h-[18px] w-[18px] text-gray-500" />
+            <ImagePlus className="h-[18px] w-[18px] text-gray-500" aria-hidden="true" />
           </button>
           <textarea
             ref={textareaRef}
@@ -488,7 +488,7 @@ export function ChatConversation({
             )}
             aria-label={t('Send')}
           >
-            <Send className="h-[15px] w-[15px]" color={canSend ? '#fff' : '#a3a39b'} />
+            <Send className="h-[15px] w-[15px]" color={canSend ? '#fff' : '#a3a39b'} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -575,7 +575,7 @@ export function ChatReplyBar({
                 className={styles.replyPreviewDelete}
                 aria-label={t('Remove image')}
               >
-                <X className="h-2.5 w-2.5 text-white" />
+                <X className="h-2.5 w-2.5 text-white" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -595,7 +595,7 @@ export function ChatReplyBar({
           className={cn(styles.replyAttachButton, 'chat-conversation-attach-button')}
           aria-label={t('Attach images')}
         >
-          <ImagePlus className="h-[18px] w-[18px] text-gray-500" />
+          <ImagePlus className="h-[18px] w-[18px] text-gray-500" aria-hidden="true" />
         </button>
         <textarea
           ref={textareaRef}
@@ -619,7 +619,7 @@ export function ChatReplyBar({
           )}
           aria-label={t('Send')}
         >
-          <Send className="h-[15px] w-[15px]" color={canSend ? '#fff' : '#a3a39b'} />
+          <Send className="h-[15px] w-[15px]" color={canSend ? '#fff' : '#a3a39b'} aria-hidden="true" />
         </button>
       </div>
     </div>

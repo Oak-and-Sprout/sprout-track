@@ -148,7 +148,7 @@ export default function AccountFamilySetupPage() {
         {/* Loading Content */}
         <div className="min-h-screen flex items-center justify-center p-4" style={{ paddingTop: '6rem' }}>
           <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-teal-600 mx-auto mb-4" />
+            <Loader2 className="w-12 h-12 animate-spin text-teal-600 mx-auto mb-4" aria-hidden="true" />
             <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-2">
               {t('Checking Account Status')}
             </h2>
@@ -261,7 +261,7 @@ export default function AccountFamilySetupPage() {
         {/* Error Content */}
         <div className="min-h-screen flex items-center justify-center p-4" style={{ paddingTop: '6rem' }}>
           <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" aria-hidden="true" />
             <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-2">
               {t('Access Denied')}
             </h2>

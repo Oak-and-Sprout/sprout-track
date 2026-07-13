@@ -85,15 +85,20 @@ export const CalendarEventItem: React.FC<CalendarEventItemProps> = ({
   
   // Count total participants (babies + caretakers + contacts)
   const totalParticipants = event.babies.length + event.caretakers.length + event.contacts.length;
-  
+
+  const Container: React.ElementType = onClick ? 'button' : 'div';
+
   return (
-    <div 
+    <Container
+      type={onClick ? 'button' : undefined}
       className={cn(
         styles.container,
         'calendar-event-item-container',
+        onClick && 'w-full text-left appearance-none',
         className
       )}
       onClick={handleClick}
+      aria-label={onClick ? `${event.title}, ${formatEventDate(event.startTime)}, ${formatEventTime(event.startTime, event.allDay, event.endTime)}` : undefined}
     >
       {/* Color indicator based on event type */}
       <div className={getColorIndicatorClass()} />
@@ -104,12 +109,12 @@ export const CalendarEventItem: React.FC<CalendarEventItemProps> = ({
         'calendar-event-item'
       )}>
         {/* Title */}
-        <h3 className={cn(
+        <div className={cn(
           styles.title,
           'calendar-event-item-title'
         )}>
           {event.title}
-        </h3>
+        </div>
         
         {/* Details: time, location, recurring */}
         <div className={cn(
@@ -117,7 +122,7 @@ export const CalendarEventItem: React.FC<CalendarEventItemProps> = ({
           'calendar-event-item-details'
         )}>
           {/* Time */}
-          <Clock className={cn(styles.icon.base, styles.icon.time)} />
+          <Clock aria-hidden="true" className={cn(styles.icon.base, styles.icon.time)} />
           <span>
             {formatEventDate(event.startTime)}, {formatEventTime(event.startTime, event.allDay, event.endTime)}
           </span>
@@ -125,14 +130,14 @@ export const CalendarEventItem: React.FC<CalendarEventItemProps> = ({
           {/* Location if available */}
           {event.location && (
             <span className={styles.location}>
-              <MapPin className={cn(styles.icon.base, styles.icon.location)} />
+              <MapPin aria-hidden="true" className={cn(styles.icon.base, styles.icon.location)} />
               {event.location}
             </span>
           )}
           
           {/* Recurring indicator */}
           {event.recurring && (
-            <RepeatIcon className={cn(
+            <RepeatIcon aria-hidden="true" className={cn(
               styles.icon.base, 
               styles.icon.recurring, 
               "recurring-icon-small",
@@ -146,12 +151,12 @@ export const CalendarEventItem: React.FC<CalendarEventItemProps> = ({
       {totalParticipants > 0 && (
         <div className={styles.badgesContainer}>
           <div className={cn(styles.badge.base, styles.badge.baby, 'calendar-event-item-badge')}>
-            <Users className="h-3 w-3" />
+            <Users aria-hidden="true" className="h-3 w-3" />
           </div>
           <span className={styles.badgeCount}>{totalParticipants}</span>
         </div>
       )}
-    </div>
+    </Container>
   );
 };
 

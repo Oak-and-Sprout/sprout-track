@@ -223,6 +223,7 @@ model Baby {
   inactive          Boolean   @default(false)
   feedWarningTime   String    @default("03:00") // Default 3 hours
   diaperWarningTime String    @default("02:00") // Default 2 hours
+  feedTimerFrom     String    @default("start") // "start" | "end" - count feed timer from start or end of feeding
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
@@ -367,6 +368,7 @@ model FeedLog {
   notes        String? // Optional notes for any feed type
   bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
   breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
+  sessionId    String? // Groups breast feeds into one nursing session; a unique value opts a feed out of heuristic grouping
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?
@@ -485,6 +487,7 @@ model Settings {
   defaultTempUnit     String   @default("F") // Default unit for temperature
   activitySettings    String? // JSON string for activity order and visibility settings
   sleepLocationSettings String? // JSON string for hidden sleep locations
+  bathTypeSettings    String? // JSON string for hidden bath types
   nurseryModeSettings String? // JSON string for nursery mode settings per caretaker
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
@@ -629,6 +632,7 @@ model PlayLog {
 model BathLog {
   id          String    @id @default(uuid())
   time        DateTime // Single time when the bath occurred
+  bathType    String? // e.g. "Full Bath", "Sponge Bath", "Wipe Down", or custom value
   soapUsed    Boolean   @default(true)
   shampooUsed Boolean   @default(true)
   notes       String?

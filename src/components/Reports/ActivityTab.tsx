@@ -414,7 +414,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
   if (!dateRange.from || !dateRange.to) {
     return (
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
-        <Activity className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
+        <Activity aria-hidden="true" className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
           {t('Select a date range to view activity charts.')}
         </p>
@@ -425,7 +425,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
   if (isLoading && !groupedByDay.length) {
     return (
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
-        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+        <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-teal-600" />
         <p className={cn(styles.loadingText, "reports-loading-text")}>
           {t('Loading activity data...')}
         </p>
@@ -436,7 +436,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
   if (!groupedByDay.length) {
     return (
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
-        <Activity className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
+        <Activity aria-hidden="true" className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
           {t('No activities recorded for this date range.')}
         </p>

@@ -84,7 +84,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
     <>
       <AccordionItem value="pumping">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <LampWallDown className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
+          <LampWallDown aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
           <span>{t('Pumping Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>
@@ -127,11 +127,12 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
               }}
             >
               <CardContent className="p-4">
+                {/* No unit when there are no pumps in range — nothing meaningful to surface */}
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                  {t('Left:')} {stats.avgLeftAmount.toFixed(1)} {unitSymbol(stats.unit)}
+                  {t('Left:')} {stats.avgLeftAmount.toFixed(1)}{stats.totalSessions > 0 ? ` ${unitSymbol(stats.unit)}` : ''}
                 </div>
                 <div className={cn(styles.statCardValue, "reports-stat-card-value")}>
-                  {t('Right:')} {stats.avgRightAmount.toFixed(1)} {unitSymbol(stats.unit)}
+                  {t('Right:')} {stats.avgRightAmount.toFixed(1)}{stats.totalSessions > 0 ? ` ${unitSymbol(stats.unit)}` : ''}
                 </div>
                 <div className={cn(styles.statCardLabel, "reports-stat-card-label")}>{t('Avg Amount per Side')}</div>
               </CardContent>

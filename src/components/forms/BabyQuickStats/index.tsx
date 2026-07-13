@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useId } from 'react';
 import { BabyQuickStatsProps, TimePeriod } from './baby-quick-stats.types';
 import {
   quickStatsContainer,
@@ -22,6 +22,7 @@ import { Clock, Moon, Sun, Utensils, Droplet, Loader2 } from 'lucide-react';
 import { diaper } from '@lucide/lab';
 import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
+import { countBreastFeedSessions } from '@/src/utils/feedSessionUtils';
 
 /**
  * BabyQuickStats Component
@@ -131,7 +132,9 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   }, [selectedBaby, family?.id]);
 
   const { t } = useLocalization();
-  
+  const mainPeriodLabelId = useId();
+  const comparePeriodLabelId = useId();
+
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
 
@@ -360,11 +363,13 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
         nightSleepByNight[nightKey] += sleepDurationMinutes;
       });
 
-      // Count feedings
-      const feedingsForDay = dayActivities.filter(a => 
-        ('type' in a && (a.type === 'BOTTLE' || a.type === 'BREAST' || a.type === 'SOLIDS'))
-      ).length;
-      
+      // Count feedings — a left+right nursing session is two rows but one feed
+      const feedingsForDay = dayActivities.filter(a =>
+        ('type' in a && (a.type === 'BOTTLE' || a.type === 'SOLIDS'))
+      ).length + countBreastFeedSessions(
+        dayActivities.filter(a => 'type' in a && a.type === 'BREAST') as any
+      );
+
       feedingCount += feedingsForDay;
 
       // Calculate feed amounts
@@ -463,8 +468,8 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               {/* Time period selectors */}
               <div className={timePeriodSelectorContainer()}>
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>{t('Main Period:')}</Label>
-                  <div className={timePeriodButtonGroup()}>
+                  <Label id={mainPeriodLabelId} className={timePeriodSelectorLabel()}>{t('Main Period:')}</Label>
+                  <div className={timePeriodButtonGroup()} role="group" aria-labelledby={mainPeriodLabelId}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
                         key={`main-${period}`}
@@ -479,8 +484,8 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                 </div>
                 
                 <div>
-                  <Label className={timePeriodSelectorLabel()}>{t('Compare Period:')}</Label>
-                  <div className={timePeriodButtonGroup()}>
+                  <Label id={comparePeriodLabelId} className={timePeriodSelectorLabel()}>{t('Compare Period:')}</Label>
+                  <div className={timePeriodButtonGroup()} role="group" aria-labelledby={comparePeriodLabelId}>
                     {(['2day', '7day', '14day', '30day'] as TimePeriod[]).map((period) => (
                       <Button
                         key={`compare-${period}`}
@@ -498,7 +503,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
               {/* Stats cards */}
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" />
+                  <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" aria-hidden="true" />
                   <p className="text-gray-600">{t('Loading statistics...')}</p>
                 </div>
               ) : error ? (

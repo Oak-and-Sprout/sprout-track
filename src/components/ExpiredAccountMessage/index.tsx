@@ -50,7 +50,7 @@ export default function ExpiredAccountMessage({
         {/* Warning Icon */}
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center expired-account-icon-bg">
-            <AlertTriangle className="w-8 h-8 text-red-600 expired-account-icon" />
+            <AlertTriangle className="w-8 h-8 text-red-600 expired-account-icon" aria-hidden="true" />
           </div>
         </div>
 
@@ -90,7 +90,7 @@ export default function ExpiredAccountMessage({
           size="lg"
           className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
         >
-          <Crown className="w-5 h-5 mr-2" />
+          <Crown className="w-5 h-5 mr-2" aria-hidden="true" />
           {isTrialExpired ? 'Upgrade Account' : 'Renew Subscription'}
         </Button>
 

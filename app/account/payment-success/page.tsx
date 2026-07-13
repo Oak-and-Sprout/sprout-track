@@ -119,7 +119,7 @@ function PaymentSuccessContent() {
             <>
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center">
-                  <Loader2 className="w-12 h-12 text-teal-600 animate-spin" />
+                  <Loader2 className="w-12 h-12 text-teal-600 animate-spin" aria-hidden="true" />
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
@@ -133,7 +133,7 @@ function PaymentSuccessContent() {
             <>
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="w-12 h-12 text-amber-600" />
+                  <AlertTriangle className="w-12 h-12 text-amber-600" aria-hidden="true" />
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
@@ -151,7 +151,7 @@ function PaymentSuccessContent() {
               {/* Success Icon */}
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-12 h-12 text-white" />
+                  <CheckCircle className="w-12 h-12 text-white" aria-hidden="true" />
                 </div>
               </div>
 
@@ -197,7 +197,7 @@ function PaymentSuccessContent() {
                 onClick={() => router.push(getRedirectUrl())}
                 className="w-full"
               >
-                <Home className="h-4 w-4 mr-2" />
+                <Home className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Go to Home Now')}
               </Button>
             </>
@@ -227,7 +227,7 @@ export default function PaymentSuccessPage() {
             <CardContent className="text-center pt-8">
               <div className="flex justify-center mb-6">
                 <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center">
-                  <Loader2 className="w-12 h-12 text-teal-600 animate-spin" />
+                  <Loader2 className="w-12 h-12 text-teal-600 animate-spin" aria-hidden="true" />
                 </div>
               </div>
               <Label className="text-3xl font-bold text-gray-900 mb-4 block">
