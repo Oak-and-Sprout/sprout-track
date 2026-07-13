@@ -43,6 +43,8 @@ export default function Lightbox({ photos, photoId, onClose, onNavigate, onToggl
   const { dateFormat, timeFormat } = useTimezone();
   const [busy, setBusy] = useState<'favorite' | 'download' | 'delete' | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const index = useMemo(() => photos.findIndex((p) => p.id === photoId), [photos, photoId]);
   const photo = index >= 0 ? photos[index] : null;
@@ -109,19 +111,29 @@ export default function Lightbox({ photos, photoId, onClose, onNavigate, onToggl
     };
   }, [photo]);
 
-  // Focus management: remember what was focused before the lightbox opened
-  // and restore it on unmount, mirroring FormPage's open/close pattern. The
-  // lightbox stays mounted across photo navigation (only unmounts on
-  // close), so this intentionally runs once per mount rather than per photo.
+  // Focus management, mirroring FormPage's open/close pattern: capture
+  // `document.activeElement` BEFORE moving focus into the dialog, since
+  // reading it from a passive effect after the close button's own focus
+  // has already landed would just capture the close button itself. Gated
+  // on `photo` resolving (the real closed->open transition — the lightbox
+  // can mount before its photo is available while a reload is in flight)
+  // and guarded on the ref being empty so prev/next navigation, which
+  // re-runs this effect with a new `photo`, doesn't re-capture.
   useEffect(() => {
-    if (!photo) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
+    if (!photo || previouslyFocusedRef.current) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus({ preventScroll: true });
+  }, [photo]);
+
+  // Restore focus to whatever was captured above, once the lightbox
+  // actually closes (unmounts).
+  useEffect(() => {
     return () => {
+      const previouslyFocused = previouslyFocusedRef.current;
       if (previouslyFocused && document.contains(previouslyFocused)) {
         previouslyFocused.focus({ preventScroll: true });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -200,11 +212,11 @@ export default function Lightbox({ photos, photoId, onClose, onNavigate, onToggl
         onClick={(e) => e.stopPropagation()}
       >
         <button
+          ref={closeButtonRef}
           type="button"
           onClick={onClose}
           className="photo-gallery-lightbox-close absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-gray-700 shadow"
           aria-label={t('Close')}
-          autoFocus
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

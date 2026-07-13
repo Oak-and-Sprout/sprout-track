@@ -51,6 +51,12 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const onStateChange = useCallback((partial: Partial<GalleryState>) => {
+    // Exiting select mode, emptying the selection, or switching views all
+    // leave any prior bulk-action error stale and orphaned (nothing on
+    // screen to attach it to) — clear it alongside those transitions.
+    if (partial.selectMode === false || partial.selectedIds?.size === 0 || partial.view !== undefined) {
+      setActionError(null);
+    }
     setState((prev) => ({ ...prev, ...partial }));
   }, []);
 
@@ -132,17 +138,23 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
   // of both the filtered list and the single-item fallback (e.g. a reload
   // after delete resets pagination and the photo is gone), close it rather
   // than leaving the body-scroll lock and keydown listener stuck active.
+  // Gated on `!isLoading` so this doesn't race a just-kicked-off loadPhotos()
+  // call (e.g. opening from PhotoForm's Photo Library tab) — `photos` is
+  // still stale mid-request, and closing here would immediately undo the
+  // open. The Lightbox is already hardened to stay inert while `photo` is
+  // unresolved, so it's safe to wait for the load to settle.
   useEffect(() => {
-    if (state.lightboxPhotoId && !lightboxPhotos.some((p) => p.id === state.lightboxPhotoId)) {
+    if (!isLoading && state.lightboxPhotoId && !lightboxPhotos.some((p) => p.id === state.lightboxPhotoId)) {
       setState((s) => ({ ...s, lightboxPhotoId: null }));
     }
-  }, [state.lightboxPhotoId, lightboxPhotos]);
+  }, [isLoading, state.lightboxPhotoId, lightboxPhotos]);
 
   const handleToggleSelect = useCallback((id: string) => {
     setState((prev) => {
       const next = new Set(prev.selectedIds);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      if (next.size === 0) setActionError(null);
       return { ...prev, selectedIds: next };
     });
   }, []);
