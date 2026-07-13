@@ -1,3 +1,7 @@
 html.dark .photo-form-hint {
   color: #64748b;
 }
+
+html.dark .photo-library-row:hover {
+  background-color: #1e293b;
+}
