@@ -9,8 +9,9 @@ export interface ProcessedPhoto {
 }
 
 /**
- * Extract EXIF DateTimeOriginal (falling back to DateTime) before any
- * transformation strips metadata. Returns null when absent or unparsable.
+ * Extract EXIF DateTimeOriginal (falling back to DateTime) from already-read
+ * sharp metadata of the ORIGINAL buffer, before any transformation strips
+ * metadata. Returns null when absent or unparsable.
  *
  * exif-reader v2.0.3 (installed) groups tags under `Photo` / `Image` keys
  * (not the older `exif` / `image` lowercase grouping) and types datetime
@@ -18,9 +19,8 @@ export interface ProcessedPhoto {
  * `new Date(value)` fallback below tolerates either shape in case the
  * installed version changes.
  */
-async function extractExifTakenAt(buffer: Buffer): Promise<Date | null> {
+function extractExifTakenAt(metadata: sharp.Metadata): Date | null {
   try {
-    const metadata = await sharp(buffer).metadata();
     if (!metadata.exif) return null;
     const tags = exifReader(metadata.exif);
     const value = tags?.Photo?.DateTimeOriginal || tags?.Image?.DateTime;
@@ -39,12 +39,16 @@ async function extractExifTakenAt(buffer: Buffer): Promise<Date | null> {
  * Originals are NOT retained (see spec section 4).
  */
 export async function processPhoto(buffer: Buffer, mimeType: string): Promise<ProcessedPhoto> {
-  const exifTakenAt = await extractExifTakenAt(buffer);
+  // Decode the buffer once; metadata() and each clone() reuse this single
+  // decode instead of re-parsing the source buffer per output.
+  const image = sharp(buffer);
+  const metadata = await image.metadata();
+  const exifTakenAt = extractExifTakenAt(metadata);
   const normalizedMime = mimeType.toLowerCase();
 
   // rotate() applies EXIF orientation; resize keeps aspect, never enlarges
   const base = () =>
-    sharp(buffer).rotate().resize(PHOTO_DISPLAY_MAX_DIMENSION, PHOTO_DISPLAY_MAX_DIMENSION, {
+    image.clone().rotate().resize(PHOTO_DISPLAY_MAX_DIMENSION, PHOTO_DISPLAY_MAX_DIMENSION, {
       fit: 'inside',
       withoutEnlargement: true,
     });
@@ -62,7 +66,8 @@ export async function processPhoto(buffer: Buffer, mimeType: string): Promise<Pr
     display = { data: await base().jpeg({ quality: 80 }).toBuffer(), mimeType: 'image/jpeg' };
   }
 
-  const thumbnailData = await sharp(buffer)
+  const thumbnailData = await image
+    .clone()
     .rotate()
     .resize(PHOTO_THUMBNAIL_DIMENSION, PHOTO_THUMBNAIL_DIMENSION, { fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: 70 })
