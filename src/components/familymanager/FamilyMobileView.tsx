@@ -287,7 +287,11 @@ export default function FamilyMobileView({
                     min={1}
                     placeholder={t('Default')}
                     value={editingData.photoQuotaMB ?? ''}
-                    onChange={(e) => setEditingData(prev => ({ ...prev, photoQuotaMB: e.target.value === '' ? null : parseInt(e.target.value, 10) }))}
+                    onChange={(e) => {
+                      if (e.target.value === '') { setEditingData(prev => ({ ...prev, photoQuotaMB: null })); return; }
+                      const parsed = parseInt(e.target.value, 10);
+                      if (!Number.isNaN(parsed)) setEditingData(prev => ({ ...prev, photoQuotaMB: parsed }));
+                    }}
                     className="mt-1"
                   />
                 ) : (

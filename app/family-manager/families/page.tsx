@@ -196,9 +196,9 @@ export default function FamiliesPage() {
       const data = await response.json();
       if (data.success) {
         // photoQuotaMB lives on the family's Settings record, not the Family record,
-        // so it's saved via a separate call. Omitting the field from the request
-        // body leaves the existing value untouched.
-        if (editingData.photoQuotaMB !== undefined) {
+        // so it's saved via a separate call only when the value actually changed.
+        // Skip the settings call if the quota was not modified.
+        if (editingData.photoQuotaMB !== undefined && editingData.photoQuotaMB !== (family.photoQuotaMB ?? null)) {
           const settingsResponse = await authFetch(`/api/settings?familyId=${family.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
