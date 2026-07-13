@@ -141,3 +141,9 @@ html.dark .new-updates-badge {
   background-color: #0d9488; /* teal-600 */
   color: #ffffff;
 }
+
+/* Photos nav item NEW pill */
+html.dark .side-nav-new-pill {
+  background-color: #4c0519; /* rose-950 */
+  color: #fda4af; /* rose-300 */
+}

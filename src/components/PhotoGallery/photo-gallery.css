@@ -1,0 +1,51 @@
+/* Dark mode overrides for the PhotoGallery feature (page, toolbar, grid). */
+
+html.dark .photo-gallery-header {
+  background: linear-gradient(to right, #0f766e, #115e59); /* teal-700 -> teal-800 */
+}
+
+html.dark .photo-gallery-empty-icon {
+  background-color: #1e293b; /* slate-800 */
+  color: #64748b; /* slate-500 */
+}
+
+html.dark .photo-gallery-month-heading {
+  color: #94a3b8; /* slate-400 */
+}
+
+html.dark .photo-gallery-tile {
+  background-color: #1e293b; /* slate-800 */
+}
+
+/* Toolbar segmented control */
+html.dark .photo-gallery-seg {
+  background-color: #1e293b; /* slate-800 */
+  border-color: #334155; /* slate-700 */
+}
+
+html.dark .photo-gallery-seg-btn {
+  color: #cbd5e1; /* slate-300 */
+}
+
+html.dark .photo-gallery-seg-btn.active {
+  background-color: #0d9488; /* teal-600 */
+  color: #ffffff;
+}
+
+/* Toolbar chips (type filter, favorites, captions) */
+html.dark .photo-gallery-chip {
+  border-color: #475569; /* slate-600 */
+  background-color: #1e293b; /* slate-800 */
+  color: #cbd5e1; /* slate-300 */
+}
+
+html.dark .photo-gallery-chip.active {
+  background-color: #0d9488; /* teal-600 */
+  border-color: #0d9488;
+  color: #ffffff;
+}
+
+html.dark .photo-gallery-trash-badge {
+  background-color: #334155; /* slate-700 */
+  color: #e2e8f0; /* slate-200 */
+}
