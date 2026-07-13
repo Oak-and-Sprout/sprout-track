@@ -17,6 +17,8 @@ import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { newFeedSessionId } from '@/src/utils/feedSessionUtils';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import './feed-form.css';
 
 // Import subcomponents
@@ -106,6 +108,28 @@ export default function FeedForm({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
+
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'feed' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
+
+  // Whether the current mode ends in a call to handleSubmit (vs. Start/End Feed's own API calls)
+  const showPhotosSection = photosEnabled && !(isFeeding && activeFeedData && !activity) &&
+    !(formData.type === 'BREAST' && !isFeeding && !activity && !manualEntry);
 
   // Live timer for active breastfeed session
   const [liveElapsed, setLiveElapsed] = useState(0);
@@ -402,6 +426,9 @@ export default function FeedForm({
       // Reset initialization flag and stored time when form closes
       setIsInitialized(false);
       setInitializedTime(null);
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   }, [isOpen, activity, initialTime]);
 
@@ -577,27 +604,51 @@ export default function FeedForm({
     setLoading(true);
 
     try {
+      let savedActivityId: string | undefined = activity?.id;
+
       if (formData.type === 'BREAST' && !activity) {
         // For new breast feeding entries, create entries for both sides if they have durations
         // Use accurate durations captured above
         if (accurateLeftDuration > 0 && accurateRightDuration > 0) {
           // Create entries for both sides
-          await createBreastFeedingEntries(accurateLeftDuration, accurateRightDuration);
+          savedActivityId = await createBreastFeedingEntries(accurateLeftDuration, accurateRightDuration);
         } else if (accurateLeftDuration > 0) {
           // Create only left side entry
-          await createSingleFeedEntry('LEFT', accurateLeftDuration);
+          savedActivityId = await createSingleFeedEntry('LEFT', accurateLeftDuration);
         } else if (accurateRightDuration > 0) {
           // Create only right side entry
-          await createSingleFeedEntry('RIGHT', accurateRightDuration);
+          savedActivityId = await createSingleFeedEntry('RIGHT', accurateRightDuration);
         }
       } else {
         // For editing or non-breast feeding entries, use the single entry method
-        await createSingleFeedEntry(formData.side as BreastSide);
+        savedActivityId = await createSingleFeedEntry(formData.side as BreastSide);
+      }
+
+      if (photosEnabled && savedActivityId) {
+        try {
+          for (const photoId of removedPhotoIds) {
+            await unlinkPhoto(photoId, 'feed', savedActivityId);
+          }
+          if (pendingPhotoFiles.length > 0) {
+            const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+            for (const photo of result.photos) {
+              await linkPhoto(photo.id, 'feed', savedActivityId);
+            }
+          }
+        } catch (photoError) {
+          console.error('Photo attachment failed:', photoError);
+          showToast({
+            variant: 'warning',
+            title: t('Warning'),
+            message: t('Feeding saved, but one or more photos failed to attach.'),
+            duration: 5000,
+          });
+        }
       }
 
       onClose();
       onSuccess?.();
-      
+
       // Reset form data
       setSelectedDateTime(new Date(initialTime));
       setFormData({
@@ -616,6 +667,9 @@ export default function FeedForm({
         rightDuration: 0,
         activeBreast: ''
       });
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     } catch (error) {
       console.error('Error saving feed log:', error);
       // If it's an expiration error, don't close the form (already handled by handleExpirationError)
@@ -636,15 +690,19 @@ export default function FeedForm({
     // When both sides are logged together they are one nursing session
     const sessionId = leftDuration > 0 && rightDuration > 0 ? newFeedSessionId() : undefined;
 
+    let lastId: string | undefined;
+
     // Create left side entry
     if (leftDuration > 0) {
-      await createSingleFeedEntry('LEFT', leftDuration, sessionId);
+      lastId = await createSingleFeedEntry('LEFT', leftDuration, sessionId);
     }
 
     // Create right side entry
     if (rightDuration > 0) {
-      await createSingleFeedEntry('RIGHT', rightDuration, sessionId);
+      lastId = await createSingleFeedEntry('RIGHT', rightDuration, sessionId);
     }
+
+    return lastId;
   };
 
   // Helper function to create a single feed entry
@@ -755,7 +813,8 @@ export default function FeedForm({
       throw new Error(errorData.error || t('Failed to save feed log'));
     }
 
-    return response;
+    const savedFeedLog = await response.json();
+    return (activity?.id || savedFeedLog.data?.id) as string | undefined;
   };
 
   // This section is now handled in the createSingleFeedEntry and createBreastFeedingEntries functions
@@ -861,6 +920,9 @@ export default function FeedForm({
     // Reset initialization flag
     setIsInitialized(false);
     setManualEntry(false);
+    setPendingPhotoFiles([]);
+    setAttachedPhotos([]);
+    setRemovedPhotoIds([]);
 
     // Call the original onClose
     onClose();
@@ -1448,6 +1510,22 @@ export default function FeedForm({
                 onIncrement={incrementAmount}
                 onDecrement={decrementAmount}
               />
+            )}
+
+            {showPhotosSection && (
+              <div>
+                <label className="form-label">{t('Photos')}</label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
             )}
           </div>
           </form>
