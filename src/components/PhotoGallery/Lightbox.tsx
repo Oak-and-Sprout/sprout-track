@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, Heart, ImageOff, Trash2, X } from 'lucide-react';
 import { PhotoResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -18,6 +18,9 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
   play: 'Activity',
   measurement: 'Measurement',
 };
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface LightboxProps {
   photos: PhotoResponse[];
@@ -39,6 +42,7 @@ export default function Lightbox({ photos, photoId, onClose, onNavigate, onToggl
   const { t } = useLocalization();
   const { dateFormat, timeFormat } = useTimezone();
   const [busy, setBusy] = useState<'favorite' | 'download' | 'delete' | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const index = useMemo(() => photos.findIndex((p) => p.id === photoId), [photos, photoId]);
   const photo = index >= 0 ? photos[index] : null;
@@ -47,21 +51,77 @@ export default function Lightbox({ photos, photoId, onClose, onNavigate, onToggl
 
   const { src, loading, error: imageError } = useAuthedImage(photo ? photoFileUrl(photo.id, 'full') : null, !!photo);
 
+  // Escape/arrow navigation plus Tab focus-trapping within the dialog. Only
+  // takes effect once `photo` resolves — a stale mount (e.g. the fallback
+  // photo disappearing after a delete/reload) must not leave a global
+  // keydown listener attached to a component that's about to render null.
   useEffect(() => {
+    if (!photo) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft' && prevId) onNavigate(prevId);
-      if (e.key === 'ArrowRight' && nextId) onNavigate(nextId);
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'ArrowLeft' && prevId) {
+        onNavigate(prevId);
+        return;
+      }
+      if (e.key === 'ArrowRight' && nextId) {
+        onNavigate(nextId);
+        return;
+      }
+      if (e.key === 'Tab') {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+          (el) => el.offsetParent !== null
+        );
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        const inDialog = dialog.contains(active);
+        if (e.shiftKey) {
+          if (active === first || !inDialog) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last || !inDialog) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [prevId, nextId, onClose, onNavigate]);
+  }, [photo, prevId, nextId, onClose, onNavigate]);
 
+  // Body scroll lock — gated the same way, so a stale/blank mount releases
+  // the lock instead of holding the page hostage.
   useEffect(() => {
+    if (!photo) return;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
+  }, [photo]);
+
+  // Focus management: remember what was focused before the lightbox opened
+  // and restore it on unmount, mirroring FormPage's open/close pattern. The
+  // lightbox stays mounted across photo navigation (only unmounts on
+  // close), so this intentionally runs once per mount rather than per photo.
+  useEffect(() => {
+    if (!photo) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    return () => {
+      if (previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus({ preventScroll: true });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -107,6 +167,7 @@ export default function Lightbox({ photos, photoId, onClose, onNavigate, onToggl
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/90 p-6"
       role="dialog"
       aria-modal="true"

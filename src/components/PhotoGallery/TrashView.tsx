@@ -75,10 +75,11 @@ export default function TrashView({ babyId, onBack, onChanged }: TrashViewProps)
     setBusy(true);
     setActionError(null);
     try {
-      await bulkPhotoAction('restore', ids);
+      const count = await bulkPhotoAction('restore', ids);
       setSelectedIds(new Set());
       await load(true);
       onChanged();
+      if (count < ids.length) setActionError(t('Some photos could not be updated'));
     } catch {
       setActionError(t('Failed to restore photo'));
     } finally {
@@ -91,11 +92,12 @@ export default function TrashView({ babyId, onBack, onChanged }: TrashViewProps)
     setBusy(true);
     setActionError(null);
     try {
-      await bulkPhotoAction('purge', ids);
+      const count = await bulkPhotoAction('purge', ids);
       setSelectedIds(new Set());
       setConfirmingPurge(false);
       await load(true);
       onChanged();
+      if (count < ids.length) setActionError(t('Some photos could not be updated'));
     } catch {
       setActionError(t('Failed to delete photo'));
     } finally {

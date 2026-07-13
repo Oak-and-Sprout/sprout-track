@@ -48,6 +48,7 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const onStateChange = useCallback((partial: Partial<GalleryState>) => {
     setState((prev) => ({ ...prev, ...partial }));
@@ -127,6 +128,16 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
     return fallback ? [fallback] : filtered;
   }, [filtered, photos, state.lightboxPhotoId]);
 
+  // Guard against a mounted-but-blank Lightbox: if the open photo drops out
+  // of both the filtered list and the single-item fallback (e.g. a reload
+  // after delete resets pagination and the photo is gone), close it rather
+  // than leaving the body-scroll lock and keydown listener stuck active.
+  useEffect(() => {
+    if (state.lightboxPhotoId && !lightboxPhotos.some((p) => p.id === state.lightboxPhotoId)) {
+      setState((s) => ({ ...s, lightboxPhotoId: null }));
+    }
+  }, [state.lightboxPhotoId, lightboxPhotos]);
+
   const handleToggleSelect = useCallback((id: string) => {
     setState((prev) => {
       const next = new Set(prev.selectedIds);
@@ -188,6 +199,8 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
   }, []);
 
   const handleBulkDownload = useCallback(async () => {
+    setActionError(null);
+    let failures = 0;
     for (const id of Array.from(state.selectedIds)) {
       const photo = photos.find((p) => p.id === id);
       if (!photo) continue;
@@ -195,22 +208,26 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
         await downloadPhoto(photo.id, photo.originalName);
       } catch (error) {
         console.error('Error downloading photo:', error);
+        failures += 1;
       }
     }
-  }, [state.selectedIds, photos]);
+    if (failures > 0) setActionError(t('Some photos failed to download'));
+  }, [state.selectedIds, photos, t]);
 
   const handleBulkDelete = useCallback(async () => {
     const ids = Array.from(state.selectedIds);
     if (ids.length === 0) return;
+    setActionError(null);
     try {
-      await bulkPhotoAction('trash', ids);
-    } catch (error) {
-      console.error('Error deleting photos:', error);
-    } finally {
+      const count = await bulkPhotoAction('trash', ids);
       onStateChange({ selectMode: false, selectedIds: new Set() });
       await loadPhotos(true);
+      if (count < ids.length) setActionError(t('Some photos could not be updated'));
+    } catch (error) {
+      console.error('Error deleting photos:', error);
+      setActionError(t('Failed to delete photo'));
     }
-  }, [state.selectedIds, onStateChange, loadPhotos]);
+  }, [state.selectedIds, onStateChange, loadPhotos, t]);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -240,9 +257,9 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
           <>
             <GalleryToolbar state={state} onStateChange={onStateChange} trashCount={trashCount} />
 
-            {state.selectMode && (
-              <p className="text-xs font-medium text-gray-500">
-                {state.selectedIds.size} {t('Selected')}
+            {actionError && (
+              <p className="text-xs text-red-500" role="alert">
+                {actionError}
               </p>
             )}
 
@@ -345,7 +362,10 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
           count={state.selectedIds.size}
           onDownload={handleBulkDownload}
           onDelete={handleBulkDelete}
-          onCancel={() => onStateChange({ selectMode: false, selectedIds: new Set() })}
+          onCancel={() => {
+            setActionError(null);
+            onStateChange({ selectMode: false, selectedIds: new Set() });
+          }}
         />
       )}
     </div>
