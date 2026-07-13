@@ -95,7 +95,9 @@ describe('trash lifecycle', () => {
     expect(trashDaysRemaining(new Date('2026-07-30T11:00:00Z'), now)).toBe(29);
     expect(trashDaysRemaining(new Date('2026-06-01T00:00:00Z'), now)).toBe(0);
   });
-  expect(TRASH_RETENTION_DAYS).toBe(30);
+  it('retention is 30 days', () => {
+    expect(TRASH_RETENTION_DAYS).toBe(30);
+  });
 });
 
 describe('getVisibleThumbnails', () => {

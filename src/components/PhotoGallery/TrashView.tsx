@@ -50,8 +50,7 @@ export default function TrashView({ babyId, onBack, onChanged }: TrashViewProps)
         setIsLoadingMore(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [babyId]
+    [babyId, nextCursor, t]
   );
 
   useEffect(() => {

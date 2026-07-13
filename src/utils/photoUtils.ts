@@ -91,7 +91,7 @@ export function formatQuotaLabel(usedBytes: number, totalBytes: number): { usedG
   const gb = 1024 * 1024 * 1024;
   const fmt = (n: number) => {
     const v = n / gb;
-    return (Math.round(v * 10) / 10).toString().replace(/\.0$/, '');
+    return (Math.round(v * 10) / 10).toString();
   };
   const percent = totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 100) : 0;
   return { usedGb: fmt(usedBytes), totalGb: fmt(totalBytes), percent };

@@ -4,6 +4,7 @@ import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, Note
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { buildLinkTargets, groupPhotoLinks } from './timeline-photo-links';
+import { isPhotosEnabled } from '../photos/photo-service';
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
@@ -147,6 +148,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const typesParam = searchParams.get('types');
     const requestedTypes = typesParam ? new Set(typesParam.split(',').map(t => t.trim().toLowerCase())) : null;
     const shouldFetch = (type: string) => !requestedTypes || requestedTypes.has(type);
+    const photosEnabled = await isPhotosEnabled();
 
     // Get recent activities from each type with caretaker information
     const emptyPromise = Promise.resolve([]);
@@ -368,7 +370,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         },
         orderBy: { time: 'desc' }
       }) : emptyPromise,
-      shouldFetch('photo') ? prisma.photoLog.findMany({
+      photosEnabled && shouldFetch('photo') ? prisma.photoLog.findMany({
         where: {
           babyId,
           ...(startDateUTC && endDateUTC ? {
@@ -399,7 +401,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       photo: photoLogs.map((l: any) => l.id),
     });
 
-    const photoLinks = linkTargets.length > 0
+    const photoLinks = photosEnabled && linkTargets.length > 0
       ? await prisma.photoLink.findMany({
           where: {
             OR: linkTargets.map((t) => ({ activityType: t.activityType, activityId: { in: t.ids } })),

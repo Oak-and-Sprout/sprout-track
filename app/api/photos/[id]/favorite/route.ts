@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../db';
 import { ApiResponse } from '../../../types';
 import { withAuthContext, AuthResult } from '../../../utils/auth';
+import { checkWritePermission } from '../../../utils/writeProtection';
 import { isPhotosEnabled, photosDisabledResponse, favoriteOwnerFilter } from '../../photo-service';
 
 /**
@@ -12,6 +13,8 @@ import { isPhotosEnabled, photosDisabledResponse, favoriteOwnerFilter } from '..
  */
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   if (!(await isPhotosEnabled())) return photosDisabledResponse();
+  const writeCheck = checkWritePermission(authContext);
+  if (!writeCheck.allowed) return writeCheck.response!;
 
   try {
     const pathParts = new URL(req.url).pathname.split('/');

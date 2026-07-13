@@ -25,8 +25,8 @@ interface PhotoGroup {
   photos: GalleryPhoto[];
 }
 
-function formatMonthHeading(monthKey: string): string {
-  return new Date(`${monthKey}-01T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+function formatMonthHeading(monthKey: string, language: string): string {
+  return new Date(`${monthKey}-01T00:00:00`).toLocaleDateString(language || undefined, { month: 'long', year: 'numeric' });
 }
 
 /**
@@ -37,7 +37,7 @@ function formatMonthHeading(monthKey: string): string {
  * threads through.
  */
 export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
-  const { t } = useLocalization();
+  const { t, language } = useLocalization();
 
   const [state, setState] = useState<GalleryState>(DEFAULT_GALLERY_STATE);
   const [photos, setPhotos] = useState<PhotoResponse[]>([]);
@@ -110,7 +110,7 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
 
   const groups = useMemo<PhotoGroup[]>(() => {
     if (state.grouping === 'month') {
-      return groupByMonth(filtered).map((g) => ({ key: g.monthKey, heading: formatMonthHeading(g.monthKey), photos: g.photos }));
+      return groupByMonth(filtered).map((g) => ({ key: g.monthKey, heading: formatMonthHeading(g.monthKey, language), photos: g.photos }));
     }
     if (state.grouping === 'milestone') {
       return groupByMilestone(filtered).map((g) => ({
@@ -120,7 +120,7 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
       }));
     }
     return [{ key: 'all', heading: null, photos: filtered }];
-  }, [state.grouping, filtered, t]);
+  }, [state.grouping, filtered, t, language]);
 
   const hasActiveFilters = !!state.query || state.typeFilter !== 'all' || state.favoritesOnly;
 
