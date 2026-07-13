@@ -179,3 +179,17 @@ export interface ExternalImportExecutionConfiguration {
     Record<string, ExternalImportChildDestination>
   >;
 }
+
+export interface ExternalImportPlannedNewBaby {
+  readonly sourceRecord: ExternalImportBabyRecord;
+  readonly gender: ExternalImportGender;
+}
+
+export interface ExternalImportExecutionPlan {
+  readonly newBabies: readonly ExternalImportPlannedNewBaby[];
+  readonly existingBabyIds: readonly string[];
+  readonly activityRecords: readonly Exclude<
+    ExternalImportRecord,
+    ExternalImportBabyRecord
+  >[];
+}
