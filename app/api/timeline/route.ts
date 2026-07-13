@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
-import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse, VaccineLogResponse } from '../types';
+import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse, VaccineLogResponse, PhotoLogResponse, TimelinePhotoInfo } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
   SleepLogResponse | FeedLogResponse | DiaperLogResponse | NoteResponse | BathLogResponse | PumpLogResponse | PlayLogResponse | MilestoneResponse | MeasurementResponse | MedicineLogResponse | BreastMilkAdjustmentResponse | VaccineLogResponse
+  | (Omit<PhotoLogResponse, 'photos'> & { photoLogId: string; photos: TimelinePhotoInfo[] })
 ) & {
   caretakerId?: string | null;
   caretakerName?: string;
   medicine?: MedicineResponse;
+  photos?: TimelinePhotoInfo[];
 };
 
 type ActivityType = ActivityTypeWithCaretaker;
@@ -147,7 +149,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 
     // Get recent activities from each type with caretaker information
     const emptyPromise = Promise.resolve([]);
-    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, playLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments, vaccineLogs] = await Promise.all([
+    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, playLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments, vaccineLogs, photoLogs] = await Promise.all([
       shouldFetch('sleep') ? prisma.sleepLog.findMany({
         where: {
           babyId,
@@ -364,10 +366,56 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           }
         },
         orderBy: { time: 'desc' }
+      }) : emptyPromise,
+      shouldFetch('photo') ? prisma.photoLog.findMany({
+        where: {
+          babyId,
+          ...(startDateUTC && endDateUTC ? {
+            time: {
+              gte: startDateUTC,
+              lte: endDateUTC
+            }
+          } : {}),
+          familyId, // Filter by the verified family ID
+          deletedAt: null,
+        },
+        include: {
+          caretaker: true
+        },
+        orderBy: { time: 'desc' }
       }) : emptyPromise
     ]);
     
     console.log(`Results - sleepLogs: ${sleepLogs.length}, feedLogs: ${feedLogs.length}, diaperLogs: ${diaperLogs.length}, noteLogs: ${noteLogs.length}, bathLogs: ${bathLogs.length}, pumpLogs: ${pumpLogs.length}`);
+
+    // Batch-load photo attachments for every activity on this page (no N+1)
+    const linkTargets: { activityType: string; ids: string[] }[] = [
+      { activityType: 'feed', ids: feedLogs.map((l: any) => l.id) },
+      { activityType: 'bath', ids: bathLogs.map((l: any) => l.id) },
+      { activityType: 'play', ids: playLogs.map((l: any) => l.id) },
+      { activityType: 'milestone', ids: milestoneLogs.map((l: any) => l.id) },
+      { activityType: 'measurement', ids: measurementLogs.map((l: any) => l.id) },
+      { activityType: 'photo', ids: photoLogs.map((l: any) => l.id) },
+    ].filter((t) => t.ids.length > 0);
+
+    const photoLinks = linkTargets.length > 0
+      ? await prisma.photoLink.findMany({
+          where: {
+            OR: linkTargets.map((t) => ({ activityType: t.activityType, activityId: { in: t.ids } })),
+            photo: { deletedAt: null },
+          },
+          orderBy: { createdAt: 'asc' },
+          include: { photo: { select: { id: true, caption: true } } },
+        })
+      : [];
+
+    const photosByActivity = new Map<string, TimelinePhotoInfo[]>();
+    for (const link of photoLinks) {
+      const key = `${link.activityType}:${link.activityId}`;
+      if (!photosByActivity.has(key)) photosByActivity.set(key, []);
+      photosByActivity.get(key)!.push({ id: link.photo.id, caption: link.photo.caption });
+    }
+    const photosFor = (activityType: string, activityId: string) => photosByActivity.get(`${activityType}:${activityId}`);
 
     // Format the responses with caretaker information
     const formattedSleepLogs: ActivityTypeWithCaretaker[] = sleepLogs
@@ -402,6 +450,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
           caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          photos: photosFor('feed', log.id),
         };
       });
 
@@ -453,9 +502,10 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
           caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          photos: photosFor('bath', log.id),
         };
       });
-      
+
     const formattedPumpLogs: ActivityTypeWithCaretaker[] = pumpLogs
       .map(log => {
         // Create a new object without the caretaker property
@@ -491,6 +541,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
           caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          photos: photosFor('play', log.id),
         };
       });
 
@@ -530,9 +581,10 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
           caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          photos: photosFor('milestone', log.id),
         };
       });
-      
+
     // Format measurement logs
     const formattedMeasurementLogs: ActivityTypeWithCaretaker[] = measurementLogs
       .map(log => {
@@ -548,6 +600,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
           caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          photos: photosFor('measurement', log.id),
         };
       });
 
@@ -586,6 +639,23 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         };
       });
 
+    // Format photo logs
+    const formattedPhotoLogs: ActivityTypeWithCaretaker[] = photoLogs
+      .map((log: any) => {
+        const { caretaker, ...logWithoutCaretaker } = log;
+        return {
+          ...logWithoutCaretaker,
+          photoLogId: log.id, // discriminant for the client icon/record switch
+          time: formatForResponse(log.time) || '',
+          createdAt: formatForResponse(log.createdAt) || '',
+          updatedAt: formatForResponse(log.updatedAt) || '',
+          deletedAt: formatForResponse(log.deletedAt),
+          caretakerId: log.caretakerId,
+          caretakerName: caretaker ? caretaker.name : undefined,
+          photos: photosFor('photo', log.id) || [],
+        };
+      });
+
     // Combine and sort all activities
     const allActivities = [
       ...formattedSleepLogs,
@@ -599,7 +669,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       ...formattedMeasurementLogs,
       ...formattedMedicineLogs,
       ...formattedBreastMilkAdjustments,
-      ...formattedVaccineLogs
+      ...formattedVaccineLogs,
+      ...formattedPhotoLogs
     ]
     .sort((a, b) => getActivityTime(b) - getActivityTime(a));
     

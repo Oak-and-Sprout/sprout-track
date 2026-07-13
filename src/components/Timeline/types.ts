@@ -1,9 +1,15 @@
 import { Settings } from '@prisma/client';
 import { ActivityType as ImportedActivityType } from '@/src/components/ui/activity-tile/activity-tile.types';
-import { SleepLogResponse } from '@/app/api/types';
+import { SleepLogResponse, PhotoLogResponse, TimelinePhotoInfo } from '@/app/api/types';
+
+// Helper to add the optional batched photo-thumbnail info to attachable activity types
+type WithPhotos<T> = T & { photos?: TimelinePhotoInfo[] };
 
 // Define the extended ActivityType that includes caretaker information
-export type TimelineActivityType = ImportedActivityType & {
+export type TimelineActivityType = (
+  WithPhotos<ImportedActivityType>
+  | (Omit<PhotoLogResponse, 'photos'> & { photoLogId: string; photos?: TimelinePhotoInfo[] })
+) & {
   caretakerId?: string | null;
   caretakerName?: string;
 };
@@ -11,7 +17,7 @@ export type TimelineActivityType = ImportedActivityType & {
 // Use TimelineActivityType for internal component logic
 export type ActivityType = TimelineActivityType;
 
-export type FilterType = 'sleep' | 'feed' | 'diaper' | 'poop' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null;
+export type FilterType = 'sleep' | 'feed' | 'diaper' | 'poop' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null;
 
 export interface LatestStatusData {
   lastFeedTime?: Date;
