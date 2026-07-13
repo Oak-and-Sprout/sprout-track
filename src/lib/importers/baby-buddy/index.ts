@@ -40,3 +40,10 @@ export type {
   BabyBuddyImportWarning,
   BabyBuddyWarningCode,
 } from './types';
+
+export {
+  mapBabyBuddyChild,
+  mapBabyBuddyNote,
+  mapBabyBuddyRows,
+  mapBabyBuddySleep,
+} from './map';

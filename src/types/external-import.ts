@@ -52,3 +52,40 @@ export interface ExternalImportPreviewer {
     files: readonly ExternalImportFile[],
   ): ExternalImportPreview;
 }
+
+export interface ExternalImportSource {
+  readonly providerId: string;
+  readonly entityType: string;
+  readonly recordId: string;
+  readonly childId?: string;
+}
+
+export interface ExternalImportBabyRecord {
+  readonly targetType: 'baby';
+  readonly source: ExternalImportSource;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly birthDate: string;
+}
+
+export interface ExternalImportSleepRecord {
+  readonly targetType: 'sleep';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly type: 'NAP' | 'NIGHT_SLEEP';
+}
+
+export interface ExternalImportNoteRecord {
+  readonly targetType: 'note';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly time: string;
+  readonly content: string;
+}
+
+export type ExternalImportRecord =
+  | ExternalImportBabyRecord
+  | ExternalImportSleepRecord
+  | ExternalImportNoteRecord;
