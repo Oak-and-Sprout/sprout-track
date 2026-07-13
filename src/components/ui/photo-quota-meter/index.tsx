@@ -19,7 +19,7 @@ export function PhotoQuotaMeter({ usedBytes, totalBytes, variant = 'light', clas
 
   return (
     <div className={cn(quotaMeterStyles.container({ variant }), variant === 'light' ? 'photo-quota-meter' : '', className)}>
-      <span className={quotaMeterStyles.bar({ variant })} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+      <span className={quotaMeterStyles.bar({ variant })} role="progressbar" aria-valuenow={Math.min(percent, 100)} aria-valuemin={0} aria-valuemax={100}>
         <span className={quotaMeterStyles.fill({ level })} style={{ width: `${Math.min(percent, 100)}%` }} />
       </span>
       <span>
