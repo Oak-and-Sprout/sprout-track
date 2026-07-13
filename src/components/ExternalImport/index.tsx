@@ -301,17 +301,17 @@ export default function ExternalImport({
             <div
               role="status"
               aria-live="polite"
-              className="flex items-center gap-3 rounded-lg border border-teal-200 bg-teal-50 p-4 text-teal-900"
+              className="flex items-center gap-3 rounded-lg border border-teal-600 bg-teal-950/40 p-4 text-teal-100"
             >
               <Loader2
                 className="h-5 w-5 shrink-0 animate-spin"
                 aria-hidden="true"
               />
               <div>
-                <p className="font-medium">
+                <p className="font-medium text-slate-100">
                   {t('Analysing import files...')}
                 </p>
-                <p className="text-sm text-teal-700">
+                <p className="text-sm text-teal-200">
                   {t(
                     'Detecting file types, records, children, units and warnings',
                   )}
@@ -320,12 +320,12 @@ export default function ExternalImport({
             </div>
           )}
 
-          <section className="rounded-lg border border-gray-200 p-4">
-            <h3 className="font-medium text-gray-900">
+          <section className="rounded-lg border border-slate-600 p-4">
+            <h3 className="font-medium text-slate-100">
               {t('Baby Buddy')}
             </h3>
 
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-slate-300">
               {t(
                 'Select the CSV files exported from Baby Buddy Database Admin',
               )}
@@ -356,7 +356,7 @@ export default function ExternalImport({
             </Button>
 
             {files.length > 0 && (
-              <ul className="mt-4 space-y-1 text-sm text-gray-700">
+              <ul className="mt-4 space-y-1 text-sm text-slate-300">
                 {files.map(file => (
                   <li key={`${file.name}-${file.size}`}>
                     {file.name}
@@ -376,12 +376,12 @@ export default function ExternalImport({
           )}
 
           {preview && (
-            <section className="rounded-lg border border-gray-200 p-4">
-              <h3 className="font-medium text-gray-900">
+            <section className="rounded-lg border border-slate-600 p-4">
+              <h3 className="font-medium text-slate-100">
                 {t('Import preview')}
               </h3>
 
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-slate-300">
                 {preview.preview.totalRows}{' '}
                 {t('records detected')}
               </p>
@@ -426,20 +426,20 @@ export default function ExternalImport({
 
         {step === 'result' && completedResult && (
           <div className="space-y-6">
-            <section className="rounded-lg border border-green-200 bg-green-50 p-4">
-              <h3 className="font-medium text-green-900">
+            <section className="rounded-lg border border-green-700 bg-green-950/40 p-4">
+              <h3 className="font-medium text-green-100">
                 {t('Import completed')}
               </h3>
-              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-green-900">
+              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-green-100">
                 <div>
                   <dt>{t('Created')}</dt>
-                  <dd className="font-medium">
+                  <dd className="font-medium text-slate-100">
                     {completedResult.execution.created}
                   </dd>
                 </div>
                 <div>
                   <dt>{t('Already imported')}</dt>
-                  <dd className="font-medium">
+                  <dd className="font-medium text-slate-100">
                     {completedResult.execution.duplicates}
                   </dd>
                 </div>

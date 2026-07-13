@@ -96,12 +96,12 @@ export default function ConfigureStep({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-gray-200 p-4">
-        <h3 className="font-medium text-gray-900">
+      <section className="rounded-lg border border-slate-600 p-4">
+        <h3 className="font-medium text-slate-100">
           {t('Child destination')}
         </h3>
 
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-slate-300">
           {t(
             'Choose whether each exported child should be added or mapped to an existing baby',
           )}
@@ -117,13 +117,13 @@ export default function ConfigureStep({
             return (
               <div
                 key={child.sourceId}
-                className="rounded-md border border-gray-200 p-3"
+                className="rounded-md border border-slate-600 p-3"
               >
-                <div className="font-medium">
+                <div className="font-medium text-slate-100">
                   {child.firstName} {child.lastName}
                 </div>
 
-                <div className="mt-1 text-sm text-gray-500">
+                <div className="mt-1 text-sm text-slate-400">
                   {t('Birth date')}: {child.birthDate}
                 </div>
 
@@ -261,12 +261,12 @@ export default function ConfigureStep({
         </div>
       </section>
 
-      <section className="rounded-lg border border-gray-200 p-4">
-        <h3 className="font-medium text-gray-900">
+      <section className="rounded-lg border border-slate-600 p-4">
+        <h3 className="font-medium text-slate-100">
           {t('Source timezone')}
         </h3>
 
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-slate-300">
           {t(
             'Baby Buddy timestamps will be interpreted in this timezone',
           )}
@@ -286,8 +286,8 @@ export default function ConfigureStep({
 
       {preview.details.unitRequirements.length >
         0 && (
-        <section className="rounded-lg border border-gray-200 p-4">
-          <h3 className="font-medium text-gray-900">
+        <section className="rounded-lg border border-slate-600 p-4">
+          <h3 className="font-medium text-slate-100">
             {t('Units')}
           </h3>
 
@@ -338,7 +338,7 @@ export default function ConfigureStep({
                     </SelectContent>
                   </Select>
 
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-slate-400">
                     {requirement.populatedRows}{' '}
                     {t('records use this unit')}
                   </p>
@@ -350,12 +350,12 @@ export default function ConfigureStep({
       )}
 
       {preview.warnings.length > 0 && (
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h3 className="font-medium text-amber-900">
+        <section className="rounded-lg border border-amber-700 bg-amber-950/40 p-4">
+          <h3 className="font-medium text-amber-100">
             {t('Import warnings')}
           </h3>
 
-          <ul className="mt-3 space-y-2 text-sm text-amber-800">
+          <ul className="mt-3 space-y-2 text-sm text-amber-200">
             {preview.warnings.map(warning => (
               <li
                 key={`${warning.code}-${warning.entityType}`}
