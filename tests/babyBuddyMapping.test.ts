@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildBabyBuddyImportRecords,
   mapBabyBuddyChild,
   mapBabyBuddyNote,
   mapBabyBuddySleep,
@@ -102,5 +103,54 @@ describe('Baby Buddy record mapping', () => {
         time: 'not-a-date',
       }),
     ).toThrow('Invalid Baby Buddy date-time');
+  });
+});
+
+describe('Baby Buddy server-side record building', () => {
+  it('builds normalised records from multiple exports', () => {
+    const records = buildBabyBuddyImportRecords(
+      [
+        {
+          name: 'Child.csv',
+          content: [
+            'id,first_name,last_name,birth_date,birth_time',
+            '7,Test,Child,2026-01-01,12:30:00',
+          ].join('\n'),
+        },
+        {
+          name: 'Sleep.csv',
+          content: [
+            'id,child_id,start,end,nap,notes,tags',
+            '12,7,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+          ].join('\n'),
+        },
+      ],
+      {},
+    );
+
+    expect(records).toHaveLength(2);
+    expect(records.map(record => record.targetType)).toEqual([
+      'baby',
+      'sleep',
+    ]);
+  });
+
+  it('requires a unit for populated bottle amounts', () => {
+    expect(() =>
+      buildBabyBuddyImportRecords(
+        [
+          {
+            name: 'Feeding.csv',
+            content: [
+              'id,child_id,start,end,type,method,amount,notes,tags',
+              '1,7,2026-01-02 10:00:00,2026-01-02 10:10:00,breast milk,bottle,100,,',
+            ].join('\n'),
+          },
+        ],
+        {},
+      ),
+    ).toThrow(
+      'Missing Baby Buddy import configuration: feedingUnit',
+    );
   });
 });

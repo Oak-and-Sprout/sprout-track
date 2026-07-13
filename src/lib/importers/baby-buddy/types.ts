@@ -43,3 +43,12 @@ export interface BabyBuddyImportWarning {
   readonly entityType: string;
   readonly affectedRows: number;
 }
+
+export interface BabyBuddyExecutionConfiguration {
+  readonly feedingUnit?: 'ML' | 'OZ' | 'SKIP';
+  readonly pumpingUnit?: 'ML' | 'OZ';
+  readonly heightUnit?: 'cm' | 'in';
+  readonly weightUnit?: 'kg' | 'lb';
+  readonly headCircumferenceUnit?: 'cm' | 'in';
+  readonly temperatureUnit?: '°C' | '°F';
+}
