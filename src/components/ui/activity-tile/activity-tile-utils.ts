@@ -61,6 +61,16 @@ export const useActivityDescription = () => {
    * Gets the description for an activity
    */
   const getActivityDescription = (activity: ActivityType) => {
+    // Photo log - check before the more generic field checks below
+    if ('photoLogId' in activity) {
+      const photos = (activity as any).photos as { caption?: string | null }[] | undefined;
+      const firstCaption = photos?.find((p) => p.caption)?.caption;
+      const count = photos?.length ?? 0;
+      return {
+        type: 'Photo',
+        details: firstCaption || (count === 1 ? '1 photo' : `${count} photos`)
+      };
+    }
     if ('type' in activity) {
       if ('duration' in activity) {
         const startTimeFormatted = activity.startTime ? formatDateTime(activity.startTime) : 'unknown';

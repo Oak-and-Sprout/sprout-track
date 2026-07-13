@@ -11,6 +11,7 @@ import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import PhotoForm from '@/src/components/forms/PhotoForm';
 import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
@@ -25,7 +26,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
 
@@ -431,7 +432,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -619,6 +620,17 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             babyId={selectedActivity.babyId}
             initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
             activity={'vaccineName' in selectedActivity ? (selectedActivity as unknown as VaccineLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
+          />
+          <PhotoForm
+            isOpen={editModalType === 'photo'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={getActivityTime(selectedActivity)}
+            activity={'photoLogId' in selectedActivity ? { photoLogId: (selectedActivity as any).photoLogId } : undefined}
             onSuccess={handleFormSuccess}
           />
         </>

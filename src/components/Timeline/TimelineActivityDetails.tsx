@@ -51,8 +51,12 @@ const TimelineActivityDetails = ({
   
   const handleEdit = () => {
     if (activity) {
+      // Photo log - check before the more generic field checks below
+      if ('photoLogId' in activity) {
+        onEdit(activity, 'photo');
+      }
       // Check play activity before sleep since both have duration and type
-      if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
+      else if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
         onEdit(activity, 'play');
       }
       // Check for breast milk adjustment before pump

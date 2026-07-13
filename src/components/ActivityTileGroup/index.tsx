@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ActivityTile } from '@/src/components/ui/activity-tile';
 import { StatusBubble } from "@/src/components/ui/status-bubble";
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse, ActivitySettings } from '@/app/api/types';
-import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowDownUp, ChevronDown, ChevronUp, Camera } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
 import './activity-tile-group.css';
@@ -41,6 +41,8 @@ interface ActivityTileGroupProps {
   onMedicineClick: () => void;
   onPlayClick?: () => void;
   onVaccineClick?: () => void;
+  onPhotoClick?: () => void;
+  photosEnabled?: boolean;
 }
 
 /**
@@ -50,7 +52,7 @@ interface ActivityTileGroupProps {
  * and displaying status bubbles with timing information.
  */
 // Activity type definition
-type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine';
+type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'photo' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine';
 
 export function ActivityTileGroup({
   selectedBaby,
@@ -81,7 +83,9 @@ export function ActivityTileGroup({
     }
   },
   onPlayClick = () => {},
-  onVaccineClick = () => {}
+  onVaccineClick = () => {},
+  onPhotoClick = () => {},
+  photosEnabled = true
 }: ActivityTileGroupProps) {
   const { theme } = useTheme();
   const { t } = useLocalization();
@@ -103,7 +107,7 @@ export function ActivityTileGroup({
   if (!selectedBaby?.id) return null;
 
   // Define all activity types
-  const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'];
+  const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'];
   
   // State for visible activities and their order
   const [visibleActivities, setVisibleActivities] = useState<Set<ActivityType>>(
@@ -288,7 +292,7 @@ export function ActivityTileGroup({
   // Function to set default settings
   const setDefaultSettings = () => {
     // Define all activity types
-    const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'];
+    const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine'];
     
     // Set default order and make all activities visible by default
     setActivityOrder([...allActivityTypes]);
@@ -306,8 +310,8 @@ export function ActivityTileGroup({
   };
   
   // Refs to store the original settings for comparison
-  const originalOrderRef = React.useRef<ActivityType[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine']);
-  const originalVisibleRef = React.useRef<string[]>(['sleep', 'feed', 'diaper', 'note', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine']);
+  const originalOrderRef = React.useRef<ActivityType[]>(['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine']);
+  const originalVisibleRef = React.useRef<string[]>(['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine']);
   
   // Track if settings have been modified since loading
   const [settingsModified, setSettingsModified] = useState(false);
@@ -426,6 +430,7 @@ export function ActivityTileGroup({
     feed: t('Feed'),
     diaper: t('Diaper'),
     note: t('Note'),
+    photo: t('Photo'),
     bath: t('Bath'),
     pump: t('Pump'),
     measurement: t('Measurement'),
@@ -619,6 +624,37 @@ export function ActivityTileGroup({
                 updateUnlockTimer();
                 onNoteClick();
               }}
+            />
+          </div>
+        );
+      case 'photo':
+        return (
+          <div key="photo" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+            <ActivityTile
+              activity={{
+                id: 'photo-button',
+                babyId: selectedBaby.id,
+                time: new Date().toISOString(),
+                content: '',
+                category: 'Photo',
+                caretakerId: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                deletedAt: null
+              } as unknown as NoteResponse}
+              title={t('Photo')}
+              variant="default"
+              isButton={true}
+              icon={<Camera className="h-16 w-16" style={{ color: '#e11d48' }} aria-hidden="true" />}
+              onClick={() => {
+                updateUnlockTimer();
+                onPhotoClick();
+              }}
+            />
+            {/* NEW indicator dot */}
+            <span
+              aria-hidden="true"
+              className="absolute top-0.5 right-0.5 z-10 block h-[11px] w-[11px] rounded-full bg-rose-600 border-2 border-white"
             />
           </div>
         );
@@ -833,7 +869,9 @@ export function ActivityTileGroup({
     <div className="activity-tile-group">
       <div ref={scrollContainerRef} className="flex overflow-x-auto border-0 no-scrollbar snap-x snap-mandatory relative p-2 gap-1">
         {/* Render activity tiles based on order and visibility */}
-        {activityOrder.map(activity => renderActivityTile(activity))}
+        {activityOrder
+          .filter(activity => activity !== 'photo' || photosEnabled)
+          .map(activity => renderActivityTile(activity))}
 
         {/* Configure Button for customizing activity tiles */}
         <div className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
