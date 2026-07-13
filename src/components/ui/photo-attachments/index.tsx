@@ -26,7 +26,7 @@ function ExistingThumb({ photoId, onClick, onRemove }: { photoId: string; onClic
   );
 }
 
-function PendingThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
+function PendingThumb({ file, onRemove }: { file: File; onRemove?: () => void }) {
   const { t } = useLocalization();
   const objectUrl = React.useMemo(() => URL.createObjectURL(file), [file]);
   React.useEffect(() => () => URL.revokeObjectURL(objectUrl), [objectUrl]);
@@ -35,9 +35,11 @@ function PendingThumb({ file, onRemove }: { file: File; onRemove: () => void }) 
       <span className={attachmentStyles.thumb()}>
         <img src={objectUrl} alt={file.name} className="h-full w-full rounded-xl object-cover" />
       </span>
-      <button type="button" className={attachmentStyles.removeBadge()} onClick={onRemove} aria-label={t('Remove photo')}>
-        <X className="h-3 w-3" />
-      </button>
+      {onRemove && (
+        <button type="button" className={attachmentStyles.removeBadge()} onClick={onRemove} aria-label={t('Remove photo')}>
+          <X className="h-3 w-3" />
+        </button>
+      )}
     </span>
   );
 }
@@ -78,7 +80,7 @@ export function PhotoAttachments({
           />
         ))}
         {pendingFiles.map((file, index) => (
-          <PendingThumb key={`${file.name}-${index}`} file={file} onRemove={() => onPendingFilesChange(pendingFiles.filter((_, i) => i !== index))} />
+          <PendingThumb key={`${file.name}-${index}`} file={file} onRemove={!disabled ? () => onPendingFilesChange(pendingFiles.filter((_, i) => i !== index)) : undefined} />
         ))}
         {total < maxPhotos && !disabled && (
           <button type="button" className={`${attachmentStyles.addTile()} photo-attachments-add`} onClick={() => fileInputRef.current?.click()} aria-label={t('Add photo')}>
