@@ -124,4 +124,25 @@ describe('Baby Buddy import analysis', () => {
       unitRequirements: [],
     });
   });
+
+  it('requires a feeding unit only for bottle amounts', () => {
+    const details = analyseBabyBuddyFiles([
+      {
+        name: 'Feeding.csv',
+        content: [
+          'id,child_id,start,end,type,method,amount,notes,tags',
+          '1,7,2026-01-02 10:00:00,2026-01-02 10:10:00,solid food,parent fed,100,,',
+          '2,7,2026-01-02 11:00:00,2026-01-02 11:10:00,breast milk,bottle,,,',
+        ].join('\\n'),
+      },
+    ]);
+
+    expect(
+      details.unitRequirements.find(
+        requirement =>
+          requirement.entityType === 'feeding',
+      ),
+    ).toBeUndefined();
+  });
+
 });

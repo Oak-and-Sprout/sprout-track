@@ -66,10 +66,15 @@ export function analyseBabyBuddyFiles(
     }
 
     const populatedRows =
-      entityType === 'feeding' ||
-      entityType === 'pumping'
-        ? populatedValueCount(parsed.rows, 'amount')
-        : parsed.rows.length;
+      entityType === 'feeding'
+        ? parsed.rows.filter(
+            row =>
+              row.method?.trim() === 'bottle' &&
+              Boolean(row.amount?.trim()),
+          ).length
+        : entityType === 'pumping'
+          ? populatedValueCount(parsed.rows, 'amount')
+          : parsed.rows.length;
 
     if (populatedRows === 0) {
       return;
