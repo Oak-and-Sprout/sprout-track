@@ -28,7 +28,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const babyId = searchParams.get('babyId');
     const trash = searchParams.get('trash') === 'true';
     const cursor = searchParams.get('cursor');
-    const limit = Math.min(parseInt(searchParams.get('limit') || `${DEFAULT_LIMIT}`, 10) || DEFAULT_LIMIT, MAX_LIMIT);
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || `${DEFAULT_LIMIT}`, 10) || DEFAULT_LIMIT, 1), MAX_LIMIT);
 
     await purgeExpiredPhotos(familyId!);
 
