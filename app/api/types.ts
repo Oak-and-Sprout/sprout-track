@@ -46,6 +46,19 @@ export interface ActivitySettings {
 // Sleep location settings types
 export interface SleepLocationSettings {
   hiddenLocations: string[];
+  customLocations?: string[]; // custom names persisted before any sleep entry uses them
+}
+
+// Sleep location management types (Settings > Sleep Locations)
+export interface SleepLocationSummary {
+  name: string;
+  count: number; // non-deleted SleepLog rows with this exact location
+  isDefault: boolean; // exact match in DEFAULT_SLEEP_LOCATIONS
+  hidden: boolean; // exact match in hiddenLocations
+}
+
+export interface SleepLocationRenameResult {
+  updatedCount: number;
 }
 
 // Bath type settings types

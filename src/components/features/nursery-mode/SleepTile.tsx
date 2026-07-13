@@ -17,6 +17,7 @@ interface SleepTileProps {
   expanded?: boolean;
 }
 
+// Intentional nursery-mode subset of DEFAULT_SLEEP_LOCATIONS (src/constants/sleepLocations.ts)
 const LOCATIONS = ['Crib', 'Contact'];
 
 type SleepPhase = 'awake' | 'selecting_location' | 'sleeping';

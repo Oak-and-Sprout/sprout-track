@@ -61,6 +61,18 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
       orderBy: { updatedAt: 'desc' },
     });
 
+    // Merge with the stored JSON so other fields (e.g. customLocations) survive
+    let existing: SleepLocationSettings = { hiddenLocations: [] };
+    const existingRaw = (settings as unknown as { sleepLocationSettings?: string } | null)?.sleepLocationSettings;
+    if (existingRaw) {
+      try {
+        existing = JSON.parse(existingRaw) as SleepLocationSettings;
+      } catch {
+        // keep defaults
+      }
+    }
+    const merged: SleepLocationSettings = { ...existing, hiddenLocations };
+
     if (!settings) {
       settings = await prisma.settings.create({
         data: {
@@ -72,21 +84,21 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
           defaultHeightUnit: 'IN',
           defaultWeightUnit: 'LB',
           defaultTempUnit: 'F',
-          sleepLocationSettings: JSON.stringify({ hiddenLocations }),
+          sleepLocationSettings: JSON.stringify(merged),
         } as any,
       });
     } else {
       await prisma.settings.update({
         where: { id: settings.id },
         data: {
-          ...(({ sleepLocationSettings: JSON.stringify({ hiddenLocations }) }) as any),
+          ...(({ sleepLocationSettings: JSON.stringify(merged) }) as any),
         },
       });
     }
 
     return NextResponse.json({
       success: true,
-      data: { hiddenLocations },
+      data: merged,
     });
   } catch (error) {
     console.error('Error saving sleep location settings:', error);
