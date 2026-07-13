@@ -15,6 +15,16 @@ function cacheSet(url: string, objectUrl: string) {
   objectUrlCache.set(url, objectUrl);
 }
 
+function cacheGet(url: string): string | undefined {
+  const cached = objectUrlCache.get(url);
+  if (cached !== undefined) {
+    // LRU touch: move to the end so in-use URLs aren't evicted first
+    objectUrlCache.delete(url);
+    objectUrlCache.set(url, cached);
+  }
+  return cached;
+}
+
 export function photoFileUrl(id: string, size: 'thumb' | 'full', trash = false): string {
   return `/api/photos/file/${id}?size=${size}${trash ? '&trash=true' : ''}`;
 }
@@ -50,13 +60,13 @@ export function useInView<T extends Element>(): { ref: React.RefObject<T | null>
  * goes through this hook (same pattern as chat-conversation attachments).
  */
 export function useAuthedImage(url: string | null, enabled = true): { src: string | null; loading: boolean; error: boolean } {
-  const [src, setSrc] = useState<string | null>(url ? objectUrlCache.get(url) || null : null);
+  const [src, setSrc] = useState<string | null>(url ? cacheGet(url) || null : null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!url || !enabled) return;
-    const cached = objectUrlCache.get(url);
+    const cached = cacheGet(url);
     if (cached) {
       setSrc(cached);
       return;

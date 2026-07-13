@@ -8,7 +8,7 @@ function authHeaders(): Record<string, string> {
 async function jsonRequest<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
-    headers: { ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...authHeaders(), ...init?.headers },
+    headers: { ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...init?.headers, ...authHeaders() },
   });
   const payload = await response.json();
   if (!response.ok || !payload.success) {
