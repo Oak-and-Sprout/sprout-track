@@ -31,7 +31,10 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     const existing = await prisma.photoFavorite.findFirst({ where: { photoId: id, ...ownerWhere } });
 
     if (existing) {
-      await prisma.photoFavorite.delete({ where: { id: existing.id } });
+      // deleteMany (not delete by id): duplicates from concurrent creates self-heal
+      // on the next unfavorite — the schema intentionally has no composite unique
+      // because NULLable owner columns behave as distinct on both SQLite and Postgres.
+      await prisma.photoFavorite.deleteMany({ where: { photoId: id, ...ownerWhere } });
       return NextResponse.json<ApiResponse<{ isFavorite: boolean }>>({ success: true, data: { isFavorite: false } });
     }
     await prisma.photoFavorite.create({ data: { photoId: id, ...ownerWhere } });

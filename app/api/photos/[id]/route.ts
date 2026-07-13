@@ -37,33 +37,36 @@ async function handlePatch(req: NextRequest, authContext: AuthResult) {
       }
     }
 
-    const photo = await prisma.photo.update({
-      where: { id },
-      data: {
-        ...(body.caption !== undefined && { caption: body.caption && body.caption.trim() ? body.caption.trim() : null }),
-        ...(body.takenAt && { takenAt: toUTC(body.takenAt) }),
-        ...(body.milestoneId !== undefined && { milestoneId: body.milestoneId }),
-      },
-      include: PHOTO_INCLUDE,
+    // Photo update and milestone link re-sync must commit together, or a
+    // crash between the two steps would leave the photo tagged with a
+    // milestone that has no matching PhotoLink (or vice versa).
+    await prisma.$transaction(async (tx) => {
+      await tx.photo.update({
+        where: { id },
+        data: {
+          ...(body.caption !== undefined && { caption: body.caption && body.caption.trim() ? body.caption.trim() : null }),
+          ...(body.takenAt && { takenAt: toUTC(body.takenAt) }),
+          ...(body.milestoneId !== undefined && { milestoneId: body.milestoneId }),
+        },
+      });
+
+      // Re-sync the automatic milestone link when the tag changed
+      if (body.milestoneId !== undefined && body.milestoneId !== existing.milestoneId) {
+        if (existing.milestoneId) {
+          await tx.photoLink.deleteMany({
+            where: { photoId: id, activityType: 'milestone', activityId: existing.milestoneId },
+          });
+        }
+        if (body.milestoneId) {
+          await tx.photoLink.create({
+            data: { photoId: id, activityType: 'milestone', activityId: body.milestoneId },
+          });
+        }
+      }
     });
 
-    // Re-sync the automatic milestone link when the tag changed
-    if (body.milestoneId !== undefined && body.milestoneId !== existing.milestoneId) {
-      if (existing.milestoneId) {
-        await prisma.photoLink.deleteMany({
-          where: { photoId: id, activityType: 'milestone', activityId: existing.milestoneId },
-        });
-      }
-      if (body.milestoneId) {
-        await prisma.photoLink.create({
-          data: { photoId: id, activityType: 'milestone', activityId: body.milestoneId },
-        });
-      }
-      const refreshed = await prisma.photo.findFirst({ where: { id }, include: PHOTO_INCLUDE });
-      return NextResponse.json<ApiResponse<PhotoResponse>>({ success: true, data: toPhotoResponse(refreshed!, authContext) });
-    }
-
-    return NextResponse.json<ApiResponse<PhotoResponse>>({ success: true, data: toPhotoResponse(photo, authContext) });
+    const refreshed = await prisma.photo.findFirst({ where: { id }, include: PHOTO_INCLUDE });
+    return NextResponse.json<ApiResponse<PhotoResponse>>({ success: true, data: toPhotoResponse(refreshed!, authContext) });
   } catch (error) {
     console.error('Error updating photo:', error);
     return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Failed to update photo' }, { status: 500 });
