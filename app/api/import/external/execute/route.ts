@@ -111,6 +111,10 @@ async function handlePost(
           records,
           configuration: configuration.execution,
         }),
+      {
+        maxWait: 10000,
+        timeout: 120000,
+      },
     );
 
     return NextResponse.json<

@@ -15,12 +15,14 @@ import {
 } from '@/src/components/ui/form-page';
 import { useLocalization } from '@/src/context/localization';
 import ConfigureStep from './ConfigureStep';
+import ReviewStep from './ReviewStep';
 import {
   ExistingBaby,
   ExternalImportProps,
   ExternalImportPreviewResponse,
   ExternalImportStep,
   ExternalImportUiConfiguration,
+  ExternalImportCompletedResult,
 } from './external-import.types';
 
 export default function ExternalImport({
@@ -48,6 +50,10 @@ export default function ExternalImport({
       childDestinations: {},
       units: {},
     });
+  const [isImporting, setIsImporting] =
+    useState(false);
+  const [completedResult, setCompletedResult] =
+    useState<ExternalImportCompletedResult | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,6 +78,8 @@ export default function ExternalImport({
     setStep('select');
     setBabies([]);
     setIsLoadingBabies(false);
+    setIsImporting(false);
+    setCompletedResult(null);
   }, [isOpen]);
 
   const getAuthHeaders = (): HeadersInit => {
@@ -148,6 +156,79 @@ export default function ExternalImport({
       childDestinations,
       units,
     }));
+  };
+
+  const providerConfiguration = () => ({
+    feedingUnit: configuration.units.feeding,
+    pumpingUnit: configuration.units.pumping,
+    heightUnit: configuration.units.height,
+    weightUnit: configuration.units.weight,
+    headCircumferenceUnit:
+      configuration.units['head-circumference'],
+    temperatureUnit: configuration.units.temperature,
+  });
+
+  const buildExecutionConfiguration = () => ({
+    execution: {
+      sourceTimezone: configuration.sourceTimezone,
+      childDestinations:
+        configuration.childDestinations,
+    },
+    provider: providerConfiguration(),
+  });
+
+  const handleImport = async () => {
+    if (!preview) {
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      setError('');
+
+      const formData = new FormData();
+      formData.set('providerId', 'baby-buddy');
+
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+
+      formData.set(
+        'configuration',
+        JSON.stringify(buildExecutionConfiguration()),
+      );
+
+      const response = await fetch(
+        '/api/import/external/execute',
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: formData,
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error ||
+            t('Failed to execute import'),
+        );
+      }
+
+      setCompletedResult({
+        execution: result.data,
+      });
+      setStep('result');
+    } catch (importError) {
+      setError(
+        importError instanceof Error
+          ? importError.message
+          : t('Failed to execute import'),
+      );
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handlePreview = async () => {
@@ -334,10 +415,42 @@ export default function ExternalImport({
             onConfigurationChange={setConfiguration}
           />
         )}
+
+        {step === 'review' && preview && (
+          <ReviewStep
+            preview={preview}
+            babies={babies}
+            configuration={configuration}
+          />
+        )}
+
+        {step === 'result' && completedResult && (
+          <div className="space-y-6">
+            <section className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <h3 className="font-medium text-green-900">
+                {t('Import completed')}
+              </h3>
+              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-green-900">
+                <div>
+                  <dt>{t('Created')}</dt>
+                  <dd className="font-medium">
+                    {completedResult.execution.created}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t('Already imported')}</dt>
+                  <dd className="font-medium">
+                    {completedResult.execution.duplicates}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+        )}
       </FormPageContent>
 
       <FormPageFooter>
-        {step === 'select' ? (
+        {step === 'select' && (
           <>
             <Button
               type="button"
@@ -363,7 +476,9 @@ export default function ExternalImport({
                   : t('Preview import')}
             </Button>
           </>
-        ) : (
+        )}
+
+        {step === 'configure' && (
           <>
             <Button
               type="button"
@@ -399,6 +514,38 @@ export default function ExternalImport({
               {t('Continue')}
             </Button>
           </>
+        )}
+
+        {step === 'review' && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep('configure')}
+              disabled={isImporting}
+            >
+              {t('Back')}
+            </Button>
+
+            <Button
+              type="button"
+              onClick={handleImport}
+              disabled={isImporting}
+            >
+              {isImporting
+                ? t('Importing...')
+                : t('Import records')}
+            </Button>
+          </>
+        )}
+
+        {step === 'result' && (
+          <Button
+            type="button"
+            onClick={onClose}
+          >
+            {t('Close')}
+          </Button>
         )}
       </FormPageFooter>
     </FormPage>
