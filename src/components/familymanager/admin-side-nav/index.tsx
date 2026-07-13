@@ -116,7 +116,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
                   className={cn(adminSideNavStyles.closeButton, "admin-side-nav-close-button")}
                   aria-label="Close navigation"
                 >
-                  <X size={20} />
+                  <X size={20} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -128,7 +128,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
           <SideNavItem
             path="/family-manager/families"
             label={t('Families')}
-            icon={<Users size={18} />}
+            icon={<Users size={18} aria-hidden="true" />}
             isActive={currentPath === '/family-manager/families'}
             onClick={onNavigate}
             className="admin-side-nav-item"
@@ -137,7 +137,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
           <SideNavItem
             path="/family-manager/invites"
             label={t('Active Invites')}
-            icon={<Mail size={18} />}
+            icon={<Mail size={18} aria-hidden="true" />}
             isActive={currentPath === '/family-manager/invites'}
             onClick={onNavigate}
             className="admin-side-nav-item"
@@ -147,7 +147,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
             <SideNavItem
               path="/family-manager/accounts"
               label={t('Accounts')}
-              icon={<UserCircle size={18} />}
+              icon={<UserCircle size={18} aria-hidden="true" />}
               isActive={currentPath === '/family-manager/accounts'}
               onClick={onNavigate}
               className="admin-side-nav-item"
@@ -158,7 +158,7 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
             <SideNavItem
               path="/family-manager/feedback"
               label={t('Feedback')}
-              icon={<MessageSquare size={18} />}
+              icon={<MessageSquare size={18} aria-hidden="true" />}
               isActive={currentPath === '/family-manager/feedback'}
               onClick={onNavigate}
               className="admin-side-nav-item"
@@ -182,18 +182,18 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
         {/* Footer */}
         <div className={cn(adminSideNavStyles.footer, "admin-side-nav-footer")}>
           <FooterButton
-            icon={<Plus />}
+            icon={<Plus aria-hidden="true" />}
             label={t('Add New Family')}
             onClick={onAddFamily}
           />
           <ThemeToggle className="mb-2" />
           <FooterButton
-            icon={<Settings />}
+            icon={<Settings aria-hidden="true" />}
             label={t('Settings')}
             onClick={onSettingsClick}
           />
           <FooterButton
-            icon={<LogOut />}
+            icon={<LogOut aria-hidden="true" />}
             label={t('Logout')}
             onClick={onLogout}
           />

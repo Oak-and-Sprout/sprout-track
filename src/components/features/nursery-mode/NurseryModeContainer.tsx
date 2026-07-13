@@ -458,6 +458,7 @@ export function NurseryModeContainer() {
                   {babies.length > 1 && (
                     <ChevronDown
                       size={14}
+                      aria-hidden="true"
                       style={{
                         color: colors.text,
                         opacity: 0.6,
@@ -552,6 +553,7 @@ export function NurseryModeContainer() {
                   {babies.length > 1 && (
                     <ChevronDown
                       size={18}
+                      aria-hidden="true"
                       style={{
                         color: colors.text,
                         opacity: 0.6,

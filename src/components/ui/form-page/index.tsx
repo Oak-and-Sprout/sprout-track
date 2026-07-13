@@ -138,7 +138,7 @@ export function FormPageTabs({
           >
             {/* Icon */}
             {IconComponent && (
-              <IconComponent className={cn(tabStyles.tabIcon, "form-page-tab-icon")} />
+              <IconComponent className={cn(tabStyles.tabIcon, "form-page-tab-icon")} aria-hidden="true" />
             )}
             {tab.imageSrc && (
               <img

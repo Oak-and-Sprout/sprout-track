@@ -30,16 +30,23 @@ import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
+// Loading fallback is a component so it can use the localization hook
+const PaymentModalLoading = () => {
+  const { t } = useLocalization();
+  return (
+    <div role="status" className="flex items-center justify-center p-4">
+      <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-teal-600" />
+      <span className="sr-only">{t('Loading...')}</span>
+    </div>
+  );
+};
+
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
   () => import('@/src/components/account-manager/PaymentModal'),
-  { 
+  {
     ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
-      </div>
-    )
+    loading: () => <PaymentModalLoading />
   }
 );
 

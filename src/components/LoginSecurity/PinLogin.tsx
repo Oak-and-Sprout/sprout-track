@@ -531,11 +531,12 @@ export default function PinLogin({
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                 onClick={() => setShowAdminPassword(!showAdminPassword)}
                 disabled={!!lockoutTime}
+                aria-label={showAdminPassword ? t('Hide password') : t('Show password')}
               >
                 {showAdminPassword ? (
-                  <EyeOff className="h-4 w-4" />
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
                 ) : (
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-4 w-4" aria-hidden="true" />
                 )}
               </Button>
             </div>
@@ -712,7 +713,7 @@ export default function PinLogin({
             onClick={handleDelete}
             disabled={!!lockoutTime}
           >
-            <X className="h-6 w-6" />
+            <X className="h-6 w-6" aria-hidden="true" />
           </Button>
           {/* Go Button integrated into keypad */}
           <Button

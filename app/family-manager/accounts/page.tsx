@@ -163,8 +163,9 @@ export default function AccountsPage() {
 
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div role="status" className="h-full w-full flex items-center justify-center">
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin" />
+        <span className="sr-only">{t('Loading...')}</span>
       </div>
     );
   }

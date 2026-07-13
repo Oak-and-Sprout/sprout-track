@@ -224,7 +224,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
   if (isLoading) {
     return (
       <div className={cn(s.loading)}>
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-teal-600" />
         <p className={cn(s.loadingText, 'report-card-loading-text')}>{t('Loading report...')}</p>
       </div>
     );
@@ -278,7 +278,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
             disabled={exporting || !reportData}
             type="button"
           >
-            <FileDown className="w-3.5 h-3.5" />
+            <FileDown aria-hidden="true" className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{exporting ? t('Exporting PDF...') : t('PDF export')}</span>
           </button>
         )}

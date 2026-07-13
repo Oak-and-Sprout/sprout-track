@@ -299,8 +299,9 @@ export default function FamiliesPage() {
 
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div role="status" className="h-full w-full flex items-center justify-center">
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin" />
+        <span className="sr-only">{t('Loading...')}</span>
       </div>
     );
   }
@@ -389,8 +390,9 @@ export default function FamiliesPage() {
           </DialogHeader>
           <div className="mt-4">
             {loadingCaretakers ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
+              <div role="status" className="flex items-center justify-center py-8">
+                <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin" />
+                <span className="sr-only">{t('Loading...')}</span>
               </div>
             ) : selectedFamilyCaretakers.length > 0 ? (
               <Table>

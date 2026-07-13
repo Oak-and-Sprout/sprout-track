@@ -66,7 +66,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
           onCheckedChange={(checked) => onRecurringChange(checked === true)}
         />
         <label htmlFor="recurring" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-          <Repeat className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" />
+          <Repeat className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
           {t('Recurring event')}
         </label>
       </div>
@@ -95,7 +95,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
             </div>
             {error?.recurrencePattern && (
               <div className={styles.fieldError}>
-                <AlertCircle className="h-3 w-3 inline mr-1" />
+                <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                 {error.recurrencePattern}
               </div>
             )}
@@ -121,7 +121,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
             </div>
             {error?.recurrenceEnd && (
               <div className={styles.fieldError}>
-                <AlertCircle className="h-3 w-3 inline mr-1" />
+                <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                 {error.recurrenceEnd}
               </div>
             )}

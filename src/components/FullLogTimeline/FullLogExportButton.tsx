@@ -102,9 +102,9 @@ const FullLogExportButton: React.FC<FullLogExportButtonProps> = ({
         className="flex items-center gap-1 h-7 text-sm font-medium text-white hover:bg-transparent hover:text-white/90 p-0"
       >
         {isExporting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
         ) : (
-          <Download className="h-4 w-4" />
+          <Download className="h-4 w-4" aria-hidden="true" />
         )}
         {t('Export')}
       </Button>

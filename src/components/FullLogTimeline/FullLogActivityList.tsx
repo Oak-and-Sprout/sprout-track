@@ -63,7 +63,7 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
             <div className={cn(styles.emptyState, "full-log-timeline-empty-state")}>
               <div className={cn(styles.emptyStateContent, "full-log-timeline-empty-state-content")}>
                 <div className={cn(styles.emptyStateIcon, "full-log-timeline-empty-state-icon")}>
-                  <BabyIcon className={cn(styles.emptyStateIconInner, "full-log-timeline-empty-state-icon-inner")} />
+                  <BabyIcon className={cn(styles.emptyStateIconInner, "full-log-timeline-empty-state-icon-inner")} aria-hidden="true" />
                 </div>
                 <h3 className={cn(styles.emptyStateTitle, "full-log-timeline-empty-state-title")}>
                   {t('No activities recorded')}

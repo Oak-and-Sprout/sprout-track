@@ -219,11 +219,12 @@ function LoginPageContent() {
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                     onClick={() => setShowTokenPassword(!showTokenPassword)}
                     disabled={tokenLoading}
+                    aria-label={showTokenPassword ? t('Hide password') : t('Show password')}
                   >
                     {showTokenPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4" aria-hidden="true" />
                     )}
                   </Button>
                 </div>
@@ -242,7 +243,7 @@ function LoginPageContent() {
               >
                 {tokenLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                     {t('Authenticating...')}
                   </>
                 ) : (

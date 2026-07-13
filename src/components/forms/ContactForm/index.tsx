@@ -376,11 +376,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     aria-invalid={errors.name ? true : undefined}
                     aria-describedby={errors.name ? `${formId}-name-error` : undefined}
                   />
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.name && (
                   <div id={`${formId}-name-error`} role="alert" className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.name}
                   </div>
                 )}
@@ -407,11 +407,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     aria-invalid={errors.role ? true : undefined}
                     aria-describedby={errors.role ? `${formId}-role-error` : undefined}
                   />
-                  <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.role && (
                   <div id={`${formId}-role-error`} role="alert" className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.role}
                   </div>
                 )}
@@ -437,11 +437,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     aria-invalid={errors.phone ? true : undefined}
                     aria-describedby={errors.phone ? `${formId}-phone-error` : undefined}
                   />
-                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.phone && (
                   <div id={`${formId}-phone-error`} role="alert" className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.phone}
                   </div>
                 )}
@@ -467,11 +467,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
                     aria-invalid={errors.email ? true : undefined}
                     aria-describedby={errors.email ? `${formId}-email-error` : undefined}
                   />
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.email && (
                   <div id={`${formId}-email-error`} role="alert" className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.email}
                   </div>
                 )}
@@ -490,7 +490,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 onClick={handleDelete}
                 disabled={isLoading}
               >
-                <Trash2 className="h-4 w-4 mr-1.5" />
+                <Trash2 className="h-4 w-4 mr-1.5" aria-hidden="true" />
                 {t('Delete')}
               </Button>
             )}
@@ -513,7 +513,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
                     {t('Saving...')}
                   </>
                 ) : (

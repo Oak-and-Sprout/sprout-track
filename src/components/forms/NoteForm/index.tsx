@@ -427,7 +427,8 @@ export default function NoteForm({
                       placeholder={t("Enter or select a category")}
                       disabled={loading}
                     />
-                    <ChevronDown 
+                    <ChevronDown
+                      aria-hidden="true"
                       className="absolute right-3 h-4 w-4 text-gray-500 note-form-dropdown-icon"
                       onClick={() => {
                         setDropdownOpen(!dropdownOpen);

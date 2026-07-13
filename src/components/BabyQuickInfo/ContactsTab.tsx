@@ -45,7 +45,7 @@ const ContactsTab: React.FC<ContactsTabProps> = ({
                 <div className={cn(styles.contactDetails, "baby-quick-info-contact-details")}>
                   {contact.phone && (
                     <div className={cn(styles.contactDetail, "baby-quick-info-contact-detail")}>
-                      <Phone className={cn(styles.contactIcon, "baby-quick-info-contact-icon")} />
+                      <Phone className={cn(styles.contactIcon, "baby-quick-info-contact-icon")} aria-hidden="true" />
                       <a 
                         href={`tel:${contact.phone.replace(/\D/g, '')}`}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
@@ -58,7 +58,7 @@ const ContactsTab: React.FC<ContactsTabProps> = ({
                   
                   {contact.email && (
                     <div className={cn(styles.contactDetail, "baby-quick-info-contact-detail")}>
-                      <Mail className={cn(styles.contactIcon, "baby-quick-info-contact-icon")} />
+                      <Mail className={cn(styles.contactIcon, "baby-quick-info-contact-icon")} aria-hidden="true" />
                       <a 
                         href={`mailto:${contact.email}`}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
@@ -71,7 +71,7 @@ const ContactsTab: React.FC<ContactsTabProps> = ({
                   
                   {contact.address && (
                     <div className={cn(styles.contactDetail, "baby-quick-info-contact-detail")}>
-                      <MapPin className={cn(styles.contactIcon, "baby-quick-info-contact-icon")} />
+                      <MapPin className={cn(styles.contactIcon, "baby-quick-info-contact-icon")} aria-hidden="true" />
                       <a 
                         href={`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"

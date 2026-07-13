@@ -1,0 +1,7 @@
+/*
+ * ChartDataTable dark mode styles
+ *
+ * The component is visually hidden (Tailwind `sr-only`), so no dark mode
+ * overrides are required. This file exists to follow the project's
+ * component folder convention.
+ */

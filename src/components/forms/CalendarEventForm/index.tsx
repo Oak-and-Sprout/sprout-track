@@ -444,7 +444,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 />
                 {errors.title && (
                   <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.title}
                   </div>
                 )}
@@ -480,7 +480,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 </DropdownMenu>
                 {errors.type && (
                   <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.type}
                   </div>
                 )}
@@ -522,7 +522,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   </div>
                   {errors.startTime && (
                     <div className={styles.fieldError}>
-                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                       {errors.startTime}
                     </div>
                   )}
@@ -544,7 +544,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   </div>
                   {errors.endTime && (
                     <div className={styles.fieldError}>
-                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                       {errors.endTime}
                     </div>
                   )}
@@ -566,7 +566,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     className="w-full pl-8"
                     placeholder={t("Enter location (optional)")}
                   />
-                  <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
               </div>
               
@@ -642,7 +642,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   htmlFor="reminderTime" 
                   className="form-label flex items-center"
                 >
-                  <Bell className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" />
+                  <Bell aria-hidden="true" className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" />
                   Remind me
                 </label>
                 <DropdownMenu>
@@ -897,7 +897,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   }}
                   disabled={isLoading}
                 >
-                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  <Trash2 className="h-4 w-4 mr-1.5" aria-hidden="true" />
                   {t('Delete')}
                 </Button>
               )}
@@ -919,7 +919,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
                     {t('Saving...')}
                   </>
                 ) : (

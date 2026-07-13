@@ -213,11 +213,12 @@ export default function FamilyManagerLoginPage() {
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading || !!lockoutTime}
+                  aria-label={showPassword ? t('Hide password') : t('Show password')}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4" aria-hidden="true" />
                   )}
                 </Button>
               </div>
@@ -237,7 +238,7 @@ export default function FamilyManagerLoginPage() {
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                   {t('Authenticating...')}
                 </>
               ) : (
@@ -255,7 +256,7 @@ export default function FamilyManagerLoginPage() {
               onClick={() => router.push('/')}
               disabled={loading}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
               {t('Go back to home')}
             </Button>
           </div>

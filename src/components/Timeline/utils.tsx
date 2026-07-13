@@ -64,67 +64,67 @@ const isPlayActivity = (activity: any): boolean => {
 export const getActivityIcon = (activity: ActivityType) => {
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
-    return <Baby className="h-4 w-4 text-black" />;
+    return <Baby className="h-4 w-4 text-black" aria-hidden="true" />;
   }
   if ('doseAmount' in activity && 'medicineId' in activity) {
     // Medicine or supplement log
     if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && activity.medicine.isSupplement) {
-      return <Pill className="h-4 w-4 text-white" />;
+      return <Pill className="h-4 w-4 text-white" aria-hidden="true" />;
     }
-    return <PillBottle className="h-4 w-4 text-white" />;
+    return <PillBottle className="h-4 w-4 text-white" aria-hidden="true" />;
   }
   // Check for breast milk adjustment BEFORE pump (both have amount)
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
     const amt = (activity as any).amount;
     if (amt < 0) {
-      return <Minus className="h-4 w-4 text-black" />;
+      return <Minus className="h-4 w-4 text-black" aria-hidden="true" />;
     }
-    return <Plus className="h-4 w-4 text-black" />;
+    return <Plus className="h-4 w-4 text-black" aria-hidden="true" />;
   }
   // Check for pump activities FIRST (before sleep) since they also have duration and startTime
   if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return <LampWallDown className="h-4 w-4 text-black" />; // Pump activity
+    return <LampWallDown className="h-4 w-4 text-black" aria-hidden="true" />; // Pump activity
   }
   if ('type' in activity) {
     if ('duration' in activity) {
-      return <Moon className="h-4 w-4 text-white" />; // Sleep activity
+      return <Moon className="h-4 w-4 text-white" aria-hidden="true" />; // Sleep activity
     }
     if ('amount' in activity) {
-      return <Icon iconNode={bottleBaby} className="h-4 w-4 text-gray-700" />; // Feed activity
+      return <Icon iconNode={bottleBaby} className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Feed activity
     }
     if ('condition' in activity) {
-      return <Icon iconNode={diaper} className="h-4 w-4 text-white" />; // Diaper activity
+      return <Icon iconNode={diaper} className="h-4 w-4 text-white" aria-hidden="true" />; // Diaper activity
     }
   }
   if ('content' in activity) {
-    return <Edit className="h-4 w-4 text-gray-700" />; // Note activity
+    return <Edit className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Note activity
   }
   if ('soapUsed' in activity) {
-    return <Bath className="h-4 w-4 text-white" />; // Bath activity
+    return <Bath className="h-4 w-4 text-white" aria-hidden="true" />; // Bath activity
   }
   if ('vaccineName' in activity) {
-    return <Syringe className="h-4 w-4 text-red-500" />;
+    return <Syringe className="h-4 w-4 text-red-500" aria-hidden="true" />;
   }
   if ('title' in activity && 'category' in activity) {
-    return <Trophy className="h-4 w-4 text-white" />; // Milestone activity
+    return <Trophy className="h-4 w-4 text-white" aria-hidden="true" />; // Milestone activity
   }
   if ('value' in activity && 'unit' in activity) {
     // Different icons based on measurement type
     if ('type' in activity) {
       switch (activity.type) {
         case 'HEIGHT':
-          return <Ruler className="h-4 w-4 text-white" />;
+          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />;
         case 'WEIGHT':
-          return <Scale className="h-4 w-4 text-white" />;
+          return <Scale className="h-4 w-4 text-white" aria-hidden="true" />;
         case 'HEAD_CIRCUMFERENCE':
-          return <RotateCw className="h-4 w-4 text-white" />;
+          return <RotateCw className="h-4 w-4 text-white" aria-hidden="true" />;
         case 'TEMPERATURE':
-          return <Thermometer className="h-4 w-4 text-white" />;
+          return <Thermometer className="h-4 w-4 text-white" aria-hidden="true" />;
         default:
-          return <Ruler className="h-4 w-4 text-white" />; // Default to ruler
+          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default to ruler
       }
     }
-    return <Ruler className="h-4 w-4 text-white" />; // Default measurement icon
+    return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default measurement icon
   }
   return null;
 };

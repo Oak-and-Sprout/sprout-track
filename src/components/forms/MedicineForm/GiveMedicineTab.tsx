@@ -283,14 +283,14 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
       <div className="flex-1 overflow-y-auto p-1">
         {isFetching ? (
           <div className={cn(styles.loadingContainer, "medicine-form-loading-container")}>
-            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
             <p className="mt-2 text-gray-600">{t('Loading form data...')}</p>
           </div>
         ) : (
           <div className="space-y-4">
             {error && (
               <div role="alert" className={cn(styles.errorContainer, "medicine-form-error-container flex items-center text-red-500 p-2 bg-red-50 rounded-md")}>
-                <AlertCircle className="mr-2 h-4 w-4" />
+                <AlertCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                 <span>{error}</span>
               </div>
             )}
@@ -308,7 +308,7 @@ const GiveMedicineTab: React.FC<GiveMedicineTabProps> = ({
                     aria-describedby={errors.medicineId ? `${formId}-medicineId-error` : undefined}
                   >
                     {selectedMedicine ? selectedMedicine.name : t('Select a medicine')}
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                    <ChevronDown className="ml-2 h-4 w-4" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">

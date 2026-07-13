@@ -343,7 +343,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: null,
         label: t('Awake Time'),
         value: formatMinutes(awakeMinutes),
-        icon: <Sun className="h-full w-full" />,
+        icon: <Sun className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-amber-600',
         borderColor: 'border-gray-500',
@@ -357,7 +357,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'sleep',
         label: t('Total Sleep'),
         value: formatMinutes(totalSleepMinutes),
-        icon: <Moon className="h-full w-full" />,
+        icon: <Moon className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#9ca3af]', // gray-400 - matches timeline
         borderColor: 'border-gray-500',
@@ -409,7 +409,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'feed',
         label: combinedLabel,
         value: totalFeedCount.toString(),
-        icon: <Icon iconNode={bottleBaby} className="h-full w-full" />,
+        icon: <Icon iconNode={bottleBaby} className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#7dd3fc]', // sky-300 - matches timeline
         borderColor: 'border-gray-500',
@@ -423,7 +423,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'diaper',
         label: t('Wet Diapers'),
         value: wetCount.toString(),
-        icon: <Icon iconNode={diaper} className="h-full w-full" />,
+        icon: <Icon iconNode={diaper} className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#0d9488]', // teal-600 (green) - matches timeline for wet
         borderColor: 'border-gray-500',
@@ -437,7 +437,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'poop',
         label: t('Poops'),
         value: poopCount.toString(),
-        icon: <Icon iconNode={diaper} className="h-full w-full" />,
+        icon: <Icon iconNode={diaper} className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-amber-700', // amber-700 for poops
         borderColor: 'border-gray-500',
@@ -454,7 +454,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           filter: 'medicine',
           label: `${medicineName}: ${stats.count}x (${stats.total} ${stats.unit})`,
           value: stats.count.toString(),
-          icon: <PillBottle className="h-full w-full" />,
+          icon: <PillBottle className="h-full w-full" aria-hidden="true" />,
           bgColor: 'bg-gray-50',
           iconColor: 'text-[#43B755]', // green - matches timeline
           borderColor: 'border-gray-500',
@@ -469,7 +469,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           filter: 'medicine',
           label: label,
           value: totalCount.toString(),
-          icon: <PillBottle className="h-full w-full" />,
+          icon: <PillBottle className="h-full w-full" aria-hidden="true" />,
           bgColor: 'bg-gray-50',
           iconColor: 'text-[#43B755]', // green - matches timeline
           borderColor: 'border-gray-500',
@@ -487,7 +487,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           filter: 'medicine',
           label: `${supplementName}: ${stats.count}x (${stats.total} ${stats.unit})`,
           value: stats.count.toString(),
-          icon: <Pill className="h-full w-full" />,
+          icon: <Pill className="h-full w-full" aria-hidden="true" />,
           bgColor: 'bg-gray-50',
           iconColor: 'text-[#43B755]', // green - matches timeline
           borderColor: 'border-gray-500',
@@ -502,7 +502,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           filter: 'medicine',
           label: label,
           value: totalCount.toString(),
-          icon: <Pill className="h-full w-full" />,
+          icon: <Pill className="h-full w-full" aria-hidden="true" />,
           bgColor: 'bg-gray-50',
           iconColor: 'text-[#43B755]', // green - matches timeline
           borderColor: 'border-gray-500',
@@ -517,7 +517,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'note',
         label: t('Notes'),
         value: noteCount.toString(),
-        icon: <Edit className="h-full w-full" />,
+        icon: <Edit className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#fef08a]', // yellow-200 - matches timeline
         borderColor: 'border-gray-500',
@@ -531,7 +531,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'bath',
         label: t('Baths'),
         value: bathCount.toString(),
-        icon: <Bath className="h-full w-full" />,
+        icon: <Bath className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#fb923c]', // orange-400 - matches timeline
         borderColor: 'border-gray-500',
@@ -548,7 +548,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'pump',
         label: formattedPumpAmounts || t('Pump'),
         value: pumpCount.toString(),
-        icon: <LampWallDown className="h-full w-full" />,
+        icon: <LampWallDown className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches timeline
         borderColor: 'border-gray-500',
@@ -562,7 +562,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: null,
         label: t('Breast Milk Stored'),
         value: breastMilkBalance,
-        icon: <LampWallDown className="h-full w-full" />,
+        icon: <LampWallDown className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches pump
         borderColor: 'border-gray-500',
@@ -576,7 +576,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'vaccine',
         label: t('Vaccines'),
         value: vaccineCount.toString(),
-        icon: <Syringe className="h-full w-full" />,
+        icon: <Syringe className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#EF4444]',
         borderColor: 'border-gray-500',
@@ -590,7 +590,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'milestone',
         label: t('Milestones'),
         value: milestoneCount.toString(),
-        icon: <Trophy className="h-full w-full" />,
+        icon: <Trophy className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#4875EC]', // blue - matches timeline
         borderColor: 'border-gray-500',
@@ -604,7 +604,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'measurement',
         label: t('Measurements'),
         value: measurementCount.toString(),
-        icon: <Ruler className="h-full w-full" />,
+        icon: <Ruler className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#EA6A5E]', // red - matches timeline
         borderColor: 'border-gray-500',
@@ -619,7 +619,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'play',
         label: playLabel,
         value: playCount.toString(),
-        icon: <Baby className="h-full w-full" />,
+        icon: <Baby className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#F3C4A2]', // peach - matches play activity
         borderColor: 'border-gray-500',
@@ -647,7 +647,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               className="h-8 w-8 text-gray-700 hover:bg-gray-100"
               aria-label={t('Previous day')}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -682,7 +682,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               className="h-8 w-8 text-gray-700 hover:bg-gray-100"
               aria-label={t('Next day')}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -696,9 +696,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           >
             <span>{t('Daily Summary')}</span>
             {isCollapsed ? (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
             ) : (
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-4 w-4" aria-hidden="true" />
             )}
           </button>
 
@@ -711,12 +711,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             >
               {isHeatmapVisible ? (
                 <>
-                  <EyeOff className="h-3 w-3" />
+                  <EyeOff className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
-                  <Eye className="h-3 w-3" />
+                  <Eye className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Show heatmap')}</span>
                 </>
               )}
@@ -730,12 +730,12 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
             >
               {isHeatmapVisible ? (
                 <>
-                  <EyeOff className="h-3 w-3" />
+                  <EyeOff className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Hide heatmap')}</span>
                 </>
               ) : (
                 <>
-                  <Eye className="h-3 w-3" />
+                  <Eye className="h-3 w-3" aria-hidden="true" />
                   <span>{t('Show heatmap')}</span>
                 </>
               )}
@@ -818,7 +818,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
               className="text-xs inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
               onClick={onHeatmapToggle}
             >
-              <EyeOff className="h-3 w-3" />
+              <EyeOff className="h-3 w-3" aria-hidden="true" />
               <span>{t('Hide')}</span>
             </button>
           </div>

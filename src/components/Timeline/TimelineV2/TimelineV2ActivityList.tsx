@@ -450,7 +450,7 @@ const TimelineV2ActivityList = ({
             <div className="absolute inset-0 flex items-center justify-center h-full">
               <div className="text-center p-6">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <BabyIcon className="h-8 w-8 text-indigo-600" />
+                  <BabyIcon className="h-8 w-8 text-indigo-600" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-1 timeline-empty-state">{t('No activities recorded')}</h3>
                 <p className="text-sm text-gray-500 timeline-empty-description">

@@ -988,7 +988,7 @@ export default function FeedForm({
                     <span className="text-xs font-medium mt-1">{t('Breast')}</span>
                     {formData.type === 'BREAST' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" />
+                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -1010,7 +1010,7 @@ export default function FeedForm({
                     <span className="text-xs font-medium mt-1">{t('Bottle')}</span>
                     {formData.type === 'BOTTLE' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" />
+                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -1032,7 +1032,7 @@ export default function FeedForm({
                     <span className="text-xs font-medium mt-1">{t('Solids')}</span>
                     {formData.type === 'SOLIDS' && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" />
+                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
                       </div>
                     )}
                   </button>
@@ -1159,7 +1159,7 @@ export default function FeedForm({
                           onClick={onSwitch}
                           title={t('Switch Side')}
                         >
-                          <ArrowLeftRight className="h-5 w-5" />
+                          <ArrowLeftRight className="h-5 w-5" aria-hidden="true" />
                         </Button>
                         <Button
                           type="button"
@@ -1168,7 +1168,7 @@ export default function FeedForm({
                           onClick={onPause}
                           title={t('Pause Feed')}
                         >
-                          <Pause className="h-5 w-5" />
+                          <Pause className="h-5 w-5" aria-hidden="true" />
                         </Button>
                       </>
                     ) : (
@@ -1180,7 +1180,7 @@ export default function FeedForm({
                           onClick={() => onResume?.('LEFT')}
                           title={t('Resume Left')}
                         >
-                          <Play className="h-4 w-4 mr-0.5" />
+                          <Play className="h-4 w-4 mr-0.5" aria-hidden="true" />
                           <span className="text-xs font-semibold">L</span>
                         </Button>
                         <Button
@@ -1190,7 +1190,7 @@ export default function FeedForm({
                           onClick={() => onResume?.('RIGHT')}
                           title={t('Resume Right')}
                         >
-                          <Play className="h-4 w-4 mr-0.5" />
+                          <Play className="h-4 w-4 mr-0.5" aria-hidden="true" />
                           <span className="text-xs font-semibold">R</span>
                         </Button>
                       </>

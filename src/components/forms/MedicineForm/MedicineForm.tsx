@@ -440,11 +440,11 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   aria-invalid={errors.name ? true : undefined}
                   aria-describedby={errors.name ? `${errorId}-name` : undefined}
                 />
-                <PillBottle className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <PillBottle className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
               </div>
               {errors.name && (
                 <div id={`${errorId}-name`} role="alert" className="text-xs text-red-500 mt-1">
-                  <AlertCircle className="h-3 w-3 inline mr-1" />
+                  <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                   {errors.name}
                 </div>
               )}
@@ -469,7 +469,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                 />
                 {errors.typicalDoseSize && (
                   <div id={`${errorId}-typicalDoseSize`} role="alert" className="text-xs text-red-500 mt-1">
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.typicalDoseSize}
                   </div>
                 )}
@@ -500,7 +500,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                 </Select>
                 {errors.unitAbbr && (
                   <div id={`${errorId}-unitAbbr`} role="alert" className="text-xs text-red-500 mt-1">
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.unitAbbr}
                   </div>
                 )}
@@ -526,7 +526,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                       aria-invalid={errors.doseMinTime ? true : undefined}
                       aria-describedby={errors.doseMinTime ? `${errorId}-doseMinTime` : undefined}
                     />
-                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                   </div>
                   
                   {/* Unit Toggle */}
@@ -557,7 +557,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
               
               {errors.doseMinTime && (
                 <div id={`${errorId}-doseMinTime`} role="alert" className="text-xs text-red-500 mt-1">
-                  <AlertCircle className="h-3 w-3 inline mr-1" />
+                  <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                   {errors.doseMinTime}
                 </div>
               )}
@@ -592,7 +592,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
                   className="w-full min-h-[100px] pl-9"
                   placeholder="Enter additional notes about this medicine"
                 />
-                <FileText className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <FileText className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
               </div>
             </div>
             
@@ -632,7 +632,7 @@ const MedicineForm: React.FC<MedicineFormProps> = ({
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
                 {t('Saving...')}
               </>
             ) : (medicine ? t('Update') : t('Save'))}

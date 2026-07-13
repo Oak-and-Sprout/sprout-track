@@ -481,7 +481,7 @@ export default function ActivityForm({
                     className={cn(dateTimePickerButtonStyles, "date-time-picker-button whitespace-nowrap")}
                     disabled={loading}
                   >
-                    <Timer className="h-4 w-4" />
+                    <Timer className="h-4 w-4" aria-hidden="true" />
                     {duration ? t('Resume Timer') : t('Start Timer')}
                   </Button>
                 )}
@@ -498,7 +498,7 @@ export default function ActivityForm({
                         className="banner-btn activity-banner-btn-pause"
                         title={t('Pause Activity')}
                       >
-                        <Pause className="h-4 w-4" />
+                        <Pause className="h-4 w-4" aria-hidden="true" />
                       </button>
                     ) : (
                       <button
@@ -507,7 +507,7 @@ export default function ActivityForm({
                         className="banner-btn activity-banner-btn-resume"
                         title={t('Resume Activity')}
                       >
-                        <Play className="h-4 w-4" />
+                        <Play className="h-4 w-4" aria-hidden="true" />
                       </button>
                     )}
                     <button
@@ -516,7 +516,7 @@ export default function ActivityForm({
                       className="banner-btn activity-banner-btn-stop"
                       title={t('End Activity')}
                     >
-                      <Square className="h-4 w-4" />
+                      <Square className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 )}
@@ -557,6 +557,7 @@ export default function ActivityForm({
                         disabled={loading}
                       />
                       <ChevronDown
+                        aria-hidden="true"
                         className="absolute right-3 h-4 w-4 text-gray-500 activity-form-dropdown-icon"
                         onClick={() => {
                           setDropdownOpen(!dropdownOpen);

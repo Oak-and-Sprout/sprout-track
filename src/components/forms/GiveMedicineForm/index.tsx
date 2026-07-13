@@ -363,14 +363,14 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
         <FormPageContent>
           {isFetching ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
               <p className="mt-2 text-gray-600">{t('Loading form data...')}</p>
             </div>
           ) : (
             <div className="space-y-6">
               {error && (
                 <div className="flex items-center text-red-500 p-3 bg-red-50 rounded-md border border-red-200">
-                  <AlertCircle className="mr-2 h-4 w-4" />
+                  <AlertCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                   <span>{error}</span>
                 </div>
               )}
@@ -381,7 +381,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full justify-between" aria-invalid={errors.medicineId ? true : undefined} aria-describedby={errors.medicineId ? `${formId}-medicineId-error` : undefined}>
                       {selectedMedicine ? selectedMedicine.name : (isSupplement ? t('Select a supplement') : t('Select a medicine'))}
-                      <ChevronDown className="ml-2 h-4 w-4" />
+                      <ChevronDown className="ml-2 h-4 w-4" aria-hidden="true" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
@@ -468,7 +468,7 @@ const GiveMedicineForm: React.FC<GiveMedicineFormProps> = ({
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                   {t('Saving...')}
                 </>
               ) : (

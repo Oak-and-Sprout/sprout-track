@@ -192,14 +192,14 @@ const ManageSupplementsTab: React.FC<ManageSupplementsTabProps> = ({ refreshData
     <div className={cn(styles.tabContent)}>
       {isFetching && (
         <div className="flex flex-col items-center justify-center p-6">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
           <p className="mt-2 text-gray-600">{t('Loading supplements...')}</p>
         </div>
       )}
 
       {error && (
         <div className="flex flex-col items-center justify-center p-6">
-          <AlertCircle className="h-8 w-8 text-red-500" />
+          <AlertCircle className="h-8 w-8 text-red-500" aria-hidden="true" />
           <p className="mt-2 text-red-500 text-center">{error}</p>
         </div>
       )}
@@ -221,7 +221,7 @@ const ManageSupplementsTab: React.FC<ManageSupplementsTabProps> = ({ refreshData
           <div className={cn(styles.medicinesList)}>
             {filteredSupplements.length === 0 && (
               <div className="flex flex-col items-center justify-center p-6 text-gray-500">
-                <Pill className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <Pill className="h-12 w-12 mx-auto mb-2 text-gray-400" aria-hidden="true" />
                 <p>{t('No supplements added yet')}</p>
               </div>
             )}
@@ -232,15 +232,15 @@ const ManageSupplementsTab: React.FC<ManageSupplementsTabProps> = ({ refreshData
                 !supplement.active && styles.medicineListItemInactive
               )}>
                 <div className={cn(styles.medicineListItemHeader)} onClick={() => handleAccordionToggle(supplement.id)}>
-                  <Pill className={cn(styles.medicineListIcon, "medicine-form-medicine-list-icon")} />
+                  <Pill className={cn(styles.medicineListIcon, "medicine-form-medicine-list-icon")} aria-hidden="true" />
                   <div className={cn(styles.medicineListContent)}>
                     <p className={cn(styles.medicineListName, "medicine-form-medicine-list-name")}>{supplement.name}</p>
                     <p className={cn(styles.medicineListDose, "medicine-form-medicine-list-dose")}>
                       {t('Typical dose:')} {supplement.typicalDoseSize} {unitSymbol(supplement.unit?.unitAbbr)}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditSupplement(supplement); }}>
-                    <Edit className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditSupplement(supplement); }} aria-label={t('Edit') + ' ' + supplement.name}>
+                    <Edit className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
                 {expandedSupplement === supplement.id && (
@@ -248,7 +248,7 @@ const ManageSupplementsTab: React.FC<ManageSupplementsTabProps> = ({ refreshData
                     <div className={cn(styles.medicineListDetailsContent)}>
                       {supplement.notes && <p className={cn(styles.medicineListNotes, "medicine-form-medicine-list-notes")}>{supplement.notes}</p>}
                       <div className={cn(styles.medicineListContactsContainer)}>
-                        <User className={cn(styles.medicineListDetailIcon)} />
+                        <User className={cn(styles.medicineListDetailIcon)} aria-hidden="true" />
                         <div className={cn(styles.medicineListContactsList)}>
                           {supplement.contacts.length > 0 ? (
                             supplement.contacts.map(c => <Badge key={c.contact.id} variant="secondary">{c.contact.name}</Badge>)
@@ -265,7 +265,7 @@ const ManageSupplementsTab: React.FC<ManageSupplementsTabProps> = ({ refreshData
           </div>
 
           <Button className="w-full mt-4" onClick={handleAddSupplement}>
-            <Plus className="mr-2 h-4 w-4" /> {t('Add New Supplement')}
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {t('Add New Supplement')}
           </Button>
         </>
       )}

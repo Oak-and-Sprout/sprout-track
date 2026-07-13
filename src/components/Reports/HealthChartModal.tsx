@@ -16,6 +16,7 @@ import {
   Legend,
 } from 'recharts';
 import { MedicineLogActivity, DateRange } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
@@ -138,6 +139,14 @@ const HealthChartModal: React.FC<HealthChartModalProps> = ({
                 ))}
               </BarChart>
             </ResponsiveContainer>
+            <ChartDataTable
+              caption={t('Daily Doses')}
+              columns={[
+                { key: 'label', label: t('Date') },
+                ...medicineNames.map((name) => ({ key: name, label: name })),
+              ]}
+              rows={chartData}
+            />
           </div>
         )}
       </ModalContent>

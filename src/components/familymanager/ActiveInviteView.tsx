@@ -108,17 +108,17 @@ export default function ActiveInviteView({
                 <div className="flex items-center gap-2">
                   {invite.isUsed ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      <CheckCircle className="h-3 w-3 mr-1" />
+                      <CheckCircle className="h-3 w-3 mr-1" aria-hidden="true" />
                       {t('Used')}
                     </span>
                   ) : invite.isExpired ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      <XCircle className="h-3 w-3 mr-1" />
+                      <XCircle className="h-3 w-3 mr-1" aria-hidden="true" />
                       {t('Expired')}
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      <Clock className="h-3 w-3 mr-1" />
+                      <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
                       {t('Active')}
                     </span>
                   )}
@@ -155,9 +155,9 @@ export default function ActiveInviteView({
                         title="Revoke invite"
                       >
                         {deletingInviteId === invite.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                         ) : (
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         )}
                       </Button>
                     </>

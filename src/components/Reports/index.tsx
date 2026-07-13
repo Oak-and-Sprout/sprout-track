@@ -183,7 +183,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
     return (
       <div className={cn(styles.container, className, "reports-container")}>
         <div className={cn(styles.noBabyContainer, "reports-no-baby-container")}>
-          <BabyIcon className={cn(styles.noBabyIcon, "reports-no-baby-icon")} />
+          <BabyIcon aria-hidden="true" className={cn(styles.noBabyIcon, "reports-no-baby-icon")} />
           <p className={cn(styles.noBabyText, "reports-no-baby-text")}>
             {t('Please select a baby to view reports')}
           </p>
@@ -208,7 +208,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
                 variant="outline"
                 className={cn(styles.dateRangeButton, "reports-date-range-button")}
               >
-                <CalendarIcon className={cn(styles.dateRangeIcon, "reports-date-range-icon")} />
+                <CalendarIcon aria-hidden="true" className={cn(styles.dateRangeIcon, "reports-date-range-icon")} />
                 {formatDateRange()}
               </Button>
             </PopoverTrigger>
@@ -246,7 +246,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
                 role="tab"
                 aria-selected={isActive}
               >
-                <IconComponent className={tabStyles.tabIcon} />
+                <IconComponent aria-hidden="true" className={tabStyles.tabIcon} />
                 <span>{tab.label}</span>
               </button>
             );

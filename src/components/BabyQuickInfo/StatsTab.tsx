@@ -462,7 +462,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
       {/* Stats cards */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" aria-hidden="true" />
           <p className="text-gray-600">{t('Loading statistics...')}</p>
         </div>
       ) : error ? (

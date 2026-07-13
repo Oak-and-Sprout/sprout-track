@@ -523,6 +523,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                   required
                 />
                 <ChevronDown
+                  aria-hidden="true"
                   className="absolute right-3 h-4 w-4 text-gray-500 vaccine-form-dropdown-icon"
                   onClick={() => {
                     setDropdownOpen(!dropdownOpen);
@@ -638,11 +639,12 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                   size="sm"
                   onClick={() => activity?.id && handleUploadDocument(activity.id)}
                   disabled={isUploading}
+                  aria-label={t('Upload document')}
                 >
                   {isUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <Upload className="h-4 w-4" aria-hidden="true" />
                   )}
                 </Button>
               )}
@@ -671,7 +673,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                       onClick={() => handleDownloadDocument(doc.id, doc.originalName)}
                       title={t('Download')}
                     >
-                      <Download className="h-4 w-4 text-teal-600" />
+                      <Download className="h-4 w-4 text-teal-600" aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -680,7 +682,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                       onClick={() => handleDeleteDocument(doc.id)}
                       title={t('Delete')}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -701,7 +703,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
           </Button>
           <Button type="submit" disabled={isSubmitting || !vaccineName.trim()}>
             {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
             ) : null}
             {activity ? t('Update') : t('Save')}
           </Button>

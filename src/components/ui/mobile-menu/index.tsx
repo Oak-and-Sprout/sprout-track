@@ -71,7 +71,7 @@ const MobileMenu = React.forwardRef<HTMLDivElement, MobileMenuProps>(
                 className="mobile-menu-hamburger p-2"
                 aria-label="Toggle menu"
               >
-                <Menu size={20} />
+                <Menu size={20} aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 

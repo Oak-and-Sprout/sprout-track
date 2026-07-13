@@ -237,7 +237,7 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
               size="sm"
               onClick={handleCopyKey}
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
               <span className="ml-1">{copied ? t('Copied!') : t('Copy to Clipboard')}</span>
             </Button>
           </div>
@@ -328,7 +328,7 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
               disabled={creating || !newKeyName.trim() || (!newKeyReadScope && !newKeyWriteScope)}
               size="sm"
             >
-              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Key className="h-4 w-4 mr-1" />}
+              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" /> : <Key className="h-4 w-4 mr-1" aria-hidden="true" />}
               {t('Create API Key')}
             </Button>
             <Button
@@ -348,12 +348,13 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
 
       {/* Key list */}
       {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <div role="status" className="flex items-center justify-center py-8">
+          <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-gray-400" />
+          <span className="sr-only">{t('Loading...')}</span>
         </div>
       ) : apiKeys.length === 0 && !showCreateForm ? (
         <div className="text-center py-8 text-gray-500">
-          <Key className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <Key className="h-8 w-8 mx-auto mb-2 opacity-50" aria-hidden="true" />
           <p className="text-sm">{t('No API keys yet')}</p>
           <p className="text-xs mt-1">{t('Create your first API key to enable external integrations.')}</p>
         </div>
@@ -412,8 +413,9 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
                         variant="ghost"
                         size="sm"
                         onClick={() => setRevokingKeyId(key.id)}
+                        aria-label={t('Revoke') + ' ' + key.name}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
                       </Button>
                     )}
                   </div>
@@ -432,7 +434,7 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           className="w-full mt-3"
           onClick={() => setShowCreateForm(true)}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           {t('Create API Key')}
         </Button>
       )}

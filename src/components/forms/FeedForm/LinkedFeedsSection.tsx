@@ -171,11 +171,11 @@ export default function LinkedFeedsSection({
           title={linked ? t('Unlink') : t('Link')}
         >
           {busyId === feed.id ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
           ) : linked ? (
-            <Link2Off className="h-3.5 w-3.5 text-red-500" />
+            <Link2Off className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
           ) : (
-            <Link2 className="h-3.5 w-3.5 text-teal-600" />
+            <Link2 className="h-3.5 w-3.5 text-teal-600" aria-hidden="true" />
           )}
         </Button>
       ) : null}
@@ -186,7 +186,7 @@ export default function LinkedFeedsSection({
     if (readOnly) return null;
     return (
       <div className="mt-4 flex justify-center py-2">
-        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+        <Loader2 className="h-4 w-4 animate-spin text-gray-400" aria-hidden="true" />
       </div>
     );
   }

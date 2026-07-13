@@ -437,8 +437,9 @@ export function Calendar({
           size="icon"
           onClick={goToPreviousMonth}
           className="text-white hover:bg-teal-500/20"
+          aria-label={t('Previous month')}
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         </Button>
         
         <div className="flex flex-col items-center">
@@ -446,7 +447,7 @@ export function Calendar({
           <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
             <PopoverTrigger asChild>
               <button className="date-picker-trigger flex items-center gap-2 text-lg font-semibold hover:bg-teal-500/20 px-3 py-1 rounded transition-colors">
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4" aria-hidden="true" />
                 {formatMonthYear(currentDate)}
               </button>
             </PopoverTrigger>
@@ -480,8 +481,9 @@ export function Calendar({
           size="icon"
           onClick={goToNextMonth}
           className="text-white hover:bg-teal-500/20"
+          aria-label={t('Next month')}
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
         </Button>
       </div>
       
@@ -539,8 +541,9 @@ export function Calendar({
           <Button
             onClick={() => handleAddEvent(new Date())}
             className="rounded-full w-12 h-12 shadow-lg"
+            aria-label={t('Add event')}
           >
-            <Plus className="h-6 w-6" />
+            <Plus className="h-6 w-6" aria-hidden="true" />
           </Button>
         </div>
       )}

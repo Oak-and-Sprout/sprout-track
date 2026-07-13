@@ -65,7 +65,7 @@ export const BabySelector: React.FC<BabySelectorProps> = ({
             {selectedBaby ? selectedBaby.firstName : t('Select Baby')}
           </span>
           {selectedBaby && sleepingBabies.has(selectedBaby.id) && (
-            <Moon className="h-3 w-3" />
+            <Moon className="h-3 w-3" aria-hidden="true" />
           )}
         </div>
         {selectedBaby && (
@@ -82,8 +82,9 @@ export const BabySelector: React.FC<BabySelectorProps> = ({
             variant="ghost"
             size="sm"
             className={babySelectorDropdownButton()}
+            aria-label={t('Select Baby')}
           >
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

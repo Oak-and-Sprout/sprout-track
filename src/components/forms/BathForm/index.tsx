@@ -390,7 +390,7 @@ export default function BathForm({
                   className="bath-settings-button p-1 text-muted-foreground hover:text-foreground transition-colors"
                   title={t('Manage visible bath types')}
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
               {showBathTypeManager && (

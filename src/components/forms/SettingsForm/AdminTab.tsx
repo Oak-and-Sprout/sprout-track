@@ -146,14 +146,14 @@ export default function AdminTab({
                 disabled={!selectedCaretaker}
                 onClick={() => onCaretakerFormOpen(true)}
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Edit')}
               </Button>
               <Button variant="outline" onClick={() => {
                 onSelectedCaretakerChange(null);
                 onCaretakerFormOpen(false);
               }}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Add')}
               </Button>
             </div>

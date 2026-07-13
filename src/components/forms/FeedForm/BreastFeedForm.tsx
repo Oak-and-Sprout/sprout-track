@@ -347,8 +347,8 @@ export default function BreastFeedForm({
               }}
               disabled={loading || isEditingLeft || isEditingRight}
             >
-              {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ? 
-                <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+              {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ?
+                <Pause className="h-4 w-4 mr-1" aria-hidden="true" /> : <Play className="h-4 w-4 mr-1" aria-hidden="true" />}
               {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ? 
                 t('Pause') : t('Start')}
             </Button>
@@ -399,7 +399,7 @@ export default function BreastFeedForm({
               disabled={loading || isEditingLeft}
               className="w-full"
             >
-              {isTimerRunning && activeBreast === 'LEFT' ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+              {isTimerRunning && activeBreast === 'LEFT' ? <Pause className="h-4 w-4 mr-1" aria-hidden="true" /> : <Play className="h-4 w-4 mr-1" aria-hidden="true" />}
               {isTimerRunning && activeBreast === 'LEFT' ? t('Pause') : t('Start')}
             </Button>
           </div>
@@ -446,7 +446,7 @@ export default function BreastFeedForm({
               disabled={loading || isEditingRight}
               className="w-full"
             >
-              {isTimerRunning && activeBreast === 'RIGHT' ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+              {isTimerRunning && activeBreast === 'RIGHT' ? <Pause className="h-4 w-4 mr-1" aria-hidden="true" /> : <Play className="h-4 w-4 mr-1" aria-hidden="true" />}
               {isTimerRunning && activeBreast === 'RIGHT' ? t('Pause') : t('Start')}
             </Button>
           </div>

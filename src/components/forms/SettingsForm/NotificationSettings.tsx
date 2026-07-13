@@ -356,8 +356,9 @@ export default function NotificationSettings({
   if (loading && subscriptions.length === 0) {
     return (
       <div className="border-t border-slate-200 pt-6">
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <div role="status" className="flex items-center justify-center py-8">
+          <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-gray-400" />
+          <span className="sr-only">{t('Loading...')}</span>
         </div>
       </div>
     );
@@ -377,12 +378,12 @@ export default function NotificationSettings({
           >
             {subscribing ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                 {t('Enabling...')}
               </>
             ) : (
               <>
-                <Bell className="h-4 w-4 mr-2" />
+                <Bell className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Enable Notifications')}
               </>
             )}
@@ -425,7 +426,7 @@ export default function NotificationSettings({
                     onClick={() => handleRemoveDevice(subscription)}
                     disabled={loading}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Remove Device')}
                   </Button>
                 </CardContent>
@@ -501,9 +502,9 @@ export default function NotificationSettings({
                           }}
                         >
                           {expandedActivities[`${subscription.id}-${baby.id}`] ? (
-                            <ChevronUp className="h-3 w-3" />
+                            <ChevronUp className="h-3 w-3" aria-hidden="true" />
                           ) : (
-                            <ChevronDown className="h-3 w-3" />
+                            <ChevronDown className="h-3 w-3" aria-hidden="true" />
                           )}
                           {t('Select Activities')}
                         </button>

@@ -51,8 +51,9 @@ export default function SolidsFeedForm({
             onClick={onDecrement}
             disabled={loading}
             className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            aria-label={t('Decrease amount')}
           >
-            <Minus className="h-5 w-5 text-white" />
+            <Minus className="h-5 w-5 text-white" aria-hidden="true" />
           </Button>
           <Input
             id={amountId}
@@ -71,8 +72,9 @@ export default function SolidsFeedForm({
             onClick={onIncrement}
             disabled={loading}
             className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            aria-label={t('Increase amount')}
           >
-            <Plus className="h-5 w-5 text-white" />
+            <Plus className="h-5 w-5 text-white" aria-hidden="true" />
           </Button>
         </div>
         <div className="mt-2 flex space-x-2">

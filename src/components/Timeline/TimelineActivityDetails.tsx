@@ -128,14 +128,14 @@ const TimelineActivityDetails = ({
               variant="destructive"
               onClick={handleDelete}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Delete')}
             </Button>
             <Button
               variant="outline"
               onClick={handleEdit}
             >
-              <Pencil className="h-4 w-4 mr-2" />
+              <Pencil className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Edit')}
             </Button>
           </div>

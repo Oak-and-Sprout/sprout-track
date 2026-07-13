@@ -597,7 +597,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   setAccountMessage('');
                 }}
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Edit')}
               </Button>
             </div>
@@ -644,12 +644,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               >
                 {savingAccount ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                     {t('Saving...')}
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Save')}
                   </>
                 )}
@@ -667,7 +667,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 }}
                 disabled={savingAccount}
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Cancel')}
               </Button>
             </div>
@@ -699,12 +699,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   >
                     {changingPasswordLoading ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                         {t('Verifying...')}
                       </>
                     ) : (
                       <>
-                        <Key className="h-4 w-4 mr-2" />
+                        <Key className="h-4 w-4 mr-2" aria-hidden="true" />
                         Continue
                       </>
                     )}
@@ -714,7 +714,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     onClick={handlePasswordCancel}
                     disabled={changingPasswordLoading}
                   >
-                    <X className="h-4 w-4 mr-2" />
+                    <X className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Cancel')}
                   </Button>
                 </div>
@@ -798,12 +798,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   >
                     {changingPasswordLoading ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                         {t('Changing Password...')}
                       </>
                     ) : (
                       <>
-                        <Save className="h-4 w-4 mr-2" />
+                        <Save className="h-4 w-4 mr-2" aria-hidden="true" />
                         {t('Change Password')}
                       </>
                     )}
@@ -813,7 +813,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     onClick={handlePasswordCancel}
                     disabled={changingPasswordLoading}
                   >
-                    <X className="h-4 w-4 mr-2" />
+                    <X className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Cancel')}
                   </Button>
                 </div>
@@ -825,11 +825,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-500" />
+                  <User className="h-4 w-4 text-gray-500" aria-hidden="true" />
                   <Label className="font-medium">{accountStatus.firstName} {accountStatus.lastName}</Label>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
+                  <Mail className="h-4 w-4 text-gray-500" aria-hidden="true" />
                   <Label>{accountStatus.email}</Label>
                   {!accountStatus.verified && (
                     <span className="text-amber-600 text-sm">{t('(Unverified)')}</span>
@@ -845,7 +845,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 }}
                 className="self-start"
               >
-                <Key className="h-4 w-4 mr-2" />
+                <Key className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Reset Password')}
               </Button>
             </div>
@@ -861,9 +861,9 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           )}>
             <div className="flex items-center gap-2">
               {((accountMessage && accountMessage.startsWith('Error')) || (passwordMessage && passwordMessage.startsWith('Error'))) ? (
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="h-4 w-4" aria-hidden="true" />
               )}
               {passwordMessage || accountMessage}
             </div>
@@ -884,7 +884,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                  <Crown className="h-6 w-6 text-purple-600" />
+                  <Crown className="h-6 w-6 text-purple-600" aria-hidden="true" />
                 </div>
                 <div className="flex-1">
                   <h4 className="text-lg font-semibold text-purple-800 mb-2">
@@ -894,7 +894,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     {t('Thank you for being a beta participant and helping Sprout Track grow! You have full access to all features and functionality.')}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-purple-600">
-                    <Shield className="h-4 w-4" />
+                    <Shield className="h-4 w-4" aria-hidden="true" />
                     <span className="font-medium">{t('Full Access')}</span>
                   </div>
                 </div>
@@ -905,7 +905,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
-                    <Home className="h-6 w-6 text-blue-600" />
+                    <Home className="h-6 w-6 text-blue-600" aria-hidden="true" />
                   </div>
                   <div className="flex-1">
                     <h4 className="text-lg font-semibold text-blue-800 mb-2">
@@ -928,14 +928,14 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   onClick={() => window.location.href = '/account/family-setup'}
                   className="flex-1"
                 >
-                  <Home className="h-4 w-4 mr-2" />
+                  <Home className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Create Family')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowPaymentModal(true)}
                 >
-                  <Crown className="h-4 w-4 mr-2" />
+                  <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Upgrade Plan')}
                 </Button>
               </div>
@@ -962,7 +962,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   <CheckCircle className={cn(
                     "h-4 w-4",
                     subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-600" : "text-green-600"
-                  )} />
+                  )} aria-hidden="true" />
                   <Label className={cn(
                     "font-medium",
                     subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-700" : "text-green-600"
@@ -978,7 +978,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               {accountStatus.trialEnds && accountStatus.accountStatus !== 'expired' && (
                 <>
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <Calendar className="h-4 w-4 text-gray-500" aria-hidden="true" />
                     <Label className="text-sm">
                       {t('Trial ends')} {new Date(accountStatus.trialEnds).toLocaleDateString()}
                     </Label>
@@ -988,7 +988,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     onClick={() => setShowPaymentModal(true)}
                     className="mt-2"
                   >
-                    <Crown className="h-4 w-4 mr-2" />
+                    <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Upgrade')}
                   </Button>
                 </>
@@ -996,7 +996,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
 
               {accountStatus.planExpires && !accountStatus.trialEnds && accountStatus.planType !== 'full' && (
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Calendar className="h-4 w-4 text-gray-500" aria-hidden="true" />
                   <Label className="text-sm">
                     {t('Subscription ends')} {new Date(accountStatus.planExpires).toLocaleDateString()}
                   </Label>
@@ -1006,7 +1006,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               {accountStatus.accountStatus === 'expired' && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-red-700">
-                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                     <span className="font-medium">
                       {accountStatus.trialEnds ? 'Trial Expired' : 'Subscription Expired'}
                     </span>
@@ -1022,7 +1022,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     onClick={() => setShowPaymentModal(true)}
                     variant="destructive"
                   >
-                    <Crown className="h-4 w-4 mr-2" />
+                    <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
                     {accountStatus.trialEnds ? 'Subscribe Now' : 'Renew Subscription'}
                   </Button>
                 </div>
@@ -1037,7 +1037,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                       onClick={() => setShowPaymentModal(true)}
                       className="self-start"
                     >
-                      <CreditCard className="h-4 w-4 mr-2" />
+                      <CreditCard className="h-4 w-4 mr-2" aria-hidden="true" />
                       {t('Manage Subscription')}
                     </Button>
                   )}
@@ -1051,12 +1051,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     >
                       {renewingSubscription ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                           {t('Renewing...')}
                         </>
                       ) : (
                         <>
-                          <Crown className="h-4 w-4 mr-2" />
+                          <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
                           {t('Renew Subscription')}
                         </>
                       )}
@@ -1068,7 +1068,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     onClick={() => setShowPaymentHistory(true)}
                     className="self-start"
                   >
-                    <Receipt className="h-4 w-4 mr-2" />
+                    <Receipt className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Payment History')}
                   </Button>
                 </div>
@@ -1094,7 +1094,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   setFamilyMessage('');
                 }}
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Edit')}
               </Button>
             )}
@@ -1122,20 +1122,20 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     className={slugError ? 'border-red-500' : ''}
                   />
                   {checkingSlug && (
-                    <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                    <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" aria-hidden="true" />
                   )}
                 </div>
                 {/* Validation feedback */}
                 <div className="min-h-[20px] mt-1">
                   {checkingSlug && (
                     <div className="flex items-center gap-1 text-blue-600 text-sm">
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                       {t('Checking availability...')}
                     </div>
                   )}
                   {slugError && (
                     <div className="flex items-center gap-1 text-red-600 text-sm account-manager-validation-error">
-                      <AlertTriangle className="h-3 w-3" />
+                      <AlertTriangle className="h-3 w-3" aria-hidden="true" />
                       {slugError}
                     </div>
                   )}
@@ -1158,12 +1158,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 >
                   {savingFamily ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                       {t('Saving...')}
                     </>
                   ) : (
                     <>
-                      <Save className="h-4 w-4 mr-2" />
+                      <Save className="h-4 w-4 mr-2" aria-hidden="true" />
                       {t('Save')}
                     </>
                   )}
@@ -1181,7 +1181,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   }}
                   disabled={savingFamily}
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Cancel')}
                 </Button>
               </div>
@@ -1189,11 +1189,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           ) : (
             <div className={styles.formGroup}>
               <div className="flex items-center gap-2 mb-2">
-                <Home className="h-4 w-4 text-gray-500" />
+                <Home className="h-4 w-4 text-gray-500" aria-hidden="true" />
                 <Label className="font-medium">{familyData.name}</Label>
               </div>
               <div className="flex items-center gap-2">
-                <Link className="h-4 w-4 text-gray-500" />
+                <Link className="h-4 w-4 text-gray-500" aria-hidden="true" />
                 <Label className="font-mono text-sm">/{familyData.slug}</Label>
               </div>
             </div>
@@ -1208,9 +1208,9 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             )}>
               <div className="flex items-center gap-2">
                 {familyMessage.startsWith('Error') ? (
-                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                 ) : (
-                  <CheckCircle className="h-4 w-4" />
+                  <CheckCircle className="h-4 w-4" aria-hidden="true" />
                 )}
                 {familyMessage}
               </div>
@@ -1238,12 +1238,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             >
               {downloadingData ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                   {t('Preparing Download...')}
                 </>
               ) : (
                 <>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Download Data')}
                 </>
               )}
@@ -1265,7 +1265,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className="text-center py-8">
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-white" />
+                  <CheckCircle className="w-8 h-8 text-white" aria-hidden="true" />
                 </div>
               </div>
               <h4 className="text-xl font-semibold text-gray-800 mb-2">
@@ -1324,12 +1324,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               >
                 {closurePasswordLoading || closingAccount ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                     {closingAccount ? 'Closing Account...' : 'Verifying...'}
                   </>
                 ) : (
                   <>
-                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    <AlertTriangle className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Close Account')}
                   </>
                 )}
@@ -1339,7 +1339,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 onClick={handleClosureCancel}
                 disabled={closurePasswordLoading || closingAccount}
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Cancel')}
               </Button>
             </div>
@@ -1353,9 +1353,9 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               )}>
                 <div className="flex items-center gap-2">
                   {closurePasswordMessage.startsWith('Error') || closurePasswordMessage.includes('incorrect') ? (
-                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                   ) : (
-                    <CheckCircle className="h-4 w-4" />
+                    <CheckCircle className="h-4 w-4" aria-hidden="true" />
                   )}
                   {closurePasswordMessage}
                 </div>
@@ -1365,14 +1365,14 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         ) : (
           <div className={styles.formGroup}>
             <p className="text-sm text-gray-600 mb-4 account-manager-info-text">
-              <AlertTriangle className="h-4 w-4 inline mr-1" />
+              <AlertTriangle className="h-4 w-4 inline mr-1" aria-hidden="true" />
               {t('Warning: Closing your account will permanently disable access to your')} {familyData ? "family" : "account"} {t('data. This action cannot be undone. Please download your data first if you want to keep it.')}
             </p>
             <Button
               onClick={() => setConfirmingClosure(true)}
               variant="destructive"
             >
-              <AlertTriangle className="h-4 w-4 mr-2" />
+              <AlertTriangle className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Close Account')}
             </Button>
           </div>

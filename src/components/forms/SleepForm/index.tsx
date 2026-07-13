@@ -606,7 +606,7 @@ export default function SleepForm({
                     className="sleep-settings-button p-1 text-muted-foreground hover:text-foreground transition-colors"
                     title={t('Manage visible locations')}
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
                 {showLocationManager && (

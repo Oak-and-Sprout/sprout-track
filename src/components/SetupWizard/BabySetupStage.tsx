@@ -104,7 +104,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
                 !babyBirthDate && "setup-wizard-date-picker-placeholder"
               )}
             >
-              <Calendar className="mr-2 h-4 w-4" />
+              <Calendar className="mr-2 h-4 w-4" aria-hidden="true" />
               {babyBirthDate ? formatDateLong(babyBirthDate, dateFormat) : t("Select date")}
             </Button>
           </PopoverTrigger>

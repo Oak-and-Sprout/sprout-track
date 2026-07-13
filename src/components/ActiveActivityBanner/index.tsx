@@ -118,7 +118,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-pause"
                 title={t('Pause Activity')}
               >
-                <Pause className="h-5 w-5" />
+                <Pause className="h-5 w-5" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -126,7 +126,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-stop"
                 title={t('End Activity')}
               >
-                <Square className="h-5 w-5" />
+                <Square className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-resume"
                 title={t('Resume Activity')}
               >
-                <Play className="h-5 w-5 mr-0.5" />
+                <Play className="h-5 w-5 mr-0.5" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -167,7 +167,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-stop"
                 title={t('End Activity')}
               >
-                <Square className="h-5 w-5" />
+                <Square className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           </div>

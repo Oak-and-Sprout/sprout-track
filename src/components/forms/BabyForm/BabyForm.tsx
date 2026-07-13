@@ -193,7 +193,7 @@ export default function BabyForm({
                     !formData.birthDate && "text-muted-foreground"
                   )}
                 >
-                  <Calendar className="mr-2 h-4 w-4" />
+                  <Calendar className="mr-2 h-4 w-4" aria-hidden="true" />
                   {formData.birthDate ? formatDateLong(formData.birthDate, dateFormat) : t("Select date")}
                 </Button>
               </PopoverTrigger>

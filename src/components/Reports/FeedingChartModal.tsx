@@ -18,6 +18,7 @@ import {
   ComposedChart,
   Legend,
 } from 'recharts';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
 import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
@@ -362,6 +363,23 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                     ))}
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    { key: 'count', label: t('Feed Count') },
+                    ...bottleData.bottleTypes.map((type) => ({
+                      key: type,
+                      label: t(type.replace('\\', '/')),
+                    })),
+                  ]}
+                  rows={bottleData.data.map((point: any) => ({
+                    ...point,
+                    ...Object.fromEntries(
+                      bottleData.bottleTypes.map((type) => [type, (point[type] as number).toFixed(1)])
+                    ),
+                  }))}
+                />
               </div>
             )}
           </>
@@ -447,6 +465,21 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    { key: 'count', label: t('Feed Count') },
+                    { key: 'leftAvg', label: t('Left Avg') },
+                    { key: 'rightAvg', label: t('Right Avg') },
+                  ]}
+                  rows={breastData.map((point) => ({
+                    label: point.label,
+                    count: point.count,
+                    leftAvg: formatMinutes(point.leftAvg),
+                    rightAvg: formatMinutes(point.rightAvg),
+                  }))}
+                />
               </div>
             )}
           </>
@@ -519,6 +552,20 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                     ))}
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    { key: 'count', label: t('Feed Count') },
+                    ...solidsData.foodTypes.map((food) => ({ key: food, label: food })),
+                  ]}
+                  rows={solidsData.data.map((point: any) => ({
+                    ...point,
+                    ...Object.fromEntries(
+                      solidsData.foodTypes.map((food) => [food, (point[food] as number).toFixed(1)])
+                    ),
+                  }))}
+                />
               </div>
             )}
           </>

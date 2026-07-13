@@ -79,7 +79,7 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
         <div className={cn(styles.header, 'chat-new-feedback-header')}>
           {showBackButton && onBack && (
             <button onClick={onBack} className={styles.backButton} aria-label={t('Back')}>
-              <ChevronLeft className="h-[18px] w-[18px]" />
+              <ChevronLeft className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           )}
           <div className={styles.headerContent}>
@@ -97,7 +97,7 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
       <div className={cn(styles.formBody, 'chat-new-feedback-form-body')}>
         {sent && (
           <div className={cn(styles.successBanner, 'chat-new-feedback-success')}>
-            <CheckCircle className="h-[18px] w-[18px] text-emerald-500 flex-shrink-0" />
+            <CheckCircle className="h-[18px] w-[18px] text-emerald-500 flex-shrink-0" aria-hidden="true" />
             <span className={cn(styles.successText, 'chat-new-feedback-success-text')}>
               {t("Sent! We'll get back to you soon.")}
             </span>
@@ -146,7 +146,7 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
             disabled={sending || sent}
             className={cn(styles.fileUploadButton, 'chat-new-feedback-upload-button')}
           >
-            <ImagePlus className="h-4 w-4" />
+            <ImagePlus className="h-4 w-4" aria-hidden="true" />
             {t('Attach images')}
           </button>
 
@@ -164,7 +164,7 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
                     className={styles.filePreviewDelete}
                     aria-label={t('Remove image')}
                   >
-                    <X className="h-2.5 w-2.5 text-white" />
+                    <X className="h-2.5 w-2.5 text-white" aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -186,7 +186,7 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
                 : cn(styles.sendButtonInactive, 'chat-new-feedback-send-inactive'),
             )}
           >
-            <Send className="h-3.5 w-3.5" color={canSend ? '#fff' : '#a3a39b'} />
+            <Send className="h-3.5 w-3.5" color={canSend ? '#fff' : '#a3a39b'} aria-hidden="true" />
             {sending ? t('Sending...') : t('Send feedback')}
           </button>
           <button

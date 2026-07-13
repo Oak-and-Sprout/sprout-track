@@ -84,7 +84,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
     <>
       <AccordionItem value="pumping">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <LampWallDown className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
+          <LampWallDown aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-pump")} />
           <span>{t('Pumping Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>

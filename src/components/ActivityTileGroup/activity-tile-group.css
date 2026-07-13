@@ -69,6 +69,25 @@ html.dark .activity-dropdown-item-drag-button:hover {
   background-color: #4b5563 !important; /* gray-600 */
 }
 
+/* Keyboard move up/down menu items in dark mode */
+html.dark .activity-dropdown-item-move-button {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Disabled boundary items (first row up / last row down) in dark mode.
+   Radix marks disabled menu items with the data-disabled attribute. */
+html.dark .activity-dropdown-item-move-button[data-disabled] {
+  opacity: 0.4 !important;
+}
+
+/* Disabled items don't use pointer-events-none (it would retarget presses to the
+   draggable row), so suppress the hover/focus backgrounds that the shared
+   .hover-background and .dropdown-menu-item dark rules would otherwise apply */
+html.dark .activity-dropdown-item-move-button[data-disabled]:hover,
+html.dark .activity-dropdown-item-move-button[data-disabled]:focus {
+  background-color: transparent !important;
+}
+
 /* Draggable item highlight in dark mode */
 html.dark .draggable-highlight {
   background-color: rgba(6, 78, 59, 0.2) !important; /* dark:bg-emerald-900/20 */
