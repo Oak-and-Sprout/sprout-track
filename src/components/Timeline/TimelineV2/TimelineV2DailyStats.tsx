@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { 
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
@@ -17,7 +18,8 @@ import {
   Eye,
   EyeOff,
   Baby,
-  Syringe
+  Syringe,
+  Camera
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -36,6 +38,8 @@ import { formatDateLong } from '@/src/utils/dateFormat';
 import { convertVolume } from '@/src/utils/unit-conversion';
 import { groupBreastFeedSessions, BreastFeedLike } from '@/src/utils/feedSessionUtils';
 import { useUnit } from '@/src/hooks/useUnit';
+import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
+import { countUniquePhotoIds } from '@/src/utils/photoUtils';
 
 import './TimelineV2DailyStats.css';
 
@@ -66,6 +70,8 @@ interface StatTile {
   iconColor: string;
   borderColor: string;
   bgActiveColor: string;
+  /** Overrides the default filter-toggle behavior when the tile is tapped (e.g. navigating away). */
+  onClick?: () => void;
 }
 
 const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
@@ -87,8 +93,16 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   const { t } = useLocalization();
   const { unitSymbol } = useUnit();
   const { dateFormat } = useTimezone();
+  const router = useRouter();
+  const params = useParams();
+  const slug = params?.slug as string | undefined;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+
+  useEffect(() => {
+    fetchPhotosEnabled().then(setPhotosEnabled);
+  }, []);
 
   // Helper function to format minutes into hours and minutes
   const formatMinutes = (minutes: number): string => {
@@ -334,6 +348,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     
     const elapsedMinutes = Math.floor((referenceTime.getTime() - startOfDay.getTime()) / (1000 * 60));
     awakeMinutes = Math.max(0, elapsedMinutes - totalSleepMinutes);
+
+    // Photos today - unique photo ids across the day's activities (standalone
+    // photo-log entries plus photos attached to other activity types), deduped by id
+    const photosTodayCount = countUniquePhotoIds(activities as { photos?: { id: string }[] }[]);
 
     const tiles: StatTile[] = [];
 
@@ -627,8 +645,25 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
+    // Photos Today tile - only shown when the deployment has photos enabled
+    if (photosEnabled && photosTodayCount > 0) {
+      tiles.push({
+        filter: null,
+        label: t('Photos Today'),
+        value: photosTodayCount.toString(),
+        icon: <Camera className="h-full w-full" aria-hidden="true" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#e11d48]', // rose - matches photo timeline entries
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100',
+        onClick: () => {
+          if (slug) router.push(`/${slug}/photos`);
+        }
+      });
+    }
+
     return tiles;
-  }, [activities, windowActivities, date, t]);
+  }, [activities, windowActivities, date, t, photosEnabled, slug, router]);
 
   const formatDateDisplay = (date: Date): string => {
     return formatDateLong(date, dateFormat);
@@ -752,16 +787,20 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
                   <button
                     key={tile.filter ? `${tile.filter}-${tile.label.toLowerCase().replace(/\s+/g, '-')}` : tile.label.toLowerCase().replace(/\s+/g, '-')}
                     onClick={() => {
+                      if (tile.onClick) {
+                        tile.onClick();
+                        return;
+                      }
                       // Only allow filtering if it's not the awake time tile
                       if (tile.filter !== null) {
                         onFilterChange(tile.filter === activeFilter ? null : tile.filter);
                       }
                     }}
                     className={`relative rounded-xl text-left transition-all duration-200 overflow-hidden ${
-                      // Never show awake time tile as selected, only show selected state for filterable tiles
+                      // Never show awake time tile as selected, only show selected state for filterable/clickable tiles
                       tile.filter !== null && activeFilter === tile.filter
-                        ? 'bg-gray-100 cursor-pointer scale-105' 
-                        : tile.filter !== null
+                        ? 'bg-gray-100 cursor-pointer scale-105'
+                        : tile.filter !== null || tile.onClick
                         ? 'bg-transparent cursor-pointer'
                         : 'bg-transparent cursor-default'
                     }`}

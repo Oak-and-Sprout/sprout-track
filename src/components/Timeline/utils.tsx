@@ -21,7 +21,8 @@ import {
   Baby,
   Plus,
   Minus,
-  Syringe
+  Syringe,
+  Camera
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { 
@@ -62,6 +63,10 @@ const isPlayActivity = (activity: any): boolean => {
 };
 
 export const getActivityIcon = (activity: ActivityType) => {
+  // Photo log - check first since it has no overlapping fields with other types
+  if ('photoLogId' in activity) {
+    return <Camera className="h-4 w-4 text-[#e11d48]" aria-hidden="true" />;
+  }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
     return <Baby className="h-4 w-4 text-black" aria-hidden="true" />;
@@ -647,6 +652,16 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
 };
 
 export const getActivityDescription = (activity: ActivityType, settings: Settings | null, t: (key: string) => string): ActivityDescription => {
+  // Photo log - check first since it has no overlapping fields with other types
+  if ('photoLogId' in activity) {
+    const photos = activity.photos;
+    const firstCaption = photos?.find(p => p.caption)?.caption;
+    const count = photos?.length ?? 0;
+    return {
+      type: t('Photo'),
+      details: firstCaption || `${count} ${count === 1 ? t('photo') : t('photos')}`
+    };
+  }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
     const formatPlayType = (type: string) => {
@@ -1033,6 +1048,10 @@ export const getActivityEndpoint = (activity: ActivityType): string => {
 };
 
 export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
+  // Photo log - check first since it has no overlapping fields with other types
+  if ('photoLogId' in activity) {
+    return { bg: 'bg-white border-2 border-[#e11d48]', textColor: 'text-[#e11d48]' };
+  }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
     return { bg: 'bg-[#F3C4A2]', textColor: 'text-white' };

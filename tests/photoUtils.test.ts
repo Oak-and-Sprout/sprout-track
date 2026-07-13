@@ -9,6 +9,7 @@ import {
   trashDaysRemaining,
   getVisibleThumbnails,
   formatQuotaLabel,
+  countUniquePhotoIds,
   MAX_PHOTO_FILE_SIZE,
   TRASH_RETENTION_DAYS,
 } from '@/src/utils/photoUtils';
@@ -110,5 +111,23 @@ describe('getVisibleThumbnails', () => {
   });
   it('empty input', () => {
     expect(getVisibleThumbnails([], 3)).toEqual({ visible: [], overflow: 0 });
+  });
+});
+
+describe('countUniquePhotoIds', () => {
+  it('counts photos across multiple items with no overlap', () => {
+    const items = [{ photos: [{ id: 'a' }, { id: 'b' }] }, { photos: [{ id: 'c' }] }];
+    expect(countUniquePhotoIds(items)).toBe(3);
+  });
+  it('dedupes a photo shared by a standalone photo-log entry and an attached activity', () => {
+    const items = [{ photos: [{ id: 'a' }] }, { photos: [{ id: 'a' }, { id: 'b' }] }];
+    expect(countUniquePhotoIds(items)).toBe(2);
+  });
+  it('ignores items with no photos field', () => {
+    const items = [{}, { photos: [{ id: 'a' }] }, { photos: undefined }];
+    expect(countUniquePhotoIds(items)).toBe(1);
+  });
+  it('empty list returns 0', () => {
+    expect(countUniquePhotoIds([])).toBe(0);
   });
 });

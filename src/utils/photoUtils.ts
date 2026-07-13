@@ -75,6 +75,18 @@ export function getVisibleThumbnails<T>(photos: T[], maxVisible: number): { visi
   return { visible, overflow: photos.length - visible.length };
 }
 
+/**
+ * Counts distinct photo ids across a list of items that may each carry a
+ * batch of photos (e.g. a day's timeline activities, where both standalone
+ * photo-log entries and other activity types with attached photos should
+ * only count each underlying photo once).
+ */
+export function countUniquePhotoIds(items: { photos?: { id: string }[] | undefined }[]): number {
+  const ids = new Set<string>();
+  items.forEach((item) => item.photos?.forEach((photo) => ids.add(photo.id)));
+  return ids.size;
+}
+
 export function formatQuotaLabel(usedBytes: number, totalBytes: number): { usedGb: string; totalGb: string; percent: number } {
   const gb = 1024 * 1024 * 1024;
   const fmt = (n: number) => {

@@ -1,5 +1,5 @@
 import { Baby as BabyIcon } from 'lucide-react';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { ActivityType, TimelineActivityListProps } from '../types';
 import { getActivityIcon, getActivityStyle, getActivityDescription, getActivityTime, formatWeightDisplay } from '../utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,8 +8,54 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
 import { useUnit } from '@/src/hooks/useUnit';
+import { useAuthedImage, useInView, photoFileUrl } from '@/src/hooks/useAuthedImage';
+import { getVisibleThumbnails } from '@/src/utils/photoUtils';
+import { TimelinePhotoInfo } from '@/app/api/types';
 
 import '../timeline-activity-list.css';
+
+// 3 thumbs on desktop, 2 on mobile (PRD 4.3); +N badge for overflow
+function TimelinePhotoThumbs({ photos, onPhotoClick }: { photos: TimelinePhotoInfo[]; onPhotoClick: (photoId: string) => void }) {
+  const [maxVisible, setMaxVisible] = useState(3);
+  useEffect(() => {
+    const update = () => setMaxVisible(window.innerWidth < 940 ? 2 : 3);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  const { visible, overflow } = getVisibleThumbnails(photos, maxVisible);
+  return (
+    <div className="flex gap-1.5">
+      {visible.map((photo) => (
+        <TimelineThumb key={photo.id} photo={photo} onClick={() => onPhotoClick(photo.id)} />
+      ))}
+      {overflow > 0 && (
+        <span className="grid h-11 w-11 place-items-center rounded-[10px] border-[1.5px] border-dashed border-gray-300 bg-gray-100 text-xs font-bold text-gray-600 timeline-thumb-more">
+          +{overflow}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TimelineThumb({ photo, onClick }: { photo: TimelinePhotoInfo; onClick: () => void }) {
+  const { ref, inView } = useInView<HTMLButtonElement>();
+  const { src } = useAuthedImage(photoFileUrl(photo.id, 'thumb'), inView);
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className="h-11 w-11 shrink-0 overflow-hidden rounded-[10px] bg-gray-100 shadow-sm"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      title={photo.caption || undefined}
+    >
+      {src && <img src={src} alt={photo.caption || ''} className="h-full w-full object-cover" />}
+    </button>
+  );
+}
 
 const TimelineV2ActivityList = ({
   activities,
@@ -18,8 +64,9 @@ const TimelineV2ActivityList = ({
   isAnimated = true,
   selectedDate,
   onActivitySelect,
+  onPhotoClick,
 }: TimelineActivityListProps) => {
-  
+
   const { t } = useLocalization();
   const { unitSymbol } = useUnit();
   const { dateFormat, timeFormat } = useTimezone();
@@ -201,6 +248,7 @@ const TimelineV2ActivityList = ({
                             if (bgClass.includes('bg-[#43B755]')) return '#43B755'; // green - matches old timeline
                             if (bgClass.includes('bg-[#F3C4A2]')) return '#F3C4A2'; // peach - play activity
                             if (bgClass.includes('border-red-500')) return '#EF4444'; // red - vaccine
+                            if (bgClass.includes('border-[#e11d48]')) return '#e11d48'; // rose - photo
                             return '#9ca3af'; // default gray
                           };
                           
@@ -209,7 +257,8 @@ const TimelineV2ActivityList = ({
                           // Determine activity type class for styling
                           // Check play and pump FIRST since they also have duration and startTime
                           let activityTypeClass = '';
-                          if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) activityTypeClass = 'play';
+                          if ('photoLogId' in activity) activityTypeClass = 'photo';
+                          else if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) activityTypeClass = 'play';
                           else if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
                           else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
                           else if ('duration' in activity && 'type' in activity) activityTypeClass = 'sleep';
@@ -432,7 +481,17 @@ const TimelineV2ActivityList = ({
                                   })()}
                                 </div>
                               </div>
-                              
+
+                              {/* Photo Thumbnails */}
+                              {!!activity.photos?.length && (
+                                <div className="flex-shrink-0">
+                                  <TimelinePhotoThumbs
+                                    photos={activity.photos}
+                                    onPhotoClick={(photoId) => onPhotoClick?.(photoId)}
+                                  />
+                                </div>
+                              )}
+
                               {/* Event Time */}
                               <div className="flex-shrink-0 text-xs text-gray-500 event-time">
                                 {timeStr}
