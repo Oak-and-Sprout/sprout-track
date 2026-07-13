@@ -121,13 +121,22 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       }
 
       const data: Partial<AppConfig> = {};
-      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail'];
+      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail', 'enablePhotos', 'defaultPhotoQuotaMB'];
       for (const field of allowedAppFields) {
         if (appConfigData[field] !== undefined) {
           if (field === 'adminPass') {
             // Blank means "keep the current password" — never overwrite with an empty value.
             if (!appConfigData[field]) continue;
             (data as any)[field] = encrypt(appConfigData[field]);
+          } else if (field === 'defaultPhotoQuotaMB') {
+            const quota = parseInt(appConfigData[field], 10);
+            if (isNaN(quota) || quota < 1) {
+              return NextResponse.json<ApiResponse<null>>(
+                { success: false, error: 'Default photo quota must be a positive number of MB' },
+                { status: 400 }
+              );
+            }
+            (data as any)[field] = quota;
           } else {
             (data as any)[field] = appConfigData[field];
           }
