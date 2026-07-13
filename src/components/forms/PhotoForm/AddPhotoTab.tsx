@@ -41,7 +41,7 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
   const [milestones, setMilestones] = useState<MilestoneResponse[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fileErrors, setFileErrors] = useState<{ fileName: string; error: string }[]>([]);
+  const [fileErrors, setFileErrors] = useState<{ fileName: string; error: string; index: number }[]>([]);
   // Tracks a log created mid-retry (NEW mode only) so a subsequent Save
   // after a partial upload failure updates the same log instead of
   // creating a duplicate. Reset whenever the drawer opens/resets.
@@ -104,7 +104,7 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
     setFileErrors([]);
     try {
       let photoIds = existingPhotos.map((p) => p.id);
-      let uploadErrors: { fileName: string; error: string }[] = [];
+      let uploadErrors: { fileName: string; error: string; index: number }[] = [];
       if (pendingFiles.length > 0) {
         const result = await uploadPhotos(pendingFiles, {
           babyId,
@@ -123,7 +123,8 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
           setExistingPhotos((prev) => [...prev, ...result.photos]);
         }
         if (result.errors.length > 0) {
-          setPendingFiles((prev) => prev.filter((f) => result.errors.some((e) => e.fileName === f.name)));
+          const failedIndices = new Set(result.errors.map((e) => e.index));
+          setPendingFiles((prev) => prev.filter((_, i) => failedIndices.has(i)));
         } else {
           setPendingFiles([]);
         }
@@ -209,7 +210,7 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
           onRemoveExisting={(photoId) => setExistingPhotos(existingPhotos.filter((p) => p.id !== photoId))}
         />
         {fileErrors.map((fe) => (
-          <p key={fe.fileName} className="mt-1 text-xs text-red-500">
+          <p key={`${fe.fileName}-${fe.index}`} className="mt-1 text-xs text-red-500">
             {fe.fileName}: {fe.error}
           </p>
         ))}

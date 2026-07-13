@@ -66,12 +66,13 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     let runningUsed = quota.usedBytes;
 
     const photos: PhotoResponse[] = [];
-    const errors: { fileName: string; error: string }[] = [];
+    const errors: { fileName: string; error: string; index: number }[] = [];
 
-    for (const file of files) {
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
       const validation = validatePhotoFile({ mimeType: file.type, fileSize: file.size });
       if (!validation.valid) {
-        errors.push({ fileName: file.name, error: validation.error! });
+        errors.push({ fileName: file.name, error: validation.error!, index });
         continue;
       }
       let storedName: string | undefined;
@@ -81,7 +82,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         const processed = await processPhoto(rawBuffer, file.type.toLowerCase());
         const incomingBytes = processed.display.data.length + processed.thumbnail.data.length;
         if (isOverQuota(runningUsed, incomingBytes, quota.totalBytes)) {
-          errors.push({ fileName: file.name, error: 'Photo storage quota exceeded' });
+          errors.push({ fileName: file.name, error: 'Photo storage quota exceeded', index });
           continue;
         }
 
@@ -142,7 +143,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
             console.error(`Failed to clean up orphaned thumbnail ${thumbStoredName}:`, cleanupError);
           }
         }
-        errors.push({ fileName: file.name, error: 'Failed to process photo' });
+        errors.push({ fileName: file.name, error: 'Failed to process photo', index });
       }
     }
 

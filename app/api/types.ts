@@ -470,7 +470,7 @@ export interface PhotoListResponse {
 
 export interface PhotoUploadResult {
   photos: PhotoResponse[];
-  errors: { fileName: string; error: string }[];
+  errors: { fileName: string; error: string; index: number }[];
   quota: { usedBytes: number; totalBytes: number };
 }
 
