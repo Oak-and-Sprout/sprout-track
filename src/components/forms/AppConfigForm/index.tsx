@@ -558,7 +558,7 @@ export default function AppConfigForm({
   };
 
   return (
-    <FormPage
+    <FormPage 
       isOpen={isOpen} 
       onClose={handleClose}
       title={t("App Configuration")}
@@ -1244,4 +1244,4 @@ export default function AppConfigForm({
       />
     </FormPage>
   );
-}
+} 
