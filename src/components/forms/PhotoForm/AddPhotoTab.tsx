@@ -42,6 +42,10 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileErrors, setFileErrors] = useState<{ fileName: string; error: string }[]>([]);
+  // Tracks a log created mid-retry (NEW mode only) so a subsequent Save
+  // after a partial upload failure updates the same log instead of
+  // creating a duplicate. Reset whenever the drawer opens/resets.
+  const [savedLogId, setSavedLogId] = useState<string | null>(null);
   const takenAtDate = useMemo(() => new Date(takenAt), [takenAt]);
 
   // Reset/load state whenever the drawer opens, for both new and edit mode.
@@ -65,6 +69,7 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
           setFileErrors([]);
           setError(null);
           setSaving(false);
+          setSavedLogId(null);
         })
         .catch(() => setError(t('Failed to load photo entry')));
     } else {
@@ -78,6 +83,7 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
       setInitialMilestoneId('');
       setFileErrors([]);
       setError(null);
+      setSavedLogId(null);
     }
   }, [isOpen, activity?.photoLogId]);
 
@@ -110,6 +116,17 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
         uploadErrors = result.errors;
         setFileErrors(result.errors);
         photoIds = [...photoIds, ...result.photos.map((p) => p.id)];
+        // Fold succeeded uploads into existing-photo state so a retry after
+        // a partial failure doesn't re-upload them (duplicate Photo rows)
+        // and only the failed files remain pending.
+        if (result.photos.length > 0) {
+          setExistingPhotos((prev) => [...prev, ...result.photos]);
+        }
+        if (result.errors.length > 0) {
+          setPendingFiles((prev) => prev.filter((f) => result.errors.some((e) => e.fileName === f.name)));
+        } else {
+          setPendingFiles([]);
+        }
         if (photoIds.length === 0) {
           setError(result.errors[0]?.error || t('Failed to upload photos'));
           return;
@@ -120,33 +137,43 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
         return;
       }
       let patchError: string | null = null;
-      if (activity) {
-        await updatePhotoLog(activity.photoLogId, { time: takenAt, photoIds });
+      // Target the same log across retries: edit mode always has one, and
+      // NEW mode remembers the log created by a prior (partially failed)
+      // save attempt so we update it instead of creating a duplicate.
+      const logId = activity?.photoLogId ?? savedLogId;
+      if (logId) {
+        await updatePhotoLog(logId, { time: takenAt, photoIds });
         // updatePhotoLog only carries time/photoIds, so caption/milestone
         // edits on pre-existing photos must be patched separately. Newly
         // uploaded photos already got the caption/milestone at upload time.
-        const trimmedCaption = caption.trim();
-        if (trimmedCaption !== initialCaption || milestoneId !== initialMilestoneId) {
-          try {
-            await Promise.all(
-              existingPhotos.map((p) =>
-                updatePhoto(p.id, { caption: trimmedCaption || null, milestoneId: milestoneId || null })
-              )
-            );
-          } catch (err) {
-            patchError = err instanceof Error ? err.message : t('Failed to update photo details');
+        if (activity) {
+          const trimmedCaption = caption.trim();
+          if (trimmedCaption !== initialCaption || milestoneId !== initialMilestoneId) {
+            try {
+              await Promise.all(
+                existingPhotos.map((p) =>
+                  updatePhoto(p.id, { caption: trimmedCaption || null, milestoneId: milestoneId || null })
+                )
+              );
+            } catch (err) {
+              patchError = err instanceof Error ? err.message : t('Failed to update photo details');
+            }
           }
         }
       } else {
-        await createPhotoLog({ babyId, time: userTouchedTime ? takenAt : initialTime, photoIds });
+        const created = await createPhotoLog({ babyId, time: userTouchedTime ? takenAt : initialTime, photoIds });
+        setSavedLogId(created.id);
       }
       onSuccess?.();
-      if (uploadErrors.length > 0) {
-        setError(t('Saved, but some photos failed to upload'));
-        return;
-      }
-      if (patchError) {
-        setError(patchError);
+      if (uploadErrors.length > 0 || patchError) {
+        setError(
+          [
+            uploadErrors.length > 0 ? t('Saved, but some photos failed to upload') : null,
+            patchError,
+          ]
+            .filter(Boolean)
+            .join(' ')
+        );
         return;
       }
       onClose();
