@@ -1009,6 +1009,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 };
 
 export const getActivityEndpoint = (activity: ActivityType): string => {
+  if ('photoLogId' in activity) return 'photo-log';
   // Check play activity before sleep since both have duration and type
   if (isPlayActivity(activity)) return 'play-log';
   // Check for breast milk adjustment before pump
