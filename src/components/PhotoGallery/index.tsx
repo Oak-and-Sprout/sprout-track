@@ -45,6 +45,7 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
   const [showAddPhotos, setShowAddPhotos] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const onStateChange = useCallback((partial: Partial<GalleryState>) => {
     setState((prev) => ({ ...prev, ...partial }));
@@ -64,12 +65,16 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
         setQuota(data.quota);
         setTrashCount(data.trashCount);
         setNextCursor(data.nextCursor);
+        setLoadError(null);
+      } catch (error) {
+        console.error('Error fetching photos:', error);
+        setLoadError(error instanceof Error ? error.message : t('Failed to load photos'));
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
       }
     },
-    [babyId, state.view, nextCursor]
+    [babyId, state.view, nextCursor, t]
   );
 
   // Reload from scratch whenever the baby or gallery/trash view changes.
@@ -180,6 +185,13 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" aria-hidden="true" />
             <span className="sr-only">{t('Loading')}...</span>
+          </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <p className="text-sm text-gray-500">{loadError}</p>
+            <Button type="button" variant="outline" onClick={() => loadPhotos(true)}>
+              {t('Retry')}
+            </Button>
           </div>
         ) : photos.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">

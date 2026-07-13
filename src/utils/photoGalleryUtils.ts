@@ -35,11 +35,18 @@ function sortNewestFirst<T extends GalleryPhotoLike>(photos: T[]): T[] {
   return [...photos].sort((a, b) => new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime());
 }
 
+/**
+ * Groups photos by the LOCAL calendar month (not UTC) they were taken in, so
+ * the month a photo lands under always matches the wall-clock date the user
+ * sees elsewhere in the app (mirrors the local-day convention used by
+ * PhotoLibraryTab).
+ */
 export function groupByMonth<T extends GalleryPhotoLike>(photos: T[]): { monthKey: string; photos: T[] }[] {
   const sorted = sortNewestFirst(photos);
   const groups = new Map<string, T[]>();
   for (const photo of sorted) {
-    const monthKey = photo.takenAt.slice(0, 7); // 'YYYY-MM'
+    const d = new Date(photo.takenAt);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; // local 'YYYY-MM'
     if (!groups.has(monthKey)) groups.set(monthKey, []);
     groups.get(monthKey)!.push(photo);
   }

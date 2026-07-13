@@ -39,6 +39,15 @@ function PhotosPage() {
     };
   }, []);
 
+  if (photosEnabled === null) {
+    return (
+      <div className="flex h-[calc(100vh-192px)] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" aria-hidden="true" />
+        <span className="sr-only">{t('Loading')}...</span>
+      </div>
+    );
+  }
+
   if (photosEnabled === false) {
     return (
       <div className="flex h-[calc(100vh-192px)] flex-col items-center justify-center text-center bg-white border-t border-gray-200">
