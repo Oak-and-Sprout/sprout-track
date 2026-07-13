@@ -53,6 +53,23 @@ async function handlePost(
     );
   }
 
+  const hasImportPermission =
+    authContext.isSysAdmin ||
+    authContext.isSetupAuth ||
+    authContext.isAccountOwner ||
+    authContext.caretakerRole === 'ADMIN' ||
+    authContext.caretakerRole === 'OWNER';
+
+  if (!hasImportPermission) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Administrator access is required to import external data.',
+      },
+      { status: 403 },
+    );
+  }
+
   try {
     const formData = await request.formData();
     const upload = await readExternalImportUpload(

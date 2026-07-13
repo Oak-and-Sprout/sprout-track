@@ -21,7 +21,6 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { Settings } from '@/app/api/types';
 import { DateFormatSetting, TimeFormatSetting } from '@/src/utils/dateFormat';
-import ExternalImport from '@/src/components/ExternalImport';
 
 interface FamilyData {
   id: string;
@@ -90,7 +89,6 @@ export default function ConfigTab({
 }: ConfigTabProps) {
   const { t } = useLocalization();
   const router = useRouter();
-  const [showExternalImport, setShowExternalImport] = React.useState(false);
   const { setDateTimeFormats } = useTimezone();
   const id = React.useId();
   const familyNameId = `${id}-family-name`;
@@ -99,8 +97,7 @@ export default function ConfigTab({
   const timeFormatId = `${id}-time-format`;
 
   return (
-    <>
-      <div className="space-y-6">
+    <div className="space-y-6">
       {/* Family Information Section */}
       <div className="space-y-4">
         <h3 className="form-label mb-4">{t('Family Information')}</h3>
@@ -385,16 +382,6 @@ export default function ConfigTab({
           <h3 className="form-label mb-4">{t('System Administration')}</h3>
           <div className="space-y-4">
             <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowExternalImport(true)}
-              className="w-full"
-              disabled={loading || !family}
-            >
-              {t('Import from another platform')}
-            </Button>
-
-            <Button
               variant="outline"
               onClick={() => router.push('/family-manager')}
               className="w-full"
@@ -409,12 +396,6 @@ export default function ConfigTab({
           </div>
         </div>
       )}
-      </div>
-
-      <ExternalImport
-        isOpen={showExternalImport}
-        onClose={() => setShowExternalImport(false)}
-      />
-    </>
+    </div>
   );
 }
