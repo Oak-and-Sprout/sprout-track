@@ -30,6 +30,7 @@ import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
+import { cacheDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -167,12 +168,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
       }
       
       const settingsResponse = await fetch(settingsUrl, {
+        cache: 'no-store',
         headers: authToken ? {
           'Authorization': `Bearer ${authToken}`
         } : {}
       });
       if (settingsResponse.ok) {
         const settingsData = await settingsResponse.json();
+        if (settingsData.success) {
+          cacheDefaultBottleUnit(settingsData.data?.defaultBottleUnit);
+        }
         if (settingsData.success && settingsData.data.familyName) {
           setFamilyName(settingsData.data.familyName);
         }

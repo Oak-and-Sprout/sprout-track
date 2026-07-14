@@ -20,6 +20,7 @@ import { Switch } from '@/src/components/ui/switch';
 import { useLocalization } from '@/src/context/localization';
 import { BreastMilkAdjustmentResponse } from '@/app/api/types';
 import { useUnit } from '@/src/hooks/useUnit';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
 import './pump-form.css';
 
@@ -51,7 +52,7 @@ export default function PumpForm({
   // Adjustment mode state
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState('');
-  const [adjustUnit, setAdjustUnit] = useState('OZ');
+  const [adjustUnit, setAdjustUnit] = useState<string>(() => readCachedDefaultBottleUnit());
   const [adjustIsAdding, setAdjustIsAdding] = useState(true);
   const [adjustReason, setAdjustReason] = useState('Initial Stock');
   const [adjustNotes, setAdjustNotes] = useState('');
@@ -99,7 +100,7 @@ export default function PumpForm({
     leftAmount: '',
     rightAmount: '',
     totalAmount: '',
-    unitAbbr: 'OZ', // Default unit
+    unitAbbr: readCachedDefaultBottleUnit() as string,
     notes: '',
   });
   const [loading, setLoading] = useState(false);
@@ -143,7 +144,7 @@ export default function PumpForm({
     if (isOpen && adjustmentActivity) {
       setIsAdjustMode(true);
       setAdjustAmount(Math.abs(adjustmentActivity.amount).toString());
-      setAdjustUnit(adjustmentActivity.unitAbbr || 'OZ');
+      setAdjustUnit(adjustmentActivity.unitAbbr || readCachedDefaultBottleUnit());
       setAdjustIsAdding(adjustmentActivity.amount >= 0);
       setAdjustReason(adjustmentActivity.reason || 'Other');
       setAdjustNotes(adjustmentActivity.notes || '');
@@ -203,7 +204,7 @@ export default function PumpForm({
           leftAmount: activity.leftAmount?.toString() || '',
           rightAmount: activity.rightAmount?.toString() || '',
           totalAmount: activity.totalAmount?.toString() || '',
-          unitAbbr: activity.unitAbbr || 'OZ',
+          unitAbbr: activity.unitAbbr || readCachedDefaultBottleUnit(),
           notes: activity.notes || '',
         });
       } else {
@@ -212,14 +213,19 @@ export default function PumpForm({
           try {
             const authToken = localStorage.getItem('authToken');
             const response = await fetch('/api/settings', {
+              cache: 'no-store',
               headers: {
                 'Authorization': authToken ? `Bearer ${authToken}` : '',
               },
             });
             if (!response.ok) return;
             const data = await response.json();
-            if (data.success && data.data?.defaultBottleUnit) {
-              setFormData(prev => ({ ...prev, unitAbbr: data.data.defaultBottleUnit }));
+            if (data.success && data.data) {
+              const defaultBottleUnit = cacheDefaultBottleUnit(data.data.defaultBottleUnit);
+              if (defaultBottleUnit) {
+                setFormData(prev => ({ ...prev, unitAbbr: defaultBottleUnit }));
+                setAdjustUnit(defaultBottleUnit);
+              }
             }
             setBreastMilkTrackingEnabled(data.data?.enableBreastMilkTracking ?? true);
           } catch (error) {
@@ -281,12 +287,12 @@ export default function PumpForm({
         leftAmount: '',
         rightAmount: '',
         totalAmount: '',
-        unitAbbr: 'OZ',
+        unitAbbr: readCachedDefaultBottleUnit(),
         notes: '',
       });
       setPumpAction('STORED');
       setAdjustAmount('');
-      setAdjustUnit('OZ');
+      setAdjustUnit(readCachedDefaultBottleUnit());
       setAdjustIsAdding(true);
       setAdjustReason('Initial Stock');
       setAdjustNotes('');

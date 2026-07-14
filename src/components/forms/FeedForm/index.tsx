@@ -19,6 +19,7 @@ import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { newFeedSessionId } from '@/src/utils/feedSessionUtils';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 import './feed-form.css';
 
 // Import subcomponents
@@ -83,7 +84,7 @@ export default function FeedForm({
     time: initialTime,
     type: '' as FeedType | '',
     amount: '',
-    unit: 'OZ', // Default unit
+    unit: readCachedDefaultBottleUnit() as string,
     side: '' as BreastSide | '',
     food: '',
     notes: '',
@@ -100,7 +101,7 @@ export default function FeedForm({
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string>('');
   const [defaultSettings, setDefaultSettings] = useState({
-    defaultBottleUnit: 'OZ',
+    defaultBottleUnit: readCachedDefaultBottleUnit() as string,
     defaultSolidsUnit: 'TBSP',
   });
 
@@ -258,6 +259,7 @@ export default function FeedForm({
     try {
       const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/settings', {
+        cache: 'no-store',
         headers: {
           'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
@@ -266,15 +268,16 @@ export default function FeedForm({
       
       const data = await response.json();
       if (data.success && data.data) {
+        const defaultBottleUnit = cacheDefaultBottleUnit(data.data.defaultBottleUnit) || 'OZ';
         setDefaultSettings({
-          defaultBottleUnit: data.data.defaultBottleUnit || 'OZ',
+          defaultBottleUnit,
           defaultSolidsUnit: data.data.defaultSolidsUnit || 'TBSP',
         });
         
         // Set the default unit from settings
         setFormData(prev => ({
           ...prev,
-          unit: data.data.defaultBottleUnit || 'OZ'
+          unit: defaultBottleUnit
         }));
       }
     } catch (error) {

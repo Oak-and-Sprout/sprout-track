@@ -23,9 +23,11 @@ import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, PhotoResponse } from '@/app/api/types';
 import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
 const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [defaultBottleUnit, setDefaultBottleUnit] = useState(() => readCachedDefaultBottleUnit());
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
@@ -130,7 +132,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
     try {
       const authToken = localStorage.getItem('authToken');
-      const unit = settings?.defaultBottleUnit || 'OZ';
+      const unit = settings?.defaultBottleUnit || defaultBottleUnit;
       const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=${unit}`, {
         headers: {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
@@ -270,24 +272,42 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     setActiveFilter(activeFilter === filter ? null : filter);
   };
 
-  // Fetch settings
-  useEffect(() => {
-    const fetchSettings = async () => {
+  // Fetch settings and refresh them when a warm PWA becomes active again.
+  const refreshSettings = useCallback(async () => {
+    try {
       const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/settings', {
+        cache: 'no-store',
         headers: {
           'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setSettings(data.data);
-        }
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.success) {
+        setSettings(data.data);
+        const unit = cacheDefaultBottleUnit(data.data?.defaultBottleUnit);
+        if (unit) setDefaultBottleUnit(unit);
       }
-    };
-    fetchSettings();
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
   }, []);
+
+  useEffect(() => {
+    refreshSettings();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshSettings();
+    };
+    window.addEventListener('focus', refreshSettings);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', refreshSettings);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshSettings]);
 
   // Initial fetch when babyId changes
   useEffect(() => {
@@ -302,7 +322,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     if (babyId) {
       fetchBreastMilkBalance(babyId);
     }
-  }, [babyId, settings?.defaultBottleUnit]);
+  }, [babyId, settings?.defaultBottleUnit, defaultBottleUnit]);
 
   // Handle refreshTrigger from parent (form submissions in log-entry page)
   useEffect(() => {
@@ -474,7 +494,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         isHeatmapVisible={isHeatmapVisible}
         onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
         breastMilkBalance={breastMilkTrackingEnabled ? breastMilkBalance : undefined}
-        defaultBottleUnit={settings?.defaultBottleUnit}
+        defaultBottleUnit={settings?.defaultBottleUnit || defaultBottleUnit}
         enableBreastMilkTracking={breastMilkTrackingEnabled}
       />
 
