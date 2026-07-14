@@ -3,6 +3,7 @@
 import { NurserySettings } from '@/src/utils/nursery/settings';
 import { AmbientScene } from './AmbientScene';
 import { StarlitScene } from './StarlitScene';
+import { TapestryScene } from './TapestryScene';
 
 /**
  * Base two-stop gradient used as the fallback/underlay for every scene.
@@ -52,10 +53,9 @@ export function SceneBackground({ settings, photoObjectUrl }: SceneBackgroundPro
   }
 
   if (scene === 'tapestry') {
-    // Placeholder until Task 10 implements the full tapestry scene.
     return (
       <div className="nursery-bg" style={{ filter }} aria-hidden="true">
-        <div className="nursery-bg-grad" style={{ background: baseGrad(hue) }} />
+        <TapestryScene tapestry={settings.tapestry} />
       </div>
     );
   }
