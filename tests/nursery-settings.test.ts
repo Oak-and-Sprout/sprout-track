@@ -40,4 +40,13 @@ describe('normalizeNurserySettings', () => {
     const out = normalizeNurserySettings({ ...NURSERY_DEFAULTS, tapestry: { ...NURSERY_DEFAULTS.tapestry, palette: 'girls', colors: ['red'] } });
     expect(out.tapestry.colors).toEqual(PALETTES.girls.colors);
   });
+  it('accepts custom sleep locations, dedupes, and drops blanks', () => {
+    const out = normalizeNurserySettings({ ...NURSERY_DEFAULTS, sleep: { locations: ['Bassinet', 'Bassinet', ' ', 'Nana\'s'] } });
+    expect(out.sleep.locations).toEqual(['Bassinet', "Nana's"]);
+  });
+  it('falls back to default sleep locations when empty or invalid', () => {
+    expect(normalizeNurserySettings({ ...NURSERY_DEFAULTS, sleep: { locations: [] } }).sleep.locations).toEqual(['Crib', 'Contact']);
+    expect(normalizeNurserySettings({ ...NURSERY_DEFAULTS, sleep: { locations: 'Crib' } }).sleep.locations).toEqual(['Crib', 'Contact']);
+    expect(normalizeNurserySettings({ ...NURSERY_DEFAULTS, sleep: {} }).sleep.locations).toEqual(['Crib', 'Contact']);
+  });
 });

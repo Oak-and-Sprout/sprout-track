@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
-import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS, undoDeleteLog } from './types';
+import { formatPumpNote, PumpNoteLabels } from '@/src/utils/nursery/activityDetail';
+import { ActivityHookArgs, ActivityView, ActionButton, AmountPrompt, formatMMSS, undoDeleteLog } from './types';
 
 type PumpSide = 'left' | 'right' | 'both';
 type PumpPhase = 'idle' | 'timing' | 'paused' | 'selecting_action';
@@ -17,11 +18,46 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
   const [phase, setPhase] = useState<PumpPhase>('idle');
   const [activeSide, setActiveSide] = useState<PumpSide | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // Seconds already banked for each side by a prior segment (folded in on switch) —
+  // 'both' never switches, so these stay 0 and the whole session lives in `elapsed`.
+  const [sideDuration, setSideDuration] = useState({ left: 0, right: 0 });
   const [pauseAccumulated, setPauseAccumulated] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [resumeTime, setResumeTime] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [defaultUnit, setDefaultUnit] = useState('OZ');
+  const [amountLeft, setAmountLeft] = useState('');
+  const [amountRight, setAmountRight] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch bottle/pump amount unit default (same setting FeedTile uses).
+  useEffect(() => {
+    const fetchDefaultUnit = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const res = await fetch('/api/settings', { headers: { Authorization: authToken ? `Bearer ${authToken}` : '' } });
+        const data = await res.json();
+        if (data.success && data.data?.defaultBottleUnit) setDefaultUnit(data.data.defaultBottleUnit);
+      } catch { /* use default */ }
+    };
+    fetchDefaultUnit();
+  }, []);
+
+  // Pump sessions have no server-side "active session" record to resume (unlike
+  // breastfeeding/sleep), so switching babies must clear any in-progress local
+  // timer — otherwise the card keeps showing the previous baby's running pump,
+  // and Stop would log it against the wrong baby.
+  useEffect(() => {
+    setPhase('idle');
+    setActiveSide(null);
+    setElapsed(0);
+    setSideDuration({ left: 0, right: 0 });
+    setPauseAccumulated(0);
+    setStartTime(null);
+    setResumeTime(null);
+    setAmountLeft('');
+    setAmountRight('');
+  }, [babyId]);
 
   useEffect(() => {
     if (phase === 'timing' && resumeTime != null) {
@@ -43,6 +79,9 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
     setPauseAccumulated(0);
     setResumeTime(Date.now());
     setElapsed(0);
+    setSideDuration({ left: 0, right: 0 });
+    setAmountLeft('');
+    setAmountRight('');
     setPhase('timing');
   };
 
@@ -59,7 +98,11 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
 
   const handleSwitch = () => {
     if (!activeSide || activeSide === 'both') return;
+    setSideDuration(prev => ({ ...prev, [activeSide]: prev[activeSide] + elapsed }));
     setActiveSide(activeSide === 'left' ? 'right' : 'left');
+    setPauseAccumulated(0);
+    setResumeTime(Date.now());
+    setElapsed(0);
   };
 
   const submitPump = useCallback(async (pumpAction: string) => {
@@ -68,7 +111,23 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
     try {
       const authToken = localStorage.getItem('authToken');
       const endTime = new Date();
-      const durationMinutes = Math.max(1, Math.round(elapsed / 60));
+      const totalElapsed = sideDuration.left + sideDuration.right + elapsed;
+      const durationMinutes = Math.max(1, Math.round(totalElapsed / 60));
+      const leftVal = amountLeft.trim() !== '' ? parseFloat(amountLeft) : undefined;
+      const rightVal = amountRight.trim() !== '' ? parseFloat(amountRight) : undefined;
+      const hasLeft = leftVal !== undefined && !isNaN(leftVal);
+      const hasRight = rightVal !== undefined && !isNaN(rightVal);
+
+      const payload: Record<string, unknown> = {
+        babyId,
+        startTime: toUTCString(startTime),
+        endTime: toUTCString(endTime),
+        duration: durationMinutes,
+        pumpAction,
+      };
+      if (hasLeft) payload.leftAmount = leftVal;
+      if (hasRight) payload.rightAmount = rightVal;
+      if (hasLeft || hasRight) payload.unitAbbr = defaultUnit;
 
       const res = await fetch('/api/pump-log', {
         method: 'POST',
@@ -76,29 +135,23 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
           'Content-Type': 'application/json',
           Authorization: authToken ? `Bearer ${authToken}` : '',
         },
-        body: JSON.stringify({
-          babyId,
-          startTime: toUTCString(startTime),
-          endTime: toUTCString(endTime),
-          duration: durationMinutes,
-          pumpAction,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
-        const actionLabels: Record<string, string> = {
-          STORED: t('Stored'),
-          FED: t('Fed'),
-          DISCARDED: t('Discarded'),
+        const pumpNoteLabels: PumpNoteLabels = {
+          left: t('Left'), right: t('Right'), both: t('Both'),
+          stored: t('Stored'), fed: t('Fed'), discarded: t('Discarded'),
         };
-        const sideLabelsMap: Record<PumpSide, string> = {
-          both: t('Both'),
-          left: t('Left'),
-          right: t('Right'),
-        };
-        const action = actionLabels[pumpAction] || pumpAction;
-        const side = sideLabelsMap[activeSide] || activeSide;
-        onLog('pump', [side, formatMMSS(elapsed), action].join(' — '));
+        const note = formatPumpNote({
+          side: activeSide,
+          leftAmount: hasLeft ? leftVal : null,
+          rightAmount: hasRight ? rightVal : null,
+          unitAbbr: defaultUnit,
+          durationSeconds: totalElapsed,
+          action: pumpAction,
+        }, pumpNoteLabels);
+        onLog('pump', note);
         if (data.data?.id) {
           const logId = data.data.id;
           onUndoable({
@@ -118,8 +171,11 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
       setResumeTime(null);
       setPauseAccumulated(0);
       setElapsed(0);
+      setSideDuration({ left: 0, right: 0 });
+      setAmountLeft('');
+      setAmountRight('');
     }
-  }, [babyId, startTime, activeSide, elapsed, toUTCString, onLog, onUndoable, submitting, t]);
+  }, [babyId, startTime, activeSide, elapsed, sideDuration, amountLeft, amountRight, defaultUnit, toUTCString, onLog, onUndoable, submitting, t]);
 
   const handleStop = () => {
     if (enableBreastMilkTracking === false) {
@@ -136,12 +192,26 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
   };
 
   const canSwitch = activeSide === 'left' || activeSide === 'right';
+  // Total across every segment/side so far — sideDuration holds completed segments
+  // (folded in on switch), `elapsed` is whichever side is currently live.
+  const totalElapsed = sideDuration.left + sideDuration.right + elapsed;
 
   let statusText: string | null = null;
   let buttons: ActionButton[] = [];
+  let amountPrompt: AmountPrompt | null = null;
 
   if (phase === 'selecting_action') {
-    statusText = `${formatMMSS(elapsed)} — ${t('Select Action')}`;
+    statusText = `${formatMMSS(totalElapsed)} — ${t('Select Action')}`;
+    const unit = defaultUnit.toLowerCase();
+    // Show a field for every side that was actually pumped this session — not just
+    // the side active at Stop — so switching left/right mid-session still lets you
+    // enter an amount for both instead of silently dropping the finished side.
+    const leftUsed = activeSide === 'both' || activeSide === 'left' || sideDuration.left > 0;
+    const rightUsed = activeSide === 'both' || activeSide === 'right' || sideDuration.right > 0;
+    const fields = [];
+    if (leftUsed) fields.push({ key: 'left', label: t('Left'), value: amountLeft, onChange: setAmountLeft, unit });
+    if (rightUsed) fields.push({ key: 'right', label: t('Right'), value: amountRight, onChange: setAmountRight, unit });
+    amountPrompt = { fields };
     buttons = [
       { key: 'stored', label: t('Stored'), onClick: () => submitPump('STORED'), disabled: submitting },
       { key: 'fed', label: t('Fed'), onClick: () => submitPump('FED'), disabled: submitting },
@@ -149,7 +219,17 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
     ];
   } else if ((phase === 'timing' || phase === 'paused') && activeSide) {
     const isPaused = phase === 'paused';
-    const sideTimer = `${sideLabels[activeSide]}: ${formatMMSS(elapsed)}`;
+    let sideTimer: string;
+    if (activeSide === 'both') {
+      sideTimer = `${sideLabels.both}: ${formatMMSS(elapsed)}`;
+    } else {
+      const other = activeSide === 'left' ? 'right' : 'left';
+      const activeTotal = sideDuration[activeSide] + elapsed;
+      const otherTotal = sideDuration[other];
+      const shortOtherLabel = other === 'left' ? t('Left') : t('Right');
+      sideTimer = `${sideLabels[activeSide]}: ${formatMMSS(activeTotal)}`;
+      if (otherTotal > 0) sideTimer += ` (${shortOtherLabel}: ${formatMMSS(otherTotal)})`;
+    }
     statusText = isPaused ? `${t('Paused')} · ${sideTimer}` : sideTimer;
     if (canSwitch) {
       buttons.push({ key: 'switch', label: t('Switch'), onClick: handleSwitch });
@@ -159,7 +239,7 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
     } else {
       buttons.push({ key: 'pause', label: t('Pause'), onClick: handlePause });
     }
-    buttons.push({ key: 'stop', label: t('Stop'), onClick: handleStop, emphasized: true });
+    buttons.push({ key: 'stop', label: t('Stop'), onClick: handleStop, emphasized: true, keepOpen: enableBreastMilkTracking !== false });
   } else {
     buttons = [
       { key: 'startLeft', label: t('Start Left'), onClick: () => handleStart('left') },
@@ -174,6 +254,8 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
     label: t('Pump'),
     statusText,
     active: phase === 'timing' || phase === 'paused',
+    question: phase === 'selecting_action',
+    amountPrompt,
     buttons,
   };
 }

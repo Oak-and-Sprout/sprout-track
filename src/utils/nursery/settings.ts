@@ -10,11 +10,12 @@ export interface NurserySettings {
   iconShape: 'circle' | 'square'; iconColor: string | null;
   acts: { feed: boolean; pump: boolean; diaper: boolean; sleep: boolean };
   ambient: {
-    pattern: string; auroraRange: number; waveMotion: number;
+    pattern: string; auroraRange: number; waveMotion: number; rock: number;
     bubbles: { count: number; min: number; max: number };
     rot: number; move: number; size: number;
   };
   starlit: { density: number; aura: boolean };
+  sleep: { locations: string[] };
   tapestry: {
     backdrop: string; primary: string | null; accent: string | null;
     palette: 'boys' | 'girls'; base: string;
@@ -62,13 +63,15 @@ export const NURSERY_DEFAULTS: NurserySettings = {
   ambient: {
     pattern: 'aurora',
     auroraRange: 50,
-    waveMotion: 40,
+    waveMotion: 0,
+    rock: 50,
     bubbles: { count: 24, min: 10, max: 48 },
     rot: 20,
     move: 0,
     size: 40,
   },
   starlit: { density: 200, aura: true },
+  sleep: { locations: ['Crib', 'Contact'] },
   tapestry: {
     backdrop: 'vstripe',
     primary: 'teddy',
@@ -151,6 +154,15 @@ function normalizeBackdrop(v: unknown): string {
   return NURSERY_DEFAULTS.tapestry.backdrop;
 }
 
+function normalizeSleepLocations(v: unknown): string[] {
+  if (Array.isArray(v)) {
+    const names = v.filter((n): n is string => typeof n === 'string' && n.trim() !== '');
+    const deduped = Array.from(new Set(names)).slice(0, 20);
+    if (deduped.length > 0) return deduped;
+  }
+  return NURSERY_DEFAULTS.sleep.locations;
+}
+
 function normalizeTapestryColors(v: unknown, palette: 'boys' | 'girls'): [string, string, string, string, string] {
   if (Array.isArray(v) && v.length === 5) {
     var ok = true;
@@ -208,6 +220,7 @@ export function normalizeNurserySettings(raw: unknown): NurserySettings {
   const rawAmbient = isPlainObject(raw.ambient) ? raw.ambient : {};
   const rawBubbles = isPlainObject(rawAmbient.bubbles) ? rawAmbient.bubbles : {};
   const rawStarlit = isPlainObject(raw.starlit) ? raw.starlit : {};
+  const rawSleep = isPlainObject(raw.sleep) ? raw.sleep : {};
   const rawTapestry = isPlainObject(raw.tapestry) ? raw.tapestry : {};
   const rawPhoto = isPlainObject(raw.photo) ? raw.photo : {};
 
@@ -237,6 +250,7 @@ export function normalizeNurserySettings(raw: unknown): NurserySettings {
       pattern: normalizeAmbientPattern(rawAmbient.pattern),
       auroraRange: clamp(rawAmbient.auroraRange, 0, 100, NURSERY_DEFAULTS.ambient.auroraRange),
       waveMotion: clamp(rawAmbient.waveMotion, 0, 100, NURSERY_DEFAULTS.ambient.waveMotion),
+      rock: clamp(rawAmbient.rock, 0, 100, NURSERY_DEFAULTS.ambient.rock),
       bubbles: { count: bubbleCount, min: bubbleMin, max: bubbleMax },
       rot: clamp(rawAmbient.rot, 0, 100, NURSERY_DEFAULTS.ambient.rot),
       move: clamp(rawAmbient.move, 0, 100, NURSERY_DEFAULTS.ambient.move),
@@ -245,6 +259,9 @@ export function normalizeNurserySettings(raw: unknown): NurserySettings {
     starlit: {
       density: clamp(rawStarlit.density, 30, 400, NURSERY_DEFAULTS.starlit.density),
       aura: boolOrDefault(rawStarlit.aura, NURSERY_DEFAULTS.starlit.aura),
+    },
+    sleep: {
+      locations: normalizeSleepLocations(rawSleep.locations),
     },
     tapestry: {
       backdrop: normalizeBackdrop(rawTapestry.backdrop),

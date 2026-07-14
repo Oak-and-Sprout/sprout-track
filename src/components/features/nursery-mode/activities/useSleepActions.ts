@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
 import { ActivityHookArgs, ActivityView, ActionButton, formatHMMSS, undoDeleteLog } from './types';
 
-// Intentional nursery-mode subset of DEFAULT_SLEEP_LOCATIONS (src/constants/sleepLocations.ts)
-const LOCATIONS = ['Crib', 'Contact'];
+// Fallback when no nursery setting is configured yet — matches NURSERY_DEFAULTS.sleep.locations.
+const DEFAULT_LOCATIONS = ['Crib', 'Contact'];
 
 type SleepPhase = 'awake' | 'selecting_location' | 'sleeping';
 
@@ -13,7 +13,8 @@ type SleepPhase = 'awake' | 'selecting_location' | 'sleeping';
  * Sleep activity state machine — transplanted 1:1 from SleepTile.tsx.
  * POST start captures id; PUT ?id= endTime on wake; checks ongoing sleep on mount.
  */
-export function useSleepActions({ babyId, toUTCString, onLog, onUndoable }: ActivityHookArgs): ActivityView {
+export function useSleepActions({ babyId, toUTCString, onLog, onUndoable, sleepLocations }: ActivityHookArgs): ActivityView {
+  const LOCATIONS = sleepLocations && sleepLocations.length > 0 ? sleepLocations : DEFAULT_LOCATIONS;
   const { t } = useLocalization();
   const [phase, setPhase] = useState<SleepPhase>('awake');
   const [activeSleepId, setActiveSleepId] = useState<string | null>(null);
@@ -29,18 +30,28 @@ export function useSleepActions({ babyId, toUTCString, onLog, onUndoable }: Acti
     const headers = { Authorization: authToken ? `Bearer ${authToken}` : '' };
 
     const checkOngoingSleep = async () => {
+      let ongoing: { id: string; startTime: string } | null = null;
       try {
         const res = await fetch(`/api/sleep-log?babyId=${babyId}`, { headers });
         const data = await res.json();
         if (data.success && data.data) {
-          const ongoing = data.data.find((s: any) => !s.endTime);
-          if (ongoing) {
-            setActiveSleepId(ongoing.id);
-            setSleepStart(new Date(ongoing.startTime));
-            setPhase('sleeping');
-          }
+          ongoing = data.data.find((s: any) => !s.endTime) || null;
         }
-      } catch { /* ignore */ }
+      } catch { /* fall through to reset below */ }
+
+      // Always resolve to a definite state for this baby — otherwise switching from
+      // a baby with an active sleep to one without leaves the previous baby's timer
+      // showing (phase never gets reset back to 'awake').
+      if (ongoing) {
+        setActiveSleepId(ongoing.id);
+        setSleepStart(new Date(ongoing.startTime));
+        setPhase('sleeping');
+      } else {
+        setActiveSleepId(null);
+        setSleepStart(null);
+        setElapsed(0);
+        setPhase('awake');
+      }
     };
 
     checkOngoingSleep();
@@ -186,7 +197,7 @@ export function useSleepActions({ babyId, toUTCString, onLog, onUndoable }: Acti
     }));
   } else {
     buttons = [
-      { key: 'startSleep', label: t('Start Sleep'), onClick: () => setPhase('selecting_location'), wide: true },
+      { key: 'startSleep', label: t('Start Sleep'), onClick: () => setPhase('selecting_location'), wide: true, keepOpen: true },
     ];
   }
 
@@ -196,6 +207,8 @@ export function useSleepActions({ babyId, toUTCString, onLog, onUndoable }: Acti
     label: t('Sleep'),
     statusText,
     active: phase === 'sleeping',
+    question: phase === 'selecting_location',
+    buttonsWrap: phase === 'selecting_location',
     buttons,
   };
 }

@@ -13,9 +13,20 @@ export interface AmbientSceneProps {
   hue: number;
 }
 
-/** Layered wave SVG data-URI. Ported from nursery.jsx:219. */
-const wavesUri = (h: number): string => {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 50 C22 40 38 60 55 50 S86 40 100 50 L100 100 0 100Z' fill='hsl(${h},40%,44%)'/><path d='M0 63 C22 54 40 74 56 63 S86 54 100 63 L100 100 0 100Z' fill='hsl(${(h + 18) % 360},42%,38%)'/><path d='M0 77 C24 69 40 88 58 77 S86 69 100 77 L100 100 0 100Z' fill='hsl(${(h + 34) % 360},44%,31%)'/></svg>`;
+/**
+ * The 3 wave bands, back-to-front. Each renders as its own layer (rather than
+ * one flattened SVG) so they can drift at different speeds/amplitudes for
+ * parallax, and be phase-staggered by the Rock setting for a peak-offset look.
+ * Paths/colors ported from nursery.jsx:219.
+ */
+const WAVE_LAYERS = [
+  { key: 'back', path: 'M0 50 C22 40 38 60 55 50 S86 40 100 50 L100 100 0 100Z', hueOffset: 0, sat: 40, light: 44, ampMult: 0.65, durMult: 1.5, phaseFrac: 0 },
+  { key: 'mid', path: 'M0 63 C22 54 40 74 56 63 S86 54 100 63 L100 100 0 100Z', hueOffset: 18, sat: 42, light: 38, ampMult: 1, durMult: 1, phaseFrac: 0.33 },
+  { key: 'front', path: 'M0 77 C24 69 40 88 58 77 S86 69 100 77 L100 100 0 100Z', hueOffset: 34, sat: 44, light: 31, ampMult: 1.35, durMult: 0.72, phaseFrac: 0.66 },
+] as const;
+
+const waveLayerUri = (h: number, layer: (typeof WAVE_LAYERS)[number]): string => {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='${layer.path}' fill='hsl(${(h + layer.hueOffset) % 360},${layer.sat}%,${layer.light}%)'/></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 };
 
@@ -28,7 +39,7 @@ const bubblesPatternLayer = (h: number): string =>
  * floating sprite outlines. Ported from nursery.jsx:389-403 (Background component).
  */
 export function AmbientScene({ ambient, hue }: AmbientSceneProps) {
-  const { pattern, auroraRange, waveMotion, bubbles: bubbleCfg, rot, move, size } = ambient;
+  const { pattern, auroraRange, waveMotion, rock, bubbles: bubbleCfg, rot, move, size } = ambient;
 
   const spriteSetId = pattern.indexOf('sprite:') === 0 ? pattern.slice(7) : null;
   // Debounced: outline-tracing is expensive (canvas rasterize + edge trace) and
@@ -82,17 +93,23 @@ export function AmbientScene({ ambient, hue }: AmbientSceneProps) {
   return (
     <>
       <div className="nursery-pattern-layer" style={{ background: patternLayerBg }} />
-      {pattern === 'waves' && (
-        <div
-          className={'nursery-waves-layer' + (waveMotion > 0 ? ' anim' : '')}
-          style={{
-            backgroundImage: wavesUri(hue),
-            '--wamp': (waveMotion * 0.045).toFixed(2) + 'deg',
-            '--wdx': Math.round(waveMotion * 1.4) + 'px',
-            '--wdur': (26 - waveMotion * 0.16).toFixed(1) + 's',
-          } as CSSProperties}
-        />
-      )}
+      {pattern === 'waves' && WAVE_LAYERS.map(layer => {
+        const dur = (26 - waveMotion * 0.16) * layer.durMult;
+        const delay = -(rock / 100) * dur * layer.phaseFrac;
+        return (
+          <div
+            key={layer.key}
+            className={'nursery-waves-layer ' + layer.key + (waveMotion > 0 ? ' anim' : '')}
+            style={{
+              backgroundImage: waveLayerUri(hue, layer),
+              '--wamp': (waveMotion * 0.045 * layer.ampMult).toFixed(2) + 'deg',
+              '--wdx': Math.round(waveMotion * 1.4 * layer.ampMult) + 'px',
+              '--wdur': dur.toFixed(1) + 's',
+              '--wdelay': delay.toFixed(1) + 's',
+            } as CSSProperties}
+          />
+        );
+      })}
       {spriteSetId && sprites && outlineItems.length > 0 && (
         <div className="nursery-motifs">
           {outlineItems.map((it, i) => {

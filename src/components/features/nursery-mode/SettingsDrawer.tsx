@@ -1,8 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactElement } from 'react';
 import { useLocalization } from '@/src/context/localization';
+import { SleepLocationSummary } from '@/app/api/types';
+import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
 import {
   NurserySettings,
   NurseryScene,
@@ -125,11 +127,35 @@ export function SettingsDrawer({
   // first time (PRD §5.3) — not after the caretaker has deliberately cleared them.
   const objectsTouchedRef = useRef(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [sleepLocationOptions, setSleepLocationOptions] = useState<string[]>([...DEFAULT_SLEEP_LOCATIONS]);
+
+  // Family's sleep locations (defaults + custom, minus hidden) — same source SleepForm uses.
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const res = await fetch('/api/sleep-locations', { headers: { Authorization: authToken ? `Bearer ${authToken}` : '' } });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          const names = (data.data as SleepLocationSummary[]).filter(l => !l.hidden).map(l => l.name);
+          if (names.length > 0) setSleepLocationOptions(names);
+        }
+      } catch { /* keep defaults */ }
+    };
+    fetchLocations();
+  }, []);
 
   if (!open) return null;
 
   const tapestry = settings.tapestry;
   const ambient = settings.ambient;
+
+  const toggleSleepLocation = (name: string) => {
+    const current = settings.sleep.locations;
+    const isOn = current.includes(name);
+    if (isOn && current.length <= 1) return; // always keep at least one selected
+    updateSettings({ sleep: { locations: isOn ? current.filter(l => l !== name) : [...current, name] } });
+  };
 
   const handleBackdropSelect = (id: string) => {
     if (tapestry.primary === null && tapestry.accent === null && !objectsTouchedRef.current) {
@@ -162,6 +188,44 @@ export function SettingsDrawer({
         </div>
         <div className="nursery-dw-b">
 
+          {/* Wake lock / fullscreen */}
+          <div className="nursery-sect">
+            <button
+              type="button"
+              className={'nursery-togcard' + (wakeLockActive ? ' on' : '')}
+              onClick={onToggleWakeLock}
+              disabled={!wakeLockSupported}
+              style={wakeLockSupported ? undefined : { opacity: 0.55, cursor: 'default' }}
+            >
+              <div className="k">{t('Screen wake lock')}</div>
+              <div className="v">
+                {!wakeLockSupported
+                  ? t('Wake lock not supported')
+                  : wakeLockActive
+                    ? t('Active — screen will stay on')
+                    : t('Off — screen may sleep')}
+              </div>
+            </button>
+            {fullscreenSupported && (
+              <button type="button" className={'nursery-togcard' + (fullscreenActive ? ' on' : '')} onClick={onToggleFullscreen}>
+                <div className="k">{t('Fullscreen')}</div>
+                <div className="v">{fullscreenActive ? t('Active — immersive') : t('Inactive — tap to enter')}</div>
+              </button>
+            )}
+          </div>
+
+          {/* Layout */}
+          <div className="nursery-sect">
+            <div className="nursery-slabel">{t('Layout')}</div>
+            <div className="nursery-seg">
+              {(['cards', 'tiles'] as NurseryLayout[]).map(v => (
+                <button key={v} type="button" className={settings.layout === v ? 'on' : ''} onClick={() => updateSettings({ layout: v })}>
+                  {t(v === 'cards' ? 'Cards' : 'Big Tiles')}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Scene */}
           <div className="nursery-sect">
             <div className="nursery-slabel">{t('Scene')}</div>
@@ -180,18 +244,6 @@ export function SettingsDrawer({
                     </div>
                   )}
                   <div className="nm">{t(labelKey)}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Layout */}
-          <div className="nursery-sect">
-            <div className="nursery-slabel">{t('Layout')}</div>
-            <div className="nursery-seg">
-              {(['cards', 'tiles'] as NurseryLayout[]).map(v => (
-                <button key={v} type="button" className={settings.layout === v ? 'on' : ''} onClick={() => updateSettings({ layout: v })}>
-                  {t(v === 'cards' ? 'Cards' : 'Big Tiles')}
                 </button>
               ))}
             </div>
@@ -247,6 +299,15 @@ export function SettingsDrawer({
                     onChange={e => updateSettings({ ambient: { ...ambient, waveMotion: Number(e.target.value) } })}
                   />
                   <div className="nursery-sval">{ambient.waveMotion === 0 ? t('Still') : `${ambient.waveMotion}%`}</div>
+
+                  <div className="nursery-slabel" style={{ marginTop: 14 }}>{t('Rock')}</div>
+                  <input
+                    className="nursery-srange" style={NEUTRAL_TRACK}
+                    type="range" min={0} max={100} value={ambient.rock}
+                    aria-label={t('Rock')}
+                    onChange={e => updateSettings({ ambient: { ...ambient, rock: Number(e.target.value) } })}
+                  />
+                  <div className="nursery-sval">{ambient.rock === 0 ? t('Flat') : `${ambient.rock}%`}</div>
                 </>
               )}
 
@@ -489,32 +550,6 @@ export function SettingsDrawer({
             </div>
           )}
 
-          {/* Wake lock / fullscreen */}
-          <div className="nursery-sect">
-            <button
-              type="button"
-              className={'nursery-togcard' + (wakeLockActive ? ' on' : '')}
-              onClick={onToggleWakeLock}
-              disabled={!wakeLockSupported}
-              style={wakeLockSupported ? undefined : { opacity: 0.55, cursor: 'default' }}
-            >
-              <div className="k">{t('Screen wake lock')}</div>
-              <div className="v">
-                {!wakeLockSupported
-                  ? t('Wake lock not supported')
-                  : wakeLockActive
-                    ? t('Active — screen will stay on')
-                    : t('Off — screen may sleep')}
-              </div>
-            </button>
-            {fullscreenSupported && (
-              <button type="button" className={'nursery-togcard' + (fullscreenActive ? ' on' : '')} onClick={onToggleFullscreen}>
-                <div className="k">{t('Fullscreen')}</div>
-                <div className="v">{fullscreenActive ? t('Active — immersive') : t('Inactive — tap to enter')}</div>
-              </button>
-            )}
-          </div>
-
           {/* Background hue / dim / saturation */}
           <div className="nursery-sect">
             <div className="nursery-slabel">{t('Background hue')}</div>
@@ -601,6 +636,28 @@ export function SettingsDrawer({
               </div>
             ))}
           </div>
+
+          {/* Sleep locations */}
+          {settings.acts.sleep && (
+            <div className="nursery-sect">
+              <div className="nursery-slabel">{t('Sleep Locations')}</div>
+              {sleepLocationOptions.map(name => {
+                const on = settings.sleep.locations.includes(name);
+                return (
+                  <div key={name} className="nursery-trow">
+                    <span className="tn">{t(name)}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span className={'nursery-tstate' + (on ? ' on' : '')}>{on ? t('ON') : t('OFF')}</span>
+                      <button
+                        type="button" className={'nursery-sw-toggle' + (on ? ' on' : '')}
+                        onClick={() => toggleSleepLocation(name)}
+                      />
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
         </div>
       </div>

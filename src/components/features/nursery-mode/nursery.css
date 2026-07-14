@@ -43,7 +43,7 @@
 .nursery-pattern-layer { position: absolute; inset: 0; }
 .nursery-waves-layer { position: absolute; left: -14%; right: -14%; bottom: -5%; top: 0; background-repeat: no-repeat; background-position: bottom; background-size: cover; transform-origin: 50% 100%; }
 @media (prefers-reduced-motion: no-preference) {
-  .nursery-waves-layer.anim { animation: nursery-rock var(--wdur, 18s) ease-in-out infinite alternate; }
+  .nursery-waves-layer.anim { animation: nursery-rock var(--wdur, 18s) ease-in-out var(--wdelay, 0s) infinite alternate; }
 }
 @keyframes nursery-rock {
   from { transform: translateX(calc(var(--wdx, 40px) * -1)) rotate(calc(var(--wamp, 1.5deg) * -1)); }
@@ -93,15 +93,19 @@
 .nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
 .nursery-ghost:hover { color: #fff; }
 .nursery-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(18px, 3.4vh, 52px); width: 100%; min-height: 0; }
-.nursery-clockwrap { text-align: center; }
-.nursery-clock { display: flex; align-items: baseline; justify-content: center; gap: .5ch; flex-wrap: wrap; }
-.nursery-clock .time { font-weight: 400; font-size: clamp(56px, min(11.5vw, 15vh), 168px); line-height: .9; letter-spacing: -.01em; text-shadow: 0 2px 40px rgba(0,0,0,.25); }
-.nursery-clock .name { font-style: italic; font-weight: 400; font-size: clamp(22px, min(3.4vw, 4.4vh), 46px); opacity: .9; background: none; border: none; color: inherit; padding: 0; }
+.nursery-clockwrap { text-align: center; min-height: 0; }
+.nursery-clock { display: flex; align-items: baseline; justify-content: center; }
+/* vh-capped so a short viewport shrinks the clock rather than pushing the activity cards off screen */
+.nursery-clock .time { font-weight: 400; font-size: clamp(48px, min(11.5vw, 12vh), 168px); line-height: .9; letter-spacing: -.01em; text-shadow: 0 2px 40px rgba(0,0,0,.25); }
+.nursery-namerow { margin-top: clamp(4px, 1vh, 10px); }
+.nursery-namerow .name { font-style: italic; font-weight: 400; font-size: clamp(22px, min(3.4vw, 4.4vh), 46px); opacity: .9; background: none; border: none; color: inherit; padding: 0; }
 .nursery-date { margin-top: clamp(8px, 1.4vh, 20px); font-size: clamp(13px, 1.25vw, 18px); font-weight: 600; letter-spacing: .28em; text-transform: uppercase; color: rgba(255,255,255,.62); }
 
 /* activity grid (cards) */
 .nursery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 1.6vw, 26px); width: min(1080px, 92vw); }
-.nursery-card { border-radius: 22px; padding: clamp(18px, 1.7vw, 28px); border: 1px solid rgba(255,255,255,var(--cardline, .14)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,var(--cardbg, .08)); box-shadow: 0 8px 40px rgba(0,0,0,.18); }
+.nursery-card { --fs-scale: 1; border-radius: 22px; padding: clamp(18px, 1.7vw, 28px); border: 1px solid rgba(255,255,255,var(--cardline, .14)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,var(--cardbg, .08)); box-shadow: 0 8px 40px rgba(0,0,0,.18); }
+/* a card asking a question (pump amount/action, sleep location) takes over the whole grid — animated via framer-motion's layout prop on the component; button text scales up 1.5x via --fs-scale */
+.nursery-card.question { --fs-scale: 1.5; grid-column: 1 / -1; grid-row: 1 / -1; min-height: clamp(440px, 58vh, 620px); z-index: 10; display: flex; flex-direction: column; justify-content: center; }
 .nursery-card-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: clamp(12px, 1.4vw, 20px); }
 .nursery-card-h .lhs { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .nursery-card-h h3 { font-size: clamp(20px, 1.9vw, 30px); font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
@@ -110,11 +114,39 @@
 .nursery-card-meta .d { font-size: clamp(11px, 1vw, 14px); color: rgba(255,255,255,.6); margin-top: 2px; white-space: nowrap; }
 /* Active-timer status ("Right Side: 3:57") — same serif as .t but sized to use the header space. */
 .nursery-card-meta .status { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(24px, 2.3vw, 38px); line-height: 1.05; color: rgba(255,255,255,.95); white-space: normal; font-variant-numeric: tabular-nums; }
-.nursery-card-actions { display: flex; gap: clamp(8px, .8vw, 12px); }
-.nursery-abtn { flex: 1; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(12px, 1.15vw, 18px) 8px; font-size: clamp(13px, 1.2vw, 17px); font-weight: 500; transition: transform .1s, background .15s; white-space: nowrap; }
+.nursery-amount-row { display: flex; gap: clamp(6px, .8vw, 12px); margin-bottom: clamp(8px, .8vw, 12px); }
+.nursery-amount-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: clamp(11px, 1vw, 13px); color: rgba(255,255,255,.7); }
+.nursery-amount-field .ai { display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); border-radius: 12px; padding: 8px 6px 8px 10px; min-width: 0; }
+.nursery-amount-field input { flex: 1; min-width: 0; background: none; border: none; color: #fff; font-size: clamp(14px, 1.3vw, 18px); font-variant-numeric: tabular-nums; }
+.nursery-amount-field input:focus { outline: none; }
+.nursery-amount-field .au { flex-shrink: 0; white-space: nowrap; color: rgba(255,255,255,.6); font-size: clamp(11px, 1vw, 13px); }
+.nursery-card-actions { display: flex; flex-wrap: nowrap; gap: clamp(8px, .8vw, 12px); }
+.nursery-card-actions.wrap { flex-wrap: wrap; justify-content: center; }
+.nursery-abtn { flex: 1; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(12px, 1.15vw, 18px) 8px; font-size: calc(clamp(13px, 1.2vw, 17px) * var(--fs-scale)); font-weight: 500; transition: transform .1s, background .15s; white-space: nowrap; }
 .nursery-abtn:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .08)); }
 .nursery-abtn:active { transform: scale(.96); }
 .nursery-abtn.wide { flex: none; width: 100%; }
+.nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
+
+/* active-session glow — a ring floated off the card, colored to match the icon */
+.nursery-card.active, .nursery-tile.active { position: relative; }
+.nursery-card.active::after, .nursery-tile.active::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 4px solid var(--active-glow, #fff);
+  border-radius: inherit;
+  box-shadow: 0 0 24px 4px var(--active-glow, #fff);
+  opacity: .65;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-card.active::after, .nursery-tile.active::after { animation: nursery-activeGlow 2.4s ease-in-out infinite; }
+}
+@keyframes nursery-activeGlow {
+  0%, 100% { opacity: .5; }
+  50% { opacity: .8; }
+}
 
 /* icon badge */
 .nursery-badge { flex-shrink: 0; display: grid; place-items: center; color: var(--ifg, #fff); }
@@ -124,14 +156,30 @@
 /* big tile variant */
 .nursery-tilegrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(16px, 1.8vw, 30px); width: min(1180px, 94vw); }
 .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: min(560px, 52vh); }
-.nursery-tile { position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(12px, 1.4vw, 22px); border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 8px 40px rgba(0,0,0,.2); transition: transform .12s, background .15s; color: #fff; }
+.nursery-tile { position: relative; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 8px 40px rgba(0,0,0,.2); color: #fff; }
+.nursery-tile:not(.with-qa) { aspect-ratio: 1; }
 .nursery-tile.circle { border-radius: 50%; }
 .nursery-tile.square { border-radius: 22%; }
-.nursery-tile:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .07)); }
-.nursery-tile:active { transform: scale(.97); }
+/* .tmain is the actual clickable surface (opens the modal); the outer .nursery-tile
+   is a plain div so quick-action buttons can sit beside it without nesting <button>s. */
+.nursery-tile .tmain { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(12px, 1.4vw, 22px); width: 100%; height: 100%; border-radius: inherit; transition: transform .12s, background .15s; }
+.nursery-tile .tmain:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .07)); }
+.nursery-tile .tmain:active { transform: scale(.97); }
 .nursery-tile .tico { color: var(--ifg, #fff); }
 .nursery-tile .tlabel { font-size: clamp(16px, 1.5vw, 24px); font-weight: 600; letter-spacing: .01em; }
 .nursery-tile .tmeta { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(13px, 1.15vw, 18px); color: rgba(255,255,255,.7); margin-top: -6px; }
+
+/* quick actions (feed, while a breastfeed is active) — switch/pause/stop sit as a
+   row of keys inset along the tile's bottom edge, like piano keys, so they're one tap. */
+.nursery-tile.with-qa { display: flex; flex-direction: column; overflow: hidden; }
+.nursery-tile.with-qa .tmain { flex: 1; padding: clamp(14px, 1.6vw, 20px); gap: clamp(8px, 1vw, 14px); }
+.nursery-tile .tqa { display: flex; flex-shrink: 0; }
+.nursery-tqa-btn { flex: 1; display: grid; place-items: center; height: clamp(36px, 4vw, 48px); border: none; border-top: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); color: #fff; border-radius: 0; transition: background .15s; }
+.nursery-tqa-btn:not(:first-child) { border-left: 1px solid rgba(255,255,255,.14); }
+.nursery-tqa-btn:hover { background: rgba(255,255,255,.16); }
+.nursery-tqa-btn:active { background: rgba(255,255,255,.24); }
+.nursery-tqa-btn.emphasized { background: rgba(255,255,255,.16); }
+.nursery-tqa-btn:disabled { opacity: .5; }
 
 .nursery-footer { position: relative; z-index: 2; text-align: center; padding-bottom: clamp(16px, 2.4vh, 34px); }
 .nursery-footer .m { font-size: clamp(11px, 1vw, 14px); font-weight: 600; letter-spacing: .34em; color: rgba(255,255,255,.5); }
@@ -156,13 +204,17 @@
   .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
   .nursery-bg { position: fixed; }
   .nursery-fg { padding: 18px 15px; }
-  .nursery-center { gap: 22px; justify-content: flex-start; padding: 6px 0 26px; }
+  .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 26px; }
   .nursery-grid { grid-template-columns: 1fr; width: 100%; max-width: 520px; gap: 14px; }
   .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
   .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 340px; }
   .nursery-card { padding: 17px; border-radius: 18px; }
-  .nursery-clock .time { font-size: clamp(52px, 17vw, 104px); }
-  .nursery-clock .name { font-size: clamp(20px, 6vw, 34px); }
+  /* vh-capped (not just vw) so the clock actually shrinks on short mobile viewports
+     instead of eating space the activity cards need. */
+  .nursery-clock .time { font-size: clamp(40px, min(15vw, 8vh), 84px); }
+  .nursery-namerow { margin-top: 2px; }
+  .nursery-namerow .name { font-size: clamp(17px, min(5vw, 3vh), 28px); }
+  .nursery-date { margin-top: 4px; }
   .nursery-topbar { gap: 26px; }
   .nursery-drawer { width: 100vw; }
 }

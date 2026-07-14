@@ -9,6 +9,7 @@ import { useWakeLock } from '@/src/hooks/useWakeLock';
 import { useFullscreen } from '@/src/hooks/useFullscreen';
 import { useNurserySettings } from '@/src/hooks/useNurserySettings';
 import { autoIconColor } from '@/src/utils/nursery/colorMath';
+import { formatFeedNote, formatPumpNote } from '@/src/utils/nursery/activityDetail';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { Baby } from '@prisma/client';
 import { ClockBlock } from './ClockBlock';
@@ -45,6 +46,11 @@ export function NurseryModeContainer() {
   const [isLandscape, setIsLandscape] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
   );
+  // Matches nursery.css's mobile breakpoint — on narrow screens, active cards
+  // (a timer running) sort to the top of the single-column cards layout.
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches
+  );
 
   const lastSeenRef = useRef<Record<string, string>>({});
   const fetchActivityRef = useRef<(() => void) | null>(null);
@@ -54,6 +60,15 @@ export function NurseryModeContainer() {
     const mql = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
     setIsLandscape(mql.matches);
     const onChange = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  // Listen for the mobile breakpoint
+  useLayoutEffect(() => {
+    const mql = window.matchMedia('(max-width: 680px)');
+    setIsMobile(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mql.addEventListener('change', onChange);
     return () => mql.removeEventListener('change', onChange);
   }, []);
@@ -146,11 +161,19 @@ export function NurseryModeContainer() {
             const time = new Date(latest.time || latest.startTime)
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
               .toLowerCase();
-            const typeLabels: Record<string, string> = {
-              BREAST: 'Breast', BOTTLE: 'Bottle', FOOD: 'Food',
-              FORMULA: 'Formula', PUMPED_BOTTLE: 'Pumped Bottle',
-            };
-            newLogs.feed = { last: time, note: t(typeLabels[latest.type]) || latest.type };
+            const breastSides = latest.type === 'BREAST' && latest.sessionId
+              ? feedData.data
+                  .filter((f: any) => f.sessionId === latest.sessionId && f.type === 'BREAST')
+                  .map((f: any) => ({ side: f.side, seconds: f.feedDuration || 0 }))
+              : null;
+            const note = formatFeedNote(
+              { type: latest.type, amount: latest.amount, unitAbbr: latest.unitAbbr, food: latest.food, breastSides },
+              {
+                breast: t('Breast'), bottle: t('Bottle'), formula: t('Formula'), pumpedBottle: t('Pumped Bottle'), food: t('Food'),
+                left: t('Left'), right: t('Right'),
+              },
+            );
+            newLogs.feed = { last: time, note };
           }
         }
 
@@ -193,8 +216,17 @@ export function NurseryModeContainer() {
             const time = new Date(latest.startTime)
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
               .toLowerCase();
-            const actionLabels: Record<string, string> = { STORED: 'Stored', FED: 'Fed', DISCARDED: 'Discarded' };
-            newLogs.pump = { last: time, note: t(actionLabels[latest.pumpAction]) || latest.pumpAction };
+            const note = formatPumpNote(
+              {
+                leftAmount: latest.leftAmount, rightAmount: latest.rightAmount, totalAmount: latest.totalAmount,
+                unitAbbr: latest.unitAbbr, durationMinutes: latest.duration, action: latest.pumpAction,
+              },
+              {
+                left: t('Left'), right: t('Right'), both: t('Both'),
+                stored: t('Stored'), fed: t('Fed'), discarded: t('Discarded'),
+              },
+            );
+            newLogs.pump = { last: time, note };
           }
         }
 
@@ -257,7 +289,7 @@ export function NurseryModeContainer() {
   }, [babies, setSelectedBaby]);
 
   // Activity hooks — always called unconditionally (rules of hooks)
-  const hookArgs = { babyId: selectedBaby?.id ?? '', toUTCString, onLog: handleLog, onUndoable: setUndo, enableBreastMilkTracking };
+  const hookArgs = { babyId: selectedBaby?.id ?? '', toUTCString, onLog: handleLog, onUndoable: setUndo, enableBreastMilkTracking, sleepLocations: settings.sleep.locations };
   const feedView = useFeedActions(hookArgs);
   const pumpView = usePumpActions(hookArgs);
   const diaperView = useDiaperActions(hookArgs);
@@ -284,6 +316,12 @@ export function NurseryModeContainer() {
 
   const views = [feedView, pumpView, diaperView, sleepView];
   const visible = views.filter(v => settings.acts[v.id]);
+  const anyQuestion = visible.some(v => v.question);
+  // Single-column mobile layout: surface running timers first instead of a fixed
+  // feed/pump/diaper/sleep order, so an active card isn't buried below a scroll.
+  const cardOrder = isMobile
+    ? [...visible].sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0))
+    : visible;
 
   const activityArea = settings.layout === 'tiles' ? (
     <div className={`nursery-tilegrid${visible.length <= 2 ? ' two' : ''}`}>
@@ -293,8 +331,8 @@ export function NurseryModeContainer() {
     </div>
   ) : (
     <div className="nursery-grid">
-      {visible.map(v => (
-        <ActivityCard key={v.id} view={v} log={logs[v.id] || null} iconColor={iconColor} iconShape={shape} />
+      {cardOrder.map(v => (
+        <ActivityCard key={v.id} view={v} log={logs[v.id] || null} iconColor={iconColor} iconShape={shape} dimmed={anyQuestion && !v.question} />
       ))}
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay } from '@/src/utils/dateFormat';
 import { useLocalization } from '@/src/context/localization';
@@ -63,10 +64,18 @@ export function ClockBlock({ babyName, babies, selectedBabyId, onSelectBaby, com
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
+          gap: '.25em',
           cursor: canSwitch ? 'pointer' : 'default',
         }}
       >
         {babyName}
+        {canSwitch && (
+          <ChevronDown
+            size="0.7em"
+            aria-hidden="true"
+            style={{ opacity: .75, transition: 'transform .15s', transform: switcherOpen ? 'rotate(180deg)' : 'none' }}
+          />
+        )}
       </button>
       {switcherOpen && canSwitch && (
         <>
@@ -152,8 +161,8 @@ export function ClockBlock({ babyName, babies, selectedBabyId, onSelectBaby, com
     <div className="nursery-clockwrap">
       <div className="nursery-clock">
         <span className="nursery-serif time">{time}</span>
-        {nameButton}
       </div>
+      <div className="nursery-namerow">{nameButton}</div>
       <div className="nursery-date">{date}</div>
     </div>
   );

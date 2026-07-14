@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
 import { ActiveBreastFeedResponse } from '@/app/api/types';
+import { formatFeedNote, FeedNoteLabels } from '@/src/utils/nursery/activityDetail';
 import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS, undoDeleteLog } from './types';
 
 type FeedPhase = 'idle' | 'feeding' | 'paused';
@@ -100,6 +101,11 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
     };
   }, [phase, activeFeed]);
 
+  const feedNoteLabels: FeedNoteLabels = {
+    breast: t('Breast'), bottle: t('Bottle'), formula: t('Formula'), pumpedBottle: t('Pumped Bottle'), food: t('Food'),
+    left: t('Left'), right: t('Right'),
+  };
+
   const getAuthHeaders = () => {
     const authToken = localStorage.getItem('authToken');
     return {
@@ -126,7 +132,8 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       });
       const data = await res.json();
       if (data.success) {
-        onLog('feed', `${t('Bottle')}${avgBottleAmount ? ` ${avgBottleAmount} ${defaultUnit.toLowerCase()}` : ''}`);
+        const note = formatFeedNote({ type: 'BOTTLE', amount: avgBottleAmount, unitAbbr: defaultUnit }, feedNoteLabels);
+        onLog('feed', note);
         if (data.data?.id) {
           const logId = data.data.id;
           onUndoable({
@@ -235,10 +242,14 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       });
       const data = await res.json();
       if (data.success) {
-        const parts = [];
-        if (leftTotalStop > 0) parts.push(`L: ${formatMMSS(leftTotalStop)}`);
-        if (rightTotalStop > 0) parts.push(`R: ${formatMMSS(rightTotalStop)}`);
-        onLog('feed', parts.join(' ') || t('Left Breast'));
+        const note = formatFeedNote({
+          type: 'BREAST',
+          breastSides: [
+            { side: 'LEFT', seconds: leftTotalStop },
+            { side: 'RIGHT', seconds: rightTotalStop },
+          ],
+        }, feedNoteLabels);
+        onLog('feed', note);
         // The server created the feed log entries; undo deletes them all.
         const createdIds: string[] = data.data?.feedLogIds || [];
         if (createdIds.length > 0) {
@@ -303,6 +314,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
     label: t('Feed'),
     statusText,
     active: phase !== 'idle',
+    question: false,
     buttons,
   };
 }

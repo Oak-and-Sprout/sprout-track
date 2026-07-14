@@ -13,6 +13,21 @@ export interface ActionButton {
   disabled?: boolean;
   emphasized?: boolean;
   wide?: boolean;
+  /** True when this button only advances to another decision screen (not a final log/action) — BigTile's modal stays open instead of closing. */
+  keepOpen?: boolean;
+}
+
+export interface AmountPromptField {
+  key: string;
+  label: string; // localized, e.g. "Left"
+  value: string;
+  onChange: (value: string) => void;
+  unit: string; // e.g. "oz", shown next to the input
+}
+
+/** Optional amount entry (e.g. pump volume) shown above the action buttons. */
+export interface AmountPrompt {
+  fields: AmountPromptField[];
 }
 
 export interface ActivityView {
@@ -21,7 +36,12 @@ export interface ActivityView {
   label: string; // localized
   statusText: string | null; // active timer line, e.g. "Left Side — 4:12 · L: 4:12 R: 0:00"
   active: boolean; // a timer/session is running
+  /** True while a decision screen is showing (e.g. pump's amount/action step, sleep's location picker) — the card expands to fill the grid in cards layout. */
+  question: boolean;
+  amountPrompt?: AmountPrompt | null;
   buttons: ActionButton[];
+  /** When true, buttons keep their intrinsic size and wrap to new rows instead of shrinking to fit one row (e.g. sleep's location picker, which can have many options). */
+  buttonsWrap?: boolean;
 }
 
 export interface UndoInfo {
@@ -53,6 +73,8 @@ export interface ActivityHookArgs {
   onLog: (tileId: string, note: string) => void;
   onUndoable: (u: UndoInfo) => void; // instant logs only (bottle, diaper)
   enableBreastMilkTracking?: boolean;
+  /** Locations offered by useSleepActions' location picker; defaults to ['Crib', 'Contact']. */
+  sleepLocations?: string[];
 }
 
 /** m:ss — replaces the FeedTile/PumpTile local formatDuration. */

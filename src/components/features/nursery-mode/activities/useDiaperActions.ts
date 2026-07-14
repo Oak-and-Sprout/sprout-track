@@ -57,6 +57,7 @@ export function useDiaperActions({ babyId, toUTCString, onLog, onUndoable }: Act
     label: t('Diaper'),
     statusText: null,
     active: false,
+    question: false,
     buttons: [
       { key: 'wet', label: t('Wet'), onClick: () => submitDiaper('WET'), disabled: submitting },
       { key: 'dirty', label: t('Dirty'), onClick: () => submitDiaper('DIRTY'), disabled: submitting },
