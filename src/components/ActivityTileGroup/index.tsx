@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ActivityTile } from '@/src/components/ui/activity-tile';
 import { StatusBubble } from "@/src/components/ui/status-bubble";
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse, ActivitySettings } from '@/app/api/types';
-import { ArrowDownUp, ChevronDown, ChevronUp, Camera } from 'lucide-react';
+import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
 import './activity-tile-group.css';
@@ -645,16 +645,17 @@ export function ActivityTileGroup({
               title={t('Photo')}
               variant="default"
               isButton={true}
-              icon={<Camera className="h-16 w-16" style={{ color: '#e11d48' }} aria-hidden="true" />}
+              icon={
+                // rounded-full + slight zoom crops the light antialiasing halo
+                // baked into the icon's edge (visible against dark backgrounds)
+                <span className="block h-16 w-16 overflow-hidden rounded-full" aria-hidden="true">
+                  <img src="/photo-192.png" alt="" width={64} height={64} className="h-full w-full scale-[1.06] object-cover" />
+                </span>
+              }
               onClick={() => {
                 updateUnlockTimer();
                 onPhotoClick();
               }}
-            />
-            {/* NEW indicator dot */}
-            <span
-              aria-hidden="true"
-              className="absolute top-0.5 right-0.5 z-10 block h-[11px] w-[11px] rounded-full bg-rose-600 border-2 border-white"
             />
           </div>
         );

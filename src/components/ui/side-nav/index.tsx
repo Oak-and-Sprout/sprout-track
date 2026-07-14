@@ -465,7 +465,6 @@ export const SideNav: React.FC<SideNavProps> = ({
               isActive={currentPath === '/photos'}
               onClick={onNavigate}
               className="side-nav-item"
-              badge={<span className="side-nav-new-pill rounded-full bg-rose-100 px-2 text-[10.5px] font-bold text-rose-600">{t('NEW')}</span>}
             />
           )}
           <SideNavItem

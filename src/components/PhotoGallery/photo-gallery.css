@@ -20,8 +20,20 @@
   }
 }
 
+html.dark .photo-gallery-body {
+  background-color: #1f2937 !important; /* gray-800 - matches other page surfaces */
+}
+
 html.dark .photo-gallery-header {
   background: linear-gradient(to right, #0f766e, #115e59); /* teal-700 -> teal-800 */
+}
+
+html.dark .photo-gallery-tile-caption {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .photo-gallery-tile-date {
+  color: #6b7280; /* gray-500 */
 }
 
 html.dark .photo-gallery-empty-icon {
@@ -102,6 +114,10 @@ html.dark .photo-gallery-lightbox-close {
 }
 
 /* Trash view */
+html.dark .photo-gallery-trash-heading {
+  color: #f1f5f9; /* slate-100 */
+}
+
 html.dark .photo-gallery-trash-hint {
   color: #64748b; /* slate-500 */
 }

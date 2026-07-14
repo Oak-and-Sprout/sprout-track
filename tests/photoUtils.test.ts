@@ -10,6 +10,7 @@ import {
   getVisibleThumbnails,
   formatQuotaLabel,
   countUniquePhotoIds,
+  filterTaggableMilestones,
   MAX_PHOTO_FILE_SIZE,
   TRASH_RETENTION_DAYS,
 } from '@/src/utils/photoUtils';
@@ -131,5 +132,37 @@ describe('countUniquePhotoIds', () => {
   });
   it('empty list returns 0', () => {
     expect(countUniquePhotoIds([])).toBe(0);
+  });
+});
+
+describe('filterTaggableMilestones', () => {
+  const now = new Date('2026-07-13T12:00:00Z');
+  const ms = (id: string, date: string) => ({ id, date });
+
+  it('keeps milestones within ±10 days of now', () => {
+    const list = [ms('past', '2026-07-04T12:00:00Z'), ms('today', '2026-07-13T08:00:00Z'), ms('future', '2026-07-22T12:00:00Z')];
+    expect(filterTaggableMilestones(list, now).map((m) => m.id)).toEqual(['past', 'today', 'future']);
+  });
+  it('drops milestones outside the window on both sides', () => {
+    const list = [ms('too-old', '2026-06-01T00:00:00Z'), ms('in', '2026-07-10T00:00:00Z'), ms('too-far', '2026-08-15T00:00:00Z')];
+    expect(filterTaggableMilestones(list, now).map((m) => m.id)).toEqual(['in']);
+  });
+  it('exact boundary (10 days) is included', () => {
+    expect(filterTaggableMilestones([ms('edge', '2026-07-03T12:00:00Z')], now)).toHaveLength(1);
+    expect(filterTaggableMilestones([ms('edge', '2026-07-23T12:00:00Z')], now)).toHaveLength(1);
+  });
+  it('always keeps the already-selected milestone even outside the window', () => {
+    const list = [ms('old-tag', '2025-01-01T00:00:00Z'), ms('other-old', '2025-01-02T00:00:00Z')];
+    expect(filterTaggableMilestones(list, now, 'old-tag').map((m) => m.id)).toEqual(['old-tag']);
+  });
+  it('drops milestones with invalid dates', () => {
+    expect(filterTaggableMilestones([ms('bad', 'not-a-date')], now)).toHaveLength(0);
+  });
+  it('respects a custom window', () => {
+    const list = [ms('near', '2026-07-12T12:00:00Z'), ms('far', '2026-07-16T12:00:00Z')];
+    expect(filterTaggableMilestones(list, now, undefined, 2).map((m) => m.id)).toEqual(['near']);
+  });
+  it('empty input returns empty', () => {
+    expect(filterTaggableMilestones([], now)).toEqual([]);
   });
 });

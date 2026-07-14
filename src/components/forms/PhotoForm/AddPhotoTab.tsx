@@ -15,6 +15,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, createPhotoLog, fetchPhotoLog, updatePhotoLog, updatePhoto, deletePhotoLog } from '@/src/utils/photoClientApi';
+import { filterTaggableMilestones } from '@/src/utils/photoUtils';
 import { MilestoneResponse, PhotoResponse } from '@/app/api/types';
 
 interface AddPhotoTabProps {
@@ -96,6 +97,13 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
       .then((payload) => setMilestones(payload.success ? payload.data : []))
       .catch(() => setMilestones([]));
   }, [babyId]);
+
+  // Only offer recent milestones (±10 days), but keep an already-tagged
+  // older one visible so editing doesn't silently drop it.
+  const taggableMilestones = useMemo(
+    () => filterTaggableMilestones(milestones, new Date(), milestoneId || undefined),
+    [milestones, milestoneId]
+  );
 
   const handleSave = async () => {
     if (!babyId) return;
@@ -246,7 +254,7 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="null">{t('No milestone')}</SelectItem>
-            {milestones.map((m) => (
+            {taggableMilestones.map((m) => (
               <SelectItem key={m.id} value={m.id}>
                 {m.title}
               </SelectItem>

@@ -201,7 +201,7 @@ export default function PhotoDetail({ isOpen, onClose, photo, onChanged }: Photo
               />
             ) : (
               <>
-                <p className={`flex-1 text-base font-semibold ${caption ? 'text-gray-900' : 'italic text-gray-400'}`}>
+                <p className={`photo-detail-caption flex-1 text-base font-semibold ${caption ? 'text-gray-900' : 'italic text-gray-400'}`}>
                   {caption || t('Untitled photo')}
                 </p>
                 <Button type="button" variant="ghost" size="icon" onClick={startEditCaption} aria-label={t('Edit caption')}>

@@ -74,6 +74,7 @@ export interface TimelineActivityDetailsProps {
   onClose: () => void;
   onDelete: (activity: ActivityType) => void;
   onEdit: (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => void;
+  onPhotoClick?: (photoId: string) => void; // Handler for tapping an attached photo thumbnail
 }
 
 export interface ActivityDetail {

@@ -87,6 +87,27 @@ export function countUniquePhotoIds(items: { photos?: { id: string }[] | undefin
   return ids.size;
 }
 
+export const MILESTONE_TAG_WINDOW_DAYS = 10;
+
+/**
+ * Milestones eligible for tagging on a photo: dated within ±windowDays of
+ * `now`. The already-selected milestone (edit mode) is always included so
+ * an older tag stays visible and isn't silently dropped by the window.
+ */
+export function filterTaggableMilestones<T extends { id: string; date: string | Date }>(
+  milestones: T[],
+  now: Date,
+  selectedId?: string,
+  windowDays: number = MILESTONE_TAG_WINDOW_DAYS
+): T[] {
+  const windowMs = windowDays * MS_PER_DAY;
+  return milestones.filter((milestone) => {
+    if (selectedId && milestone.id === selectedId) return true;
+    const time = new Date(milestone.date).getTime();
+    return !Number.isNaN(time) && Math.abs(time - now.getTime()) <= windowMs;
+  });
+}
+
 export function formatQuotaLabel(usedBytes: number, totalBytes: number): { usedGb: string; totalGb: string; percent: number } {
   const gb = 1024 * 1024 * 1024;
   const fmt = (n: number) => {

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
@@ -93,9 +92,6 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   const { t } = useLocalization();
   const { unitSymbol } = useUnit();
   const { dateFormat } = useTimezone();
-  const router = useRouter();
-  const params = useParams();
-  const slug = params?.slug as string | undefined;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [photosEnabled, setPhotosEnabled] = useState(false);
@@ -648,22 +644,19 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     // Photos Today tile - only shown when the deployment has photos enabled
     if (photosEnabled && photosTodayCount > 0) {
       tiles.push({
-        filter: null,
+        filter: 'photo',
         label: t('Photos Today'),
         value: photosTodayCount.toString(),
         icon: <Camera className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#e11d48]', // rose - matches photo timeline entries
         borderColor: 'border-gray-500',
-        bgActiveColor: 'bg-gray-100',
-        onClick: () => {
-          if (slug) router.push(`/${slug}/photos`);
-        }
+        bgActiveColor: 'bg-gray-100'
       });
     }
 
     return tiles;
-  }, [activities, windowActivities, date, t, photosEnabled, slug, router]);
+  }, [activities, windowActivities, date, t, photosEnabled]);
 
   const formatDateDisplay = (date: Date): string => {
     return formatDateLong(date, dateFormat);

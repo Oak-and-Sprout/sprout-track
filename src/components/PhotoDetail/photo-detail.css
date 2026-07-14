@@ -2,6 +2,14 @@
    directly in index.tsx; dark mode overrides live here via html.dark
    selectors (not Tailwind `dark:` classes) per project convention. */
 
+html.dark .photo-detail-caption {
+  color: #f1f5f9; /* slate-100 */
+}
+
+html.dark .photo-detail-caption.italic {
+  color: #64748b; /* slate-500 */
+}
+
 html.dark .photo-detail-row-label {
   color: #94a3b8; /* slate-400 */
 }

@@ -242,7 +242,7 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
   }, [state.selectedIds, onStateChange, loadPhotos, t]);
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-white photo-gallery-body">
       <div className="flex flex-col gap-3 p-4 text-white photo-gallery-header bg-gradient-to-r from-teal-600 to-teal-700 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold">{t('Photos')}</h1>

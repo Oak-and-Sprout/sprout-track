@@ -396,6 +396,10 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
               return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
             case 'vaccine':
               return 'vaccineName' in activity;
+            case 'photo':
+              // Match what the Photos Today stat counts: standalone photo
+              // logs plus any activity with attached photos
+              return 'photoLogId' in activity || !!(activity as any).photos?.length;
             default:
               return true;
           }
@@ -508,6 +512,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         onClose={() => setSelectedActivity(null)}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        onPhotoClick={handlePhotoClick}
       />
 
       {/* Photo Detail - opened from a timeline thumbnail click */}

@@ -5,3 +5,7 @@ html.dark .photo-form-hint {
 html.dark .photo-library-row:hover {
   background-color: #1e293b;
 }
+
+html.dark .photo-library-caption {
+  color: #e5e7eb; /* gray-200 */
+}

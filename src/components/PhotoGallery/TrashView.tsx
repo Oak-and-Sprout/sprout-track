@@ -110,7 +110,7 @@ export default function TrashView({ babyId, onBack, onChanged }: TrashViewProps)
         <Button type="button" variant="ghost" size="icon" onClick={onBack} aria-label={t('Back')}>
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </Button>
-        <h2 className="text-lg font-bold">{t('Trash')}</h2>
+        <h2 className="text-lg font-bold text-gray-900 photo-gallery-trash-heading">{t('Trash')}</h2>
       </div>
       <p className="mt-1 text-xs text-gray-500 photo-gallery-trash-hint">{t('Items are deleted forever after 30 days.')}</p>
 

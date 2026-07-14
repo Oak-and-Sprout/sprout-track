@@ -58,8 +58,8 @@ function GalleryTile({ photo, selectMode, selected, onToggleSelect, onOpen, onTo
       </button>
       {showCaptions && (
         <div className="mt-1.5">
-          <b className="block truncate text-[13px] font-semibold">{photo.caption || t('Untitled photo')}</b>
-          <i className="text-[11.5px] not-italic text-gray-400">{new Date(photo.takenAt).toLocaleDateString()}</i>
+          <b className="block truncate text-[13px] font-semibold text-gray-900 photo-gallery-tile-caption">{photo.caption || t('Untitled photo')}</b>
+          <i className="text-[11.5px] not-italic text-gray-400 photo-gallery-tile-date">{new Date(photo.takenAt).toLocaleDateString()}</i>
         </div>
       )}
     </div>

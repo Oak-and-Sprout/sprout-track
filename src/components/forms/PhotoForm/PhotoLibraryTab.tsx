@@ -118,7 +118,7 @@ export default function PhotoLibraryTab({ babyId, onOpenPhoto, refreshTrigger, o
             >
               <LibraryThumb photoId={photo.id} />
               <span className="min-w-0 flex-1">
-                <b className="block truncate text-sm">{photo.caption || t('Untitled photo')}</b>
+                <b className="block truncate text-sm text-gray-900 photo-library-caption">{photo.caption || t('Untitled photo')}</b>
                 <i className="block text-xs not-italic text-gray-500">
                   {formatTimeDisplay(new Date(photo.takenAt), timeFormat)}
                   {photo.milestoneTitle ? ` • ${photo.milestoneTitle}` : ''}
