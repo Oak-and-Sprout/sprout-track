@@ -262,6 +262,11 @@ export function NurseryModeContainer() {
     setLogs(prev => ({ ...prev, [tileId]: { last: now, note } }));
   }, []);
 
+  // Stable identity: the container re-renders every second while an activity
+  // timer runs, and UndoToast's auto-dismiss effect depends on this callback —
+  // an inline arrow would re-arm the 6s timeout on every tick.
+  const dismissUndo = useCallback(() => setUndo(null), []);
+
   const handleUndo = useCallback(async () => {
     if (!undo) return;
     const { id, endpoint } = undo;
@@ -387,7 +392,7 @@ export function NurseryModeContainer() {
         </div>
       )}
 
-      <UndoToast undo={undo} onUndo={handleUndo} onDismiss={() => setUndo(null)} />
+      <UndoToast undo={undo} onUndo={handleUndo} onDismiss={dismissUndo} />
 
       {/* Placeholder drawer — replaced by full SettingsDrawer in Task 12 */}
       {settingsOpen && (
