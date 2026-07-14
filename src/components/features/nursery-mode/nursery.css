@@ -166,7 +166,13 @@
 /* ---- settings drawer ---- */
 .nursery-ovl { position: fixed; inset: 0; background: rgba(6,8,15,.5); z-index: 40; animation: nursery-fade .2s; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 @keyframes nursery-fade { from { opacity: 0; } }
-.nursery-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: #14161f; border-left: 1px solid rgba(255,255,255,.08); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); animation: nursery-slidein .26s cubic-bezier(.22,1,.36,1); color: #fff; }
+.nursery-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: #14161f; border-left: 1px solid rgba(255,255,255,.08); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); color: #fff; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-drawer { animation: nursery-slidein .26s cubic-bezier(.22,1,.36,1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nursery-drawer { animation: nursery-fade .15s; }
+}
 @keyframes nursery-slidein { from { transform: translateX(60px); opacity: 0; } }
 .nursery-dw-h { display: flex; justify-content: space-between; align-items: center; padding: 22px 26px 18px; flex-shrink: 0; }
 .nursery-dw-h h2 { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
