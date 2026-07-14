@@ -9,9 +9,11 @@ import { useWakeLock } from '@/src/hooks/useWakeLock';
 import { useFullscreen } from '@/src/hooks/useFullscreen';
 import { useNurserySettings } from '@/src/hooks/useNurserySettings';
 import { autoIconColor } from '@/src/utils/nursery/colorMath';
+import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { Baby } from '@prisma/client';
 import { ClockBlock } from './ClockBlock';
 import { SceneBackground } from './scenes/SceneBackground';
+import { SettingsDrawer } from './SettingsDrawer';
 import { useFeedActions } from './activities/useFeedActions';
 import { usePumpActions } from './activities/usePumpActions';
 import { useDiaperActions } from './activities/useDiaperActions';
@@ -21,55 +23,6 @@ import { BigTile } from './activities/BigTile';
 import { UndoToast } from './activities/UndoToast';
 import { TileLog, UndoInfo } from './activities/types';
 import './nursery.css';
-
-const ACT_IDS = ['feed', 'pump', 'diaper', 'sleep'] as const;
-
-const ROW_LABEL: CSSProperties = {
-  fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
-  color: 'rgba(255,255,255,.5)', marginBottom: 8,
-};
-
-function DrawerSlider({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (n: number) => void }) {
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={ROW_LABEL}>{label}</div>
-      <input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: '100%' }} />
-    </div>
-  );
-}
-
-function DrawerSeg({ label, options, value, onChange }: { label: string; options: [string, string][]; value: string; onChange: (v: string) => void }) {
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={ROW_LABEL}>{label}</div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {options.map(([v, l]) => (
-          <button key={v} type="button" onClick={() => onChange(v)}
-            style={{ flex: '1 1 auto', minWidth: 70, minHeight: 40, borderRadius: 10, cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,.16)', color: '#fff', fontSize: 13,
-              background: value === v ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.08)' }}>
-            {l}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DrawerToggle({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick}
-      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%',
-        minHeight: 48, padding: '0 14px', marginBottom: 8, borderRadius: 12, cursor: 'pointer',
-        border: '1px solid rgba(255,255,255,.16)', background: 'rgba(255,255,255,.08)', color: '#fff', fontSize: 14 }}>
-      <span>{label}</span>
-      <span style={{ width: 42, height: 24, borderRadius: 999, position: 'relative', transition: 'background .15s',
-        background: on ? '#4ade80' : 'rgba(255,255,255,.2)' }}>
-        <span style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .15s' }} />
-      </span>
-    </button>
-  );
-}
 
 export function NurseryModeContainer() {
   const router = useRouter();
@@ -87,6 +40,7 @@ export function NurseryModeContainer() {
   const [undo, setUndo] = useState<UndoInfo | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [enableBreastMilkTracking, setEnableBreastMilkTracking] = useState(true);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
   const [isLandscape, setIsLandscape] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
   );
@@ -122,6 +76,11 @@ export function NurseryModeContainer() {
       }
     };
     fetchFamilySettings();
+  }, []);
+
+  // Deployment-wide photos feature flag (Task 13 wires the actual picker)
+  useEffect(() => {
+    fetchPhotosEnabled().then(setPhotosEnabled);
   }, []);
 
   // Fetch babies list and auto-select if needed
@@ -394,42 +353,19 @@ export function NurseryModeContainer() {
 
       <UndoToast undo={undo} onUndo={handleUndo} onDismiss={dismissUndo} />
 
-      {/* Placeholder drawer — replaced by full SettingsDrawer in Task 12 */}
-      {settingsOpen && (
-        <>
-          <button type="button" aria-label={t('Close')} onClick={() => setSettingsOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.4)', border: 'none', cursor: 'default' }} />
-          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 401, width: 'min(360px, 92vw)', overflowY: 'auto',
-            padding: 24, background: 'rgba(20,22,31,.96)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-            borderLeft: '1px solid rgba(255,255,255,.12)', color: '#fff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 600 }}>{t('Settings')}</h2>
-              <button type="button" className="nursery-ghost" onClick={() => setSettingsOpen(false)}>{t('Close')}</button>
-            </div>
-            <DrawerSeg label={t('Scene')} value={settings.scene}
-              options={[['ambient', t('Ambient')], ['starlit', t('Starlit')], ['tapestry', t('Tapestry')], ['photo', t('Photo')]]}
-              onChange={v => updateSettings({ scene: v as any })} />
-            <DrawerSeg label={t('Layout')} value={settings.layout}
-              options={[['cards', t('Cards')], ['tiles', t('Big Tiles')]]}
-              onChange={v => updateSettings({ layout: v as any })} />
-            <DrawerSlider label={t('Hue')} value={settings.hue} min={0} max={360} onChange={n => updateSettings({ hue: n })} />
-            <DrawerSlider label={t('Dim')} value={settings.dim} min={0} max={100} onChange={n => updateSettings({ dim: n })} />
-            <DrawerSlider label={t('Saturation')} value={settings.sat} min={0} max={100} onChange={n => updateSettings({ sat: n })} />
-            <DrawerSlider label={t('Button transparency')} value={settings.trans} min={0} max={100} onChange={n => updateSettings({ trans: n })} />
-            <div style={ROW_LABEL}>{t('Activities')}</div>
-            {ACT_IDS.map(id => (
-              <DrawerToggle key={id} label={t(id.charAt(0).toUpperCase() + id.slice(1))} on={settings.acts[id]}
-                onClick={() => updateSettings({ acts: { ...settings.acts, [id]: !settings.acts[id] } })} />
-            ))}
-            <div style={{ ...ROW_LABEL, marginTop: 14 }}>{t('Display')}</div>
-            <DrawerToggle label={t('Keep screen awake')} on={wakeLock.isActive}
-              onClick={() => (wakeLock.isActive ? wakeLock.release() : wakeLock.request())} />
-            {fullscreen.isSupported && (
-              <DrawerToggle label={t('Fullscreen')} on={fullscreen.isFullscreen} onClick={() => fullscreen.toggle()} />
-            )}
-          </div>
-        </>
-      )}
+      <SettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        updateSettings={updateSettings}
+        wakeLockActive={wakeLock.isActive}
+        wakeLockSupported={wakeLock.isSupported}
+        onToggleWakeLock={() => (wakeLock.isActive ? wakeLock.release() : wakeLock.request())}
+        fullscreenActive={fullscreen.isFullscreen}
+        fullscreenSupported={fullscreen.isSupported}
+        onToggleFullscreen={() => fullscreen.toggle()}
+        photosEnabled={photosEnabled}
+      />
     </div>
   );
 }
