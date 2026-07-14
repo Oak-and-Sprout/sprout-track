@@ -4,6 +4,7 @@ import { NurserySettings } from '@/src/utils/nursery/settings';
 import { AmbientScene } from './AmbientScene';
 import { StarlitScene } from './StarlitScene';
 import { TapestryScene } from './TapestryScene';
+import { PhotoScene, photoIdFromSrc } from './PhotoScene';
 
 /**
  * Base two-stop gradient used as the fallback/underlay for every scene.
@@ -14,40 +15,27 @@ export const baseGrad = (h: number): string =>
 
 export interface SceneBackgroundProps {
   settings: NurserySettings;
-  /** Object URL for the uploaded nursery photo (photo scene). Completed in Task 13. */
-  photoObjectUrl?: string | null;
+  /** Reports the photo scene's sampled dominant-color tint (or null when unset/disabled) up to the container, which uses it for auto icon color. */
+  onPhotoTint?: (tint: string | null) => void;
 }
 
 /**
  * Renders the `.nursery-bg` layer and dispatches to the active scene.
  * This is the only scene entry point the nursery mode container should use.
  */
-export function SceneBackground({ settings, photoObjectUrl }: SceneBackgroundProps) {
+export function SceneBackground({ settings, onPhotoTint }: SceneBackgroundProps) {
   const { scene, hue, dim, sat } = settings;
   const filter = `brightness(${(0.32 + (dim / 100) * 0.78).toFixed(2)}) saturate(${((sat / 100) * 1.9).toFixed(2)})`;
 
   if (scene === 'photo') {
     return (
       <div className="nursery-bg" style={{ filter }} aria-hidden="true">
-        {photoObjectUrl ? (
-          <>
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: `url(${photoObjectUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            />
-            <div
-              className="nursery-scrim"
-              style={{ background: `linear-gradient(180deg, oklch(0.15 0.04 ${hue} / .55), oklch(0.1 0.05 ${hue} / .78))` }}
-            />
-          </>
-        ) : (
-          <div className="nursery-bg-grad" style={{ background: baseGrad(hue) }} />
-        )}
+        <PhotoScene
+          photoId={photoIdFromSrc(settings.photo.src)}
+          hue={hue}
+          autoTint={settings.photo.autoTint}
+          onTint={onPhotoTint}
+        />
       </div>
     );
   }

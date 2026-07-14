@@ -41,6 +41,7 @@ export function NurseryModeContainer() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [enableBreastMilkTracking, setEnableBreastMilkTracking] = useState(true);
   const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [photoTint, setPhotoTint] = useState<string | null>(null);
   const [isLandscape, setIsLandscape] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
   );
@@ -287,7 +288,7 @@ export function NurseryModeContainer() {
   const line = (0.24 - (trans / 100) * 0.16).toFixed(3);
   const stageVars = { '--cardbg': cardBg, '--btnbg': btnBg, '--cardline': line, '--btnline': line } as CSSProperties;
 
-  const iconColor = settings.iconColor ?? autoIconColor(settings.hue);
+  const iconColor = settings.iconColor ?? (settings.scene === 'photo' && photoTint ? photoTint : autoIconColor(settings.hue));
   const shape = settings.iconShape;
   const clockBabies = babies.map(b => ({ id: b.id, firstName: b.firstName }));
   const babyName = selectedBaby?.firstName ?? t('Sprout Track');
@@ -320,7 +321,7 @@ export function NurseryModeContainer() {
       <style>{`* { -webkit-tap-highlight-color: transparent; }
         .nursery-stage input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); cursor: pointer; }`}</style>
 
-      <SceneBackground settings={settings} />
+      <SceneBackground settings={settings} onPhotoTint={setPhotoTint} />
 
       <div className="nursery-fg">
         <div className="nursery-topbar" style={isLandscape ? { justifyContent: 'space-between' } : undefined}>

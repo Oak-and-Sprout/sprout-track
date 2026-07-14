@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { CSSProperties, ReactElement } from 'react';
 import { useLocalization } from '@/src/context/localization';
 import {
@@ -15,9 +15,11 @@ import {
 import { SPRITE_SETS, RUGS, rugUrl } from './spriteManifest';
 import { backdropStyle, isRug } from './scenes/backdropStyle';
 import { baseGrad } from './scenes/SceneBackground';
+import { photoIdFromSrc } from './scenes/PhotoScene';
 import { Icon, IconName } from './icons';
 import { SpriteThumb } from './drawer/SpriteThumb';
 import { RugThumb, RugPreviewDiv } from './drawer/RugThumb';
+import { PhotoPicker, PickerThumb } from './PhotoPicker';
 
 export interface SettingsDrawerProps {
   open: boolean;
@@ -30,7 +32,7 @@ export interface SettingsDrawerProps {
   fullscreenActive: boolean;
   fullscreenSupported: boolean;
   onToggleFullscreen: () => void;
-  /** Task 13 wires the actual picker; the Photo section renders a stub when false. */
+  /** Deployment-wide photos feature flag; the Photo section shows a disabled note when false. */
   photosEnabled: boolean;
 }
 
@@ -122,6 +124,7 @@ export function SettingsDrawer({
   // so picking a CSS backdrop only auto-restores the default objects the
   // first time (PRD §5.3) — not after the caretaker has deliberately cleared them.
   const objectsTouchedRef = useRef(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   if (!open) return null;
 
@@ -437,13 +440,43 @@ export function SettingsDrawer({
             </div>
           )}
 
-          {/* Photo — stub, replaced by Task 13 */}
+          {/* Photo */}
           {settings.scene === 'photo' && (
             <div className="nursery-sect">
               <div className="nursery-slabel">{t('Photo')}</div>
-              <div className="nursery-togcard">
-                <div className="v">{photosEnabled ? t('Photo picker coming in the next update') : t('Photos are disabled for this family')}</div>
-              </div>
+              {photosEnabled ? (
+                <>
+                  {photoIdFromSrc(settings.photo.src) && (
+                    <div style={{ width: 88, height: 88, borderRadius: 12, overflow: 'hidden', marginBottom: 14, background: 'rgba(255,255,255,.06)' }}>
+                      <PickerThumb id={photoIdFromSrc(settings.photo.src)!} />
+                    </div>
+                  )}
+                  <button type="button" className="nursery-togcard" onClick={() => setPickerOpen(true)}>
+                    <div className="v">{t('Choose from gallery')}</div>
+                  </button>
+
+                  <div className="nursery-trow" style={{ marginTop: 12 }}>
+                    <span className="tn">{t('Auto icon color')}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span className={'nursery-tstate' + (settings.photo.autoTint ? ' on' : '')}>{settings.photo.autoTint ? t('ON') : t('OFF')}</span>
+                      <button
+                        type="button" className={'nursery-sw-toggle' + (settings.photo.autoTint ? ' on' : '')}
+                        onClick={() => updateSettings({ photo: { ...settings.photo, autoTint: !settings.photo.autoTint } })}
+                      />
+                    </span>
+                  </div>
+
+                  <PhotoPicker
+                    open={pickerOpen}
+                    onClose={() => setPickerOpen(false)}
+                    onPick={(id) => updateSettings({ photo: { ...settings.photo, src: 'gallery:' + id } })}
+                  />
+                </>
+              ) : (
+                <div className="nursery-togcard">
+                  <div className="v">{t('Photos are disabled for this family')}</div>
+                </div>
+              )}
             </div>
           )}
 
