@@ -35,7 +35,32 @@ export function NurseryModeContainer() {
   const { t } = useLocalization();
   const wakeLock = useWakeLock();
   const fullscreen = useFullscreen();
-  const { settings, isLoading, saveSettings } = useNurserySettings(null);
+  const { settings: v1Settings, isLoading, updateSettings } = useNurserySettings();
+
+  // TEMP during nursery redesign (removed in Task 11): adapt old container to v1 settings
+  const ACT_IDS: Array<keyof typeof v1Settings.acts> = ['feed', 'pump', 'diaper', 'sleep'];
+  const settings: { hue: number; brightness: number; saturation: number; visibleTiles: string[] } = {
+    hue: v1Settings.hue,
+    brightness: v1Settings.dim,
+    saturation: v1Settings.sat,
+    visibleTiles: ACT_IDS.filter((id) => v1Settings.acts[id]),
+  };
+  const saveSettings = useCallback(
+    (newSettings: { hue: number; brightness: number; saturation: number; visibleTiles: string[] }) => {
+      updateSettings({
+        hue: newSettings.hue,
+        dim: newSettings.brightness,
+        sat: newSettings.saturation,
+        acts: {
+          feed: newSettings.visibleTiles.includes('feed'),
+          pump: newSettings.visibleTiles.includes('pump'),
+          diaper: newSettings.visibleTiles.includes('diaper'),
+          sleep: newSettings.visibleTiles.includes('sleep'),
+        },
+      });
+    },
+    [updateSettings]
+  );
 
   const [hue, setHue] = useState<number | null>(null);
   const [brightness, setBrightness] = useState<number | null>(null);

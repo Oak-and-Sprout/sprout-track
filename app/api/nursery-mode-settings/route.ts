@@ -2,22 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { normalizeNurserySettings, NurserySettings } from '@/src/utils/nursery/settings';
 
-interface NurseryModeUserSettings {
-  hue: number;
-  brightness: number;
-  saturation: number;
-  visibleTiles: string[];
-}
-
-const DEFAULT_SETTINGS: NurseryModeUserSettings = {
-  hue: 230,
-  brightness: 15,
-  saturation: 25,
-  visibleTiles: ['feed', 'pump', 'diaper', 'sleep'],
-};
-
-async function handleGet(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<NurseryModeUserSettings>>> {
+async function handleGet(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<NurserySettings>>> {
   try {
     const { familyId } = authContext;
     if (!familyId) {
@@ -33,39 +20,39 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     });
 
     if (!settings) {
-      return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS } });
+      return NextResponse.json({ success: true, data: normalizeNurserySettings(undefined) });
     }
 
     const settingsWithNursery = settings as unknown as (typeof settings & { nurseryModeSettings?: string });
 
     if (!settingsWithNursery.nurseryModeSettings) {
-      return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS } });
+      return NextResponse.json({ success: true, data: normalizeNurserySettings(undefined) });
     }
 
-    let allSettings: Record<string, NurseryModeUserSettings>;
+    let allSettings: Record<string, unknown>;
     try {
       allSettings = JSON.parse(settingsWithNursery.nurseryModeSettings);
     } catch {
-      return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS } });
+      return NextResponse.json({ success: true, data: normalizeNurserySettings(undefined) });
     }
 
     // Cascade: caretaker-specific → global → defaults
     if (caretakerId && allSettings[caretakerId]) {
-      return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS, ...allSettings[caretakerId] } });
+      return NextResponse.json({ success: true, data: normalizeNurserySettings(allSettings[caretakerId]) });
     }
 
     if (allSettings.global) {
-      return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS, ...allSettings.global } });
+      return NextResponse.json({ success: true, data: normalizeNurserySettings(allSettings.global) });
     }
 
-    return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS } });
+    return NextResponse.json({ success: true, data: normalizeNurserySettings(undefined) });
   } catch (error) {
     console.error('Error retrieving nursery mode settings:', error);
-    return NextResponse.json({ success: true, data: { ...DEFAULT_SETTINGS } });
+    return NextResponse.json({ success: true, data: normalizeNurserySettings(undefined) });
   }
 }
 
-async function handlePost(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<NurseryModeUserSettings>>> {
+async function handlePost(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<NurserySettings>>> {
   try {
     const { familyId } = authContext;
     if (!familyId) {
@@ -73,13 +60,13 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
     }
 
     const body = await req.json();
-    const { hue, brightness, saturation, visibleTiles, caretakerId } = body;
 
-    if (typeof hue !== 'number' || typeof brightness !== 'number' || !Array.isArray(visibleTiles)) {
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
       return NextResponse.json({ success: false, error: 'Invalid nursery mode settings format' }, { status: 400 });
     }
 
-    const effectiveSaturation = typeof saturation === 'number' ? saturation : DEFAULT_SETTINGS.saturation;
+    const caretakerId: string | null = typeof body.caretakerId === 'string' ? body.caretakerId : null;
+    const normalized = normalizeNurserySettings('settings' in body ? body.settings : body);
 
     let currentSettings = await prisma.settings.findFirst({
       where: { familyId },
@@ -103,7 +90,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
 
     const settingsWithNursery = currentSettings as unknown as (typeof currentSettings & { nurseryModeSettings?: string });
 
-    let allSettings: Record<string, NurseryModeUserSettings> = {};
+    let allSettings: Record<string, unknown> = {};
     if (settingsWithNursery.nurseryModeSettings) {
       try {
         allSettings = JSON.parse(settingsWithNursery.nurseryModeSettings);
@@ -113,9 +100,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
     }
 
     const settingsKey = caretakerId || 'global';
-    const userSettings: NurseryModeUserSettings = { hue, brightness, saturation: effectiveSaturation, visibleTiles };
-
-    allSettings[settingsKey] = userSettings;
+    allSettings[settingsKey] = normalized;
 
     await prisma.settings.update({
       where: { id: currentSettings.id },
@@ -124,7 +109,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
       },
     });
 
-    return NextResponse.json({ success: true, data: userSettings });
+    return NextResponse.json({ success: true, data: normalized });
   } catch (error) {
     console.error('Error saving nursery mode settings:', error);
     return NextResponse.json({ success: false, error: 'Failed to save nursery mode settings' }, { status: 500 });
