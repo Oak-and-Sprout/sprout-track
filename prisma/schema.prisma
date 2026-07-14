@@ -200,6 +200,7 @@ model Family {
   apiKeys        ApiKey[]
   photos         Photo[]
   photoLogs      PhotoLog[]
+  externalImportRecords ExternalImportRecord[]
 }
 
 // New model for family membership
@@ -1446,4 +1447,22 @@ model ApiKey {
   @@index([keyHash])
   @@index([familyId])
   @@index([revoked])
+}
+
+model ExternalImportRecord {
+  id               String   @id @default(uuid())
+  providerId       String
+  sourceEntityType String
+  sourceRecordId   String
+  sourceChildId    String?
+  targetEntityType String
+  targetRecordId   String
+  importedAt       DateTime @default(now())
+
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId String
+
+  @@unique([familyId, providerId, sourceEntityType, sourceRecordId])
+  @@index([familyId, providerId])
+  @@index([targetEntityType, targetRecordId])
 }
