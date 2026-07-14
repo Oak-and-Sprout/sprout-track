@@ -35,10 +35,10 @@ export function SpriteThumb({ setId, mode, base, colors, hue, selected, onClick,
     ? spriteUrl(setId, poses[Math.floor(pick * poses.length)].file)
     : null;
   // Debounced: these thumbs re-recolor/re-trace on every color/hue drag event otherwise.
-  const debouncedBase = useDebouncedValue(base || '#ffffff', 200);
   const debouncedColors = useDebouncedValue(colors || [], 200);
   const debouncedHue = useDebouncedValue(hue ?? 0, 200);
-  const recolored = useRecoloredAsset(recoloredUrl, debouncedBase, debouncedColors);
+  // Stencil preview: literal pattern colors only — base only sets the swatch backdrop below.
+  const recolored = useRecoloredAsset(recoloredUrl, debouncedColors);
   const outline = useOutlineSprites(mode === 'outline' ? setId : null, debouncedHue);
 
   let previewStyle: CSSProperties;

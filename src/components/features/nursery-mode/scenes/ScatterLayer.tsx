@@ -10,12 +10,12 @@ import { placeScatter, mulberry32, PlacedItem } from '@/src/utils/nursery/placem
 interface SpriteAssets { urls: string[]; ars: number[] }
 
 /**
- * Resolves every pose of a sprite set into recolored (base/palette-tinted) blob
+ * Resolves every pose of a sprite set into recolored (pattern-color-tinted) blob
  * URLs, in manifest pose order. Returns null while unset/unresolved.
  */
-function useRecoloredSpriteSet(setId: string | null, base: string, colors: string[]): SpriteAssets | null {
+function useRecoloredSpriteSet(setId: string | null, colors: string[]): SpriteAssets | null {
   const [result, setResult] = useState<SpriteAssets | null>(null);
-  const key = setId ? `${setId}|${base}|${colors.join()}` : null;
+  const key = setId ? `${setId}|${colors.join()}` : null;
 
   useEffect(() => {
     if (!setId) {
@@ -28,7 +28,7 @@ function useRecoloredSpriteSet(setId: string | null, base: string, colors: strin
       return;
     }
     let live = true;
-    Promise.all(set.poses.map(pose => recoloredSvgUrl(spriteUrl(setId, pose.file), base, colors))).then(assets => {
+    Promise.all(set.poses.map(pose => recoloredSvgUrl(spriteUrl(setId, pose.file), colors))).then(assets => {
       if (!live) return;
       setResult({ urls: assets.map(a => a.objectUrl), ars: assets.map(a => a.ar) });
     }).catch(err => {
@@ -47,7 +47,6 @@ function useRecoloredSpriteSet(setId: string | null, base: string, colors: strin
 export interface ScatterLayerProps {
   primary: string | null;
   accent: string | null;
-  base: string;
   colors: string[];
 }
 
@@ -57,13 +56,12 @@ export interface ScatterLayerProps {
  * from nursery.jsx:173-216 (ScatterLayer + throwDarts), using per-pose whole-file
  * sprites in place of the prototype's sprite-sheet slicing/background-position math.
  */
-export function ScatterLayer({ primary, accent, base, colors }: ScatterLayerProps) {
-  // Debounced: each color/base tweak would otherwise re-recolor and re-cache a
+export function ScatterLayer({ primary, accent, colors }: ScatterLayerProps) {
+  // Debounced: each color tweak would otherwise re-recolor and re-cache a
   // permanent blob URL per pose on every input event while dragging a swatch.
-  const debouncedBase = useDebouncedValue(base, 200);
   const debouncedColors = useDebouncedValue(colors, 200);
-  const primaryAssets = useRecoloredSpriteSet(primary, debouncedBase, debouncedColors);
-  const accentAssets = useRecoloredSpriteSet(accent, debouncedBase, debouncedColors);
+  const primaryAssets = useRecoloredSpriteSet(primary, debouncedColors);
+  const accentAssets = useRecoloredSpriteSet(accent, debouncedColors);
 
   // Seeded once per mount: the arrangement is re-dealt per visit. Changing sets
   // re-places items via the new poseARs without reshuffling the seed.

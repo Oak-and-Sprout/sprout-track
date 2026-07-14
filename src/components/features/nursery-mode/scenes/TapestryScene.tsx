@@ -20,10 +20,11 @@ export function TapestryScene({ tapestry }: TapestrySceneProps) {
   const { backdrop, primary, accent, base, colors } = tapestry;
   const rug = isRug(backdrop) ? RUGS.find(r => r.id === backdrop) : undefined;
   // Debounced: recoloring the rug SVG (trace + cache a permanent blob URL) is
-  // expensive and shouldn't refire on every color-drag input event.
+  // expensive and shouldn't refire on every color-drag input event. The rug is
+  // the backdrop, so base is included in its literal palette alongside colors.
   const debouncedBase = useDebouncedValue(base, 200);
   const debouncedColors = useDebouncedValue(colors, 200);
-  const rugAsset = useRecoloredAsset(rug ? rugUrl(rug.file) : null, debouncedBase, debouncedColors);
+  const rugAsset = useRecoloredAsset(rug ? rugUrl(rug.file) : null, [debouncedBase, ...debouncedColors]);
 
   return (
     <>
@@ -40,7 +41,7 @@ export function TapestryScene({ tapestry }: TapestrySceneProps) {
       ) : (
         <div className="nursery-pattern-layer" style={backdropStyle(backdrop, base)} />
       )}
-      <ScatterLayer primary={primary} accent={accent} base={base} colors={colors} />
+      <ScatterLayer primary={primary} accent={accent} colors={colors} />
       <div
         className="nursery-scrim"
         style={{ background: 'radial-gradient(125% 95% at 50% 42%, rgba(28,20,10,.14), rgba(14,10,16,.5))' }}

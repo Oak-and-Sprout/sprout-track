@@ -18,9 +18,10 @@ export interface RugPreviewDivProps {
  */
 export function RugPreviewDiv({ file, base, colors, className }: RugPreviewDivProps): ReactElement {
   // Debounced: avoids re-recoloring/re-caching the rug SVG on every color-drag input event.
+  // The rug is the backdrop, so base is included in its literal palette alongside colors.
   const debouncedBase = useDebouncedValue(base, 200);
   const debouncedColors = useDebouncedValue(colors, 200);
-  const asset = useRecoloredAsset(file, debouncedBase, debouncedColors);
+  const asset = useRecoloredAsset(file, [debouncedBase, ...debouncedColors]);
   const style: CSSProperties = {
     backgroundImage: asset ? `url(${asset.objectUrl})` : 'none',
     backgroundSize: 'cover',

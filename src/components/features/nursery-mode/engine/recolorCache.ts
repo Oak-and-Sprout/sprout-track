@@ -37,15 +37,15 @@ export function svgAspectRatio(svgText: string): number {
 
 /**
  * Fetches, recolors, and blob-URLs a single-pose SVG. Result promises are cached
- * per `${url}|${base}|${colors.join()}` (never revoked — session-lifetime cache).
+ * per `${url}|${palette.join()}` (never revoked — session-lifetime cache).
  * A failed attempt evicts its cache entry so a later call can retry.
  */
-export function recoloredSvgUrl(url: string, base: string, colors: string[]): Promise<RasterAsset> {
-  const key = `${url}|${base}|${colors.join()}`;
+export function recoloredSvgUrl(url: string, palette: string[]): Promise<RasterAsset> {
+  const key = `${url}|${palette.join()}`;
   const cached = recoloredCache.get(key);
   if (cached) return cached;
   const promise = fetchSvgText(url).then(text => {
-    const out = recolorSvgText(text, base, colors);
+    const out = recolorSvgText(text, palette);
     const ar = svgAspectRatio(text);
     const objectUrl = URL.createObjectURL(new Blob([out], { type: 'image/svg+xml' }));
     return { objectUrl, ar };

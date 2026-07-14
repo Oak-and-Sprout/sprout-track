@@ -34,6 +34,59 @@ export const BASE_CHIPS: Record<'boys' | 'girls', string[]> = {
   girls: ['#f4ebe4', '#e7f0e9', '#cee3d5', '#f2dae3', '#eac2d3', '#d99bb4'],
 };
 
+export interface PatternPalette {
+  id: string;
+  name: string;
+  colors: [string, string, string, string, string];
+}
+
+export const PATTERN_PALETTES: Record<'boys' | 'girls', PatternPalette[]> = {
+  boys: [
+    { id: 'ocean', name: 'Ocean Breeze', colors: ['#1c3d5c', '#2f6690', '#4f93bd', '#83bcd9', '#c3e2ee'] },
+    { id: 'forest', name: 'Forest Trail', colors: ['#20351f', '#345c31', '#4f8548', '#7fae72', '#b9d9ac'] },
+    { id: 'harvest', name: 'Autumn Harvest', colors: ['#5c2c14', '#8f4420', '#c06430', '#dd9159', '#f0c39a'] },
+    { id: 'storm', name: 'Storm Grey', colors: ['#262b33', '#3e4650', '#5c6672', '#8a94a0', '#c2cad2'] },
+    { id: 'racer', name: 'Racing Red', colors: ['#5c1414', '#8f2020', '#c03030', '#dd6a6a', '#f0a8a8'] },
+    { id: 'meadow', name: 'Sunny Meadow', colors: ['#4a4a14', '#767620', '#a3a330', '#c7c766', '#e8e8a3'] },
+    { id: 'denim', name: 'Denim & Khaki', colors: ['#2c3e50', '#4f708f', '#8aa8bd', '#c9b48a', '#e8dcc0'] },
+    { id: 'slate', name: 'Slate & Rust', colors: ['#2b2f36', '#565e68', '#8a929c', '#a04a2e', '#d67f5f'] },
+    { id: 'woodland', name: 'Woodland', colors: ['#33261a', '#5c4530', '#7a6248', '#4f6e4a', '#8fae82'] },
+    { id: 'galaxy', name: 'Galaxy', colors: ['#131328', '#262652', '#42428f', '#6c6cbd', '#a3a3e0'] },
+    { id: 'circus', name: 'Circus Big Top', colors: ['#c81d25', '#f2a900', '#1b5fae', '#f5f0e6', '#1a1a1a'] },
+    { id: 'arcade', name: 'Arcade Lights', colors: ['#ff3864', '#2de2e6', '#f9c80e', '#261447', '#a4fbe1'] },
+    { id: 'racecar', name: 'Checkered Flag', colors: ['#111111', '#ffffff', '#e10600', '#ffd400', '#0056b3'] },
+    { id: 'dinosaur', name: 'Dino Roar', colors: ['#2e7d32', '#e65100', '#6d4c41', '#fdd835', '#004d40'] },
+    { id: 'pirate', name: 'Pirate Cove', colors: ['#0b1d3a', '#c1272d', '#d4af37', '#f4ead5', '#1a1a1a'] },
+    { id: 'robot', name: 'Robot Workshop', colors: ['#37474f', '#ff6d00', '#00b0ff', '#eceff1', '#212121'] },
+    { id: 'safari', name: 'Jungle Safari', colors: ['#33691e', '#f57f17', '#4e342e', '#0277bd', '#fbc02d'] },
+    { id: 'rocketpop', name: 'Rocket Pop', colors: ['#d7263d', '#ffffff', '#1b98e0', '#f7f7f2', '#0b1f3a'] },
+    { id: 'traffic', name: 'Traffic Signal', colors: ['#c62828', '#f9a825', '#2e7d32', '#263238', '#eceff1'] },
+    { id: 'toolbox', name: 'Toolbox Bright', colors: ['#eb5e28', '#252422', '#ccc5b9', '#403d39', '#fffcf2'] },
+  ],
+  girls: [
+    { id: 'blush', name: 'Blush Garden', colors: ['#6b2340', '#a3406a', '#cc6f97', '#e6a2c0', '#f7d6e4'] },
+    { id: 'mint', name: 'Meadow Mint', colors: ['#1f4a34', '#357056', '#59a17f', '#8fc7ab', '#c8e8d8'] },
+    { id: 'lavender', name: 'Lavender Fields', colors: ['#3d2a5c', '#5f4589', '#8a6cb8', '#b79fd9', '#dfd0f0'] },
+    { id: 'peach', name: 'Sunset Peach', colors: ['#7a331f', '#a85536', '#d98a5f', '#eeb491', '#f9dcc6'] },
+    { id: 'honey', name: 'Golden Honey', colors: ['#5c4310', '#8f6c1c', '#c2992e', '#dfc266', '#f3e2a8'] },
+    { id: 'rose', name: 'Rose Quartz', colors: ['#4a2530', '#75404e', '#a3697a', '#c99ba6', '#e8d2d8'] },
+    { id: 'sky', name: 'Sky Whisper', colors: ['#1f4a5c', '#347089', '#5fa0bd', '#9bc9dd', '#d3edf5'] },
+    { id: 'berry', name: 'Berry Bliss', colors: ['#4a0f30', '#7a1f52', '#a83b7d', '#cc72a8', '#eab3d4'] },
+    { id: 'buttercream', name: 'Buttercream', colors: ['#5c451f', '#8f6c34', '#c2995c', '#dfc48f', '#f5e8c8'] },
+    { id: 'coral', name: 'Coral Reef', colors: ['#7a3324', '#b1553a', '#d98266', '#59a191', '#a8d9cb'] },
+    { id: 'carnival', name: 'Carnival Sweets', colors: ['#ff6f91', '#845ec2', '#ffc75f', '#00c2a8', '#f9f871'] },
+    { id: 'rainbow', name: 'Rainbow Sherbet', colors: ['#ff9a8b', '#ff6a88', '#ff99ac', '#a8e6cf', '#dcedc1'] },
+    { id: 'popsicle', name: 'Popsicle Pop', colors: ['#ff477e', '#7bdff2', '#ffcb77', '#b2f7ef', '#0d3b66'] },
+    { id: 'butterfly', name: 'Butterfly Garden', colors: ['#7209b7', '#f72585', '#4cc9f0', '#4361ee', '#ffd60a'] },
+    { id: 'tropical', name: 'Tropical Punch', colors: ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557'] },
+    { id: 'candyshop', name: 'Candy Shop', colors: ['#f94144', '#f3722c', '#f9c74f', '#90be6d', '#577590'] },
+    { id: 'unicorn', name: 'Unicorn Sparkle', colors: ['#ff86c8', '#ffb3de', '#c9a8ff', '#8ecae6', '#fff3b0'] },
+    { id: 'flamingo', name: 'Flamingo Beach', colors: ['#ff477e', '#ffd166', '#06d6a0', '#118ab2', '#073b4c'] },
+    { id: 'fiesta', name: 'Fiesta Bright', colors: ['#d62828', '#f77f00', '#fcbf49', '#eae2b7', '#003049'] },
+    { id: 'mermaid', name: 'Mermaid Cove', colors: ['#00b4d8', '#90e0ef', '#caf0f8', '#ff70a6', '#0077b6'] },
+  ],
+};
+
 export const ICON_SWATCHES: (string | null)[] = [null, '#f9c9d6', '#fbd38d', '#a7f3d0', '#a5d8ff', '#d8b4fe', '#ffffff'];
 
 export const AMBIENT_PATTERNS: string[] = ['aurora', 'waves', 'bubbles'];

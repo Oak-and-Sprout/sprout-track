@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
 import { formatPumpNote, PumpNoteLabels } from '@/src/utils/nursery/activityDetail';
+import { loadPumpSession, savePumpSession, clearPumpSession } from '@/src/utils/nursery/pumpSession';
 import { ActivityHookArgs, ActivityView, ActionButton, AmountPrompt, formatMMSS, undoDeleteLog } from './types';
 
 type PumpSide = 'left' | 'right' | 'both';
@@ -43,21 +44,66 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
     fetchDefaultUnit();
   }, []);
 
-  // Pump sessions have no server-side "active session" record to resume (unlike
-  // breastfeeding/sleep), so switching babies must clear any in-progress local
-  // timer — otherwise the card keeps showing the previous baby's running pump,
-  // and Stop would log it against the wrong baby.
+  // Guards the persistence effect below against writing a stale ('idle') snapshot
+  // in the same render pass this rehydration effect fires in — state updates from
+  // this effect aren't visible to other effects until the next render, so without
+  // this flag the persist effect would clear out the session we're about to restore.
+  const skipNextPersistRef = useRef(true);
+
+  // Pump sessions have no server-side "active session" record (unlike
+  // breastfeeding/sleep), so on mount / baby switch, recall any in-progress local
+  // timer from localStorage — otherwise a reload or switching babies loses it, and
+  // Stop would either log nothing or log against the wrong baby.
   useEffect(() => {
-    setPhase('idle');
-    setActiveSide(null);
-    setElapsed(0);
-    setSideDuration({ left: 0, right: 0 });
-    setPauseAccumulated(0);
-    setStartTime(null);
-    setResumeTime(null);
-    setAmountLeft('');
-    setAmountRight('');
+    skipNextPersistRef.current = true;
+    const snapshot = loadPumpSession(babyId);
+    if (snapshot) {
+      setPhase(snapshot.phase);
+      setActiveSide(snapshot.activeSide);
+      setStartTime(new Date(snapshot.startTime));
+      setSideDuration(snapshot.sideDuration);
+      setPauseAccumulated(snapshot.pauseAccumulated);
+      setResumeTime(snapshot.resumeTime);
+      setElapsed(snapshot.elapsed);
+      setAmountLeft(snapshot.amountLeft);
+      setAmountRight(snapshot.amountRight);
+    } else {
+      setPhase('idle');
+      setActiveSide(null);
+      setElapsed(0);
+      setSideDuration({ left: 0, right: 0 });
+      setPauseAccumulated(0);
+      setStartTime(null);
+      setResumeTime(null);
+      setAmountLeft('');
+      setAmountRight('');
+    }
   }, [babyId]);
+
+  // Mirror the in-progress session to localStorage (keyed per baby) on every change
+  // so it survives a reload and can be recalled before the final POST /api/pump-log.
+  useEffect(() => {
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    if (!babyId) return;
+    if (phase === 'idle' || !startTime || !activeSide) {
+      clearPumpSession(babyId);
+      return;
+    }
+    savePumpSession(babyId, {
+      phase,
+      activeSide,
+      startTime: startTime.toISOString(),
+      sideDuration,
+      pauseAccumulated,
+      resumeTime,
+      elapsed,
+      amountLeft,
+      amountRight,
+    });
+  }, [babyId, phase, activeSide, startTime, sideDuration, pauseAccumulated, resumeTime, elapsed, amountLeft, amountRight]);
 
   useEffect(() => {
     if (phase === 'timing' && resumeTime != null) {

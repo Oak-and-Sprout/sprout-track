@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactElement } from 'react';
+import { Palette as PaletteIcon, ChevronDown } from 'lucide-react';
 import { useLocalization } from '@/src/context/localization';
 import { SleepLocationSummary } from '@/app/api/types';
 import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
@@ -11,6 +12,7 @@ import {
   NurseryLayout,
   PALETTES,
   BASE_CHIPS,
+  PATTERN_PALETTES,
   ICON_SWATCHES,
   CSS_BACKDROPS,
 } from '@/src/utils/nursery/settings';
@@ -127,6 +129,7 @@ export function SettingsDrawer({
   // first time (PRD §5.3) — not after the caretaker has deliberately cleared them.
   const objectsTouchedRef = useRef(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [presetOpen, setPresetOpen] = useState(false);
   const [sleepLocationOptions, setSleepLocationOptions] = useState<string[]>([...DEFAULT_SLEEP_LOCATIONS]);
 
   // Family's sleep locations (defaults + custom, minus hidden) — same source SleepForm uses.
@@ -475,6 +478,37 @@ export function SettingsDrawer({
                     />
                   </label>
                 ))}
+                <div className="nursery-preset-wrap">
+                  <button
+                    type="button" className="nursery-preset-btn" onClick={() => setPresetOpen(o => !o)}
+                    aria-haspopup="listbox" aria-expanded={presetOpen}
+                  >
+                    <PaletteIcon size={15} aria-hidden="true" />
+                    {t('Presets')}
+                    <ChevronDown size={13} aria-hidden="true" style={{ opacity: .75, transition: 'transform .15s', transform: presetOpen ? 'rotate(180deg)' : 'none' }} />
+                  </button>
+                  {presetOpen && (
+                    <>
+                      <button type="button" className="nursery-preset-scrim" onClick={() => setPresetOpen(false)} aria-label={t('Close')} />
+                      <div className="nursery-preset-menu" role="listbox">
+                        {PATTERN_PALETTES[tapestry.palette].map(p => (
+                          <button
+                            key={p.id} type="button" role="option" className="nursery-preset-opt"
+                            onClick={() => {
+                              updateSettings({ tapestry: { ...tapestry, colors: p.colors } });
+                              setPresetOpen(false);
+                            }}
+                          >
+                            <span className="nursery-preset-dots">
+                              {p.colors.map((c, i) => <i key={i} style={{ background: c }} />)}
+                            </span>
+                            <span className="nursery-preset-name">{t(p.name)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,.5)', marginTop: 12, lineHeight: 1.5 }}>
                 {t('Tap a swatch to recolor it — every color is adjustable.')}

@@ -79,9 +79,13 @@ of four scenes by `settings.scene`:
 sprite/rug pickers use:
 
 - `fetchSvgText(url)` — memoizes raw SVG fetches per URL.
-- `recoloredSvgUrl(url, base, colors)` — recolors via
-  `src/utils/nursery/recolorSvg.ts::recolorSvgText` (pure, tested) and caches
-  the resulting blob URL per `url|base|colors` key.
+- `recoloredSvgUrl(url, palette)` — recolors via
+  `src/utils/nursery/recolorSvg.ts::recolorSvgText` (pure, tested; maps a
+  source SVG's grayscale colors verbatim onto `palette`, ranked darkest→lightest
+  on both sides — no hue/lightness blending) and caches the resulting blob URL
+  per `url|palette` key. Backdrops (rugs) pass `[base, ...colors]` so the base
+  color tints the background; scattered sprites pass `colors` only, so the
+  base color never bleeds into the "stencil" artwork.
 - `outlineSpriteUrl(url, hue)` — rasterizes a transparent-background SVG to a
   canvas, edge-detects + dilates twice, tints the outline to the hue, and
   caches the result per `url|hue`. Used for ambient sprite-outline mode.

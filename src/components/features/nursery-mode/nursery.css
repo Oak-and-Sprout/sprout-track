@@ -291,3 +291,16 @@
 .nursery-chip.on { border-color: #fff; }
 .nursery-cwell { width: 38px; height: 38px; border-radius: 10px; border: 2px dashed rgba(255,255,255,.4); cursor: pointer; position: relative; overflow: hidden; padding: 0; display: inline-block; }
 .nursery-cwell input { position: absolute; inset: -6px; width: 150%; height: 150%; opacity: 0; cursor: pointer; border: none; padding: 0; }
+
+.nursery-preset-wrap { position: relative; margin-left: auto; }
+.nursery-preset-btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .15s; }
+.nursery-preset-btn:hover { background: rgba(255,255,255,.1); }
+.nursery-preset-dots { display: inline-flex; flex-shrink: 0; }
+.nursery-preset-dots i { width: 13px; height: 13px; border-radius: 50%; margin-left: -4px; border: 1.5px solid rgba(20,22,31,.9); }
+.nursery-preset-dots i:first-child { margin-left: 0; }
+.nursery-preset-scrim { position: fixed; inset: 0; z-index: 49; background: transparent; border: none; padding: 0; cursor: default; }
+.nursery-preset-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; width: 236px; max-height: 320px; overflow-y: auto; background: rgba(24,26,36,.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 6px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.nursery-preset-opt { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 9px; border: none; background: none; color: #fff; cursor: pointer; text-align: left; }
+.nursery-preset-opt:hover { background: rgba(255,255,255,.08); }
+.nursery-preset-opt .nursery-preset-dots i { width: 16px; height: 16px; margin-left: -5px; border-width: 2px; }
+.nursery-preset-name { font-size: 13px; font-weight: 500; }

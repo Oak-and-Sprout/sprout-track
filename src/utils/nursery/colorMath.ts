@@ -1,11 +1,28 @@
 export type HSL = [number, number, number];
 
-export const COLOR_RE = /#[0-9a-fA-F]{6}\b|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)/g;
+// Some sprite/rug source SVGs use 3-digit hex shorthand or CSS named greys
+// (e.g. rug-2.svg's `fill="silver"`) alongside 6-digit hex — all three forms
+// need to be found so recolorSvgText doesn't leave an unrecolored grey behind.
+// The named-color branch only matches a bare quoted attribute value (`="silver"`)
+// so it can't accidentally eat unrelated text like an id="...-black-..." string.
+export const COLOR_RE = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)|(?<=")(?:silver|black|gray|grey|white)(?=")/g;
 
-const parseRGB = (c: string): [number, number, number] =>
-  c[0] === '#'
-    ? [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]
-    : ((c.match(/\d+/g) || []).map(Number) as [number, number, number]);
+const NAMED_RGB: Record<string, [number, number, number]> = {
+  black: [0, 0, 0],
+  white: [255, 255, 255],
+  silver: [192, 192, 192],
+  gray: [128, 128, 128],
+  grey: [128, 128, 128],
+};
+
+const parseRGB = (c: string): [number, number, number] => {
+  if (c[0] === '#') {
+    const hex = c.length === 4 ? c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c.slice(1);
+    return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+  }
+  if (c[0] === 'r') return (c.match(/\d+/g) || []).map(Number) as [number, number, number];
+  return NAMED_RGB[c] || [128, 128, 128];
+};
 
 export function hex2hsl(hex: string): HSL {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -35,15 +52,6 @@ export function hsl2hex(h: number, s: number, l: number): string {
 export function colorLuminance(color: string): number {
   const [r, g, b] = parseRGB(color);
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-}
-
-export function mapTargetColor(p: number, base: string, colors: string[]): string {
-  return p >= 0.8 ? base : colors[Math.min(colors.length - 1, Math.floor((p / 0.8) * colors.length))];
-}
-
-export function toneMapped(targetHex: string, grey: number): string {
-  const [th, ts, tl] = hex2hsl(targetHex);
-  return hsl2hex(th, ts, 0.55 * grey + 0.45 * tl);
 }
 
 export function backdropTint(baseHex: string): string {
