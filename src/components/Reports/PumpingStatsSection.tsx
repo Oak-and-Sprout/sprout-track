@@ -78,7 +78,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
       }
     };
     fetchBalance();
-  }, [selectedBaby, stats.unit, enableBreastMilkTracking]);
+  }, [selectedBaby, stats.unit, enableBreastMilkTracking, activities]);
 
   return (
     <>
@@ -178,4 +178,3 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
 };
 
 export default PumpingStatsSection;
-
