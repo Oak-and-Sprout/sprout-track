@@ -229,26 +229,15 @@ export function NurseryModeContainer() {
 
   const handleUndo = useCallback(async () => {
     if (!undo) return;
-    const { id, endpoint } = undo;
-    const tileId = endpoint.indexOf('diaper') >= 0 ? 'diaper' : 'feed';
-    try {
-      const authToken = localStorage.getItem('authToken');
-      const res = await fetch(`${endpoint}?id=${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: authToken ? `Bearer ${authToken}` : '' },
+    const ok = await undo.undo();
+    if (ok) {
+      setLogs(prev => {
+        const next = { ...prev };
+        delete next[undo.tileId];
+        return next;
       });
-      const data = await res.json();
-      if (data.success) {
-        setLogs(prev => {
-          const next = { ...prev };
-          delete next[tileId];
-          return next;
-        });
-        lastSeenRef.current[tileId] = '';
-        if (fetchActivityRef.current) fetchActivityRef.current();
-      }
-    } catch (err) {
-      console.error('Undo failed:', err);
+      lastSeenRef.current[undo.tileId] = '';
+      if (fetchActivityRef.current) fetchActivityRef.current();
     }
     setUndo(null);
   }, [undo]);

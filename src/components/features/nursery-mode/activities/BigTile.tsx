@@ -87,11 +87,6 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
                 style={{ minHeight: 44, opacity: btn.disabled ? 0.5 : 1 }}
               >
                 {btn.label}
-                {btn.timerText ? (
-                  <span className="nursery-serif" style={{ fontStyle: 'italic', marginLeft: 6, opacity: 0.9 }}>
-                    {btn.timerText}
-                  </span>
-                ) : null}
               </button>
             ))}
             <button

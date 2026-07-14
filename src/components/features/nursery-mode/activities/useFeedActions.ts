@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
 import { ActiveBreastFeedResponse } from '@/app/api/types';
-import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS } from './types';
+import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS, undoDeleteLog } from './types';
 
 type FeedPhase = 'idle' | 'feeding' | 'paused';
 
@@ -128,7 +128,12 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       if (data.success) {
         onLog('feed', `${t('Bottle')}${avgBottleAmount ? ` ${avgBottleAmount} ${defaultUnit.toLowerCase()}` : ''}`);
         if (data.data?.id) {
-          onUndoable({ id: data.data.id, endpoint: '/api/feed-log', message: t('Bottle logged') });
+          const logId = data.data.id;
+          onUndoable({
+            tileId: 'feed',
+            message: t('Bottle logged'),
+            undo: () => undoDeleteLog('/api/feed-log', logId),
+          });
         }
       }
     } catch (err) {
@@ -233,7 +238,19 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
         const parts = [];
         if (leftTotalStop > 0) parts.push(`L: ${formatMMSS(leftTotalStop)}`);
         if (rightTotalStop > 0) parts.push(`R: ${formatMMSS(rightTotalStop)}`);
-        onLog('feed', parts.join(' ') || t('Breast L'));
+        onLog('feed', parts.join(' ') || t('Left Breast'));
+        // The server created the feed log entries; undo deletes them all.
+        const createdIds: string[] = data.data?.feedLogIds || [];
+        if (createdIds.length > 0) {
+          onUndoable({
+            tileId: 'feed',
+            message: t('Feed logged'),
+            undo: async () => {
+              const results = await Promise.all(createdIds.map(id => undoDeleteLog('/api/feed-log', id)));
+              return results.every(Boolean);
+            },
+          });
+        }
       }
     } catch (err) {
       console.error('Error ending breastfeed:', err);
@@ -243,7 +260,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       setPhase('idle');
       setCurrentElapsed(0);
     }
-  }, [activeFeed, currentElapsed, onLog, submitting, t]);
+  }, [activeFeed, currentElapsed, onLog, onUndoable, submitting, t]);
 
   // Computed totals (same as ActiveFeedBanner)
   const leftTotal = activeFeed
@@ -257,7 +274,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   let buttons: ActionButton[];
 
   if (phase === 'paused' && activeFeed) {
-    statusText = `${t('Paused')}  ·  L: ${formatMMSS(leftTotal)}  R: ${formatMMSS(rightTotal)}`;
+    statusText = `${t('Paused')} · L: ${formatMMSS(leftTotal)} R: ${formatMMSS(rightTotal)}`;
     buttons = [
       { key: 'resumeLeft', label: t('Resume Left'), onClick: () => handleResume('LEFT'), disabled: submitting },
       { key: 'resumeRight', label: t('Resume Right'), onClick: () => handleResume('RIGHT'), disabled: submitting },
@@ -266,7 +283,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   } else if (phase === 'feeding' && activeFeed) {
     const sideLabel = activeFeed.activeSide === 'LEFT' ? t('Left Side') : t('Right Side');
     const activeSideTotal = activeFeed.activeSide === 'LEFT' ? leftTotal : rightTotal;
-    statusText = `${sideLabel} — ${formatMMSS(activeSideTotal)}  ·  L: ${formatMMSS(leftTotal)}  R: ${formatMMSS(rightTotal)}`;
+    statusText = `${sideLabel}: ${formatMMSS(activeSideTotal)}`;
     buttons = [
       { key: 'switch', label: t('Switch'), onClick: handleSwitch, disabled: submitting },
       { key: 'pause', label: t('Pause'), onClick: handlePause, disabled: submitting },
@@ -275,8 +292,8 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   } else {
     buttons = [
       { key: 'bottle', label: avgBottleAmount ? `${t('Bottle')} (${avgBottleAmount})` : t('Bottle'), onClick: submitBottle, disabled: submitting },
-      { key: 'breastL', label: t('Breast L'), onClick: () => startBreastFeed('LEFT'), disabled: submitting },
-      { key: 'breastR', label: t('Breast R'), onClick: () => startBreastFeed('RIGHT'), disabled: submitting },
+      { key: 'breastL', label: t('Left Breast'), onClick: () => startBreastFeed('LEFT'), disabled: submitting },
+      { key: 'breastR', label: t('Right Breast'), onClick: () => startBreastFeed('RIGHT'), disabled: submitting },
     ];
   }
 

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
-import { ActivityHookArgs, ActivityView } from './types';
+import { ActivityHookArgs, ActivityView, undoDeleteLog } from './types';
 
 /**
  * Diaper activity — transplanted 1:1 from DiaperTile.tsx.
@@ -36,7 +36,12 @@ export function useDiaperActions({ babyId, toUTCString, onLog, onUndoable }: Act
             DIRTY: t('Dirty diaper logged'),
             BOTH: t('Diaper logged'),
           };
-          onUndoable({ id: data.data.id, endpoint: '/api/diaper-log', message: messages[type] || t('Diaper logged') });
+          const logId = data.data.id;
+          onUndoable({
+            tileId: 'diaper',
+            message: messages[type] || t('Diaper logged'),
+            undo: () => undoDeleteLog('/api/diaper-log', logId),
+          });
         }
       }
     } catch (err) {

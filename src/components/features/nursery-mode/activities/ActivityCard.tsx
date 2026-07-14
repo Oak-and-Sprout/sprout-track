@@ -27,12 +27,7 @@ export function ActivityCard({ view, log, iconColor, iconShape }: ActivityCardPr
         </div>
         <div className="nursery-card-meta">
           {statusText ? (
-            <div
-              className="nursery-serif t"
-              style={{ whiteSpace: 'normal', fontStyle: 'italic' }}
-            >
-              {statusText}
-            </div>
+            <div className="status">{statusText}</div>
           ) : log ? (
             <>
               <div className="t">{log.last}</div>
@@ -54,11 +49,6 @@ export function ActivityCard({ view, log, iconColor, iconShape }: ActivityCardPr
               style={btn.disabled ? { opacity: 0.5 } : undefined}
             >
               {btn.label}
-              {btn.timerText ? (
-                <span className="nursery-serif" style={{ fontStyle: 'italic', marginLeft: 6, opacity: 0.9 }}>
-                  {btn.timerText}
-                </span>
-              ) : null}
             </button>
           );
         })}

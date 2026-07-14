@@ -181,9 +181,9 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       rightDuration: body.rightDuration,
     });
 
-    return NextResponse.json<ApiResponse<{ feedLogsCreated: number }>>({
+    return NextResponse.json<ApiResponse<{ feedLogsCreated: number; feedLogIds: string[] }>>({
       success: true,
-      data: { feedLogsCreated: feedLogs.length },
+      data: { feedLogsCreated: feedLogs.length, feedLogIds: feedLogs.map(log => log.id) },
     });
   } catch (error) {
     console.error('Error ending active breastfeed:', error);

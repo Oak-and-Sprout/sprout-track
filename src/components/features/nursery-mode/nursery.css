@@ -9,8 +9,10 @@
 
 /* ---- stage ---- */
 /* The stage overlays the whole app (it is not a standalone document root),
-   so it is fixed/inset instead of the prototype's 100vw/100vh flex child. */
-.nursery-stage { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; isolation: isolate; }
+   so it is fixed/inset instead of the prototype's 100vw/100vh flex child.
+   color:#fff replaces the prototype's body{color:#fff} — the app's default text
+   color underneath is near-black in light mode, so inheritance is reset here. */
+.nursery-stage { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; isolation: isolate; color: #fff; -webkit-font-smoothing: antialiased; }
 .nursery-bg { position: absolute; inset: 0; z-index: 0; transition: filter .5s ease; }
 .nursery-bg-grad { position: absolute; inset: 0; }
 .nursery-blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: .5; will-change: transform; }
@@ -106,6 +108,8 @@
 .nursery-card-meta { text-align: right; flex-shrink: 0; min-width: 0; }
 .nursery-card-meta .t { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(15px, 1.35vw, 21px); color: rgba(255,255,255,.92); white-space: nowrap; }
 .nursery-card-meta .d { font-size: clamp(11px, 1vw, 14px); color: rgba(255,255,255,.6); margin-top: 2px; white-space: nowrap; }
+/* Active-timer status ("Right Side: 3:57") — same serif as .t but sized to use the header space. */
+.nursery-card-meta .status { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(24px, 2.3vw, 38px); line-height: 1.05; color: rgba(255,255,255,.95); white-space: normal; font-variant-numeric: tabular-nums; }
 .nursery-card-actions { display: flex; gap: clamp(8px, .8vw, 12px); }
 .nursery-abtn { flex: 1; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(12px, 1.15vw, 18px) 8px; font-size: clamp(13px, 1.2vw, 17px); font-weight: 500; transition: transform .1s, background .15s; white-space: nowrap; }
 .nursery-abtn:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .08)); }

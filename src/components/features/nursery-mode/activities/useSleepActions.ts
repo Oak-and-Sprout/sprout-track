@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
-import { ActivityHookArgs, ActivityView, ActionButton, formatHMMSS } from './types';
+import { ActivityHookArgs, ActivityView, ActionButton, formatHMMSS, undoDeleteLog } from './types';
 
 // Intentional nursery-mode subset of DEFAULT_SLEEP_LOCATIONS (src/constants/sleepLocations.ts)
 const LOCATIONS = ['Crib', 'Contact'];
@@ -13,7 +13,7 @@ type SleepPhase = 'awake' | 'selecting_location' | 'sleeping';
  * Sleep activity state machine — transplanted 1:1 from SleepTile.tsx.
  * POST start captures id; PUT ?id= endTime on wake; checks ongoing sleep on mount.
  */
-export function useSleepActions({ babyId, toUTCString, onLog }: ActivityHookArgs): ActivityView {
+export function useSleepActions({ babyId, toUTCString, onLog, onUndoable }: ActivityHookArgs): ActivityView {
   const { t } = useLocalization();
   const [phase, setPhase] = useState<SleepPhase>('awake');
   const [activeSleepId, setActiveSleepId] = useState<string | null>(null);
@@ -81,17 +81,32 @@ export function useSleepActions({ babyId, toUTCString, onLog }: ActivityHookArgs
       });
       const data = await res.json();
       if (data.success && data.data) {
-        setActiveSleepId(data.data.id);
+        const logId = data.data.id;
+        setActiveSleepId(logId);
         setSleepStart(now);
         setPhase('sleeping');
         onLog('sleep', `${t('Start Sleep')} — ${location}`);
+        onUndoable({
+          tileId: 'sleep',
+          message: t('Sleep started'),
+          undo: async () => {
+            const ok = await undoDeleteLog('/api/sleep-log', logId);
+            if (ok) {
+              setPhase('awake');
+              setActiveSleepId(null);
+              setSleepStart(null);
+              setElapsed(0);
+            }
+            return ok;
+          },
+        });
       }
     } catch (err) {
       console.error('Error starting sleep:', err);
     } finally {
       setSubmitting(false);
     }
-  }, [babyId, toUTCString, onLog, submitting, t]);
+  }, [babyId, toUTCString, onLog, onUndoable, submitting, t]);
 
   const endSleep = useCallback(async () => {
     if (submitting || !activeSleepId) return;
@@ -110,25 +125,56 @@ export function useSleepActions({ babyId, toUTCString, onLog }: ActivityHookArgs
       const data = await res.json();
       if (data.success) {
         onLog('sleep', `${t('Wake Up')} — ${formatHMMSS(elapsed)}`);
+        // Capture the session so undo can resume it (clear endTime, restore the timer).
+        const endedId = activeSleepId;
+        const endedStart = sleepStart;
         setPhase('awake');
         setActiveSleepId(null);
         setSleepStart(null);
         setElapsed(0);
+        onUndoable({
+          tileId: 'sleep',
+          message: t('Sleep logged'),
+          undo: async () => {
+            try {
+              const undoToken = localStorage.getItem('authToken');
+              const undoRes = await fetch(`/api/sleep-log?id=${endedId}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: undoToken ? `Bearer ${undoToken}` : '',
+                },
+                body: JSON.stringify({ endTime: null, duration: null }),
+              });
+              const undoData = await undoRes.json();
+              if (undoData.success) {
+                setActiveSleepId(endedId);
+                setSleepStart(endedStart);
+                setPhase('sleeping');
+                return true;
+              }
+              return false;
+            } catch (err) {
+              console.error('Undo failed:', err);
+              return false;
+            }
+          },
+        });
       }
     } catch (err) {
       console.error('Error ending sleep:', err);
     } finally {
       setSubmitting(false);
     }
-  }, [activeSleepId, elapsed, toUTCString, onLog, submitting, t]);
+  }, [activeSleepId, sleepStart, elapsed, toUTCString, onLog, onUndoable, submitting, t]);
 
   let statusText: string | null = null;
   let buttons: ActionButton[];
 
   if (phase === 'sleeping') {
-    statusText = `${t('Sleeping')} — ${formatHMMSS(elapsed)}`;
+    statusText = `${t('Sleeping')}: ${formatHMMSS(elapsed)}`;
     buttons = [
-      { key: 'wake', label: t('Wake Up'), onClick: endSleep, emphasized: true, timerText: formatHMMSS(elapsed), disabled: submitting, wide: true },
+      { key: 'wake', label: t('Wake Up'), onClick: endSleep, emphasized: true, disabled: submitting, wide: true },
     ];
   } else if (phase === 'selecting_location') {
     statusText = t('Select Location');

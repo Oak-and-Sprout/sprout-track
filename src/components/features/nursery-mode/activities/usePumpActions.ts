@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
-import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS } from './types';
+import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS, undoDeleteLog } from './types';
 
 type PumpSide = 'left' | 'right' | 'both';
 type PumpPhase = 'idle' | 'timing' | 'paused' | 'selecting_action';
@@ -12,7 +12,7 @@ type PumpPhase = 'idle' | 'timing' | 'paused' | 'selecting_action';
  * Local timer; enableBreastMilkTracking===false skips action selection;
  * POST /api/pump-log on submit.
  */
-export function usePumpActions({ babyId, toUTCString, onLog, enableBreastMilkTracking = true }: ActivityHookArgs): ActivityView {
+export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableBreastMilkTracking = true }: ActivityHookArgs): ActivityView {
   const { t } = useLocalization();
   const [phase, setPhase] = useState<PumpPhase>('idle');
   const [activeSide, setActiveSide] = useState<PumpSide | null>(null);
@@ -99,6 +99,14 @@ export function usePumpActions({ babyId, toUTCString, onLog, enableBreastMilkTra
         const action = actionLabels[pumpAction] || pumpAction;
         const side = sideLabelsMap[activeSide] || activeSide;
         onLog('pump', [side, formatMMSS(elapsed), action].join(' — '));
+        if (data.data?.id) {
+          const logId = data.data.id;
+          onUndoable({
+            tileId: 'pump',
+            message: t('Pump logged'),
+            undo: () => undoDeleteLog('/api/pump-log', logId),
+          });
+        }
       }
     } catch (err) {
       console.error('Error logging pump:', err);
@@ -111,7 +119,7 @@ export function usePumpActions({ babyId, toUTCString, onLog, enableBreastMilkTra
       setPauseAccumulated(0);
       setElapsed(0);
     }
-  }, [babyId, startTime, activeSide, elapsed, toUTCString, onLog, submitting, t]);
+  }, [babyId, startTime, activeSide, elapsed, toUTCString, onLog, onUndoable, submitting, t]);
 
   const handleStop = () => {
     if (enableBreastMilkTracking === false) {
@@ -122,9 +130,9 @@ export function usePumpActions({ babyId, toUTCString, onLog, enableBreastMilkTra
   };
 
   const sideLabels: Record<PumpSide, string> = {
-    left: t('left side running'),
-    right: t('right side running'),
-    both: t('both sides running'),
+    left: t('Left Side'),
+    right: t('Right Side'),
+    both: t('Both'),
   };
 
   const canSwitch = activeSide === 'left' || activeSide === 'right';
@@ -141,12 +149,8 @@ export function usePumpActions({ babyId, toUTCString, onLog, enableBreastMilkTra
     ];
   } else if ((phase === 'timing' || phase === 'paused') && activeSide) {
     const isPaused = phase === 'paused';
-    const sidePausedLabels: Record<PumpSide, string> = {
-      left: `${t('Paused')} — ${t('Left Side')} — ${formatMMSS(elapsed)}`,
-      right: `${t('Paused')} — ${t('Right Side')} — ${formatMMSS(elapsed)}`,
-      both: `${t('Paused')} — ${formatMMSS(elapsed)}`,
-    };
-    statusText = isPaused ? sidePausedLabels[activeSide] : sideLabels[activeSide];
+    const sideTimer = `${sideLabels[activeSide]}: ${formatMMSS(elapsed)}`;
+    statusText = isPaused ? `${t('Paused')} · ${sideTimer}` : sideTimer;
     if (canSwitch) {
       buttons.push({ key: 'switch', label: t('Switch'), onClick: handleSwitch });
     }
@@ -155,13 +159,7 @@ export function usePumpActions({ babyId, toUTCString, onLog, enableBreastMilkTra
     } else {
       buttons.push({ key: 'pause', label: t('Pause'), onClick: handlePause });
     }
-    buttons.push({
-      key: 'stop',
-      label: t('Stop'),
-      onClick: handleStop,
-      emphasized: true,
-      timerText: isPaused ? undefined : formatMMSS(elapsed),
-    });
+    buttons.push({ key: 'stop', label: t('Stop'), onClick: handleStop, emphasized: true });
   } else {
     buttons = [
       { key: 'startLeft', label: t('Start Left'), onClick: () => handleStart('left') },
