@@ -35,6 +35,8 @@ export function useNurserySettings(): {
   const [settings, setSettings] = useState<NurserySettings>(readLocalMirror);
   const [isLoading, setIsLoading] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSettingsRef = useRef<NurserySettings | null>(null);
+  const inflightSavesRef = useRef(0);
   const settingsRef = useRef<NurserySettings>(settings);
   settingsRef.current = settings;
 
@@ -43,7 +45,37 @@ export function useNurserySettings(): {
     return window.localStorage.getItem('caretakerId');
   }, []);
 
+  const postSettings = useCallback(
+    async (toSave: NurserySettings) => {
+      inflightSavesRef.current += 1;
+      try {
+        const caretakerId = getCaretakerId();
+        const authToken = typeof window !== 'undefined' ? window.localStorage.getItem('authToken') : null;
+        await fetch('/api/nursery-mode-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authToken ? `Bearer ${authToken}` : '',
+          },
+          body: JSON.stringify({ caretakerId, settings: toSave }),
+        });
+      } catch (err) {
+        console.error('Failed to save nursery mode settings:', err);
+      } finally {
+        inflightSavesRef.current -= 1;
+      }
+    },
+    [getCaretakerId]
+  );
+
   const fetchSettings = useCallback(async () => {
+    // Don't clobber a local edit that hasn't been persisted yet: skip the
+    // refetch while a debounced save is scheduled or a POST is in flight
+    // (last-write-wins — the next focus refetch will reconcile).
+    if (debounceRef.current !== null || inflightSavesRef.current > 0) {
+      setIsLoading(false);
+      return;
+    }
     try {
       const caretakerId = getCaretakerId();
       const authToken = typeof window !== 'undefined' ? window.localStorage.getItem('authToken') : null;
@@ -76,31 +108,35 @@ export function useNurserySettings(): {
     };
   }, [fetchSettings]);
 
+  // On unmount, flush any debounce-pending save immediately so the final
+  // edit isn't lost (value is already normalized and mirrored locally).
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current !== null) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+        const toSave = pendingSettingsRef.current;
+        pendingSettingsRef.current = null;
+        if (toSave) postSettings(toSave);
+      }
+    };
+  }, [postSettings]);
+
   const updateSettings = useCallback(
     (patch: Partial<NurserySettings>) => {
       const merged = normalizeNurserySettings({ ...settingsRef.current, ...patch });
       setSettings(merged);
       writeLocalMirror(merged);
 
+      pendingSettingsRef.current = merged;
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(async () => {
-        try {
-          const caretakerId = getCaretakerId();
-          const authToken = typeof window !== 'undefined' ? window.localStorage.getItem('authToken') : null;
-          await fetch('/api/nursery-mode-settings', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: authToken ? `Bearer ${authToken}` : '',
-            },
-            body: JSON.stringify({ caretakerId, settings: merged }),
-          });
-        } catch (err) {
-          console.error('Failed to save nursery mode settings:', err);
-        }
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null;
+        pendingSettingsRef.current = null;
+        postSettings(merged);
       }, 500);
     },
-    [getCaretakerId]
+    [postSettings]
   );
 
   return { settings, isLoading, updateSettings };
