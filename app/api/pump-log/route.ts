@@ -5,6 +5,7 @@ import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse, calculateDurationMinutes } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
 import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
+import { autoPumpFeedNotes, AUTO_PUMP_FEED_PREFIX } from '@/src/utils/breastMilkInventory';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -41,7 +42,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     
     // Calculate total amount if not provided but left and right amounts are
     let totalAmount = body.totalAmount;
-    if (!totalAmount && (body.leftAmount || body.rightAmount)) {
+    if (totalAmount === undefined && (body.leftAmount !== undefined || body.rightAmount !== undefined)) {
       totalAmount = (body.leftAmount || 0) + (body.rightAmount || 0);
     }
     
@@ -51,47 +52,51 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid pump action. Must be STORED, FED, or DISCARDED.' }, { status: 400 });
     }
 
-    const pumpLog = await prisma.pumpLog.create({
-      data: {
-        babyId: body.babyId,
-        startTime: startTimeUTC,
-        endTime: endTimeUTC,
-        duration,
-        leftAmount: body.leftAmount,
-        rightAmount: body.rightAmount,
-        totalAmount,
-        unitAbbr: body.unitAbbr,
-        pumpAction,
-        notes: body.notes,
-        caretakerId: caretakerId,
-        familyId: userFamilyId,
-      },
-    });
-
-    // If pump action is "FED", auto-create a bottle feed log (only when breast milk tracking is enabled)
     const familySettings = await prisma.settings.findFirst({
       where: { familyId: userFamilyId },
       select: { enableBreastMilkTracking: true },
     });
-    if (familySettings?.enableBreastMilkTracking !== false && pumpAction === 'FED' && totalAmount) {
-      try {
-        await prisma.feedLog.create({
+    const trackingEnabled = familySettings?.enableBreastMilkTracking !== false;
+
+    const pumpLog = await prisma.$transaction(async (tx) => {
+      const createdPumpLog = await tx.pumpLog.create({
+        data: {
+          babyId: body.babyId,
+          startTime: startTimeUTC,
+          endTime: endTimeUTC,
+          duration,
+          leftAmount: body.leftAmount,
+          rightAmount: body.rightAmount,
+          totalAmount,
+          unitAbbr: body.unitAbbr,
+          pumpAction,
+          notes: body.notes,
+          caretakerId: caretakerId,
+          familyId: userFamilyId,
+        },
+      });
+
+      // Keep the feeding record for reports, but link it to the pump so it can
+      // be synchronized and excluded from stored-inventory consumption.
+      if (trackingEnabled && pumpAction === 'FED' && typeof totalAmount === 'number' && totalAmount > 0) {
+        await tx.feedLog.create({
           data: {
             time: startTimeUTC,
             type: 'BOTTLE',
             amount: totalAmount,
             unitAbbr: body.unitAbbr || 'OZ',
             bottleType: 'Breast Milk',
-            notes: body.notes ? `Auto-created from pump: ${body.notes}` : 'Auto-created from pump session',
+            notes: autoPumpFeedNotes(body.notes),
+            sourcePumpId: createdPumpLog.id,
             babyId: body.babyId,
             caretakerId: caretakerId,
             familyId: userFamilyId,
           },
         });
-      } catch (feedError) {
-        console.error('Error auto-creating feed log from pump:', feedError);
       }
-    }
+
+      return createdPumpLog;
+    });
 
     // Format dates as ISO strings for response
     const response: PumpLogResponse = {
@@ -208,9 +213,86 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       data.pumpAction = body.pumpAction;
     }
 
-    const pumpLog = await prisma.pumpLog.update({
-      where: { id },
-      data,
+    const finalStartTime = body.startTime ? toUTC(body.startTime) : existingPumpLog.startTime;
+    const finalTotalAmount = body.totalAmount !== undefined
+      ? body.totalAmount
+      : (body.leftAmount !== undefined || body.rightAmount !== undefined)
+        ? (body.leftAmount !== undefined ? body.leftAmount : existingPumpLog.leftAmount || 0) +
+          (body.rightAmount !== undefined ? body.rightAmount : existingPumpLog.rightAmount || 0)
+        : existingPumpLog.totalAmount;
+    const finalPumpAction = body.pumpAction ?? existingPumpLog.pumpAction;
+    const finalUnitAbbr = body.unitAbbr !== undefined ? body.unitAbbr : existingPumpLog.unitAbbr;
+    const finalNotes = body.notes !== undefined ? body.notes : existingPumpLog.notes;
+    const finalBabyId = body.babyId !== undefined ? body.babyId : existingPumpLog.babyId;
+
+    const familySettings = await prisma.settings.findFirst({
+      where: { familyId: userFamilyId },
+      select: { enableBreastMilkTracking: true },
+    });
+    const trackingEnabled = familySettings?.enableBreastMilkTracking !== false;
+
+    const pumpLog = await prisma.$transaction(async (tx) => {
+      const linkedAutoFeed = await tx.feedLog.findFirst({
+        where: {
+          sourcePumpId: id,
+          familyId: userFamilyId,
+          babyId: existingPumpLog.babyId,
+        },
+      });
+      const legacyAutoFeed = linkedAutoFeed ? null : await tx.feedLog.findFirst({
+        where: {
+          sourcePumpId: null,
+          babyId: existingPumpLog.babyId,
+          familyId: userFamilyId,
+          time: existingPumpLog.startTime,
+          type: 'BOTTLE',
+          bottleType: 'Breast Milk',
+          ...(existingPumpLog.totalAmount != null ? { amount: existingPumpLog.totalAmount } : {}),
+          notes: { startsWith: AUTO_PUMP_FEED_PREFIX },
+          deletedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const updatedPumpLog = await tx.pumpLog.update({
+        where: { id },
+        data,
+      });
+
+      const autoFeedId = linkedAutoFeed?.id || legacyAutoFeed?.id;
+      const shouldHaveAutoFeed = trackingEnabled && finalPumpAction === 'FED' &&
+        typeof finalTotalAmount === 'number' && finalTotalAmount > 0;
+
+      if (shouldHaveAutoFeed) {
+        const feedData = {
+          time: finalStartTime,
+          type: 'BOTTLE' as const,
+          amount: finalTotalAmount,
+          unitAbbr: finalUnitAbbr || 'OZ',
+          bottleType: 'Breast Milk',
+          notes: autoPumpFeedNotes(finalNotes),
+          sourcePumpId: id,
+          deletedAt: null,
+          babyId: finalBabyId,
+          caretakerId: existingPumpLog.caretakerId,
+          familyId: userFamilyId,
+        };
+
+        if (autoFeedId) {
+          await tx.feedLog.update({ where: { id: autoFeedId }, data: feedData });
+        } else {
+          await tx.feedLog.create({ data: feedData });
+        }
+      } else {
+        if (linkedAutoFeed) {
+          await tx.feedLog.delete({ where: { id: linkedAutoFeed.id } });
+        }
+        if (legacyAutoFeed) {
+          await tx.feedLog.delete({ where: { id: legacyAutoFeed.id } });
+        }
+      }
+
+      return updatedPumpLog;
     });
 
     // Format dates as ISO strings for response
@@ -374,9 +456,37 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Hard delete the record
-    await prisma.pumpLog.delete({
-      where: { id },
+    await prisma.$transaction(async (tx) => {
+      const linkedAutoFeed = await tx.feedLog.findFirst({
+        where: {
+          sourcePumpId: id,
+          familyId: userFamilyId,
+          babyId: existingPumpLog.babyId,
+        },
+      });
+      const legacyAutoFeed = linkedAutoFeed ? null : await tx.feedLog.findFirst({
+        where: {
+          sourcePumpId: null,
+          babyId: existingPumpLog.babyId,
+          familyId: userFamilyId,
+          time: existingPumpLog.startTime,
+          type: 'BOTTLE',
+          bottleType: 'Breast Milk',
+          ...(existingPumpLog.totalAmount != null ? { amount: existingPumpLog.totalAmount } : {}),
+          notes: { startsWith: AUTO_PUMP_FEED_PREFIX },
+          deletedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (linkedAutoFeed) {
+        await tx.feedLog.delete({ where: { id: linkedAutoFeed.id } });
+      }
+      if (legacyAutoFeed) {
+        await tx.feedLog.delete({ where: { id: legacyAutoFeed.id } });
+      }
+
+      await tx.pumpLog.delete({ where: { id } });
     });
 
     return NextResponse.json<ApiResponse<void>>({
