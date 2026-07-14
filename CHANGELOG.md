@@ -28,12 +28,17 @@
 - Preview your import first and choose whether each exported child is added as a new baby or mapped to an existing one
 - Non-destructive and safe to re-run — your existing data is never modified or replaced, and already-imported records are automatically skipped
 
+#### Other Enhancements
+- Added ability to globally adjust sleep locations with rename, merge, and hide functionality (in settings page)
+
 #### Bugfixes
 - Fixed breast milk inventory balance so pump sessions you fed directly no longer incorrectly reduce your stored milk count. Thank you **philzx**!
 - Pump entries now validate their unit and keep it consistent to prevent inventory miscalculations
 
 #### Localization
 - Added and updated translations across all supported languages for the new features
+
+
 
 ## v1.4.0 - Screen Reader Accessibility, Bath Types, and Feed Timer Controls
 
