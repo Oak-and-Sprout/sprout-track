@@ -33,6 +33,53 @@ export function isAutoCreatedPumpFeed(feed: Pick<BreastMilkFeedInventoryRow, 'so
   );
 }
 
+/**
+ * Whether a pump log should have an auto-created "Breast Milk" bottle feed
+ * mirroring it: only when breast-milk tracking is on, the pump was FED, and it
+ * carries a positive amount.
+ */
+export function shouldHaveAutoPumpFeed(params: {
+  trackingEnabled: boolean;
+  pumpAction: string;
+  totalAmount: number | null | undefined;
+}): boolean {
+  const { trackingEnabled, pumpAction, totalAmount } = params;
+  return (
+    trackingEnabled &&
+    pumpAction === 'FED' &&
+    typeof totalAmount === 'number' &&
+    totalAmount > 0
+  );
+}
+
+export type AutoFeedSyncPlan =
+  | { action: 'upsert'; updateId: string | null }
+  | { action: 'delete'; deleteIds: string[] }
+  | { action: 'noop' };
+
+/**
+ * Decide how to reconcile a pump's auto-created feed given the desired end state
+ * and the feeds currently found for it. A directly linked feed (via sourcePumpId)
+ * is preferred; a legacy note-matched feed is adopted when no linked feed exists.
+ */
+export function planAutoFeedSync(params: {
+  shouldHaveAutoFeed: boolean;
+  linkedAutoFeedId?: string | null;
+  legacyAutoFeedId?: string | null;
+}): AutoFeedSyncPlan {
+  const { shouldHaveAutoFeed, linkedAutoFeedId, legacyAutoFeedId } = params;
+
+  if (shouldHaveAutoFeed) {
+    return { action: 'upsert', updateId: linkedAutoFeedId || legacyAutoFeedId || null };
+  }
+
+  const deleteIds = [linkedAutoFeedId, legacyAutoFeedId].filter(
+    (value): value is string => Boolean(value)
+  );
+
+  return deleteIds.length > 0 ? { action: 'delete', deleteIds } : { action: 'noop' };
+}
+
 export function calculateBreastMilkBalance({
   pumpLogs,
   adjustments,

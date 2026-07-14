@@ -5,7 +5,13 @@ import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse, calculateDurationMinutes } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
 import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
-import { autoPumpFeedNotes, AUTO_PUMP_FEED_PREFIX } from '@/src/utils/breastMilkInventory';
+import {
+  autoPumpFeedNotes,
+  AUTO_PUMP_FEED_PREFIX,
+  planAutoFeedSync,
+  shouldHaveAutoPumpFeed,
+} from '@/src/utils/breastMilkInventory';
+import { normalizeVolumeUnit } from '@/src/utils/unit-conversion';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -52,6 +58,17 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid pump action. Must be STORED, FED, or DISCARDED.' }, { status: 400 });
     }
 
+    // Validate/normalize the volume unit — an unknown unit silently corrupts
+    // breast-milk balances (convertVolume no-ops on units it can't convert).
+    let unitAbbr = body.unitAbbr;
+    if (unitAbbr !== undefined) {
+      const normalizedUnit = normalizeVolumeUnit(unitAbbr);
+      if (!normalizedUnit) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid unit. Supported units are OZ and ML.' }, { status: 400 });
+      }
+      unitAbbr = normalizedUnit;
+    }
+
     const familySettings = await prisma.settings.findFirst({
       where: { familyId: userFamilyId },
       select: { enableBreastMilkTracking: true },
@@ -68,7 +85,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
           leftAmount: body.leftAmount,
           rightAmount: body.rightAmount,
           totalAmount,
-          unitAbbr: body.unitAbbr,
+          unitAbbr,
           pumpAction,
           notes: body.notes,
           caretakerId: caretakerId,
@@ -78,13 +95,13 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
 
       // Keep the feeding record for reports, but link it to the pump so it can
       // be synchronized and excluded from stored-inventory consumption.
-      if (trackingEnabled && pumpAction === 'FED' && typeof totalAmount === 'number' && totalAmount > 0) {
+      if (shouldHaveAutoPumpFeed({ trackingEnabled, pumpAction, totalAmount })) {
         await tx.feedLog.create({
           data: {
             time: startTimeUTC,
             type: 'BOTTLE',
             amount: totalAmount,
-            unitAbbr: body.unitAbbr || 'OZ',
+            unitAbbr: unitAbbr || 'OZ',
             bottleType: 'Breast Milk',
             notes: autoPumpFeedNotes(body.notes),
             sourcePumpId: createdPumpLog.id,
@@ -109,7 +126,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     };
 
     // Notify subscribers about activity creation (non-blocking)
-    notifyActivityCreated(pumpLog.babyId, 'pump', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { totalAmount, unitAbbr: body.unitAbbr }).catch(console.error);
+    notifyActivityCreated(pumpLog.babyId, 'pump', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { totalAmount, unitAbbr }).catch(console.error);
 
     return NextResponse.json<ApiResponse<PumpLogResponse>>({
       success: true,
@@ -166,6 +183,26 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
         },
         { status: 404 }
       );
+    }
+
+    // If the caller is reassigning the pump to a baby, that baby must belong to
+    // their family — never trust a client-sent babyId across families.
+    if (body.babyId !== undefined && body.babyId !== existingPumpLog.babyId) {
+      const targetBaby = await prisma.baby.findFirst({
+        where: { id: body.babyId, familyId: userFamilyId },
+      });
+      if (!targetBaby) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Baby not found in this family.' }, { status: 404 });
+      }
+    }
+
+    // Validate/normalize the volume unit before it reaches the balance math.
+    if (body.unitAbbr !== undefined) {
+      const normalizedUnit = normalizeVolumeUnit(body.unitAbbr);
+      if (!normalizedUnit) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid unit. Supported units are OZ and ML.' }, { status: 400 });
+      }
+      body.unitAbbr = normalizedUnit;
     }
 
     // Process date fields and prepare data for update
@@ -259,11 +296,17 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
         data,
       });
 
-      const autoFeedId = linkedAutoFeed?.id || legacyAutoFeed?.id;
-      const shouldHaveAutoFeed = trackingEnabled && finalPumpAction === 'FED' &&
-        typeof finalTotalAmount === 'number' && finalTotalAmount > 0;
+      const plan = planAutoFeedSync({
+        shouldHaveAutoFeed: shouldHaveAutoPumpFeed({
+          trackingEnabled,
+          pumpAction: finalPumpAction,
+          totalAmount: finalTotalAmount,
+        }),
+        linkedAutoFeedId: linkedAutoFeed?.id,
+        legacyAutoFeedId: legacyAutoFeed?.id,
+      });
 
-      if (shouldHaveAutoFeed) {
+      if (plan.action === 'upsert') {
         const feedData = {
           time: finalStartTime,
           type: 'BOTTLE' as const,
@@ -278,17 +321,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
           familyId: userFamilyId,
         };
 
-        if (autoFeedId) {
-          await tx.feedLog.update({ where: { id: autoFeedId }, data: feedData });
+        if (plan.updateId) {
+          await tx.feedLog.update({ where: { id: plan.updateId }, data: feedData });
         } else {
           await tx.feedLog.create({ data: feedData });
         }
-      } else {
-        if (linkedAutoFeed) {
-          await tx.feedLog.delete({ where: { id: linkedAutoFeed.id } });
-        }
-        if (legacyAutoFeed) {
-          await tx.feedLog.delete({ where: { id: legacyAutoFeed.id } });
+      } else if (plan.action === 'delete') {
+        for (const feedId of plan.deleteIds) {
+          await tx.feedLog.delete({ where: { id: feedId } });
         }
       }
 
@@ -479,11 +519,16 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
         orderBy: { createdAt: 'desc' },
       });
 
-      if (linkedAutoFeed) {
-        await tx.feedLog.delete({ where: { id: linkedAutoFeed.id } });
-      }
-      if (legacyAutoFeed) {
-        await tx.feedLog.delete({ where: { id: legacyAutoFeed.id } });
+      const plan = planAutoFeedSync({
+        shouldHaveAutoFeed: false,
+        linkedAutoFeedId: linkedAutoFeed?.id,
+        legacyAutoFeedId: legacyAutoFeed?.id,
+      });
+
+      if (plan.action === 'delete') {
+        for (const feedId of plan.deleteIds) {
+          await tx.feedLog.delete({ where: { id: feedId } });
+        }
       }
 
       await tx.pumpLog.delete({ where: { id } });
