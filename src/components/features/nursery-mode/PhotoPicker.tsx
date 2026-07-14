@@ -36,6 +36,7 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setUploadError(null);
     fetchPhotos({ limit: 60 })
       .then((data) => {
         if (!cancelled) setPhotos(data.photos);
@@ -65,15 +67,21 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
     e.target.value = '';
     if (!file || !selectedBaby) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const result = await uploadPhotos([file], { babyId: selectedBaby.id });
       const uploaded = result.photos[0];
       if (uploaded) {
         onPick(uploaded.id);
         onClose();
+      } else {
+        // Per-file failure (quota exceeded, invalid file): the API reports it
+        // in errors[] with a human-readable message while still returning success.
+        setUploadError(result.errors[0]?.error || t('Failed to upload photo'));
       }
     } catch (err) {
       console.error('Failed to upload photo:', err);
+      setUploadError(t('Failed to upload photo'));
     } finally {
       setUploading(false);
     }
@@ -118,6 +126,10 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
           <div className="v">{uploading ? `${t('Loading')}...` : t('Upload photo')}</div>
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleUpload} />
+
+        {uploadError && (
+          <div style={{ padding: '0 0 16px', textAlign: 'center', color: 'rgba(255,255,255,.6)' }}>{uploadError}</div>
+        )}
 
         {loading ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,.6)' }}>{t('Loading')}...</div>
