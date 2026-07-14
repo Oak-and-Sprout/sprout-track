@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { NurserySettings } from '@/src/utils/nursery/settings';
 import { useOutlineSprites } from '../engine/useOutlineSprites';
+import { useDebouncedValue } from '../engine/useDebouncedValue';
 import { placeOutlineField, mulberry32 } from '@/src/utils/nursery/placement';
 import { baseGrad } from './SceneBackground';
 
@@ -30,7 +31,11 @@ export function AmbientScene({ ambient, hue }: AmbientSceneProps) {
   const { pattern, auroraRange, waveMotion, bubbles: bubbleCfg, rot, move, size } = ambient;
 
   const spriteSetId = pattern.indexOf('sprite:') === 0 ? pattern.slice(7) : null;
-  const sprites = useOutlineSprites(spriteSetId, hue);
+  // Debounced: outline-tracing is expensive (canvas rasterize + edge trace) and
+  // permanently caches a blob URL per hue, so dragging the hue slider shouldn't
+  // fire it per input event. The aurora/waves/bubbles CSS paths below stay live.
+  const debouncedHue = useDebouncedValue(hue, 200);
+  const sprites = useOutlineSprites(spriteSetId, debouncedHue);
 
   const bubbles = useMemo(() => {
     const lo = Math.min(bubbleCfg.min, bubbleCfg.max);

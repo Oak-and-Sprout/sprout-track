@@ -5,6 +5,7 @@ import type { CSSProperties, ReactElement } from 'react';
 import { spriteSetById, spriteUrl } from '../spriteManifest';
 import { useRecoloredAsset } from '../engine/useRecoloredAsset';
 import { useOutlineSprites } from '../engine/useOutlineSprites';
+import { useDebouncedValue } from '../engine/useDebouncedValue';
 import { baseGrad } from '../scenes/SceneBackground';
 
 export interface SpriteThumbProps {
@@ -33,8 +34,12 @@ export function SpriteThumb({ setId, mode, base, colors, hue, selected, onClick,
   const recoloredUrl = mode === 'recolored' && poses.length > 0
     ? spriteUrl(setId, poses[Math.floor(pick * poses.length)].file)
     : null;
-  const recolored = useRecoloredAsset(recoloredUrl, base || '#ffffff', colors || []);
-  const outline = useOutlineSprites(mode === 'outline' ? setId : null, hue ?? 0);
+  // Debounced: these thumbs re-recolor/re-trace on every color/hue drag event otherwise.
+  const debouncedBase = useDebouncedValue(base || '#ffffff', 200);
+  const debouncedColors = useDebouncedValue(colors || [], 200);
+  const debouncedHue = useDebouncedValue(hue ?? 0, 200);
+  const recolored = useRecoloredAsset(recoloredUrl, debouncedBase, debouncedColors);
+  const outline = useOutlineSprites(mode === 'outline' ? setId : null, debouncedHue);
 
   let previewStyle: CSSProperties;
   let inner: ReactElement | null = null;

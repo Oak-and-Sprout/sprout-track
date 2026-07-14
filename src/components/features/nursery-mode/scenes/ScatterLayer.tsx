@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { spriteSetById, spriteUrl } from '../spriteManifest';
 import { recoloredSvgUrl } from '../engine/recolorCache';
+import { useDebouncedValue } from '../engine/useDebouncedValue';
 import { placeScatter, mulberry32, PlacedItem } from '@/src/utils/nursery/placement';
 
 interface SpriteAssets { urls: string[]; ars: number[] }
@@ -57,8 +58,12 @@ export interface ScatterLayerProps {
  * sprites in place of the prototype's sprite-sheet slicing/background-position math.
  */
 export function ScatterLayer({ primary, accent, base, colors }: ScatterLayerProps) {
-  const primaryAssets = useRecoloredSpriteSet(primary, base, colors);
-  const accentAssets = useRecoloredSpriteSet(accent, base, colors);
+  // Debounced: each color/base tweak would otherwise re-recolor and re-cache a
+  // permanent blob URL per pose on every input event while dragging a swatch.
+  const debouncedBase = useDebouncedValue(base, 200);
+  const debouncedColors = useDebouncedValue(colors, 200);
+  const primaryAssets = useRecoloredSpriteSet(primary, debouncedBase, debouncedColors);
+  const accentAssets = useRecoloredSpriteSet(accent, debouncedBase, debouncedColors);
 
   // Seeded once per mount: the arrangement is re-dealt per visit. Changing sets
   // re-places items via the new poseARs without reshuffling the seed.

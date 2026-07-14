@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactElement } from 'react';
 import { useRecoloredAsset } from '../engine/useRecoloredAsset';
+import { useDebouncedValue } from '../engine/useDebouncedValue';
 
 export interface RugPreviewDivProps {
   file: string;
@@ -16,7 +17,10 @@ export interface RugPreviewDivProps {
  * Ported from nursery.jsx's RugPrev (514) + coverStyle (104).
  */
 export function RugPreviewDiv({ file, base, colors, className }: RugPreviewDivProps): ReactElement {
-  const asset = useRecoloredAsset(file, base, colors);
+  // Debounced: avoids re-recoloring/re-caching the rug SVG on every color-drag input event.
+  const debouncedBase = useDebouncedValue(base, 200);
+  const debouncedColors = useDebouncedValue(colors, 200);
+  const asset = useRecoloredAsset(file, debouncedBase, debouncedColors);
   const style: CSSProperties = {
     backgroundImage: asset ? `url(${asset.objectUrl})` : 'none',
     backgroundSize: 'cover',

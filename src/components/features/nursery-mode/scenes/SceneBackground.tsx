@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { NurserySettings } from '@/src/utils/nursery/settings';
 import { AmbientScene } from './AmbientScene';
 import { StarlitScene } from './StarlitScene';
@@ -22,8 +23,11 @@ export interface SceneBackgroundProps {
 /**
  * Renders the `.nursery-bg` layer and dispatches to the active scene.
  * This is the only scene entry point the nursery mode container should use.
+ * Wrapped in `memo` below: `settings` and `onPhotoTint` are referentially
+ * stable between activity-timer ticks in NurseryModeContainer, so this stops
+ * the whole scene subtree (stars/scatter/bubbles) from re-rendering every second.
  */
-export function SceneBackground({ settings, onPhotoTint }: SceneBackgroundProps) {
+function SceneBackgroundImpl({ settings, onPhotoTint }: SceneBackgroundProps) {
   const { scene, hue, dim, sat } = settings;
   const filter = `brightness(${(0.32 + (dim / 100) * 0.78).toFixed(2)}) saturate(${((sat / 100) * 1.9).toFixed(2)})`;
 
@@ -62,3 +66,5 @@ export function SceneBackground({ settings, onPhotoTint }: SceneBackgroundProps)
     </div>
   );
 }
+
+export const SceneBackground = memo(SceneBackgroundImpl);

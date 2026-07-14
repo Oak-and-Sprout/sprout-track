@@ -3,6 +3,7 @@
 import { NurserySettings } from '@/src/utils/nursery/settings';
 import { RUGS, rugUrl } from '../spriteManifest';
 import { useRecoloredAsset } from '../engine/useRecoloredAsset';
+import { useDebouncedValue } from '../engine/useDebouncedValue';
 import { backdropStyle, isRug } from './backdropStyle';
 import { ScatterLayer } from './ScatterLayer';
 
@@ -18,7 +19,11 @@ export interface TapestrySceneProps {
 export function TapestryScene({ tapestry }: TapestrySceneProps) {
   const { backdrop, primary, accent, base, colors } = tapestry;
   const rug = isRug(backdrop) ? RUGS.find(r => r.id === backdrop) : undefined;
-  const rugAsset = useRecoloredAsset(rug ? rugUrl(rug.file) : null, base, colors);
+  // Debounced: recoloring the rug SVG (trace + cache a permanent blob URL) is
+  // expensive and shouldn't refire on every color-drag input event.
+  const debouncedBase = useDebouncedValue(base, 200);
+  const debouncedColors = useDebouncedValue(colors, 200);
+  const rugAsset = useRecoloredAsset(rug ? rugUrl(rug.file) : null, debouncedBase, debouncedColors);
 
   return (
     <>

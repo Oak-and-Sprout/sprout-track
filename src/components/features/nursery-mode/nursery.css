@@ -219,7 +219,6 @@
 
 /* scene picker */
 .nursery-scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
-.nursery-scenes.s3 { grid-template-columns: repeat(3, 1fr); }
 .nursery-scene { border: 1.5px solid rgba(255,255,255,.1); border-radius: 15px; overflow: hidden; background: none; color: #fff; padding: 0; text-align: left; transition: border-color .15s; cursor: pointer; }
 .nursery-scene.on { border-color: #fff; }
 .nursery-scene .prev { height: 62px; position: relative; display: grid; place-items: center; color: rgba(255,255,255,.85); }

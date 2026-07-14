@@ -14,7 +14,10 @@ const outlineCache = new Map<string, Promise<RasterAsset>>();
 export function fetchSvgText(url: string): Promise<string> {
   const cached = svgTextCache.get(url);
   if (cached) return cached;
-  const promise = fetch(url).then(r => r.text()).catch(err => {
+  const promise = fetch(url).then(r => {
+    if (!r.ok) throw new Error(`fetchSvgText failed: ${r.status} ${r.statusText} for ${url}`);
+    return r.text();
+  }).catch(err => {
     svgTextCache.delete(url);
     throw err;
   });

@@ -228,6 +228,7 @@ export function SettingsDrawer({
                     className="nursery-srange"
                     style={{ background: `linear-gradient(90deg, oklch(0.6 0.15 ${settings.hue}), oklch(0.65 0.17 ${(settings.hue + 60) % 360}), oklch(0.65 0.17 ${(settings.hue + 140) % 360}))` }}
                     type="range" min={0} max={100} value={ambient.auroraRange}
+                    aria-label={t('Color range')}
                     onChange={e => updateSettings({ ambient: { ...ambient, auroraRange: Number(e.target.value) } })}
                   />
                   <div className="nursery-sval">
@@ -242,6 +243,7 @@ export function SettingsDrawer({
                   <input
                     className="nursery-srange" style={NEUTRAL_TRACK}
                     type="range" min={0} max={100} value={ambient.waveMotion}
+                    aria-label={t('Motion')}
                     onChange={e => updateSettings({ ambient: { ...ambient, waveMotion: Number(e.target.value) } })}
                   />
                   <div className="nursery-sval">{ambient.waveMotion === 0 ? t('Still') : `${ambient.waveMotion}%`}</div>
@@ -254,6 +256,7 @@ export function SettingsDrawer({
                   <input
                     className="nursery-srange" style={NEUTRAL_TRACK}
                     type="range" min={0} max={100} value={ambient.rot}
+                    aria-label={t('Rotation')}
                     onChange={e => updateSettings({ ambient: { ...ambient, rot: Number(e.target.value) } })}
                   />
                   <div className="nursery-sval">{ambient.rot === 0 ? t('Upright') : `${ambient.rot}%`}</div>
@@ -262,6 +265,7 @@ export function SettingsDrawer({
                   <input
                     className="nursery-srange" style={NEUTRAL_TRACK}
                     type="range" min={0} max={100} value={ambient.move}
+                    aria-label={t('Movement')}
                     onChange={e => updateSettings({ ambient: { ...ambient, move: Number(e.target.value) } })}
                   />
                   <div className="nursery-sval">{ambient.move === 0 ? t('Pattern — static') : `${t('Free float')} ${ambient.move}%`}</div>
@@ -270,6 +274,7 @@ export function SettingsDrawer({
                   <input
                     className="nursery-srange" style={NEUTRAL_TRACK}
                     type="range" min={0} max={100} value={ambient.size}
+                    aria-label={t('Icon size')}
                     onChange={e => updateSettings({ ambient: { ...ambient, size: Number(e.target.value) } })}
                   />
                   <div className="nursery-sval">{ambient.size <= 2 ? t('Fixed size') : `${t('Varied')} ${ambient.size}%`}</div>
@@ -282,6 +287,7 @@ export function SettingsDrawer({
                   <input
                     className="nursery-srange" style={NEUTRAL_TRACK}
                     type="range" min={4} max={80} value={ambient.bubbles.count}
+                    aria-label={t('Bubbles')}
                     onChange={e => updateSettings({ ambient: { ...ambient, bubbles: { ...ambient.bubbles, count: Number(e.target.value) } } })}
                   />
                   <div className="nursery-sval">{ambient.bubbles.count} {t('bubbles')}</div>
@@ -290,6 +296,7 @@ export function SettingsDrawer({
                   <input
                     className="nursery-srange" style={NEUTRAL_TRACK}
                     type="range" min={4} max={80} value={ambient.bubbles.min}
+                    aria-label={t('Min size')}
                     onChange={e => updateSettings({ ambient: { ...ambient, bubbles: { ...ambient.bubbles, min: Number(e.target.value) } } })}
                   />
                   <div className="nursery-sval">{ambient.bubbles.min}px</div>
@@ -298,6 +305,7 @@ export function SettingsDrawer({
                   <input
                     className="nursery-srange" style={NEUTRAL_TRACK}
                     type="range" min={10} max={160} value={ambient.bubbles.max}
+                    aria-label={t('Max size')}
                     onChange={e => updateSettings({ ambient: { ...ambient, bubbles: { ...ambient.bubbles, max: Number(e.target.value) } } })}
                   />
                   <div className="nursery-sval">{ambient.bubbles.max}px</div>
@@ -434,6 +442,7 @@ export function SettingsDrawer({
               <input
                 className="nursery-srange" style={{ background: 'linear-gradient(90deg,#1a2035,#c7d2fe)' }}
                 type="range" min={30} max={400} value={settings.starlit.density}
+                aria-label={t('Star density')}
                 onChange={e => updateSettings({ starlit: { ...settings.starlit, density: Number(e.target.value) } })}
               />
               <div className="nursery-sval">{settings.starlit.density} {t('stars')}</div>
@@ -511,6 +520,7 @@ export function SettingsDrawer({
             <div className="nursery-slabel">{t('Background hue')}</div>
             <input
               className="nursery-srange nursery-hue-track" type="range" min={0} max={360} value={settings.hue}
+              aria-label={t('Background hue')}
               onChange={e => updateSettings({ hue: Number(e.target.value) })}
             />
             <div className="nursery-sval">{settings.hue}°</div>
@@ -520,6 +530,7 @@ export function SettingsDrawer({
             <input
               className="nursery-srange" style={{ background: `linear-gradient(90deg,#0b0d16,oklch(0.7 0.12 ${settings.hue}))` }}
               type="range" min={0} max={100} value={settings.dim}
+              aria-label={t('Dim')}
               onChange={e => updateSettings({ dim: Number(e.target.value) })}
             />
             <div className="nursery-sval">{settings.dim}%</div>
@@ -529,6 +540,7 @@ export function SettingsDrawer({
             <input
               className="nursery-srange" style={{ background: `linear-gradient(90deg,#6b7280,oklch(0.6 0.2 ${settings.hue}))` }}
               type="range" min={0} max={100} value={settings.sat}
+              aria-label={t('Saturation')}
               onChange={e => updateSettings({ sat: Number(e.target.value) })}
             />
             <div className="nursery-sval">{settings.sat}%</div>
@@ -540,6 +552,7 @@ export function SettingsDrawer({
             <input
               className="nursery-srange" style={{ background: `linear-gradient(90deg, oklch(0.7 0.1 ${settings.hue}), rgba(255,255,255,.12))` }}
               type="range" min={0} max={100} value={settings.trans}
+              aria-label={t('Button transparency')}
               onChange={e => updateSettings({ trans: Number(e.target.value) })}
             />
             <div className="nursery-sval">{settings.trans}%</div>
