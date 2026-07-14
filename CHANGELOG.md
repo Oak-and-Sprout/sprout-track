@@ -1,5 +1,45 @@
 # Sprout Track Changelog
 
+## v1.5.0 - Nursery Mode Redesign, Photos, and Baby Buddy Import
+
+### Changes
+
+#### Nursery Mode Redesign
+- Redesigned Nursery Mode with immersive, full-screen scenes — pick from Ambient, Starlit, Tapestry, or one of your own photos
+- New Photo scene: choose a photo and the whole nursery screen automatically tints to match its colors
+- Added a personalization drawer to customize scenes, background patterns, color palettes, activity icons, and which activities show up
+- Added new quick-log layouts — switch between cards and big tiles for comfortable one-tap logging
+- One-tap undo if you log an activity by accident
+- Active timers now display large and legible right on the nursery screen (breastfeeding sides and sleep)
+- Everything you personalize is saved per device, and honors your system's reduced-motion setting
+- The in-progress pump timer now survives a page reload or switching babies and back without losing your place
+
+#### Photos
+- Added a new Photos gallery page to browse all of a baby's photos, grouped by month
+- Attach photos directly to feed, milestone, bath, activity, and measurement entries
+- Photo entries appear in the timeline with thumbnails, plus a new "Photos Today" daily stat and a Photo tile on the log-entry screen
+- Added a full-screen photo viewer with favorites, multi-select, and a trash/restore view
+- Added a per-family photo storage quota with a visual usage meter that admins can manage
+- Photos are stored encrypted, the same as vaccine documents
+- In the family-manager/settings page Photo functionality can be turned on and off and global\per family quotas can be set
+
+#### Baby Buddy Import
+- Added the ability to import historical data from a Baby Buddy CSV export (family admins only), found in Settings. Thank you **bachjessen**!
+- Preview your import first and choose whether each exported child is added as a new baby or mapped to an existing one
+- Non-destructive and safe to re-run — your existing data is never modified or replaced, and already-imported records are automatically skipped
+
+#### Other Enhancements
+- Added ability to globally adjust sleep locations with rename, merge, and hide functionality (in settings page)
+
+#### Bugfixes
+- Fixed breast milk inventory balance so pump sessions you fed directly no longer incorrectly reduce your stored milk count. Thank you **philzx**!
+- Pump entries now validate their unit and keep it consistent to prevent inventory miscalculations
+
+#### Localization
+- Added and updated translations across all supported languages for the new features
+
+
+
 ## v1.4.0 - Screen Reader Accessibility, Bath Types, and Feed Timer Controls
 
 ### Changes

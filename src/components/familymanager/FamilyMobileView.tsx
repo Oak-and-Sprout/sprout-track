@@ -32,6 +32,7 @@ interface FamilyData {
   lastEntryAt?: string | null;
   caretakerCount?: number;
   babyCount?: number;
+  photoQuotaMB?: number | null;
 }
 
 interface CaretakerData {
@@ -274,6 +275,27 @@ export default function FamilyMobileView({
                       {selectedFamily.isActive ? t('Active') : t('Inactive')}
                     </span>
                   </div>
+                )}
+              </div>
+
+              {/* Photo Storage Quota */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mobile-detail-label">{t('Photo storage quota (MB)')}</label>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder={t('Default')}
+                    value={editingData.photoQuotaMB ?? ''}
+                    onChange={(e) => {
+                      if (e.target.value === '') { setEditingData(prev => ({ ...prev, photoQuotaMB: null })); return; }
+                      const parsed = parseInt(e.target.value, 10);
+                      if (!Number.isNaN(parsed)) setEditingData(prev => ({ ...prev, photoQuotaMB: parsed }));
+                    }}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-gray-900 mobile-detail-value">{selectedFamily.photoQuotaMB ?? t('Default')}</p>
                 )}
               </div>
 

@@ -18,6 +18,7 @@ import { Switch } from '@/src/components/ui/switch';
 import { useLocalization } from '@/src/context/localization';
 import ApiKeyManager from './ApiKeyManager';
 import ApiGuide from './ApiGuide';
+import ExternalImport from '@/src/components/ExternalImport';
 
 interface AdminTabProps {
   settings: Settings | null;
@@ -50,11 +51,34 @@ export default function AdminTab({
   onChangePinOpen,
 }: AdminTabProps) {
   const { t } = useLocalization();
+  const [showExternalImport, setShowExternalImport] = React.useState(false);
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* API Keys / Integrations Section */}
       <ApiKeyManager babies={babies} familyId={familyId} />
+
+      {/* External data import */}
+      <div className="border-t border-slate-200 pt-6">
+        <h3 className="form-label mb-2">
+          {t('External Data Import')}
+        </h3>
+        <p className="mb-4 text-sm text-gray-500">
+          {t(
+            'Import historical data from another platform without replacing existing family data',
+          )}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => setShowExternalImport(true)}
+          disabled={loading || !familyId}
+        >
+          {t('Import from another platform')}
+        </Button>
+      </div>
 
       {/* API Integration Guide */}
       <div className="border-t border-slate-200 pt-6">
@@ -198,6 +222,12 @@ export default function AdminTab({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      <ExternalImport
+        isOpen={showExternalImport}
+        onClose={() => setShowExternalImport(false)}
+      />
+    </>
   );
 }

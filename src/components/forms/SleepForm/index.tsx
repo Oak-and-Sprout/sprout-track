@@ -28,8 +28,10 @@ import { Checkbox } from '@/src/components/ui/checkbox';
 
 import './sleep-form.css';
 
+import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
+
 // Note: DEFAULT_LOCATIONS are displayed as-is but could be localized if needed
-const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
+const DEFAULT_LOCATIONS: string[] = [...DEFAULT_SLEEP_LOCATIONS];
 
 interface SleepFormProps {
   isOpen: boolean;

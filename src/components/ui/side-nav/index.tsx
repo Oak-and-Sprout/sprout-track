@@ -42,6 +42,7 @@ import { SideNavProps, SideNavTriggerProps, SideNavItemProps } from './side-nav.
 import { ReactNode } from 'react';
 import './side-nav.css'; // Import the CSS file with dark mode overrides
 import packageInfo from '@/package.json';
+import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
 // Interface for the FooterButton component
 interface FooterButtonProps {
@@ -185,7 +186,12 @@ export const SideNav: React.FC<SideNavProps> = ({
   const [isAccountAuth, setIsAccountAuth] = useState<boolean>(false);
   const [unreadFeedbackCount, setUnreadFeedbackCount] = useState<number>(0);
   const [hasNewUpdates, setHasNewUpdates] = useState<boolean>(false);
+  const [photosEnabled, setPhotosEnabled] = useState<boolean>(false);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    fetchPhotosEnabled().then(setPhotosEnabled);
+  }, []);
 
   // Restore focus to the element that opened the nav when it closes (modal mode)
   useEffect(() => {
@@ -452,6 +458,15 @@ export const SideNav: React.FC<SideNavProps> = ({
             onClick={onNavigate}
             className="side-nav-item"
           />
+          {photosEnabled && (
+            <SideNavItem
+              path="/photos"
+              label={t('Photos')}
+              isActive={currentPath === '/photos'}
+              onClick={onNavigate}
+              className="side-nav-item"
+            />
+          )}
           <SideNavItem
             path="/reports"
             label={t('Reports')}

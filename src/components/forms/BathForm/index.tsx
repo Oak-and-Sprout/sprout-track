@@ -25,6 +25,8 @@ import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
 import { Settings } from 'lucide-react';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
 import './bath-form.css';
 
@@ -83,6 +85,23 @@ export default function BathForm({
   const [customBathTypeInput, setCustomBathTypeInput] = useState('');
   const [hiddenBathTypes, setHiddenBathTypes] = useState<string[]>([]);
   const [showBathTypeManager, setShowBathTypeManager] = useState(false);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'bath' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
 
   // Fetch custom bath types and hidden bath type settings when form opens
   useEffect(() => {
@@ -223,6 +242,9 @@ export default function BathForm({
       setIsInitialized(false);
       setInitializedTime(null);
       setLastActivityId(null);
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   }, [isOpen, activity, initialTime, isInitialized, lastActivityId]);
 
@@ -333,8 +355,32 @@ export default function BathForm({
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
+        const savedActivityId = activity?.id || data.data?.id;
+
+        if (photosEnabled && savedActivityId) {
+          try {
+            for (const photoId of removedPhotoIds) {
+              await unlinkPhoto(photoId, 'bath', savedActivityId);
+            }
+            if (pendingPhotoFiles.length > 0) {
+              const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+              for (const photo of result.photos) {
+                await linkPhoto(photo.id, 'bath', savedActivityId);
+              }
+            }
+          } catch (photoError) {
+            console.error('Photo attachment failed:', photoError);
+            showToast({
+              variant: 'warning',
+              title: t('Warning'),
+              message: t('Bath saved, but one or more photos failed to attach.'),
+              duration: 5000,
+            });
+          }
+        }
+
         // Close the form and trigger the success callback
         onClose();
         if (onSuccess) onSuccess();
@@ -511,6 +557,22 @@ export default function BathForm({
                 rows={3}
               />
             </div>
+
+            {photosEnabled && (
+              <div className="space-y-2">
+                <Label>{t('Photos')}</Label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
           </form>
         </FormPageContent>

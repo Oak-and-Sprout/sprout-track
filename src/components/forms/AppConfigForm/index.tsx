@@ -10,7 +10,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle, RefreshCw, Key } from 'lucide-react';
+import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle, RefreshCw, Key, Image } from 'lucide-react';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
 import { BackupRestore } from '@/src/components/BackupRestore';
@@ -38,6 +38,8 @@ interface AppConfigData {
   rootDomain: string;
   enableHttps: boolean;
   adminEmail: string | null;
+  enablePhotos: boolean;
+  defaultPhotoQuotaMB: number;
   updatedAt: string;
 }
 
@@ -101,6 +103,8 @@ export default function AppConfigForm({
     rootDomain: '',
     enableHttps: false,
     adminEmail: '',
+    enablePhotos: false,
+    defaultPhotoQuotaMB: 5120,
   });
   const [emailFormData, setEmailFormData] = useState({
     providerType: 'SENDGRID' as EmailProviderType,
@@ -187,6 +191,8 @@ export default function AppConfigForm({
           rootDomain: data.data.appConfig?.rootDomain || '',
           enableHttps: data.data.appConfig?.enableHttps || false,
           adminEmail: data.data.appConfig?.adminEmail || '',
+          enablePhotos: data.data.appConfig?.enablePhotos || false,
+          defaultPhotoQuotaMB: data.data.appConfig?.defaultPhotoQuotaMB || 5120,
         });
         setEmailFormData({
           providerType: data.data.emailConfig?.providerType || 'SENDGRID',
@@ -781,6 +787,53 @@ export default function AppConfigForm({
                     />
                     <p className="text-xs text-gray-500">
                       {t('Email address used for admin replies to feedback submissions')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Photos Section */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Image className="h-5 w-5 text-teal-600" aria-hidden="true" />
+                  <Label className="text-lg font-semibold">
+                    {t('Photos')}
+                  </Label>
+                </div>
+                <div className="space-y-4">
+                  {/* Enable Photos */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="enablePhotos"
+                        checked={formData.enablePhotos}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxChange('enablePhotos', checked as boolean)
+                        }
+                      />
+                      <Label htmlFor="enablePhotos" className="text-sm font-medium cursor-pointer">
+                        {t('Enable photo functionality')}
+                      </Label>
+                    </div>
+                  </div>
+
+                  {/* Default Photo Storage Quota */}
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultPhotoQuotaMB" className="text-sm font-medium">
+                      {t('Default photo storage quota (MB)')}
+                    </Label>
+                    <Input
+                      type="number"
+                      id="defaultPhotoQuotaMB"
+                      name="defaultPhotoQuotaMB"
+                      min={1}
+                      value={formData.defaultPhotoQuotaMB}
+                      onChange={(e) =>
+                        setFormData(prev => ({ ...prev, defaultPhotoQuotaMB: parseInt(e.target.value, 10) || 5120 }))
+                      }
+                    />
+                    <p className="text-xs text-gray-500">
+                      {t('Applies to families without a custom quota.')}
                     </p>
                   </div>
                 </div>

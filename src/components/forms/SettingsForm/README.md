@@ -97,6 +97,10 @@ useEffect(() => {
 }, [familyEditData.slug, family?.id, checkSlugUniqueness]);
 ```
 
+## Sleep Location Management
+
+`SleepLocationManager.tsx` is a self-contained manager rendered as the "Sleep Locations" section of `ConfigTab.tsx`. It lists every distinct sleep location for the family (defaults plus custom values) with usage counts, and supports show/hide toggles, renaming and merging custom locations (updating all existing sleep entries), deleting unused values, and one-click merge suggestions for near-duplicates (case/whitespace variants). It fetches from `GET/PUT/DELETE /api/sleep-locations` and saves visibility via the existing `POST /api/sleep-location-settings`; all endpoints are scoped by the authenticated user's family. Shared list-building/validation logic lives in `src/utils/sleepLocationUtils.ts` (unit tested in `tests/sleepLocationUtils.test.ts`), and the default location values live in `src/constants/sleepLocations.ts`.
+
 ## Implementation Details
 
 The form components in this directory follow these patterns:

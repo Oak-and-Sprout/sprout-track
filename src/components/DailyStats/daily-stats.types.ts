@@ -1,4 +1,4 @@
-import { ActivityType } from '../ui/activity-tile/activity-tile.types';
+import { ActivityType } from '../Timeline/types';
 
 /**
  * Props for the DailyStats component

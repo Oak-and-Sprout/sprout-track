@@ -19,6 +19,8 @@ import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
 import './activity-form.css';
 
@@ -96,6 +98,23 @@ export default function ActivityForm({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'play' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
 
   // Live timer state for active activity
   const [liveElapsed, setLiveElapsed] = useState(0);
@@ -253,6 +272,9 @@ export default function ActivityForm({
       setIsInitialized(true);
     } else if (!isOpen) {
       setIsInitialized(false);
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   }, [isOpen, activity, initialTime]);
 
@@ -334,6 +356,31 @@ export default function ActivityForm({
         throw new Error(errorData.error || 'Failed to save activity');
       }
 
+      const savedActivity = await response.json();
+      const savedActivityId = activity?.id || savedActivity.data?.id;
+
+      if (photosEnabled && savedActivityId) {
+        try {
+          for (const photoId of removedPhotoIds) {
+            await unlinkPhoto(photoId, 'play', savedActivityId);
+          }
+          if (pendingPhotoFiles.length > 0) {
+            const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+            for (const photo of result.photos) {
+              await linkPhoto(photo.id, 'play', savedActivityId);
+            }
+          }
+        } catch (photoError) {
+          console.error('Photo attachment failed:', photoError);
+          showToast({
+            variant: 'warning',
+            title: t('Warning'),
+            message: t('Activity saved, but one or more photos failed to attach.'),
+            duration: 5000,
+          });
+        }
+      }
+
       onClose();
       onSuccess?.();
 
@@ -343,6 +390,9 @@ export default function ActivityForm({
       setDuration('');
       setSubCategory('');
       setNotes('');
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     } catch (error) {
       console.error('Error saving activity:', error);
     } finally {
@@ -621,6 +671,22 @@ export default function ActivityForm({
                 disabled={loading}
               />
             </div>
+
+            {photosEnabled && (
+              <div>
+                <label className="form-label">{t('Photos')}</label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
         </form>
       </FormPageContent>

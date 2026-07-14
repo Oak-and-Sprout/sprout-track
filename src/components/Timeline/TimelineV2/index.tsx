@@ -11,6 +11,8 @@ import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import PhotoForm from '@/src/components/forms/PhotoForm';
+import PhotoDetail from '@/src/components/PhotoDetail';
 import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
@@ -18,14 +20,16 @@ import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
 import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, PhotoResponse } from '@/app/api/types';
+import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
 
 const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
 
@@ -392,6 +396,10 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
               return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
             case 'vaccine':
               return 'vaccineName' in activity;
+            case 'photo':
+              // Match what the Photos Today stat counts: standalone photo
+              // logs plus any activity with attached photos
+              return 'photoLogId' in activity || !!(activity as any).photos?.length;
             default:
               return true;
           }
@@ -431,10 +439,22 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
+
+  // Resolve a timeline thumbnail click to its full PhotoResponse for the detail drawer
+  const handlePhotoClick = useCallback(async (photoId: string) => {
+    if (!babyId) return;
+    try {
+      const result = await fetchPhotos({ babyId, limit: 200 });
+      const photo = result.photos.find((p) => p.id === photoId);
+      if (photo) setSelectedPhoto(photo);
+    } catch (error) {
+      console.error('Error fetching photo:', error);
+    }
+  }, [babyId]);
 
   return (
     // app header (80px + 1px border) + activity tile row (117px) + 1px rounding margin —
@@ -468,6 +488,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             isAnimated={isFetchAnimated}
             selectedDate={selectedDate}
             onActivitySelect={(activity) => setSelectedActivity(activity)}
+            onPhotoClick={handlePhotoClick}
           />
         </div>
 
@@ -491,6 +512,15 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         onClose={() => setSelectedActivity(null)}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        onPhotoClick={handlePhotoClick}
+      />
+
+      {/* Photo Detail - opened from a timeline thumbnail click */}
+      <PhotoDetail
+        isOpen={!!selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        photo={selectedPhoto}
+        onChanged={handleFormSuccess}
       />
 
       {/* Edit Forms */}
@@ -619,6 +649,17 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             babyId={selectedActivity.babyId}
             initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
             activity={'vaccineName' in selectedActivity ? (selectedActivity as unknown as VaccineLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
+          />
+          <PhotoForm
+            isOpen={editModalType === 'photo'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={getActivityTime(selectedActivity)}
+            activity={'photoLogId' in selectedActivity ? { photoLogId: (selectedActivity as any).photoLogId } : undefined}
             onSuccess={handleFormSuccess}
           />
         </>

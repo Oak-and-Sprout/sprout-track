@@ -1,9 +1,15 @@
 import { Settings } from '@prisma/client';
 import { ActivityType as ImportedActivityType } from '@/src/components/ui/activity-tile/activity-tile.types';
-import { SleepLogResponse } from '@/app/api/types';
+import { SleepLogResponse, PhotoLogResponse, TimelinePhotoInfo } from '@/app/api/types';
+
+// Helper to add the optional batched photo-thumbnail info to attachable activity types
+type WithPhotos<T> = T & { photos?: TimelinePhotoInfo[] };
 
 // Define the extended ActivityType that includes caretaker information
-export type TimelineActivityType = ImportedActivityType & {
+export type TimelineActivityType = (
+  WithPhotos<ImportedActivityType>
+  | (Omit<PhotoLogResponse, 'photos'> & { photoLogId: string; photos?: TimelinePhotoInfo[] })
+) & {
   caretakerId?: string | null;
   caretakerName?: string;
 };
@@ -11,7 +17,7 @@ export type TimelineActivityType = ImportedActivityType & {
 // Use TimelineActivityType for internal component logic
 export type ActivityType = TimelineActivityType;
 
-export type FilterType = 'sleep' | 'feed' | 'diaper' | 'poop' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null;
+export type FilterType = 'sleep' | 'feed' | 'diaper' | 'poop' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null;
 
 export interface LatestStatusData {
   lastFeedTime?: Date;
@@ -58,6 +64,7 @@ export interface TimelineActivityListProps {
   onItemsPerPageChange?: (itemsPerPage: number) => void;
   onSwipeLeft?: () => void; // Handler for swiping left (next day)
   onSwipeRight?: () => void; // Handler for swiping right (previous day)
+  onPhotoClick?: (photoId: string) => void; // Handler for tapping a timeline photo thumbnail
 }
 
 export interface TimelineActivityDetailsProps {
@@ -66,7 +73,8 @@ export interface TimelineActivityDetailsProps {
   isOpen: boolean;
   onClose: () => void;
   onDelete: (activity: ActivityType) => void;
-  onEdit: (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine') => void;
+  onEdit: (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => void;
+  onPhotoClick?: (photoId: string) => void; // Handler for tapping an attached photo thumbnail
 }
 
 export interface ActivityDetail {

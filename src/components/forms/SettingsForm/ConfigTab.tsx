@@ -21,6 +21,7 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { Settings } from '@/app/api/types';
 import { DateFormatSetting, TimeFormatSetting } from '@/src/utils/dateFormat';
+import SleepLocationManager from './SleepLocationManager';
 
 interface FamilyData {
   id: string;
@@ -329,6 +330,15 @@ export default function ConfigTab({
               onCheckedChange={(checked) => onSettingsChange({ includeSolidsInFeedTimer: checked } as any)}
             />
           </label>
+        </div>
+      </div>
+
+      {/* Sleep Locations */}
+      <div className="border-t border-slate-200 pt-6">
+        <h3 className="form-label mb-4">{t('Sleep Locations')}</h3>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">{t('Manage the sleep locations available when logging sleep. Rename or merge custom locations, and hide any you don\'t use.')}</p>
+          <SleepLocationManager />
         </div>
       </div>
 

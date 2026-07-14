@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import '../../../(app)/[slug]/log-entry/no-activities.css';
-import { ActiveBreastFeedResponse, ActiveActivityResponse } from '@/app/api/types';
+import { ActiveBreastFeedResponse, ActiveActivityResponse, PhotoResponse } from '@/app/api/types';
 import { Card } from "@/src/components/ui/card";
 import { Baby as BabyIcon } from 'lucide-react';
 import TimelineV2 from '@/src/components/Timeline/TimelineV2';
@@ -22,10 +22,13 @@ import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MedicineForm from '@/src/components/forms/MedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import PhotoForm from '@/src/components/forms/PhotoForm';
+import PhotoDetail from '@/src/components/PhotoDetail';
 import { useParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
 import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
+import { fetchPhotosEnabled, fetchPhotos } from '@/src/utils/photoClientApi';
 
 function HomeContent(): React.ReactElement {
   const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
@@ -45,6 +48,9 @@ function HomeContent(): React.ReactElement {
   const [showMedicineModal, setShowMedicineModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showVaccineModal, setShowVaccineModal] = useState<boolean>(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [detailPhoto, setDetailPhoto] = useState<PhotoResponse | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [localTime, setLocalTime] = useState<string>('');
   const [sleepStartTime, setSleepStartTime] = useState<Record<string, Date>>({});
@@ -76,6 +82,25 @@ function HomeContent(): React.ReactElement {
     };
     fetchSettings();
   }, [family?.id]);
+
+  // Check whether the Photos feature is enabled for this deployment
+  useEffect(() => {
+    fetchPhotosEnabled().then(setPhotosEnabled);
+  }, []);
+
+  // Open the PhotoDetail drawer for a photo tapped inside the Photo Library tab
+  const handleOpenPhoto = useCallback(async (photoId: string) => {
+    if (!selectedBaby?.id) return;
+    try {
+      const result = await fetchPhotos({ babyId: selectedBaby.id });
+      const photo = result.photos.find((p) => p.id === photoId);
+      if (photo) {
+        setDetailPhoto(photo);
+      }
+    } catch (error) {
+      console.error('Error fetching photo:', error);
+    }
+  }, [selectedBaby?.id]);
 
   const [activeFeedData, setActiveFeedData] = useState<ActiveBreastFeedResponse | null>(null);
   const [feedStartTime, setFeedStartTime] = useState<Record<string, Date>>({});
@@ -495,6 +520,8 @@ function HomeContent(): React.ReactElement {
           onMedicineClick={() => setShowMedicineModal(true)}
           onPlayClick={() => setShowActivityModal(true)}
           onVaccineClick={() => setShowVaccineModal(true)}
+          onPhotoClick={() => setShowPhotoModal(true)}
+          photosEnabled={photosEnabled}
         />
       )}
 
@@ -775,6 +802,32 @@ function HomeContent(): React.ReactElement {
         babyId={selectedBaby?.id || ''}
         initialTime={localTime}
         onSuccess={() => {
+          if (selectedBaby?.id) {
+            triggerRefresh();
+          }
+        }}
+      />
+
+      {/* Photo Form */}
+      <PhotoForm
+        isOpen={showPhotoModal}
+        onClose={() => setShowPhotoModal(false)}
+        babyId={selectedBaby?.id}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            triggerRefresh();
+          }
+        }}
+        onOpenPhoto={handleOpenPhoto}
+      />
+
+      {/* Photo Detail */}
+      <PhotoDetail
+        isOpen={!!detailPhoto}
+        onClose={() => setDetailPhoto(null)}
+        photo={detailPhoto}
+        onChanged={() => {
           if (selectedBaby?.id) {
             triggerRefresh();
           }

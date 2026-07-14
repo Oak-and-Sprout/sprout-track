@@ -23,6 +23,8 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
 interface MilestoneFormProps {
   isOpen: boolean;
@@ -68,6 +70,23 @@ export default function MilestoneForm({
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'milestone' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
 
   // Handle date/time change
   const handleDateTimeChange = (date: Date) => {
@@ -145,6 +164,9 @@ export default function MilestoneForm({
       // Reset initialization flag and stored time when form closes
       setIsInitialized(false);
       setInitializedTime(null);
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   }, [isOpen, activity, initialTime]);
 
@@ -226,9 +248,34 @@ export default function MilestoneForm({
         throw new Error(errorData.error || 'Failed to save milestone');
       }
 
+      const savedMilestone = await response.json();
+      const savedActivityId = activity?.id || savedMilestone.data?.id;
+
+      if (photosEnabled && savedActivityId) {
+        try {
+          for (const photoId of removedPhotoIds) {
+            await unlinkPhoto(photoId, 'milestone', savedActivityId);
+          }
+          if (pendingPhotoFiles.length > 0) {
+            const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+            for (const photo of result.photos) {
+              await linkPhoto(photo.id, 'milestone', savedActivityId);
+            }
+          }
+        } catch (photoError) {
+          console.error('Photo attachment failed:', photoError);
+          showToast({
+            variant: 'warning',
+            title: t('Warning'),
+            message: t('Milestone saved, but one or more photos failed to attach.'),
+            duration: 5000,
+          });
+        }
+      }
+
       onClose();
       onSuccess?.();
-      
+
       // Reset form data
       setSelectedDateTime(new Date(initialTime));
       setFormData({
@@ -237,6 +284,9 @@ export default function MilestoneForm({
         description: '',
         category: '' as MilestoneCategory | '',
       });
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     } catch (error) {
       console.error('Error saving milestone:', error);
       // Error toast already shown above for non-expiration errors
@@ -336,6 +386,22 @@ export default function MilestoneForm({
                 disabled={loading}
               />
             </div>
+
+            {photosEnabled && (
+              <div>
+                <label className="form-label">{t('Photos')}</label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
           </form>
         </FormPageContent>
