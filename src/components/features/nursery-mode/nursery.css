@@ -1,0 +1,151 @@
+/**
+ * Nursery Mode — stage, scene backgrounds, and foreground layout.
+ * Ported from documentation/temp-development-docs/sprout-track-nursery/nursery-mode.html
+ * (lines 21-111 stage/scenes/foreground, 191-204 mobile), with every class
+ * prefixed `nursery-` to avoid collisions with the rest of the app.
+ *
+ * The settings drawer CSS is intentionally NOT ported here (see Task 12).
+ */
+
+.nursery-serif { font-family: var(--font-newsreader), Georgia, serif; }
+
+/* ---- stage ---- */
+/* The stage overlays the whole app (it is not a standalone document root),
+   so it is fixed/inset instead of the prototype's 100vw/100vh flex child. */
+.nursery-stage { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; isolation: isolate; }
+.nursery-bg { position: absolute; inset: 0; z-index: 0; transition: filter .5s ease; }
+.nursery-bg-grad { position: absolute; inset: 0; }
+.nursery-blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: .5; will-change: transform; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-blob { animation: nursery-drift 26s ease-in-out infinite alternate; }
+  .nursery-blob.b2 { animation-duration: 34s; animation-delay: -8s; }
+  .nursery-blob.b3 { animation-duration: 30s; animation-delay: -15s; }
+}
+@keyframes nursery-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8vw, -6vh) scale(1.18); }
+  100% { transform: translate(-6vw, 7vh) scale(.92); }
+}
+.nursery-stars { position: absolute; inset: 0; }
+.nursery-stars i { position: absolute; background: #fff; border-radius: 50%; }
+.nursery-stars i.spark { box-shadow: 0 0 6px 1px rgba(255,255,255,.8); }
+.nursery-stars i.spark::before, .nursery-stars i.spark::after { content: ""; position: absolute; left: 50%; top: 50%; background: linear-gradient(var(--fa), transparent, rgba(255,255,255,.95), transparent); opacity: 0; }
+.nursery-stars i.spark::before { width: 18px; height: 1.6px; --fa: 90deg; transform: translate(-50%,-50%) scale(.2); }
+.nursery-stars i.spark::after { width: 1.6px; height: 18px; --fa: 0deg; transform: translate(-50%,-50%) scale(.2); }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-stars i.spark::before, .nursery-stars i.spark::after { animation: nursery-flare var(--dur, 6s) ease-in-out var(--d, 0s) infinite; }
+}
+@keyframes nursery-flare {
+  0%, 82%, 100% { opacity: 0; transform: translate(-50%,-50%) scale(.2); }
+  90% { opacity: .95; transform: translate(-50%,-50%) scale(1); }
+}
+.nursery-scrim { position: absolute; inset: 0; pointer-events: none; }
+.nursery-pattern-layer { position: absolute; inset: 0; }
+.nursery-waves-layer { position: absolute; left: -14%; right: -14%; bottom: -5%; top: 0; background-repeat: no-repeat; background-position: bottom; background-size: cover; transform-origin: 50% 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-waves-layer.anim { animation: nursery-rock var(--wdur, 18s) ease-in-out infinite alternate; }
+}
+@keyframes nursery-rock {
+  from { transform: translateX(calc(var(--wdx, 40px) * -1)) rotate(calc(var(--wamp, 1.5deg) * -1)); }
+  to { transform: translateX(var(--wdx, 40px)) rotate(var(--wamp, 1.5deg)); }
+}
+.nursery-motifs { position: absolute; inset: 0; overflow: hidden; }
+.nursery-motifs i { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-motifs i.float { animation: nursery-floatXY var(--dur, 20s) ease-in-out var(--d, 0s) infinite alternate; }
+}
+@keyframes nursery-floatXY {
+  from { transform: translate(0, 0) rotate(var(--tr, 0deg)); }
+  to { transform: translate(var(--tx, 0px), var(--ty, 0px)) rotate(var(--tr2, 0deg)); }
+}
+.nursery-scatter { position: absolute; inset: 0; overflow: hidden; }
+/* rising bubbles */
+.nursery-bubbles { position: absolute; inset: 0; overflow: hidden; }
+.nursery-bubbles i { position: absolute; top: 105%; border-radius: 50%; background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.4), rgba(255,255,255,.05) 62%); border: 1px solid rgba(255,255,255,.28); box-shadow: inset -3px -4px 8px rgba(255,255,255,.08); }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-bubbles i { animation: nursery-rise var(--dur, 14s) linear var(--d, 0s) infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nursery-bubbles i { top: var(--sy, 50%); }
+}
+@keyframes nursery-rise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  6% { opacity: var(--o, .7); }
+  92% { opacity: var(--o, .7); }
+  100% { transform: translate(var(--dx, 0px), -118vh); opacity: 0; }
+}
+/* aura curtains over the starfield */
+.nursery-aura { position: absolute; inset: 0; overflow: hidden; }
+.nursery-ab { position: absolute; left: -15%; right: -15%; top: -12%; height: 78%; filter: blur(48px); mix-blend-mode: screen; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-ab { animation: nursery-aur 16s ease-in-out infinite alternate; }
+  .nursery-ab.a2 { animation-duration: 21s; animation-delay: -6s; }
+  .nursery-ab.a3 { animation-duration: 26s; animation-delay: -11s; }
+}
+@keyframes nursery-aur {
+  0% { transform: translateX(-6%) scaleY(.92); }
+  100% { transform: translateX(7%) scaleY(1.08); }
+}
+
+/* ---- foreground layout ---- */
+.nursery-fg { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; padding: clamp(20px, 3.2vw, 48px); }
+.nursery-topbar { display: flex; justify-content: flex-end; align-items: center; gap: clamp(20px, 2.5vw, 40px); }
+.nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
+.nursery-ghost:hover { color: #fff; }
+.nursery-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(18px, 3.4vh, 52px); width: 100%; min-height: 0; }
+.nursery-clockwrap { text-align: center; }
+.nursery-clock { display: flex; align-items: baseline; justify-content: center; gap: .5ch; flex-wrap: wrap; }
+.nursery-clock .time { font-weight: 400; font-size: clamp(56px, min(11.5vw, 15vh), 168px); line-height: .9; letter-spacing: -.01em; text-shadow: 0 2px 40px rgba(0,0,0,.25); }
+.nursery-clock .name { font-style: italic; font-weight: 400; font-size: clamp(22px, min(3.4vw, 4.4vh), 46px); opacity: .9; background: none; border: none; color: inherit; padding: 0; }
+.nursery-date { margin-top: clamp(8px, 1.4vh, 20px); font-size: clamp(13px, 1.25vw, 18px); font-weight: 600; letter-spacing: .28em; text-transform: uppercase; color: rgba(255,255,255,.62); }
+
+/* activity grid (cards) */
+.nursery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 1.6vw, 26px); width: min(1080px, 92vw); }
+.nursery-card { border-radius: 22px; padding: clamp(18px, 1.7vw, 28px); border: 1px solid rgba(255,255,255,var(--cardline, .14)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,var(--cardbg, .08)); box-shadow: 0 8px 40px rgba(0,0,0,.18); }
+.nursery-card-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: clamp(12px, 1.4vw, 20px); }
+.nursery-card-h .lhs { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.nursery-card-h h3 { font-size: clamp(20px, 1.9vw, 30px); font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+.nursery-card-meta { text-align: right; flex-shrink: 0; min-width: 0; }
+.nursery-card-meta .t { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(15px, 1.35vw, 21px); color: rgba(255,255,255,.92); white-space: nowrap; }
+.nursery-card-meta .d { font-size: clamp(11px, 1vw, 14px); color: rgba(255,255,255,.6); margin-top: 2px; white-space: nowrap; }
+.nursery-card-actions { display: flex; gap: clamp(8px, .8vw, 12px); }
+.nursery-abtn { flex: 1; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(12px, 1.15vw, 18px) 8px; font-size: clamp(13px, 1.2vw, 17px); font-weight: 500; transition: transform .1s, background .15s; white-space: nowrap; }
+.nursery-abtn:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .08)); }
+.nursery-abtn:active { transform: scale(.96); }
+.nursery-abtn.wide { flex: none; width: 100%; }
+
+/* icon badge */
+.nursery-badge { flex-shrink: 0; display: grid; place-items: center; color: var(--ifg, #fff); }
+.nursery-badge.circle { border-radius: 50%; }
+.nursery-badge.square { border-radius: 22%; }
+
+/* big tile variant */
+.nursery-tilegrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(16px, 1.8vw, 30px); width: min(1180px, 94vw); }
+.nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: min(560px, 52vh); }
+.nursery-tile { position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(12px, 1.4vw, 22px); border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 8px 40px rgba(0,0,0,.2); transition: transform .12s, background .15s; color: #fff; }
+.nursery-tile.circle { border-radius: 50%; }
+.nursery-tile.square { border-radius: 22%; }
+.nursery-tile:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .07)); }
+.nursery-tile:active { transform: scale(.97); }
+.nursery-tile .tico { color: var(--ifg, #fff); }
+.nursery-tile .tlabel { font-size: clamp(16px, 1.5vw, 24px); font-weight: 600; letter-spacing: .01em; }
+.nursery-tile .tmeta { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(13px, 1.15vw, 18px); color: rgba(255,255,255,.7); margin-top: -6px; }
+
+.nursery-footer { position: relative; z-index: 2; text-align: center; padding-bottom: clamp(16px, 2.4vh, 34px); }
+.nursery-footer .m { font-size: clamp(11px, 1vw, 14px); font-weight: 600; letter-spacing: .34em; color: rgba(255,255,255,.5); }
+.nursery-footer .l { font-size: clamp(10px, .85vw, 12px); font-weight: 600; letter-spacing: .24em; color: rgba(255,255,255,.34); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.nursery-dotlock { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+
+@media (max-width: 680px) {
+  .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
+  .nursery-bg { position: fixed; }
+  .nursery-fg { padding: 18px 15px; }
+  .nursery-center { gap: 22px; justify-content: flex-start; padding: 6px 0 26px; }
+  .nursery-grid { grid-template-columns: 1fr; width: 100%; max-width: 520px; gap: 14px; }
+  .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
+  .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 340px; }
+  .nursery-card { padding: 17px; border-radius: 18px; }
+  .nursery-clock .time { font-size: clamp(52px, 17vw, 104px); }
+  .nursery-clock .name { font-size: clamp(20px, 6vw, 34px); }
+  .nursery-topbar { gap: 26px; }
+}

@@ -19,6 +19,7 @@ import { SleepTile } from './SleepTile';
 import { SettingsDrawer } from './SettingsDrawer';
 import { TileLog } from './TileShell';
 import './nursery-animations.css';
+import './nursery.css';
 
 interface TileConfig {
   id: string;
