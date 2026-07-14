@@ -153,7 +153,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       ...(body.bottleType && body.bottleType.trim() ? { bottleType: body.bottleType } : { bottleType: null }),
       ...(body.breastMilkAmount !== undefined ? { breastMilkAmount: body.breastMilkAmount } : {}),
       ...Object.entries(body)
-        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'breastMilkAmount', 'familyId'].includes(key))
+        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'breastMilkAmount', 'familyId', 'sourcePumpId'].includes(key))
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
     };
 

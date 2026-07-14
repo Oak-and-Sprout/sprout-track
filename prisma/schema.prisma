@@ -376,6 +376,7 @@ model FeedLog {
   bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
   breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
   sessionId    String? // Groups breast feeds into one nursing session; a unique value opts a feed out of heuristic grouping
+  sourcePumpId String? @unique // Links an automatic breast-milk feed to the pump session that created it
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?

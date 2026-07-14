@@ -23,6 +23,7 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 import { convertVolume } from '@/src/utils/unit-conversion';
+import { isAutoCreatedPumpFeed } from '@/src/utils/breastMilkInventory';
 
 export type PumpingChartMetric = 'count' | 'duration' | 'amount' | 'inventory';
 
@@ -236,7 +237,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
     const endDate = new Date(dateRange.to);
     endDate.setHours(23, 59, 59, 999);
 
-    const targetUnit = 'OZ';
+    const targetUnit = currentBalance.unit.toUpperCase();
 
     // Collect all inventory events with their dates and effects on balance
     const eventsByDay: Record<string, { consumed: number; stored: number; adjusted: number }> = {};
@@ -245,7 +246,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
       // Bottle feeds with breast milk = consumed
       if ('type' in activity && 'time' in activity && 'bottleType' in activity) {
         const feedActivity = activity as any;
-        if (feedActivity.type === 'BOTTLE') {
+        if (feedActivity.type === 'BOTTLE' && !isAutoCreatedPumpFeed(feedActivity)) {
           let bmConsumed = 0;
           if (feedActivity.bottleType === 'Breast Milk' && feedActivity.amount) {
             bmConsumed = convertVolume(feedActivity.amount, feedActivity.unitAbbr || 'OZ', targetUnit);
@@ -621,10 +622,10 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                     <RechartsTooltip
                       formatter={(value: any, name?: string) => {
                         if (name === 'consumed') {
-                          return [`${value.toFixed(1)} oz`, t('Consumed')];
+                          return [`${value.toFixed(1)} ${(currentBalance?.unit || 'OZ').toLowerCase()}`, t('Consumed')];
                         }
                         if (name === 'storedBalance') {
-                          return [`${value.toFixed(1)} oz`, t('Stored Balance')];
+                          return [`${value.toFixed(1)} ${(currentBalance?.unit || 'OZ').toLowerCase()}`, t('Stored Balance')];
                         }
                         return [`${value.toFixed(1)}`, name || ''];
                       }}
@@ -672,4 +673,3 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
 };
 
 export default PumpingChartModal;
-

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse, BreastMilkBalanceResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
-import { convertVolume } from '@/src/utils/unit-conversion';
+import { calculateBreastMilkBalance } from '@/src/utils/breastMilkInventory';
 
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
@@ -36,15 +36,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         pumpAction: 'STORED',
         deletedAt: null,
       },
-      select: { totalAmount: true, unitAbbr: true },
+      select: { totalAmount: true, unitAbbr: true, pumpAction: true },
     });
-
-    let storedTotal = 0;
-    for (const log of pumpLogs) {
-      if (log.totalAmount) {
-        storedTotal += convertVolume(log.totalAmount, log.unitAbbr || 'OZ', targetUnit);
-      }
-    }
 
     // 2. Sum of breast milk adjustments
     const adjustments = await prisma.breastMilkAdjustment.findMany({
@@ -56,11 +49,6 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       select: { amount: true, unitAbbr: true },
     });
 
-    let adjustmentTotal = 0;
-    for (const adj of adjustments) {
-      adjustmentTotal += convertVolume(adj.amount, adj.unitAbbr || 'OZ', targetUnit);
-    }
-
     // 3. Sum of bottle feeds with bottleType "Breast Milk" or "Formula\Breast"
     const feedLogs = await prisma.feedLog.findMany({
       where: {
@@ -70,20 +58,15 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         bottleType: { in: ['Breast Milk', 'Formula\\Breast'] },
         deletedAt: null,
       },
-      select: { amount: true, unitAbbr: true, bottleType: true, breastMilkAmount: true },
+      select: { amount: true, unitAbbr: true, bottleType: true, breastMilkAmount: true, sourcePumpId: true, notes: true },
     });
 
-    let consumedTotal = 0;
-    for (const log of feedLogs) {
-      if (log.bottleType === 'Breast Milk' && log.amount) {
-        consumedTotal += convertVolume(log.amount, log.unitAbbr || 'OZ', targetUnit);
-      } else if (log.bottleType === 'Formula\\Breast' && log.breastMilkAmount) {
-        consumedTotal += convertVolume(log.breastMilkAmount, log.unitAbbr || 'OZ', targetUnit);
-      }
-    }
-
-    // Calculate balance: stored + adjustments - consumed
-    const balance = Math.round((storedTotal + adjustmentTotal - consumedTotal) * 100) / 100;
+    const balance = calculateBreastMilkBalance({
+      pumpLogs,
+      adjustments,
+      feedLogs,
+      targetUnit,
+    });
 
     return NextResponse.json<ApiResponse<BreastMilkBalanceResponse>>({
       success: true,
