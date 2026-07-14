@@ -1,36 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { NurseryColors } from '@/src/hooks/useNurseryColors';
-import { TileShell, TileLog } from './TileShell';
-import { SubButton } from './SubButton';
 import { useLocalization } from '@/src/context/localization';
-
-interface SleepTileProps {
-  colors: NurseryColors;
-  log: TileLog | null;
-  onLog: (tileId: string, note: string) => void;
-  onActiveChange?: (tileId: string, isActive: boolean) => void;
-  animating: boolean;
-  babyId: string;
-  toUTCString: (date: Date | null | undefined) => string | null;
-  expanded?: boolean;
-}
+import { ActivityHookArgs, ActivityView, ActionButton, formatHMMSS } from './types';
 
 // Intentional nursery-mode subset of DEFAULT_SLEEP_LOCATIONS (src/constants/sleepLocations.ts)
 const LOCATIONS = ['Crib', 'Contact'];
 
 type SleepPhase = 'awake' | 'selecting_location' | 'sleeping';
 
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-export function SleepTile({ colors, log, onLog, onActiveChange, animating, babyId, toUTCString, expanded }: SleepTileProps) {
+/**
+ * Sleep activity state machine — transplanted 1:1 from SleepTile.tsx.
+ * POST start captures id; PUT ?id= endTime on wake; checks ongoing sleep on mount.
+ */
+export function useSleepActions({ babyId, toUTCString, onLog }: ActivityHookArgs): ActivityView {
   const { t } = useLocalization();
   const [phase, setPhase] = useState<SleepPhase>('awake');
   const [activeSleepId, setActiveSleepId] = useState<string | null>(null);
@@ -38,11 +21,6 @@ export function SleepTile({ colors, log, onLog, onActiveChange, animating, babyI
   const [elapsed, setElapsed] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Notify parent of active state changes
-  useEffect(() => {
-    onActiveChange?.('sleep', phase === 'sleeping');
-  }, [phase, onActiveChange]);
 
   // Check for ongoing sleep on mount
   useEffect(() => {
@@ -131,7 +109,7 @@ export function SleepTile({ colors, log, onLog, onActiveChange, animating, babyI
       });
       const data = await res.json();
       if (data.success) {
-        onLog('sleep', `${t('Wake Up')} — ${formatDuration(elapsed)}`);
+        onLog('sleep', `${t('Wake Up')} — ${formatHMMSS(elapsed)}`);
         setPhase('awake');
         setActiveSleepId(null);
         setSleepStart(null);
@@ -144,55 +122,34 @@ export function SleepTile({ colors, log, onLog, onActiveChange, animating, babyI
     }
   }, [activeSleepId, elapsed, toUTCString, onLog, submitting, t]);
 
+  let statusText: string | null = null;
+  let buttons: ActionButton[];
+
   if (phase === 'sleeping') {
-    return (
-      <TileShell
-        label={t('Sleep')}
-        colors={colors}
-        log={log}
-        animating={animating}
-        sleeping
-        expanded={expanded}
-        statusText={`${t('Sleeping')} — ${formatDuration(elapsed)}`}
-      >
-        <div className="flex gap-[clamp(0.375rem,1vw,0.75rem)] mt-auto pt-3">
-          <SubButton
-            label={t('Wake Up')}
-            onClick={endSleep}
-            colors={colors}
-            active
-            expanded={expanded}
-            timerText={formatDuration(elapsed)}
-            disabled={submitting}
-          />
-        </div>
-      </TileShell>
-    );
+    statusText = `${t('Sleeping')} — ${formatHMMSS(elapsed)}`;
+    buttons = [
+      { key: 'wake', label: t('Wake Up'), onClick: endSleep, emphasized: true, timerText: formatHMMSS(elapsed), disabled: submitting, wide: true },
+    ];
+  } else if (phase === 'selecting_location') {
+    statusText = t('Select Location');
+    buttons = LOCATIONS.map(loc => ({
+      key: loc,
+      label: t(loc),
+      onClick: () => startSleep(loc),
+      disabled: submitting,
+    }));
+  } else {
+    buttons = [
+      { key: 'startSleep', label: t('Start Sleep'), onClick: () => setPhase('selecting_location'), wide: true },
+    ];
   }
 
-  if (phase === 'selecting_location') {
-    return (
-      <TileShell label={t('Sleep')} colors={colors} log={log} animating={animating} statusText={t('Select Location')}>
-        <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
-          {LOCATIONS.map(loc => (
-            <SubButton
-              key={loc}
-              label={t(loc)}
-              onClick={() => startSleep(loc)}
-              colors={colors}
-              disabled={submitting}
-            />
-          ))}
-        </div>
-      </TileShell>
-    );
-  }
-
-  return (
-    <TileShell label={t('Sleep')} colors={colors} log={log} animating={animating}>
-      <div className="flex gap-1.5 mt-auto pt-2">
-        <SubButton label={t('Start Sleep')} onClick={() => setPhase('selecting_location')} colors={colors} />
-      </div>
-    </TileShell>
-  );
+  return {
+    id: 'sleep',
+    icon: 'moon',
+    label: t('Sleep'),
+    statusText,
+    active: phase === 'sleeping',
+    buttons,
+  };
 }

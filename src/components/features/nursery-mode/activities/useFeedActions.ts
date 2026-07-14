@@ -1,32 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { NurseryColors } from '@/src/hooks/useNurseryColors';
-import { TileShell, TileLog } from './TileShell';
-import { SubButton } from './SubButton';
 import { useLocalization } from '@/src/context/localization';
 import { ActiveBreastFeedResponse } from '@/app/api/types';
-
-interface FeedTileProps {
-  colors: NurseryColors;
-  log: TileLog | null;
-  onLog: (tileId: string, note: string) => void;
-  onActiveChange?: (tileId: string, isActive: boolean) => void;
-  animating: boolean;
-  babyId: string;
-  toUTCString: (date: Date | null | undefined) => string | null;
-  expanded?: boolean;
-}
+import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS } from './types';
 
 type FeedPhase = 'idle' | 'feeding' | 'paused';
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-export function FeedTile({ colors, log, onLog, onActiveChange, animating, babyId, toUTCString, expanded }: FeedTileProps) {
+/**
+ * Feed activity state machine — transplanted 1:1 from FeedTile.tsx.
+ * Bottle instant log (avg amount) + breastfeed via /api/active-breastfeed
+ * server session (POST start, PUT ?action=switch|pause|resume, DELETE finalize).
+ */
+export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: ActivityHookArgs): ActivityView {
   const { t } = useLocalization();
   const [avgBottleAmount, setAvgBottleAmount] = useState<number | null>(null);
   const [defaultUnit, setDefaultUnit] = useState('OZ');
@@ -34,11 +20,6 @@ export function FeedTile({ colors, log, onLog, onActiveChange, animating, babyId
   const [phase, setPhase] = useState<FeedPhase>('idle');
   const [activeFeed, setActiveFeed] = useState<ActiveBreastFeedResponse | null>(null);
   const [currentElapsed, setCurrentElapsed] = useState(0);
-
-  // Notify parent of active state changes
-  useEffect(() => {
-    onActiveChange?.('feed', phase !== 'idle');
-  }, [phase, onActiveChange]);
 
   // Fetch bottle defaults
   useEffect(() => {
@@ -146,13 +127,16 @@ export function FeedTile({ colors, log, onLog, onActiveChange, animating, babyId
       const data = await res.json();
       if (data.success) {
         onLog('feed', `${t('Bottle')}${avgBottleAmount ? ` ${avgBottleAmount} ${defaultUnit.toLowerCase()}` : ''}`);
+        if (data.data?.id) {
+          onUndoable({ id: data.data.id, endpoint: '/api/feed-log', message: t('Bottle logged') });
+        }
       }
     } catch (err) {
       console.error('Error logging bottle feed:', err);
     } finally {
       setSubmitting(false);
     }
-  }, [babyId, avgBottleAmount, defaultUnit, toUTCString, onLog, submitting, t]);
+  }, [babyId, avgBottleAmount, defaultUnit, toUTCString, onLog, onUndoable, submitting, t]);
 
   // Start breastfeed session
   const startBreastFeed = useCallback(async (side: 'LEFT' | 'RIGHT') => {
@@ -236,19 +220,19 @@ export function FeedTile({ colors, log, onLog, onActiveChange, animating, babyId
     if (!activeFeed || submitting) return;
     setSubmitting(true);
     try {
-      const leftTotal = activeFeed.leftDuration + (activeFeed.activeSide === 'LEFT' && !activeFeed.isPaused ? currentElapsed : 0);
-      const rightTotal = activeFeed.rightDuration + (activeFeed.activeSide === 'RIGHT' && !activeFeed.isPaused ? currentElapsed : 0);
+      const leftTotalStop = activeFeed.leftDuration + (activeFeed.activeSide === 'LEFT' && !activeFeed.isPaused ? currentElapsed : 0);
+      const rightTotalStop = activeFeed.rightDuration + (activeFeed.activeSide === 'RIGHT' && !activeFeed.isPaused ? currentElapsed : 0);
 
       const res = await fetch(`/api/active-breastfeed?id=${activeFeed.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ leftDuration: leftTotal, rightDuration: rightTotal }),
+        body: JSON.stringify({ leftDuration: leftTotalStop, rightDuration: rightTotalStop }),
       });
       const data = await res.json();
       if (data.success) {
         const parts = [];
-        if (leftTotal > 0) parts.push(`L: ${formatDuration(leftTotal)}`);
-        if (rightTotal > 0) parts.push(`R: ${formatDuration(rightTotal)}`);
+        if (leftTotalStop > 0) parts.push(`L: ${formatMMSS(leftTotalStop)}`);
+        if (rightTotalStop > 0) parts.push(`R: ${formatMMSS(rightTotalStop)}`);
         onLog('feed', parts.join(' ') || t('Breast L'));
       }
     } catch (err) {
@@ -269,62 +253,39 @@ export function FeedTile({ colors, log, onLog, onActiveChange, animating, babyId
     ? activeFeed.rightDuration + (activeFeed.activeSide === 'RIGHT' && !activeFeed.isPaused ? currentElapsed : 0)
     : 0;
 
-  // Paused phase
-  if (phase === 'paused' && activeFeed) {
-    return (
-      <TileShell
-        label={t('Feed')}
-        colors={colors}
-        log={log}
-        animating={animating}
-        expanded={expanded}
-        statusText={`${t('Paused')}  ·  L: ${formatDuration(leftTotal)}  R: ${formatDuration(rightTotal)}`}
-      >
-        <div className="flex gap-[clamp(0.375rem,1vw,0.75rem)] mt-auto pt-3">
-          <SubButton label={t('Resume Left')} onClick={() => handleResume('LEFT')} colors={colors} disabled={submitting} expanded={expanded} />
-          <SubButton label={t('Resume Right')} onClick={() => handleResume('RIGHT')} colors={colors} disabled={submitting} expanded={expanded} />
-          <SubButton label={t('Stop')} onClick={handleStop} colors={colors} active disabled={submitting} expanded={expanded} />
-        </div>
-      </TileShell>
-    );
-  }
+  let statusText: string | null = null;
+  let buttons: ActionButton[];
 
-  // Feeding phase
-  if (phase === 'feeding' && activeFeed) {
+  if (phase === 'paused' && activeFeed) {
+    statusText = `${t('Paused')}  ·  L: ${formatMMSS(leftTotal)}  R: ${formatMMSS(rightTotal)}`;
+    buttons = [
+      { key: 'resumeLeft', label: t('Resume Left'), onClick: () => handleResume('LEFT'), disabled: submitting },
+      { key: 'resumeRight', label: t('Resume Right'), onClick: () => handleResume('RIGHT'), disabled: submitting },
+      { key: 'stop', label: t('Stop'), onClick: handleStop, emphasized: true, disabled: submitting },
+    ];
+  } else if (phase === 'feeding' && activeFeed) {
     const sideLabel = activeFeed.activeSide === 'LEFT' ? t('Left Side') : t('Right Side');
     const activeSideTotal = activeFeed.activeSide === 'LEFT' ? leftTotal : rightTotal;
-
-    return (
-      <TileShell
-        label={t('Feed')}
-        colors={colors}
-        log={log}
-        animating={animating}
-        expanded={expanded}
-        statusText={`${sideLabel} — ${formatDuration(activeSideTotal)}  ·  L: ${formatDuration(leftTotal)}  R: ${formatDuration(rightTotal)}`}
-      >
-        <div className="flex gap-[clamp(0.375rem,1vw,0.75rem)] mt-auto pt-3">
-          <SubButton label={t('Switch')} onClick={handleSwitch} colors={colors} disabled={submitting} expanded={expanded} />
-          <SubButton label={t('Pause')} onClick={handlePause} colors={colors} disabled={submitting} expanded={expanded} />
-          <SubButton label={t('Stop')} onClick={handleStop} colors={colors} active disabled={submitting} expanded={expanded} />
-        </div>
-      </TileShell>
-    );
+    statusText = `${sideLabel} — ${formatMMSS(activeSideTotal)}  ·  L: ${formatMMSS(leftTotal)}  R: ${formatMMSS(rightTotal)}`;
+    buttons = [
+      { key: 'switch', label: t('Switch'), onClick: handleSwitch, disabled: submitting },
+      { key: 'pause', label: t('Pause'), onClick: handlePause, disabled: submitting },
+      { key: 'stop', label: t('Stop'), onClick: handleStop, emphasized: true, disabled: submitting },
+    ];
+  } else {
+    buttons = [
+      { key: 'bottle', label: avgBottleAmount ? `${t('Bottle')} (${avgBottleAmount})` : t('Bottle'), onClick: submitBottle, disabled: submitting },
+      { key: 'breastL', label: t('Breast L'), onClick: () => startBreastFeed('LEFT'), disabled: submitting },
+      { key: 'breastR', label: t('Breast R'), onClick: () => startBreastFeed('RIGHT'), disabled: submitting },
+    ];
   }
 
-  // Idle phase
-  return (
-    <TileShell label={t('Feed')} colors={colors} log={log} animating={animating}>
-      <div className="flex gap-1.5 mt-auto pt-2">
-        <SubButton
-          label={avgBottleAmount ? `${t('Bottle')} (${avgBottleAmount})` : t('Bottle')}
-          onClick={submitBottle}
-          colors={colors}
-          disabled={submitting}
-        />
-        <SubButton label={t('Breast L')} onClick={() => startBreastFeed('LEFT')} colors={colors} disabled={submitting} />
-        <SubButton label={t('Breast R')} onClick={() => startBreastFeed('RIGHT')} colors={colors} disabled={submitting} />
-      </div>
-    </TileShell>
-  );
+  return {
+    id: 'feed',
+    icon: 'bottle',
+    label: t('Feed'),
+    statusText,
+    active: phase !== 'idle',
+    buttons,
+  };
 }

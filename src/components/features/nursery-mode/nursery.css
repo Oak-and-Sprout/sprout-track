@@ -136,6 +136,20 @@
 .nursery-footer .l { font-size: clamp(10px, .85vw, 12px); font-weight: 600; letter-spacing: .24em; color: rgba(255,255,255,.34); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .nursery-dotlock { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
 
+/* wake status gentle pulse (ported from the removed nursery-animations.css) */
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-dotlock { animation: nursery-gentlePulse 4s ease-in-out infinite; }
+  .nursery-toast { animation: nursery-toastIn .2s ease; }
+}
+@keyframes nursery-gentlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+@keyframes nursery-toastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @media (max-width: 680px) {
   .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
   .nursery-bg { position: fixed; }

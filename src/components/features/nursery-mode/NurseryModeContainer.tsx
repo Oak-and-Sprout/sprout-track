@@ -1,30 +1,74 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef, CSSProperties } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useBaby } from '@/app/context/baby';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
 import { useWakeLock } from '@/src/hooks/useWakeLock';
 import { useFullscreen } from '@/src/hooks/useFullscreen';
-import { useNurseryColors } from '@/src/hooks/useNurseryColors';
 import { useNurserySettings } from '@/src/hooks/useNurserySettings';
-import { ChevronDown } from 'lucide-react';
+import { autoIconColor } from '@/src/utils/nursery/colorMath';
 import { Baby } from '@prisma/client';
-import { Clock } from './Clock';
-import { FeedTile } from './FeedTile';
-import { PumpTile } from './PumpTile';
-import { DiaperTile } from './DiaperTile';
-import { SleepTile } from './SleepTile';
-import { SettingsDrawer } from './SettingsDrawer';
-import { TileLog } from './TileShell';
-import './nursery-animations.css';
+import { ClockBlock } from './ClockBlock';
+import { SceneBackground } from './scenes/SceneBackground';
+import { useFeedActions } from './activities/useFeedActions';
+import { usePumpActions } from './activities/usePumpActions';
+import { useDiaperActions } from './activities/useDiaperActions';
+import { useSleepActions } from './activities/useSleepActions';
+import { ActivityCard } from './activities/ActivityCard';
+import { BigTile } from './activities/BigTile';
+import { UndoToast } from './activities/UndoToast';
+import { TileLog, UndoInfo } from './activities/types';
 import './nursery.css';
 
-interface TileConfig {
-  id: string;
-  label: string;
-  active: boolean;
+const ACT_IDS = ['feed', 'pump', 'diaper', 'sleep'] as const;
+
+const ROW_LABEL: CSSProperties = {
+  fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
+  color: 'rgba(255,255,255,.5)', marginBottom: 8,
+};
+
+function DrawerSlider({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (n: number) => void }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={ROW_LABEL}>{label}</div>
+      <input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: '100%' }} />
+    </div>
+  );
+}
+
+function DrawerSeg({ label, options, value, onChange }: { label: string; options: [string, string][]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={ROW_LABEL}>{label}</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {options.map(([v, l]) => (
+          <button key={v} type="button" onClick={() => onChange(v)}
+            style={{ flex: '1 1 auto', minWidth: 70, minHeight: 40, borderRadius: 10, cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,.16)', color: '#fff', fontSize: 13,
+              background: value === v ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.08)' }}>
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DrawerToggle({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%',
+        minHeight: 48, padding: '0 14px', marginBottom: 8, borderRadius: 12, cursor: 'pointer',
+        border: '1px solid rgba(255,255,255,.16)', background: 'rgba(255,255,255,.08)', color: '#fff', fontSize: 14 }}>
+      <span>{label}</span>
+      <span style={{ width: 42, height: 24, borderRadius: 999, position: 'relative', transition: 'background .15s',
+        background: on ? '#4ade80' : 'rgba(255,255,255,.2)' }}>
+        <span style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .15s' }} />
+      </span>
+    </button>
+  );
 }
 
 export function NurseryModeContainer() {
@@ -36,64 +80,27 @@ export function NurseryModeContainer() {
   const { t } = useLocalization();
   const wakeLock = useWakeLock();
   const fullscreen = useFullscreen();
-  const { settings: v1Settings, isLoading, updateSettings } = useNurserySettings();
+  const { settings, isLoading, updateSettings } = useNurserySettings();
 
-  // TEMP during nursery redesign (removed in Task 11): adapt old container to v1 settings
-  const ACT_IDS: Array<keyof typeof v1Settings.acts> = ['feed', 'pump', 'diaper', 'sleep'];
-  const settings: { hue: number; brightness: number; saturation: number; visibleTiles: string[] } = {
-    hue: v1Settings.hue,
-    brightness: v1Settings.dim,
-    saturation: v1Settings.sat,
-    visibleTiles: ACT_IDS.filter((id) => v1Settings.acts[id]),
-  };
-  const saveSettings = useCallback(
-    (newSettings: { hue: number; brightness: number; saturation: number; visibleTiles: string[] }) => {
-      updateSettings({
-        hue: newSettings.hue,
-        dim: newSettings.brightness,
-        sat: newSettings.saturation,
-        acts: {
-          feed: newSettings.visibleTiles.includes('feed'),
-          pump: newSettings.visibleTiles.includes('pump'),
-          diaper: newSettings.visibleTiles.includes('diaper'),
-          sleep: newSettings.visibleTiles.includes('sleep'),
-        },
-      });
-    },
-    [updateSettings]
-  );
-
-  const [hue, setHue] = useState<number | null>(null);
-  const [brightness, setBrightness] = useState<number | null>(null);
-  const [saturation, setSaturation] = useState<number | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [logs, setLogs] = useState<Record<string, TileLog>>({});
-  const [animatingTile, setAnimatingTile] = useState<string | null>(null);
   const [babies, setBabies] = useState<Baby[]>([]);
-  const [babySwitcherOpen, setBabySwitcherOpen] = useState(false);
-  const [expandedTileId, setExpandedTileId] = useState<string | null>(null);
+  const [undo, setUndo] = useState<UndoInfo | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [enableBreastMilkTracking, setEnableBreastMilkTracking] = useState(true);
   const [isLandscape, setIsLandscape] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
   );
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
-  );
 
-  // Listen for orientation and size changes
+  const lastSeenRef = useRef<Record<string, string>>({});
+  const fetchActivityRef = useRef<(() => void) | null>(null);
+
+  // Listen for orientation changes
   useLayoutEffect(() => {
-    const landscapeMql = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
-    const mobileMql = window.matchMedia('(max-width: 768px)');
-    setIsLandscape(landscapeMql.matches);
-    setIsMobile(mobileMql.matches);
-    const onLandscape = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
-    const onMobile = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    landscapeMql.addEventListener('change', onLandscape);
-    mobileMql.addEventListener('change', onMobile);
-    return () => {
-      landscapeMql.removeEventListener('change', onLandscape);
-      mobileMql.removeEventListener('change', onMobile);
-    };
+    const mql = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
+    setIsLandscape(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
   }, []);
 
   // Fetch family settings for breast milk tracking flag
@@ -130,7 +137,6 @@ export function NurseryModeContainer() {
           if (data.success) {
             const activeBabies = data.data.filter((b: Baby) => !b.inactive);
             setBabies(activeBabies);
-            // Auto-select first baby if none selected
             if (!selectedBaby && activeBabies.length > 0) {
               setSelectedBaby(activeBabies[0]);
             }
@@ -145,7 +151,6 @@ export function NurseryModeContainer() {
 
   // Poll for recent activity updates every 10 seconds
   const pollRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSeenRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     if (!selectedBaby) return;
@@ -241,10 +246,8 @@ export function NurseryModeContainer() {
       }
     };
 
-    // Initial fetch
+    fetchActivityRef.current = fetchRecentActivity;
     fetchRecentActivity();
-
-    // Poll every 10 seconds
     pollRef.current = setInterval(fetchRecentActivity, 10000);
 
     return () => {
@@ -252,69 +255,38 @@ export function NurseryModeContainer() {
     };
   }, [selectedBaby?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initialize from settings once loaded
-  const effectiveHue = hue ?? settings.hue;
-  const effectiveBrightness = brightness ?? settings.brightness;
-  const effectiveSaturation = saturation ?? settings.saturation;
-
-  const colors = useNurseryColors(effectiveHue, effectiveBrightness, effectiveSaturation);
-
-  const tiles = useMemo<TileConfig[]>(() => {
-    const allTiles = [
-      { id: 'feed', label: t('Feed') },
-      { id: 'pump', label: t('Pump') },
-      { id: 'diaper', label: t('Diaper') },
-      { id: 'sleep', label: t('Sleep') },
-    ];
-    return allTiles.map(tile => ({
-      ...tile,
-      active: settings.visibleTiles.includes(tile.id),
-    }));
-  }, [settings.visibleTiles, t]);
-
-  const activeTiles = tiles.filter(tile => tile.active);
-
   const handleLog = useCallback((tileId: string, note: string) => {
     const now = new Date()
       .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
       .toLowerCase();
     setLogs(prev => ({ ...prev, [tileId]: { last: now, note } }));
-    setAnimatingTile(tileId);
-    setTimeout(() => setAnimatingTile(null), 600);
   }, []);
 
-  const currentSettings = useCallback(() => ({
-    ...settings,
-    hue: hue ?? settings.hue,
-    brightness: brightness ?? settings.brightness,
-    saturation: saturation ?? settings.saturation,
-  }), [settings, hue, brightness, saturation]);
-
-  const handleHueChange = useCallback((newHue: number) => {
-    setHue(newHue);
-    saveSettings({ ...currentSettings(), hue: newHue });
-  }, [currentSettings, saveSettings]);
-
-  const handleBrightnessChange = useCallback((newBrightness: number) => {
-    setBrightness(newBrightness);
-    saveSettings({ ...currentSettings(), brightness: newBrightness });
-  }, [currentSettings, saveSettings]);
-
-  const handleSaturationChange = useCallback((newSaturation: number) => {
-    setSaturation(newSaturation);
-    saveSettings({ ...currentSettings(), saturation: newSaturation });
-  }, [currentSettings, saveSettings]);
-
-  const toggleTile = useCallback((id: string) => {
-    const newVisible = settings.visibleTiles.includes(id)
-      ? settings.visibleTiles.filter(t => t !== id)
-      : [...settings.visibleTiles, id];
-    saveSettings({ ...currentSettings(), visibleTiles: newVisible });
-  }, [settings.visibleTiles, currentSettings, saveSettings]);
-
-  const handleActiveChange = useCallback((tileId: string, isActive: boolean) => {
-    setExpandedTileId(prev => isActive ? tileId : (prev === tileId ? null : prev));
-  }, []);
+  const handleUndo = useCallback(async () => {
+    if (!undo) return;
+    const { id, endpoint } = undo;
+    const tileId = endpoint.indexOf('diaper') >= 0 ? 'diaper' : 'feed';
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const res = await fetch(`${endpoint}?id=${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: authToken ? `Bearer ${authToken}` : '' },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLogs(prev => {
+          const next = { ...prev };
+          delete next[tileId];
+          return next;
+        });
+        lastSeenRef.current[tileId] = '';
+        if (fetchActivityRef.current) fetchActivityRef.current();
+      }
+    } catch (err) {
+      console.error('Undo failed:', err);
+    }
+    setUndo(null);
+  }, [undo]);
 
   const handleExit = useCallback(() => {
     wakeLock.release();
@@ -322,29 +294,20 @@ export function NurseryModeContainer() {
     router.push(`/${slug}/log-entry`);
   }, [wakeLock, fullscreen, router, slug]);
 
-  // Dim: 0-50% → 0-45% lightness, 50-100% → 45-70% lightness
-  const dimL = effectiveBrightness <= 50
-    ? (effectiveBrightness / 50) * 45
-    : 45 + ((effectiveBrightness - 50) / 50) * 25;
-  const sat = effectiveSaturation;
+  const handleSelectBaby = useCallback((id: string) => {
+    const baby = babies.find(b => b.id === id);
+    if (!baby) return;
+    setSelectedBaby(baby);
+    setLogs({});
+    lastSeenRef.current = {};
+  }, [babies, setSelectedBaby]);
 
-  // Base background gradient
-  const baseBg = `linear-gradient(165deg,
-    hsl(${effectiveHue}, ${sat}%, ${dimL}%) 0%,
-    hsl(${(effectiveHue + 8) % 360}, ${sat * 0.9}%, ${Math.max(dimL - 2, 1)}%) 100%)`;
-
-  // Lava lamp blob colors — wider hue shifts ±25-40 degrees for more color variation
-  const h = effectiveHue;
-  const blob1Color = `hsla(${(h + 40) % 360}, ${Math.min(sat * 1.4, 100)}%, ${Math.min(dimL + 3, 48)}%, 0.7)`;
-  const blob2Color = `hsla(${(h - 30 + 360) % 360}, ${Math.min(sat * 1.2, 100)}%, ${Math.min(dimL + 8, 50)}%, 0.6)`;
-  const blob3Color = `hsla(${(h + 25) % 360}, ${Math.min(sat * 1.3, 100)}%, ${Math.min(dimL + 5, 48)}%, 0.55)`;
-
-  const tileComponents: Record<string, React.ComponentType<any>> = {
-    feed: FeedTile,
-    pump: PumpTile,
-    diaper: DiaperTile,
-    sleep: SleepTile,
-  };
+  // Activity hooks — always called unconditionally (rules of hooks)
+  const hookArgs = { babyId: selectedBaby?.id ?? '', toUTCString, onLog: handleLog, onUndoable: setUndo, enableBreastMilkTracking };
+  const feedView = useFeedActions(hookArgs);
+  const pumpView = usePumpActions(hookArgs);
+  const diaperView = useDiaperActions(hookArgs);
+  const sleepView = useSleepActions(hookArgs);
 
   if (isLoading) {
     return (
@@ -354,384 +317,114 @@ export function NurseryModeContainer() {
     );
   }
 
+  const trans = settings.trans;
+  const cardBg = (0.16 - (trans / 100) * 0.15).toFixed(3);
+  const btnBg = (0.2 - (trans / 100) * 0.16).toFixed(3);
+  const line = (0.24 - (trans / 100) * 0.16).toFixed(3);
+  const stageVars = { '--cardbg': cardBg, '--btnbg': btnBg, '--cardline': line, '--btnline': line } as CSSProperties;
+
+  const iconColor = settings.iconColor ?? autoIconColor(settings.hue);
+  const shape = settings.iconShape;
+  const clockBabies = babies.map(b => ({ id: b.id, firstName: b.firstName }));
+  const babyName = selectedBaby?.firstName ?? t('Sprout Track');
+
+  const views = [feedView, pumpView, diaperView, sleepView];
+  const visible = views.filter(v => settings.acts[v.id]);
+
+  const activityArea = settings.layout === 'tiles' ? (
+    <div className={`nursery-tilegrid${visible.length <= 2 ? ' two' : ''}`}>
+      {visible.map(v => (
+        <BigTile key={v.id} view={v} log={logs[v.id] || null} iconColor={iconColor} iconShape={shape} />
+      ))}
+    </div>
+  ) : (
+    <div className="nursery-grid">
+      {visible.map(v => (
+        <ActivityCard key={v.id} view={v} log={logs[v.id] || null} iconColor={iconColor} iconShape={shape} />
+      ))}
+    </div>
+  );
+
+  const wakeStatus = wakeLock.isActive
+    ? t('Screen lock active')
+    : wakeLock.isSupported
+      ? t('Requesting wake lock...')
+      : t('Wake lock not supported');
+
   return (
-    <>
-      <style>{`
-        input[type="range"]::-webkit-slider-thumb {
-          -webkit-appearance: none; width: 36px; height: 36px;
-          border-radius: 50%; background: white;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer;
-        }
-        * { -webkit-tap-highlight-color: transparent; }
-        @supports (padding-top: env(safe-area-inset-top)) {
-          .nursery-safe-area {
-            padding-top: env(safe-area-inset-top) !important;
-            padding-left: env(safe-area-inset-left) !important;
-            padding-right: env(safe-area-inset-right) !important;
-            padding-bottom: env(safe-area-inset-bottom) !important;
-          }
-        }
-        @supports (backdrop-filter: url(#liquid-glass)) {
-          .liquid-glass-tile {
-            backdrop-filter: url(#liquid-glass) blur(20px) brightness(1.05) saturate(1.3) !important;
-            -webkit-backdrop-filter: url(#liquid-glass) blur(20px) brightness(1.05) saturate(1.3) !important;
-          }
-          .liquid-glass-btn {
-            backdrop-filter: url(#liquid-glass) blur(12px) brightness(1.05) saturate(1.2) !important;
-            -webkit-backdrop-filter: url(#liquid-glass) blur(12px) brightness(1.05) saturate(1.2) !important;
-          }
-        }
-        @supports not (backdrop-filter: url(#liquid-glass)) {
-          .liquid-glass-tile {
-            backdrop-filter: blur(20px) brightness(1.05) saturate(1.3) !important;
-            -webkit-backdrop-filter: blur(20px) brightness(1.05) saturate(1.3) !important;
-          }
-          .liquid-glass-btn {
-            backdrop-filter: blur(12px) brightness(1.05) saturate(1.2) !important;
-            -webkit-backdrop-filter: blur(12px) brightness(1.05) saturate(1.2) !important;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .liquid-glass-tile, .liquid-glass-btn {
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-          }
-        }
-      `}</style>
+    <div className="nursery-stage" style={stageVars}>
+      <style>{`* { -webkit-tap-highlight-color: transparent; }
+        .nursery-stage input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); cursor: pointer; }`}</style>
 
-      <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
-        <defs>
-          <filter id="liquid-glass" x="-10%" y="-10%" width="120%" height="120%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves={3} seed={2} result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale={6} xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-      </svg>
+      <SceneBackground settings={settings} />
 
-      <div
-        className="fixed inset-0 z-[9999] flex flex-col font-sans overflow-hidden nursery-safe-area"
-        style={{
-          background: baseBg,
-          animation: 'nursery-hueShift 45s ease-in-out infinite',
-        }}
-      >
-        {/* Lava lamp blobs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: '130%',
-              height: '80%',
-              left: '-15%',
-              bottom: '-20%',
-              background: `radial-gradient(ellipse at center, ${blob1Color}, transparent 70%)`,
-              animation: 'nursery-blob1 30s ease-in-out infinite',
-              willChange: 'transform',
-            }}
-          />
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: '100%',
-              height: '70%',
-              right: '-10%',
-              top: '-15%',
-              background: `radial-gradient(ellipse at center, ${blob2Color}, transparent 65%)`,
-              animation: 'nursery-blob2 25s ease-in-out infinite',
-              willChange: 'transform',
-            }}
-          />
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: '90%',
-              height: '60%',
-              left: '5%',
-              top: '20%',
-              background: `radial-gradient(ellipse at center, ${blob3Color}, transparent 60%)`,
-              animation: 'nursery-blob3 35s ease-in-out infinite',
-              willChange: 'transform',
-            }}
-          />
-        </div>
-
-        {/* Header — landscape: clock + baby inline with buttons; portrait: buttons only */}
-        <div
-          className="flex items-center flex-shrink-0"
-          style={{
-            paddingTop: isLandscape ? 'clamp(0.5rem, 1.5vw, 0.75rem)' : 'clamp(1rem, 3vw, 2rem)',
-            paddingRight: isLandscape ? 'clamp(1rem, 3vw, 2rem)' : 'clamp(1.25rem, 4vw, 2.5rem)',
-            paddingBottom: 0,
-            paddingLeft: isLandscape ? 'clamp(1rem, 3vw, 2rem)' : 'clamp(1.25rem, 4vw, 2.5rem)',
-            justifyContent: isLandscape ? 'space-between' : 'flex-end',
-          }}
-        >
+      <div className="nursery-fg">
+        <div className="nursery-topbar" style={isLandscape ? { justifyContent: 'space-between' } : undefined}>
           {isLandscape && (
-            <div className="flex items-center gap-4">
-              <Clock colors={colors} compact />
-              <div className="relative flex flex-col items-start">
-                <button
-                  onClick={() => babies.length > 1 && setBabySwitcherOpen(!babySwitcherOpen)}
-                  className="bg-transparent border-none p-0 flex items-center gap-1.5 cursor-pointer text-left"
-                  style={{ cursor: babies.length > 1 ? 'pointer' : 'default' }}
-                >
-                  <div
-                    className="text-[clamp(0.8rem,1.8vw,1rem)] font-light tracking-tight font-serif"
-                    style={{ color: colors.text, opacity: 0.7 }}
-                  >
-                    {selectedBaby ? selectedBaby.firstName : t('Sprout Track')}
-                  </div>
-                  {babies.length > 1 && (
-                    <ChevronDown
-                      size={14}
-                      aria-hidden="true"
-                      style={{
-                        color: colors.text,
-                        opacity: 0.6,
-                        transform: babySwitcherOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s ease',
-                      }}
-                    />
-                  )}
-                </button>
-                {babySwitcherOpen && babies.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      className="fixed inset-0 z-[100] bg-transparent border-none p-0 cursor-default"
-                      onClick={() => setBabySwitcherOpen(false)}
-                      aria-label={t('Close')}
-                    />
-                    <div
-                      className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
-                      style={{
-                        background: colors.panelBg,
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
-                        border: `1px solid ${colors.border}`,
-                        minWidth: '140px',
-                        animation: 'nursery-fadeIn 0.15s ease',
-                      }}
-                    >
-                      {babies.map((baby) => (
-                        <button
-                          key={baby.id}
-                          onClick={() => {
-                            setSelectedBaby(baby);
-                            setBabySwitcherOpen(false);
-                            setLogs({});
-                            lastSeenRef.current = {};
-                          }}
-                          className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
-                          style={{
-                            color: colors.text,
-                            opacity: selectedBaby?.id === baby.id ? 1 : 0.6,
-                            background: selectedBaby?.id === baby.id ? colors.btnBg : 'transparent',
-                          }}
-                        >
-                          {baby.firstName}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+            <ClockBlock babyName={babyName} babies={clockBabies} selectedBabyId={selectedBaby?.id} onSelectBaby={handleSelectBaby} compact />
           )}
-          <div className="flex items-center gap-6">
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="bg-transparent border-none font-sans text-[clamp(0.85rem,1.8vw,1rem)] cursor-pointer py-1 px-0 tracking-wide"
-              style={{ color: colors.text, opacity: 0.45 }}
-            >
-              {t('Settings')}
-            </button>
-            <button
-              onClick={handleExit}
-              className="bg-transparent border-none font-sans text-[clamp(0.85rem,1.8vw,1rem)] cursor-pointer py-1 px-0 tracking-wide"
-              style={{ color: colors.text, opacity: 0.45 }}
-            >
-              {t('Exit')}
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px, 2.5vw, 40px)' }}>
+            <button type="button" className="nursery-ghost" onClick={() => setSettingsOpen(true)}>{t('Settings')}</button>
+            <button type="button" className="nursery-ghost" onClick={handleExit}>{t('Exit')}</button>
           </div>
         </div>
 
-        {/* Clock + Baby Selector — portrait only */}
-        {!isLandscape && (
-          <div
-            className="flex-shrink-0 flex items-center justify-center"
-            style={{ padding: 'clamp(1.25rem, 4vw, 3rem) 0 clamp(0.75rem, 2.5vw, 1.5rem)' }}
-          >
-            <div className="flex items-center gap-8">
-              <Clock colors={colors} />
-              <div className="relative flex flex-col items-start">
-                <button
-                  onClick={() => babies.length > 1 && setBabySwitcherOpen(!babySwitcherOpen)}
-                  className="bg-transparent border-none p-0 flex items-center gap-1.5 cursor-pointer text-left"
-                  style={{ cursor: babies.length > 1 ? 'pointer' : 'default' }}
-                >
-                  <div
-                    className="text-[clamp(1rem,2.2vw,1.2rem)] font-light tracking-tight font-serif"
-                    style={{ color: colors.text, opacity: 0.7 }}
-                  >
-                    {selectedBaby ? selectedBaby.firstName : t('Sprout Track')}
-                  </div>
-                  {babies.length > 1 && (
-                    <ChevronDown
-                      size={18}
-                      aria-hidden="true"
-                      style={{
-                        color: colors.text,
-                        opacity: 0.6,
-                        transform: babySwitcherOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s ease',
-                      }}
-                    />
-                  )}
-                </button>
-                {babySwitcherOpen && babies.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      className="fixed inset-0 z-[100] bg-transparent border-none p-0 cursor-default"
-                      onClick={() => setBabySwitcherOpen(false)}
-                      aria-label={t('Close')}
-                    />
-                    <div
-                      className="absolute top-full left-0 mt-2 z-[101] rounded-lg overflow-hidden"
-                      style={{
-                        background: colors.panelBg,
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
-                        border: `1px solid ${colors.border}`,
-                        minWidth: '140px',
-                        animation: 'nursery-fadeIn 0.15s ease',
-                      }}
-                    >
-                      {babies.map((baby) => (
-                        <button
-                          key={baby.id}
-                          onClick={() => {
-                            setSelectedBaby(baby);
-                            setBabySwitcherOpen(false);
-                            setLogs({});
-                            lastSeenRef.current = {};
-                          }}
-                          className="w-full text-left bg-transparent border-none font-serif text-sm py-2.5 px-4 cursor-pointer transition-colors duration-100"
-                          style={{
-                            color: colors.text,
-                            opacity: selectedBaby?.id === baby.id ? 1 : 0.6,
-                            background: selectedBaby?.id === baby.id ? colors.btnBg : 'transparent',
-                          }}
-                        >
-                          {baby.firstName}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tiles */}
-        <div
-          className="flex-1 flex justify-center overflow-hidden"
-          style={{
-            padding: isLandscape
-              ? 'clamp(0.25rem, 1vw, 0.5rem) clamp(1rem, 3vw, 2rem)'
-              : '0 clamp(1.25rem, 4vw, 2.5rem) clamp(1rem, 2.5vw, 1.5rem)',
-            alignItems: isMobile ? 'stretch' : 'flex-start',
-          }}
-        >
-          <div
-            className={isMobile ? 'flex flex-col w-full' : 'grid w-full'}
-            style={{
-              maxWidth: isLandscape ? '100%' : '620px',
-              gap: expandedTileId ? '0' : 'clamp(0.5rem, 1.3vw, 0.75rem)',
-              ...(!isMobile && {
-                gridTemplateColumns: expandedTileId || activeTiles.length === 1 ? '1fr' : '1fr 1fr',
-              }),
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-          >
-            {activeTiles.map(tile => {
-              const Component = tileComponents[tile.id];
-              if (!Component || !selectedBaby) return null;
-              const isExpanded = expandedTileId === tile.id;
-              const isHidden = expandedTileId != null && !isExpanded;
-              return (
-                <div
-                  key={tile.id}
-                  style={{
-                    flex: isMobile && !isHidden ? 1 : undefined,
-                    minHeight: 0,
-                    opacity: isHidden ? 0 : 1,
-                    maxHeight: isHidden ? 0 : undefined,
-                    overflow: 'hidden',
-                    transition: 'opacity 0.3s ease, max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), flex 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                >
-                  <Component
-                    colors={colors}
-                    log={logs[tile.id] || null}
-                    onLog={handleLog}
-                    onActiveChange={handleActiveChange}
-                    animating={animatingTile === tile.id}
-                    babyId={selectedBaby.id}
-                    toUTCString={toUTCString}
-                    expanded={isExpanded}
-                    enableBreastMilkTracking={enableBreastMilkTracking}
-                  />
-                </div>
-              );
-            })}
-          </div>
+        <div className="nursery-center">
+          {!isLandscape && (
+            <ClockBlock babyName={babyName} babies={clockBabies} selectedBabyId={selectedBaby?.id} onSelectBaby={handleSelectBaby} />
+          )}
+          {selectedBaby && activityArea}
         </div>
-
-        {/* Footer — hidden in landscape to save space */}
-        {!isLandscape && (
-          <div className="pb-[clamp(0.75rem,2vw,1.25rem)] text-center flex flex-col items-center gap-1">
-            <span
-              className="font-sans text-[clamp(0.55rem,1.2vw,0.7rem)] tracking-widest uppercase"
-              style={{ color: colors.text, opacity: 0.35 }}
-            >
-              {t('Nursery Mode')}
-            </span>
-            <span
-              className="font-sans text-[0.6rem] tracking-wider uppercase"
-              style={{
-                color: colors.text,
-                opacity: 0.25,
-                animation: wakeLock.isActive ? 'nursery-gentlePulse 4s ease-in-out infinite' : 'none',
-              }}
-            >
-              {wakeLock.isActive ? t('Screen lock active') : wakeLock.isSupported ? t('Requesting wake lock...') : t('Wake lock not supported')}
-            </span>
-          </div>
-        )}
-
-        {/* Settings Drawer */}
-        <SettingsDrawer
-          open={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-          hue={effectiveHue}
-          setHue={handleHueChange}
-          brightness={effectiveBrightness}
-          setBrightness={handleBrightnessChange}
-          saturation={effectiveSaturation}
-          setSaturation={handleSaturationChange}
-          tiles={tiles}
-          toggleTile={toggleTile}
-          wakeLockActive={wakeLock.isActive}
-          wakeLockSupported={wakeLock.isSupported}
-          fullscreenActive={fullscreen.isFullscreen}
-          fullscreenSupported={fullscreen.isSupported}
-          onToggleFullscreen={() => fullscreen.toggle()}
-          colors={colors}
-        />
       </div>
-    </>
+
+      {!isLandscape && (
+        <div className="nursery-footer">
+          <div className="m" style={{ textTransform: 'uppercase' }}>{t('Nursery Mode')}</div>
+          <div className="l" style={{ textTransform: 'uppercase' }}>
+            {wakeLock.isActive && <span className="nursery-dotlock" />}
+            {wakeStatus}
+          </div>
+        </div>
+      )}
+
+      <UndoToast undo={undo} onUndo={handleUndo} onDismiss={() => setUndo(null)} />
+
+      {/* Placeholder drawer — replaced by full SettingsDrawer in Task 12 */}
+      {settingsOpen && (
+        <>
+          <button type="button" aria-label={t('Close')} onClick={() => setSettingsOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.4)', border: 'none', cursor: 'default' }} />
+          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 401, width: 'min(360px, 92vw)', overflowY: 'auto',
+            padding: 24, background: 'rgba(20,22,31,.96)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            borderLeft: '1px solid rgba(255,255,255,.12)', color: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 600 }}>{t('Settings')}</h2>
+              <button type="button" className="nursery-ghost" onClick={() => setSettingsOpen(false)}>{t('Close')}</button>
+            </div>
+            <DrawerSeg label={t('Scene')} value={settings.scene}
+              options={[['ambient', t('Ambient')], ['starlit', t('Starlit')], ['tapestry', t('Tapestry')], ['photo', t('Photo')]]}
+              onChange={v => updateSettings({ scene: v as any })} />
+            <DrawerSeg label={t('Layout')} value={settings.layout}
+              options={[['cards', t('Cards')], ['tiles', t('Big Tiles')]]}
+              onChange={v => updateSettings({ layout: v as any })} />
+            <DrawerSlider label={t('Hue')} value={settings.hue} min={0} max={360} onChange={n => updateSettings({ hue: n })} />
+            <DrawerSlider label={t('Dim')} value={settings.dim} min={0} max={100} onChange={n => updateSettings({ dim: n })} />
+            <DrawerSlider label={t('Saturation')} value={settings.sat} min={0} max={100} onChange={n => updateSettings({ sat: n })} />
+            <DrawerSlider label={t('Button transparency')} value={settings.trans} min={0} max={100} onChange={n => updateSettings({ trans: n })} />
+            <div style={ROW_LABEL}>{t('Activities')}</div>
+            {ACT_IDS.map(id => (
+              <DrawerToggle key={id} label={t(id.charAt(0).toUpperCase() + id.slice(1))} on={settings.acts[id]}
+                onClick={() => updateSettings({ acts: { ...settings.acts, [id]: !settings.acts[id] } })} />
+            ))}
+            <div style={{ ...ROW_LABEL, marginTop: 14 }}>{t('Display')}</div>
+            <DrawerToggle label={t('Keep screen awake')} on={wakeLock.isActive}
+              onClick={() => (wakeLock.isActive ? wakeLock.release() : wakeLock.request())} />
+            {fullscreen.isSupported && (
+              <DrawerToggle label={t('Fullscreen')} on={fullscreen.isFullscreen} onClick={() => fullscreen.toggle()} />
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
