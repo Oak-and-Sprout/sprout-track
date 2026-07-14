@@ -47,8 +47,9 @@ export function AmbientScene({ ambient, hue }: AmbientSceneProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bubbleCfg.count, bubbleCfg.min, bubbleCfg.max]);
 
-  // Re-seeded once per mount of a given pattern so the placement doesn't reshuffle on every render.
-  const seed = useMemo(() => Math.floor(Math.random() * 2 ** 31), [pattern]);
+  // Seeded once per mount: cycling patterns back to a sprite set must not reshuffle
+  // the field (changing sets already re-places items via poseARs).
+  const seed = useMemo(() => Math.floor(Math.random() * 2 ** 31), []);
 
   const outlineItems = useMemo(() => {
     if (!sprites || !sprites.ars.length) return [];
