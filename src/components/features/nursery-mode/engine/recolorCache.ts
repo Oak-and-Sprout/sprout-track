@@ -7,11 +7,17 @@ const svgTextCache = new Map<string, Promise<string>>();
 const recoloredCache = new Map<string, Promise<RasterAsset>>();
 const outlineCache = new Map<string, Promise<RasterAsset>>();
 
-/** Fetches raw SVG text for a url, memoized per url so concurrent callers dedupe. */
+/**
+ * Fetches raw SVG text for a url, memoized per url so concurrent callers dedupe.
+ * A failed fetch evicts its cache entry so a later call can retry.
+ */
 export function fetchSvgText(url: string): Promise<string> {
   const cached = svgTextCache.get(url);
   if (cached) return cached;
-  const promise = fetch(url).then(r => r.text());
+  const promise = fetch(url).then(r => r.text()).catch(err => {
+    svgTextCache.delete(url);
+    throw err;
+  });
   svgTextCache.set(url, promise);
   return promise;
 }
@@ -29,6 +35,7 @@ export function svgAspectRatio(svgText: string): number {
 /**
  * Fetches, recolors, and blob-URLs a single-pose SVG. Result promises are cached
  * per `${url}|${base}|${colors.join()}` (never revoked — session-lifetime cache).
+ * A failed attempt evicts its cache entry so a later call can retry.
  */
 export function recoloredSvgUrl(url: string, base: string, colors: string[]): Promise<RasterAsset> {
   const key = `${url}|${base}|${colors.join()}`;
@@ -39,6 +46,9 @@ export function recoloredSvgUrl(url: string, base: string, colors: string[]): Pr
     const ar = svgAspectRatio(text);
     const objectUrl = URL.createObjectURL(new Blob([out], { type: 'image/svg+xml' }));
     return { objectUrl, ar };
+  }).catch(err => {
+    recoloredCache.delete(key);
+    throw err;
   });
   recoloredCache.set(key, promise);
   return promise;

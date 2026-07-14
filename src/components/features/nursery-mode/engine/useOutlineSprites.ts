@@ -28,6 +28,9 @@ export function useOutlineSprites(setId: string | null, hue: number): OutlineSpr
     Promise.all(set.poses.map(pose => outlineSpriteUrl(spriteUrl(setId, pose.file), hue))).then(assets => {
       if (!live) return;
       setResult({ urls: assets.map(a => a.objectUrl), ars: assets.map(a => a.ar) });
+    }).catch(err => {
+      // Leave state null; failed cache entries were evicted so a re-render can retry.
+      if (live) console.error('useOutlineSprites failed:', err);
     });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

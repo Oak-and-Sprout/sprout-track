@@ -19,6 +19,9 @@ export function useRecoloredAsset(url: string | null, base: string, colors: stri
     let live = true;
     recoloredSvgUrl(url, base, colors).then(asset => {
       if (live) setResult(asset);
+    }).catch(err => {
+      // Leave state null; the cache entry was evicted so a re-render can retry.
+      if (live) console.error('useRecoloredAsset failed:', err);
     });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
