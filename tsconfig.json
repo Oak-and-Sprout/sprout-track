@@ -18,6 +18,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "downlevelIteration": true,
     "plugins": [
       {
         "name": "next"
