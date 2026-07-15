@@ -8,6 +8,7 @@ import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { FamilyResponse } from '@/app/api/types';
+import { validateFamilySlugWithRetry } from '@/src/utils/session-timeout';
 
 function FamilySlugPageContent() {
   const router = useRouter();
@@ -31,24 +32,26 @@ function FamilySlugPageContent() {
         return;
       }
 
-      try {
-        const response = await fetch(`/api/family/by-slug/${encodeURIComponent(familySlug)}`);
-        const data = await response.json();
-        
-        // If family doesn't exist, redirect to home
-        if (!data.success || !data.data) {
-          console.log(`Family slug "${familySlug}" not found, redirecting to home...`);
-          router.push('/');
-          return;
-        }
-        
-        // Family exists, allow page to continue loading
-        setSlugValidated(true);
-      } catch (error) {
-        console.error('Error validating family slug:', error);
-        // On error, redirect to home to be safe
-        router.push('/');
+      // Transient failures (network hiccup, 5xx) are retried and never treated
+      // as "family not found" (issue #209, candidate 3)
+      const outcome = await validateFamilySlugWithRetry(familySlug);
+
+      if (outcome === 'not-found') {
+        // The API definitively answered that the family doesn't exist
+        console.log(`Family slug "${familySlug}" not found, redirecting to home...`);
+        router.push('/?src=slug-404');
+        return;
       }
+
+      if (outcome === 'transient') {
+        // Network/server hiccup — stay on the validating state instead of
+        // bouncing to home; a reload retries
+        console.error(`Could not validate family slug "${familySlug}" (transient error), staying on page`);
+        return;
+      }
+
+      // Family exists, allow page to continue loading
+      setSlugValidated(true);
     };
 
     validateSlug();
@@ -166,10 +169,10 @@ function FamilySlugPageContent() {
 
     if (family && family.isActive === false) {
       // Family exists but is inactive - redirect to root
-      router.push('/');
+      router.push('/?src=family-inactive');
     } else if (!family && familySlug) {
       // Family not found for the given slug - redirect to root
-      router.push('/');
+      router.push('/?src=family-missing');
     }
   }, [family, familyLoading, familySlug, router, slugValidated]);
 

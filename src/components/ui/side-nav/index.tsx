@@ -389,7 +389,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                   {isSaasMode ? (
                     <button
                       onClick={() => {
-                        window.location.href = '/';
+                        window.location.href = '/?src=nav-home';
                       }}
                       className="text-left cursor-pointer hover:opacity-80 transition-opacity"
                       aria-label="Go to home page"
