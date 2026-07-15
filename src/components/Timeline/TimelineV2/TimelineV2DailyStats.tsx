@@ -18,7 +18,8 @@ import {
   EyeOff,
   Baby,
   Syringe,
-  Camera
+  Camera,
+  Utensils
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -35,7 +36,7 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
 import { convertVolume } from '@/src/utils/unit-conversion';
-import { groupBreastFeedSessions, BreastFeedLike } from '@/src/utils/feedSessionUtils';
+import { aggregateFeedStats } from '@/src/utils/feedStatsUtils';
 import { useUnit } from '@/src/hooks/useUnit';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { countUniquePhotoIds } from '@/src/utils/photoUtils';
@@ -119,12 +120,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let wetCount = 0;
     let dirtyCount = 0;
     let poopCount = 0;
-    let totalFeedCount = 0;
     const preferredUnit = defaultBottleUnit || 'OZ';
-    let bottleFeedTotal = 0;
-    let leftBreastFeedMinutes = 0;
-    let rightBreastFeedMinutes = 0;
-    const solidsAmounts: Record<string, number> = {};
     const medicineStats: Record<string, { count: number, total: number, unit: string }> = {};
     const supplementStats: Record<string, { count: number, total: number, unit: string }> = {};
     let noteCount = 0;
@@ -167,27 +163,6 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
           if (overlapEnd > overlapStart) {
             const overlapMinutes = Math.floor((overlapEnd - overlapStart) / (1000 * 60));
             totalSleepMinutes += overlapMinutes;
-          }
-        }
-      }
-      
-      // Feed activities - track all types together
-      if ('amount' in activity && 'type' in activity) {
-        const time = new Date(activity.time);
-        if (time >= startOfDay && time <= endOfDay) {
-          if (activity.type === 'BOTTLE') {
-            totalFeedCount++;
-            const entryUnit = activity.unitAbbr || 'OZ';
-            const amount = activity.amount || 0;
-            bottleFeedTotal += convertVolume(amount, entryUnit, preferredUnit);
-          } else if (activity.type === 'SOLIDS') {
-            totalFeedCount++;
-            // Track solids amounts by unit
-            const unit = activity.unitAbbr || 'g';
-            if (!solidsAmounts[unit]) {
-              solidsAmounts[unit] = 0;
-            }
-            solidsAmounts[unit] += activity.amount || 0;
           }
         }
       }
@@ -302,18 +277,9 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       }
     });
 
-    // Breast feeds: group per-side rows into nursing sessions (issue #198). The
-    // grouping window spans midnight, so use the surrounding days' activities
-    // and attribute each session (count and minutes) to the day it started.
-    const breastRows = ((windowActivities ?? activities) as unknown as BreastFeedLike[])
-      .filter(a => a && 'type' in a && a.type === 'BREAST');
-    for (const session of groupBreastFeedSessions(breastRows)) {
-      if (session.time >= startOfDay && session.time <= endOfDay) {
-        totalFeedCount++;
-        leftBreastFeedMinutes += Math.floor(session.leftDuration / 60);
-        rightBreastFeedMinutes += Math.floor(session.rightDuration / 60);
-      }
-    }
+    // Feed stats: bottle + breast (grouped into nursing sessions, issue #198)
+    // counted together, solids counted separately (issue #207).
+    const feedStats = aggregateFeedStats(activities, windowActivities, startOfDay, endOfDay, preferredUnit);
 
     // Check for active sleep (sleep without endTime)
     // Note: Must exclude pump activities which also have duration and startTime
@@ -379,30 +345,25 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
-    // Combined feed tile (bottle, breast, and solids)
-    if (totalFeedCount > 0) {
+    // Feeds tile (bottle and breast)
+    if (feedStats.milkFeedCount > 0) {
       // Format bottle feed amounts
-      const formattedBottleAmounts = bottleFeedTotal > 0
-        ? `${Math.round(bottleFeedTotal * 100) / 100} ${preferredUnit.toLowerCase()}`
+      const formattedBottleAmounts = feedStats.bottleFeedTotal > 0
+        ? `${Math.round(feedStats.bottleFeedTotal * 100) / 100} ${preferredUnit.toLowerCase()}`
         : '';
-      
-      // Format solids amounts
-      const formattedSolidsAmounts = Object.entries(solidsAmounts)
-        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
-        .join(', ');
-      
+
       // Format breast feed amounts separately for left and right
       const breastFeedParts: string[] = [];
-      if (leftBreastFeedMinutes > 0 && rightBreastFeedMinutes > 0) {
-        breastFeedParts.push(`${t('L:')} ${formatMinutes(leftBreastFeedMinutes)}`);
-        breastFeedParts.push(`${t('R:')} ${formatMinutes(rightBreastFeedMinutes)}`);
-      } else if (leftBreastFeedMinutes > 0) {
-        breastFeedParts.push(`${t('Left:')} ${formatMinutes(leftBreastFeedMinutes)}`);
-      } else if (rightBreastFeedMinutes > 0) {
-        breastFeedParts.push(`${t('Right:')} ${formatMinutes(rightBreastFeedMinutes)}`);
+      if (feedStats.leftBreastMinutes > 0 && feedStats.rightBreastMinutes > 0) {
+        breastFeedParts.push(`${t('L:')} ${formatMinutes(feedStats.leftBreastMinutes)}`);
+        breastFeedParts.push(`${t('R:')} ${formatMinutes(feedStats.rightBreastMinutes)}`);
+      } else if (feedStats.leftBreastMinutes > 0) {
+        breastFeedParts.push(`${t('Left:')} ${formatMinutes(feedStats.leftBreastMinutes)}`);
+      } else if (feedStats.rightBreastMinutes > 0) {
+        breastFeedParts.push(`${t('Right:')} ${formatMinutes(feedStats.rightBreastMinutes)}`);
       }
       const formattedBreastFeed = breastFeedParts.length > 0 ? breastFeedParts.join(', ') : '';
-      
+
       // Build combined label
       const labelParts: string[] = [];
       if (formattedBottleAmounts) {
@@ -411,21 +372,37 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       if (formattedBreastFeed) {
         labelParts.push(formattedBreastFeed);
       }
-      if (formattedSolidsAmounts) {
-        labelParts.push(formattedSolidsAmounts);
-      }
-      
-      const combinedLabel = labelParts.length > 0 
+
+      const combinedLabel = labelParts.length > 0
         ? labelParts.join(' • ')
         : t('Feeds');
-      
+
       tiles.push({
         filter: 'feed',
         label: combinedLabel,
-        value: totalFeedCount.toString(),
+        value: feedStats.milkFeedCount.toString(),
         icon: <Icon iconNode={bottleBaby} className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#7dd3fc]', // sky-300 - matches timeline
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Solids tile (issue #207: split from the combined feed tile)
+    if (feedStats.solidsCount > 0) {
+      // Format solids amounts by unit
+      const formattedSolidsAmounts = Object.entries(feedStats.solidsAmounts)
+        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
+        .join(', ');
+
+      tiles.push({
+        filter: 'solids',
+        label: formattedSolidsAmounts || t('Solids'),
+        value: feedStats.solidsCount.toString(),
+        icon: <Utensils className="h-full w-full" aria-hidden="true" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-green-600', // matches legacy DailyStats solids
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });

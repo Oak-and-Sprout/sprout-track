@@ -22,7 +22,8 @@ import {
   Plus,
   Minus,
   Syringe,
-  Camera
+  Camera,
+  Utensils
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { 
@@ -95,6 +96,9 @@ export const getActivityIcon = (activity: ActivityType) => {
       return <Moon className="h-4 w-4 text-white" aria-hidden="true" />; // Sleep activity
     }
     if ('amount' in activity) {
+      if ((activity as any).type === 'SOLIDS') {
+        return <Utensils className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Solids feed
+      }
       return <Icon iconNode={bottleBaby} className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Feed activity
     }
     if ('condition' in activity) {

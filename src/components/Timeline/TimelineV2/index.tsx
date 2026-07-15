@@ -391,7 +391,13 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
-              return 'amount' in activity;
+              // Bottle and breast feeds only; solids have their own filter and
+              // breast-milk adjustments (amount without type) stay excluded
+              return 'amount' in activity && 'type' in activity &&
+                     (activity as any).type !== 'SOLIDS';
+            case 'solids':
+              return 'amount' in activity && 'type' in activity &&
+                     (activity as any).type === 'SOLIDS';
             case 'diaper':
               return 'condition' in activity && 'type' in activity &&
                      (activity.type === 'WET' || activity.type === 'BOTH');
