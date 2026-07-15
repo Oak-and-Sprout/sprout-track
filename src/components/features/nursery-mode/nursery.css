@@ -88,7 +88,10 @@
 }
 
 /* ---- foreground layout ---- */
-.nursery-fg { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; padding: calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-top)) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-right)) clamp(20px, 3.2vw, 48px) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-left)); }
+/* min-height: 0 is load-bearing — without it this flex item grows to its content,
+   overflowing the clipped stage (hiding the footer) and the activity scroller never
+   engages because nothing inside is ever height-constrained. */
+.nursery-fg { position: relative; z-index: 2; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-top)) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-right)) clamp(20px, 3.2vw, 48px) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-left)); }
 .nursery-topbar { display: flex; justify-content: flex-end; align-items: center; gap: clamp(20px, 2.5vw, 40px); }
 .nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
 .nursery-ghost:hover { color: #fff; }
