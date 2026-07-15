@@ -98,6 +98,12 @@ export interface AllergensTabProps {
    * Called after a manual allergen is added or deleted so the parent refetches
    */
   onAllergensChanged: () => void;
+
+  /**
+   * Called when the user follows a "View in log" link so the parent can close
+   * the modal (navigation may target the page already underneath it)
+   */
+  onNavigate?: () => void;
 }
 
 /**

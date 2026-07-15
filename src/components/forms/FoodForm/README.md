@@ -4,7 +4,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 
 ## Structure
 
-- `index.tsx` — the `FormPage` shell with two tabs; fetches the family food catalog when opened
+- `index.tsx` — the `FormPage` shell with two tabs; fetches the family food catalog when opened. The footer renders Save/Cancel for the Log Food tab (Save submits the tab's form via the HTML `form` attribute) and a Close button for the Progress tab
 - `LogFoodTab.tsx` — log a new food try or edit an existing food log
 - `ProgressTab.tsx` — unique-food counter, enjoyment breakdown, allergen list, per-food history
 - `food-form.types.ts` — prop types
@@ -31,6 +31,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 - **Reaction occurred** switch reveals a description textarea; the description is only sent when the switch is on.
 - **Photos** use the shared `PhotoAttachments` component with `activityType: 'foodLog'` links (only rendered when the deployment has photos enabled).
 - Saves via `POST /api/food-log` (or `PUT /api/food-log?id=` when editing). Times go through `toUTCString()`.
+- The Save/Cancel buttons live in the `FormPage` footer (`index.tsx`); the tab reports `{ isSubmitting, canSubmit }` up via `onFormStateChange` so the footer can disable them.
 
 ### Progress tab
 

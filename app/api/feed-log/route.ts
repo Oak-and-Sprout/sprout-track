@@ -58,6 +58,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       bottleType: body.bottleType && body.bottleType.trim() ? body.bottleType : null,
       hadReaction: body.hadReaction === true,
       reactionDescription: body.reactionDescription && body.reactionDescription.trim() ? body.reactionDescription : null,
+      reactionCause: body.reactionCause && body.reactionCause.trim() ? body.reactionCause : null,
       familyId,
     };
     
@@ -158,8 +159,11 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       ...(body.reactionDescription !== undefined
         ? { reactionDescription: body.reactionDescription && body.reactionDescription.trim() ? body.reactionDescription : null }
         : {}),
+      ...(body.reactionCause !== undefined
+        ? { reactionCause: body.reactionCause && body.reactionCause.trim() ? body.reactionCause : null }
+        : {}),
       ...Object.entries(body)
-        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'breastMilkAmount', 'hadReaction', 'reactionDescription', 'familyId', 'sourcePumpId'].includes(key))
+        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'breastMilkAmount', 'hadReaction', 'reactionDescription', 'reactionCause', 'familyId', 'sourcePumpId'].includes(key))
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
     };
 

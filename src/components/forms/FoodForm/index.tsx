@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { FoodFormProps } from './food-form.types';
+import React, { useState, useEffect, useCallback, useId } from 'react';
+import { FoodFormProps, LogFoodFormState } from './food-form.types';
 import { FoodResponse } from '@/app/api/types';
-import { Apple, TrendingUp } from 'lucide-react';
+import { Apple, TrendingUp, Loader2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { FormPage, FormPageFooter } from '@/src/components/ui/form-page';
 import { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
@@ -41,9 +41,11 @@ const FoodForm: React.FC<FoodFormProps> = ({
   activity,
 }) => {
   const { t } = useLocalization();
+  const logFormId = useId();
   const [activeTab, setActiveTab] = useState<string>('log');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [foods, setFoods] = useState<FoodResponse[]>([]);
+  const [logFormState, setLogFormState] = useState<LogFoodFormState>({ isSubmitting: false, canSubmit: false });
 
   // Fetch the family food catalog once when the form opens
   useEffect(() => {
@@ -98,11 +100,12 @@ const FoodForm: React.FC<FoodFormProps> = ({
           babyId={babyId}
           initialTime={initialTime}
           onSuccess={handleLogSuccess}
-          onClose={onClose}
           refreshData={refreshData}
           activity={activity}
           foods={foods}
           onFoodsUpdated={setFoods}
+          formId={logFormId}
+          onFormStateChange={setLogFormState}
         />
       ),
     },
@@ -130,13 +133,37 @@ const FoodForm: React.FC<FoodFormProps> = ({
     >
       <FormPageFooter>
         <div className="flex justify-end space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-          >
-            {t('Close')}
-          </Button>
+          {activeTab === 'log' ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={logFormState.isSubmitting}
+              >
+                {t('Cancel')}
+              </Button>
+              {/* Submits the LogFoodTab form via the HTML form attribute */}
+              <Button
+                type="submit"
+                form={logFormId}
+                disabled={logFormState.isSubmitting || !logFormState.canSubmit}
+              >
+                {logFormState.isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
+                ) : null}
+                {activity ? t('Update') : t('Save')}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              {t('Close')}
+            </Button>
+          )}
         </div>
       </FormPageFooter>
     </FormPage>

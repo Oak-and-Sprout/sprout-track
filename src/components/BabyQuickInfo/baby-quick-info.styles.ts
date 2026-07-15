@@ -65,7 +65,7 @@ export const styles = {
   
   // Allergens tab
   allergensContainer: "space-y-4",
-  allergenItem: "rounded-md border border-amber-200 bg-amber-50 px-3 py-2",
+  allergenItem: "rounded-lg bg-gray-50 border border-gray-100 shadow-sm px-3 py-2",
   allergenName: "font-medium text-sm text-gray-800",
   allergenBadge: "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700",
   allergenTypeBadge: "inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700",

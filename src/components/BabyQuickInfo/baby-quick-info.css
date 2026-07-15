@@ -90,8 +90,9 @@ html.dark .baby-quick-info-contact-icon {
 
 /* Allergen items */
 html.dark .baby-quick-info-allergen-item {
-  background-color: rgba(245, 158, 11, 0.1) !important; /* amber-500 with opacity */
-  border-color: rgba(245, 158, 11, 0.35) !important;
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 html.dark .baby-quick-info-allergen-name {

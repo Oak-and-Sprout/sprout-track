@@ -18,6 +18,12 @@ export interface FoodFormProps {
   activity?: FoodLogResponse;
 }
 
+/** Submit-related state LogFoodTab reports up for the FormPage footer buttons */
+export interface LogFoodFormState {
+  isSubmitting: boolean;
+  canSubmit: boolean;
+}
+
 /**
  * Props for the LogFoodTab component
  */
@@ -25,12 +31,15 @@ export interface LogFoodTabProps {
   babyId: string | undefined;
   initialTime: string;
   onSuccess?: () => void;
-  onClose: () => void;
   refreshData: () => void;
   activity?: FoodLogResponse;
   /** Family food catalog, fetched by the parent form */
   foods: FoodResponse[];
   onFoodsUpdated: (foods: FoodResponse[]) => void;
+  /** DOM id for the form element so the footer Save button can target it */
+  formId: string;
+  /** Reports submit state so the footer can disable its buttons */
+  onFormStateChange: (state: LogFoodFormState) => void;
 }
 
 /**

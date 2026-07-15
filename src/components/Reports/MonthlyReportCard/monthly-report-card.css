@@ -273,16 +273,16 @@ html.dark .report-card-food-emoji-placeholder {
 
 /* Known Allergens box */
 html.dark .report-card-allergens-box {
-  background-color: rgba(245, 158, 11, 0.1) !important; /* amber-500 with opacity */
-  border-color: rgba(245, 158, 11, 0.35) !important;
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
 }
 
 html.dark .report-card-allergens-box-title {
-  color: #fbbf24 !important; /* amber-400 */
+  color: #e5e7eb !important; /* gray-200 */
 }
 
 html.dark .report-card-allergen-row {
-  border-color: rgba(245, 158, 11, 0.2) !important;
+  border-color: #374151 !important; /* gray-700 */
 }
 
 html.dark .report-card-allergen-row-name {

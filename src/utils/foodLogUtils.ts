@@ -124,6 +124,16 @@ export function toDateParam(time: Date | string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * Build a deep link to the log-entry timeline for the local day of `time`,
+ * optionally selecting the baby the entry belongs to.
+ */
+export function buildLogEntryLink(slug: string, time: Date | string, babyId?: string): string {
+  const params = new URLSearchParams({ date: toDateParam(time) });
+  if (babyId) params.set('babyId', babyId);
+  return `/${slug}/log-entry?${params.toString()}`;
+}
+
 /** True when `name` case-insensitively matches any of `existingNames`. */
 export function isDuplicateFoodName(name: string, existingNames: string[]): boolean {
   const key = foodNameKey(name);
@@ -363,14 +373,16 @@ export interface ReactionFeedLogLike {
   food?: string | null;
   hadReaction?: boolean;
   reactionDescription?: string | null;
+  /** What caused the reaction (e.g. a formula name like "Similac"). */
+  reactionCause?: string | null;
   deletedAt?: Date | string | null;
 }
 
 /** An allergen derived from reaction-flagged feed logs. */
 export interface FeedAllergenEntry {
   /**
-   * The solids `food` text when present; null groups reaction-flagged
-   * bottle/formula feeds without a food description (UI localizes the label).
+   * The `reactionCause` text when present, else the solids `food` text;
+   * null groups reaction-flagged feeds without either (UI localizes the label).
    */
   name: string | null;
   /** Reactions sorted oldest-first; description is null when none was given. */
@@ -382,17 +394,21 @@ export interface FeedAllergenEntry {
 const GENERIC_FEED_KEY = ' generic-feed';
 
 /**
- * Derive allergens from reaction-flagged feed logs. Feeds with a solids
- * `food` description group case-insensitively by that text; reaction-flagged
- * feeds without one (e.g. a formula bottle) group into a single generic entry
- * with `name: null`. Entries sort by name, generic entry last.
+ * Derive allergens from reaction-flagged feed logs. Feeds group
+ * case-insensitively by `reactionCause` when present (e.g. a formula name),
+ * else by the solids `food` text; reaction-flagged feeds with neither (e.g. a
+ * formula bottle) group into a single generic entry with `name: null`.
+ * Entries sort by name, generic entry last.
  */
 export function deriveFeedAllergens(logs: ReactionFeedLogLike[]): FeedAllergenEntry[] {
   const entriesByKey = new Map<string, FeedAllergenEntry & { earliestTime: string }>();
 
   for (const log of logs) {
     if (log.deletedAt != null || log.hadReaction !== true) continue;
-    const name = log.food && normalizeFoodName(log.food) ? normalizeFoodName(log.food) : null;
+    const name =
+      (log.reactionCause && normalizeFoodName(log.reactionCause)) ||
+      (log.food && normalizeFoodName(log.food)) ||
+      null;
     const key = name === null ? GENERIC_FEED_KEY : foodNameKey(name);
     const time = toIso(log.time);
     let entry = entriesByKey.get(key);

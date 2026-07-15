@@ -181,7 +181,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     prisma.babyAllergen.findMany({ where: baseWhere }),
     prisma.feedLog.findMany({
       where: { ...baseWhere, hadReaction: true },
-      select: { time: true, food: true, hadReaction: true, reactionDescription: true },
+      select: { time: true, food: true, hadReaction: true, reactionDescription: true, reactionCause: true },
     }),
 
     // Dates for days tracked (select only the time/date field for counting distinct dates)

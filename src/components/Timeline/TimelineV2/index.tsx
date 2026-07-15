@@ -36,6 +36,14 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, 
   const [selectedDate, setSelectedDate] = useState<Date>(() => initialDate ?? new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
 
+  // React to ?date= deep-link changes after mount (in-app navigation to the
+  // same route doesn't remount; the parent memoizes initialDate on the param
+  // value, so a new identity means the requested day actually changed)
+  useEffect(() => {
+    if (!initialDate) return;
+    setSelectedDate(prev => (prev.toDateString() === initialDate.toDateString() ? prev : initialDate));
+  }, [initialDate]);
+
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
   // Selected day ±1 so daily stats can group breast-feed sessions across midnight
   const [windowActivities, setWindowActivities] = useState<ActivityType[]>([]);

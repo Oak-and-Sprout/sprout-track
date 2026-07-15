@@ -92,6 +92,7 @@ export default function FeedForm({
     notes: '',
     hadReaction: false,
     reactionDescription: '',
+    reactionCause: '',
     bottleType: '',
     breastMilkAmount: '',
     formulaAmount: '',
@@ -241,15 +242,15 @@ export default function FeedForm({
       if (!response.ok) return;
       
       const data = await response.json();
-      if (data.success && data.data?.type) {
+      // SOLIDS is not pre-selected: new solids feeds can no longer be created
+      // here (solids eating is logged via the Food activity)
+      if (data.success && data.data?.type && data.data.type !== 'SOLIDS') {
         // Set the last feed type
         setFormData(prev => ({
           ...prev,
           type: data.data.type,
           // For breast feeding, also set the side
           ...(data.data.type === 'BREAST' && { side: data.data.side || '' }),
-          // For solids, also set the food
-          ...(data.data.type === 'SOLIDS' && { food: data.data.food || '' })
         }));
         
         // If it's bottle feeding, also fetch the last amount
@@ -375,6 +376,7 @@ export default function FeedForm({
         notes: (activity as any).notes || '',
         hadReaction: (activity as any).hadReaction === true,
         reactionDescription: (activity as any).reactionDescription || '',
+        reactionCause: (activity as any).reactionCause || '',
         bottleType: activityBottleType,
         breastMilkAmount: activityBottleType === 'Formula\\Breast' && activityBmAmount != null
           ? activityBmAmount.toString() : '',
@@ -676,6 +678,7 @@ export default function FeedForm({
         notes: '',
         hadReaction: false,
         reactionDescription: '',
+        reactionCause: '',
         bottleType: '',
         breastMilkAmount: '',
         formulaAmount: '',
@@ -782,6 +785,7 @@ export default function FeedForm({
       // Always sent so editing can clear a previously flagged reaction
       hadReaction: formData.hadReaction,
       reactionDescription: formData.hadReaction ? formData.reactionDescription : '',
+      reactionCause: formData.hadReaction ? formData.reactionCause : '',
     };
 
     console.log('Payload being sent:', payload); // Debug log for payload
@@ -930,6 +934,7 @@ export default function FeedForm({
       notes: '',
       hadReaction: false,
       reactionDescription: '',
+      reactionCause: '',
       bottleType: '',
       breastMilkAmount: '',
       formulaAmount: '',
@@ -1099,27 +1104,30 @@ export default function FeedForm({
                     )}
                   </button>
                   
-                  {/* Solids Button */}
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, type: 'SOLIDS' })}
-                    disabled={loading}
-                    className={`relative flex flex-col items-center justify-center p-2 rounded-full w-24 h-24 transition-all feed-type-button ${formData.type === 'SOLIDS' 
-                      ? 'bg-blue-100 ring-2 ring-blue-500 shadow-md feed-type-selected' 
-                      : 'bg-gray-50 hover:bg-gray-100'}`}
-                  >
-                    <img 
-                      src="/solids-128.png" 
-                      alt="Solids" 
-                      className="w-16 h-16 object-contain" 
-                    />
-                    <span className="text-xs font-medium mt-1">{t('Solids')}</span>
-                    {formData.type === 'SOLIDS' && (
-                      <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
-                      </div>
-                    )}
-                  </button>
+                  {/* Solids Button — only when editing an existing SOLIDS feed;
+                      new solids eating is logged via the Food activity */}
+                  {activity?.type === 'SOLIDS' && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: 'SOLIDS' })}
+                      disabled={loading}
+                      className={`relative flex flex-col items-center justify-center p-2 rounded-full w-24 h-24 transition-all feed-type-button ${formData.type === 'SOLIDS'
+                        ? 'bg-blue-100 ring-2 ring-blue-500 shadow-md feed-type-selected'
+                        : 'bg-gray-50 hover:bg-gray-100'}`}
+                    >
+                      <img
+                        src="/solids-128.png"
+                        alt="Solids"
+                        className="w-16 h-16 object-contain"
+                      />
+                      <span className="text-xs font-medium mt-1">{t('Solids')}</span>
+                      {formData.type === 'SOLIDS' && (
+                        <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
+                          <Check className="h-3 w-3 text-white" aria-hidden="true" />
+                        </div>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             
@@ -1549,17 +1557,30 @@ export default function FeedForm({
                   />
                 </div>
                 {formData.hadReaction && (
-                  <div className="mt-2">
-                    <label className="form-label" htmlFor={`${formId}-reaction-description`}>{t('Describe the reaction')}</label>
-                    <Textarea
-                      id={`${formId}-reaction-description`}
-                      value={formData.reactionDescription}
-                      onChange={(e) => setFormData(prev => ({ ...prev, reactionDescription: e.target.value }))}
-                      className="w-full min-h-[60px]"
-                      placeholder={t("Redness, swelling, hives...")}
-                      disabled={loading}
-                    />
-                  </div>
+                  <>
+                    <div className="mt-2">
+                      <label className="form-label" htmlFor={`${formId}-reaction-cause`}>{t('What caused the reaction?')}</label>
+                      <Input
+                        id={`${formId}-reaction-cause`}
+                        value={formData.reactionCause}
+                        onChange={(e) => setFormData(prev => ({ ...prev, reactionCause: e.target.value }))}
+                        className="w-full"
+                        placeholder={t("Formula name, food...")}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <label className="form-label" htmlFor={`${formId}-reaction-description`}>{t('Describe the reaction')}</label>
+                      <Textarea
+                        id={`${formId}-reaction-description`}
+                        value={formData.reactionDescription}
+                        onChange={(e) => setFormData(prev => ({ ...prev, reactionDescription: e.target.value }))}
+                        className="w-full min-h-[60px]"
+                        placeholder={t("Redness, swelling, hives...")}
+                        disabled={loading}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             )}

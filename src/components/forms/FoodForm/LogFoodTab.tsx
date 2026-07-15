@@ -12,7 +12,7 @@ import { Checkbox } from '@/src/components/ui/checkbox';
 import { Switch } from '@/src/components/ui/switch';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
-import { Loader2, ChevronDown, TriangleAlert } from 'lucide-react';
+import { ChevronDown, TriangleAlert } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
@@ -42,11 +42,12 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   babyId,
   initialTime,
   onSuccess,
-  onClose,
   refreshData,
   activity,
   foods,
   onFoodsUpdated,
+  formId,
+  onFormStateChange,
 }) => {
   const { t } = useLocalization();
   const uid = useId();
@@ -150,6 +151,11 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   useEffect(() => {
     setIsInitialized(false);
   }, [activity?.id]);
+
+  // Report submit state up so the FormPage footer buttons stay in sync
+  useEffect(() => {
+    onFormStateChange({ isSubmitting, canSubmit: !!normalizeFoodName(foodName) });
+  }, [isSubmitting, foodName, onFormStateChange]);
 
   // Pre-suggest the common-allergen flag for new foods (big-9 keyword match)
   // until the user explicitly toggles the checkbox
@@ -396,7 +402,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
 
   return (
     <div className="food-form-tab-content">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id={formId} onSubmit={handleSubmit} className="space-y-4">
         {/* Date/Time Picker */}
         <div>
           <Label className="form-label">{t('Date & Time')}</Label>
@@ -583,24 +589,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
             />
           </div>
         )}
-
-        {/* Submit Button */}
-        <div className="flex justify-end space-x-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            {t('Cancel')}
-          </Button>
-          <Button type="submit" disabled={isSubmitting || !normalizeFoodName(foodName)}>
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
-            ) : null}
-            {activity ? t('Update') : t('Save')}
-          </Button>
-        </div>
       </form>
     </div>
   );

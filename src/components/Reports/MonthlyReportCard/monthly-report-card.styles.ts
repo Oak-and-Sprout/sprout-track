@@ -79,10 +79,10 @@ export const reportCardStyles = {
   foodSub: 'text-xs text-gray-500 mt-0.5 m-0',
   foodReactionIcon: 'w-4 h-4 text-amber-500 flex-shrink-0',
 
-  // Known Allergens box (safety info — prominent but tasteful)
-  allergensBox: 'bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-4 mb-6',
-  allergensBoxTitle: 'text-sm font-semibold text-amber-900 mb-1.5 m-0 flex items-center gap-1.5',
-  allergenRow: 'py-1.5 border-b border-amber-100 last:border-b-0',
+  // Known Allergens box (clean list matching the other bordered sections)
+  allergensBox: 'bg-white border border-gray-200 rounded-xl p-3 sm:p-4 mb-6',
+  allergensBoxTitle: 'text-sm font-semibold text-gray-900 mb-1.5 m-0 flex items-center gap-1.5',
+  allergenRow: 'py-1.5 border-b border-gray-100 last:border-b-0',
   allergenRowName: 'text-sm font-medium text-gray-900 m-0',
   allergenRowBadge: 'inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 ml-1.5 align-middle',
   allergenRowDetail: 'text-xs text-gray-600 mt-0.5 m-0',

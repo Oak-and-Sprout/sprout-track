@@ -14,6 +14,7 @@ import {
   buildNewFoodsForRange,
   countFirstTriesInRange,
   toDateParam,
+  buildLogEntryLink,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
   FOOD_ENJOYMENT_ICON_SRC,
@@ -322,6 +323,22 @@ describe('toDateParam', () => {
   });
 });
 
+describe('buildLogEntryLink', () => {
+  it('builds a date-only deep link when no babyId is given', () => {
+    expect(buildLogEntryLink('smith', new Date(2026, 6, 12))).toBe('/smith/log-entry?date=2026-07-12');
+  });
+
+  it('includes the babyId when given', () => {
+    expect(buildLogEntryLink('smith', new Date(2026, 6, 12), 'baby-1'))
+      .toBe('/smith/log-entry?date=2026-07-12&babyId=baby-1');
+  });
+
+  it('URL-encodes parameter values', () => {
+    expect(buildLogEntryLink('smith', new Date(2026, 6, 12), 'a&b'))
+      .toBe('/smith/log-entry?date=2026-07-12&babyId=a%26b');
+  });
+});
+
 describe('FOOD_ENJOYMENT_ICON_SRC', () => {
   it('maps every enjoyment value to a flat-emoji SVG path', () => {
     for (const value of FOOD_ENJOYMENT_VALUES) {
@@ -384,6 +401,26 @@ describe('deriveFeedAllergens', () => {
     expect(deriveFeedAllergens([
       { time: at('2026-07-01T09:00:00Z'), food: 'Carrot', hadReaction: true, deletedAt: at('2026-07-02T00:00:00Z') },
     ])).toEqual([]);
+  });
+
+  it('names entries by reactionCause when present, grouping case-insensitively', () => {
+    const entries = deriveFeedAllergens([
+      { time: at('2026-07-02T09:00:00Z'), reactionCause: 'similac', hadReaction: true, reactionDescription: 'spit up' },
+      { time: at('2026-07-01T09:00:00Z'), reactionCause: '  Similac ', hadReaction: true, reactionDescription: 'rash' },
+    ]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].name).toBe('Similac');
+    expect(entries[0].reactions.map(r => r.description)).toEqual(['rash', 'spit up']);
+    expect(entries[0].firstReactionAt).toBe('2026-07-01T09:00:00.000Z');
+  });
+
+  it('prefers reactionCause over the solids food text, falling back to food then the generic bucket', () => {
+    const entries = deriveFeedAllergens([
+      { time: at('2026-07-01T09:00:00Z'), food: 'Carrot', reactionCause: 'Similac', hadReaction: true },
+      { time: at('2026-07-02T09:00:00Z'), food: 'Apple', reactionCause: '   ', hadReaction: true },
+      { time: at('2026-07-03T09:00:00Z'), hadReaction: true },
+    ]);
+    expect(entries.map(e => e.name)).toEqual(['Apple', 'Similac', null]);
   });
 });
 

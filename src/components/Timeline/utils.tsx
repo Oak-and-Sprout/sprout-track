@@ -408,6 +408,9 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       // Show reaction for all feed types if flagged
       if ((activity as any).hadReaction) {
         details.push({ label: t('Reaction'), value: (activity as any).reactionDescription || t('Yes') });
+        if ((activity as any).reactionCause) {
+          details.push({ label: t('Cause'), value: (activity as any).reactionCause });
+        }
       }
 
       // Show notes for all feed types if present

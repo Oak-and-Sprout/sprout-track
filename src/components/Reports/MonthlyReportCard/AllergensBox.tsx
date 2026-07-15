@@ -10,14 +10,14 @@ import { useFamily } from '@/src/context/family';
 import { formatDateShort } from '@/src/utils/dateFormat';
 import { reportCardStyles as s } from './monthly-report-card.styles';
 import type { AllergensBoxProps } from './monthly-report-card.types';
-import { toDateParam, ALLERGEN_TYPE_LABELS } from '@/src/utils/foodLogUtils';
+import { buildLogEntryLink, ALLERGEN_TYPE_LABELS } from '@/src/utils/foodLogUtils';
 
 /**
  * Known Allergens box — a STATIC (not month-dependent) list of every known
  * allergen: derived from reaction-flagged food/feed logs and manually
- * recorded entries. Prominent styling because this is safety information.
+ * recorded entries.
  */
-const AllergensBox: React.FC<AllergensBoxProps> = ({ allergens, isPdfExport }) => {
+const AllergensBox: React.FC<AllergensBoxProps> = ({ allergens, babyId, isPdfExport }) => {
   const { t } = useLocalization();
   const { dateFormat } = useTimezone();
   const { family } = useFamily();
@@ -27,12 +27,14 @@ const AllergensBox: React.FC<AllergensBoxProps> = ({ allergens, isPdfExport }) =
   return (
     <div className={cn(s.allergensBox, 'report-card-allergens-box')}>
       <p className={cn(s.allergensBoxTitle, 'report-card-allergens-box-title')}>
-        <TriangleAlert aria-hidden="true" className="w-4 h-4" />
+        <TriangleAlert aria-hidden="true" className="w-4 h-4 text-amber-500" />
         {t('Known Allergens')}
       </p>
       {allergens.map(entry => {
         const isDerived = entry.sources.includes('food-log') || entry.sources.includes('feed');
-        const logDateParam = entry.reactions.length > 0 ? toDateParam(entry.reactions[0].time) : null;
+        const logLink = entry.reactions.length > 0 && family?.slug
+          ? buildLogEntryLink(family.slug, entry.reactions[0].time, babyId)
+          : null;
         return (
           <div
             key={`${entry.name ?? 'generic-feed'}-${entry.manualId ?? 'derived'}`}
@@ -63,11 +65,11 @@ const AllergensBox: React.FC<AllergensBoxProps> = ({ allergens, isPdfExport }) =
             )}
             <p className={cn(s.allergenRowMeta, 'report-card-allergen-row-meta')}>
               {t('Added')} {formatDateShort(new Date(entry.dateAdded), dateFormat)}
-              {!isPdfExport && isDerived && logDateParam && family?.slug && (
+              {!isPdfExport && isDerived && logLink && (
                 <>
                   {' · '}
                   <Link
-                    href={`/${family.slug}/log-entry?date=${logDateParam}`}
+                    href={logLink}
                     className={cn(s.allergenRowLink, 'report-card-allergen-row-link')}
                   >
                     {t('View in log')}

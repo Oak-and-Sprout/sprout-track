@@ -61,6 +61,8 @@ export interface FoodsSectionProps extends SectionProps {
 
 export interface AllergensBoxProps extends SectionProps {
   allergens: MonthlyReport['allergens'];
+  /** Baby the report is for — included in "View in log" deep links */
+  babyId?: string;
   isPdfExport?: boolean;
 }
 

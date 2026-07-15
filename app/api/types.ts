@@ -142,6 +142,7 @@ export interface FeedLogCreate {
   notes?: string;
   hadReaction?: boolean;
   reactionDescription?: string;
+  reactionCause?: string; // What caused the reaction (e.g. a formula name like "Similac")
   bottleType?: string;
   breastMilkAmount?: number;
   sessionId?: string; // Links breast feeds belonging to the same nursing session

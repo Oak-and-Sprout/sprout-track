@@ -266,6 +266,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
               feedAllergens={feedAllergens}
               manualAllergens={manualAllergens}
               onAllergensChanged={fetchAllergens}
+              onNavigate={onClose}
             />
           )}
         </>

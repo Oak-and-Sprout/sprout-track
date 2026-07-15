@@ -21,7 +21,7 @@ import { useFamily } from '@/src/context/family';
 import { formatDateShort } from '@/src/utils/dateFormat';
 import {
   mergeAllergens,
-  toDateParam,
+  buildLogEntryLink,
   normalizeFoodName,
   ALLERGEN_TYPE_VALUES,
   ALLERGEN_TYPE_LABELS,
@@ -42,6 +42,7 @@ const AllergensTab: React.FC<AllergensTabProps> = ({
   feedAllergens,
   manualAllergens,
   onAllergensChanged,
+  onNavigate,
 }) => {
   const { t } = useLocalization();
   const { formatDate, dateFormat } = useTimezone();
@@ -136,7 +137,9 @@ const AllergensTab: React.FC<AllergensTabProps> = ({
         <div className="space-y-2">
           {merged.map((entry) => {
             const isDerived = entry.sources.includes('food-log') || entry.sources.includes('feed');
-            const logDateParam = entry.reactions.length > 0 ? toDateParam(entry.reactions[0].time) : null;
+            const logLink = entry.reactions.length > 0 && family?.slug
+              ? buildLogEntryLink(family.slug, entry.reactions[0].time, selectedBaby.id)
+              : null;
             return (
               <div
                 key={`${entry.name ?? 'generic-feed'}-${entry.manualId ?? 'derived'}`}
@@ -206,9 +209,12 @@ const AllergensTab: React.FC<AllergensTabProps> = ({
 
                 <div className={cn('mt-1 flex items-center gap-2', styles.allergenMeta, 'baby-quick-info-allergen-meta')}>
                   <span>{t('Added')} {formatDateShort(new Date(entry.dateAdded), dateFormat)}</span>
-                  {isDerived && logDateParam && family?.slug && (
+                  {isDerived && logLink && (
                     <Link
-                      href={`/${family.slug}/log-entry?date=${logDateParam}`}
+                      href={logLink}
+                      // Close the modal so the timeline underneath is visible
+                      // when navigating within the log-entry page itself
+                      onClick={onNavigate}
                       className="text-teal-600 hover:text-teal-700 hover:underline baby-quick-info-allergen-link"
                     >
                       {t('View in log')}

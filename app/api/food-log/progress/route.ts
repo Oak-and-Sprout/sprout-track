@@ -55,7 +55,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       // Reaction-flagged feeds (e.g. a formula intolerance) join the allergen profile
       prisma.feedLog.findMany({
         where: { babyId, familyId: userFamilyId, deletedAt: null, hadReaction: true },
-        select: { time: true, food: true, hadReaction: true, reactionDescription: true },
+        select: { time: true, food: true, hadReaction: true, reactionDescription: true, reactionCause: true },
       }),
     ]);
 

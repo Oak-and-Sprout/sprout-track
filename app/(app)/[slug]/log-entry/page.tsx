@@ -32,17 +32,20 @@ import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
 import { fetchPhotosEnabled, fetchPhotos } from '@/src/utils/photoClientApi';
 
 function HomeContent(): React.ReactElement {
-  const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
+  const { selectedBaby, setSelectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
   const { family } = useFamily();
   const { t } = useLocalization();
   const params = useParams();
   const familySlug = params?.slug as string;
   const searchParams = useSearchParams();
+  const dateParam = searchParams?.get('date') ?? null;
+  const babyIdParam = searchParams?.get('babyId') ?? null;
 
   // Optional ?date=YYYY-MM-DD deep link (e.g. from allergen entries) — invalid
-  // or missing values fall back to today
+  // or missing values fall back to today. Memoized on the param VALUE so the
+  // Date identity (and thus TimelineV2's sync effect) only changes when the
+  // date param itself changes, not on unrelated query updates.
   const initialTimelineDate = React.useMemo(() => {
-    const dateParam = searchParams?.get('date');
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       const [year, month, day] = dateParam.split('-').map(Number);
       const date = new Date(year, month - 1, day);
@@ -51,7 +54,32 @@ function HomeContent(): React.ReactElement {
       }
     }
     return undefined;
-  }, [searchParams]);
+  }, [dateParam]);
+
+  // Optional ?babyId= deep link — switch the selected baby when the link
+  // targets a different one (e.g. a "View in log" allergen link). Keyed on
+  // the param only: a manual baby switch must not snap back to the URL baby.
+  useEffect(() => {
+    if (!babyIdParam || babyIdParam === selectedBaby?.id) return;
+    const selectBabyFromParam = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/api/baby', {
+          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          const baby = data.data.find((b: any) => b.id === babyIdParam && !b.inactive);
+          if (baby) setSelectedBaby(baby);
+        }
+      } catch (error) {
+        console.error('Error selecting baby from URL:', error);
+      }
+    };
+    selectBabyFromParam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [babyIdParam]);
 
 
   const [showSleepModal, setShowSleepModal] = useState(false);

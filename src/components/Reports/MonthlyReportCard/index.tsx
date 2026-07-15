@@ -332,7 +332,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
           <HealthSection health={reportData.health} />
 
           {/* Known Allergens (static — derived + manual) */}
-          <AllergensBox allergens={reportData.allergens} isPdfExport={isPdfMode} />
+          <AllergensBox allergens={reportData.allergens} babyId={selectedBaby.id} isPdfExport={isPdfMode} />
 
           {/* Caretaker Activity */}
           <CaretakerSection caretakers={reportData.caretakers} />
