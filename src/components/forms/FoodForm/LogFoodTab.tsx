@@ -23,12 +23,21 @@ import {
   isLikelyCommonAllergen,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
-  FOOD_ENJOYMENT_EMOJI,
   FoodEnjoymentValue,
 } from '@/src/utils/foodLogUtils';
 
 // Picker shows happiest → saddest, left to right
 const ENJOYMENT_DISPLAY_ORDER = [...FOOD_ENJOYMENT_VALUES].reverse();
+
+// Fluent Emoji "Flat" SVGs (MIT, see public/emoji-flat/LICENSE.md) — consistent
+// rendering across platforms, unlike native emoji glyphs
+const ENJOYMENT_ICON_SRC: Record<FoodEnjoymentValue, string> = {
+  LOVED: '/emoji-flat/loved.svg',
+  LIKED: '/emoji-flat/liked.svg',
+  NEUTRAL: '/emoji-flat/neutral.svg',
+  DISLIKED: '/emoji-flat/disliked.svg',
+  HATED: '/emoji-flat/hated.svg',
+};
 
 /**
  * LogFoodTab Component
@@ -507,14 +516,14 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
                 key={value}
                 type="button"
                 variant={enjoyment === value ? 'default' : 'outline'}
-                className="px-1 py-1 h-16 text-5xl leading-none"
+                className="px-1 py-1 h-16"
                 onClick={() => setEnjoyment(prev => (prev === value ? null : value))}
                 disabled={isSubmitting}
                 aria-pressed={enjoyment === value}
                 aria-label={t(FOOD_ENJOYMENT_LABELS[value])}
                 title={t(FOOD_ENJOYMENT_LABELS[value])}
               >
-                <span aria-hidden="true">{FOOD_ENJOYMENT_EMOJI[value]}</span>
+                <img src={ENJOYMENT_ICON_SRC[value]} alt="" aria-hidden="true" className="h-12 w-12" />
               </Button>
             ))}
           </div>
