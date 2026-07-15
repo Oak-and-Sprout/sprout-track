@@ -5,27 +5,26 @@
 ### Changes
 
 #### Foods & Allergens
-- Solid\Food feeds have been broken out bottle and breast feeds as a dedicated activity
-- You can dynamically track foods, if your child liked the food, and allergens to food
-- There is now a 100 unique foods tracker so you can track how many foods your little one has had
+- Solid feeds have been broken out from bottle and breast feeds as a dedicated food activity
+- You can dynamically track foods, whether your child liked the food, and link allergens to foods
+- There is now a tracker for your first 100 unique foods so you can track how many foods your little one has had
 - There is a dedicated allergen window in the Baby Info Screen (click on the baby name in the top right) - Here you can add allergens for more than just food (medicine, environment, etc...)
-- Reports have been added to stats and the monthly report card for food eaten and a dedicated allergens section on the report card
-- Solid feed logs are automatically converted to food logs
-- Look for the new food activity in the activity bar!
+- Added foods-tried reporting to the stats tab and the monthly report card, plus a dedicated allergens section on the report card
+- Solid feed logs are automatically converted to food logs during upgrades and migrations (always keep a backup of your database)
 
 #### Nursery Mode Updates
 - A dedicated food activity has been added (it's disabled by default - go to the settings page in Nursery mode to enable)
-- Visual updates and QoL fixes in PWA usage and when on mobile
+- Visual updates and QoL fixes for PWA usage and when on mobile
 
 #### Localization
 - Added Polish - Thank you **rlesniak**!
 
 #### Bugfixes
-- Scrollbar styling now consistent in app
+- Scrollbar styling now consistent across the app
 - Proper PWA spacing for Nursery Mode and main Sprout Track page
-- Fixed '/' redirect in some instances in PWA mode
-- Fixed Android PWA manifest, icon, and installation fixes - Thank you **rlesniak**!
-- Fixed persistent bottle units when PWA resumes - Thank you **philzx**!
+- Fixed '/' redirect in some instances in PWA installed apps
+- Fixed Android PWA manifest, icon, and installation issues - Thank you **rlesniak**!
+- Fixed bottle units not persisting when the PWA resumes - Thank you **philzx**!
 
 ## v1.5.0 - Nursery Mode Redesign, Photos, and Baby Buddy Import
 
