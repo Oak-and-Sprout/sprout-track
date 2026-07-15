@@ -250,7 +250,7 @@ const TimelineV2ActivityList = ({
                             if (bgClass.includes('bg-[#F3C4A2]')) return '#F3C4A2'; // peach - play activity
                             if (bgClass.includes('border-red-500')) return '#EF4444'; // red - vaccine
                             if (bgClass.includes('border-[#e11d48]')) return '#e11d48'; // rose - photo
-                            if (bgClass.includes('bg-[#84CC16]')) return '#84CC16'; // lime - food
+                            if (bgClass.includes('bg-[#BBD444]')) return '#BBD444'; // lime - food
                             return '#9ca3af'; // default gray
                           };
                           

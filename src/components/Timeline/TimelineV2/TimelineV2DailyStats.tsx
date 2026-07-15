@@ -406,7 +406,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         value: feedStats.solidsCount.toString(),
         icon: <Utensils className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
-        iconColor: 'text-green-600', // matches legacy DailyStats solids
+        iconColor: 'text-[#BBD444]', // matches food timeline entries
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });

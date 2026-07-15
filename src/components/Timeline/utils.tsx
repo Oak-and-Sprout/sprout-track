@@ -1130,7 +1130,7 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
   // Food log (issue #203): lime green, distinct from medicine green (#43B755)
   // and the sky-blue feed color
   if ('foodId' in activity) {
-    return { bg: 'bg-[#84CC16]', textColor: 'text-white' };
+    return { bg: 'bg-[#BBD444]', textColor: 'text-white' };
   }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {

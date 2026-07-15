@@ -557,17 +557,17 @@ html.dark .event-icon.vaccine svg, html.dark .event-icon.vaccine svg path {
 }
 
 .event-icon.food {
-  background: #84CC16; /* lime-500 - food tracker (issue #203) */
+  background: #BBD444; /* food tracker (issue #203) */
 }
 .event-icon.food svg, .event-icon.food svg path {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
 .timeline-event.food::before {
-  background: #84CC16 !important; /* lime-500 - food tracker */
+  background: #BBD444 !important; /* food tracker */
 }
 html.dark .event-icon.food {
-  background: #84CC16 !important;
+  background: #BBD444 !important;
 }
 html.dark .event-icon.food svg, html.dark .event-icon.food svg path {
   color: #ffffff !important;
