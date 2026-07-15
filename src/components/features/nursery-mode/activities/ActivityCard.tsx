@@ -71,6 +71,7 @@ export function ActivityCard({ view, log, iconColor, iconShape, dimmed = false }
               type="button"
               onClick={btn.onClick}
               disabled={btn.disabled}
+              aria-label={btn.ariaLabel}
               className={`nursery-abtn${wide ? ' wide' : ''}`}
               style={btn.disabled ? { opacity: 0.5 } : undefined}
             >

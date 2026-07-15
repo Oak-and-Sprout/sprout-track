@@ -123,6 +123,8 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
               WebkitBackdropFilter: 'blur(20px)',
               border: '1px solid rgba(255,255,255,.12)',
               boxShadow: '0 8px 40px rgba(0,0,0,.4)',
+              maxHeight: '80vh',
+              overflowY: 'auto',
             }}
           >
             {amountPrompt && (
@@ -138,6 +140,9 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
                 ))}
               </div>
             )}
+            {view.statusText && !view.active && (
+              <div style={{ textAlign: 'center', fontSize: 14, color: 'rgba(255,255,255,.75)' }}>{view.statusText}</div>
+            )}
             {buttons.map(btn => (
               <button
                 key={btn.key}
@@ -147,6 +152,7 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
                   btn.onClick();
                   if (!btn.keepOpen) setOpen(false);
                 }}
+                aria-label={btn.ariaLabel}
                 className="nursery-abtn wide"
                 style={{ minHeight: 44, opacity: btn.disabled ? 0.5 : 1 }}
               >

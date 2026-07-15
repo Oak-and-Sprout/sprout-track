@@ -15,6 +15,8 @@ export interface ActionButton {
   wide?: boolean;
   /** True when this button only advances to another decision screen (not a final log/action) — BigTile's modal stays open instead of closing. */
   keepOpen?: boolean;
+  /** Accessible name when the visible label isn't descriptive text (e.g. emoji-only enjoyment buttons). */
+  ariaLabel?: string;
 }
 
 export interface AmountPromptField {
@@ -31,7 +33,7 @@ export interface AmountPrompt {
 }
 
 export interface ActivityView {
-  id: 'feed' | 'pump' | 'diaper' | 'sleep';
+  id: 'feed' | 'pump' | 'diaper' | 'sleep' | 'food';
   icon: IconName; // bottle | pump | diaper | moon
   label: string; // localized
   statusText: string | null; // active timer line, e.g. "Left Side — 4:12 · L: 4:12 R: 0:00"
@@ -45,7 +47,7 @@ export interface ActivityView {
 }
 
 export interface UndoInfo {
-  tileId: 'feed' | 'pump' | 'diaper' | 'sleep';
+  tileId: 'feed' | 'pump' | 'diaper' | 'sleep' | 'food';
   message: string;
   /** Reverts the just-logged action (delete the entry, or resume a session); resolves true on success. */
   undo: () => Promise<boolean>;
