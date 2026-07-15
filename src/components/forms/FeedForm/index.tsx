@@ -1059,7 +1059,7 @@ export default function FeedForm({
             {/* Feed Type Selection - Full width on all screens */}
             <div>
               <label id={`${formId}-type-label`} className="form-label">{t('Type')}</label>
-              <div className="flex justify-between items-center gap-3 mt-2" role="group" aria-labelledby={`${formId}-type-label`}>
+              <div className="flex justify-center items-center gap-2.5 mt-2" role="group" aria-labelledby={`${formId}-type-label`}>
                   {/* Breast Feed Button */}
                   <button
                     type="button"
