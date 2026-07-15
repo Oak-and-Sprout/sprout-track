@@ -28,7 +28,6 @@ import './feed-form.css';
 import BreastFeedForm from './BreastFeedForm';
 import LinkedFeedsSection from './LinkedFeedsSection';
 import BottleFeedForm from './BottleFeedForm';
-import SolidsFeedForm from './SolidsFeedForm';
 import { useLocalization } from '@/src/context/localization';
 
 interface FeedFormProps {
@@ -88,7 +87,6 @@ export default function FeedForm({
     amount: '',
     unit: readCachedDefaultBottleUnit() as string,
     side: '' as BreastSide | '',
-    food: '',
     notes: '',
     hadReaction: false,
     reactionDescription: '',
@@ -107,7 +105,6 @@ export default function FeedForm({
   const [validationError, setValidationError] = useState<string>('');
   const [defaultSettings, setDefaultSettings] = useState({
     defaultBottleUnit: readCachedDefaultBottleUnit() as string,
-    defaultSolidsUnit: 'TBSP',
   });
 
   // Editing state for session duration inputs (null = not editing, use formatted value)
@@ -279,7 +276,6 @@ export default function FeedForm({
         const defaultBottleUnit = cacheDefaultBottleUnit(data.data.defaultBottleUnit) || 'OZ';
         setDefaultSettings({
           defaultBottleUnit,
-          defaultSolidsUnit: data.data.defaultSolidsUnit || 'TBSP',
         });
         
         // Set the default unit from settings (new entries only — when editing
@@ -369,10 +365,8 @@ export default function FeedForm({
         type: activity.type,
         amount: activity.amount?.toString() || '',
         unit: activity.unitAbbr ||
-          (activity.type === 'BOTTLE' ? defaultSettings.defaultBottleUnit :
-           activity.type === 'SOLIDS' ? defaultSettings.defaultSolidsUnit : ''),
+          (activity.type === 'BOTTLE' ? defaultSettings.defaultBottleUnit : ''),
         side: activity.side || '',
-        food: activity.food || '',
         notes: (activity as any).notes || '',
         hadReaction: (activity as any).hadReaction === true,
         reactionDescription: (activity as any).reactionDescription || '',
@@ -450,18 +444,11 @@ export default function FeedForm({
   }, [isOpen, activity, initialTime]);
 
   useEffect(() => {
-    if (formData.type === 'BOTTLE' || formData.type === 'SOLIDS') {
-      if (!activity) {
-        fetchLastAmount(formData.type);
-
-        if (formData.type === 'BOTTLE') {
-          setFormData(prev => ({ ...prev, unit: defaultSettings.defaultBottleUnit }));
-        } else if (formData.type === 'SOLIDS') {
-          setFormData(prev => ({ ...prev, unit: defaultSettings.defaultSolidsUnit }));
-        }
-      }
+    if (formData.type === 'BOTTLE' && !activity) {
+      fetchLastAmount(formData.type);
+      setFormData(prev => ({ ...prev, unit: defaultSettings.defaultBottleUnit }));
     }
-  }, [formData.type, babyId, defaultSettings.defaultBottleUnit, defaultSettings.defaultSolidsUnit]);
+  }, [formData.type, babyId, defaultSettings.defaultBottleUnit]);
 
   const handleAmountChange = (newAmount: string) => {
     // Allow any numeric values
@@ -476,14 +463,8 @@ export default function FeedForm({
   const incrementAmount = () => {
     const currentAmount = parseFloat(formData.amount || '0');
     // Different step sizes for different units
-    let step = 0.5; // Default for OZ and TBSP
-    if (formData.unit === 'ML') {
-      step = 5;
-    } else if (formData.unit === 'G') {
-      step = 5; // 1 grams increments for grams
-    }
-    
-    const newAmount = (currentAmount + step).toFixed(formData.unit === 'G' ? 0 : 1);
+    const step = formData.unit === 'ML' ? 5 : 0.5; // 0.5 for OZ
+    const newAmount = (currentAmount + step).toFixed(1);
     setFormData(prev => ({
       ...prev,
       amount: newAmount
@@ -493,15 +474,9 @@ export default function FeedForm({
   const decrementAmount = () => {
     const currentAmount = parseFloat(formData.amount || '0');
     // Different step sizes for different units
-    let step = 0.5; // Default for OZ and TBSP
-    if (formData.unit === 'ML') {
-      step = 5;
-    } else if (formData.unit === 'G') {
-      step = 1; // 1 gram increments for grams
-    }
-    
+    const step = formData.unit === 'ML' ? 5 : 0.5; // 0.5 for OZ
     if (currentAmount >= step) {
-      const newAmount = (currentAmount - step).toFixed(formData.unit === 'G' ? 0 : 1);
+      const newAmount = (currentAmount - step).toFixed(1);
       setFormData(prev => ({
         ...prev,
         amount: newAmount
@@ -607,12 +582,6 @@ export default function FeedForm({
       }
     }
 
-    // For solids feeding, validate amount
-    if (formData.type === 'SOLIDS' && (!formData.amount || parseFloat(formData.amount) <= 0)) {
-      setValidationError(t('Please enter a valid amount for solids feeding'));
-      return;
-    }
-
     // Stop timer if it's running
     if (isTimerRunning) {
       stopTimer();
@@ -674,7 +643,6 @@ export default function FeedForm({
         amount: '',
         unit: defaultSettings.defaultBottleUnit,
         side: '' as BreastSide | '',
-        food: '',
         notes: '',
         hadReaction: false,
         reactionDescription: '',
@@ -770,8 +738,8 @@ export default function FeedForm({
         ...(sessionId && { sessionId }),
         feedDuration: duration
       }),
-      ...((formData.type === 'BOTTLE' || formData.type === 'SOLIDS') && {
-        amount: formData.type === 'BOTTLE' && formData.bottleType === 'Formula\\Breast'
+      ...(formData.type === 'BOTTLE' && {
+        amount: formData.bottleType === 'Formula\\Breast'
           ? parseFloat(formData.breastMilkAmount || '0') + parseFloat(formData.formulaAmount || '0')
           : parseFloat(formData.amount),
         unitAbbr: formData.unit,
@@ -779,7 +747,6 @@ export default function FeedForm({
       ...(formData.type === 'BOTTLE' && formData.bottleType === 'Formula\\Breast' && {
         breastMilkAmount: parseFloat(formData.breastMilkAmount || '0'),
       }),
-      ...(formData.type === 'SOLIDS' && formData.food && { food: formData.food }),
       ...(formData.type === 'BOTTLE' && formData.bottleType && { bottleType: formData.bottleType }),
       ...(formData.notes && { notes: formData.notes }),
       // Always sent so editing can clear a previously flagged reaction
@@ -930,7 +897,6 @@ export default function FeedForm({
       amount: '',
       unit: defaultSettings.defaultBottleUnit,
       side: '' as BreastSide | '',
-      food: '',
       notes: '',
       hadReaction: false,
       reactionDescription: '',
@@ -1104,30 +1070,6 @@ export default function FeedForm({
                     )}
                   </button>
                   
-                  {/* Solids Button — only when editing an existing SOLIDS feed;
-                      new solids eating is logged via the Food activity */}
-                  {activity?.type === 'SOLIDS' && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: 'SOLIDS' })}
-                      disabled={loading}
-                      className={`relative flex flex-col items-center justify-center p-2 rounded-full w-24 h-24 transition-all feed-type-button ${formData.type === 'SOLIDS'
-                        ? 'bg-blue-100 ring-2 ring-blue-500 shadow-md feed-type-selected'
-                        : 'bg-gray-50 hover:bg-gray-100'}`}
-                    >
-                      <img
-                        src="/solids-128.png"
-                        alt="Solids"
-                        className="w-16 h-16 object-contain"
-                      />
-                      <span className="text-xs font-medium mt-1">{t('Solids')}</span>
-                      {formData.type === 'SOLIDS' && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                          <Check className="h-3 w-3 text-white" aria-hidden="true" />
-                        </div>
-                      )}
-                    </button>
-                  )}
                 </div>
               </div>
             
@@ -1526,22 +1468,6 @@ export default function FeedForm({
               />
             )}
             
-            {formData.type === 'SOLIDS' && (
-              <SolidsFeedForm
-                amount={formData.amount}
-                unit={formData.unit}
-                food={formData.food}
-                notes={formData.notes}
-                loading={loading}
-                onAmountChange={handleAmountChange}
-                onUnitChange={(unit) => setFormData(prev => ({ ...prev, unit }))}
-                onFoodChange={(food) => setFormData({ ...formData, food })}
-                onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
-                onIncrement={incrementAmount}
-                onDecrement={decrementAmount}
-              />
-            )}
-
             {showReactionSection && (
               <div>
                 <div className="flex items-center justify-between">

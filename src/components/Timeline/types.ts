@@ -17,7 +17,7 @@ export type TimelineActivityType = (
 // Use TimelineActivityType for internal component logic
 export type ActivityType = TimelineActivityType;
 
-export type FilterType = 'sleep' | 'feed' | 'solids' | 'diaper' | 'poop' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo' | null;
+export type FilterType = 'sleep' | 'feed' | 'diaper' | 'poop' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo' | null;
 
 export interface LatestStatusData {
   lastFeedTime?: Date;

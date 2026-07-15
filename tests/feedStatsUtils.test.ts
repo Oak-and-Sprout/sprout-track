@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { aggregateFeedStats } from '@/src/utils/feedStatsUtils';
 
 // Issue #207: the daily stats bar splits bottle/breast ("milk") feeds from
-// solid feeds so each renders its own tile with its own count.
+// solid feeds so each renders its own tile with its own count. Solids come
+// from food-log activities (foodId) now that legacy SOLIDS feeds are
+// converted into food logs at startup.
 const at = (iso: string) => new Date(iso);
 
 const startOfDay = at('2026-07-10T00:00:00.000Z');
@@ -21,10 +23,10 @@ describe('aggregateFeedStats', () => {
     expect(stats.solidsAmounts).toEqual({});
   });
 
-  it('counts a solids-only day under solidsCount with no milk feeds', () => {
+  it('counts a food-log-only day under solidsCount with no milk feeds', () => {
     const activities = [
-      { type: 'SOLIDS', time: at('2026-07-10T09:00:00Z'), amount: 45, unitAbbr: 'g' },
-      { type: 'SOLIDS', time: at('2026-07-10T17:00:00Z'), amount: 30, unitAbbr: 'g' },
+      { foodId: 'banana', time: at('2026-07-10T09:00:00Z'), amount: 45, unitAbbr: 'G' },
+      { foodId: 'carrot', time: at('2026-07-10T17:00:00Z'), amount: 30, unitAbbr: 'G' },
     ];
     const stats = aggregateFeedStats(activities, undefined, startOfDay, endOfDay, 'OZ');
     expect(stats.solidsCount).toBe(2);
@@ -33,11 +35,11 @@ describe('aggregateFeedStats', () => {
     expect(stats.bottleFeedTotal).toBe(0);
   });
 
-  it('splits a mixed day: bottle + breast count as milk, solids separately', () => {
+  it('splits a mixed day: bottle + breast count as milk, food logs separately', () => {
     const activities = [
       { type: 'BOTTLE', time: at('2026-07-10T08:00:00Z'), amount: 4, unitAbbr: 'OZ' },
       { type: 'BREAST', time: at('2026-07-10T11:00:00Z'), side: 'LEFT', feedDuration: 480 },
-      { type: 'SOLIDS', time: at('2026-07-10T13:00:00Z'), amount: 45, unitAbbr: 'g' },
+      { foodId: 'banana', time: at('2026-07-10T13:00:00Z'), amount: 45, unitAbbr: 'G' },
     ];
     const stats = aggregateFeedStats(activities, undefined, startOfDay, endOfDay, 'OZ');
     expect(stats.milkFeedCount).toBe(2);
@@ -47,15 +49,30 @@ describe('aggregateFeedStats', () => {
     expect(stats.solidsAmounts).toEqual({ g: 45 });
   });
 
-  it('accumulates solids amounts per unit, defaulting missing units to g', () => {
+  it('accumulates food-log amounts per lowercase unit, defaulting missing units to g', () => {
     const activities = [
-      { type: 'SOLIDS', time: at('2026-07-10T09:00:00Z'), amount: 45, unitAbbr: 'g' },
-      { type: 'SOLIDS', time: at('2026-07-10T12:00:00Z'), amount: 2, unitAbbr: 'tbsp' },
-      { type: 'SOLIDS', time: at('2026-07-10T17:00:00Z'), amount: 15 },
+      { foodId: 'banana', time: at('2026-07-10T09:00:00Z'), amount: 45, unitAbbr: 'G' },
+      { foodId: 'carrot', time: at('2026-07-10T12:00:00Z'), amount: 2, unitAbbr: 'TBSP' },
+      { foodId: 'pear', time: at('2026-07-10T17:00:00Z'), amount: 15 },
+      // Logs without an amount still count toward solidsCount
+      { foodId: 'apple', time: at('2026-07-10T18:00:00Z') },
     ];
     const stats = aggregateFeedStats(activities, undefined, startOfDay, endOfDay, 'OZ');
-    expect(stats.solidsCount).toBe(3);
+    expect(stats.solidsCount).toBe(4);
     expect(stats.solidsAmounts).toEqual({ g: 60, tbsp: 2 });
+  });
+
+  it('excludes soft-deleted food logs and unconverted SOLIDS feeds', () => {
+    const activities = [
+      { foodId: 'banana', time: at('2026-07-10T09:00:00Z'), amount: 45, unitAbbr: 'G', deletedAt: at('2026-07-11T00:00:00Z') },
+      // Defensive: an unconverted SOLIDS feed no longer counts (food logs are
+      // the single source of truth for solids)
+      { type: 'SOLIDS', time: at('2026-07-10T12:00:00Z'), amount: 30, unitAbbr: 'G' },
+    ];
+    const stats = aggregateFeedStats(activities, undefined, startOfDay, endOfDay, 'OZ');
+    expect(stats.solidsCount).toBe(0);
+    expect(stats.solidsAmounts).toEqual({});
+    expect(stats.milkFeedCount).toBe(0);
   });
 
   it('converts bottle amounts to the preferred unit, defaulting missing units to OZ', () => {
@@ -96,7 +113,7 @@ describe('aggregateFeedStats', () => {
   it('ignores feeds outside the day window and non-feed activities', () => {
     const activities = [
       { type: 'BOTTLE', time: at('2026-07-09T23:00:00Z'), amount: 4, unitAbbr: 'OZ' },
-      { type: 'SOLIDS', time: at('2026-07-11T09:00:00Z'), amount: 45, unitAbbr: 'g' },
+      { foodId: 'banana', time: at('2026-07-11T09:00:00Z'), amount: 45, unitAbbr: 'G' },
       // Breast-milk adjustment: has amount but no type — must never count
       { time: at('2026-07-10T10:00:00Z'), amount: 5, reason: 'donation' },
       // Diaper: has type but no amount

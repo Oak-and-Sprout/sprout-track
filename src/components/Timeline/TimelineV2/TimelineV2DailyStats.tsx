@@ -19,8 +19,7 @@ import {
   Baby,
   Syringe,
   Camera,
-  Utensils,
-  Apple
+  Utensils
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -38,6 +37,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
 import { convertVolume } from '@/src/utils/unit-conversion';
 import { aggregateFeedStats } from '@/src/utils/feedStatsUtils';
+import { formatAmountsByUnit } from '@/src/utils/foodLogUtils';
 import { useUnit } from '@/src/hooks/useUnit';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { countUniquePhotoIds } from '@/src/utils/photoUtils';
@@ -133,18 +133,13 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let playCount = 0;
     let totalPlayMinutes = 0;
     let vaccineCount = 0;
-    let foodCount = 0;
     let awakeMinutes = 0;
 
     const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
 
     activities.forEach(activity => {
-      // Food logs (issue #203) - foodId is unique to food logs
+      // Food logs (issue #203) - counted by aggregateFeedStats as solids
       if ('foodId' in activity) {
-        const time = new Date((activity as any).time);
-        if (time >= startOfDay && time <= endOfDay) {
-          foodCount++;
-        }
         return; // Skip further checks for this activity
       }
 
@@ -400,16 +395,14 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       });
     }
 
-    // Solids tile (issue #207: split from the combined feed tile)
+    // Foods tile (issues #203/#207): food logs are the single source of truth
+    // for solids eating, so this replaces the former separate Solids tile
     if (feedStats.solidsCount > 0) {
-      // Format solids amounts by unit
-      const formattedSolidsAmounts = Object.entries(feedStats.solidsAmounts)
-        .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
-        .join(', ');
+      const formattedSolidsAmounts = formatAmountsByUnit(feedStats.solidsAmounts);
 
       tiles.push({
-        filter: 'solids',
-        label: formattedSolidsAmounts || t('Solids'),
+        filter: 'food',
+        label: formattedSolidsAmounts || t('Foods'),
         value: feedStats.solidsCount.toString(),
         icon: <Utensils className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
@@ -567,20 +560,6 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         icon: <LampWallDown className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches pump
-        borderColor: 'border-gray-500',
-        bgActiveColor: 'bg-gray-100'
-      });
-    }
-
-    // Food tile (issue #203)
-    if (foodCount > 0) {
-      tiles.push({
-        filter: 'food',
-        label: t('Foods'),
-        value: foodCount.toString(),
-        icon: <Apple className="h-full w-full" aria-hidden="true" />,
-        bgColor: 'bg-gray-50',
-        iconColor: 'text-[#84CC16]', // lime - matches food timeline entries
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });

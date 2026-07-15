@@ -1,7 +1,9 @@
 /**
  * Pure aggregation of a day's feed activities for the daily-stats tiles
  * (issue #207): bottle + breast feeds are counted together as "milk" feeds,
- * solids are counted separately so each can render its own tile.
+ * solids are counted separately so each can render its own tile. Solids come
+ * from FOOD LOG activities (the food tracker is the single source of truth
+ * now that legacy SOLIDS feeds are converted at startup).
  */
 
 import { convertVolume } from './unit-conversion';
@@ -15,6 +17,15 @@ export interface FeedActivityLike {
   unitAbbr?: string | null;
 }
 
+/** Minimal shape of a food-log activity needed for daily-stats aggregation. */
+export interface FoodLogActivityLike {
+  foodId?: string;
+  time?: string | Date;
+  amount?: number | null;
+  unitAbbr?: string | null;
+  deletedAt?: string | Date | null;
+}
+
 export interface FeedStats {
   /** Bottle feeds plus breast-feed sessions (issue #198 grouping). */
   milkFeedCount: number;
@@ -22,8 +33,9 @@ export interface FeedStats {
   bottleFeedTotal: number;
   leftBreastMinutes: number;
   rightBreastMinutes: number;
+  /** Food logs on the day (was: SOLIDS feed count before the conversion). */
   solidsCount: number;
-  /** Solids totals keyed by unit abbreviation (e.g. { g: 45 }). */
+  /** Solids totals keyed by lowercase unit abbreviation (e.g. { g: 45 }). */
   solidsAmounts: Record<string, number>;
 }
 
@@ -48,8 +60,25 @@ export function aggregateFeedStats(
   const solidsAmounts: Record<string, number> = {};
 
   for (const raw of activities) {
+    if (!raw || typeof raw !== 'object') continue;
+
+    // Solids: food logs (foodId is unique to them); soft-deleted logs excluded
+    if ('foodId' in raw) {
+      const foodLog = raw as FoodLogActivityLike;
+      if (foodLog.deletedAt != null) continue;
+      const time = new Date(foodLog.time as string | Date);
+      if (time >= startOfDay && time <= endOfDay) {
+        solidsCount++;
+        if (typeof foodLog.amount === 'number' && foodLog.amount > 0) {
+          const unit = (foodLog.unitAbbr || 'g').toLowerCase();
+          solidsAmounts[unit] = (solidsAmounts[unit] || 0) + foodLog.amount;
+        }
+      }
+      continue;
+    }
+
     const activity = raw as FeedActivityLike;
-    if (activity && typeof activity === 'object' && 'amount' in activity && 'type' in activity) {
+    if ('amount' in activity && 'type' in activity) {
       const time = new Date(activity.time as string | Date);
       if (time >= startOfDay && time <= endOfDay) {
         if (activity.type === 'BOTTLE') {
@@ -57,14 +86,6 @@ export function aggregateFeedStats(
           const entryUnit = activity.unitAbbr || 'OZ';
           const amount = activity.amount || 0;
           bottleFeedTotal += convertVolume(amount, entryUnit, preferredUnit);
-        } else if (activity.type === 'SOLIDS') {
-          solidsCount++;
-          // Track solids amounts by unit
-          const unit = activity.unitAbbr || 'g';
-          if (!solidsAmounts[unit]) {
-            solidsAmounts[unit] = 0;
-          }
-          solidsAmounts[unit] += activity.amount || 0;
         }
       }
     }
