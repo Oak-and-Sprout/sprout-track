@@ -11,6 +11,6 @@ html.dark .settings-manager-list {
   border-color: #4b5563 !important; /* gray-600 — same as input-dark */
 }
 
-html.dark .settings-manager-list > * + * {
+html.dark .settings-manager-list > * {
   border-color: #374151 !important; /* gray-700 — same as accordion-item-dark */
 }
