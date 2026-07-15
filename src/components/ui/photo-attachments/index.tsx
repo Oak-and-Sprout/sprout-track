@@ -28,12 +28,18 @@ function ExistingThumb({ photoId, onClick, onRemove }: { photoId: string; onClic
 
 function PendingThumb({ file, onRemove }: { file: File; onRemove?: () => void }) {
   const { t } = useLocalization();
-  const objectUrl = React.useMemo(() => URL.createObjectURL(file), [file]);
-  React.useEffect(() => () => URL.revokeObjectURL(objectUrl), [objectUrl]);
+  // Create the preview URL inside the effect so StrictMode's mount→cleanup→remount
+  // cycle gets a fresh URL instead of an already-revoked one
+  const [objectUrl, setObjectUrl] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const url = URL.createObjectURL(file);
+    setObjectUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
   return (
     <span className="relative inline-block">
       <span className={attachmentStyles.thumb()}>
-        <img src={objectUrl} alt={file.name} className="h-full w-full rounded-xl object-cover" />
+        {objectUrl && <img src={objectUrl} alt={file.name} className="h-full w-full rounded-xl object-cover" />}
       </span>
       {onRemove && (
         <button type="button" className={attachmentStyles.removeBadge()} onClick={onRemove} aria-label={t('Remove photo')}>
