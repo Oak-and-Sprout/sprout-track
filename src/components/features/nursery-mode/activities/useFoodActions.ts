@@ -98,7 +98,15 @@ export function useFoodActions({ babyId, toUTCString, onLog, onUndoable }: Activ
         onUndoable({
           tileId: 'food',
           message: t('Food logged'),
-          undo: () => undoDeleteLog('/api/food-log', logId),
+          undo: async () => {
+            const ok = await undoDeleteLog('/api/food-log', logId);
+            if (ok) {
+              // Dismiss the enjoyment prompt — the log it would PUT onto is gone.
+              setLastLogged(null);
+              setPhase('idle');
+            }
+            return ok;
+          },
         });
         setLastLogged({ id: logId, name: food.name });
         setPhase('enjoyment');
