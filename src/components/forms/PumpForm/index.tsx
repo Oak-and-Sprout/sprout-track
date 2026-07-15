@@ -224,7 +224,11 @@ export default function PumpForm({
               const defaultBottleUnit = cacheDefaultBottleUnit(data.data.defaultBottleUnit);
               if (defaultBottleUnit) {
                 setFormData(prev => ({ ...prev, unitAbbr: defaultBottleUnit }));
-                setAdjustUnit(defaultBottleUnit);
+                // Only seed the adjustment unit for new entries — when editing an
+                // existing adjustment its stored unit must be preserved.
+                if (!adjustmentActivity) {
+                  setAdjustUnit(defaultBottleUnit);
+                }
               }
             }
             setBreastMilkTrackingEnabled(data.data?.enableBreastMilkTracking ?? true);
