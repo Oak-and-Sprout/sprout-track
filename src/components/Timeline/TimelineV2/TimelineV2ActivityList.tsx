@@ -384,6 +384,7 @@ const TimelineV2ActivityList = ({
                                           duration = `${activity.amount} ${t('min')}`;
                                         }
                                         const parts = [side, duration].filter(Boolean);
+                                        if ((activity as any).hadReaction) parts.push(t('Reaction'));
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
@@ -398,6 +399,7 @@ const TimelineV2ActivityList = ({
                                           parts.push(t(bottleType));
                                         }
                                         parts.push(`${activity.amount} ${unit}`);
+                                        if ((activity as any).hadReaction) parts.push(t('Reaction'));
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
@@ -413,6 +415,7 @@ const TimelineV2ActivityList = ({
                                         } else {
                                           parts.push(`${activity.amount} ${unit}`);
                                         }
+                                        if ((activity as any).hadReaction) parts.push(t('Reaction'));
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;

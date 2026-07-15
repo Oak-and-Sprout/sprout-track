@@ -11,7 +11,9 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { Check, ArrowLeftRight, Pause, Play } from 'lucide-react';
+import { Check, ArrowLeftRight, Pause, Play, TriangleAlert } from 'lucide-react';
+import { Textarea } from '@/src/components/ui/textarea';
+import { Switch } from '@/src/components/ui/switch';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
@@ -88,6 +90,8 @@ export default function FeedForm({
     side: '' as BreastSide | '',
     food: '',
     notes: '',
+    hadReaction: false,
+    reactionDescription: '',
     bottleType: '',
     breastMilkAmount: '',
     formulaAmount: '',
@@ -129,8 +133,11 @@ export default function FeedForm({
   }, [isOpen, activity?.id, photosEnabled]);
 
   // Whether the current mode ends in a call to handleSubmit (vs. Start/End Feed's own API calls)
-  const showPhotosSection = photosEnabled && !(isFeeding && activeFeedData && !activity) &&
+  const endsInSubmit = !(isFeeding && activeFeedData && !activity) &&
     !(formData.type === 'BREAST' && !isFeeding && !activity && !manualEntry);
+  const showPhotosSection = photosEnabled && endsInSubmit;
+  // Reaction toggle applies to all feed types once one is selected
+  const showReactionSection = !!formData.type && endsInSubmit;
 
   // Live timer for active breastfeed session
   const [liveElapsed, setLiveElapsed] = useState(0);
@@ -366,6 +373,8 @@ export default function FeedForm({
         side: activity.side || '',
         food: activity.food || '',
         notes: (activity as any).notes || '',
+        hadReaction: (activity as any).hadReaction === true,
+        reactionDescription: (activity as any).reactionDescription || '',
         bottleType: activityBottleType,
         breastMilkAmount: activityBottleType === 'Formula\\Breast' && activityBmAmount != null
           ? activityBmAmount.toString() : '',
@@ -665,6 +674,8 @@ export default function FeedForm({
         side: '' as BreastSide | '',
         food: '',
         notes: '',
+        hadReaction: false,
+        reactionDescription: '',
         bottleType: '',
         breastMilkAmount: '',
         formulaAmount: '',
@@ -768,6 +779,9 @@ export default function FeedForm({
       ...(formData.type === 'SOLIDS' && formData.food && { food: formData.food }),
       ...(formData.type === 'BOTTLE' && formData.bottleType && { bottleType: formData.bottleType }),
       ...(formData.notes && { notes: formData.notes }),
+      // Always sent so editing can clear a previously flagged reaction
+      hadReaction: formData.hadReaction,
+      reactionDescription: formData.hadReaction ? formData.reactionDescription : '',
     };
 
     console.log('Payload being sent:', payload); // Debug log for payload
@@ -914,6 +928,8 @@ export default function FeedForm({
       side: '' as BreastSide | '',
       food: '',
       notes: '',
+      hadReaction: false,
+      reactionDescription: '',
       bottleType: '',
       breastMilkAmount: '',
       formulaAmount: '',
@@ -922,7 +938,7 @@ export default function FeedForm({
       rightDuration: 0,
       activeBreast: ''
     });
-    
+
     // Reset initialization flag
     setIsInitialized(false);
     setManualEntry(false);
@@ -1516,6 +1532,36 @@ export default function FeedForm({
                 onIncrement={incrementAmount}
                 onDecrement={decrementAmount}
               />
+            )}
+
+            {showReactionSection && (
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="form-label !mb-0 flex items-center gap-1.5">
+                    <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-500" />
+                    {t('Reaction occurred')}
+                  </label>
+                  <Switch
+                    checked={formData.hadReaction}
+                    onCheckedChange={(hadReaction: boolean) => setFormData(prev => ({ ...prev, hadReaction }))}
+                    disabled={loading}
+                    aria-label={t('Reaction occurred')}
+                  />
+                </div>
+                {formData.hadReaction && (
+                  <div className="mt-2">
+                    <label className="form-label" htmlFor={`${formId}-reaction-description`}>{t('Describe the reaction')}</label>
+                    <Textarea
+                      id={`${formId}-reaction-description`}
+                      value={formData.reactionDescription}
+                      onChange={(e) => setFormData(prev => ({ ...prev, reactionDescription: e.target.value }))}
+                      className="w-full min-h-[60px]"
+                      placeholder={t("Redness, swelling, hives...")}
+                      disabled={loading}
+                    />
+                  </div>
+                )}
+              </div>
             )}
 
             {showPhotosSection && (

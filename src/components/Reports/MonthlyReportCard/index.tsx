@@ -17,6 +17,8 @@ import SleepSection from './SleepSection';
 import DiapersSection from './DiapersSection';
 import ActivitySection from './ActivitySection';
 import MilestonesSection from './MilestonesSection';
+import FoodsSection from './FoodsSection';
+import AllergensBox from './AllergensBox';
 import HealthSection from './HealthSection';
 import CaretakerSection from './CaretakerSection';
 import ReportFooter from './ReportFooter';
@@ -311,6 +313,9 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
           {/* Feeding */}
           <FeedingSection feeding={reportData.feeding} />
 
+          {/* Foods (issue #203 follow-up) */}
+          <FoodsSection foods={reportData.foods} />
+
           {/* Sleep */}
           <SleepSection sleep={reportData.sleep} isPdfExport={isPdfMode} />
 
@@ -325,6 +330,9 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
 
           {/* Health & Medicine */}
           <HealthSection health={reportData.health} />
+
+          {/* Known Allergens (static — derived + manual) */}
+          <AllergensBox allergens={reportData.allergens} isPdfExport={isPdfMode} />
 
           {/* Caretaker Activity */}
           <CaretakerSection caretakers={reportData.caretakers} />

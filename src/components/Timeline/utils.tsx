@@ -399,10 +399,15 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       // Show bottle type for bottle feeds
       if (activity.type === 'BOTTLE' && (activity as any).bottleType) {
         const bottleType = (activity as any).bottleType;
-        details.push({ 
-          label: t('Bottle Type'), 
-          value: t(bottleType.replace('\\', '/')) 
+        details.push({
+          label: t('Bottle Type'),
+          value: t(bottleType.replace('\\', '/'))
         });
+      }
+
+      // Show reaction for all feed types if flagged
+      if ((activity as any).hadReaction) {
+        details.push({ label: t('Reaction'), value: (activity as any).reactionDescription || t('Yes') });
       }
 
       // Show notes for all feed types if present

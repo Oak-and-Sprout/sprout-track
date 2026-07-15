@@ -25,7 +25,7 @@ import VaccineForm from '@/src/components/forms/VaccineForm';
 import FoodForm from '@/src/components/forms/FoodForm';
 import PhotoForm from '@/src/components/forms/PhotoForm';
 import PhotoDetail from '@/src/components/PhotoDetail';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
 import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
@@ -37,7 +37,23 @@ function HomeContent(): React.ReactElement {
   const { t } = useLocalization();
   const params = useParams();
   const familySlug = params?.slug as string;
-  
+  const searchParams = useSearchParams();
+
+  // Optional ?date=YYYY-MM-DD deep link (e.g. from allergen entries) — invalid
+  // or missing values fall back to today
+  const initialTimelineDate = React.useMemo(() => {
+    const dateParam = searchParams?.get('date');
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      const [year, month, day] = dateParam.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+        return date;
+      }
+    }
+    return undefined;
+  }, [searchParams]);
+
+
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [showFeedModal, setShowFeedModal] = useState(false);
   const [showDiaperModal, setShowDiaperModal] = useState(false);
@@ -557,6 +573,7 @@ function HomeContent(): React.ReactElement {
           <TimelineV2
             babyId={selectedBaby.id}
             refreshTrigger={refreshTrigger}
+            initialDate={initialTimelineDate}
             onLatestStatusReady={handleLatestStatusReady}
             onActivityDeleted={() => {
               triggerRefresh();

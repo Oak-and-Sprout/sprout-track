@@ -37,6 +37,8 @@ export interface LegacyTimelineProps {
 export interface TimelineProps {
   babyId: string;
   refreshTrigger?: number;
+  /** Initial selected day (e.g. from a ?date=YYYY-MM-DD deep link); defaults to today. */
+  initialDate?: Date;
   onLatestStatusReady?: (data: LatestStatusData) => void;
   onActivityDeleted?: (dateFilter?: Date) => void;
 }

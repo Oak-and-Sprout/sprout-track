@@ -18,6 +18,11 @@ html.dark .baby-quick-stats-allergen-badge {
   color: #fbbf24 !important;
 }
 
+html.dark .baby-quick-stats-allergen-type-badge {
+  background-color: rgba(13, 148, 136, 0.2) !important; /* teal-600 with opacity */
+  color: #5eead4 !important; /* teal-300 */
+}
+
 html.dark .baby-quick-stats-allergen-reaction {
   color: rgba(255, 255, 255, 0.7) !important;
 }

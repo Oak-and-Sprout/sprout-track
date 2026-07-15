@@ -251,3 +251,57 @@ html.dark .report-card-chart .recharts-tooltip-wrapper .recharts-default-tooltip
   background-color: #1f2937 !important; /* gray-800 */
   border-color: #374151 !important; /* gray-700 */
 }
+
+/* Foods section (issue #203 follow-up) */
+html.dark .report-card-food-row {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .report-card-food-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-food-sub {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-food-emoji-placeholder {
+  background-color: #374151 !important; /* gray-700 */
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Known Allergens box */
+html.dark .report-card-allergens-box {
+  background-color: rgba(245, 158, 11, 0.1) !important; /* amber-500 with opacity */
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+html.dark .report-card-allergens-box-title {
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .report-card-allergen-row {
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+html.dark .report-card-allergen-row-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .report-card-allergen-row-badge {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .report-card-allergen-row-detail {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .report-card-allergen-row-meta {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .report-card-allergen-row-link {
+  color: #5eead4 !important; /* teal-300 */
+}

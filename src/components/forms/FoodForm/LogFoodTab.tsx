@@ -23,21 +23,12 @@ import {
   isLikelyCommonAllergen,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
+  FOOD_ENJOYMENT_ICON_SRC,
   FoodEnjoymentValue,
 } from '@/src/utils/foodLogUtils';
 
 // Picker shows happiest → saddest, left to right
 const ENJOYMENT_DISPLAY_ORDER = [...FOOD_ENJOYMENT_VALUES].reverse();
-
-// Fluent Emoji "Flat" SVGs (MIT, see public/emoji-flat/LICENSE.md) — consistent
-// rendering across platforms, unlike native emoji glyphs
-const ENJOYMENT_ICON_SRC: Record<FoodEnjoymentValue, string> = {
-  LOVED: '/emoji-flat/loved.svg',
-  LIKED: '/emoji-flat/liked.svg',
-  NEUTRAL: '/emoji-flat/neutral.svg',
-  DISLIKED: '/emoji-flat/disliked.svg',
-  HATED: '/emoji-flat/hated.svg',
-};
 
 /**
  * LogFoodTab Component
@@ -524,7 +515,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
                 title={t(FOOD_ENJOYMENT_LABELS[value])}
               >
                 <img
-                  src={ENJOYMENT_ICON_SRC[value]}
+                  src={FOOD_ENJOYMENT_ICON_SRC[value]}
                   alt=""
                   aria-hidden="true"
                   className="h-14 w-14 transition-all duration-200 group-hover:scale-110 group-hover:drop-shadow-lg"

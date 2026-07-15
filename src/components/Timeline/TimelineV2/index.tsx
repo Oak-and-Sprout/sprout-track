@@ -26,14 +26,14 @@ import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
 import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
-const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
+const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [defaultBottleUnit, setDefaultBottleUnit] = useState(() => readCachedDefaultBottleUnit());
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
   const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo' | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => initialDate ?? new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
 
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
