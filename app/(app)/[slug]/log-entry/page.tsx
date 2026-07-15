@@ -22,6 +22,7 @@ import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MedicineForm from '@/src/components/forms/MedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import FoodForm from '@/src/components/forms/FoodForm';
 import PhotoForm from '@/src/components/forms/PhotoForm';
 import PhotoDetail from '@/src/components/PhotoDetail';
 import { useParams } from 'next/navigation';
@@ -48,6 +49,7 @@ function HomeContent(): React.ReactElement {
   const [showMedicineModal, setShowMedicineModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showVaccineModal, setShowVaccineModal] = useState<boolean>(false);
+  const [showFoodModal, setShowFoodModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [photosEnabled, setPhotosEnabled] = useState(false);
   const [detailPhoto, setDetailPhoto] = useState<PhotoResponse | null>(null);
@@ -520,6 +522,7 @@ function HomeContent(): React.ReactElement {
           onMedicineClick={() => setShowMedicineModal(true)}
           onPlayClick={() => setShowActivityModal(true)}
           onVaccineClick={() => setShowVaccineModal(true)}
+          onFoodClick={() => setShowFoodModal(true)}
           onPhotoClick={() => setShowPhotoModal(true)}
           photosEnabled={photosEnabled}
         />
@@ -800,6 +803,19 @@ function HomeContent(): React.ReactElement {
         isOpen={showVaccineModal}
         onClose={() => setShowVaccineModal(false)}
         babyId={selectedBaby?.id || ''}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            triggerRefresh();
+          }
+        }}
+      />
+
+      {/* Food Form */}
+      <FoodForm
+        isOpen={showFoodModal}
+        onClose={() => setShowFoodModal(false)}
+        babyId={selectedBaby?.id}
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {

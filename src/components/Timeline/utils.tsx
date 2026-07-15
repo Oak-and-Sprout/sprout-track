@@ -23,7 +23,8 @@ import {
   Minus,
   Syringe,
   Camera,
-  Utensils
+  Utensils,
+  Apple
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { 
@@ -33,6 +34,7 @@ import {
   ActivityStyle 
 } from './types';
 import { getSymbol } from '@/src/hooks/useUnit';
+import { FOOD_ENJOYMENT_LABELS, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 
 // Split decimal pounds into whole pounds and ounces (to 1 decimal place).
 // Rolls over when ounces round up to 16.
@@ -67,6 +69,11 @@ export const getActivityIcon = (activity: ActivityType) => {
   // Photo log - check first since it has no overlapping fields with other types
   if ('photoLogId' in activity) {
     return <Camera className="h-4 w-4 text-[#e11d48]" aria-hidden="true" />;
+  }
+  // Food log (issue #203) - foodId is unique to food logs. NOT the Utensils
+  // icon: that marks SOLIDS feed logs; food tries get an Apple instead
+  if ('foodId' in activity) {
+    return <Apple className="h-4 w-4 text-white" aria-hidden="true" />;
   }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
@@ -202,6 +209,35 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   const caretakerDetail = activity.caretakerName ? [
     { label: t('Caretaker'), value: activity.caretakerName }
   ] : [];
+
+  // Food log (issue #203) - foodId is unique to food logs
+  if ('foodId' in activity) {
+    const foodLog = activity as any;
+    const enjoyment: unknown = foodLog.enjoyment;
+    const foodDetails = [
+      { label: t('Food'), value: foodLog.food?.name || t('unknown') },
+      { label: t('Time'), value: formatTime(foodLog.time, settings, true, t) },
+    ];
+    if (isValidEnjoyment(enjoyment)) {
+      foodDetails.push({ label: t('Enjoyment'), value: t(FOOD_ENJOYMENT_LABELS[enjoyment]) });
+    }
+    if (foodLog.food?.commonAllergen) {
+      foodDetails.push({ label: t('Common Allergen'), value: t('Yes') });
+    }
+    if (foodLog.isFirstTry) {
+      foodDetails.push({ label: t('First Try'), value: t('Yes') });
+    }
+    if (foodLog.hadReaction) {
+      foodDetails.push({ label: t('Reaction'), value: foodLog.reactionDescription || t('Yes') });
+    }
+    if (foodLog.notes) {
+      foodDetails.push({ label: t('Notes'), value: foodLog.notes });
+    }
+    return {
+      title: t('Food Record'),
+      details: [...foodDetails, ...caretakerDetail],
+    };
+  }
 
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
@@ -666,6 +702,25 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       details: firstCaption || `${count} ${count === 1 ? t('photo') : t('photos')}`
     };
   }
+  // Food log (issue #203) - foodId is unique to food logs
+  if ('foodId' in activity) {
+    const foodLog = activity as any;
+    const enjoyment: unknown = foodLog.enjoyment;
+    const time = formatTime(foodLog.time, settings, true, t);
+    const parts = [time];
+    if (isValidEnjoyment(enjoyment)) {
+      parts.push(t(FOOD_ENJOYMENT_LABELS[enjoyment]));
+    }
+    if (foodLog.isFirstTry) parts.push(t('First try!'));
+    if (foodLog.hadReaction) parts.push(t('Reaction'));
+    let notes: string = foodLog.notes ?? '';
+    if (notes.length > 30) notes = notes.slice(0, 30) + '...';
+    if (notes) parts.push(notes);
+    return {
+      type: foodLog.food?.name || t('Food'),
+      details: parts.join(' • ')
+    };
+  }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
     const formatPlayType = (type: string) => {
@@ -1029,6 +1084,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 
 export const getActivityEndpoint = (activity: ActivityType): string => {
   if ('photoLogId' in activity) return 'photo-log';
+  // Food log (issue #203) - foodId is unique to food logs
+  if ('foodId' in activity) return 'food-log';
   // Check play activity before sleep since both have duration and type
   if (isPlayActivity(activity)) return 'play-log';
   // Check for breast milk adjustment before pump
@@ -1055,6 +1112,11 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
   // Photo log - check first since it has no overlapping fields with other types
   if ('photoLogId' in activity) {
     return { bg: 'bg-white border-2 border-[#e11d48]', textColor: 'text-[#e11d48]' };
+  }
+  // Food log (issue #203): lime green, distinct from medicine green (#43B755)
+  // and the sky-blue feed color
+  if ('foodId' in activity) {
+    return { bg: 'bg-[#84CC16]', textColor: 'text-white' };
   }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {

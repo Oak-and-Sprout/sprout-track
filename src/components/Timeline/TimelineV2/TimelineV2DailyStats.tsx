@@ -19,7 +19,8 @@ import {
   Baby,
   Syringe,
   Camera,
-  Utensils
+  Utensils,
+  Apple
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -132,11 +133,21 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
     let playCount = 0;
     let totalPlayMinutes = 0;
     let vaccineCount = 0;
+    let foodCount = 0;
     let awakeMinutes = 0;
 
     const PLAY_TYPES = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
 
     activities.forEach(activity => {
+      // Food logs (issue #203) - foodId is unique to food logs
+      if ('foodId' in activity) {
+        const time = new Date((activity as any).time);
+        if (time >= startOfDay && time <= endOfDay) {
+          foodCount++;
+        }
+        return; // Skip further checks for this activity
+      }
+
       // Play activities - check before sleep since both have duration, startTime, type
       if ('activities' in activity && 'type' in activity && PLAY_TYPES.includes((activity as any).type)) {
         const time = new Date((activity as any).startTime);
@@ -556,6 +567,20 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         icon: <LampWallDown className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#c084fc]', // purple-400 - matches pump
+        borderColor: 'border-gray-500',
+        bgActiveColor: 'bg-gray-100'
+      });
+    }
+
+    // Food tile (issue #203)
+    if (foodCount > 0) {
+      tiles.push({
+        filter: 'food',
+        label: t('Foods'),
+        value: foodCount.toString(),
+        icon: <Apple className="h-full w-full" aria-hidden="true" />,
+        bgColor: 'bg-gray-50',
+        iconColor: 'text-[#84CC16]', // lime - matches food timeline entries
         borderColor: 'border-gray-500',
         bgActiveColor: 'bg-gray-100'
       });

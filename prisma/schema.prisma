@@ -616,7 +616,7 @@ model PhotoLink {
   id           String   @id @default(uuid())
   photo        Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
   photoId      String
-  activityType String // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement'
+  activityType String // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement' | 'foodLog'
   activityId   String // Polymorphic - no FK
   createdAt    DateTime @default(now())
 

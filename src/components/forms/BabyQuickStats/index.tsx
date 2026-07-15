@@ -18,11 +18,15 @@ import FormPage, { FormPageContent, FormPageFooter } from '@/src/components/ui/f
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
 import CardVisual from '@/src/components/reporting/CardVisual';
-import { Clock, Moon, Sun, Utensils, Droplet, Loader2 } from 'lucide-react';
+import { Clock, Moon, Sun, Utensils, Droplet, Loader2, TriangleAlert } from 'lucide-react';
 import { diaper } from '@lucide/lab';
 import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
 import { countBreastFeedSessions } from '@/src/utils/feedSessionUtils';
+import { FoodProgressResponse } from '@/app/api/types';
+
+import './baby-quick-stats.css';
 
 /**
  * BabyQuickStats Component
@@ -58,6 +62,38 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   const [activities, setActivities] = useState<any[]>(initialActivities);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Derived allergen/reaction profile from reaction-flagged food logs (issue #203)
+  const [foodAllergens, setFoodAllergens] = useState<FoodProgressResponse['allergens']>([]);
+
+  useEffect(() => {
+    if (!selectedBaby) {
+      setFoodAllergens([]);
+      return;
+    }
+
+    const fetchAllergens = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch(`/api/food-log/progress?babyId=${selectedBaby.id}`, {
+          cache: 'no-store',
+          headers: {
+            'Authorization': authToken ? `Bearer ${authToken}` : '',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setFoodAllergens(data.success && data.data?.allergens ? data.data.allergens : []);
+        } else {
+          setFoodAllergens([]);
+        }
+      } catch {
+        setFoodAllergens([]);
+      }
+    };
+
+    fetchAllergens();
+  }, [selectedBaby]);
   
   // Fetch activities for the selected baby
   useEffect(() => {
@@ -132,6 +168,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   }, [selectedBaby, family?.id]);
 
   const { t } = useLocalization();
+  const { formatDate } = useTimezone();
   const mainPeriodLabelId = useId();
   const comparePeriodLabelId = useId();
 
@@ -572,6 +609,41 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                     comparativeValue={compareStats.avgPoops.toFixed(1)}
                     trend="neutral"
                   />
+                </div>
+              )}
+
+              {/* Allergens & Reactions - derived from reaction-flagged food logs (issue #203) */}
+              {foodAllergens.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 mb-2 baby-quick-stats-allergen-title">
+                    <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-500" />
+                    {t('Allergens & Reactions')}
+                  </h3>
+                  <div className="space-y-2">
+                    {foodAllergens.map((entry) => (
+                      <div
+                        key={entry.foodId}
+                        className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 baby-quick-stats-allergen-item"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm text-gray-800 baby-quick-stats-allergen-name">{entry.foodName}</span>
+                          {entry.commonAllergen && (
+                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 baby-quick-stats-allergen-badge">
+                              {t('Common allergen')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 space-y-0.5">
+                          {entry.reactions.map((reaction, index) => (
+                            <div key={index} className="text-xs text-gray-600 baby-quick-stats-allergen-reaction">
+                              {formatDate(reaction.time)}
+                              {reaction.description ? ` — ${reaction.description}` : ''}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </>

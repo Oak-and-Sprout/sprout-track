@@ -77,6 +77,10 @@ const TimelineActivityDetails = ({
       if ('photoLogId' in activity) {
         onEdit(activity, 'photo');
       }
+      // Food log (issue #203) - foodId is unique to food logs
+      else if ('foodId' in activity) {
+        onEdit(activity, 'food');
+      }
       // Check play activity before sleep since both have duration and type
       else if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
         onEdit(activity, 'play');

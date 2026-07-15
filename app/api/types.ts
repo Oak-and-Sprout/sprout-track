@@ -489,7 +489,7 @@ export interface FoodProgressResponse {
 
 // Photo types
 export interface PhotoLinkInfo {
-  activityType: string; // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement'
+  activityType: string; // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement' | 'foodLog'
   activityId: string;
 }
 

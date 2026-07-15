@@ -16,6 +16,18 @@ export type FoodEnjoymentValue = (typeof FOOD_ENJOYMENT_VALUES)[number];
 /** The "100 foods before 1" goal the progress view counts toward. */
 export const UNIQUE_FOOD_GOAL = 100;
 
+/**
+ * Localization keys (== English labels) for each enjoyment value.
+ * Components render them via t(FOOD_ENJOYMENT_LABELS[value]).
+ */
+export const FOOD_ENJOYMENT_LABELS: Record<FoodEnjoymentValue, string> = {
+  HATED: 'Hated',
+  DISLIKED: 'Disliked',
+  NEUTRAL: 'Neutral',
+  LIKED: 'Liked',
+  LOVED: 'Loved',
+};
+
 /** Minimal shape of a FoodLog row the helpers need. */
 export interface FoodLogLike {
   foodId: string;
@@ -153,4 +165,78 @@ export function deriveAllergens(logs: FoodLogLike[], foods: FoodLike[]): Allerge
     entry.reactions.sort((a, b) => a.time.localeCompare(b.time));
   }
   return entries.sort((a, b) => a.foodName.localeCompare(b.foodName));
+}
+
+/** A FoodLog row with the joined catalog food, as returned by /api/food-log. */
+export type FoodLogWithFood = FoodLogLike & {
+  food?: FoodLike | null;
+};
+
+/** One row of the per-food history list on the FoodForm Progress tab. */
+export interface FoodTryListEntry {
+  foodId: string;
+  foodName: string;
+  commonAllergen: boolean;
+  tryCount: number;
+  /** ISO time of the earliest (non-deleted) try. */
+  firstTryTime: string;
+  /** ISO time of the latest (non-deleted) try. */
+  latestTryTime: string;
+  /** Enjoyment of the most recent try that recorded one, or null. */
+  latestEnjoyment: FoodEnjoymentValue | null;
+  /** True when any non-deleted try was reaction-flagged. */
+  hadReaction: boolean;
+}
+
+/**
+ * Group food logs into a per-food history list (name, try count, first/latest
+ * try, latest enjoyment, reaction flag) for display. Soft-deleted logs are
+ * excluded; entries sort newest-latest-try first.
+ */
+export function buildFoodTryList(logs: FoodLogWithFood[]): FoodTryListEntry[] {
+  const entriesByFoodId = new Map<string, FoodTryListEntry & { latestEnjoymentTime: string | null }>();
+
+  for (const log of logs) {
+    if (isDeleted(log)) continue;
+    const time = toIso(log.time);
+    let entry = entriesByFoodId.get(log.foodId);
+    if (!entry) {
+      entry = {
+        foodId: log.foodId,
+        foodName: log.food?.name || '',
+        commonAllergen: log.food?.commonAllergen === true,
+        tryCount: 0,
+        firstTryTime: time,
+        latestTryTime: time,
+        latestEnjoyment: null,
+        latestEnjoymentTime: null,
+        hadReaction: false,
+      };
+      entriesByFoodId.set(log.foodId, entry);
+    }
+    entry.tryCount += 1;
+    if (time < entry.firstTryTime) entry.firstTryTime = time;
+    if (time > entry.latestTryTime) entry.latestTryTime = time;
+    if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
+      entry.latestEnjoyment = log.enjoyment;
+      entry.latestEnjoymentTime = time;
+    }
+    if (log.hadReaction === true) entry.hadReaction = true;
+  }
+
+  return Array.from(entriesByFoodId.values())
+    .map(({ latestEnjoymentTime, ...entry }) => entry)
+    .sort((a, b) => b.latestTryTime.localeCompare(a.latestTryTime));
+}
+
+/**
+ * Count foods whose FIRST (all-time, non-deleted) try falls within
+ * [start, end] — the "new foods in range" stat for Reports. `logs` must be the
+ * baby's full all-time log list, otherwise first tries are misidentified.
+ */
+export function countFirstTriesInRange(logs: FoodLogLike[], start: Date | string, end: Date | string): number {
+  const { firstTryByFoodId } = computeFoodProgress(logs);
+  const startIso = toIso(start);
+  const endIso = toIso(end);
+  return Object.values(firstTryByFoodId).filter(time => time >= startIso && time <= endIso).length;
 }

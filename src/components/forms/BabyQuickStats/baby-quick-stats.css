@@ -1,0 +1,23 @@
+/* Dark mode styles for the BabyQuickStats allergen list (issue #203) */
+
+html.dark .baby-quick-stats-allergen-title {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .baby-quick-stats-allergen-item {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .baby-quick-stats-allergen-name {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .baby-quick-stats-allergen-badge {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+}
+
+html.dark .baby-quick-stats-allergen-reaction {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
