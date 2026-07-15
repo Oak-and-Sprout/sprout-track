@@ -515,15 +515,15 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
               <Button
                 key={value}
                 type="button"
-                variant={enjoyment === value ? 'default' : 'outline'}
-                className="px-1 py-1 h-16"
+                variant="ghost"
+                className={`px-1 py-1 h-16 ${enjoyment === value ? 'bg-teal-100 food-enjoyment-selected' : ''}`}
                 onClick={() => setEnjoyment(prev => (prev === value ? null : value))}
                 disabled={isSubmitting}
                 aria-pressed={enjoyment === value}
                 aria-label={t(FOOD_ENJOYMENT_LABELS[value])}
                 title={t(FOOD_ENJOYMENT_LABELS[value])}
               >
-                <img src={ENJOYMENT_ICON_SRC[value]} alt="" aria-hidden="true" className="h-12 w-12" />
+                <img src={ENJOYMENT_ICON_SRC[value]} alt="" aria-hidden="true" className="h-14 w-14" />
               </Button>
             ))}
           </div>
