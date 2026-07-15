@@ -10,6 +10,8 @@ import { useFullscreen } from '@/src/hooks/useFullscreen';
 import { useNurserySettings } from '@/src/hooks/useNurserySettings';
 import { autoIconColor } from '@/src/utils/nursery/colorMath';
 import { formatFeedNote, formatPumpNote } from '@/src/utils/nursery/activityDetail';
+import { formatFoodLogNote } from '@/src/utils/nursery/foodActivity';
+import { isValidEnjoyment, FOOD_ENJOYMENT_LABELS } from '@/src/utils/foodLogUtils';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { Baby } from '@prisma/client';
 import { ClockBlock } from './ClockBlock';
@@ -19,6 +21,7 @@ import { useFeedActions } from './activities/useFeedActions';
 import { usePumpActions } from './activities/usePumpActions';
 import { useDiaperActions } from './activities/useDiaperActions';
 import { useSleepActions } from './activities/useSleepActions';
+import { useFoodActions } from './activities/useFoodActions';
 import { ActivityCard } from './activities/ActivityCard';
 import { BigTile } from './activities/BigTile';
 import { UndoToast } from './activities/UndoToast';
@@ -136,18 +139,20 @@ export function NurseryModeContainer() {
         const headers: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
         const babyId = selectedBaby.id;
 
-        const [feedRes, diaperRes, sleepRes, pumpRes] = await Promise.all([
+        const [feedRes, diaperRes, sleepRes, pumpRes, foodRes] = await Promise.all([
           fetch(`/api/feed-log?babyId=${babyId}`, { headers }),
           fetch(`/api/diaper-log?babyId=${babyId}`, { headers }),
           fetch(`/api/sleep-log?babyId=${babyId}`, { headers }),
           fetch(`/api/pump-log?babyId=${babyId}`, { headers }),
+          settings.acts.food ? fetch(`/api/food-log?babyId=${babyId}`, { headers }) : Promise.resolve(null),
         ]);
 
-        const [feedData, diaperData, sleepData, pumpData] = await Promise.all([
+        const [feedData, diaperData, sleepData, pumpData, foodData] = await Promise.all([
           feedRes.ok ? feedRes.json() : null,
           diaperRes.ok ? diaperRes.json() : null,
           sleepRes.ok ? sleepRes.json() : null,
           pumpRes.ok ? pumpRes.json() : null,
+          foodRes && foodRes.ok ? foodRes.json() : null,
         ]);
 
         const newLogs: Record<string, TileLog> = {};
@@ -230,6 +235,21 @@ export function NurseryModeContainer() {
           }
         }
 
+        // Latest food try
+        if (foodData?.success && foodData.data?.length > 0) {
+          const latest = foodData.data[0];
+          const id = latest.id;
+          if (id !== lastSeenRef.current.food) {
+            lastSeenRef.current.food = id;
+            const time = new Date(latest.time)
+              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+              .toLowerCase();
+            const enjoyment = latest.enjoyment;
+            const enjoymentLabel = isValidEnjoyment(enjoyment) ? t(FOOD_ENJOYMENT_LABELS[enjoyment]) : null;
+            newLogs.food = { last: time, note: formatFoodLogNote({ foodName: latest.food?.name || t('Food'), enjoymentLabel }) };
+          }
+        }
+
         if (Object.keys(newLogs).length > 0) {
           setLogs(prev => ({ ...prev, ...newLogs }));
         }
@@ -245,7 +265,7 @@ export function NurseryModeContainer() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [selectedBaby?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedBaby?.id, settings.acts.food]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLog = useCallback((tileId: string, note: string) => {
     const now = new Date()
@@ -294,6 +314,7 @@ export function NurseryModeContainer() {
   const pumpView = usePumpActions(hookArgs);
   const diaperView = useDiaperActions(hookArgs);
   const sleepView = useSleepActions(hookArgs);
+  const foodView = useFoodActions(hookArgs);
 
   if (isLoading) {
     return (
@@ -314,7 +335,7 @@ export function NurseryModeContainer() {
   const clockBabies = babies.map(b => ({ id: b.id, firstName: b.firstName }));
   const babyName = selectedBaby?.firstName ?? t('Sprout Track');
 
-  const views = [feedView, pumpView, diaperView, sleepView];
+  const views = [feedView, pumpView, diaperView, sleepView, foodView];
   const visible = views.filter(v => settings.acts[v.id]);
   const anyQuestion = visible.some(v => v.question);
   // Single-column mobile layout: surface running timers first instead of a fixed

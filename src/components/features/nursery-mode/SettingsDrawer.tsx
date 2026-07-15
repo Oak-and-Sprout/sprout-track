@@ -58,6 +58,7 @@ const ACT_ROWS: { id: keyof NurserySettings['acts']; icon: IconName; label: stri
   { id: 'pump', icon: 'pump', label: 'Pump' },
   { id: 'diaper', icon: 'diaper', label: 'Diaper' },
   { id: 'sleep', icon: 'moon', label: 'Sleep' },
+  { id: 'food', icon: 'food', label: 'Food' },
 ];
 
 /** Flat gray thumb-drag track used by most contextual sliders (nursery.jsx:566 etc). */
