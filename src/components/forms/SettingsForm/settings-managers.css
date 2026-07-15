@@ -1,0 +1,7 @@
+/* Dark mode overrides for the Settings list managers (sleep locations, foods).
+   Light mode uses Tailwind utilities inline; html.dark is controlled by the
+   app theme context per the project styling convention. */
+
+html.dark .settings-manager-item-name {
+  color: #f3f4f6 !important; /* gray-100 */
+}

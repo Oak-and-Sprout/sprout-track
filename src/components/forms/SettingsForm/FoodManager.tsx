@@ -16,6 +16,7 @@ import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { FoodResponse } from '@/app/api/types';
 import { getFoodDuplicateSuggestions } from '@/src/utils/foodLogUtils';
+import './settings-managers.css';
 
 type RowAction =
   | { id: string; type: 'rename'; value: string }
@@ -210,7 +211,7 @@ function FoodRow({
   return (
     <li className="px-3 py-1.5">
       <div className="flex items-center gap-2 min-h-7">
-        <span className="text-sm text-gray-900 truncate">{name}</span>
+        <span className="text-sm text-gray-900 settings-manager-item-name truncate">{name}</span>
         {count > 0 && <span className="text-xs text-gray-500 whitespace-nowrap">{count} {t('tries')}</span>}
         {commonAllergen && <Badge variant="warning" className="text-xs">{t('Common allergen')}</Badge>}
         {duplicateTargetId !== undefined && (
