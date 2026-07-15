@@ -262,10 +262,10 @@
   .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
   .nursery-bg { position: fixed; }
   .nursery-fg { padding: calc(18px + env(safe-area-inset-top)) calc(15px + env(safe-area-inset-right)) 18px calc(15px + env(safe-area-inset-left)); }
-  .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 26px; }
-  /* Mobile keeps whole-page scrolling (stage height:auto) — neutralize the inner
-     scroller so there's a single scroll context and no resting edge fades. */
-  .nursery-actscroll { flex: none; overflow-y: visible; padding: 0; mask-image: none; -webkit-mask-image: none; }
+  .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 0; }
+  /* Same pinned-clock treatment as desktop: the activity area is the scroll
+     context (the fixed inset-0 stage never grows, so page scrolling can't work). */
+  .nursery-actscroll { padding: 18px 0; mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
   .nursery-grid { grid-template-columns: 1fr; width: 100%; max-width: 520px; gap: 14px; }
   .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
   .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 340px; }

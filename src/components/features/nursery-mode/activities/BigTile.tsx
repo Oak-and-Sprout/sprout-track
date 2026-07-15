@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactElement, useState, CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocalization } from '@/src/context/localization';
 import { Badge } from './Badge';
 import { Icon, IconName } from '../icons';
@@ -93,7 +94,10 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
         )}
       </div>
 
-      {open && (
+      {/* Portaled to <body>: the activity area's edge-fade mask clips everything its
+          subtree paints (even position:fixed), so the modal must escape it to cover
+          the full page — including the clock/topbar. */}
+      {open && createPortal(
         <>
           <button
             type="button"
@@ -203,7 +207,8 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
               {t('Close')}
             </button>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </>
   );
