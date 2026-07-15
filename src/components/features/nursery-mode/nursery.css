@@ -91,7 +91,7 @@
 /* min-height: 0 is load-bearing — without it this flex item grows to its content,
    overflowing the clipped stage (hiding the footer) and the activity scroller never
    engages because nothing inside is ever height-constrained. */
-.nursery-fg { position: relative; z-index: 2; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-top)) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-right)) clamp(20px, 3.2vw, 48px) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-left)); }
+.nursery-fg { position: relative; z-index: 2; flex: 1; min-height: 0; display: flex; flex-direction: column; --fgpad: clamp(20px, 3.2vw, 48px); padding: calc(var(--fgpad) + env(safe-area-inset-top)) calc(var(--fgpad) + env(safe-area-inset-right)) var(--fgpad) calc(var(--fgpad) + env(safe-area-inset-left)); }
 .nursery-topbar { display: flex; justify-content: flex-end; align-items: center; gap: clamp(20px, 2.5vw, 40px); }
 .nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
 .nursery-ghost:hover { color: #fff; }
@@ -102,14 +102,20 @@
 .nursery-actscroll {
   flex: 1 1 auto;
   min-height: 0;
-  width: 100%;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   justify-content: safe center;
   overflow-y: auto;
-  padding: 26px 0;
+  /* overflow-y forces the x-axis to clip (and the mask confines painting to the box),
+     which would shear card shadows at the grid edge — bleed into the stage padding
+     with negative margins, restored by matching horizontal padding, so the clip/mask
+     box is wider than the grid while the vertical fades stay put. */
+  margin-left: calc(-1 * (var(--fgpad) + env(safe-area-inset-left)));
+  margin-right: calc(-1 * (var(--fgpad) + env(safe-area-inset-right)));
+  padding: 26px calc(var(--fgpad) + env(safe-area-inset-right)) 26px calc(var(--fgpad) + env(safe-area-inset-left));
   mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);
   scrollbar-width: none;
@@ -264,11 +270,12 @@
 @media (max-width: 680px) {
   .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
   .nursery-bg { position: fixed; }
-  .nursery-fg { padding: calc(18px + env(safe-area-inset-top)) calc(15px + env(safe-area-inset-right)) 18px calc(15px + env(safe-area-inset-left)); }
+  .nursery-fg { --fgpad: 15px; padding: calc(18px + env(safe-area-inset-top)) calc(var(--fgpad) + env(safe-area-inset-right)) 18px calc(var(--fgpad) + env(safe-area-inset-left)); }
   .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 0; }
   /* Same pinned-clock treatment as desktop: the activity area is the scroll
-     context (the fixed inset-0 stage never grows, so page scrolling can't work). */
-  .nursery-actscroll { padding: 18px 0; mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
+     context (the fixed inset-0 stage never grows, so page scrolling can't work).
+     Horizontal bleed margins/padding inherit --fgpad from .nursery-fg above. */
+  .nursery-actscroll { padding-top: 18px; padding-bottom: 18px; mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
   .nursery-grid { grid-template-columns: 1fr; width: 100%; max-width: 520px; gap: 14px; }
   .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
   .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 340px; }
