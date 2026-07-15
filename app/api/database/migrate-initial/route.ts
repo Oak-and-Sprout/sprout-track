@@ -4,7 +4,8 @@ import { promisify } from 'util';
 import path from 'path';
 import { withAuthContext, ApiResponse, AuthResult } from '../../utils/auth';
 import { isPostgreSQL } from '../../utils/db-provider';
-import { reconnectPrisma } from '../../db';
+import prisma, { reconnectPrisma } from '../../db';
+import { convertSolidsFeeds, summarizeConversion } from '../../../../scripts/convert-solids-feeds-runner';
 
 const execAsync = promisify(exec);
 
@@ -85,17 +86,30 @@ async function handler(request: NextRequest, authContext: AuthResult): Promise<N
     console.log('Step 5: Reconnecting Prisma client...');
     await reconnectPrisma();
 
+    // Step 6: Convert legacy SOLIDS feeds to food logs (restored backups may
+    // still contain them even though startup already converted the live DB)
+    console.log('Step 6: Converting legacy solids feeds to food logs...');
+    let solidsConversionSummary = 'Solids conversion skipped due to an error';
+    try {
+      solidsConversionSummary = summarizeConversion(await convertSolidsFeeds(prisma));
+      console.log(`✓ ${solidsConversionSummary}`);
+    } catch (error) {
+      console.error('⚠ Solids feed conversion failed:', error);
+      console.warn('Solids conversion skipped - it will retry on next startup');
+    }
+
     console.log('🎉 Initial setup migration completed successfully!');
-    
+
     return NextResponse.json<ApiResponse<any>>({
       success: true,
       data: {
         message: 'Database successfully migrated for initial setup',
         steps: [
           'Prisma client generated',
-          'Schema migrations applied', 
+          'Schema migrations applied',
           'Family data structure updated',
-          'Default settings and units added'
+          'Default settings and units added',
+          solidsConversionSummary
         ]
       }
     });

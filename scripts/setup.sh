@@ -145,6 +145,13 @@ if [ $? -ne 0 ]; then
 fi
 echo "Database seeded successfully with default family, system caretaker (PIN: 111222), and units."
 
+# Step 6b: Convert legacy solids feeds to food logs (idempotent, safe to rerun)
+echo "Converting legacy solids feeds to food logs..."
+node "$SCRIPT_DIR/convert-solids-feeds.js"
+if [ $? -ne 0 ]; then
+    echo "Warning: Solids feed conversion had issues. It will retry on next update."
+fi
+
 # Step 7: Build the Next.js application
 echo "Step 7: Building the Next.js application..."
 npm run build
