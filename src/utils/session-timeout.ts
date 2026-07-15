@@ -94,6 +94,30 @@ export function logoutDestination({
   return '/login';
 }
 
+/**
+ * Whether the family-slug page should redirect home based on the loaded family
+ * state. Only a definitively-inactive family redirects (to
+ * /?src=family-inactive). A *missing* family (familyIsActive === null) does
+ * NOT redirect: on a resumed PWA the family fetch can transiently fail, and
+ * bouncing a valid family to the marketing homepage was the #209 follow-up
+ * bug. Slug-not-found is already handled authoritatively by
+ * validateFamilySlugWithRetry before this runs. System admins are exempt.
+ */
+export function familyStateRedirect({
+  slugValidated,
+  familyLoading,
+  isSysAdmin,
+  familyIsActive,
+}: {
+  slugValidated: boolean;
+  familyLoading: boolean;
+  isSysAdmin: boolean;
+  familyIsActive: boolean | null;
+}): 'family-inactive' | null {
+  if (!slugValidated || familyLoading || isSysAdmin) return null;
+  return familyIsActive === false ? 'family-inactive' : null;
+}
+
 export type SlugValidationOutcome = 'valid' | 'not-found' | 'transient';
 
 /**
@@ -124,25 +148,44 @@ export interface SlugValidationOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
+export interface FamilyBySlugData {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
+export interface FamilyLoadOptions extends SlugValidationOptions {
+  /** Bearer token to attach (sysadmins load families by slug with auth). */
+  authToken?: string | null;
+}
+
 /**
- * Validate a family slug, retrying transient failures with a small backoff.
- * Returns 'transient' only after exhausting retries — callers should stay on
- * the current page in that case rather than redirecting.
+ * Fetch a family by slug, retrying transient failures with a small backoff and
+ * returning the family payload on success. Transient failures (thrown fetch,
+ * 5xx) are retried; only a definitive answer (2xx-not-success, 400, 404)
+ * resolves early. Returns { outcome: 'transient', data: null } after
+ * exhausting retries so callers can keep their last-known family (issue #209).
  */
-export async function validateFamilySlugWithRetry(
+export async function loadFamilyBySlugWithRetry(
   slug: string,
   {
     fetchFn = fetch,
     retries = 2,
     backoffMs = 500,
     sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
-  }: SlugValidationOptions = {}
-): Promise<SlugValidationOutcome> {
+    authToken = null,
+  }: FamilyLoadOptions = {}
+): Promise<{ outcome: SlugValidationOutcome; data: FamilyBySlugData | null }> {
   let outcome: SlugValidationOutcome = 'transient';
+  let data: FamilyBySlugData | null = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) await sleep(backoffMs * attempt);
     try {
-      const response = await fetchFn(`/api/family/by-slug/${encodeURIComponent(slug)}`);
+      const url = `/api/family/by-slug/${encodeURIComponent(slug)}`;
+      const response = authToken
+        ? await fetchFn(url, { headers: { Authorization: `Bearer ${authToken}` } })
+        : await fetchFn(url);
       let body: { success?: boolean; data?: unknown } | null = null;
       try {
         body = await response.json();
@@ -150,12 +193,26 @@ export async function validateFamilySlugWithRetry(
         body = null;
       }
       outcome = classifySlugValidationResponse(response.status, body);
+      data = outcome === 'valid' && body && body.data ? (body.data as FamilyBySlugData) : null;
     } catch {
       outcome = 'transient';
+      data = null;
     }
-    if (outcome !== 'transient') return outcome;
+    if (outcome !== 'transient') return { outcome, data };
   }
-  return outcome;
+  return { outcome, data };
+}
+
+/**
+ * Validate a family slug, retrying transient failures with a small backoff.
+ * Returns 'transient' only after exhausting retries — callers should stay on
+ * the current page in that case rather than redirecting.
+ */
+export async function validateFamilySlugWithRetry(
+  slug: string,
+  options: SlugValidationOptions = {}
+): Promise<SlugValidationOutcome> {
+  return (await loadFamilyBySlugWithRetry(slug, options)).outcome;
 }
 
 // Single in-flight refresh shared by every caller (the layout's expiry check

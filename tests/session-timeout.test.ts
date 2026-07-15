@@ -8,6 +8,8 @@ import {
   logoutDestination,
   classifySlugValidationResponse,
   validateFamilySlugWithRetry,
+  loadFamilyBySlugWithRetry,
+  familyStateRedirect,
   refreshAuthToken,
   __resetRefreshStateForTests,
 } from '@/src/utils/session-timeout';
@@ -281,6 +283,84 @@ describe('validateFamilySlugWithRetry', () => {
     const fetchFn = vi.fn(async () => jsonResponse(200, { success: true, data: { id: '1' } }));
     await validateFamilySlugWithRetry('smith family', { fetchFn, sleep: noSleep });
     expect(fetchFn).toHaveBeenCalledWith('/api/family/by-slug/smith%20family');
+  });
+});
+
+describe('loadFamilyBySlugWithRetry', () => {
+  const familyBody = { success: true, data: { id: 'f1', name: 'Smith', slug: 'smith-family', isActive: true } };
+  const noSleep = () => Promise.resolve();
+
+  it('returns valid + the family data on a 200 success', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(familyBody), { status: 200 })
+    );
+    const result = await loadFamilyBySlugWithRetry('smith-family', { fetchFn: fetchFn as any, sleep: noSleep });
+    expect(result.outcome).toBe('valid');
+    expect(result.data).toEqual(familyBody.data);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns not-found (no data) on a definitive 404', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 404 }));
+    const result = await loadFamilyBySlugWithRetry('nope', { fetchFn: fetchFn as any, sleep: noSleep });
+    expect(result.outcome).toBe('not-found');
+    expect(result.data).toBeNull();
+  });
+
+  it('retries transient failures then succeeds', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValue(new Response(JSON.stringify(familyBody), { status: 200 }));
+    const result = await loadFamilyBySlugWithRetry('smith-family', { fetchFn: fetchFn as any, sleep: noSleep });
+    expect(result.outcome).toBe('valid');
+    expect(result.data).toEqual(familyBody.data);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns transient with no data after exhausting retries', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response('', { status: 503 }));
+    const result = await loadFamilyBySlugWithRetry('smith-family', {
+      fetchFn: fetchFn as any,
+      retries: 2,
+      sleep: noSleep,
+    });
+    expect(result.outcome).toBe('transient');
+    expect(result.data).toBeNull();
+    expect(fetchFn).toHaveBeenCalledTimes(3); // initial + 2 retries
+  });
+
+  it('sends the Authorization header when a token is provided', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response(JSON.stringify(familyBody), { status: 200 }));
+    await loadFamilyBySlugWithRetry('smith-family', { fetchFn: fetchFn as any, sleep: noSleep, authToken: 'tok' });
+    const [, init] = fetchFn.mock.calls[0];
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer tok');
+  });
+});
+
+describe('familyStateRedirect', () => {
+  const base = { slugValidated: true, familyLoading: false, isSysAdmin: false };
+
+  it('redirects when the loaded family is inactive', () => {
+    expect(familyStateRedirect({ ...base, familyIsActive: false })).toBe('family-inactive');
+  });
+
+  it('does NOT redirect when the family is absent (transient load failure)', () => {
+    // This is the #209 follow-up fix: a null family must never bounce to '/'.
+    expect(familyStateRedirect({ ...base, familyIsActive: null })).toBeNull();
+  });
+
+  it('does not redirect for an active family', () => {
+    expect(familyStateRedirect({ ...base, familyIsActive: true })).toBeNull();
+  });
+
+  it('waits until the slug is validated and the family has finished loading', () => {
+    expect(familyStateRedirect({ ...base, slugValidated: false, familyIsActive: false })).toBeNull();
+    expect(familyStateRedirect({ ...base, familyLoading: true, familyIsActive: false })).toBeNull();
+  });
+
+  it('exempts system admins (they can view any family)', () => {
+    expect(familyStateRedirect({ ...base, isSysAdmin: true, familyIsActive: false })).toBeNull();
   });
 });
 

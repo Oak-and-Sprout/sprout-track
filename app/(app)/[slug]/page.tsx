@@ -8,7 +8,7 @@ import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { FamilyResponse } from '@/app/api/types';
-import { validateFamilySlugWithRetry } from '@/src/utils/session-timeout';
+import { familyStateRedirect, validateFamilySlugWithRetry } from '@/src/utils/session-timeout';
 
 function FamilySlugPageContent() {
   const router = useRouter();
@@ -147,34 +147,34 @@ function FamilySlugPageContent() {
     checkAuth();
   }, [slugValidated]); // Only depend on slugValidated to prevent loops
 
-  // Check if family is inactive and redirect to root
+  // Redirect home only for a definitively-inactive family. A missing family is
+  // NOT treated as "gone" here — that path bounced valid families to the
+  // marketing homepage on resumed PWAs (issue #209 follow-up). Slug-not-found
+  // is handled by validateFamilySlugWithRetry above.
   useEffect(() => {
-    // Only check after slug is validated and family context has finished loading
     if (!slugValidated || familyLoading) return;
 
-    // Don't redirect system admins - they can access any family
+    let isSysAdmin = false;
     const authToken = localStorage.getItem('authToken');
     if (authToken) {
       try {
         const payload = authToken.split('.')[1];
-        const decodedPayload = JSON.parse(atob(payload));
-        if (decodedPayload.isSysAdmin) {
-          // System admins can access any family, don't redirect
-          return;
-        }
+        isSysAdmin = JSON.parse(atob(payload)).isSysAdmin || false;
       } catch (error) {
         // Ignore parsing errors
       }
     }
 
-    if (family && family.isActive === false) {
-      // Family exists but is inactive - redirect to root
-      router.push('/?src=family-inactive');
-    } else if (!family && familySlug) {
-      // Family not found for the given slug - redirect to root
-      router.push('/?src=family-missing');
+    const redirect = familyStateRedirect({
+      slugValidated,
+      familyLoading,
+      isSysAdmin,
+      familyIsActive: family ? family.isActive : null,
+    });
+    if (redirect) {
+      router.push(`/?src=${redirect}`);
     }
-  }, [family, familyLoading, familySlug, router, slugValidated]);
+  }, [family, familyLoading, router, slugValidated]);
 
   // Handle successful authentication
   const handleUnlock = (caretakerId?: string) => {

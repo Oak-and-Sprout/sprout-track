@@ -3,7 +3,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useDeployment } from '../../app/context/deployment';
-import { isRootSlugPath, refreshAuthToken, should401AttemptRefresh } from '@/src/utils/session-timeout';
+import {
+  isRootSlugPath,
+  loadFamilyBySlugWithRetry,
+  refreshAuthToken,
+  should401AttemptRefresh,
+} from '@/src/utils/session-timeout';
 
 interface Family {
   id: string;
@@ -80,39 +85,22 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
 
         // For system administrators, we need to load family by slug since they don't have a fixed familyId
         // For regular users, this also works as expected
-        let response: Response;
-        try {
-          response = await fetch(`/api/family/by-slug/${slug}`, {
-            headers: authToken ? {
-              'Authorization': `Bearer ${authToken}`
-            } : {}
-          });
-        } catch (fetchError) {
-          // Network error or fetch failed - this is expected on login page
-          // Don't set error state, just stop loading
-          setLoading(false);
-          return;
-        }
-        
-        if (!response.ok) {
-          // If response is not OK, don't throw - just stop loading
-          // This is expected when user is not authenticated
-          setLoading(false);
-          return;
-        }
-        
-        const data = await response.json();
-        if (data.success && data.data) {
-          setFamily(data.data);
-          
+        const { outcome, data } = await loadFamilyBySlugWithRetry(slug, { authToken });
+
+        if (outcome === 'valid' && data) {
+          setFamily(data);
+
           // For system administrators, store the family context so APIs can use it
           if (isSysAdmin && typeof window !== 'undefined') {
-            // Store the current family context for the session
-            sessionStorage.setItem('sysadmin-family-context', JSON.stringify(data.data));
+            sessionStorage.setItem('sysadmin-family-context', JSON.stringify(data));
           }
-        } else {
-          setError(data.error || 'Failed to load family data');
+        } else if (outcome === 'not-found') {
+          // Definitive: the slug does not resolve to a family.
+          setError('Failed to load family data');
         }
+        // 'transient': keep the last-known family (initialized from
+        // localStorage) rather than nulling it — a resumed PWA whose family
+        // fetch blips must not be treated as "family gone" (issue #209).
       } catch (err) {
         // Only set error for unexpected errors, not for network/fetch failures
         if (err instanceof Error && err.name !== 'TypeError') {
