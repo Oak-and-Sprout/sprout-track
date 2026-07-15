@@ -33,6 +33,15 @@ describe('normalizeFoodName / foodNameKey (parity with foodLogUtils)', () => {
   it('keys case-insensitively', () => {
     expect(foodNameKey(' Sweet  POTATO ')).toBe('sweet potato');
   });
+
+  it('strips leading/trailing punctuation junk, keeping interior punctuation', () => {
+    expect(normalizeFoodName('. carrots')).toBe('carrots');
+    expect(normalizeFoodName('"Peas",')).toBe('Peas');
+    expect(normalizeFoodName('mac & cheese')).toBe('mac & cheese');
+    expect(normalizeFoodName('banana-bread')).toBe('banana-bread');
+    expect(foodNameKey('. Carrots')).toBe(foodNameKey('carrots'));
+    expect(normalizeFoodName('...')).toBe('');
+  });
 });
 
 describe('resolveCatalogFoodName', () => {

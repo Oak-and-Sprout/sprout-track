@@ -3,6 +3,8 @@ import {
   normalizeFoodName,
   foodNameKey,
   isDuplicateFoodName,
+  getFoodDuplicateSuggestions,
+  validateFoodMerge,
   isValidEnjoyment,
   isValidAllergenType,
   computeFoodProgress,
@@ -42,6 +44,29 @@ describe('normalizeFoodName', () => {
   it('preserves casing (display name is stored as entered)', () => {
     expect(normalizeFoodName('Sweet Potato')).toBe('Sweet Potato');
   });
+
+  it('strips leading/trailing punctuation junk (conversion artifacts like ". carrots")', () => {
+    expect(normalizeFoodName('. carrots')).toBe('carrots');
+    expect(normalizeFoodName('carrots.')).toBe('carrots');
+    expect(normalizeFoodName(',, peas ,')).toBe('peas');
+    expect(normalizeFoodName('- rice -')).toBe('rice');
+    expect(normalizeFoodName('"avocado"')).toBe('avocado');
+    expect(normalizeFoodName('“avocado”')).toBe('avocado');
+    expect(normalizeFoodName("'egg'")).toBe('egg');
+    expect(normalizeFoodName('.- " banana . ')).toBe('banana');
+  });
+
+  it('keeps interior punctuation intact', () => {
+    expect(normalizeFoodName('mac & cheese')).toBe('mac & cheese');
+    expect(normalizeFoodName('banana-bread')).toBe('banana-bread');
+    expect(normalizeFoodName("shepherd's pie")).toBe("shepherd's pie");
+    expect(normalizeFoodName('rice, beans & corn')).toBe('rice, beans & corn');
+  });
+
+  it('returns an empty string for punctuation-only input', () => {
+    expect(normalizeFoodName('...')).toBe('');
+    expect(normalizeFoodName(' -,"\' ')).toBe('');
+  });
 });
 
 describe('foodNameKey / isDuplicateFoodName', () => {
@@ -62,6 +87,72 @@ describe('foodNameKey / isDuplicateFoodName', () => {
 
   it('handles an empty catalog', () => {
     expect(isDuplicateFoodName('Banana', [])).toBe(false);
+  });
+
+  it('detects duplicates across punctuation junk', () => {
+    expect(foodNameKey('. Carrots')).toBe(foodNameKey('carrots'));
+    expect(isDuplicateFoodName('. carrots', ['Carrots'])).toBe(true);
+  });
+});
+
+describe('getFoodDuplicateSuggestions', () => {
+  const food = (id: string, name: string, count: number) => ({ id, name, count });
+
+  it('returns no suggestions when all names are distinct', () => {
+    expect(getFoodDuplicateSuggestions([food('a', 'Carrots', 3), food('b', 'Peas', 1)])).toEqual([]);
+    expect(getFoodDuplicateSuggestions([])).toEqual([]);
+  });
+
+  it('suggests merging into the most-used food in a normalized-name group', () => {
+    const suggestions = getFoodDuplicateSuggestions([
+      food('a', '. carrots', 1),
+      food('b', 'Carrots', 5),
+      food('c', 'Peas', 2),
+    ]);
+    expect(suggestions).toEqual([{ id: 'a', mergeIntoId: 'b' }]);
+  });
+
+  it('breaks count ties by name ascending', () => {
+    const suggestions = getFoodDuplicateSuggestions([
+      food('a', 'carrots.', 2),
+      food('b', 'Carrots', 2),
+    ]);
+    expect(suggestions).toEqual([{ id: 'a', mergeIntoId: 'b' }]);
+  });
+
+  it('flags every non-canonical member of a group', () => {
+    const suggestions = getFoodDuplicateSuggestions([
+      food('a', '. carrots', 0),
+      food('b', 'Carrots', 5),
+      food('c', ' CARROTS ', 1),
+    ]);
+    expect(suggestions).toEqual([
+      { id: 'a', mergeIntoId: 'b' },
+      { id: 'c', mergeIntoId: 'b' },
+    ]);
+  });
+
+  it('ignores foods whose names normalize to empty', () => {
+    expect(getFoodDuplicateSuggestions([food('a', '...', 0), food('b', '-', 0)])).toEqual([]);
+  });
+});
+
+describe('validateFoodMerge', () => {
+  it('accepts two distinct food ids', () => {
+    expect(validateFoodMerge('food-1', 'food-2'))
+      .toEqual({ valid: true, sourceFoodId: 'food-1', targetFoodId: 'food-2' });
+  });
+
+  it('rejects missing or non-string ids', () => {
+    expect(validateFoodMerge('', 'food-2')).toEqual({ valid: false, error: 'A source food is required' });
+    expect(validateFoodMerge(undefined, 'food-2')).toEqual({ valid: false, error: 'A source food is required' });
+    expect(validateFoodMerge('food-1', '')).toEqual({ valid: false, error: 'A target food is required' });
+    expect(validateFoodMerge('food-1', null)).toEqual({ valid: false, error: 'A target food is required' });
+  });
+
+  it('rejects merging a food into itself', () => {
+    expect(validateFoodMerge('food-1', 'food-1'))
+      .toEqual({ valid: false, error: 'A food cannot be merged into itself' });
   });
 });
 

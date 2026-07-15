@@ -10,8 +10,10 @@ import { normalizeFoodName, foodNameKey } from '@/src/utils/foodLogUtils';
  * Format a Food catalog row into a FoodResponse
  */
 function formatFood(food: any): FoodResponse {
+  const { _count, ...rest } = food;
   return {
-    ...food,
+    ...rest,
+    ...(_count !== undefined && { foodLogCount: _count.foodLogs }),
     createdAt: formatForResponse(food.createdAt) || '',
     updatedAt: formatForResponse(food.updatedAt) || '',
     deletedAt: formatForResponse(food.deletedAt),
@@ -219,6 +221,9 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         familyId: userFamilyId,
         deletedAt: null,
       },
+      include: {
+        _count: { select: { foodLogs: { where: { deletedAt: null } } } },
+      },
       orderBy: { name: 'asc' },
     });
 
@@ -279,6 +284,17 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
           error: 'Food not found or access denied',
         },
         { status: 404 }
+      );
+    }
+
+    // Foods with logs must be merged, not deleted, so history keeps a live food
+    const inUse = await prisma.foodLog.count({
+      where: { foodId: id, deletedAt: null },
+    });
+    if (inUse > 0) {
+      return NextResponse.json<ApiResponse<void>>(
+        { success: false, error: 'This food is still in use. Merge it into another food instead.' },
+        { status: 400 }
       );
     }
 

@@ -18,9 +18,15 @@
 /** Name used for solids feeds with no food text and no reaction cause. */
 const GENERIC_FOOD_NAME = 'Solids';
 
-/** Trim and collapse internal whitespace (mirrors src/utils/foodLogUtils normalizeFoodName). */
+/**
+ * Trim, collapse internal whitespace, and strip leading/trailing punctuation
+ * junk — periods, commas, hyphens, quotes — so '. carrots' matches 'carrots'
+ * (mirrors src/utils/foodLogUtils normalizeFoodName; keep them in sync).
+ */
 function normalizeFoodName(name) {
-  return String(name || '').replace(/\s+/g, ' ').trim();
+  return String(name || '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s.,\-'"‘’“”]+|[\s.,\-'"‘’“”]+$/g, '');
 }
 
 /** Case-insensitive catalog matching key (mirrors src/utils/foodLogUtils foodNameKey). */

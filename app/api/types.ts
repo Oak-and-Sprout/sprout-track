@@ -446,7 +446,15 @@ export type FoodResponse = Omit<Food, 'createdAt' | 'updatedAt' | 'deletedAt'> &
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  /** Non-deleted food logs pointing at this food (list responses only). */
+  foodLogCount?: number;
 };
+
+/** Result of POST /api/food/merge (Settings > Foods). */
+export interface FoodMergeResult {
+  /** FoodLog rows re-pointed from the source food to the target. */
+  movedCount: number;
+}
 
 export interface FoodCreate {
   name: string;

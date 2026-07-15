@@ -109,11 +109,21 @@ export interface AllergenEntry {
 }
 
 /**
- * Trim and collapse internal whitespace in a food name.
- * Returns '' for empty or whitespace-only input (callers should reject that).
+ * Leading/trailing junk stripped by normalizeFoodName: whitespace plus
+ * periods, commas, hyphens, and straight/curly quotes (e.g. the ". carrots"
+ * artifacts the SOLIDS conversion produced). Interior punctuation is kept so
+ * names like "mac & cheese" or "banana-bread" survive.
+ * Mirrored in scripts/convert-solids-feeds-core.js — keep them in sync.
+ */
+const EDGE_JUNK = /^[\s.,\-'"‘’“”]+|[\s.,\-'"‘’“”]+$/g;
+
+/**
+ * Trim, collapse internal whitespace, and strip leading/trailing punctuation
+ * junk in a food name ('. carrots' → 'carrots').
+ * Returns '' for empty or junk-only input (callers should reject that).
  */
 export function normalizeFoodName(name: string): string {
-  return name.replace(/\s+/g, ' ').trim();
+  return name.replace(/\s+/g, ' ').replace(EDGE_JUNK, '');
 }
 
 /** Case-insensitive comparison key for catalog duplicate detection. */
@@ -141,6 +151,70 @@ export function buildLogEntryLink(slug: string, time: Date | string, babyId?: st
 export function isDuplicateFoodName(name: string, existingNames: string[]): boolean {
   const key = foodNameKey(name);
   return key !== '' && existingNames.some(existing => foodNameKey(existing) === key);
+}
+
+/** Minimal shape of a catalog food (with usage count) the manager helpers need. */
+export interface FoodSummaryLike {
+  id: string;
+  name: string;
+  /** Non-deleted food logs pointing at this food. */
+  count: number;
+}
+
+export interface FoodDuplicateSuggestion {
+  /** The non-canonical duplicate. */
+  id: string;
+  /** The canonical food it should merge into. */
+  mergeIntoId: string;
+}
+
+/**
+ * Groups foods whose names match after normalization (case-insensitive,
+ * punctuation junk stripped); every non-canonical member of a group gets a
+ * one-click merge suggestion. Canonical = highest count (ties broken by
+ * name ascending, then id ascending for stability).
+ */
+export function getFoodDuplicateSuggestions(foods: FoodSummaryLike[]): FoodDuplicateSuggestion[] {
+  const groups = new Map<string, FoodSummaryLike[]>();
+  for (const food of foods) {
+    const key = foodNameKey(food.name);
+    if (key === '') continue;
+    const group = groups.get(key);
+    if (group) group.push(food);
+    else groups.set(key, [food]);
+  }
+
+  const suggestions: FoodDuplicateSuggestion[] = [];
+  for (const group of Array.from(groups.values())) {
+    if (group.length < 2) continue;
+    const canonical = [...group].sort(
+      (a, b) => b.count - a.count || a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+    )[0];
+    for (const food of group) {
+      if (food.id !== canonical.id) {
+        suggestions.push({ id: food.id, mergeIntoId: canonical.id });
+      }
+    }
+  }
+  return suggestions;
+}
+
+export type FoodMergeValidation =
+  | { valid: true; sourceFoodId: string; targetFoodId: string }
+  | { valid: false; error: string };
+
+/** Validates the body of a merge request (presence + source ≠ target). */
+export function validateFoodMerge(sourceFoodId: unknown, targetFoodId: unknown): FoodMergeValidation {
+  if (typeof sourceFoodId !== 'string' || sourceFoodId === '') {
+    return { valid: false, error: 'A source food is required' };
+  }
+  if (typeof targetFoodId !== 'string' || targetFoodId === '') {
+    return { valid: false, error: 'A target food is required' };
+  }
+  if (sourceFoodId === targetFoodId) {
+    return { valid: false, error: 'A food cannot be merged into itself' };
+  }
+  return { valid: true, sourceFoodId, targetFoodId };
 }
 
 /** Type guard for FoodLog.enjoyment values. */
