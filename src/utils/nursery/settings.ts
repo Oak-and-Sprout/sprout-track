@@ -8,7 +8,7 @@ export interface NurserySettings {
   scene: NurseryScene; layout: NurseryLayout;
   hue: number; dim: number; sat: number; trans: number;
   iconShape: 'circle' | 'square'; iconColor: string | null;
-  acts: { feed: boolean; pump: boolean; diaper: boolean; sleep: boolean };
+  acts: { feed: boolean; pump: boolean; diaper: boolean; sleep: boolean; food: boolean };
   ambient: {
     pattern: string; auroraRange: number; waveMotion: number; rock: number;
     bubbles: { count: number; min: number; max: number };
@@ -112,7 +112,7 @@ export const NURSERY_DEFAULTS: NurserySettings = {
   trans: 58,
   iconShape: 'square',
   iconColor: null,
-  acts: { feed: true, pump: true, diaper: true, sleep: true },
+  acts: { feed: true, pump: true, diaper: true, sleep: true, food: false },
   ambient: {
     pattern: 'aurora',
     auroraRange: 50,
@@ -252,6 +252,7 @@ function migrateLegacy(raw: Record<string, unknown>): NurserySettings {
     pump: includesTile('pump'),
     diaper: includesTile('diaper'),
     sleep: includesTile('sleep'),
+    food: false, // the food tile postdates legacy settings
   };
   return base;
 }
@@ -298,6 +299,7 @@ export function normalizeNurserySettings(raw: unknown): NurserySettings {
       pump: boolOrDefault(rawActs.pump, NURSERY_DEFAULTS.acts.pump),
       diaper: boolOrDefault(rawActs.diaper, NURSERY_DEFAULTS.acts.diaper),
       sleep: boolOrDefault(rawActs.sleep, NURSERY_DEFAULTS.acts.sleep),
+      food: boolOrDefault(rawActs.food, NURSERY_DEFAULTS.acts.food),
     },
     ambient: {
       pattern: normalizeAmbientPattern(rawAmbient.pattern),
