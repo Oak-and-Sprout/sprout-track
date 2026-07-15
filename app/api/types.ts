@@ -1,4 +1,4 @@
-import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, ActiveActivity, VaccineLog, VaccineDocument } from '@prisma/client';
+import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, ActiveActivity, VaccineLog, VaccineDocument, Food, FoodLog, FoodEnjoyment } from '@prisma/client';
 
 // Family types
 export interface Family {
@@ -435,6 +435,56 @@ export interface VaccineLogCreate {
   doseNumber?: number;
   notes?: string;
   contactIds?: string[];
+}
+
+// Food types (issue #203)
+export type FoodResponse = Omit<Food, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export interface FoodCreate {
+  name: string;
+  commonAllergen?: boolean;
+  notes?: string;
+}
+
+export interface FoodUpdate extends Partial<FoodCreate> {
+  id: string;
+}
+
+// Food log types (issue #203)
+export type FoodLogResponse = Omit<FoodLog, 'time' | 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  time: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  food?: { id: string; name: string; commonAllergen: boolean };
+};
+
+export interface FoodLogCreate {
+  babyId: string;
+  foodId: string;
+  time: string;
+  enjoyment?: FoodEnjoyment | null;
+  hadReaction?: boolean;
+  reactionDescription?: string;
+  notes?: string;
+  feedLogId?: string;
+}
+
+// All-time food-try progress for a baby ("100 foods before 1")
+export interface FoodProgressResponse {
+  uniqueFoodCount: number;
+  totalTries: number;
+  byEnjoyment: Record<FoodEnjoyment, number>;
+  allergens: {
+    foodId: string;
+    foodName: string;
+    commonAllergen: boolean;
+    reactions: { time: string; description: string | null }[];
+  }[];
 }
 
 // Photo types
