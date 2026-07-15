@@ -10,6 +10,8 @@
 - There is now a 100 unique foods tracker so you can track how many foods your little one has had
 - There is a dedicated allergen window in the Baby Info Screen (click on the baby name in the top right) - Here you can add allergens for more than just food (medicine, environment, etc...)
 - Reports have been added to stats and the monthly report card for food eaten and a dedicated allergens section on the report card
+- Solid feed logs are automatically converted to food logs
+- Look for the new food activity in the activity bar!
 
 #### Nursery Mode Updates
 - A dedicated food activity has been added (it's disabled by default - go to the settings page in Nursery mode to enable)
