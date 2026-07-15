@@ -19,7 +19,7 @@ import {
   Baby,
   Syringe,
   Camera,
-  Utensils
+  Apple
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { Button } from '@/src/components/ui/button';
@@ -404,7 +404,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         filter: 'food',
         label: formattedSolidsAmounts || t('Foods'),
         value: feedStats.solidsCount.toString(),
-        icon: <Utensils className="h-full w-full" aria-hidden="true" />,
+        icon: <Apple className="h-full w-full" aria-hidden="true" />,
         bgColor: 'bg-gray-50',
         iconColor: 'text-[#BBD444]', // matches food timeline entries
         borderColor: 'border-gray-500',

@@ -782,7 +782,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       {shouldShowAppUI && (
-        <div className="min-h-screen flex">
+        <div className="h-dvh flex">
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-teal-700 focus:shadow-md"
@@ -805,14 +805,14 @@ function AppContent({ children }: { children: React.ReactNode }) {
               }}
               onLogout={() => handleLogout()}
               isAdmin={isAdmin}
-              className="h-screen sticky top-0"
+              className="h-dvh sticky top-0"
               familySlug={familySlug}
               familyName={family?.name || familyName}
             />
           )}
           
           {/* Main content area */}
-          <div className={`flex flex-col flex-1 min-h-screen ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
+          <div className={`flex flex-col flex-1 h-dvh ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
             <header className="w-full bg-gradient-to-r from-teal-600 to-teal-700 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
               <div className="mx-auto py-2">
                 <div className="flex justify-between items-center h-16"> {/* Fixed height for consistency */}
@@ -883,7 +883,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             {/* Account Expiration Banner - shows for both account users and caretakers */}
             <AccountExpirationBanner isAccountAuth={isAccountAuth} />
             
-            <main id="main-content" className="flex-1 relative z-0">
+            <main id="main-content" className="flex-1 min-h-0 overflow-y-auto relative z-0">
               {children}
             </main>
           </div>
