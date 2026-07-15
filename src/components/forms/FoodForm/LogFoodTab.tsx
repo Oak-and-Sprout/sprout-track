@@ -507,7 +507,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
                 key={value}
                 type="button"
                 variant={enjoyment === value ? 'default' : 'outline'}
-                className="px-1 py-1 h-12 text-2xl leading-none"
+                className="px-1 py-1 h-16 text-5xl leading-none"
                 onClick={() => setEnjoyment(prev => (prev === value ? null : value))}
                 disabled={isSubmitting}
                 aria-pressed={enjoyment === value}
