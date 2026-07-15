@@ -26,7 +26,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 ### Log Food tab
 
 - **Food combobox** over the family catalog (`GET /api/food`). Typing a name that doesn't match an existing food (case-insensitively) creates the catalog entry on save (`POST /api/food`); a duplicate-name race is tolerated by refetching and matching.
-- **Common allergen** checkbox is pre-suggested for new foods via `isLikelyCommonAllergen()` (big-9 keyword match) until the user toggles it. For existing foods it mirrors the catalog flag and is read-only here.
+- **Common allergen** checkbox is user-controlled for new foods, with helper text explaining when to check it (keyword auto-suggestion was removed — it only worked for English food names). For existing foods it mirrors the catalog flag and is read-only here.
 - **Enjoyment** is an optional 5-option segmented picker (Hated / Disliked / Neutral / Liked / Loved); tapping the selected option clears it.
 - **Reaction occurred** switch reveals a description textarea; the description is only sent when the switch is on.
 - **Photos** use the shared `PhotoAttachments` component with `activityType: 'foodLog'` links (only rendered when the deployment has photos enabled).

@@ -5,7 +5,6 @@ import {
   isDuplicateFoodName,
   isValidEnjoyment,
   isValidAllergenType,
-  isLikelyCommonAllergen,
   computeFoodProgress,
   deriveAllergens,
   deriveFeedAllergens,
@@ -79,22 +78,6 @@ describe('isValidEnjoyment', () => {
     expect(isValidEnjoyment(null)).toBe(false);
     expect(isValidEnjoyment(undefined)).toBe(false);
     expect(isValidEnjoyment(3)).toBe(false);
-  });
-});
-
-describe('isLikelyCommonAllergen', () => {
-  it('flags big-9 foods regardless of casing and phrasing', () => {
-    expect(isLikelyCommonAllergen('Peanut Butter')).toBe(true);
-    expect(isLikelyCommonAllergen('scrambled EGG')).toBe(true);
-    expect(isLikelyCommonAllergen('whole   milk')).toBe(true);
-    expect(isLikelyCommonAllergen('Shrimp')).toBe(true);
-    expect(isLikelyCommonAllergen('tahini')).toBe(true);
-  });
-
-  it('does not flag non-allergen foods or empty input', () => {
-    expect(isLikelyCommonAllergen('Banana')).toBe(false);
-    expect(isLikelyCommonAllergen('Sweet Potato')).toBe(false);
-    expect(isLikelyCommonAllergen('')).toBe(false);
   });
 });
 

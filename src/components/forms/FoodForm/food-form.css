@@ -136,3 +136,7 @@ html.dark .food-form-empty-state p {
 html.dark .food-enjoyment-selected {
   background-color: rgba(13, 148, 136, 0.3) !important;
 }
+
+html.dark .food-form-helper-text {
+  color: rgba(255, 255, 255, 0.5) !important;
+}

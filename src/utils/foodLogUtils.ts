@@ -6,8 +6,6 @@
  *
  * Kept free of Prisma/React so they can be unit tested (tests/foodLogUtils.test.ts).
  */
-import { COMMON_ALLERGEN_KEYWORDS } from '@/src/constants/commonAllergens';
-
 /** Valid FoodLog.enjoyment values (mirrors the FoodEnjoyment Prisma enum). */
 export const FOOD_ENJOYMENT_VALUES = ['HATED', 'DISLIKED', 'NEUTRAL', 'LIKED', 'LOVED'] as const;
 
@@ -143,15 +141,6 @@ export function isDuplicateFoodName(name: string, existingNames: string[]): bool
 /** Type guard for FoodLog.enjoyment values. */
 export function isValidEnjoyment(value: unknown): value is FoodEnjoymentValue {
   return typeof value === 'string' && (FOOD_ENJOYMENT_VALUES as readonly string[]).includes(value);
-}
-
-/**
- * True when a food name contains a big-9 common-allergen keyword,
- * used to pre-suggest the catalog `commonAllergen` flag.
- */
-export function isLikelyCommonAllergen(name: string): boolean {
-  const key = foodNameKey(name);
-  return key !== '' && COMMON_ALLERGEN_KEYWORDS.some(keyword => key.includes(keyword));
 }
 
 const toIso = (time: Date | string): string => new Date(time).toISOString();

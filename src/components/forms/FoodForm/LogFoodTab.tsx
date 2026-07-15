@@ -20,7 +20,6 @@ import { useLocalization } from '@/src/context/localization';
 import {
   normalizeFoodName,
   foodNameKey,
-  isLikelyCommonAllergen,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
   FOOD_ENJOYMENT_ICON_SRC,
@@ -35,7 +34,7 @@ const ENJOYMENT_DISPLAY_ORDER = [...FOOD_ENJOYMENT_VALUES].reverse();
  *
  * Tab for logging a new food try or editing an existing food log entry.
  * Includes a food combobox over the family catalog (with inline "add new
- * food" and common-allergen pre-suggestion), enjoyment picker, reaction
+ * food" and common-allergen checkbox), enjoyment picker, reaction
  * toggle with description, notes, and photo attachments.
  */
 const LogFoodTab: React.FC<LogFoodTabProps> = ({
@@ -157,15 +156,15 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     onFormStateChange({ isSubmitting, canSubmit: !!normalizeFoodName(foodName) });
   }, [isSubmitting, foodName, onFormStateChange]);
 
-  // Pre-suggest the common-allergen flag for new foods (big-9 keyword match)
-  // until the user explicitly toggles the checkbox
+  // Catalog foods carry their stored flag; new foods stay user-controlled
+  // (keyword auto-suggestion was removed — it only worked for English names)
   useEffect(() => {
     if (matchedFood) {
       setCommonAllergen(matchedFood.commonAllergen);
     } else if (!allergenTouched) {
-      setCommonAllergen(isLikelyCommonAllergen(foodName));
+      setCommonAllergen(false);
     }
-  }, [foodName, matchedFood, allergenTouched]);
+  }, [matchedFood, allergenTouched]);
 
   const handleFoodSelect = (food: FoodResponse) => {
     setFoodName(food.name);
@@ -491,17 +490,22 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         </div>
 
         {/* Common Allergen */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={allergenId}
-            checked={commonAllergen}
-            onCheckedChange={(checked: boolean) => {
-              setAllergenTouched(true);
-              setCommonAllergen(checked);
-            }}
-            disabled={isSubmitting || !!matchedFood}
-          />
-          <Label className="form-label !mb-0" htmlFor={allergenId}>{t('Common allergen')}</Label>
+        <div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={allergenId}
+              checked={commonAllergen}
+              onCheckedChange={(checked: boolean) => {
+                setAllergenTouched(true);
+                setCommonAllergen(checked);
+              }}
+              disabled={isSubmitting || !!matchedFood}
+            />
+            <Label className="form-label !mb-0" htmlFor={allergenId}>{t('Common allergen')}</Label>
+          </div>
+          <p className="text-xs text-gray-500 mt-1 food-form-helper-text">
+            {t('Check this box if the food is a known common allergen (e.g. peanut, egg, milk, tree nuts, soy, wheat, fish, shellfish, sesame).')}
+          </p>
         </div>
 
         {/* Enjoyment Picker */}
