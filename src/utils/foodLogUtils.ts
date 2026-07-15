@@ -28,6 +28,15 @@ export const FOOD_ENJOYMENT_LABELS: Record<FoodEnjoymentValue, string> = {
   LOVED: 'Loved',
 };
 
+/** Emoji shown on the enjoyment picker buttons; labels remain the accessible names. */
+export const FOOD_ENJOYMENT_EMOJI: Record<FoodEnjoymentValue, string> = {
+  HATED: '☹️',
+  DISLIKED: '🫤',
+  NEUTRAL: '😐',
+  LIKED: '😃',
+  LOVED: '😁',
+};
+
 /** Minimal shape of a FoodLog row the helpers need. */
 export interface FoodLogLike {
   foodId: string;

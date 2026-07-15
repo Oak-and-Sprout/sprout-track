@@ -23,8 +23,12 @@ import {
   isLikelyCommonAllergen,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
+  FOOD_ENJOYMENT_EMOJI,
   FoodEnjoymentValue,
 } from '@/src/utils/foodLogUtils';
+
+// Picker shows happiest → saddest, left to right
+const ENJOYMENT_DISPLAY_ORDER = [...FOOD_ENJOYMENT_VALUES].reverse();
 
 /**
  * LogFoodTab Component
@@ -498,17 +502,19 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         <div>
           <Label className="form-label">{t('Enjoyment')}</Label>
           <div className="grid grid-cols-5 gap-1" role="group" aria-label={t('Enjoyment')}>
-            {FOOD_ENJOYMENT_VALUES.map((value) => (
+            {ENJOYMENT_DISPLAY_ORDER.map((value) => (
               <Button
                 key={value}
                 type="button"
                 variant={enjoyment === value ? 'default' : 'outline'}
-                className="px-1 py-1 h-auto text-xs"
+                className="px-1 py-1 h-12 text-2xl leading-none"
                 onClick={() => setEnjoyment(prev => (prev === value ? null : value))}
                 disabled={isSubmitting}
                 aria-pressed={enjoyment === value}
+                aria-label={t(FOOD_ENJOYMENT_LABELS[value])}
+                title={t(FOOD_ENJOYMENT_LABELS[value])}
               >
-                {t(FOOD_ENJOYMENT_LABELS[value])}
+                <span aria-hidden="true">{FOOD_ENJOYMENT_EMOJI[value]}</span>
               </Button>
             ))}
           </div>
