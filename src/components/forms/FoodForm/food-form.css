@@ -63,8 +63,8 @@ html.dark .food-progress-total-tries {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
-html.dark .food-progress-bar-track {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+html.dark .food-progress-apple-outline {
+  color: #4b5563 !important; /* gray-600 — visible outline on dark surfaces */
 }
 
 /* Enjoyment breakdown cells */

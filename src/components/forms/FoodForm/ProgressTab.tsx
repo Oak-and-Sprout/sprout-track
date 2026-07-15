@@ -105,17 +105,23 @@ const ProgressTab: React.FC<ProgressTabProps> = ({
             </div>
             <p className="mt-1 text-sm text-gray-600 food-progress-hero-label">{t('Unique foods tried')}</p>
             <div
-              className="mt-3 h-3 w-full rounded-full bg-gray-100 overflow-hidden food-progress-bar-track"
+              className="mt-3 flex justify-center"
               role="progressbar"
               aria-valuenow={uniqueFoodCount}
               aria-valuemin={0}
               aria-valuemax={UNIQUE_FOOD_GOAL}
               aria-label={t('Unique foods tried')}
             >
-              <div
-                className="h-full rounded-full bg-[#84CC16] transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
-              />
+              {/* Apple fills bottom-up with progress toward the 100-food goal */}
+              <div className="relative h-16 w-16">
+                <Apple className="h-16 w-16 text-gray-300 food-progress-apple-outline" aria-hidden="true" />
+                <div
+                  className="absolute inset-0 overflow-hidden transition-all duration-500"
+                  style={{ clipPath: `inset(${100 - progressPercent}% 0 0 0)` }}
+                >
+                  <Apple className="h-16 w-16 text-[#84CC16]" fill="#84CC16" aria-hidden="true" />
+                </div>
+              </div>
             </div>
             {progress && progress.totalTries > 0 && (
               <p className="mt-2 text-xs text-gray-500 food-progress-total-tries">
