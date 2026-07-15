@@ -154,7 +154,9 @@
 .nursery-abtn:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .08)); }
 .nursery-abtn:active { transform: scale(.96); }
 .nursery-abtn.wide { flex: none; width: 100%; }
-.nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
+/* Wrapped picker buttons (food catalog, sleep locations): long names wrap inside the
+   button instead of forcing a nowrap button wider than the card/viewport. */
+.nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; max-width: 100%; white-space: normal; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
 /* Long picker lists (food catalog, sleep locations) scroll inside the expanded card,
    fading out at the top/bottom edges; the scrollbar track is invisible. */
 .nursery-card.question .nursery-card-actions.wrap {
@@ -173,7 +175,8 @@
 
 /* Search field shown above long pickers; a cancel button sits beside it. */
 .nursery-search-row { display: flex; gap: clamp(8px, .8vw, 12px); margin-bottom: clamp(8px, .8vw, 12px); }
-.nursery-search-input { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(10px, 1vw, 14px) clamp(12px, 1.2vw, 16px); font-size: clamp(14px, 1.3vw, 18px); }
+/* 16px font floor — anything smaller makes iOS Safari zoom the page when the field gains focus. */
+.nursery-search-input { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(10px, 1vw, 14px) clamp(12px, 1.2vw, 16px); font-size: clamp(16px, 1.3vw, 18px); }
 .nursery-search-input::placeholder { color: rgba(255,255,255,.45); }
 .nursery-search-input:focus { outline: none; border-color: rgba(255,255,255,.4); }
 .nursery-search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
@@ -280,6 +283,9 @@
   .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
   .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 340px; }
   .nursery-card { padding: 17px; border-radius: 18px; }
+  /* Expanded question cards size to their content on phones (no desktop min-height)
+     and drop the 1.5x button-text scale so the picker fits the narrow viewport. */
+  .nursery-card.question { min-height: 0; --fs-scale: 1.15; }
   /* vh-capped (not just vw) so the clock actually shrinks on short mobile viewports
      instead of eating space the activity cards need. */
   .nursery-clock .time { font-size: clamp(40px, min(15vw, 8vh), 84px); }
