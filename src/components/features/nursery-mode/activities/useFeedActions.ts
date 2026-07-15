@@ -5,6 +5,8 @@ import { useLocalization } from '@/src/context/localization';
 import { ActiveBreastFeedResponse } from '@/app/api/types';
 import { formatFeedNote, FeedNoteLabels } from '@/src/utils/nursery/activityDetail';
 import { ActivityHookArgs, ActivityView, ActionButton, formatMMSS, undoDeleteLog } from './types';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
+import type { BottleUnit } from '@/src/utils/defaultBottleUnit';
 
 type FeedPhase = 'idle' | 'feeding' | 'paused';
 
@@ -16,11 +18,23 @@ type FeedPhase = 'idle' | 'feeding' | 'paused';
 export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: ActivityHookArgs): ActivityView {
   const { t } = useLocalization();
   const [avgBottleAmount, setAvgBottleAmount] = useState<number | null>(null);
-  const [defaultUnit, setDefaultUnit] = useState('OZ');
+  const [defaultUnit, setDefaultUnit] = useState<BottleUnit>(() => readCachedDefaultBottleUnit());
   const [submitting, setSubmitting] = useState(false);
   const [phase, setPhase] = useState<FeedPhase>('idle');
   const [activeFeed, setActiveFeed] = useState<ActiveBreastFeedResponse | null>(null);
   const [currentElapsed, setCurrentElapsed] = useState(0);
+
+  const refreshDefaultUnit = useCallback(async () => {
+    const authToken = localStorage.getItem('authToken');
+    const headers = { Authorization: authToken ? `Bearer ${authToken}` : '' };
+
+    try {
+      const settingsRes = await fetch('/api/settings', { headers, cache: 'no-store' });
+      const settingsData = await settingsRes.json();
+      const unit = cacheDefaultBottleUnit(settingsData.success && settingsData.data?.defaultBottleUnit);
+      if (unit) setDefaultUnit(unit);
+    } catch { /* keep the cached/default unit */ }
+  }, []);
 
   // Fetch bottle defaults
   useEffect(() => {
@@ -28,13 +42,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       const authToken = localStorage.getItem('authToken');
       const headers = { Authorization: authToken ? `Bearer ${authToken}` : '' };
 
-      try {
-        const settingsRes = await fetch('/api/settings', { headers });
-        const settingsData = await settingsRes.json();
-        if (settingsData.success && settingsData.data?.defaultBottleUnit) {
-          setDefaultUnit(settingsData.data.defaultBottleUnit);
-        }
-      } catch { /* use default */ }
+      await refreshDefaultUnit();
 
       try {
         const feedRes = await fetch(`/api/feed-log?babyId=${babyId}&type=BOTTLE`, { headers });
@@ -53,7 +61,22 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
     };
 
     if (babyId) fetchDefaults();
-  }, [babyId]);
+  }, [babyId, refreshDefaultUnit]);
+
+  // Android can resume a warm PWA without remounting its React tree. Re-read
+  // the server preference when the app becomes active again.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshDefaultUnit();
+    };
+
+    window.addEventListener('focus', refreshDefaultUnit);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', refreshDefaultUnit);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshDefaultUnit]);
 
   // Check for existing active breastfeed session on mount / baby change
   useEffect(() => {
