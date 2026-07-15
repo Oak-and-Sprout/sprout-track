@@ -121,7 +121,10 @@
   scrollbar-width: none;
 }
 .nursery-actscroll::-webkit-scrollbar { display: none; }
-.nursery-clockwrap { text-align: center; min-height: 0; }
+/* Never shrinks: the activity scroller below absorbs all vertical overflow, and a
+   shrunken clock block lets the date paint into the scroller so cards ride over it
+   and the top fade lands above the date instead of below. */
+.nursery-clockwrap { text-align: center; flex-shrink: 0; }
 .nursery-clock { display: flex; align-items: baseline; justify-content: center; }
 /* vh-capped so a short viewport shrinks the clock rather than pushing the activity cards off screen */
 .nursery-clock .time { font-weight: 400; font-size: clamp(48px, min(11.5vw, 12vh), 168px); line-height: .9; letter-spacing: -.01em; text-shadow: 0 2px 40px rgba(0,0,0,.25); }
