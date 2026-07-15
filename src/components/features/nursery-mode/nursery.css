@@ -92,7 +92,11 @@
 .nursery-topbar { display: flex; justify-content: flex-end; align-items: center; gap: clamp(20px, 2.5vw, 40px); }
 .nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
 .nursery-ghost:hover { color: #fff; }
-.nursery-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(18px, 3.4vh, 52px); width: 100%; min-height: 0; }
+/* overflow-y lets the foreground scroll (invisible scrollbar) when an expanded card is
+   taller than the viewport; 'safe center' keeps the top reachable instead of clipping it. */
+.nursery-fg { overflow-y: auto; scrollbar-width: none; }
+.nursery-fg::-webkit-scrollbar { display: none; }
+.nursery-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; justify-content: safe center; gap: clamp(18px, 3.4vh, 52px); width: 100%; min-height: 0; }
 .nursery-clockwrap { text-align: center; min-height: 0; }
 .nursery-clock { display: flex; align-items: baseline; justify-content: center; }
 /* vh-capped so a short viewport shrinks the clock rather than pushing the activity cards off screen */
@@ -127,7 +131,45 @@
 .nursery-abtn:active { transform: scale(.96); }
 .nursery-abtn.wide { flex: none; width: 100%; }
 .nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
-.nursery-card.question .nursery-card-actions.wrap { max-height: 42vh; overflow-y: auto; }
+/* Long picker lists (food catalog, sleep locations) scroll inside the expanded card,
+   fading out at the top/bottom edges; the scrollbar track is invisible. */
+.nursery-card.question .nursery-card-actions.wrap {
+  max-height: 42vh;
+  overflow-y: auto;
+  padding-top: 22px;
+  padding-bottom: 22px;
+  mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.28) transparent;
+}
+.nursery-card.question .nursery-card-actions.wrap::-webkit-scrollbar { width: 6px; }
+.nursery-card.question .nursery-card-actions.wrap::-webkit-scrollbar-track { background: transparent; }
+.nursery-card.question .nursery-card-actions.wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 3px; }
+
+/* Search field shown above long pickers; a cancel button sits beside it. */
+.nursery-search-row { display: flex; gap: clamp(8px, .8vw, 12px); margin-bottom: clamp(8px, .8vw, 12px); }
+.nursery-search-input { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(10px, 1vw, 14px) clamp(12px, 1.2vw, 16px); font-size: clamp(14px, 1.3vw, 18px); }
+.nursery-search-input::placeholder { color: rgba(255,255,255,.45); }
+.nursery-search-input:focus { outline: none; border-color: rgba(255,255,255,.4); }
+.nursery-search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* Enjoyment emoji (same Fluent SVGs as the FoodForm picker) render ~2x the text size;
+   the negative margins collapse them back to one line-height so button size is unchanged. */
+.nursery-btn-emoji { display: block; height: 2.4em; width: 2.4em; margin: -0.7em auto; }
+
+/* Big-tile modal button list — scrolls (invisible track) when the dialog is height-capped;
+   .masked adds the same top/bottom fade the cards picker uses. */
+.nursery-modal-list { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.28) transparent; }
+.nursery-modal-list::-webkit-scrollbar { width: 6px; }
+.nursery-modal-list::-webkit-scrollbar-track { background: transparent; }
+.nursery-modal-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 3px; }
+.nursery-modal-list.masked {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  mask-image: linear-gradient(to bottom, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
 
 /* active-session glow — a ring floated off the card, colored to match the icon */
 .nursery-card.active, .nursery-tile.active { position: relative; }

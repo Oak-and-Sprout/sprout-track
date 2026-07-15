@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
 import {
   FOOD_ENJOYMENT_DISPLAY_ORDER,
-  FOOD_ENJOYMENT_EMOJI,
+  FOOD_ENJOYMENT_ICON_SRC,
   FOOD_ENJOYMENT_LABELS,
   FoodEnjoymentValue,
 } from '@/src/utils/foodLogUtils';
-import { sortFoodsByFrequency, formatFoodLogNote, NurseryFoodItem } from '@/src/utils/nursery/foodActivity';
+import { sortFoodsByName, filterFoodsByQuery, formatFoodLogNote, NurseryFoodItem } from '@/src/utils/nursery/foodActivity';
 import { ActivityHookArgs, ActivityView, ActionButton, undoDeleteLog } from './types';
 
 type FoodPhase = 'idle' | 'picking' | 'enjoyment';
@@ -27,6 +27,7 @@ export function useFoodActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   const { t } = useLocalization();
   const [phase, setPhase] = useState<FoodPhase>('idle');
   const [catalog, setCatalog] = useState<NurseryFoodItem[]>([]);
+  const [query, setQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [lastLogged, setLastLogged] = useState<{ id: string; name: string } | null>(null);
 
@@ -46,7 +47,7 @@ export function useFoodActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
-        setCatalog(sortFoodsByFrequency(data.data));
+        setCatalog(sortFoodsByName(data.data));
       }
     } catch { /* keep the current catalog */ }
   }, []);
@@ -71,6 +72,11 @@ export function useFoodActions({ babyId, toUTCString, onLog, onUndoable }: Activ
     setPhase('idle');
     setLastLogged(null);
   }, [babyId]);
+
+  // A stale search query shouldn't greet the next visit to the picker.
+  useEffect(() => {
+    if (phase !== 'picking') setQuery('');
+  }, [phase]);
 
   // The enjoyment prompt is transient — fall back to idle if ignored.
   useEffect(() => {
@@ -146,11 +152,13 @@ export function useFoodActions({ babyId, toUTCString, onLog, onUndoable }: Activ
 
   let statusText: string | null = null;
   let buttons: ActionButton[];
+  let searchPrompt: ActivityView['searchPrompt'] = null;
 
   if (phase === 'picking') {
     statusText = t('Select Food');
+    searchPrompt = { value: query, onChange: setQuery, placeholder: t('Search foods') };
     buttons = [
-      ...catalog.map(food => ({
+      ...filterFoodsByQuery(catalog, query).map(food => ({
         key: food.id,
         label: food.name, // user data, not localized
         onClick: () => submitFood(food),
@@ -158,15 +166,17 @@ export function useFoodActions({ babyId, toUTCString, onLog, onUndoable }: Activ
         // Tiles layout: keep the modal open so the enjoyment prompt that follows is visible.
         keepOpen: true,
       })),
-      { key: 'cancel', label: t('Cancel'), onClick: () => setPhase('idle') },
+      { key: 'cancel', label: t('Cancel'), onClick: () => setPhase('idle'), cancel: true },
     ];
   } else if (phase === 'enjoyment') {
     statusText = t('Enjoyed it?');
     buttons = [
       ...FOOD_ENJOYMENT_DISPLAY_ORDER.map(value => ({
         key: value,
-        label: FOOD_ENJOYMENT_EMOJI[value],
+        label: t(FOOD_ENJOYMENT_LABELS[value]),
         ariaLabel: t(FOOD_ENJOYMENT_LABELS[value]),
+        // Same Fluent Emoji SVGs the FoodForm's enjoyment picker uses.
+        iconSrc: FOOD_ENJOYMENT_ICON_SRC[value],
         onClick: () => submitEnjoyment(value),
         disabled: submitting,
       })),
@@ -189,6 +199,7 @@ export function useFoodActions({ babyId, toUTCString, onLog, onUndoable }: Activ
     active: false,
     question: phase === 'picking',
     buttonsWrap: phase === 'picking',
+    searchPrompt,
     buttons,
   };
 }

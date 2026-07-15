@@ -30,7 +30,12 @@ export interface BigTileProps {
 export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): ReactElement {
   const { t } = useLocalization();
   const [open, setOpen] = useState(false);
-  const { buttons, statusText, active, amountPrompt } = view;
+  const { buttons, statusText, active, amountPrompt, searchPrompt } = view;
+
+  // With a search field, its row hosts the cancel action at the top of the modal
+  // so backing out never requires scrolling to the bottom of a long picker list.
+  const headerButtons = searchPrompt ? buttons.filter(b => b.cancel) : [];
+  const listButtons = searchPrompt ? buttons.filter(b => !b.cancel) : buttons;
 
   const metaLine = active && statusText ? statusText : log ? log.last : '';
   // Breastfeeding/pumping are long-running sessions — surface their controls directly
@@ -124,9 +129,36 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
               border: '1px solid rgba(255,255,255,.12)',
               boxShadow: '0 8px 40px rgba(0,0,0,.4)',
               maxHeight: '80vh',
-              overflowY: 'auto',
+              overflow: 'hidden',
             }}
           >
+            {searchPrompt && (
+              <div className="nursery-search-row" style={{ marginBottom: 0 }}>
+                <input
+                  type="search"
+                  className="nursery-search-input"
+                  value={searchPrompt.value}
+                  onChange={e => searchPrompt.onChange(e.target.value)}
+                  placeholder={searchPrompt.placeholder}
+                  aria-label={searchPrompt.placeholder}
+                />
+                {headerButtons.map(btn => (
+                  <button
+                    key={btn.key}
+                    type="button"
+                    disabled={btn.disabled}
+                    onClick={() => {
+                      btn.onClick();
+                      setOpen(false);
+                    }}
+                    className="nursery-abtn"
+                    style={{ flex: '0 0 auto', opacity: btn.disabled ? 0.5 : 1 }}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {amountPrompt && (
               <div className="nursery-amount-row">
                 {amountPrompt.fields.map(f => (
@@ -143,22 +175,25 @@ export function BigTile({ view, log, iconColor, iconShape }: BigTileProps): Reac
             {view.statusText && !view.active && (
               <div style={{ textAlign: 'center', fontSize: 14, color: 'rgba(255,255,255,.75)' }}>{view.statusText}</div>
             )}
-            {buttons.map(btn => (
-              <button
-                key={btn.key}
-                type="button"
-                disabled={btn.disabled}
-                onClick={() => {
-                  btn.onClick();
-                  if (!btn.keepOpen) setOpen(false);
-                }}
-                aria-label={btn.ariaLabel}
-                className="nursery-abtn wide"
-                style={{ minHeight: 44, opacity: btn.disabled ? 0.5 : 1 }}
-              >
-                {btn.label}
-              </button>
-            ))}
+            <div className={`nursery-modal-list${searchPrompt ? ' masked' : ''}`}>
+              {listButtons.map(btn => (
+                <button
+                  key={btn.key}
+                  type="button"
+                  disabled={btn.disabled}
+                  onClick={() => {
+                    btn.onClick();
+                    if (!btn.keepOpen) setOpen(false);
+                  }}
+                  aria-label={btn.ariaLabel}
+                  title={btn.iconSrc ? btn.ariaLabel ?? btn.label : undefined}
+                  className="nursery-abtn wide"
+                  style={{ minHeight: 44, opacity: btn.disabled ? 0.5 : 1, whiteSpace: 'normal' }}
+                >
+                  {btn.iconSrc ? <img src={btn.iconSrc} alt="" aria-hidden="true" className="nursery-btn-emoji" /> : btn.label}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               onClick={() => setOpen(false)}

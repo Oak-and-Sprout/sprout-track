@@ -279,6 +279,15 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
       { key: 'stored', label: t('Stored'), onClick: () => submitPump('STORED'), disabled: submitting },
       { key: 'fed', label: t('Fed'), onClick: () => submitPump('FED'), disabled: submitting },
       { key: 'discarded', label: t('Discarded'), onClick: () => submitPump('DISCARDED'), disabled: submitting },
+      // Back out of Select Action into a paused session (mirrors handlePause) so
+      // the timer state survives an accidental Stop.
+      {
+        key: 'cancel',
+        label: t('Cancel'),
+        onClick: () => { setPauseAccumulated(elapsed); setResumeTime(null); setPhase('paused'); },
+        disabled: submitting,
+        cancel: true,
+      },
     ];
   } else if ((phase === 'timing' || phase === 'paused') && activeSide) {
     const isPaused = phase === 'paused';

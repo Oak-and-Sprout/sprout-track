@@ -110,7 +110,8 @@ the container can render either a `ActivityCard` (cards layout) or `BigTile`
 - `useDiaperActions` — wet/dirty/both instant log.
 - `useSleepActions` — location picker → sleeping timer → wake.
 - `useFoodActions` — one-tap food-try logging against the family food catalog
-  (frequency-ordered picker), with a transient after-log enjoyment prompt that
+  (alphabetical picker with a search field), with a transient after-log
+  enjoyment prompt (the FoodForm's Fluent Emoji SVGs) that
   PUTs onto the just-created entry. Off by default (`acts.food`); pure helpers
   live in `src/utils/nursery/foodActivity.ts`.
 

@@ -8,15 +8,18 @@
 export interface NurseryFoodItem {
   id: string;
   name: string;
-  /** Non-deleted logs for this food (family-wide), from GET /api/food. */
-  foodLogCount?: number;
 }
 
-/** Most-logged foods first; ties and never-logged foods alphabetical. Returns a new array. */
-export function sortFoodsByFrequency<T extends NurseryFoodItem>(foods: readonly T[]): T[] {
-  return [...foods].sort(
-    (a, b) => (b.foodLogCount ?? 0) - (a.foodLogCount ?? 0) || a.name.localeCompare(b.name),
-  );
+/** Alphabetical by name. Returns a new array. */
+export function sortFoodsByName<T extends NurseryFoodItem>(foods: readonly T[]): T[] {
+  return [...foods].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Case-insensitive substring match on the food name; a blank query returns everything. */
+export function filterFoodsByQuery<T extends NurseryFoodItem>(foods: readonly T[], query: string): T[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [...foods];
+  return foods.filter(f => f.name.toLowerCase().includes(q));
 }
 
 export interface FoodLogNoteData {

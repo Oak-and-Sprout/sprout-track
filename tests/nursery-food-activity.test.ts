@@ -1,37 +1,47 @@
 import { describe, it, expect } from 'vitest';
-import { sortFoodsByFrequency, formatFoodLogNote } from '@/src/utils/nursery/foodActivity';
+import { sortFoodsByName, filterFoodsByQuery, formatFoodLogNote } from '@/src/utils/nursery/foodActivity';
 
-describe('sortFoodsByFrequency', () => {
-  it('orders by log count descending', () => {
+describe('sortFoodsByName', () => {
+  it('orders alphabetically by name', () => {
     const foods = [
-      { id: 'a', name: 'Apple', foodLogCount: 1 },
-      { id: 'b', name: 'Banana', foodLogCount: 5 },
-      { id: 'c', name: 'Carrot', foodLogCount: 3 },
+      { id: 'c', name: 'Carrot' },
+      { id: 'a', name: 'Apple' },
+      { id: 'b', name: 'Banana' },
     ];
-    expect(sortFoodsByFrequency(foods).map(f => f.name)).toEqual(['Banana', 'Carrot', 'Apple']);
-  });
-
-  it('breaks count ties alphabetically by name', () => {
-    const foods = [
-      { id: 'p', name: 'Pear', foodLogCount: 2 },
-      { id: 'a', name: 'Avocado', foodLogCount: 2 },
-    ];
-    expect(sortFoodsByFrequency(foods).map(f => f.name)).toEqual(['Avocado', 'Pear']);
-  });
-
-  it('treats a missing count as zero', () => {
-    const foods = [
-      { id: 'o', name: 'Oatmeal' },
-      { id: 'b', name: 'Banana', foodLogCount: 1 },
-    ];
-    expect(sortFoodsByFrequency(foods).map(f => f.name)).toEqual(['Banana', 'Oatmeal']);
+    expect(sortFoodsByName(foods).map(f => f.name)).toEqual(['Apple', 'Banana', 'Carrot']);
   });
 
   it('returns a new array and handles empty input', () => {
-    const foods = [{ id: 'a', name: 'Apple', foodLogCount: 1 }];
-    const out = sortFoodsByFrequency(foods);
+    const foods = [{ id: 'a', name: 'Apple' }];
+    const out = sortFoodsByName(foods);
     expect(out).not.toBe(foods);
-    expect(sortFoodsByFrequency([])).toEqual([]);
+    expect(sortFoodsByName([])).toEqual([]);
+  });
+});
+
+describe('filterFoodsByQuery', () => {
+  const foods = [
+    { id: 'a', name: 'Apple sauce' },
+    { id: 'b', name: 'Banana purée' },
+    { id: 'c', name: 'Sweet potato' },
+  ];
+
+  it('matches case-insensitive substrings', () => {
+    expect(filterFoodsByQuery(foods, 'APPLE').map(f => f.id)).toEqual(['a']);
+    expect(filterFoodsByQuery(foods, 'pot').map(f => f.id)).toEqual(['c']);
+  });
+
+  it('trims surrounding whitespace from the query', () => {
+    expect(filterFoodsByQuery(foods, '  banana ').map(f => f.id)).toEqual(['b']);
+  });
+
+  it('returns everything for a blank query', () => {
+    expect(filterFoodsByQuery(foods, '')).toEqual(foods);
+    expect(filterFoodsByQuery(foods, '   ')).toEqual(foods);
+  });
+
+  it('returns an empty list when nothing matches', () => {
+    expect(filterFoodsByQuery(foods, 'zucchini')).toEqual([]);
   });
 });
 
