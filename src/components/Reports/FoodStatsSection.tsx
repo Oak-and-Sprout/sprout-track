@@ -18,6 +18,7 @@ import { FoodProgressResponse, FoodLogResponse } from '@/app/api/types';
 import {
   countFirstTriesInRange,
   FOOD_ENJOYMENT_VALUES,
+  FOOD_ENJOYMENT_DISPLAY_ORDER,
   FOOD_ENJOYMENT_LABELS,
   UNIQUE_FOOD_GOAL,
 } from '@/src/utils/foodLogUtils';
@@ -180,7 +181,7 @@ const FoodStatsSection: React.FC<FoodStatsSectionProps> = ({ dateRange }) => {
             {/* Enjoyment breakdown (all-time) */}
             {hasEnjoymentData && (
               <div className="mt-4 grid grid-cols-5 gap-1 text-center">
-                {FOOD_ENJOYMENT_VALUES.map((value) => (
+                {FOOD_ENJOYMENT_DISPLAY_ORDER.map((value) => (
                   <div key={value} className="rounded-md bg-gray-50 py-2 reports-food-enjoyment-cell">
                     <div className="text-sm font-semibold text-gray-800 reports-stat-card-value !text-sm">
                       {progress?.byEnjoyment?.[value] ?? 0}

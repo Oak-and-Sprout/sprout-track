@@ -14,6 +14,9 @@ export type FoodEnjoymentValue = (typeof FOOD_ENJOYMENT_VALUES)[number];
 /** The "100 foods before 1" goal the progress view counts toward. */
 export const UNIQUE_FOOD_GOAL = 100;
 
+/** Display order for enjoyment pickers/breakdowns: happiest → saddest, left to right. */
+export const FOOD_ENJOYMENT_DISPLAY_ORDER = [...FOOD_ENJOYMENT_VALUES].reverse();
+
 /**
  * Localization keys (== English labels) for each enjoyment value.
  * Components render them via t(FOOD_ENJOYMENT_LABELS[value]).

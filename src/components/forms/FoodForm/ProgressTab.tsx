@@ -9,7 +9,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
 import {
   buildFoodTryList,
-  FOOD_ENJOYMENT_VALUES,
+  FOOD_ENJOYMENT_DISPLAY_ORDER,
   FOOD_ENJOYMENT_LABELS,
   UNIQUE_FOOD_GOAL,
 } from '@/src/utils/foodLogUtils';
@@ -127,7 +127,7 @@ const ProgressTab: React.FC<ProgressTabProps> = ({
           {/* Enjoyment breakdown */}
           {progress && progress.totalTries > 0 && (
             <div className="grid grid-cols-5 gap-1 text-center">
-              {FOOD_ENJOYMENT_VALUES.map((value) => (
+              {FOOD_ENJOYMENT_DISPLAY_ORDER.map((value) => (
                 <div key={value} className="rounded-md bg-gray-50 py-2 food-progress-enjoyment-cell">
                   <div className="text-sm font-semibold text-gray-800 food-progress-enjoyment-count">
                     {progress.byEnjoyment?.[value] ?? 0}

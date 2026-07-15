@@ -21,13 +21,11 @@ import {
   normalizeFoodName,
   foodNameKey,
   FOOD_ENJOYMENT_VALUES,
+  FOOD_ENJOYMENT_DISPLAY_ORDER,
   FOOD_ENJOYMENT_LABELS,
   FOOD_ENJOYMENT_ICON_SRC,
   FoodEnjoymentValue,
 } from '@/src/utils/foodLogUtils';
-
-// Picker shows happiest → saddest, left to right
-const ENJOYMENT_DISPLAY_ORDER = [...FOOD_ENJOYMENT_VALUES].reverse();
 
 /**
  * LogFoodTab Component
@@ -512,7 +510,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         <div>
           <Label className="form-label">{t('Enjoyment')}</Label>
           <div className="grid grid-cols-5 gap-1" role="group" aria-label={t('Enjoyment')}>
-            {ENJOYMENT_DISPLAY_ORDER.map((value) => (
+            {FOOD_ENJOYMENT_DISPLAY_ORDER.map((value) => (
               <Button
                 key={value}
                 type="button"
