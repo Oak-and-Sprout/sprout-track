@@ -1,5 +1,77 @@
 # Sprout Track Changelog
 
+## v1.5.0 - Nursery Mode Redesign, Photos, and Baby Buddy Import
+
+### Changes
+
+#### Nursery Mode Redesign
+- Redesigned Nursery Mode with immersive, full-screen scenes — pick from Ambient, Starlit, Tapestry, or one of your own photos
+- New Photo scene: choose a photo and the whole nursery screen automatically tints to match its colors
+- Added a personalization drawer to customize scenes, background patterns, color palettes, activity icons, and which activities show up
+- Added new quick-log layouts — switch between cards and big tiles for comfortable one-tap logging
+- One-tap undo if you log an activity by accident
+- Active timers now display large and legible right on the nursery screen (breastfeeding sides and sleep)
+- Everything you personalize is saved per device, and honors your system's reduced-motion setting
+- The in-progress pump timer now survives a page reload or switching babies and back without losing your place
+
+#### Photos
+- Added a new Photos gallery page to browse all of a baby's photos, grouped by month
+- Attach photos directly to feed, milestone, bath, activity, and measurement entries
+- Photo entries appear in the timeline with thumbnails, plus a new "Photos Today" daily stat and a Photo tile on the log-entry screen
+- Added a full-screen photo viewer with favorites, multi-select, and a trash/restore view
+- Added a per-family photo storage quota with a visual usage meter that admins can manage
+- Photos are stored encrypted, the same as vaccine documents
+- In the family-manager/settings page Photo functionality can be turned on and off and global\per family quotas can be set
+
+#### Baby Buddy Import
+- Added the ability to import historical data from a Baby Buddy CSV export (family admins only), found in Settings. Thank you **bachjessen**!
+- Preview your import first and choose whether each exported child is added as a new baby or mapped to an existing one
+- Non-destructive and safe to re-run — your existing data is never modified or replaced, and already-imported records are automatically skipped
+
+#### Other Enhancements
+- Added ability to globally adjust sleep locations with rename, merge, and hide functionality (in settings page)
+
+#### Bugfixes
+- Fixed breast milk inventory balance so pump sessions you fed directly no longer incorrectly reduce your stored milk count. Thank you **philzx**!
+- Pump entries now validate their unit and keep it consistent to prevent inventory miscalculations
+
+#### Localization
+- Added and updated translations across all supported languages for the new features
+
+
+
+## v1.4.0 - Screen Reader Accessibility, Bath Types, and Feed Timer Controls
+
+### Changes
+
+#### Accessibility
+- Overhauled the app for screen reader and keyboard accessibility. Thank you **stefanhalus** for kicking this off!
+- Logging activities, reviewing timelines, filling out forms, and logging in now work fully with VoiceOver and other screen readers
+- The time picker, calendar, and activity tile reordering are now fully keyboard operable
+- Report charts now include screen reader friendly data tables
+
+#### Enhancements
+- Added bath types to bath tracking (full bath, sponge bath, wipe down, or your own custom types)
+- Added a per baby setting to count the feed timer from the start or the end of the previous feeding. Thank you **philzx**!
+- Breast feeds in the same nursing session are now linked together in the log, with link and unlink controls in the edit form
+- Started a breast feed on the wrong side? Active sessions now have a fix it button to swap sides
+
+#### Bugfixes
+- Report card averages now divide by days since birth instead of calendar days for babies born mid month
+- Left plus right nursing sessions now count as one feed everywhere (stats, charts, heatmaps, report card, and daily stats)
+- Fixed French breastfeeding side labels
+- Added a delete button to the vaccine tracker history
+- Fixed PostgreSQL Docker deployments so runtime database settings are respected
+- Fixed pump average per side showing a broken unit label
+
+#### Webhook API
+- The breastfeed timer can now be controlled through the API (start, switch, pause, resume, end) and stays in sync with the in app timer
+- Feed entries returned by the API now include start time, end time, and duration; bath entries include the bath type
+
+#### Localization
+- Added Norwegian. Thank you **Andlar94**!
+- Filled in missing translations across all supported languages
+
 ## v1.3.5 - Security and Privacy Patch
 
 ### Changes

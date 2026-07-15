@@ -122,7 +122,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
           {/* Loading state */}
           {isLoading && (
             <div className={cn(styles.loadingContainer, "baby-quick-info-loading-container")}>
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
               <p className={cn("mt-2 text-gray-600", "baby-quick-info-loading-text")}>{t('Loading...')}</p>
             </div>
           )}
@@ -161,7 +161,7 @@ const BabyQuickInfo: React.FC<BabyQuickInfoProps> = ({
           {/* Loading state */}
           {isLoading && (
             <div className={cn(styles.loadingContainer, "baby-quick-info-loading-container")}>
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
               <p className={cn("mt-2 text-gray-600", "baby-quick-info-loading-text")}>{t('Loading...')}</p>
             </div>
           )}

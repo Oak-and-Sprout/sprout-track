@@ -88,18 +88,22 @@ export default function ActiveFeedBanner({
       {/* Active state */}
       {!activeFeed.isPaused && (
         <div className="flex items-center justify-between">
-          <div className="flex flex-col min-w-0">
+          <button
+            type="button"
+            className="flex flex-col min-w-0 text-left"
+            onClick={(e) => { e.stopPropagation(); onOpenForm(); }}
+          >
             <span className="text-xs font-medium banner-label">
               {activeFeed.activeSide === 'LEFT' ? t('Left Side') : t('Right Side')}
             </span>
             <span className="text-2xl font-mono font-bold banner-timer">
               {formatDuration(activeSideTotal)}
             </span>
-            <div className="flex gap-3 text-xs banner-subtimes mt-0.5">
+            <span className="flex gap-3 text-xs banner-subtimes mt-0.5">
               <span>L: {formatDuration(leftTotal)}</span>
               <span>R: {formatDuration(rightTotal)}</span>
-            </div>
-          </div>
+            </span>
+          </button>
           <div className="flex gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -107,7 +111,7 @@ export default function ActiveFeedBanner({
               className="banner-btn banner-btn-switch"
               title={t('Switch Side')}
             >
-              <ArrowLeftRight className="h-5 w-5" />
+              <ArrowLeftRight className="h-5 w-5" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -115,7 +119,7 @@ export default function ActiveFeedBanner({
               className="banner-btn banner-btn-pause"
               title={t('Pause Feed')}
             >
-              <Pause className="h-5 w-5" />
+              <Pause className="h-5 w-5" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -123,7 +127,7 @@ export default function ActiveFeedBanner({
               className="banner-btn banner-btn-stop"
               title={t('End Feed')}
             >
-              <Square className="h-5 w-5" />
+              <Square className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -132,15 +136,19 @@ export default function ActiveFeedBanner({
       {/* Paused state */}
       {activeFeed.isPaused && (
         <div className="flex items-center justify-between">
-          <div className="flex flex-col min-w-0">
+          <button
+            type="button"
+            className="flex flex-col min-w-0 text-left"
+            onClick={(e) => { e.stopPropagation(); onOpenForm(); }}
+          >
             <span className="text-xs font-medium banner-paused-label">
               {t('Breastfeeding Paused')}
             </span>
-            <div className="flex gap-3 text-sm font-mono font-semibold banner-subtimes mt-0.5">
+            <span className="flex gap-3 text-sm font-mono font-semibold banner-subtimes mt-0.5">
               <span>L: {formatDuration(leftTotal)}</span>
               <span>R: {formatDuration(rightTotal)}</span>
-            </div>
-          </div>
+            </span>
+          </button>
           <div className="flex gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
@@ -148,7 +156,7 @@ export default function ActiveFeedBanner({
               className="banner-btn banner-btn-resume"
               title={t('Resume Left')}
             >
-              <Play className="h-5 w-5 mr-0.5" />
+              <Play className="h-5 w-5 mr-0.5" aria-hidden="true" />
               <span className="text-xs font-semibold">L</span>
             </button>
             <button
@@ -157,7 +165,7 @@ export default function ActiveFeedBanner({
               className="banner-btn banner-btn-resume"
               title={t('Resume Right')}
             >
-              <Play className="h-5 w-5 mr-0.5" />
+              <Play className="h-5 w-5 mr-0.5" aria-hidden="true" />
               <span className="text-xs font-semibold">R</span>
             </button>
             <button
@@ -166,7 +174,7 @@ export default function ActiveFeedBanner({
               className="banner-btn banner-btn-stop"
               title={t('End Feed')}
             >
-              <Square className="h-5 w-5" />
+              <Square className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
         </div>

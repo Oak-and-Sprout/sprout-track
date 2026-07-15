@@ -34,6 +34,7 @@ interface FamilyData {
   lastEntryAt?: string | null;
   caretakerCount?: number;
   babyCount?: number;
+  photoQuotaMB?: number | null;
 }
 
 interface CaretakerData {
@@ -194,6 +195,20 @@ export default function FamiliesPage() {
       });
       const data = await response.json();
       if (data.success) {
+        // photoQuotaMB lives on the family's Settings record, not the Family record,
+        // so it's saved via a separate call only when the value actually changed.
+        // Skip the settings call if the quota was not modified.
+        if (editingData.photoQuotaMB !== undefined && editingData.photoQuotaMB !== (family.photoQuotaMB ?? null)) {
+          const settingsResponse = await authFetch(`/api/settings?familyId=${family.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photoQuotaMB: editingData.photoQuotaMB }),
+          });
+          const settingsData = await settingsResponse.json();
+          if (!settingsData.success) {
+            alert('Failed to save photo quota: ' + settingsData.error);
+          }
+        }
         await fetchFamilies();
         setEditingId(null);
         setEditingData({});
@@ -211,7 +226,7 @@ export default function FamiliesPage() {
 
   const handleEdit = (family: FamilyData) => {
     setEditingId(family.id);
-    setEditingData({ name: family.name, slug: family.slug, isActive: family.isActive });
+    setEditingData({ name: family.name, slug: family.slug, isActive: family.isActive, photoQuotaMB: family.photoQuotaMB ?? null });
     setSlugError('');
   };
 
@@ -299,8 +314,9 @@ export default function FamiliesPage() {
 
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div role="status" className="h-full w-full flex items-center justify-center">
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin" />
+        <span className="sr-only">{t('Loading...')}</span>
       </div>
     );
   }
@@ -389,8 +405,9 @@ export default function FamiliesPage() {
           </DialogHeader>
           <div className="mt-4">
             {loadingCaretakers ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
+              <div role="status" className="flex items-center justify-center py-8">
+                <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin" />
+                <span className="sr-only">{t('Loading...')}</span>
               </div>
             ) : selectedFamilyCaretakers.length > 0 ? (
               <Table>

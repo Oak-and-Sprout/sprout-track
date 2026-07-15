@@ -2,19 +2,26 @@
 
 ## Overview
 
-Sprout Track uses React Context for global state management. Six context providers are nested in the root layout, each handling a specific domain. Data fetching throughout the app uses `useEffect` + `fetch` with loading and error states — React Query is not used. The `FamilyProvider` injects auth tokens into all fetch requests automatically.
+Sprout Track uses React Context for global state management. Context providers are nested in two layers — the root layout provides localization and timezone, and the app-shell layouts nest the rest — each handling a specific domain. Data fetching throughout the app uses `useEffect` + `fetch` with loading and error states — React Query is not used. The `FamilyProvider` injects auth tokens into all fetch requests automatically.
 
 ## Provider Hierarchy
 
-Providers are nested in `app/layout.tsx` in this order (outermost first):
+The root layout (`app/layout.tsx`) wraps the whole app (outermost first):
+
+```
+LocalizationProvider       ← i18n translations
+  └── TimezoneProvider     ← Timezone detection and formatting
+```
+
+The app shell (`app/(app)/[slug]/client-layout.tsx`, mirrored by the nursery layout at `app/(nursery)/[slug]/nursery-mode/layout.tsx`) nests the rest:
 
 ```
 DeploymentProvider         ← Deployment config (SaaS vs self-hosted)
-  └── ThemeProvider        ← Light/dark theme management
-        └── LocalizationProvider  ← i18n translations
-              └── FamilyProvider  ← Family context, auth, fetch wrapper
-                    └── TimezoneProvider  ← Timezone detection and formatting
-                          └── BabyProvider  ← Selected baby, baby list
+  └── LocalizationProvider ← i18n (re-provided inside the app shell)
+        └── FamilyProvider ← Family context, auth, fetch wrapper
+              └── BabyProvider  ← Selected baby, active sleep/feed state
+                    └── ThemeProvider  ← Light/dark theme management
+                          └── ToastProvider  ← App-wide toast notifications
 ```
 
 Order matters — inner providers can access outer provider values.
@@ -59,7 +66,7 @@ Order matters — inner providers can access outer provider values.
 | Value | Type | Purpose |
 |-------|------|---------|
 | `t(key)` | function | Translate a string (key = English text) |
-| `language` | string | Current language code (en, es, fr) |
+| `language` | string | Current language/locale code (e.g., en, de, es, fr, it, nl, nb, pt-PT, pt-BR, ro) |
 | `setLanguage(lang)` | function | Change language |
 | `isLoading` | boolean | Translation files loading |
 
@@ -69,7 +76,7 @@ Order matters — inner providers can access outer provider values.
 3. Unauthenticated → `localStorage`
 4. System admins → `sessionStorage` key `sysadmin_language`
 
-**Translation loading:** English is bundled; Spanish and French are lazy-loaded on demand.
+**Translation loading:** English is bundled; all other languages (configured in `src/localization/supported-languages.json`) are lazy-loaded on demand.
 
 ### FamilyProvider
 **File:** `src/context/family.tsx`
@@ -77,11 +84,12 @@ Order matters — inner providers can access outer provider values.
 
 | Value | Type | Purpose |
 |-------|------|---------|
-| `selectedFamily` | object | Current family (id, slug, name) |
+| `family` | object | Current family (id, slug, name, isActive) |
+| `setFamily(family)` | function | Change current family |
 | `families` | array | All families user has access to |
+| `loadFamilies()` | function | Load available families |
 | `authenticatedFetch` | function | Fetch wrapper with auth header |
-| `isAuthenticated` | boolean | Whether user is logged in |
-| `onLogout()` | function | Trigger logout |
+| `handleLogout()` | function | Trigger logout (wired via the provider's `onLogout` prop) |
 
 **Key behaviors:**
 - **Fetch interceptor:** Overrides global `fetch` to auto-add `Authorization: Bearer <token>` header to all requests
@@ -116,15 +124,20 @@ Order matters — inner providers can access outer provider values.
 |-------|------|---------|
 | `selectedBaby` | object | Currently selected baby |
 | `setSelectedBaby(baby)` | function | Change selected baby |
-| `babies` | array | All babies in current family |
-| `sleepingBabies` | array | Babies currently sleeping |
-| `feedingBabies` | array | Babies with active feeds |
+| `sleepingBabies` | Set&lt;string&gt; | IDs of babies currently sleeping (with setter) |
+| `feedingBabies` | Set&lt;string&gt; | IDs of babies with active feeds (with setter) |
+| `accountStatus` | object | Account trial/expiration status (account-based auth) |
+| `isAccountAuth` | boolean | Whether user authenticated with an account (vs PIN) |
 
 **Key behaviors:**
 - **Family-specific storage:** Uses `localStorage` keys with pattern `{baseKey}_{familyId}` to keep selections separate per family
 - **Validation:** Verifies selected baby belongs to current family
 - **Auto-redirect:** Sends verified users without families to the setup page
 - **Auth monitoring:** Watches `localStorage` storage events for auth token changes
+
+### ToastProvider
+**File:** `src/components/ui/toast/toast-provider.tsx` (exported from `src/components/ui/toast`)
+**Purpose:** App-wide toast notifications, consumed via the `useToast()` hook. Innermost provider in the app shell.
 
 ## Custom Hooks
 
@@ -189,6 +202,18 @@ Brightness 0-50% = dark palette, 50-100% = light palette.
 | `validateEmail()` | function | Trigger validation |
 | `clearError()` | function | Clear error state |
 
+### useIsMobile
+**File:** `src/hooks/useIsMobile.ts`
+**Purpose:** Returns `true` when the viewport width is 600px or less; updates on window resize.
+
+### useUnit
+**File:** `src/hooks/useUnit.ts`
+**Purpose:** Localizes measurement unit names and symbols (`unitName()`, `unitSymbol()`), falling back to the raw `unitAbbr` when no translation exists.
+
+### useFeedbackChat
+**File:** `src/hooks/useFeedbackChat.ts`
+**Purpose:** Manages feedback/support threads — fetching threads, sending replies and new feedback, uploading/deleting attachments, and read/unread state.
+
 ## Data Fetching Pattern
 
 Throughout the application, data fetching follows this pattern:
@@ -223,15 +248,21 @@ The `FamilyProvider`'s fetch interceptor automatically adds the auth token, so c
 
 ## Key Files
 
-- `app/layout.tsx` — Root layout with provider nesting order
+- `app/layout.tsx` — Root layout (LocalizationProvider, TimezoneProvider)
+- `app/(app)/[slug]/client-layout.tsx` — App shell with the remaining provider nesting
+- `app/(nursery)/[slug]/nursery-mode/layout.tsx` — Nursery mode layout (same provider nesting)
 - `app/context/deployment.tsx` — DeploymentProvider
 - `app/context/timezone.tsx` — TimezoneProvider
 - `app/context/baby.tsx` — BabyProvider
 - `src/context/theme.tsx` — ThemeProvider
 - `src/context/localization.tsx` — LocalizationProvider
 - `src/context/family.tsx` — FamilyProvider (auth integration)
+- `src/components/ui/toast/toast-provider.tsx` — ToastProvider
 - `src/hooks/useWakeLock.ts` — Wake Lock API hook
 - `src/hooks/useFullscreen.ts` — Fullscreen API hook
 - `src/hooks/useNurserySettings.ts` — Nursery settings hook
 - `src/hooks/useNurseryColors.ts` — Nursery color palette hook
 - `src/hooks/useEmailValidation.ts` — Email validation hook
+- `src/hooks/useIsMobile.ts` — Mobile viewport detection hook
+- `src/hooks/useUnit.ts` — Unit name/symbol localization hook
+- `src/hooks/useFeedbackChat.ts` — Feedback thread management hook

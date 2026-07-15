@@ -143,7 +143,7 @@ export function DateTimePicker({
             className={cn(dateTimePickerButtonStyles, "date-time-picker-button")}
             disabled={disabled}
           >
-            <CalendarIcon className="h-4 w-4 date-time-picker-calendar-icon" />
+            <CalendarIcon className="h-4 w-4 date-time-picker-calendar-icon" aria-hidden="true" />
             <span>{formatDate(date)}</span>
           </Button>
         </PopoverTrigger>
@@ -173,7 +173,7 @@ export function DateTimePicker({
             className={cn(dateTimePickerButtonStyles, "date-time-picker-button")}
             disabled={disabled}
           >
-            <Clock className="h-4 w-4 date-time-picker-clock-icon" />
+            <Clock className="h-4 w-4 date-time-picker-clock-icon" aria-hidden="true" />
             <span>{formatTime(date)}</span>
           </Button>
         </PopoverTrigger>

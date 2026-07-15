@@ -16,6 +16,7 @@ import {
   Legend,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
@@ -250,6 +251,17 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    ...dailySessionData.typeNames.map((type) => ({
+                      key: type,
+                      label: playTypeDisplayNames[type] || type,
+                    })),
+                  ]}
+                  rows={dailySessionData.chartData}
+                />
               </div>
             )}
           </>
@@ -286,6 +298,17 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
                     <Bar dataKey="avgMinutes" fill="#F3C4A2" />
                   </BarChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'name', label: t('Type') },
+                    { key: 'avgMinutes', label: t('Avg Duration') },
+                  ]}
+                  rows={avgDurationData.map((entry) => ({
+                    name: entry.name,
+                    avgMinutes: `${entry.avgMinutes} ${t('min')}`,
+                  }))}
+                />
               </div>
             )}
           </>
@@ -339,6 +362,23 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    ...dailyDurationData.typeNames.map((type) => ({
+                      key: type,
+                      label: playTypeDisplayNames[type] || type,
+                    })),
+                  ]}
+                  rows={dailyDurationData.chartData.map((row) => {
+                    const tableRow: Record<string, any> = { label: row.label };
+                    for (const type of dailyDurationData.typeNames) {
+                      tableRow[type] = `${row[type]} ${t('min')}`;
+                    }
+                    return tableRow;
+                  })}
+                />
               </div>
             )}
           </>

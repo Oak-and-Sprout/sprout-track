@@ -11,24 +11,31 @@ import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import PhotoForm from '@/src/components/forms/PhotoForm';
+import PhotoDetail from '@/src/components/PhotoDetail';
 import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
+import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, PhotoResponse } from '@/app/api/types';
+import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
 
 const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
 
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
+  // Selected day ±1 so daily stats can group breast-feed sessions across midnight
+  const [windowActivities, setWindowActivities] = useState<ActivityType[]>([]);
   const [heatmapActivities, setHeatmapActivities] = useState<ActivityType[]>([]);
 
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
@@ -59,10 +66,24 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
 
     if (lastFeed) {
       const feedAny = lastFeed as any;
-      const feedTime = (feedAny.type === 'BREAST' && feedAny.startTime)
-        ? String(feedAny.startTime)
-        : feedAny.time;
-      status.lastFeedTime = new Date(feedTime);
+      if (feedAny.type === 'BREAST') {
+        // Linked/paired rows count as one feeding (#198): time the timer against
+        // the whole nursing session, not just its latest row
+        const breastFeeds = activities.filter((a) =>
+          'amount' in a && (a as any).type === 'BREAST' && 'time' in a
+        ) as any[];
+        const session = groupBreastFeedSessions(breastFeeds)
+          .find(s => s.rows.some((r: any) => r.id === feedAny.id));
+        const rows: any[] = session?.rows ?? [feedAny];
+        // Prefer explicit startTime/endTime; `time` only equals the session end
+        // for newly logged feeds and can hold the start time after an edit
+        const startMs = Math.min(...rows.map(r => new Date(r.startTime || r.time).getTime()));
+        const endMs = Math.max(...rows.map(r => new Date(r.endTime || r.time).getTime()));
+        status.lastFeedTime = new Date(startMs);
+        status.lastFeedEndTime = new Date(endMs);
+      } else {
+        status.lastFeedTime = new Date(feedAny.time);
+      }
     }
 
     // Find last diaper time
@@ -143,6 +164,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     try {
       const result = await activityCache.fetchWindow(babyId, date, 1);
       setDateFilteredActivities(result.activities);
+      setWindowActivities(result.allActivities);
       lastRefreshTimestamp.current = Date.now();
 
       // Only emit status when today is within the fetched window (prevents stale status on past dates)
@@ -159,6 +181,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     } catch (error) {
       console.error('Error fetching activities for date:', error);
       setDateFilteredActivities([]);
+      setWindowActivities([]);
     } finally {
       if (isAnimated) {
         setIsLoadingActivities(false);
@@ -173,13 +196,23 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     try {
       const activities = await activityCache.refreshDate(babyId, selectedDate);
       setDateFilteredActivities(activities);
+      // Rebuild the ±1 day window from cache around the refreshed day
+      const prevDay = new Date(selectedDate); prevDay.setDate(prevDay.getDate() - 1);
+      const nextDay = new Date(selectedDate); nextDay.setDate(nextDay.getDate() + 1);
+      const windowActs = [
+        ...(activityCache.getActivitiesForDate(activityCache.toDateKey(prevDay)) || []),
+        ...activities,
+        ...(activityCache.getActivitiesForDate(activityCache.toDateKey(nextDay)) || []),
+      ];
+      setWindowActivities(windowActs);
       lastRefreshTimestamp.current = Date.now();
 
-      // Only emit status when refreshing today's data
+      // Only emit status when refreshing today's data. Emit the full window so
+      // a nursing session that straddles midnight groups with its earlier row
       const todayKey = activityCache.toDateKey(new Date());
       const selectedKey = activityCache.toDateKey(selectedDate);
       if (todayKey === selectedKey) {
-        emitLatestStatus(activities);
+        emitLatestStatus(windowActs);
       }
     } catch (error) {
       console.error('Error refreshing current day:', error);
@@ -363,6 +396,10 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
               return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
             case 'vaccine':
               return 'vaccineName' in activity;
+            case 'photo':
+              // Match what the Photos Today stat counts: standalone photo
+              // logs plus any activity with attached photos
+              return 'photoLogId' in activity || !!(activity as any).photos?.length;
             default:
               return true;
           }
@@ -402,16 +439,31 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
 
+  // Resolve a timeline thumbnail click to its full PhotoResponse for the detail drawer
+  const handlePhotoClick = useCallback(async (photoId: string) => {
+    if (!babyId) return;
+    try {
+      const result = await fetchPhotos({ babyId, limit: 200 });
+      const photo = result.photos.find((p) => p.id === photoId);
+      if (photo) setSelectedPhoto(photo);
+    } catch (error) {
+      console.error('Error fetching photo:', error);
+    }
+  }, [babyId]);
+
   return (
-    <div className="flex flex-col h-[calc(100vh-192px)]">
+    // app header (80px + 1px border) + activity tile row (117px) + 1px rounding margin —
+    // undershooting this budget gives the whole page a scrollbar
+    <div className="flex flex-col h-[calc(100vh-199px)]">
       {/* Daily Stats with Integrated Date Navigation */}
       <TimelineV2DailyStats
         activities={dateFilteredActivities}
+        windowActivities={windowActivities}
         heatmapActivities={heatmapActivities}
         date={selectedDate}
         isLoading={isLoadingActivities}
@@ -436,6 +488,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             isAnimated={isFetchAnimated}
             selectedDate={selectedDate}
             onActivitySelect={(activity) => setSelectedActivity(activity)}
+            onPhotoClick={handlePhotoClick}
           />
         </div>
 
@@ -459,6 +512,15 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         onClose={() => setSelectedActivity(null)}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        onPhotoClick={handlePhotoClick}
+      />
+
+      {/* Photo Detail - opened from a timeline thumbnail click */}
+      <PhotoDetail
+        isOpen={!!selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        photo={selectedPhoto}
+        onChanged={handleFormSuccess}
       />
 
       {/* Edit Forms */}
@@ -587,6 +649,17 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             babyId={selectedActivity.babyId}
             initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
             activity={'vaccineName' in selectedActivity ? (selectedActivity as unknown as VaccineLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
+          />
+          <PhotoForm
+            isOpen={editModalType === 'photo'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={getActivityTime(selectedActivity)}
+            activity={'photoLogId' in selectedActivity ? { photoLogId: (selectedActivity as any).photoLogId } : undefined}
             onSuccess={handleFormSuccess}
           />
         </>

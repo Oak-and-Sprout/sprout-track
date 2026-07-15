@@ -17,6 +17,8 @@ import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
 import { lbToLbOz } from '@/src/components/Timeline/utils';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
 interface MeasurementFormProps {
   isOpen: boolean;
@@ -94,6 +96,23 @@ export default function MeasurementForm({
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'measurement' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
 
   // Fetch default units from settings
   useEffect(() => {
@@ -250,6 +269,9 @@ export default function MeasurementForm({
       setInitializedTime(null);
       setWeightLbs('');
       setWeightOz('');
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, activity, initialTime]);
@@ -400,7 +422,13 @@ export default function MeasurementForm({
       
       // Get auth token from localStorage
       const authToken = localStorage.getItem('authToken');
-      
+
+      // Tracks which measurement record photos should be attached to. For a
+      // single edited/deleted measurement this is unambiguous; for a new
+      // entry that creates several measurement types at once, photos attach
+      // to the last one created (mirrors the FeedForm dual-side precedent).
+      let savedActivityId: string | undefined = activity?.id;
+
       // If editing an existing measurement, update it
       if (activity) {
         // Find the measurement that matches the activity type
@@ -494,6 +522,9 @@ export default function MeasurementForm({
             });
             throw new Error(errorData.error || 'Failed to delete measurement');
           }
+
+          // The measurement was removed, so there's no record left to attach photos to.
+          savedActivityId = undefined;
         }
       } else {
         // Create new measurements
@@ -506,7 +537,7 @@ export default function MeasurementForm({
             },
             body: JSON.stringify(measurement),
           });
-          
+
           if (!response.ok) {
             // Check if this is an account expiration error
             if (response.status === 403) {
@@ -541,12 +572,37 @@ export default function MeasurementForm({
             });
             throw new Error(errorData.error || `Failed to save ${measurement.type.toLowerCase()} measurement`);
           }
+
+          const savedMeasurement = await response.json();
+          savedActivityId = savedMeasurement.data?.id;
+        }
+      }
+
+      if (photosEnabled && savedActivityId) {
+        try {
+          for (const photoId of removedPhotoIds) {
+            await unlinkPhoto(photoId, 'measurement', savedActivityId);
+          }
+          if (pendingPhotoFiles.length > 0) {
+            const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+            for (const photo of result.photos) {
+              await linkPhoto(photo.id, 'measurement', savedActivityId);
+            }
+          }
+        } catch (photoError) {
+          console.error('Photo attachment failed:', photoError);
+          showToast({
+            variant: 'warning',
+            title: t('Warning'),
+            message: t('Measurement saved, but one or more photos failed to attach.'),
+            duration: 5000,
+          });
         }
       }
 
       onClose();
       onSuccess?.();
-      
+
       // Reset form data
       setSelectedDateTime(new Date(initialTime));
       setWeightLbs('');
@@ -559,6 +615,9 @@ export default function MeasurementForm({
         temperature: { value: '', unit: defaultUnits.temperature },
         notes: '',
       });
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     } catch (error) {
       console.error('Error saving measurements:', error);
       // Error toast already shown above for non-expiration errors
@@ -791,6 +850,22 @@ export default function MeasurementForm({
                 disabled={loading}
               />
             </div>
+
+            {photosEnabled && (
+              <div className="space-y-2">
+                <Label>{t('Photos')}</Label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
           </form>
         </FormPageContent>

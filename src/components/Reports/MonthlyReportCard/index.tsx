@@ -20,7 +20,7 @@ import MilestonesSection from './MilestonesSection';
 import HealthSection from './HealthSection';
 import CaretakerSection from './CaretakerSection';
 import ReportFooter from './ReportFooter';
-import { getElapsedDays } from './monthly-report-card.helpers';
+import { getEffectiveDays } from './monthly-report-card.helpers';
 
 import './monthly-report-card.css';
 
@@ -224,7 +224,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
   if (isLoading) {
     return (
       <div className={cn(s.loading)}>
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-teal-600" />
         <p className={cn(s.loadingText, 'report-card-loading-text')}>{t('Loading report...')}</p>
       </div>
     );
@@ -246,7 +246,11 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
     daysTracked: 0,
     isCurrentMonth: selectedMonth.getFullYear() === new Date().getFullYear() && selectedMonth.getMonth() === new Date().getMonth(),
   };
-  const elapsedDays = getElapsedDays(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1);
+  const elapsedDays = getEffectiveDays(
+    selectedMonth.getFullYear(),
+    selectedMonth.getMonth() + 1,
+    reportData ? new Date(reportData.baby.birthDate) : null
+  );
 
   return (
     <div className={cn(s.container, className, 'report-card-container')} ref={reportRef}>
@@ -274,7 +278,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
             disabled={exporting || !reportData}
             type="button"
           >
-            <FileDown className="w-3.5 h-3.5" />
+            <FileDown aria-hidden="true" className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{exporting ? t('Exporting PDF...') : t('PDF export')}</span>
           </button>
         )}

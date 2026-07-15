@@ -221,14 +221,14 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
     <div className={cn(styles.tabContent)}>
       {isFetching && (
         <div className="flex flex-col items-center justify-center p-6">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
           <p className="mt-2 text-gray-600">{t('Loading medicines...')}</p>
         </div>
       )}
       
       {error && (
         <div className="flex flex-col items-center justify-center p-6">
-          <AlertCircle className="h-8 w-8 text-red-500" />
+          <AlertCircle className="h-8 w-8 text-red-500" aria-hidden="true" />
           <p className="mt-2 text-red-500 text-center">{error}</p>
         </div>
       )}
@@ -255,27 +255,27 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
                 !medicine.active && styles.medicineListItemInactive
               )}>
                 <div className={cn(styles.medicineListItemHeader)} onClick={() => handleAccordionToggle(medicine.id)}>
-                  <PillBottle className={cn(styles.medicineListIcon, "medicine-form-medicine-list-icon")} />
+                  <PillBottle className={cn(styles.medicineListIcon, "medicine-form-medicine-list-icon")} aria-hidden="true" />
                   <div className={cn(styles.medicineListContent)}>
                     <p className={cn(styles.medicineListName, "medicine-form-medicine-list-name")}>{medicine.name}</p>
                     <p className={cn(styles.medicineListDose, "medicine-form-medicine-list-dose")}>
                       {t('Typical dose:')} {medicine.typicalDoseSize} {unitSymbol(medicine.unit?.unitAbbr)}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditMedicine(medicine); }}>
-                    <Edit className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEditMedicine(medicine); }} aria-label={t('Edit') + ' ' + medicine.name}>
+                    <Edit className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
                 {expandedMedicine === medicine.id && (
                   <div className={cn(styles.medicineListDetails, "medicine-form-medicine-list-details")}>
                     <div className={cn(styles.medicineListDetailsContent)}>
                       <p className={cn(styles.medicineListDetailItem, "medicine-form-medicine-list-detail-item")}>
-                        <Clock className={cn(styles.medicineListDetailIcon)} /> 
+                        <Clock className={cn(styles.medicineListDetailIcon)} aria-hidden="true" />
                         {t('Minimum time between doses:')} {formatDoseMinTimeDisplay(medicine.doseMinTime || '')}
                       </p>
                       {medicine.notes && <p className={cn(styles.medicineListNotes, "medicine-form-medicine-list-notes")}>{medicine.notes}</p>}
                       <div className={cn(styles.medicineListContactsContainer)}>
-                        <User className={cn(styles.medicineListDetailIcon)} />
+                        <User className={cn(styles.medicineListDetailIcon)} aria-hidden="true" />
                         <div className={cn(styles.medicineListContactsList)}>
                           {medicine.contacts.length > 0 ? (
                             medicine.contacts.map(c => <Badge key={c.contact.id} variant="secondary">{c.contact.name}</Badge>)
@@ -292,7 +292,7 @@ const ManageMedicinesTab: React.FC<ManageMedicinesTabProps> = ({ refreshData }) 
           </div>
           
           <Button className="w-full mt-4" onClick={handleAddMedicine}>
-            <Plus className="mr-2 h-4 w-4" /> {t('Add New Medicine')}
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {t('Add New Medicine')}
           </Button>
         </>
       )}

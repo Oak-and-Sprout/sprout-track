@@ -12,13 +12,13 @@ Used for self-hosted deployments and families without accounts.
 **Flow:**
 1. User enters family slug + two-digit login ID + security PIN
 2. `POST /api/auth` validates credentials against `Caretaker` table
-3. Server returns JWT containing: caretaker ID, name, type, role, familyId, familySlug
+3. Server returns JWT containing: caretaker ID, name, type, role, familyId, familySlug, authType (`CARETAKER` or `SYSTEM`), plus subscription metadata (`betaparticipant`, `trialEnds`, `planExpires`, `planType`) when the family has a linked account
 4. Client stores JWT in `localStorage` as `authToken`
 
 **System Caretaker (loginId '00'):**
 - Auto-created per family when no regular caretakers exist
 - Authenticated via the family's `Settings.securityPin`
-- Once regular caretakers are configured, the system caretaker is automatically disabled
+- Once regular caretakers are configured, the system caretaker is automatically disabled (login is also denied when the family's `Settings.authType` is `CARETAKER`)
 - Granted admin-level access (`withAdminAuth` allows system caretakers)
 
 ### 2. Account-Based (Email/Password Auth)
@@ -48,13 +48,14 @@ Token-based auth for invited users creating a new family:
 - Sent via `Authorization: Bearer <token>` header
 - Lifetime: `AUTH_LIFE` env var (default 1800 seconds / 30 minutes)
 - Signed with `JWT_SECRET` env var
+- Legacy fallback: if no Bearer token is present, a `caretakerId` cookie is accepted for backward compatibility (`getAuthenticatedUser` verifies the caretaker against the database)
 
 ### Refresh Token
 - Stored as HTTP-only cookie (`refreshToken`)
-- Lifetime: `REFRESH_TOKEN_LIFE` env var (default 604800 seconds / 7 days)
+- Lifetime: `REFRESH_TOKEN_LIFE` env var (default 604800 seconds / 7 days) — sliding window: a fresh refresh cookie is issued on each refresh, so it caps the maximum inactivity gap before re-login
 - Signed with separate secret (JWT_SECRET + '-refresh')
 - Endpoint: `POST /api/auth/refresh-token`
-- Contains minimal claims: userId, authType, familyId, accountId
+- Contains minimal claims: userId, authType, familyId, accountId, tokenType
 
 ### Token Blacklist
 - In-memory `Map<string, number>` (token → expiry timestamp)
@@ -96,11 +97,13 @@ export const DELETE = withAdminAuth(async (req) => { ... });
 ```
 - Allows: `caretakerRole === 'ADMIN'`, system caretakers (loginId '00'), or `isSysAdmin`
 - Returns 403 if authenticated but not admin
+- Writes a metadata-only audit log entry (who/when/endpoint/status, no bodies) for every call — including denied 401/403 attempts — when `ENABLE_LOG=true`
 
 ### `withSysAdminAuth(handler)`
 **Use when:** Only the system administrator should access (family manager operations).
 - Requires `isSysAdmin: true` in JWT
 - Returns 403 for all other users
+- Also writes metadata-only audit log entries when `ENABLE_LOG=true`
 
 ### `withAccountOwner(handler)`
 **Use when:** Only the account owner (or system admin) should access.
@@ -117,26 +120,30 @@ The `AuthResult` object passed to handlers by `withAuthContext`:
 ```typescript
 interface AuthResult {
   authenticated: boolean;
-  caretakerId?: string;      // Who is making the request
-  caretakerType?: string;    // parent, nanny, daycare, etc.
-  caretakerRole?: string;    // USER or ADMIN
-  familyId?: string;         // THE source of truth for data scoping
-  familySlug?: string;       // URL slug for the family
-  isSysAdmin?: boolean;      // System administrator flag
-  isSetupAuth?: boolean;     // Setup token authentication
-  isAccountAuth?: boolean;   // Account-based authentication
-  accountId?: string;        // Account ID (if account auth)
-  accountEmail?: string;     // Account email
-  isAccountOwner?: boolean;  // Account owns the family
-  verified?: boolean;        // Email verified
-  betaparticipant?: boolean; // Beta participant (exempt from expiration)
-  isExpired?: boolean;       // Account subscription expired
-  trialEnds?: string;        // Trial end date (ISO)
-  planExpires?: string;      // Plan expiration date (ISO)
-  planType?: string;         // Subscription plan type
-  error?: string;            // Error message if not authenticated
+  caretakerId?: string | null;  // Who is making the request
+  caretakerType?: string | null; // parent, nanny, daycare, etc.
+  caretakerRole?: string;       // USER or ADMIN
+  familyId?: string | null;     // THE source of truth for data scoping
+  familySlug?: string | null;   // URL slug for the family
+  isSysAdmin?: boolean;         // System administrator flag
+  isSetupAuth?: boolean;        // Setup token authentication
+  setupToken?: string;          // Setup token (if setup auth)
+  authType?: string;            // CARETAKER, SYSTEM, ACCOUNT, or SYSADMIN
+  isAccountAuth?: boolean;      // Account-based authentication
+  accountId?: string;           // Account ID (if account auth)
+  accountEmail?: string;        // Account email
+  isAccountOwner?: boolean;     // Account owns the family
+  verified?: boolean;           // Email verified
+  betaparticipant?: boolean;    // Beta participant (exempt from expiration)
+  isExpired?: boolean;          // Account subscription expired (soft expiration)
+  trialEnds?: string | null;    // Trial end date (ISO)
+  planExpires?: string | null;  // Plan expiration date (ISO)
+  planType?: string | null;     // Subscription plan type
+  error?: string;               // Error message if not authenticated
 }
 ```
+
+Expiration is **soft**: `getAuthenticatedUser()` never rejects an expired account — it computes `isExpired` (SaaS mode only, non-beta accounts) and attaches it as metadata. This applies to account auth *and* PIN-based tokens whose family has a linked account. Enforcement happens via write protection (below). Closed accounts, by contrast, are hard-rejected with 401.
 
 ## Family-Level Authorization (The Golden Rule)
 
@@ -191,8 +198,8 @@ const writeCheck = checkWritePermission(authContext);
 if (!writeCheck.allowed) return writeCheck.response;
 ```
 
-- Only enforced when `DEPLOYMENT_MODE=saas`
-- Returns 403 with specific error: `TRIAL_EXPIRED`, `PLAN_EXPIRED`, or `NO_PLAN`
+- Only enforced when `DEPLOYMENT_MODE=saas` (auth only sets `isExpired` in SaaS mode)
+- Returns 403 with a human-readable error message; the expiration type (`TRIAL_EXPIRED`, `PLAN_EXPIRED`, or `NO_PLAN`) and date are returned in `data.expirationInfo`
 - Beta participants and non-account families are exempt
 
 ## IP Lockout
@@ -209,7 +216,7 @@ Brute-force protection via `app/api/utils/ip-lockout.ts`:
 The `FamilyProvider` (`src/context/family.tsx`) handles client-side auth:
 - Global fetch interceptor adds `Authorization: Bearer <token>` to all requests
 - 401 responses trigger automatic logout (except on login page)
-- Account expiration checked every 30 seconds in SaaS mode
+- Account expiration checked every 30 seconds in SaaS mode (soft check reading the JWT payload — expired users are not logged out; the UI shows expiration banners while writes are blocked server-side)
 - Provides `authenticatedFetch` wrapper for components
 
 ## Key Files

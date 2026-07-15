@@ -63,7 +63,7 @@ const TemperatureStatsSection: React.FC<TemperatureStatsSectionProps> = ({
   return (
     <AccordionItem value="temperature">
       <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-        <Thermometer className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-measurement")} />
+        <Thermometer aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-measurement")} />
         <span>{t('Temperature Measurements')}</span>
       </AccordionTrigger>
       <AccordionContent className={styles.accordionContent}>

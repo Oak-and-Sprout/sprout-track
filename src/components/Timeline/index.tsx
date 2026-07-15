@@ -24,7 +24,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
@@ -294,13 +294,13 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-192px)]">
+    <div className="flex flex-col h-[calc(100vh-199px)]">
       {/* Header */}
       <CardHeader className="bg-gradient-to-r from-teal-600 to-teal-700 p-0">
         <TimelineFilter

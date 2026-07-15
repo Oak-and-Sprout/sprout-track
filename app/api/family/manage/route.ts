@@ -17,6 +17,11 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<Fa
             caretakers: true,
             babies: true
           }
+        },
+        settings: {
+          select: {
+            photoQuotaMB: true
+          }
         }
       }
     });
@@ -63,6 +68,7 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<Fa
       lastEntryAt: lastEntryMap.get(family.id) || null,
       caretakerCount: family._count.caretakers,
       babyCount: family._count.babies,
+      photoQuotaMB: family.settings[0]?.photoQuotaMB ?? null,
     }));
 
     return NextResponse.json({

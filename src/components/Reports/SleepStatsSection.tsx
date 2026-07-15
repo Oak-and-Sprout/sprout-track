@@ -66,7 +66,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
     <>
       <AccordionItem value="sleep">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <Moon className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-sleep")} />
+          <Moon aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-sleep")} />
           <span>{t('Sleep Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>
@@ -143,7 +143,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                   setSleepLocationsModalOpen(true);
                 }}
               >
-                <MapPin className={styles.sectionTitleIcon} />
+                <MapPin aria-hidden="true" className={styles.sectionTitleIcon} />
                 {t('Popular Nap Locations')}
               </button>
               <div className={styles.locationList}>
@@ -178,7 +178,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                   setSleepLocationsModalOpen(true);
                 }}
               >
-                <MapPin className={styles.sectionTitleIcon} />
+                <MapPin aria-hidden="true" className={styles.sectionTitleIcon} />
                 {t('Popular Night Sleep Locations')}
               </button>
               <div className={styles.locationList}>

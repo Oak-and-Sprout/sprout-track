@@ -1,6 +1,6 @@
 {
   "name": "baby-tracker",
-  "version": "1.3.5",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -19,7 +19,9 @@
     "setup:vapid": "tsx scripts/setup-vapid-keys.ts",
     "notification:cron:setup": "tsx scripts/setup-notification-cron.ts",
     "notification:cron:run": "bash scripts/run-notification-cron.sh",
-    "env:ensure": "node scripts/ensure-env-defaults.js"
+    "env:ensure": "node scripts/ensure-env-defaults.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@lucide/lab": "^0.1.2",
@@ -39,9 +41,11 @@
     "better-sqlite3": "^12.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "csv-parse": "^7.0.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "exceljs": "^4.4.0",
+    "exif-reader": "^2.0.3",
     "framer-motion": "^12.5.0",
     "html2canvas-pro": "^2.0.2",
     "jsonwebtoken": "^9.0.2",
@@ -84,6 +88,7 @@
     "tailwindcss": "^4.0.6",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.10"
   }
 }

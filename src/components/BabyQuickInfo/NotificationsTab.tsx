@@ -79,7 +79,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
           {lastActivities?.lastPoopDiaper ? (
             <div className={cn(styles.activityItem, "baby-quick-info-activity-item")}>
               <div className={cn(styles.activityIconContainer, "baby-quick-info-activity-icon-container")}>
-                <Icon iconNode={diaper} className="h-4 w-4" />
+                <Icon iconNode={diaper} className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
@@ -97,7 +97,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
           {lastActivities?.lastBath ? (
             <div className={cn(styles.activityItem, "baby-quick-info-activity-item")}>
               <div className={cn(styles.activityIconContainer, "baby-quick-info-activity-icon-container")}>
-                <Bath className="h-4 w-4" />
+                <Bath className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
@@ -118,7 +118,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
           {lastActivities?.lastMeasurements?.height ? (
             <div className={cn(styles.activityItem, "baby-quick-info-activity-item")}>
               <div className={cn(styles.activityIconContainer, "baby-quick-info-activity-icon-container")}>
-                <Ruler className="h-4 w-4" />
+                <Ruler className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
@@ -139,7 +139,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
           {lastActivities?.lastMeasurements?.weight ? (
             <div className={cn(styles.activityItem, "baby-quick-info-activity-item")}>
               <div className={cn(styles.activityIconContainer, "baby-quick-info-activity-icon-container")}>
-                <Scale className="h-4 w-4" />
+                <Scale className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
@@ -160,7 +160,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
           {lastActivities?.lastMeasurements?.headCircumference ? (
             <div className={cn(styles.activityItem, "baby-quick-info-activity-item")}>
               <div className={cn(styles.activityIconContainer, "baby-quick-info-activity-icon-container")}>
-                <RotateCw className="h-4 w-4" />
+                <RotateCw className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
@@ -181,7 +181,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
           {lastActivities?.lastNote ? (
             <div className={cn(styles.activityItem, "baby-quick-info-activity-item")}>
               <div className={cn(styles.activityIconContainer, "baby-quick-info-activity-icon-container")}>
-                <StickyNote className="h-4 w-4" />
+                <StickyNote className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
@@ -227,7 +227,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
                 </div>
                 {event.location && (
                   <div className={cn(styles.eventLocation, "baby-quick-info-event-location")}>
-                    <MapPin className={cn(styles.eventLocationIcon, "baby-quick-info-event-location-icon")} />
+                    <MapPin className={cn(styles.eventLocationIcon, "baby-quick-info-event-location-icon")} aria-hidden="true" />
                     {event.location}
                   </div>
                 )}

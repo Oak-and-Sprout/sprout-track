@@ -8,7 +8,8 @@ import { cva } from "class-variance-authority";
 
 export const styles = {
   // Container styles
-  container: "flex flex-col h-[calc(100vh-192px)]",
+  // app header (80px + 1px border) + activity tile row (117px) + 1px rounding margin
+  container: "flex flex-col h-[calc(100vh-199px)]",
   
   // Content styles
   content: "flex-1 overflow-y-auto bg-white",

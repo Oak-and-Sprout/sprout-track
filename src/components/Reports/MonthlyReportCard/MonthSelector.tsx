@@ -69,7 +69,7 @@ const MonthSelector: React.FC<MonthSelectorProps> = ({
           aria-label={t('Previous month')}
           type="button"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft aria-hidden="true" className="w-4 h-4" />
         </button>
       )}
 
@@ -88,7 +88,7 @@ const MonthSelector: React.FC<MonthSelectorProps> = ({
           aria-label={t('Next month')}
           type="button"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight aria-hidden="true" className="w-4 h-4" />
         </button>
       )}
     </div>

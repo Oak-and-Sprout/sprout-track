@@ -18,8 +18,10 @@ import {
   ComposedChart,
   Legend,
 } from 'recharts';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { ActivityType, DateRange } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
+import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
 
@@ -152,6 +154,18 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
     const leftDurationByDay: Record<string, { total: number; count: number }> = {};
     const rightDurationByDay: Record<string, { total: number; count: number }> = {};
 
+    // Sessions per day: linked/paired side entries count once, attributed to
+    // the day the session started (issue #198)
+    const breastRows = activities.filter(
+      (a) => 'type' in a && 'time' in a && (a as any).type === 'BREAST'
+    );
+    groupBreastFeedSessions(breastRows as any).forEach((session) => {
+      if (session.time >= startDate && session.time <= endDate) {
+        const dayKey = session.time.toLocaleDateString('en-CA').split('T')[0];
+        countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
+      }
+    });
+
     activities.forEach((activity) => {
       if ('type' in activity && 'time' in activity) {
         const activityType = (activity as any).type;
@@ -162,8 +176,6 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
         const dayKey = feedTime.toLocaleDateString('en-CA').split('T')[0];
 
         if (feedTime >= startDate && feedTime <= endDate) {
-          countsByDay[dayKey] = (countsByDay[dayKey] || 0) + 1;
-
           // Duration is in seconds, convert to minutes
           const durationSeconds = feedActivity.feedDuration || 0;
           const durationMinutes = Math.floor(durationSeconds / 60);
@@ -351,6 +363,23 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                     ))}
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    { key: 'count', label: t('Feed Count') },
+                    ...bottleData.bottleTypes.map((type) => ({
+                      key: type,
+                      label: t(type.replace('\\', '/')),
+                    })),
+                  ]}
+                  rows={bottleData.data.map((point: any) => ({
+                    ...point,
+                    ...Object.fromEntries(
+                      bottleData.bottleTypes.map((type) => [type, (point[type] as number).toFixed(1)])
+                    ),
+                  }))}
+                />
               </div>
             )}
           </>
@@ -436,6 +465,21 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    { key: 'count', label: t('Feed Count') },
+                    { key: 'leftAvg', label: t('Left Avg') },
+                    { key: 'rightAvg', label: t('Right Avg') },
+                  ]}
+                  rows={breastData.map((point) => ({
+                    label: point.label,
+                    count: point.count,
+                    leftAvg: formatMinutes(point.leftAvg),
+                    rightAvg: formatMinutes(point.rightAvg),
+                  }))}
+                />
               </div>
             )}
           </>
@@ -508,6 +552,20 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                     ))}
                   </ComposedChart>
                 </ResponsiveContainer>
+                <ChartDataTable
+                  caption={getTitle()}
+                  columns={[
+                    { key: 'label', label: t('Date') },
+                    { key: 'count', label: t('Feed Count') },
+                    ...solidsData.foodTypes.map((food) => ({ key: food, label: food })),
+                  ]}
+                  rows={solidsData.data.map((point: any) => ({
+                    ...point,
+                    ...Object.fromEntries(
+                      solidsData.foodTypes.map((food) => [food, (point[food] as number).toFixed(1)])
+                    ),
+                  }))}
+                />
               </div>
             )}
           </>

@@ -10,6 +10,8 @@ import { FullLogActivityDetailsProps } from './full-log-timeline.types';
 import { getActivityDetails, formatTime } from '@/src/components/Timeline/utils';
 import { useLocalization } from '@/src/context/localization';
 import { useUnit } from '@/src/hooks/useUnit';
+import { FeedLogResponse } from '@/app/api/types';
+import LinkedFeedsSection from '@/src/components/forms/FeedForm/LinkedFeedsSection';
 
 import './full-log-timeline.css';
 
@@ -101,6 +103,13 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
               </div>
             ))
           )}
+          {'amount' in activity && 'type' in activity && activity.type === 'BREAST' && 'babyId' in activity && (
+            <LinkedFeedsSection
+              activity={activity as FeedLogResponse}
+              babyId={activity.babyId}
+              readOnly
+            />
+          )}
         </div>
       </FormPageContent>
       <FormPageFooter>
@@ -110,14 +119,14 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
               variant="destructive"
               onClick={() => onDelete(activity)}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Delete')}
             </Button>
             <Button
               variant="outline"
               onClick={handleEdit}
             >
-              <Pencil className="h-4 w-4 mr-2" />
+              <Pencil className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Edit')}
             </Button>
           </div>

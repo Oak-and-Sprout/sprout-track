@@ -4,6 +4,15 @@
 DB_PROVIDER="${DATABASE_PROVIDER:-sqlite}"
 echo "Database provider: $DB_PROVIDER"
 
+# Capture DB settings provided via the container runtime environment (compose /
+# docker run -e) before the persisted env file is sourced. The image bakes
+# sqlite placeholder URLs into ENV; those are not user intent, so ignore them.
+RUNTIME_DATABASE_PROVIDER="$DATABASE_PROVIDER"
+RUNTIME_DATABASE_URL="$DATABASE_URL"
+RUNTIME_LOG_DATABASE_URL="$LOG_DATABASE_URL"
+[ "$RUNTIME_DATABASE_URL" = "file:/db/baby-tracker.db" ] && RUNTIME_DATABASE_URL=""
+[ "$RUNTIME_LOG_DATABASE_URL" = "file:/db/baby-tracker-logs.db" ] && RUNTIME_LOG_DATABASE_URL=""
+
 # SQLite-specific setup: create directories and symlinks
 if [ "$DB_PROVIDER" = "sqlite" ]; then
   # Ensure the database directory exists
@@ -41,6 +50,34 @@ ENV_FILE="/app/env/.env"
 set -a
 . "$ENV_FILE"
 set +a
+
+# Runtime container env takes precedence over the persisted env file for DB
+# settings (issue #171): a stale or baked sqlite env file must not clobber a
+# PostgreSQL deployment.
+[ -n "$RUNTIME_DATABASE_PROVIDER" ] && export DATABASE_PROVIDER="$RUNTIME_DATABASE_PROVIDER"
+[ -n "$RUNTIME_DATABASE_URL" ] && export DATABASE_URL="$RUNTIME_DATABASE_URL"
+[ -n "$RUNTIME_LOG_DATABASE_URL" ] && export LOG_DATABASE_URL="$RUNTIME_LOG_DATABASE_URL"
+
+# Fail fast on a provider/URL mismatch instead of silently falling back to an
+# empty SQLite database (URLs are not echoed: they may contain credentials).
+if [ "$DB_PROVIDER" = "postgresql" ]; then
+  case "$DATABASE_URL" in
+    postgres://*|postgresql://*) ;;
+    *)
+      echo "ERROR: DATABASE_PROVIDER is postgresql but DATABASE_URL is empty or does not start with postgresql://"
+      echo "Set DATABASE_URL to your PostgreSQL connection string (see docker-compose.postgres.yml)."
+      exit 1
+      ;;
+  esac
+  case "$LOG_DATABASE_URL" in
+    postgres://*|postgresql://*) ;;
+    *)
+      echo "ERROR: DATABASE_PROVIDER is postgresql but LOG_DATABASE_URL is empty or does not start with postgresql://"
+      echo "Set LOG_DATABASE_URL to your PostgreSQL connection string (see docker-compose.postgres.yml)."
+      exit 1
+      ;;
+  esac
+fi
 
 echo "Generating Prisma clients..."
 npm run prisma:generate

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
@@ -34,11 +35,14 @@ export default function SolidsFeedForm({
 }: SolidsFeedFormProps) {
   const { t } = useLocalization();
   const { unitSymbol } = useUnit();
+  const amountId = useId();
+  const foodId = useId();
+  const notesId = useId();
 
   return (
     <>
       <div>
-        <label className="form-label mb-6">{t('Amount (')}{unitSymbol(unit)})</label>
+        <label htmlFor={amountId} className="form-label mb-6">{t('Amount (')}{unitSymbol(unit)})</label>
         <div className="flex items-center justify-center mb-6">
           <Button
             type="button"
@@ -47,10 +51,12 @@ export default function SolidsFeedForm({
             onClick={onDecrement}
             disabled={loading}
             className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            aria-label={t('Decrease amount')}
           >
-            <Minus className="h-5 w-5 text-white" />
+            <Minus className="h-5 w-5 text-white" aria-hidden="true" />
           </Button>
           <Input
+            id={amountId}
             type="text"
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
@@ -66,8 +72,9 @@ export default function SolidsFeedForm({
             onClick={onIncrement}
             disabled={loading}
             className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            aria-label={t('Increase amount')}
           >
-            <Plus className="h-5 w-5 text-white" />
+            <Plus className="h-5 w-5 text-white" aria-hidden="true" />
           </Button>
         </div>
         <div className="mt-2 flex space-x-2">
@@ -92,8 +99,9 @@ export default function SolidsFeedForm({
         </div>
       </div>
       <div className="mb-6">
-        <label className="form-label">{t('Food')}</label>
+        <label htmlFor={foodId} className="form-label">{t('Food')}</label>
         <Input
+          id={foodId}
           value={food}
           onChange={(e) => onFoodChange(e.target.value)}
           className="w-full"
@@ -102,9 +110,9 @@ export default function SolidsFeedForm({
         />
       </div>
       <div className="mb-6">
-        <label className="form-label">{t('Notes')}</label>
+        <label htmlFor={notesId} className="form-label">{t('Notes')}</label>
         <Textarea
-          id="notes"
+          id={notesId}
           name="notes"
           placeholder={t("Enter any notes about the feeding")}
           value={notes}

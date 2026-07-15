@@ -21,7 +21,14 @@ export const GET = withAuthContext(handler);
 export const POST = withAuthContext(handler);
 ```
 
-A single handler function typically handles multiple HTTP methods by checking `req.method` or by exporting separate functions per method.
+Routes define a separate handler function per method (`handleGet`, `handlePost`, `handlePut`, `handleDelete`), each individually wrapped and exported:
+
+```typescript
+export const GET = withAuthContext(handleGet);
+export const POST = withAuthContext(handlePost);
+export const PUT = withAuthContext(handlePut);
+export const DELETE = withAuthContext(handleDelete);
+```
 
 ## Standard Response Format
 
@@ -55,11 +62,10 @@ Most handlers follow this sequence:
 The `withAuthContext` wrapper handles authentication and passes `authContext` to the handler.
 
 ### 2. Write Protection Check (for mutations)
+At the top of mutation handlers (`handlePost`, `handlePut`, `handleDelete`):
 ```typescript
-if (req.method !== 'GET') {
-  const writeCheck = checkWritePermission(authContext);
-  if (!writeCheck.allowed) return writeCheck.response;
-}
+const writeCheck = checkWritePermission(authContext);
+if (!writeCheck.allowed) return writeCheck.response;
 ```
 
 ### 3. Extract Family Context
@@ -103,8 +109,13 @@ const log = await prisma.diaperLog.create({
 
 ### 7. Trigger Side Effects
 ```typescript
-// Push notifications after activity creation
-await triggerActivityNotification(log, baby, userFamilyId);
+// Push notifications after activity creation (fire-and-forget)
+notifyActivityCreated(
+  log.babyId,
+  'diaper',
+  { accountId: authContext.accountId, caretakerId: authContext.caretakerId },
+  { type: body.type }
+).catch(console.error);
 ```
 
 ### 8. Return Response
@@ -192,6 +203,7 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 | `GET /api/hooks/v1/babies/[babyId]/activities/` | Recent activities |
 | `GET /api/hooks/v1/babies/[babyId]/measurements/latest/` | Latest measurements |
 | `GET /api/hooks/v1/babies/[babyId]/status/` | Baby status summary |
+| `GET /api/hooks/v1/babies/[babyId]/reference/` | Reference data (valid enum values for activity fields) |
 
 **Authentication:** Uses API keys (not JWT). Keys are validated via SHA-256 hash lookup against the `ApiKey` model. Scoped by `familyId` and optionally `babyId`, with read/write permissions.
 
@@ -203,10 +215,10 @@ After creating activity logs, the system can trigger push notifications:
 
 ```typescript
 // src/lib/notifications/activityHook.ts
-await triggerActivityNotification(log, baby, familyId);
+notifyActivityCreated(babyId, activityType, actingUser, activityData).catch(console.error);
 ```
 
-This checks `NotificationPreference` records to determine which subscriptions want to be notified about this activity type for this baby, then sends push notifications via the Web Push API.
+This checks `NotificationPreference` records to determine which subscriptions want to be notified about this activity type for this baby (excluding the acting user), then sends push notifications via the Web Push API. `resetTimerNotificationState()` is also exported to clear timer-notification state when a new feed/medicine log lands.
 
 ### Timer-Based Notifications
 A cron job (`/api/notifications/cron`) checks for overdue timers:
@@ -221,10 +233,10 @@ Optional logging wrapper for debugging:
 ```typescript
 import { withLogging } from '../utils/with-logging';
 
-export const GET = withLogging(withAuthContext(handler));
+export const GET = withAuthContext(withLogging(handler));
 ```
 
-Logs request method, URL, status code, and response time. Controlled by debug flags in Settings.
+Logs request method, path, status code, response time, IP/user agent, and request/response bodies. Enabled via the `ENABLE_LOG=true` environment variable. A combined `withAuthAndLogging(handler, authWrapper)` helper is also available. Separately, `withAdminAuth`/`withSysAdminAuth` always write metadata-only audit entries (no bodies) for privileged calls when `ENABLE_LOG=true`.
 
 ## Key Files
 

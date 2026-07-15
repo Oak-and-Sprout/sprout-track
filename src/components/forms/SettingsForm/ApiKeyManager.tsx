@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { Baby } from '@prisma/client';
 import { Key, Plus, Copy, Check, Trash2, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/src/components/ui/card';
@@ -40,6 +40,7 @@ interface ApiKeyManagerProps {
 
 export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) {
   const { t } = useLocalization();
+  const idPrefix = useId();
   const { dateFormat } = useTimezone();
   const { showToast } = useToast();
   const [apiKeys, setApiKeys] = useState<ApiKeyDisplay[]>([]);
@@ -222,11 +223,12 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
       {/* Created key success banner */}
       {createdKey && (
         <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-          <p className="text-sm font-medium text-emerald-800 mb-2">{t('API Key Created')}</p>
+          <p id={`${idPrefix}-created-key-label`} className="text-sm font-medium text-emerald-800 mb-2">{t('API Key Created')}</p>
           <p className="text-xs text-emerald-600 mb-3">{t('Copy this key now. It will not be shown again.')}</p>
           <div className="flex gap-2">
             <Input
               readOnly
+              aria-labelledby={`${idPrefix}-created-key-label`}
               value={createdKey}
               className="flex-1 font-mono text-xs bg-white"
             />
@@ -235,7 +237,7 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
               size="sm"
               onClick={handleCopyKey}
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
               <span className="ml-1">{copied ? t('Copied!') : t('Copy to Clipboard')}</span>
             </Button>
           </div>
@@ -255,8 +257,9 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
         <Card className="mb-4">
         <CardContent className="p-4 space-y-3">
           <div>
-            <Label className="form-label">{t('Key Name')}</Label>
+            <Label htmlFor={`${idPrefix}-key-name`} className="form-label">{t('Key Name')}</Label>
             <Input
+              id={`${idPrefix}-key-name`}
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
               placeholder="e.g. Home Assistant, Nursery Button"
@@ -265,8 +268,8 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           </div>
 
           <div>
-            <Label className="form-label">{t('Scopes')}</Label>
-            <div className="flex gap-4 mt-1">
+            <Label id={`${idPrefix}-scopes-label`} className="form-label">{t('Scopes')}</Label>
+            <div role="group" aria-labelledby={`${idPrefix}-scopes-label`} className="flex gap-4 mt-1">
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -289,9 +292,9 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           </div>
 
           <div>
-            <Label className="form-label">{t('Baby Restriction')}</Label>
+            <Label htmlFor={`${idPrefix}-baby-restriction`} className="form-label">{t('Baby Restriction')}</Label>
             <Select value={newKeyBabyId} onValueChange={setNewKeyBabyId}>
-              <SelectTrigger className="mt-1">
+              <SelectTrigger id={`${idPrefix}-baby-restriction`} className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -306,15 +309,17 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           </div>
 
           <div>
-            <Label className="form-label">{t('Expiration')}</Label>
+            <Label htmlFor={`${idPrefix}-expiration`} className="form-label">{t('Expiration')}</Label>
             <Input
+              id={`${idPrefix}-expiration`}
               type="date"
               value={newKeyExpiration}
               onChange={(e) => setNewKeyExpiration(e.target.value)}
               className="mt-1"
               placeholder={t('Never')}
+              aria-describedby={`${idPrefix}-expiration-hint`}
             />
-            <p className="text-xs text-gray-500 mt-1">{t('Leave blank for no expiration')}</p>
+            <p id={`${idPrefix}-expiration-hint`} className="text-xs text-gray-500 mt-1">{t('Leave blank for no expiration')}</p>
           </div>
 
           <div className="flex gap-2 pt-2">
@@ -323,7 +328,7 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
               disabled={creating || !newKeyName.trim() || (!newKeyReadScope && !newKeyWriteScope)}
               size="sm"
             >
-              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Key className="h-4 w-4 mr-1" />}
+              {creating ? <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" /> : <Key className="h-4 w-4 mr-1" aria-hidden="true" />}
               {t('Create API Key')}
             </Button>
             <Button
@@ -343,12 +348,13 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
 
       {/* Key list */}
       {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <div role="status" className="flex items-center justify-center py-8">
+          <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-gray-400" />
+          <span className="sr-only">{t('Loading...')}</span>
         </div>
       ) : apiKeys.length === 0 && !showCreateForm ? (
         <div className="text-center py-8 text-gray-500">
-          <Key className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <Key className="h-8 w-8 mx-auto mb-2 opacity-50" aria-hidden="true" />
           <p className="text-sm">{t('No API keys yet')}</p>
           <p className="text-xs mt-1">{t('Create your first API key to enable external integrations.')}</p>
         </div>
@@ -407,8 +413,9 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
                         variant="ghost"
                         size="sm"
                         onClick={() => setRevokingKeyId(key.id)}
+                        aria-label={t('Revoke') + ' ' + key.name}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
                       </Button>
                     )}
                   </div>
@@ -427,7 +434,7 @@ export default function ApiKeyManager({ babies, familyId }: ApiKeyManagerProps) 
           className="w-full mt-3"
           onClick={() => setShowCreateForm(true)}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           {t('Create API Key')}
         </Button>
       )}

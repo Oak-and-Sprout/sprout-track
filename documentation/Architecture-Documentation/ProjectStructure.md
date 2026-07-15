@@ -2,7 +2,7 @@
 
 ## Overview
 
-Sprout Track is a Next.js baby tracking application using the App Router. The codebase is organized into two main areas: `app/` for routing, pages, and API endpoints, and `src/` for shared components, hooks, context, and utilities. The application is deployed via Docker with SQLite as the database.
+Sprout Track is a Next.js baby tracking application using the App Router. The codebase is organized into two main areas: `app/` for routing, pages, and API endpoints, and `src/` for shared components, hooks, context, and utilities. The application is deployed via Docker with SQLite as the default database; PostgreSQL is also supported (`docker-compose.postgres.yml`, `DATABASE_PROVIDER` env var), and all Prisma queries must be compatible with both.
 
 ## Directory Tree
 
@@ -12,6 +12,7 @@ Sprout Track is a Next.js baby tracking application using the App Router. The co
 │   ├── (app)/[slug]/            # Main authenticated app (family-scoped)
 │   ├── (auth)/                  # Login/auth pages
 │   ├── (nursery)/[slug]/        # Nursery mode (tablet-optimized)
+│   ├── (setup-resume)/[slug]/   # Resume an in-progress family setup
 │   ├── account/                 # Account management pages
 │   ├── api/                     # All API routes (~50 route folders)
 │   ├── context/                 # App-level context providers
@@ -29,20 +30,21 @@ Sprout Track is a Next.js baby tracking application using the App Router. The co
 │   ├── hooks/                   # Custom React hooks
 │   ├── lib/                     # Libraries (email, notifications, utils)
 │   ├── localization/            # Translation files and config
-│   ├── types/                   # Shared TypeScript types
 │   └── utils/                   # Utility functions
 ├── prisma/                      # Database schema and migrations
 │   ├── schema.prisma            # Main database schema
+│   ├── log-schema.prisma        # Separate logging database schema
 │   ├── migrations/              # Migration files
-│   └── seed files               # Database seeding
-├── public/                      # Static assets
+│   └── seed.ts                  # Database seeding
+├── public/                      # Static assets (icons, tutorial/demo videos)
 │   ├── sw.js                    # Service worker (push notifications)
-│   ├── icons/                   # App icons
-│   └── videos/                  # Tutorial/demo videos
+│   └── manifest.json            # PWA manifest
 ├── scripts/                     # Utility scripts
+├── tests/                       # Tests (Vitest)
 ├── db/                          # SQLite database files (Docker volume)
 ├── Dockerfile                   # Multi-stage Docker build
-├── docker-compose.yml           # Container orchestration
+├── docker-compose.yml           # Container orchestration (SQLite)
+├── docker-compose.postgres.yml  # Container orchestration (PostgreSQL)
 ├── CLAUDE.md                    # Development rules and conventions
 └── tailwind.config.js           # Tailwind configuration
 ```
@@ -66,6 +68,9 @@ The primary user experience after login:
 ### `(nursery)/[slug]/` — Nursery Mode
 - `nursery-mode/page.tsx` — Simplified tablet interface for daycare/nursery use
 - Separate layout optimized for wall-mounted tablets
+
+### `(setup-resume)/[slug]/` — Setup Resume
+- `resume-setup/page.tsx` — Resume a partially completed family setup
 
 ### Other Page Routes
 - `account/` — Account management (family setup, payment success/cancelled)
@@ -120,7 +125,7 @@ API routes live under `app/api/` and are organized by domain. Each folder contai
 
 ```
 src/components/
-├── ui/                    # 34 base UI primitives
+├── ui/                    # 39 base UI primitives
 │   ├── button/            # Each has: index.tsx, styles.ts, .css, types.ts, README.md
 │   ├── input/
 │   ├── modal/
@@ -129,12 +134,12 @@ src/components/
 │   ├── dialog/
 │   ├── table/
 │   ├── toast/
-│   └── ... (26 more)
+│   └── ... (31 more)
 ├── forms/                 # Form components (one per activity type)
 │   ├── FeedForm/
 │   ├── SleepForm/
 │   ├── DiaperForm/
-│   └── ... (17 more)
+│   └── ... (18 more)
 ├── modals/                # Modal components
 ├── Calendar/              # Feature components at root level
 ├── Timeline/
@@ -144,8 +149,17 @@ src/components/
 ├── SetupWizard/
 ├── account-manager/       # Account management UI
 ├── familymanager/         # System admin family management
+├── reporting/             # Report visual components
 └── features/              # Feature-specific utilities (nursery-mode)
 ```
+
+## Localization
+
+All user-facing strings (including `aria-label`s) go through `t()` from the `useLocalization` hook (`@/src/context/localization`).
+
+- `src/localization/translations/` — per-language JSON files (10 languages); flat key-value structure where keys are the exact English text and `en.json` is the fallback
+- `src/localization/supported-languages.json` — supported language configuration
+- `scripts/check-missing-translations.js` — adds missing keys to all non-English files and sorts them; run after adding keys to `en.json`
 
 ## Docker Deployment
 
@@ -155,10 +169,11 @@ The application runs in a Docker container built from `node:22-alpine`:
 - `/db` — SQLite database files (persistent)
 - `/app/env` — Environment configuration files
 - `/app/Files` — Encrypted vaccine document storage
-- `/app/logs` — Application logs
+
+(`/app/logs` is created inside the image for notification logs but is not a mounted volume.)
 
 **Key Environment Variables:**
-- `DEPLOYMENT_MODE` — `saas` or `self-hosted`
+- `DEPLOYMENT_MODE` — `saas` or `selfhosted` (code checks for `'saas'`)
 - `JWT_SECRET` — JWT signing key
 - `AUTH_LIFE` — Access token lifetime (seconds)
 - `IDLE_TIME` — Client idle timeout (seconds)

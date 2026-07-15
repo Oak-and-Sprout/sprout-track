@@ -9,8 +9,27 @@ import { TimelineActivityDetailsProps } from './types';
 import { getActivityDetails, formatTime } from './utils';
 import { useLocalization } from '@/src/context/localization';
 import { useUnit } from '@/src/hooks/useUnit';
+import { FeedLogResponse, TimelinePhotoInfo } from '@/app/api/types';
+import LinkedFeedsSection from '@/src/components/forms/FeedForm/LinkedFeedsSection';
+import { useAuthedImage, photoFileUrl } from '@/src/hooks/useAuthedImage';
 
 import './timeline-activity-details.css';
+
+function DetailPhotoThumb({ photo, onClick }: { photo: TimelinePhotoInfo; onClick?: () => void }) {
+  const { t } = useLocalization();
+  const { src } = useAuthedImage(photoFileUrl(photo.id, 'thumb'));
+  return (
+    <button
+      type="button"
+      className="grid h-[84px] w-[84px] place-items-center overflow-hidden rounded-xl bg-gray-100 shadow-sm timeline-details-photo-thumb"
+      onClick={onClick}
+      title={photo.caption || undefined}
+      aria-label={photo.caption || t('View photo')}
+    >
+      {src && <img src={src} alt={photo.caption || ''} className="h-full w-full object-cover" />}
+    </button>
+  );
+}
 
 const TimelineActivityDetails = ({
   activity,
@@ -19,12 +38,17 @@ const TimelineActivityDetails = ({
   onClose,
   onDelete,
   onEdit,
+  onPhotoClick,
 }: TimelineActivityDetailsProps) => {
   
   const { t } = useLocalization();
   const { unitSymbol } = useUnit();
 
   if (!activity) return null;
+
+  // Photos attached by the timeline API (photo logs and linked activities)
+  const attachedPhotos: TimelinePhotoInfo[] =
+    'photos' in activity && Array.isArray((activity as any).photos) ? (activity as any).photos : [];
 
   // Special medicine details rendering
   let medicineDetails: { label: string; value: string }[] | null = null;
@@ -49,8 +73,12 @@ const TimelineActivityDetails = ({
   
   const handleEdit = () => {
     if (activity) {
+      // Photo log - check before the more generic field checks below
+      if ('photoLogId' in activity) {
+        onEdit(activity, 'photo');
+      }
       // Check play activity before sleep since both have duration and type
-      if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
+      else if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) {
         onEdit(activity, 'play');
       }
       // Check for breast milk adjustment before pump
@@ -110,6 +138,30 @@ const TimelineActivityDetails = ({
               </div>
             ))
           )}
+          {'amount' in activity && 'type' in activity && activity.type === 'BREAST' && 'babyId' in activity && (
+            <LinkedFeedsSection
+              activity={activity as FeedLogResponse}
+              babyId={activity.babyId}
+              readOnly
+            />
+          )}
+          {attachedPhotos.length > 0 && (
+            <div>
+              <div className="text-sm font-medium text-gray-500 timeline-details-label mb-2">
+                {t('Photos')} ({attachedPhotos.length})
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {attachedPhotos.map((photo) => (
+                  <DetailPhotoThumb
+                    key={photo.id}
+                    photo={photo}
+                    onClick={onPhotoClick ? () => onPhotoClick(photo.id) : undefined}
+                  />
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-gray-400 timeline-details-photo-hint">{t('Tap a photo to view or manage it.')}</p>
+            </div>
+          )}
         </div>
       </FormPageContent>
       <FormPageFooter>
@@ -119,14 +171,14 @@ const TimelineActivityDetails = ({
               variant="destructive"
               onClick={handleDelete}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Delete')}
             </Button>
             <Button
               variant="outline"
               onClick={handleEdit}
             >
-              <Pencil className="h-4 w-4 mr-2" />
+              <Pencil className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Edit')}
             </Button>
           </div>

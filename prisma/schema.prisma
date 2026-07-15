@@ -198,6 +198,9 @@ model Family {
   activeActivities  ActiveActivity[]
   vaccineLogs    VaccineLog[]
   apiKeys        ApiKey[]
+  photos         Photo[]
+  photoLogs      PhotoLog[]
+  externalImportRecords ExternalImportRecord[]
 }
 
 // New model for family membership
@@ -223,6 +226,7 @@ model Baby {
   inactive          Boolean   @default(false)
   feedWarningTime   String    @default("03:00") // Default 3 hours
   diaperWarningTime String    @default("02:00") // Default 2 hours
+  feedTimerFrom     String    @default("start") // "start" | "end" - count feed timer from start or end of feeding
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
@@ -250,6 +254,8 @@ model Baby {
   activeActivity   ActiveActivity?
   vaccineLogs  VaccineLog[]
   apiKeys      ApiKey[]
+  photos       Photo[]
+  photoLogs    PhotoLog[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -299,6 +305,8 @@ model Caretaker {
   activeBreastFeeds ActiveBreastFeed[]
   activeActivities  ActiveActivity[]
   vaccineLogs   VaccineLog[]
+  photos        Photo[]
+  photoLogs     PhotoLog[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -367,6 +375,8 @@ model FeedLog {
   notes        String? // Optional notes for any feed type
   bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
   breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
+  sessionId    String? // Groups breast feeds into one nursing session; a unique value opts a feed out of heuristic grouping
+  sourcePumpId String? @unique // Links an automatic breast-milk feed to the pump session that created it
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?
@@ -485,11 +495,13 @@ model Settings {
   defaultTempUnit     String   @default("F") // Default unit for temperature
   activitySettings    String? // JSON string for activity order and visibility settings
   sleepLocationSettings String? // JSON string for hidden sleep locations
+  bathTypeSettings    String? // JSON string for hidden bath types
   nurseryModeSettings String? // JSON string for nursery mode settings per caretaker
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
   enableBreastMilkTracking Boolean @default(true) // Enable breast milk inventory tracking (stored/fed/discarded actions, adjustments, balance)
   includeSolidsInFeedTimer Boolean @default(true) // Include solid food feedings when calculating time since last feed
+  photoQuotaMB        Int? // Per-family photo quota override in MB; null = use AppConfig default
   dateFormat          String   @default("MM/DD/YYYY") // "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD"
   timeFormat          String   @default("12h") // "12h" | "24h"
   createdAt           DateTime @default(now())
@@ -526,11 +538,91 @@ model Milestone {
   caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
   caretakerId String?
 
+  photos Photo[]
+
   @@index([date])
   @@index([babyId])
   @@index([caretakerId])
   @@index([deletedAt])
   @@index([familyId])
+}
+
+model Photo {
+  id              String    @id @default(uuid())
+  originalName    String
+  storedName      String // Encrypted display image (<uuid>.enc) under Files/photos/<familyId>/
+  thumbStoredName String // Encrypted ~300px thumbnail
+  mimeType        String // Mime type of the stored display image
+  fileSize        Int // Display image bytes (counts toward quota)
+  thumbSize       Int // Thumbnail bytes (counts toward quota)
+  takenAt         DateTime // EXIF-derived or user-set; drives Month grouping
+  caption         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // Trash; purge-eligible at deletedAt + 30 days
+
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+  milestone   Milestone? @relation(fields: [milestoneId], references: [id])
+  milestoneId String?
+  family      Family?    @relation(fields: [familyId], references: [id])
+  familyId    String? // Nullable initially for migration
+
+  links     PhotoLink[]
+  favorites PhotoFavorite[]
+
+  @@index([familyId])
+  @@index([babyId])
+  @@index([takenAt])
+  @@index([deletedAt])
+  @@index([milestoneId])
+}
+
+model PhotoLog {
+  id        String    @id @default(uuid())
+  time      DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+  family      Family?    @relation(fields: [familyId], references: [id])
+  familyId    String? // Nullable initially for migration
+
+  @@index([familyId])
+  @@index([babyId])
+  @@index([time])
+  @@index([deletedAt])
+}
+
+model PhotoLink {
+  id           String   @id @default(uuid())
+  photo        Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photoId      String
+  activityType String // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement'
+  activityId   String // Polymorphic - no FK
+  createdAt    DateTime @default(now())
+
+  @@unique([photoId, activityType, activityId])
+  @@index([activityType, activityId])
+}
+
+model PhotoFavorite {
+  id          String   @id @default(uuid())
+  photo       Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photoId     String
+  caretakerId String? // Set for PIN-auth users
+  accountId   String? // Set for account-auth users
+  createdAt   DateTime @default(now())
+
+  @@index([photoId])
+  @@index([caretakerId])
+  @@index([accountId])
 }
 
 model PumpLog {
@@ -629,6 +721,7 @@ model PlayLog {
 model BathLog {
   id          String    @id @default(uuid())
   time        DateTime // Single time when the bath occurred
+  bathType    String? // e.g. "Full Bath", "Sponge Bath", "Wipe Down", or custom value
   soapUsed    Boolean   @default(true)
   shampooUsed Boolean   @default(true)
   notes       String?
@@ -1032,6 +1125,8 @@ model AppConfig {
   rootDomain  String // Root domain for the application
   enableHttps Boolean  @default(false) // Whether HTTPS is enabled (0/1)
   adminEmail  String? // Admin email for feedback replies
+  enablePhotos        Boolean @default(false) // Enable the Photos feature deployment-wide
+  defaultPhotoQuotaMB Int     @default(5120) // Default per-family photo storage quota in MB
   updatedAt   DateTime @updatedAt
 }
 
@@ -1353,4 +1448,22 @@ model ApiKey {
   @@index([keyHash])
   @@index([familyId])
   @@index([revoked])
+}
+
+model ExternalImportRecord {
+  id               String   @id @default(uuid())
+  providerId       String
+  sourceEntityType String
+  sourceRecordId   String
+  sourceChildId    String?
+  targetEntityType String
+  targetRecordId   String
+  importedAt       DateTime @default(now())
+
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId String
+
+  @@unique([familyId, providerId, sourceEntityType, sourceRecordId])
+  @@index([familyId, providerId])
+  @@index([targetEntityType, targetRecordId])
 }

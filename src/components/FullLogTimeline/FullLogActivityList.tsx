@@ -35,9 +35,10 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
               const style = getActivityStyle(activity);
               const description = getActivityDescription(activity, settings, t);
               return (
-                <div
+                <button
+                  type="button"
                   key={activity.id}
-                  className={cn(styles.activityItem, "full-log-timeline-activity-item")}
+                  className={cn(styles.activityItem, "block w-full text-left", "full-log-timeline-activity-item")}
                   onClick={() => onActivitySelect(activity)}
                 >
                   <div className={cn(styles.activityContent, "full-log-timeline-activity-content")}>
@@ -55,14 +56,14 @@ const FullLogActivityList: React.FC<FullLogActivityListProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })
           ) : !isLoading && (
             <div className={cn(styles.emptyState, "full-log-timeline-empty-state")}>
               <div className={cn(styles.emptyStateContent, "full-log-timeline-empty-state-content")}>
                 <div className={cn(styles.emptyStateIcon, "full-log-timeline-empty-state-icon")}>
-                  <BabyIcon className={cn(styles.emptyStateIconInner, "full-log-timeline-empty-state-icon-inner")} />
+                  <BabyIcon className={cn(styles.emptyStateIconInner, "full-log-timeline-empty-state-icon-inner")} aria-hidden="true" />
                 </div>
                 <h3 className={cn(styles.emptyStateTitle, "full-log-timeline-empty-state-title")}>
                   {t('No activities recorded')}

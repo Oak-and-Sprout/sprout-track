@@ -55,3 +55,8 @@ sitemap.xml
 
 # Datagrip
 .idea
+
+bugfix-docs/
+temp-development-docs/
+
+docs/

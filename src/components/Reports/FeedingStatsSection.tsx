@@ -47,7 +47,7 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
     <>
       <AccordionItem value="feeding">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <Icon iconNode={bottleBaby} className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-feed")} />
+          <Icon iconNode={bottleBaby} aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-feed")} />
           <span>{t('Feeding Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>

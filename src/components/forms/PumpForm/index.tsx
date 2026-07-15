@@ -620,17 +620,17 @@ export default function PumpForm({
 
                 {/* Amount */}
                 <div className="space-y-2">
-                  <Label>{t('Amount')}</Label>
+                  <Label htmlFor="adjustAmount">{t('Amount')}</Label>
                   <div className="flex items-center">
-                    <Button type="button" variant="outline" size="icon" onClick={decrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
-                      <Minus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={decrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg" aria-label={t('Decrease amount')}>
+                      <Minus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                     <div className="flex mx-2">
-                      <Input type="text" inputMode="decimal" placeholder={t("0.0")} value={adjustAmount} onChange={(e) => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setAdjustAmount(e.target.value); }} className="rounded-r-none text-center text-lg w-24" />
+                      <Input id="adjustAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={adjustAmount} onChange={(e) => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setAdjustAmount(e.target.value); }} className="rounded-r-none text-center text-lg w-24" />
                       <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{unitSymbol(adjustUnit)}</div>
                     </div>
-                    <Button type="button" variant="outline" size="icon" onClick={incrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
-                      <Plus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={incrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg" aria-label={t('Increase amount')}>
+                      <Plus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -649,8 +649,8 @@ export default function PumpForm({
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <Label>{t('Notes')}</Label>
-                  <Textarea placeholder={t("Enter any notes")} value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} rows={3} disabled={loading} />
+                  <Label htmlFor="adjustNotes">{t('Notes')}</Label>
+                  <Textarea id="adjustNotes" placeholder={t("Enter any notes")} value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} rows={3} disabled={loading} />
                 </div>
               </div>
             </form>
@@ -683,15 +683,15 @@ export default function PumpForm({
                 <div className="space-y-2">
                   <Label htmlFor="leftAmount">{t('Left Amount')}</Label>
                   <div className="flex items-center">
-                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button">
-                      <Minus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button" aria-label={t('Decrease left amount')}>
+                      <Minus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                     <div className="flex mx-2">
                       <Input id="leftAmount" name="leftAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={formData.leftAmount} onChange={handleInputChange} className="rounded-r-none text-center text-lg w-24" />
                       <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{unitSymbol(formData.unitAbbr)}</div>
                     </div>
-                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button">
-                      <Plus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button" aria-label={t('Increase left amount')}>
+                      <Plus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -700,15 +700,15 @@ export default function PumpForm({
                 <div className="space-y-2">
                   <Label htmlFor="rightAmount">{t('Right Amount')}</Label>
                   <div className="flex items-center">
-                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button">
-                      <Minus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button" aria-label={t('Decrease right amount')}>
+                      <Minus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                     <div className="flex mx-2">
                       <Input id="rightAmount" name="rightAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={formData.rightAmount} onChange={handleInputChange} className="rounded-r-none text-center text-lg w-24" />
                       <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{unitSymbol(formData.unitAbbr)}</div>
                     </div>
-                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button">
-                      <Plus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button" aria-label={t('Increase right amount')}>
+                      <Plus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>

@@ -112,7 +112,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
     <div className={guardianUpdateStyles.container}>
       {/* Section Header */}
       <div className={guardianUpdateStyles.header.container}>
-        <RefreshCw className={guardianUpdateStyles.header.icon} />
+        <RefreshCw className={guardianUpdateStyles.header.icon} aria-hidden="true" />
         <Label className={guardianUpdateStyles.header.title}>
           {t('System Updates')}
         </Label>
@@ -136,7 +136,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             >
               {checking ? (
                 <>
-                  <Loader2 className={cn(guardianUpdateStyles.icon, 'animate-spin')} />
+                  <Loader2 className={cn(guardianUpdateStyles.icon, 'animate-spin')} aria-hidden="true" />
                   {t('Checking...')}
                 </>
               ) : (
@@ -173,7 +173,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             {/* Update available */}
             {versionInfo?.updateAvailable === true && (
               <div className={guardianUpdateStyles.banner.row}>
-                <ArrowUpCircle className="h-4 w-4 text-teal-600 flex-shrink-0" />
+                <ArrowUpCircle className="h-4 w-4 text-teal-600 flex-shrink-0" aria-hidden="true" />
                 <div>
                   <p className={guardianUpdateStyles.banner.text}>
                     {t('Update available!')}
@@ -188,7 +188,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             {/* Up to date */}
             {versionInfo?.updateAvailable === false && (
               <div className={guardianUpdateStyles.banner.row}>
-                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" aria-hidden="true" />
                 <p className={guardianUpdateStyles.banner.text}>
                   {t('You are running the latest version')}
                 </p>
@@ -198,7 +198,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             {/* GitHub unreachable */}
             {versionInfo?.updateAvailable === null && versionInfo?.latestVersion === null && (
               <div className={guardianUpdateStyles.banner.row}>
-                <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
                 <p className={guardianUpdateStyles.banner.text}>
                   {t('Could not reach GitHub to check for updates. You can still trigger a manual update.')}
                 </p>
@@ -208,7 +208,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             {/* Docker mode warning */}
             {dockerMode ? (
               <div className={guardianUpdateStyles.banner.row}>
-                <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
                 <p className={guardianUpdateStyles.banner.text}>
                   {t('Updates are managed by Docker and cannot be triggered from the admin panel.')}
                 </p>
@@ -222,7 +222,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
                   onClick={() => setShowConfirmDialog(true)}
                   disabled={updating || isLoading || isSaving}
                 >
-                  <RefreshCw className={guardianUpdateStyles.icon} />
+                  <RefreshCw className={guardianUpdateStyles.icon} aria-hidden="true" />
                   {versionInfo?.updateAvailable ? t('Update Now') : t('Force Update')}
                 </Button>
                 <Button
@@ -231,8 +231,9 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
                   size="sm"
                   onClick={checkForUpdates}
                   disabled={checking}
+                  aria-label={t('Check for Updates')}
                 >
-                  <RefreshCw className={cn('h-3 w-3', checking && 'animate-spin')} />
+                  <RefreshCw className={cn('h-3 w-3', checking && 'animate-spin')} aria-hidden="true" />
                 </Button>
               </div>
             )}
@@ -240,7 +241,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             {/* Updating redirect message */}
             {updating && (
               <div className={guardianUpdateStyles.banner.row}>
-                <Loader2 className="h-4 w-4 text-teal-600 flex-shrink-0 animate-spin" />
+                <Loader2 className="h-4 w-4 text-teal-600 flex-shrink-0 animate-spin" aria-hidden="true" />
                 <p className={guardianUpdateStyles.banner.text}>
                   {t('Update triggered. Redirecting to maintenance page...')}
                 </p>
@@ -254,7 +255,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
           <>
             <div className={guardianUpdateStyles.row}>
               <div className="flex items-center space-x-2">
-                <XCircle className="h-4 w-4 text-gray-400" />
+                <XCircle className="h-4 w-4 text-gray-400" aria-hidden="true" />
                 <span className={guardianUpdateStyles.helpText}>
                   {t('Update service not available')}
                 </span>
@@ -292,7 +293,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             </DialogDescription>
           </DialogHeader>
           <div className={guardianUpdateStyles.dialog.warningBox}>
-            <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0" aria-hidden="true" />
             <p className={guardianUpdateStyles.dialog.warningText}>
               {t('The application will restart during the update. All active users will be temporarily disconnected and redirected to a maintenance page.')}
             </p>
@@ -314,12 +315,12 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
             >
               {updating ? (
                 <>
-                  <Loader2 className={cn(guardianUpdateStyles.icon, 'animate-spin')} />
+                  <Loader2 className={cn(guardianUpdateStyles.icon, 'animate-spin')} aria-hidden="true" />
                   {t('Updating...')}
                 </>
               ) : (
                 <>
-                  <RefreshCw className={guardianUpdateStyles.icon} />
+                  <RefreshCw className={guardianUpdateStyles.icon} aria-hidden="true" />
                   {t('Update Now')}
                 </>
               )}

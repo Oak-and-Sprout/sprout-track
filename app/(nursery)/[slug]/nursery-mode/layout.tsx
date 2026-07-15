@@ -1,5 +1,6 @@
 'use client';
 
+import { Newsreader } from 'next/font/google';
 import { DeploymentProvider } from '@/app/context/deployment';
 import { LocalizationProvider } from '@/src/context/localization';
 import { FamilyProvider } from '@/src/context/family';
@@ -8,6 +9,12 @@ import { BabyProvider } from '@/app/context/baby';
 import { ThemeProvider } from '@/src/context/theme';
 import { ToastProvider } from '@/src/components/ui/toast';
 import { PwaServiceWorker } from '@/src/components/PwaServiceWorker';
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  variable: '--font-newsreader',
+});
 
 export default function NurseryLayout({
   children,
@@ -40,7 +47,7 @@ export default function NurseryLayout({
   };
 
   return (
-    <div style={{ background: '#0a0a1a', minHeight: '100vh' }}>
+    <div className={newsreader.variable} style={{ background: '#0a0a1a', minHeight: '100vh' }}>
       <DeploymentProvider>
         <LocalizationProvider>
           <FamilyProvider onLogout={handleLogout}>

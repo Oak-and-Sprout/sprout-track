@@ -21,7 +21,8 @@ import {
   Baby,
   Plus,
   Minus,
-  Syringe
+  Syringe,
+  Camera
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { 
@@ -62,69 +63,73 @@ const isPlayActivity = (activity: any): boolean => {
 };
 
 export const getActivityIcon = (activity: ActivityType) => {
+  // Photo log - check first since it has no overlapping fields with other types
+  if ('photoLogId' in activity) {
+    return <Camera className="h-4 w-4 text-[#e11d48]" aria-hidden="true" />;
+  }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
-    return <Baby className="h-4 w-4 text-black" />;
+    return <Baby className="h-4 w-4 text-black" aria-hidden="true" />;
   }
   if ('doseAmount' in activity && 'medicineId' in activity) {
     // Medicine or supplement log
     if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && activity.medicine.isSupplement) {
-      return <Pill className="h-4 w-4 text-white" />;
+      return <Pill className="h-4 w-4 text-white" aria-hidden="true" />;
     }
-    return <PillBottle className="h-4 w-4 text-white" />;
+    return <PillBottle className="h-4 w-4 text-white" aria-hidden="true" />;
   }
   // Check for breast milk adjustment BEFORE pump (both have amount)
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
     const amt = (activity as any).amount;
     if (amt < 0) {
-      return <Minus className="h-4 w-4 text-black" />;
+      return <Minus className="h-4 w-4 text-black" aria-hidden="true" />;
     }
-    return <Plus className="h-4 w-4 text-black" />;
+    return <Plus className="h-4 w-4 text-black" aria-hidden="true" />;
   }
   // Check for pump activities FIRST (before sleep) since they also have duration and startTime
   if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return <LampWallDown className="h-4 w-4 text-black" />; // Pump activity
+    return <LampWallDown className="h-4 w-4 text-black" aria-hidden="true" />; // Pump activity
   }
   if ('type' in activity) {
     if ('duration' in activity) {
-      return <Moon className="h-4 w-4 text-white" />; // Sleep activity
+      return <Moon className="h-4 w-4 text-white" aria-hidden="true" />; // Sleep activity
     }
     if ('amount' in activity) {
-      return <Icon iconNode={bottleBaby} className="h-4 w-4 text-gray-700" />; // Feed activity
+      return <Icon iconNode={bottleBaby} className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Feed activity
     }
     if ('condition' in activity) {
-      return <Icon iconNode={diaper} className="h-4 w-4 text-white" />; // Diaper activity
+      return <Icon iconNode={diaper} className="h-4 w-4 text-white" aria-hidden="true" />; // Diaper activity
     }
   }
   if ('content' in activity) {
-    return <Edit className="h-4 w-4 text-gray-700" />; // Note activity
+    return <Edit className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Note activity
   }
   if ('soapUsed' in activity) {
-    return <Bath className="h-4 w-4 text-white" />; // Bath activity
+    return <Bath className="h-4 w-4 text-white" aria-hidden="true" />; // Bath activity
   }
   if ('vaccineName' in activity) {
-    return <Syringe className="h-4 w-4 text-red-500" />;
+    return <Syringe className="h-4 w-4 text-red-500" aria-hidden="true" />;
   }
   if ('title' in activity && 'category' in activity) {
-    return <Trophy className="h-4 w-4 text-white" />; // Milestone activity
+    return <Trophy className="h-4 w-4 text-white" aria-hidden="true" />; // Milestone activity
   }
   if ('value' in activity && 'unit' in activity) {
     // Different icons based on measurement type
     if ('type' in activity) {
       switch (activity.type) {
         case 'HEIGHT':
-          return <Ruler className="h-4 w-4 text-white" />;
+          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />;
         case 'WEIGHT':
-          return <Scale className="h-4 w-4 text-white" />;
+          return <Scale className="h-4 w-4 text-white" aria-hidden="true" />;
         case 'HEAD_CIRCUMFERENCE':
-          return <RotateCw className="h-4 w-4 text-white" />;
+          return <RotateCw className="h-4 w-4 text-white" aria-hidden="true" />;
         case 'TEMPERATURE':
-          return <Thermometer className="h-4 w-4 text-white" />;
+          return <Thermometer className="h-4 w-4 text-white" aria-hidden="true" />;
         default:
-          return <Ruler className="h-4 w-4 text-white" />; // Default to ruler
+          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default to ruler
       }
     }
-    return <Ruler className="h-4 w-4 text-white" />; // Default measurement icon
+    return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default measurement icon
   }
   return null;
 };
@@ -441,6 +446,8 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
   if ('soapUsed' in activity) {
     const bathDetails = [
       { label: t('Time'), value: formatTime(activity.time, settings, true, t) },
+      // Custom bath types pass through t() unchanged; defaults get translated
+      ...((activity as any).bathType ? [{ label: t('Bath Type'), value: t((activity as any).bathType) }] : []),
       { label: t('Soap Used'), value: activity.soapUsed ? t('Yes') : t('No') },
       { label: t('Shampoo Used'), value: activity.shampooUsed ? t('Yes') : t('No') },
     ];
@@ -645,6 +652,16 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
 };
 
 export const getActivityDescription = (activity: ActivityType, settings: Settings | null, t: (key: string) => string): ActivityDescription => {
+  // Photo log - check first since it has no overlapping fields with other types
+  if ('photoLogId' in activity) {
+    const photos = activity.photos;
+    const firstCaption = photos?.find(p => p.caption)?.caption;
+    const count = photos?.length ?? 0;
+    return {
+      type: t('Photo'),
+      details: firstCaption || `${count} ${count === 1 ? t('photo') : t('photos')}`
+    };
+  }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
     const formatPlayType = (type: string) => {
@@ -862,9 +879,11 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       notes = notes.slice(0, 30) + '...';
     }
     
+    const bathType = (activity as any).bathType ? t((activity as any).bathType) : '';
+
     return {
       type: t('Bath'),
-      details: [time, bath, notes].filter(Boolean).join(' • ')
+      details: [time, bathType, bath, notes].filter(Boolean).join(' • ')
     };
   }
   
@@ -1005,6 +1024,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 };
 
 export const getActivityEndpoint = (activity: ActivityType): string => {
+  if ('photoLogId' in activity) return 'photo-log';
   // Check play activity before sleep since both have duration and type
   if (isPlayActivity(activity)) return 'play-log';
   // Check for breast milk adjustment before pump
@@ -1028,6 +1048,10 @@ export const getActivityEndpoint = (activity: ActivityType): string => {
 };
 
 export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
+  // Photo log - check first since it has no overlapping fields with other types
+  if ('photoLogId' in activity) {
+    return { bg: 'bg-white border-2 border-[#e11d48]', textColor: 'text-[#e11d48]' };
+  }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
     return { bg: 'bg-[#F3C4A2]', textColor: 'text-white' };

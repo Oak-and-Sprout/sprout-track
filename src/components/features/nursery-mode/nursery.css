@@ -1,0 +1,306 @@
+/**
+ * Nursery Mode — stage, scene backgrounds, foreground layout, and settings drawer.
+ * Ported from documentation/temp-development-docs/sprout-track-nursery/nursery-mode.html
+ * (lines 21-111 stage/scenes/foreground, 113-189 settings drawer, 191-204 mobile),
+ * with every class prefixed `nursery-` to avoid collisions with the rest of the app.
+ */
+
+.nursery-serif { font-family: var(--font-newsreader), Georgia, serif; }
+
+/* ---- stage ---- */
+/* The stage overlays the whole app (it is not a standalone document root),
+   so it is fixed/inset instead of the prototype's 100vw/100vh flex child.
+   color:#fff replaces the prototype's body{color:#fff} — the app's default text
+   color underneath is near-black in light mode, so inheritance is reset here. */
+.nursery-stage { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; isolation: isolate; color: #fff; -webkit-font-smoothing: antialiased; }
+.nursery-bg { position: absolute; inset: 0; z-index: 0; transition: filter .5s ease; }
+.nursery-bg-grad { position: absolute; inset: 0; }
+.nursery-blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: .5; will-change: transform; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-blob { animation: nursery-drift 26s ease-in-out infinite alternate; }
+  .nursery-blob.b2 { animation-duration: 34s; animation-delay: -8s; }
+  .nursery-blob.b3 { animation-duration: 30s; animation-delay: -15s; }
+}
+@keyframes nursery-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8vw, -6vh) scale(1.18); }
+  100% { transform: translate(-6vw, 7vh) scale(.92); }
+}
+.nursery-stars { position: absolute; inset: 0; }
+.nursery-stars i { position: absolute; background: #fff; border-radius: 50%; }
+.nursery-stars i.spark { box-shadow: 0 0 6px 1px rgba(255,255,255,.8); }
+.nursery-stars i.spark::before, .nursery-stars i.spark::after { content: ""; position: absolute; left: 50%; top: 50%; background: linear-gradient(var(--fa), transparent, rgba(255,255,255,.95), transparent); opacity: 0; }
+.nursery-stars i.spark::before { width: 18px; height: 1.6px; --fa: 90deg; transform: translate(-50%,-50%) scale(.2); }
+.nursery-stars i.spark::after { width: 1.6px; height: 18px; --fa: 0deg; transform: translate(-50%,-50%) scale(.2); }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-stars i.spark::before, .nursery-stars i.spark::after { animation: nursery-flare var(--dur, 6s) ease-in-out var(--d, 0s) infinite; }
+}
+@keyframes nursery-flare {
+  0%, 82%, 100% { opacity: 0; transform: translate(-50%,-50%) scale(.2); }
+  90% { opacity: .95; transform: translate(-50%,-50%) scale(1); }
+}
+.nursery-scrim { position: absolute; inset: 0; pointer-events: none; }
+.nursery-pattern-layer { position: absolute; inset: 0; }
+.nursery-waves-layer { position: absolute; left: -14%; right: -14%; bottom: -5%; top: 0; background-repeat: no-repeat; background-position: bottom; background-size: cover; transform-origin: 50% 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-waves-layer.anim { animation: nursery-rock var(--wdur, 18s) ease-in-out var(--wdelay, 0s) infinite alternate; }
+}
+@keyframes nursery-rock {
+  from { transform: translateX(calc(var(--wdx, 40px) * -1)) rotate(calc(var(--wamp, 1.5deg) * -1)); }
+  to { transform: translateX(var(--wdx, 40px)) rotate(var(--wamp, 1.5deg)); }
+}
+.nursery-motifs { position: absolute; inset: 0; overflow: hidden; }
+.nursery-motifs i { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-motifs i.float { animation: nursery-floatXY var(--dur, 20s) ease-in-out var(--d, 0s) infinite alternate; }
+}
+@keyframes nursery-floatXY {
+  from { transform: translate(0, 0) rotate(var(--tr, 0deg)); }
+  to { transform: translate(var(--tx, 0px), var(--ty, 0px)) rotate(var(--tr2, 0deg)); }
+}
+.nursery-scatter { position: absolute; inset: 0; overflow: hidden; }
+/* rising bubbles */
+.nursery-bubbles { position: absolute; inset: 0; overflow: hidden; }
+.nursery-bubbles i { position: absolute; top: 105%; border-radius: 50%; background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.4), rgba(255,255,255,.05) 62%); border: 1px solid rgba(255,255,255,.28); box-shadow: inset -3px -4px 8px rgba(255,255,255,.08); }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-bubbles i { animation: nursery-rise var(--dur, 14s) linear var(--d, 0s) infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nursery-bubbles i { top: var(--sy, 50%); }
+}
+@keyframes nursery-rise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  6% { opacity: var(--o, .7); }
+  92% { opacity: var(--o, .7); }
+  100% { transform: translate(var(--dx, 0px), -118vh); opacity: 0; }
+}
+/* aura curtains over the starfield */
+.nursery-aura { position: absolute; inset: 0; overflow: hidden; }
+.nursery-ab { position: absolute; left: -15%; right: -15%; top: -12%; height: 78%; filter: blur(48px); mix-blend-mode: screen; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-ab { animation: nursery-aur 16s ease-in-out infinite alternate; }
+  .nursery-ab.a2 { animation-duration: 21s; animation-delay: -6s; }
+  .nursery-ab.a3 { animation-duration: 26s; animation-delay: -11s; }
+}
+@keyframes nursery-aur {
+  0% { transform: translateX(-6%) scaleY(.92); }
+  100% { transform: translateX(7%) scaleY(1.08); }
+}
+
+/* ---- foreground layout ---- */
+.nursery-fg { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; padding: clamp(20px, 3.2vw, 48px); }
+.nursery-topbar { display: flex; justify-content: flex-end; align-items: center; gap: clamp(20px, 2.5vw, 40px); }
+.nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
+.nursery-ghost:hover { color: #fff; }
+.nursery-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(18px, 3.4vh, 52px); width: 100%; min-height: 0; }
+.nursery-clockwrap { text-align: center; min-height: 0; }
+.nursery-clock { display: flex; align-items: baseline; justify-content: center; }
+/* vh-capped so a short viewport shrinks the clock rather than pushing the activity cards off screen */
+.nursery-clock .time { font-weight: 400; font-size: clamp(48px, min(11.5vw, 12vh), 168px); line-height: .9; letter-spacing: -.01em; text-shadow: 0 2px 40px rgba(0,0,0,.25); }
+.nursery-namerow { margin-top: clamp(4px, 1vh, 10px); }
+.nursery-namerow .name { font-style: italic; font-weight: 400; font-size: clamp(22px, min(3.4vw, 4.4vh), 46px); opacity: .9; background: none; border: none; color: inherit; padding: 0; }
+.nursery-date { margin-top: clamp(8px, 1.4vh, 20px); font-size: clamp(13px, 1.25vw, 18px); font-weight: 600; letter-spacing: .28em; text-transform: uppercase; color: rgba(255,255,255,.62); }
+
+/* activity grid (cards) */
+.nursery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 1.6vw, 26px); width: min(1080px, 92vw); }
+.nursery-card { --fs-scale: 1; border-radius: 22px; padding: clamp(18px, 1.7vw, 28px); border: 1px solid rgba(255,255,255,var(--cardline, .14)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,var(--cardbg, .08)); box-shadow: 0 8px 40px rgba(0,0,0,.18); }
+/* a card asking a question (pump amount/action, sleep location) takes over the whole grid — animated via framer-motion's layout prop on the component; button text scales up 1.5x via --fs-scale */
+.nursery-card.question { --fs-scale: 1.5; grid-column: 1 / -1; grid-row: 1 / -1; min-height: clamp(440px, 58vh, 620px); z-index: 10; display: flex; flex-direction: column; justify-content: center; }
+.nursery-card-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: clamp(12px, 1.4vw, 20px); }
+.nursery-card-h .lhs { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.nursery-card-h h3 { font-size: clamp(20px, 1.9vw, 30px); font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+.nursery-card-meta { text-align: right; flex-shrink: 0; min-width: 0; }
+.nursery-card-meta .t { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(15px, 1.35vw, 21px); color: rgba(255,255,255,.92); white-space: nowrap; }
+.nursery-card-meta .d { font-size: clamp(11px, 1vw, 14px); color: rgba(255,255,255,.6); margin-top: 2px; white-space: nowrap; }
+/* Active-timer status ("Right Side: 3:57") — same serif as .t but sized to use the header space. */
+.nursery-card-meta .status { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(24px, 2.3vw, 38px); line-height: 1.05; color: rgba(255,255,255,.95); white-space: normal; font-variant-numeric: tabular-nums; }
+.nursery-amount-row { display: flex; gap: clamp(6px, .8vw, 12px); margin-bottom: clamp(8px, .8vw, 12px); }
+.nursery-amount-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: clamp(11px, 1vw, 13px); color: rgba(255,255,255,.7); }
+.nursery-amount-field .ai { display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); border-radius: 12px; padding: 8px 6px 8px 10px; min-width: 0; }
+.nursery-amount-field input { flex: 1; min-width: 0; background: none; border: none; color: #fff; font-size: clamp(14px, 1.3vw, 18px); font-variant-numeric: tabular-nums; }
+.nursery-amount-field input:focus { outline: none; }
+.nursery-amount-field .au { flex-shrink: 0; white-space: nowrap; color: rgba(255,255,255,.6); font-size: clamp(11px, 1vw, 13px); }
+.nursery-card-actions { display: flex; flex-wrap: nowrap; gap: clamp(8px, .8vw, 12px); }
+.nursery-card-actions.wrap { flex-wrap: wrap; justify-content: center; }
+.nursery-abtn { flex: 1; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(12px, 1.15vw, 18px) 8px; font-size: calc(clamp(13px, 1.2vw, 17px) * var(--fs-scale)); font-weight: 500; transition: transform .1s, background .15s; white-space: nowrap; }
+.nursery-abtn:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .08)); }
+.nursery-abtn:active { transform: scale(.96); }
+.nursery-abtn.wide { flex: none; width: 100%; }
+.nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
+
+/* active-session glow — a ring floated off the card, colored to match the icon */
+.nursery-card.active, .nursery-tile.active { position: relative; }
+.nursery-card.active::after, .nursery-tile.active::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 4px solid var(--active-glow, #fff);
+  border-radius: inherit;
+  box-shadow: 0 0 24px 4px var(--active-glow, #fff);
+  opacity: .65;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-card.active::after, .nursery-tile.active::after { animation: nursery-activeGlow 2.4s ease-in-out infinite; }
+}
+@keyframes nursery-activeGlow {
+  0%, 100% { opacity: .5; }
+  50% { opacity: .8; }
+}
+
+/* icon badge */
+.nursery-badge { flex-shrink: 0; display: grid; place-items: center; color: var(--ifg, #fff); }
+.nursery-badge.circle { border-radius: 50%; }
+.nursery-badge.square { border-radius: 22%; }
+
+/* big tile variant */
+.nursery-tilegrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(16px, 1.8vw, 30px); width: min(1180px, 94vw); }
+.nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: min(560px, 52vh); }
+.nursery-tile { position: relative; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 8px 40px rgba(0,0,0,.2); color: #fff; }
+.nursery-tile:not(.with-qa) { aspect-ratio: 1; }
+.nursery-tile.circle { border-radius: 50%; }
+.nursery-tile.square { border-radius: 22%; }
+/* .tmain is the actual clickable surface (opens the modal); the outer .nursery-tile
+   is a plain div so quick-action buttons can sit beside it without nesting <button>s. */
+.nursery-tile .tmain { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(12px, 1.4vw, 22px); width: 100%; height: 100%; border-radius: inherit; transition: transform .12s, background .15s; }
+.nursery-tile .tmain:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .07)); }
+.nursery-tile .tmain:active { transform: scale(.97); }
+.nursery-tile .tico { color: var(--ifg, #fff); }
+.nursery-tile .tlabel { font-size: clamp(16px, 1.5vw, 24px); font-weight: 600; letter-spacing: .01em; }
+.nursery-tile .tmeta { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(13px, 1.15vw, 18px); color: rgba(255,255,255,.7); margin-top: -6px; }
+
+/* quick actions (feed, while a breastfeed is active) — switch/pause/stop sit as a
+   row of keys inset along the tile's bottom edge, like piano keys, so they're one tap. */
+.nursery-tile.with-qa { display: flex; flex-direction: column; overflow: hidden; }
+.nursery-tile.with-qa .tmain { flex: 1; padding: clamp(14px, 1.6vw, 20px); gap: clamp(8px, 1vw, 14px); }
+.nursery-tile .tqa { display: flex; flex-shrink: 0; }
+.nursery-tqa-btn { flex: 1; display: grid; place-items: center; height: clamp(36px, 4vw, 48px); border: none; border-top: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); color: #fff; border-radius: 0; transition: background .15s; }
+.nursery-tqa-btn:not(:first-child) { border-left: 1px solid rgba(255,255,255,.14); }
+.nursery-tqa-btn:hover { background: rgba(255,255,255,.16); }
+.nursery-tqa-btn:active { background: rgba(255,255,255,.24); }
+.nursery-tqa-btn.emphasized { background: rgba(255,255,255,.16); }
+.nursery-tqa-btn:disabled { opacity: .5; }
+
+.nursery-footer { position: relative; z-index: 2; text-align: center; padding-bottom: clamp(16px, 2.4vh, 34px); }
+.nursery-footer .m { font-size: clamp(11px, 1vw, 14px); font-weight: 600; letter-spacing: .34em; color: rgba(255,255,255,.5); }
+.nursery-footer .l { font-size: clamp(10px, .85vw, 12px); font-weight: 600; letter-spacing: .24em; color: rgba(255,255,255,.34); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.nursery-dotlock { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+
+/* wake status gentle pulse (ported from the removed nursery-animations.css) */
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-dotlock { animation: nursery-gentlePulse 4s ease-in-out infinite; }
+  .nursery-toast { animation: nursery-toastIn .2s ease; }
+}
+@keyframes nursery-gentlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+@keyframes nursery-toastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (max-width: 680px) {
+  .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
+  .nursery-bg { position: fixed; }
+  .nursery-fg { padding: 18px 15px; }
+  .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 26px; }
+  .nursery-grid { grid-template-columns: 1fr; width: 100%; max-width: 520px; gap: 14px; }
+  .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
+  .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 340px; }
+  .nursery-card { padding: 17px; border-radius: 18px; }
+  /* vh-capped (not just vw) so the clock actually shrinks on short mobile viewports
+     instead of eating space the activity cards need. */
+  .nursery-clock .time { font-size: clamp(40px, min(15vw, 8vh), 84px); }
+  .nursery-namerow { margin-top: 2px; }
+  .nursery-namerow .name { font-size: clamp(17px, min(5vw, 3vh), 28px); }
+  .nursery-date { margin-top: 4px; }
+  .nursery-topbar { gap: 26px; }
+  .nursery-drawer { width: 100vw; }
+}
+
+/* ---- settings drawer ---- */
+.nursery-ovl { position: fixed; inset: 0; background: rgba(6,8,15,.5); z-index: 40; animation: nursery-fade .2s; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+@keyframes nursery-fade { from { opacity: 0; } }
+.nursery-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: #14161f; border-left: 1px solid rgba(255,255,255,.08); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); color: #fff; }
+@media (prefers-reduced-motion: no-preference) {
+  .nursery-drawer { animation: nursery-slidein .26s cubic-bezier(.22,1,.36,1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nursery-drawer { animation: nursery-fade .15s; }
+}
+@keyframes nursery-slidein { from { transform: translateX(60px); opacity: 0; } }
+.nursery-dw-h { display: flex; justify-content: space-between; align-items: center; padding: 22px 26px 18px; flex-shrink: 0; }
+.nursery-dw-h h2 { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
+.nursery-dw-h .close { background: none; border: none; color: rgba(255,255,255,.55); font-size: 17px; cursor: pointer; }
+.nursery-dw-h .close:hover { color: #fff; }
+.nursery-dw-b { flex: 1; overflow-y: auto; padding: 4px 26px 40px; display: flex; flex-direction: column; gap: 26px; }
+.nursery-dw-b::-webkit-scrollbar { width: 8px; }
+.nursery-dw-b::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 99px; }
+.nursery-slabel { font-size: 12px; font-weight: 700; letter-spacing: .16em; color: rgba(255,255,255,.45); text-transform: uppercase; margin-bottom: 11px; }
+.nursery-sect {}
+.nursery-togcard { width: 100%; text-align: left; border-radius: 16px; padding: 16px 18px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); color: #fff; transition: background .15s, border-color .15s; display: block; cursor: pointer; }
+.nursery-togcard + .nursery-togcard { margin-top: 12px; }
+.nursery-togcard.on { background: rgba(74,222,128,.09); border-color: rgba(74,222,128,.28); }
+.nursery-togcard .k { font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: rgba(255,255,255,.55); }
+.nursery-togcard.on .k { color: #86efac; }
+.nursery-togcard .v { font-size: 15px; margin-top: 6px; color: rgba(255,255,255,.82); }
+
+/* sliders */
+.nursery-srange { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 99px; outline: none; }
+.nursery-srange::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); cursor: pointer; border: none; }
+.nursery-srange::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); cursor: pointer; border: none; }
+.nursery-hue-track { background: linear-gradient(90deg,#ef4444,#f59e0b,#eab308,#22c55e,#06b6d4,#3b82f6,#8b5cf6,#ec4899,#ef4444); }
+.nursery-sval { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: 18px; color: rgba(255,255,255,.72); margin-top: 10px; }
+
+/* segmented + swatches */
+.nursery-seg { display: flex; gap: 8px; background: rgba(255,255,255,.05); border-radius: 13px; padding: 5px; }
+.nursery-seg button { flex: 1; border: none; background: none; color: rgba(255,255,255,.6); border-radius: 9px; padding: 11px 6px; font-size: 13.5px; font-weight: 600; transition: .15s; cursor: pointer; }
+.nursery-seg button.on { background: rgba(255,255,255,.14); color: #fff; }
+.nursery-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.nursery-sw { width: 38px; height: 38px; border-radius: 11px; border: 2px solid transparent; cursor: pointer; position: relative; }
+.nursery-sw.on { border-color: #fff; }
+.nursery-sw.auto { display: grid; place-items: center; background: rgba(255,255,255,.07); color: rgba(255,255,255,.7); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+
+/* tile-toggle rows */
+.nursery-trow { display: flex; align-items: center; justify-content: space-between; border-radius: 14px; padding: 15px 18px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); }
+.nursery-trow + .nursery-trow { margin-top: 10px; }
+.nursery-trow .tn { display: flex; align-items: center; gap: 12px; font-size: 16px; }
+.nursery-sw-toggle { width: 50px; height: 29px; border-radius: 99px; border: none; background: rgba(255,255,255,.16); position: relative; transition: background .2s; flex-shrink: 0; cursor: pointer; }
+.nursery-sw-toggle.on { background: #4ade80; }
+.nursery-sw-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 23px; height: 23px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.nursery-sw-toggle.on::after { transform: translateX(21px); }
+.nursery-tstate { font-size: 12px; font-weight: 700; letter-spacing: .1em; color: rgba(255,255,255,.4); }
+.nursery-tstate.on { color: #86efac; }
+
+/* scene picker */
+.nursery-scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.nursery-scene { border: 1.5px solid rgba(255,255,255,.1); border-radius: 15px; overflow: hidden; background: none; color: #fff; padding: 0; text-align: left; transition: border-color .15s; cursor: pointer; }
+.nursery-scene.on { border-color: #fff; }
+.nursery-scene .prev { height: 62px; position: relative; display: grid; place-items: center; color: rgba(255,255,255,.85); }
+.nursery-scene .nm { padding: 9px 12px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+.nursery-scene.on .nm::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #4ade80; }
+/* pattern swatches */
+.nursery-patts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.nursery-patt { border: 1.5px solid rgba(255,255,255,.1); border-radius: 12px; overflow: hidden; background: none; color: #fff; padding: 0; transition: border-color .15s; cursor: pointer; }
+.nursery-patt.on { border-color: #fff; }
+.nursery-patt .pp { height: 46px; background-color: #1c1f2b; }
+.nursery-patt .pl { padding: 6px 4px; font-size: 11.5px; font-weight: 600; letter-spacing: .01em; text-align: center; color: rgba(255,255,255,.8); }
+.nursery-chips { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+.nursery-chip { width: 34px; height: 34px; border-radius: 9px; border: 2px solid rgba(255,255,255,.12); cursor: pointer; padding: 0; }
+.nursery-chip.on { border-color: #fff; }
+.nursery-cwell { width: 38px; height: 38px; border-radius: 10px; border: 2px dashed rgba(255,255,255,.4); cursor: pointer; position: relative; overflow: hidden; padding: 0; display: inline-block; }
+.nursery-cwell input { position: absolute; inset: -6px; width: 150%; height: 150%; opacity: 0; cursor: pointer; border: none; padding: 0; }
+
+.nursery-preset-wrap { position: relative; margin-left: auto; }
+.nursery-preset-btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .15s; }
+.nursery-preset-btn:hover { background: rgba(255,255,255,.1); }
+.nursery-preset-dots { display: inline-flex; flex-shrink: 0; }
+.nursery-preset-dots i { width: 13px; height: 13px; border-radius: 50%; margin-left: -4px; border: 1.5px solid rgba(20,22,31,.9); }
+.nursery-preset-dots i:first-child { margin-left: 0; }
+.nursery-preset-scrim { position: fixed; inset: 0; z-index: 49; background: transparent; border: none; padding: 0; cursor: default; }
+.nursery-preset-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; width: 236px; max-height: 320px; overflow-y: auto; background: rgba(24,26,36,.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 6px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.nursery-preset-opt { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 9px; border: none; background: none; color: #fff; cursor: pointer; text-align: left; }
+.nursery-preset-opt:hover { background: rgba(255,255,255,.08); }
+.nursery-preset-opt .nursery-preset-dots i { width: 16px; height: 16px; margin-left: -5px; border-width: 2px; }
+.nursery-preset-name { font-size: 13px; font-weight: 500; }

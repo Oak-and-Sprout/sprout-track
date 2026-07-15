@@ -30,12 +30,17 @@ const ENV_DEFAULTS = [
   {
     key: 'DATABASE_PROVIDER',
     default: 'sqlite',
+    runtimeEnvWins: true,
     comment: 'Database provider: "sqlite" or "postgresql"'
   },
   {
     key: 'DATABASE_URL',
     dockerDefault: 'file:/db/baby-tracker.db',
     localDefault: 'file:../db/baby-tracker.db',
+    runtimeEnvWins: true,
+    // The Docker image bakes this value into ENV as a placeholder; it is not
+    // user intent, so it never overrides a value persisted in the env file.
+    ignoreRuntimeValues: ['file:/db/baby-tracker.db'],
     comment: 'Main database path',
     quoted: true
   },
@@ -43,6 +48,8 @@ const ENV_DEFAULTS = [
     key: 'LOG_DATABASE_URL',
     dockerDefault: 'file:/db/baby-tracker-logs.db',
     localDefault: 'file:../db/api-logs.db',
+    runtimeEnvWins: true,
+    ignoreRuntimeValues: ['file:/db/baby-tracker-logs.db'],
     comment: 'Log database path',
     quoted: true
   },
@@ -86,7 +93,7 @@ const ENV_DEFAULTS = [
   },
   {
     key: 'APP_VERSION',
-    default: '1.3.5',
+    default: '1.5.0',
     comment: 'Application version'
   },
   {
@@ -186,6 +193,7 @@ function main() {
 
   // Track what we add
   const added = [];
+  const updated = [];
   const skipped = [];
 
   // Build lines to append
@@ -195,9 +203,29 @@ function main() {
     const existingValue = existingVars[def.key];
     const hasValue = existingValue !== undefined && existingValue !== '';
 
-    // Skip if already exists with a value
+    // Runtime container env takes precedence for DB settings (issue #171):
+    // a stale persisted env file must not clobber compose-provided values.
+    let runtimeValue;
+    if (def.runtimeEnvWins) {
+      const candidate = process.env[def.key];
+      const isPlaceholder = def.ignoreRuntimeValues && def.ignoreRuntimeValues.includes(candidate);
+      if (candidate !== undefined && candidate !== '' && !isPlaceholder) {
+        runtimeValue = candidate;
+      }
+    }
+
+    // Already exists with a value: update in place if runtime env disagrees
     if (hasValue) {
-      skipped.push(def.key);
+      if (runtimeValue !== undefined && runtimeValue !== existingValue) {
+        const formattedValue = def.quoted ? `"${runtimeValue}"` : runtimeValue;
+        const regex = new RegExp(`^${def.key}=.*$`, 'm');
+        content = content.replace(regex, `${def.key}=${formattedValue}`);
+        existingVars[def.key] = runtimeValue;
+        updated.push(def.key);
+        console.log(`  Updated ${def.key} from runtime environment`);
+      } else {
+        skipped.push(def.key);
+      }
       continue;
     }
 
@@ -212,7 +240,10 @@ function main() {
 
     // Determine the value
     let value;
-    if (def.generate) {
+    if (runtimeValue !== undefined) {
+      value = runtimeValue;
+      console.log(`  Using runtime environment value for ${def.key}`);
+    } else if (def.generate) {
       value = crypto.randomBytes(32).toString('hex');
       console.log(`  Generated ${def.key}`);
     } else {
@@ -279,7 +310,10 @@ function main() {
   if (added.length > 0) {
     console.log(`  Added ${added.length} variable(s): ${added.join(', ')}`);
   }
-  if (added.length === 0) {
+  if (updated.length > 0) {
+    console.log(`  Updated ${updated.length} variable(s) from runtime environment: ${updated.join(', ')}`);
+  }
+  if (added.length === 0 && updated.length === 0) {
     console.log('  All environment variables are present');
   }
 

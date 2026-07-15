@@ -18,7 +18,7 @@ chmod +x scripts/*.sh
 ```
 
 The setup script will:
-- Verify Node.js and npm versions
+- Verify Node.js and npm are installed
 - Run `env-update.sh` to create/update the `.env` file
 - Install npm dependencies
 - Generate Prisma clients (main and log databases)
@@ -77,26 +77,32 @@ The setup script reads `DATABASE_PROVIDER`, `DATABASE_URL`, and `LOG_DATABASE_UR
 If you prefer to set up step-by-step:
 
 ```bash
-# 1. Install dependencies
+# 1. Create/update the .env file (generates ENC_HASH, JWT_SECRET, etc.)
+./scripts/env-update.sh
+
+# 2. Install dependencies
 npm install
 
-# 2. Generate Prisma clients (configures provider automatically)
+# 3. Generate Prisma clients (configures provider automatically)
 npm run prisma:generate
 npm run prisma:generate:log
 
-# 3. Run database migrations
+# 4. Run database migrations
 #    SQLite:
-npm run prisma:migrate
+npm run prisma:deploy
 #    PostgreSQL:
 #    npx prisma db push --accept-data-loss
 
-# 4. Seed the database
+# 5. Create the log database schema
+npm run prisma:push:log
+
+# 6. Seed the database
 npm run prisma:seed
 
-# 5. Build for production
+# 7. Build for production
 npm run build
 
-# 6. Start the server
+# 8. Start the server
 npm start
 ```
 
@@ -156,7 +162,7 @@ The log database uses `db push` instead of migrations to avoid conflicts with th
 | Script | Description |
 |--------|-------------|
 | `./scripts/setup.sh` | Full initial setup |
-| `./scripts/env-update.sh` | Create/update `.env` file (generates `ENC_HASH` and `NOTIFICATION_CRON_SECRET` if missing) |
+| `./scripts/env-update.sh` | Create/update `.env` file (generates `ENC_HASH`, `JWT_SECRET`, and `NOTIFICATION_CRON_SECRET` if missing) |
 | `./scripts/update.sh` | Pull latest code, install deps, run migrations, rebuild |
 | `./scripts/deployment.sh` | Full deployment: backup, stop service, update, restart |
 | `./scripts/backup.sh` | Create timestamped backup of the application and database |
@@ -187,7 +193,7 @@ The log database uses `db push` instead of migrations to avoid conflicts with th
 
 For production deployments, you can run Sprout Track as a systemd service.
 
-The `SERVICE_NAME` variable in `.env` controls the service name (default: `baby-tracker`).
+The `SERVICE_NAME` variable in `.env` controls the service name. It is not added automatically -- add it to `.env` yourself (e.g., `SERVICE_NAME="baby-tracker"`); `service.sh` exits with an error if it is missing. You must also create the corresponding systemd unit file.
 
 ```bash
 # Start the service

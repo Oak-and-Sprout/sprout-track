@@ -828,16 +828,16 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
 
   // Get measurement type button config
   const measurementTypes: { type: GrowthMeasurementType; label: string; icon: React.ReactNode }[] = [
-    { type: 'weight', label: 'Weight', icon: <Scale className="h-4 w-4" /> },
-    { type: 'length', label: 'Length', icon: <Ruler className="h-4 w-4" /> },
-    { type: 'head_circumference', label: 'Head', icon: <CircleDot className="h-4 w-4" /> },
+    { type: 'weight', label: 'Weight', icon: <Scale aria-hidden="true" className="h-4 w-4" /> },
+    { type: 'length', label: 'Length', icon: <Ruler aria-hidden="true" className="h-4 w-4" /> },
+    { type: 'head_circumference', label: 'Head', icon: <CircleDot aria-hidden="true" className="h-4 w-4" /> },
   ];
 
   // No baby selected
   if (!selectedBaby) {
     return (
       <div className={cn(growthChartStyles.emptyContainer, "growth-chart-empty", className)}>
-        <Scale className="h-12 w-12 text-gray-300 mb-4" />
+        <Scale aria-hidden="true" className="h-12 w-12 text-gray-300 mb-4" />
         <p className={cn(growthChartStyles.emptyText, "growth-chart-empty-text")}>
           {t('Select a baby to view growth charts.')}
         </p>
@@ -849,7 +849,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
   if (isLoading) {
     return (
       <div className={cn(growthChartStyles.loadingContainer, "growth-chart-loading", className)}>
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-teal-600" />
         <p className={cn(growthChartStyles.loadingText, "growth-chart-loading-text")}>
           {t('Loading growth chart data...')}
         </p>
@@ -898,7 +898,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
             className={cn(growthChartStyles.zoomButton, "growth-chart-zoom-button")}
             title="Zoom in"
           >
-            <ZoomIn className="h-4 w-4" />
+            <ZoomIn aria-hidden="true" className="h-4 w-4" />
           </button>
           <button
             onClick={handleZoomOut}
@@ -906,7 +906,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
             title="Zoom out"
             disabled={zoomLevel <= 1}
           >
-            <ZoomOut className="h-4 w-4" />
+            <ZoomOut aria-hidden="true" className="h-4 w-4" />
           </button>
           <button
             onClick={handleReset}
@@ -914,7 +914,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
             title="Reset zoom"
             disabled={zoomLevel === 1 && panOffset.x === 0 && panOffset.y === 0}
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw aria-hidden="true" className="h-4 w-4" />
           </button>
           <span className={cn(growthChartStyles.zoomLabel, "growth-chart-zoom-label")}>
             {Math.round(zoomLevel * 100)}%

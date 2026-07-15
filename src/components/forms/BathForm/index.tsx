@@ -1,21 +1,37 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { BathLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Label } from '@/src/components/ui/label';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
 import {
-  FormPage, 
-  FormPageContent, 
-  FormPageFooter 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
+import {
+  FormPage,
+  FormPageContent,
+  FormPageFooter
 } from '@/src/components/ui/form-page';
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { Settings } from 'lucide-react';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
+
+import './bath-form.css';
+
+// Note: DEFAULT_BATH_TYPES are displayed via t() so they can be localized
+const DEFAULT_BATH_TYPES = ['Full Bath', 'Sponge Bath', 'Wipe Down'];
 
 interface BathFormProps {
   isOpen: boolean;
@@ -37,6 +53,9 @@ export default function BathForm({
   const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
+  const formId = useId();
+  const bathTypeId = `${formId}-bath-type`;
+  const notesId = `${formId}-notes`;
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     try {
       // Try to parse the initialTime
@@ -52,6 +71,7 @@ export default function BathForm({
     }
   });
   const [formData, setFormData] = useState({
+    bathType: '',
     soapUsed: false,
     shampooUsed: false,
     notes: '',
@@ -60,6 +80,108 @@ export default function BathForm({
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
   const [lastActivityId, setLastActivityId] = useState<string | null>(null);
+  const [customBathTypes, setCustomBathTypes] = useState<string[]>([]);
+  const [isCustomBathType, setIsCustomBathType] = useState(false);
+  const [customBathTypeInput, setCustomBathTypeInput] = useState('');
+  const [hiddenBathTypes, setHiddenBathTypes] = useState<string[]>([]);
+  const [showBathTypeManager, setShowBathTypeManager] = useState(false);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'bath' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
+
+  // Fetch custom bath types and hidden bath type settings when form opens
+  useEffect(() => {
+    if (isOpen) {
+      const authToken = localStorage.getItem('authToken');
+      const headers = { 'Authorization': authToken ? `Bearer ${authToken}` : '' };
+
+      const fetchCustomBathTypes = async () => {
+        try {
+          const response = await fetch('/api/bath-log?bathTypes=true', { headers });
+          if (!response.ok) return;
+          const data = await response.json();
+          if (data.success) {
+            setCustomBathTypes(data.data);
+          }
+        } catch (error) {
+          console.error('Error fetching custom bath types:', error);
+        }
+      };
+
+      const fetchHiddenBathTypes = async () => {
+        try {
+          const response = await fetch('/api/bath-type-settings', { headers });
+          if (!response.ok) return;
+          const data = await response.json();
+          if (data.success && data.data) {
+            setHiddenBathTypes(data.data.hiddenBathTypes || []);
+          }
+        } catch (error) {
+          console.error('Error fetching bath type settings:', error);
+        }
+      };
+
+      fetchCustomBathTypes();
+      fetchHiddenBathTypes();
+    } else {
+      setShowBathTypeManager(false);
+    }
+  }, [isOpen]);
+
+  const saveHiddenBathTypes = useCallback(async (newHidden: string[]) => {
+    setHiddenBathTypes(newHidden);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch('/api/bath-type-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+        },
+        body: JSON.stringify({ hiddenBathTypes: newHidden }),
+      });
+    } catch (error) {
+      console.error('Error saving bath type settings:', error);
+    }
+  }, []);
+
+  const toggleBathTypeVisibility = useCallback((bathType: string) => {
+    const newHidden = hiddenBathTypes.includes(bathType)
+      ? hiddenBathTypes.filter(bt => bt !== bathType)
+      : [...hiddenBathTypes, bathType];
+    saveHiddenBathTypes(newHidden);
+  }, [hiddenBathTypes, saveHiddenBathTypes]);
+
+  // Compute visible default bath types, preserving the activity's current type if editing
+  const visibleDefaultBathTypes = DEFAULT_BATH_TYPES.filter(bt => {
+    if (hiddenBathTypes.includes(bt)) {
+      // Still show it if it's the current activity's bath type (editing mode)
+      return activity?.bathType === bt;
+    }
+    return true;
+  });
+
+  // Compute visible custom bath types, same logic as defaults
+  const visibleCustomBathTypes = customBathTypes.filter(bt => {
+    if (hiddenBathTypes.includes(bt)) {
+      return activity?.bathType === bt;
+    }
+    return true;
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -79,12 +201,17 @@ export default function BathForm({
           } catch (error) {
             console.error('Error parsing activity time:', error);
           }
+          const activityBathType = activity.bathType || '';
+          const isDefaultBathType = !!activityBathType && DEFAULT_BATH_TYPES.includes(activityBathType);
           setFormData({
+            bathType: isDefaultBathType ? activityBathType : (activityBathType ? 'Custom' : ''),
             soapUsed: activity.soapUsed || false,
             shampooUsed: activity.shampooUsed || false,
             notes: activity.notes || '',
           });
-          
+          setIsCustomBathType(!!activityBathType && !isDefaultBathType);
+          setCustomBathTypeInput(!isDefaultBathType ? activityBathType : '');
+
           // Store the initial time used for editing
           setInitializedTime(activity.time);
         } else {
@@ -101,6 +228,9 @@ export default function BathForm({
           
           // Store the initial time used for new entry
           setInitializedTime(initialTime);
+          setFormData(prev => ({ ...prev, bathType: '' }));
+          setIsCustomBathType(false);
+          setCustomBathTypeInput('');
         }
         
         // Mark as initialized and track activity ID
@@ -112,6 +242,9 @@ export default function BathForm({
       setIsInitialized(false);
       setInitializedTime(null);
       setLastActivityId(null);
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   }, [isOpen, activity, initialTime, isInitialized, lastActivityId]);
 
@@ -136,19 +269,34 @@ export default function BathForm({
       console.error('No baby selected');
       return;
     }
-    
+
+    // Validate custom bath type if Custom is selected
+    if (isCustomBathType && !customBathTypeInput.trim()) {
+      showToast({
+        variant: 'error',
+        title: t('Error'),
+        message: t('Please enter a custom bath type'),
+        duration: 5000,
+      });
+      return;
+    }
+
+    // Determine the bath type value to use
+    const bathTypeValue = isCustomBathType ? customBathTypeInput.trim() : (formData.bathType || null);
+
     setLoading(true);
-    
+
     try {
       // Convert local time to UTC ISO string
       const utcTimeString = toUTCString(selectedDateTime);
-      
+
       console.log('Original time (local):', selectedDateTime.toISOString());
       console.log('Converted time (UTC):', utcTimeString);
-      
+
       const payload = {
         babyId,
         time: utcTimeString, // Send the UTC ISO string instead of local time
+        bathType: bathTypeValue,
         soapUsed: formData.soapUsed,
         shampooUsed: formData.shampooUsed,
         notes: formData.notes || null,
@@ -207,8 +355,32 @@ export default function BathForm({
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
+        const savedActivityId = activity?.id || data.data?.id;
+
+        if (photosEnabled && savedActivityId) {
+          try {
+            for (const photoId of removedPhotoIds) {
+              await unlinkPhoto(photoId, 'bath', savedActivityId);
+            }
+            if (pendingPhotoFiles.length > 0) {
+              const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+              for (const photo of result.photos) {
+                await linkPhoto(photo.id, 'bath', savedActivityId);
+              }
+            }
+          } catch (photoError) {
+            console.error('Photo attachment failed:', photoError);
+            showToast({
+              variant: 'warning',
+              title: t('Warning'),
+              message: t('Bath saved, but one or more photos failed to attach.'),
+              duration: 5000,
+            });
+          }
+        }
+
         // Close the form and trigger the success callback
         onClose();
         if (onSuccess) onSuccess();
@@ -254,6 +426,96 @@ export default function BathForm({
               />
             </div>
             
+            {/* Bath Type */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor={bathTypeId}>{t('Bath Type')}</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowBathTypeManager(!showBathTypeManager)}
+                  className="bath-settings-button p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  title={t('Manage visible bath types')}
+                >
+                  <Settings className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+              {showBathTypeManager && (
+                <div className="bath-type-manager mb-2 p-3 border border-gray-300 rounded-md bg-muted/50 space-y-1">
+                  <p className="text-xs text-muted-foreground mb-2">{t('Toggle bath types to show or hide them')}</p>
+                  {DEFAULT_BATH_TYPES.map((bathType) => (
+                    <label key={bathType} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        variant="primary"
+                        size="sm"
+                        checked={!hiddenBathTypes.includes(bathType)}
+                        onCheckedChange={() => toggleBathTypeVisibility(bathType)}
+                      />
+                      {t(bathType)}
+                    </label>
+                  ))}
+                  {customBathTypes.length > 0 && (
+                    <>
+                      <hr className="my-2 border-border" />
+                      <p className="text-xs text-muted-foreground mb-1">{t('Custom Bath Types')}</p>
+                      {customBathTypes.map((bathType) => (
+                        <label key={bathType} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            variant="primary"
+                            size="sm"
+                            checked={!hiddenBathTypes.includes(bathType)}
+                            onCheckedChange={() => toggleBathTypeVisibility(bathType)}
+                          />
+                          {bathType}
+                        </label>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+              <Select
+                value={formData.bathType}
+                onValueChange={(value: string) => {
+                  if (value === 'Custom') {
+                    setIsCustomBathType(true);
+                    setFormData(prev => ({ ...prev, bathType: 'Custom' }));
+                  } else {
+                    setIsCustomBathType(false);
+                    setCustomBathTypeInput('');
+                    setFormData(prev => ({ ...prev, bathType: value }));
+                  }
+                }}
+                disabled={loading}
+              >
+                <SelectTrigger id={bathTypeId} className="w-full">
+                  <SelectValue placeholder={t("Select bath type")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {visibleDefaultBathTypes.map((bathType) => (
+                    <SelectItem key={bathType} value={bathType}>
+                      {t(bathType)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="Custom">{t('Custom')}</SelectItem>
+                  {visibleCustomBathTypes.map((bathType) => (
+                    <SelectItem key={bathType} value={bathType}>
+                      {bathType}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isCustomBathType && (
+                <div className="mt-2">
+                  <Input
+                    type="text"
+                    value={customBathTypeInput}
+                    onChange={(e) => setCustomBathTypeInput(e.target.value)}
+                    placeholder={t("Enter custom bath type")}
+                    disabled={loading}
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Bath Options */}
             <div className="space-y-2">
               <Label>{t('Bath Options')}</Label>
@@ -285,9 +547,9 @@ export default function BathForm({
             
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">{t('Notes')}</Label>
+              <Label htmlFor={notesId}>{t('Notes')}</Label>
               <Textarea
-                id="notes"
+                id={notesId}
                 name="notes"
                 placeholder={t("Enter any notes about the bath")}
                 value={formData.notes}
@@ -295,6 +557,22 @@ export default function BathForm({
                 rows={3}
               />
             </div>
+
+            {photosEnabled && (
+              <div className="space-y-2">
+                <Label>{t('Photos')}</Label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
           </form>
         </FormPageContent>

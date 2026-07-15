@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { BreastSide } from '@prisma/client';
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
@@ -66,6 +66,7 @@ export default function BreastFeedForm({
 }: BreastFeedFormProps) {
 
   const { t } = useLocalization();
+  const notesId = useId();
   const [isEditingLeft, setIsEditingLeft] = useState(false);
   const [isEditingRight, setIsEditingRight] = useState(false);
   
@@ -272,7 +273,36 @@ export default function BreastFeedForm({
   if (isEditing) {
     return (
       <div className="feed-form-container">
-                <Label className="form-label">{t('Duration -')} {side === 'LEFT' ? t('Left') : t('Right')} {t('Side')}</Label>
+        <Label className="form-label">{t('Side')}</Label>
+        <div className="flex gap-4 justify-center py-2">
+          <Button
+            type="button"
+            variant={side === 'LEFT' ? 'default' : 'outline'}
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              if (side !== 'LEFT') onSideChange('LEFT');
+            }}
+            disabled={loading || isTimerRunning}
+            className="flex-1 max-w-xs"
+          >
+            {t('Left Side')}
+          </Button>
+          <Button
+            type="button"
+            variant={side === 'RIGHT' ? 'default' : 'outline'}
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              if (side !== 'RIGHT') onSideChange('RIGHT');
+            }}
+            disabled={loading || isTimerRunning}
+            className="flex-1 max-w-xs"
+          >
+            {t('Right Side')}
+          </Button>
+        </div>
+        <Label className="form-label">{t('Duration -')} {side === 'LEFT' ? t('Left') : t('Right')} {t('Side')}</Label>
         <div className="flex flex-col items-center space-y-4 py-4">
           {side === 'LEFT' ? (
             <TimerInput
@@ -317,8 +347,8 @@ export default function BreastFeedForm({
               }}
               disabled={loading || isEditingLeft || isEditingRight}
             >
-              {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ? 
-                <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+              {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ?
+                <Pause className="h-4 w-4 mr-1" aria-hidden="true" /> : <Play className="h-4 w-4 mr-1" aria-hidden="true" />}
               {isTimerRunning && ((side === 'LEFT' && activeBreast === 'LEFT') || (side === 'RIGHT' && activeBreast === 'RIGHT')) ? 
                 t('Pause') : t('Start')}
             </Button>
@@ -369,7 +399,7 @@ export default function BreastFeedForm({
               disabled={loading || isEditingLeft}
               className="w-full"
             >
-              {isTimerRunning && activeBreast === 'LEFT' ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+              {isTimerRunning && activeBreast === 'LEFT' ? <Pause className="h-4 w-4 mr-1" aria-hidden="true" /> : <Play className="h-4 w-4 mr-1" aria-hidden="true" />}
               {isTimerRunning && activeBreast === 'LEFT' ? t('Pause') : t('Start')}
             </Button>
           </div>
@@ -416,7 +446,7 @@ export default function BreastFeedForm({
               disabled={loading || isEditingRight}
               className="w-full"
             >
-              {isTimerRunning && activeBreast === 'RIGHT' ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+              {isTimerRunning && activeBreast === 'RIGHT' ? <Pause className="h-4 w-4 mr-1" aria-hidden="true" /> : <Play className="h-4 w-4 mr-1" aria-hidden="true" />}
               {isTimerRunning && activeBreast === 'RIGHT' ? t('Pause') : t('Start')}
             </Button>
           </div>
@@ -424,9 +454,9 @@ export default function BreastFeedForm({
       </div>
       {onNotesChange && (
         <div className="mt-6">
-          <label className="form-label">{t('Notes')}</label>
+          <label htmlFor={notesId} className="form-label">{t('Notes')}</label>
           <Textarea
-            id="notes"
+            id={notesId}
             name="notes"
             placeholder={t("Enter any notes about the feeding")}
             value={notes}

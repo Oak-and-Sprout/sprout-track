@@ -4,7 +4,7 @@ import { ApiResponse, ActiveBreastFeedResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
+import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession, SESSION_UPDATE_ACTIONS, SessionUpdateAction } from '../utils/activeBreastFeed';
 
 function formatActiveBreastFeed(record: any): ActiveBreastFeedResponse {
   return {
@@ -82,20 +82,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'An active breastfeed session already exists for this baby.' }, { status: 409 });
     }
 
-    const now = new Date();
-    const session = await prisma.activeBreastFeed.create({
-      data: {
-        babyId,
-        activeSide: side,
-        isPaused: false,
-        leftDuration: 0,
-        rightDuration: 0,
-        currentSideStartTime: now,
-        sessionStartTime: now,
-        familyId: userFamilyId,
-        caretakerId: caretakerId,
-      },
-    });
+    const session = await startBreastfeedSession({ babyId, side, familyId: userFamilyId, caretakerId });
 
     return NextResponse.json<ApiResponse<ActiveBreastFeedResponse>>({
       success: true,
@@ -119,10 +106,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const action = searchParams.get('action'); // switch, pause, resume
+    const action = searchParams.get('action'); // switch, pause, resume, swap
 
     if (!id || !action) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'id and action are required' }, { status: 400 });
+    }
+
+    if (!SESSION_UPDATE_ACTIONS.includes(action as SessionUpdateAction)) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid action. Use switch, pause, resume, or swap.' }, { status: 400 });
     }
 
     const session = await prisma.activeBreastFeed.findFirst({
@@ -132,73 +123,13 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Active breastfeed session not found' }, { status: 404 });
     }
 
-    const now = new Date();
+    // resume optionally accepts a side to resume on
+    const body = action === 'resume' ? await req.json().catch(() => ({})) : {};
 
-    // Calculate elapsed time on current side (if not paused)
-    let elapsedSeconds = 0;
-    if (session.currentSideStartTime && !session.isPaused) {
-      elapsedSeconds = Math.floor((now.getTime() - session.currentSideStartTime.getTime()) / 1000);
+    const updated = await updateBreastfeedSession(session, action as SessionUpdateAction, body.side);
+    if (!updated) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid action. Use switch, pause, resume, or swap.' }, { status: 400 });
     }
-
-    let updateData: any = {};
-
-    switch (action) {
-      case 'switch': {
-        // Accumulate time on current side, switch to other side
-        const newLeftDuration = session.activeSide === 'LEFT'
-          ? session.leftDuration + elapsedSeconds
-          : session.leftDuration;
-        const newRightDuration = session.activeSide === 'RIGHT'
-          ? session.rightDuration + elapsedSeconds
-          : session.rightDuration;
-        const newSide = session.activeSide === 'LEFT' ? 'RIGHT' : 'LEFT';
-
-        updateData = {
-          activeSide: newSide,
-          leftDuration: newLeftDuration,
-          rightDuration: newRightDuration,
-          currentSideStartTime: now,
-          isPaused: false,
-        };
-        break;
-      }
-      case 'pause': {
-        // Accumulate time on current side, pause
-        const newLeftDuration = session.activeSide === 'LEFT'
-          ? session.leftDuration + elapsedSeconds
-          : session.leftDuration;
-        const newRightDuration = session.activeSide === 'RIGHT'
-          ? session.rightDuration + elapsedSeconds
-          : session.rightDuration;
-
-        updateData = {
-          leftDuration: newLeftDuration,
-          rightDuration: newRightDuration,
-          currentSideStartTime: null,
-          isPaused: true,
-        };
-        break;
-      }
-      case 'resume': {
-        // Optionally accept a side to resume on
-        const body = await req.json().catch(() => ({}));
-        const resumeSide = body.side || session.activeSide;
-
-        updateData = {
-          activeSide: resumeSide,
-          currentSideStartTime: now,
-          isPaused: false,
-        };
-        break;
-      }
-      default:
-        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Invalid action. Use switch, pause, or resume.' }, { status: 400 });
-    }
-
-    const updated = await prisma.activeBreastFeed.update({
-      where: { id },
-      data: updateData,
-    });
 
     return NextResponse.json<ApiResponse<ActiveBreastFeedResponse>>({
       success: true,
@@ -234,21 +165,6 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Active breastfeed session not found' }, { status: 404 });
     }
 
-    const now = new Date();
-
-    // Calculate final elapsed time on current side (if not paused)
-    let elapsedSeconds = 0;
-    if (session.currentSideStartTime && !session.isPaused) {
-      elapsedSeconds = Math.floor((now.getTime() - session.currentSideStartTime.getTime()) / 1000);
-    }
-
-    const finalLeftDuration = session.activeSide === 'LEFT'
-      ? session.leftDuration + elapsedSeconds
-      : session.leftDuration;
-    const finalRightDuration = session.activeSide === 'RIGHT'
-      ? session.rightDuration + elapsedSeconds
-      : session.rightDuration;
-
     // Check if caller wants to override durations (from form adjustments)
     let body: any = {};
     try {
@@ -257,59 +173,17 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       // No body is fine
     }
 
-    const leftDur = body.leftDuration !== undefined ? body.leftDuration : finalLeftDuration;
-    const rightDur = body.rightDuration !== undefined ? body.rightDuration : finalRightDuration;
+    const { feedLogs } = await endBreastfeedSession(session, {
+      familyId: userFamilyId,
+      caretakerId,
+      accountId: authContext.accountId,
+      leftDuration: body.leftDuration,
+      rightDuration: body.rightDuration,
+    });
 
-    // Create FeedLog records for each side that has duration
-    // Last-fed side gets +1s startTime so it sorts first in lists
-    const baseStartTime = session.sessionStartTime;
-    const lastSideStartTime = new Date(baseStartTime.getTime() + 10);
-    const feedLogs = [];
-
-    if (leftDur > 0) {
-      const leftLog = await prisma.feedLog.create({
-        data: {
-          babyId: session.babyId,
-          time: now,
-          type: 'BREAST',
-          side: 'LEFT',
-          startTime: session.activeSide === 'LEFT' ? lastSideStartTime : baseStartTime,
-          endTime: now,
-          feedDuration: leftDur,
-          caretakerId: caretakerId,
-          familyId: userFamilyId,
-        },
-      });
-      feedLogs.push(leftLog);
-    }
-
-    if (rightDur > 0) {
-      const rightLog = await prisma.feedLog.create({
-        data: {
-          babyId: session.babyId,
-          time: now,
-          type: 'BREAST',
-          side: 'RIGHT',
-          startTime: session.activeSide === 'RIGHT' ? lastSideStartTime : baseStartTime,
-          endTime: now,
-          feedDuration: rightDur,
-          caretakerId: caretakerId,
-          familyId: userFamilyId,
-        },
-      });
-      feedLogs.push(rightLog);
-    }
-
-    // Delete the active session
-    await prisma.activeBreastFeed.delete({ where: { id } });
-
-    // Notify subscribers about completed breastfeed and reset feed timer (non-blocking)
-    notifyActivityCreated(session.babyId, 'feed', { accountId: authContext.accountId, caretakerId: authContext.caretakerId }, { type: 'BREAST' }).catch(console.error);
-    resetTimerNotificationState(session.babyId, 'feed').catch(console.error);
-
-    return NextResponse.json<ApiResponse<{ feedLogsCreated: number }>>({
+    return NextResponse.json<ApiResponse<{ feedLogsCreated: number; feedLogIds: string[] }>>({
       success: true,
-      data: { feedLogsCreated: feedLogs.length },
+      data: { feedLogsCreated: feedLogs.length, feedLogIds: feedLogs.map(log => log.id) },
     });
   } catch (error) {
     console.error('Error ending active breastfeed:', error);

@@ -281,7 +281,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
                   />
                   {loginIdError && (
                     <div className="flex items-center gap-1 text-red-600 text-xs">
-                      <AlertCircle className="h-3 w-3" />
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {loginIdError}
                     </div>
                   )}

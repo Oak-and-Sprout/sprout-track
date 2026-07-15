@@ -60,7 +60,7 @@ function getStatusBadge(invite: FamilySetupInvite, t: (key: string) => string) {
   if (invite.isUsed) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mobile-status-badge">
-        <CheckCircle className="h-3 w-3 mr-1" />
+        <CheckCircle className="h-3 w-3 mr-1" aria-hidden="true" />
         {t('Used')}
       </span>
     );
@@ -68,14 +68,14 @@ function getStatusBadge(invite: FamilySetupInvite, t: (key: string) => string) {
   if (invite.isExpired) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mobile-status-badge">
-        <XCircle className="h-3 w-3 mr-1" />
+        <XCircle className="h-3 w-3 mr-1" aria-hidden="true" />
         {t('Expired')}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mobile-status-badge">
-      <Clock className="h-3 w-3 mr-1" />
+      <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
       {t('Active')}
     </span>
   );
@@ -144,7 +144,7 @@ export default function InviteMobileView({
                   <span className="font-mono text-sm text-gray-900 mobile-card-name">{invite.token.substring(0, 16)}...</span>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(invite, t)}
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
                   </div>
                 </div>
               </CardHeader>
@@ -236,7 +236,7 @@ export default function InviteMobileView({
                       onClick={() => handleConfirmRevoke(selectedInvite.id)}
                       disabled={deletingInviteId === selectedInvite.id}
                     >
-                      {deletingInviteId === selectedInvite.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                      {deletingInviteId === selectedInvite.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" /> : null}
                       {t('Confirm')}
                     </Button>
                     <Button
@@ -271,9 +271,9 @@ export default function InviteMobileView({
                   disabled={deletingInviteId === selectedInvite.id}
                 >
                   {deletingInviteId === selectedInvite.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" />
                   ) : (
-                    <Trash2 className="h-4 w-4 mr-1" />
+                    <Trash2 className="h-4 w-4 mr-1" aria-hidden="true" />
                   )}
                   {t('Revoke')}
                 </Button>

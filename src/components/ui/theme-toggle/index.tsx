@@ -65,9 +65,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   // Get the appropriate icon and label for the current theme
   const getCurrentThemeIcon = () => {
     const iconSize = (variant === 'light' || variant === 'minimal') ? 14 : 16;
-    if (!isHydrated) return <Sun size={iconSize} />; // Default to Sun icon during SSR
-    if (useSystemTheme) return <Monitor size={iconSize} />;
-    return theme === 'light' ? <Sun size={iconSize} /> : <Moon size={iconSize} />;
+    if (!isHydrated) return <Sun size={iconSize} aria-hidden="true" />; // Default to Sun icon during SSR
+    if (useSystemTheme) return <Monitor size={iconSize} aria-hidden="true" />;
+    return theme === 'light' ? <Sun size={iconSize} aria-hidden="true" /> : <Moon size={iconSize} aria-hidden="true" />;
   };
 
   const getCurrentTheme = () => {

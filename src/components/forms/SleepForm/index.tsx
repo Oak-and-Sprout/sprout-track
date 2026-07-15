@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { SleepType, SleepQuality } from '@prisma/client';
 import { SleepLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -28,8 +28,10 @@ import { Checkbox } from '@/src/components/ui/checkbox';
 
 import './sleep-form.css';
 
+import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
+
 // Note: DEFAULT_LOCATIONS are displayed as-is but could be localized if needed
-const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
+const DEFAULT_LOCATIONS: string[] = [...DEFAULT_SLEEP_LOCATIONS];
 
 interface SleepFormProps {
   isOpen: boolean;
@@ -53,6 +55,10 @@ export default function SleepForm({
   onSuccess,
 }: SleepFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
+  const typeId = `${formId}-type`;
+  const locationId = `${formId}-location`;
+  const qualityId = `${formId}-quality`;
   const { formatDate, calculateDurationMinutes, toUTCString } = useTimezone();
   const { showToast } = useToast();
   const [startDateTime, setStartDateTime] = useState<Date>(() => {
@@ -576,7 +582,7 @@ export default function SleepForm({
           </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="form-label">{t('Type')}</label>
+                <label htmlFor={typeId} className="form-label">{t('Type')}</label>
                 <Select
                   value={formData.type}
                   onValueChange={(value: SleepType) =>
@@ -584,7 +590,7 @@ export default function SleepForm({
                   }
                   disabled={(isSleeping && !isEditMode) || loading} // Only disabled when ending sleep and not editing
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger id={typeId} className="w-full">
                     <SelectValue placeholder={t("Select type")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -595,14 +601,14 @@ export default function SleepForm({
               </div>
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="form-label">{t('Location')}</label>
+                  <label htmlFor={locationId} className="form-label">{t('Location')}</label>
                   <button
                     type="button"
                     onClick={() => setShowLocationManager(!showLocationManager)}
                     className="sleep-settings-button p-1 text-muted-foreground hover:text-foreground transition-colors"
                     title={t('Manage visible locations')}
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
                 {showLocationManager && (
@@ -652,7 +658,7 @@ export default function SleepForm({
                   }}
                   disabled={(isSleeping && !isEditMode) || loading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger id={locationId} className="w-full">
                     <SelectValue placeholder={t("Select location")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -685,7 +691,7 @@ export default function SleepForm({
             </div>
             {(isSleeping || (isEditMode && endDateTime)) && (
               <div>
-                <label className="form-label">{t('Sleep Quality')}</label>
+                <label htmlFor={qualityId} className="form-label">{t('Sleep Quality')}</label>
                 <Select
                   value={formData.quality}
                   onValueChange={(value: SleepQuality) =>
@@ -693,7 +699,7 @@ export default function SleepForm({
                   }
                   disabled={loading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger id={qualityId} className="w-full">
                     <SelectValue placeholder={t("How well did they sleep?")} />
                   </SelectTrigger>
                   <SelectContent>

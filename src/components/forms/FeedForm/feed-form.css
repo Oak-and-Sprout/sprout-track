@@ -129,6 +129,17 @@ html.dark .feed-form-container .tracking-wider {
   color: #f3f4f6 !important;
 }
 
+/* Linked feeds (nursing session) rows - dark mode */
+html.dark .linked-feeds-item {
+  background-color: #374151 !important; /* gray-700 */
+  border-color: #4b5563 !important; /* gray-600 */
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .linked-feeds-hint {
+  color: #9ca3af !important; /* gray-400 */
+}
+
 /* Session duration MM:SS inputs in active session panel */
 .session-duration-input {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

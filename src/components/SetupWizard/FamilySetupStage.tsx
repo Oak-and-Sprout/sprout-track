@@ -212,12 +212,13 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
               onClick={generateSlug}
               disabled={generatingSlug}
               className="px-3"
-              title="Generate random URL"
+              title={t('Generate random URL')}
+              aria-label={t('Generate random URL')}
             >
               {generatingSlug ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
           </div>
@@ -233,13 +234,13 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
           <div className="min-h-[20px]">
             {checkingSlug && (
               <div className="flex items-center gap-1 text-blue-600 text-sm">
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                 {t('Checking availability...')}
               </div>
             )}
             {slugError && (
               <div className="flex items-center gap-1 text-red-600 text-sm">
-                <AlertCircle className="h-3 w-3" />
+                <AlertCircle className="h-3 w-3" aria-hidden="true" />
                 {slugError}
               </div>
             )}

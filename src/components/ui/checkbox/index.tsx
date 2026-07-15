@@ -32,26 +32,49 @@ import './checkbox.css';
  * ```
  */
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, variant, size, checked, onCheckedChange, ...props }, ref) => {
+  ({ className, variant, size, checked, onCheckedChange, id, ...props }, ref) => {
     const { theme } = useTheme();
-    
+    const generatedId = React.useId();
+    const checkboxId = id ?? generatedId;
+    const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+    const setRefs = (node: HTMLInputElement | null) => {
+      inputRef.current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
+      }
+    };
+
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       if (onCheckedChange) {
         onCheckedChange(event.target.checked);
       }
     };
 
+    // The visual box is a span (not a label) so call sites that wrap <Checkbox>
+    // in their own <label> don't produce invalid nested labels; preventDefault
+    // stops such a wrapping label from also forwarding the click (double toggle)
+    const handleBoxClick = (event: React.MouseEvent<HTMLSpanElement>) => {
+      event.preventDefault();
+      inputRef.current?.click();
+    };
+
     return (
       <div className="relative inline-flex items-center">
         <input
           type="checkbox"
-          className="sr-only"
-          ref={ref}
+          id={checkboxId}
+          className="peer sr-only checkbox-input"
+          ref={setRefs}
           checked={checked}
           onChange={handleChange}
           {...props}
         />
-        <div
+        <span
+          onClick={handleBoxClick}
+          aria-hidden="true"
           className={cn(
             checkboxVariants({ variant, size }),
             checked ? "" : "bg-white",
@@ -60,10 +83,9 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             `checkbox-${variant || 'default'}`
           )}
           data-state={checked ? "checked" : "unchecked"}
-          onClick={() => onCheckedChange?.(!checked)}
         >
           {checked && <Check className="h-3.5 w-3.5 text-white checkbox-check" />}
-        </div>
+        </span>
       </div>
     );
   }

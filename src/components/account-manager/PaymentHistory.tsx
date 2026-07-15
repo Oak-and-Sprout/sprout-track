@@ -187,7 +187,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
           {error && (
             <div className={cn("mb-4 p-4 bg-red-50 border border-red-200 rounded-lg", "payment-history-error")}>
               <div className={cn("flex items-center gap-2 text-red-700", "payment-history-error-text")}>
-                <AlertTriangle className="h-5 w-5" />
+                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
                 <span className="font-medium">{t('Error')}</span>
               </div>
               <p className={cn("text-sm text-red-600 mt-1", "payment-history-error-description")}>{error}</p>
@@ -195,12 +195,13 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
           )}
 
           {loading && transactions.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className={cn("h-8 w-8 animate-spin text-teal-600", "payment-history-loading")} />
+            <div role="status" className="flex items-center justify-center py-12">
+              <Loader2 aria-hidden="true" className={cn("h-8 w-8 animate-spin text-teal-600", "payment-history-loading")} />
+              <span className="sr-only">{t('Loading...')}</span>
             </div>
           ) : transactions.length === 0 ? (
             <div className={cn("flex flex-col items-center justify-center py-12 text-gray-500", "payment-history-empty")}>
-              <Receipt className="h-12 w-12 mb-3" />
+              <Receipt className="h-12 w-12 mb-3" aria-hidden="true" />
               <p className="text-lg font-medium">{t('No payment history')}</p>
               <p className="text-sm">{t('You haven\'t made any payments yet.')}</p>
             </div>
@@ -242,7 +243,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                         {t('Loading...')}
                       </>
                     ) : (
@@ -257,7 +258,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ isOpen, onClose }) => {
 
         <div className={cn("flex justify-end pt-4 border-t", "payment-history-footer")}>
           <Button variant="outline" onClick={onClose}>
-            <X className="h-4 w-4 mr-2" />
+            <X className="h-4 w-4 mr-2" aria-hidden="true" />
             {t('Close')}
           </Button>
         </div>

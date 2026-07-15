@@ -9,14 +9,14 @@ When you first open Sprout Track in your browser, the Setup Wizard guides you th
 ### Step 1: Family Setup
 
 - Enter your family name and URL slug
-- Optionally import data from a previous installation by uploading the old `*.db` file from the `/db` folder
+- Optionally import data from a previous installation by uploading a backup `.zip` (from the in-app backup tool) or the old `*.db` file from the `/db` folder
 
 ### Step 2: Security Setup
 
 Choose one of two authentication modes:
 
 - **System-wide PIN**: A single 6-10 digit PIN shared by all users
-- **Individual caretaker PINs**: Each caretaker gets their own 2-character login ID and 6-10 digit PIN
+- **Individual caretaker PINs**: Each caretaker gets their own 2-digit login ID and 6-10 digit PIN
   - The first caretaker will automatically be assigned the admin role
 
 ### Step 3: Baby Setup
@@ -64,7 +64,7 @@ Add families through the Family Manager interface.
 
 During the Setup Wizard (Step 1), you can import a database backup from an older Sprout Track installation:
 
-1. Locate the `baby-tracker.db` file from your previous installation's `db/` folder
+1. Locate a backup `.zip` (from the in-app backup tool) or the `baby-tracker.db` file from your previous installation's `db/` folder
 2. Upload it during the family setup step
 3. The wizard will migrate the data to the current schema
 
