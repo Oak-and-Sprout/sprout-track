@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { ProgressTabProps } from './food-form.types';
 import { FoodProgressResponse, FoodLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Loader2, AlertCircle, Apple, TriangleAlert } from 'lucide-react';
 import { useTimezone } from '@/app/context/timezone';
+import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
 import {
   buildFoodTryList,
+  buildLogEntryLink,
   formatAmountsByUnit,
   FOOD_ENJOYMENT_DISPLAY_ORDER,
   FOOD_ENJOYMENT_LABELS,
@@ -26,9 +29,11 @@ import {
 const ProgressTab: React.FC<ProgressTabProps> = ({
   babyId,
   refreshTrigger,
+  onNavigate,
 }) => {
   const { t } = useLocalization();
   const { formatDate } = useTimezone();
+  const { family } = useFamily();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<FoodProgressResponse | null>(null);
@@ -169,6 +174,17 @@ const ProgressTab: React.FC<ProgressTabProps> = ({
                           {reaction.description ? ` — ${reaction.description}` : ''}
                         </div>
                       ))}
+                      {family?.slug && entry.reactions.length > 0 && (
+                        <div className="text-xs">
+                          <Link
+                            href={buildLogEntryLink(family.slug, entry.reactions[0].time, babyId)}
+                            onClick={onNavigate}
+                            className="text-teal-600 hover:text-teal-700 hover:underline food-allergen-link"
+                          >
+                            {t('View in log')}
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -223,6 +239,18 @@ const ProgressTab: React.FC<ProgressTabProps> = ({
                       )}
                       {' • '}
                       {t('First try')}: {formatDate(entry.firstTryTime)}
+                      {family?.slug && (
+                        <>
+                          {' • '}
+                          <Link
+                            href={buildLogEntryLink(family.slug, entry.firstTryTime, babyId)}
+                            onClick={onNavigate}
+                            className="text-teal-600 hover:text-teal-700 hover:underline food-history-item-link"
+                          >
+                            {t('View in log')}
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

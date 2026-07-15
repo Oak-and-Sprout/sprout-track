@@ -48,4 +48,6 @@ export interface LogFoodTabProps {
 export interface ProgressTabProps {
   babyId: string | undefined;
   refreshTrigger: number;
+  /** Called when a "View in log" link is followed, so the form can close. */
+  onNavigate?: () => void;
 }

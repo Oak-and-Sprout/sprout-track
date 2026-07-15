@@ -117,6 +117,7 @@ const FoodForm: React.FC<FoodFormProps> = ({
         <ProgressTab
           babyId={babyId}
           refreshTrigger={refreshTrigger}
+          onNavigate={onClose}
         />
       ),
     },
