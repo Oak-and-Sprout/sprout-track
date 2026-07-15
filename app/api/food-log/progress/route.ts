@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../db';
 import { ApiResponse, FoodProgressResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
-import { computeFoodProgress, deriveAllergens } from '@/src/utils/foodLogUtils';
+import { computeFoodProgress, deriveAllergens, deriveFeedAllergens } from '@/src/utils/foodLogUtils';
 
 /**
  * Handle GET request for a baby's all-time food-try progress
@@ -36,7 +36,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Baby not found in this family.' }, { status: 404 });
     }
 
-    const [foodLogs, foods] = await Promise.all([
+    const [foodLogs, foods, reactionFeedLogs] = await Promise.all([
       prisma.foodLog.findMany({
         where: { babyId, familyId: userFamilyId, deletedAt: null },
         select: {
@@ -52,6 +52,11 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         where: { familyId: userFamilyId },
         select: { id: true, name: true, commonAllergen: true },
       }),
+      // Reaction-flagged feeds (e.g. a formula intolerance) join the allergen profile
+      prisma.feedLog.findMany({
+        where: { babyId, familyId: userFamilyId, deletedAt: null, hadReaction: true },
+        select: { time: true, food: true, hadReaction: true, reactionDescription: true },
+      }),
     ]);
 
     const progress = computeFoodProgress(foodLogs);
@@ -61,6 +66,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       totalTries: progress.totalTries,
       byEnjoyment: progress.countsByEnjoyment,
       allergens: deriveAllergens(foodLogs, foods),
+      feedAllergens: deriveFeedAllergens(reactionFeedLogs),
     };
 
     return NextResponse.json<ApiResponse<FoodProgressResponse>>({

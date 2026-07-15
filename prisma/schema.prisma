@@ -40,6 +40,14 @@ enum FoodEnjoyment {
   LOVED
 }
 
+// Type of a manually recorded allergen (food tracker follow-up)
+enum AllergenType {
+  FOOD
+  MEDICINE
+  ENVIRONMENT
+  OTHER
+}
+
 enum BreastSide {
   LEFT
   RIGHT
@@ -211,6 +219,7 @@ model Family {
   externalImportRecords ExternalImportRecord[]
   foods          Food[]
   foodLogs       FoodLog[]
+  babyAllergens  BabyAllergen[]
 }
 
 // New model for family membership
@@ -267,6 +276,7 @@ model Baby {
   photos       Photo[]
   photoLogs    PhotoLog[]
   foodLogs     FoodLog[]
+  babyAllergens BabyAllergen[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -319,6 +329,7 @@ model Caretaker {
   photos        Photo[]
   photoLogs     PhotoLog[]
   foodLogs      FoodLog[]
+  babyAllergens BabyAllergen[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -385,6 +396,8 @@ model FeedLog {
   side         BreastSide?
   food         String? // Description of solid foods
   notes        String? // Optional notes for any feed type
+  hadReaction  Boolean     @default(false) // True when this feed caused a reaction (e.g. a formula intolerance)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
   bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
   breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
   sessionId    String? // Groups breast feeds into one nursing session; a unique value opts a feed out of heuristic grouping
@@ -1073,6 +1086,35 @@ model FoodLog {
 
   @@index([time])
   @@index([foodId])
+  @@index([babyId])
+  @@index([caretakerId])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+// Manually recorded allergens for a baby (food tracker follow-up).
+// Complements the allergen profile derived from reaction-flagged FoodLogs.
+model BabyAllergen {
+  id                  String       @id @default(uuid())
+  name                String
+  allergenType        AllergenType @default(FOOD)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
+  notes               String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deletedAt           DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+
+  // Relationships
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([name])
   @@index([babyId])
   @@index([caretakerId])
   @@index([deletedAt])

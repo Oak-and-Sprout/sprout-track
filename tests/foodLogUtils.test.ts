@@ -4,13 +4,21 @@ import {
   foodNameKey,
   isDuplicateFoodName,
   isValidEnjoyment,
+  isValidAllergenType,
   isLikelyCommonAllergen,
   computeFoodProgress,
   deriveAllergens,
+  deriveFeedAllergens,
+  mergeAllergens,
   buildFoodTryList,
+  buildNewFoodsForRange,
   countFirstTriesInRange,
+  toDateParam,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
+  FOOD_ENJOYMENT_ICON_SRC,
+  ALLERGEN_TYPE_VALUES,
+  ALLERGEN_TYPE_LABELS,
   UNIQUE_FOOD_GOAL,
 } from '@/src/utils/foodLogUtils';
 
@@ -199,6 +207,7 @@ describe('deriveAllergens', () => {
       foodName: 'Peanut Butter',
       commonAllergen: true,
       reactions: [{ time: '2026-07-01T09:00:00.000Z', description: 'redness' }],
+      firstReactionAt: '2026-07-01T09:00:00.000Z',
     });
   });
 
@@ -211,6 +220,8 @@ describe('deriveAllergens', () => {
     const allergens = deriveAllergens(logs, foods);
     expect(allergens.map(a => a.foodName)).toEqual(['Banana', 'Peanut Butter']);
     expect(allergens[1].reactions.map(r => r.description)).toEqual(['redness', 'swelling']);
+    // First reaction time is the oldest reaction-flagged log
+    expect(allergens[1].firstReactionAt).toBe('2026-07-01T09:00:00.000Z');
     // Blank descriptions come through as null
     expect(allergens[0].reactions).toEqual([{ time: '2026-07-03T09:00:00.000Z', description: null }]);
     expect(allergens[0].commonAllergen).toBe(false);
@@ -301,6 +312,245 @@ describe('buildFoodTryList', () => {
     ]);
     expect(entry.foodName).toBe('');
     expect(entry.tryCount).toBe(1);
+  });
+});
+
+describe('toDateParam', () => {
+  it('formats a local date as zero-padded YYYY-MM-DD', () => {
+    expect(toDateParam(new Date(2026, 6, 8, 14, 30))).toBe('2026-07-08');
+    expect(toDateParam(new Date(2026, 0, 1))).toBe('2026-01-01');
+  });
+});
+
+describe('FOOD_ENJOYMENT_ICON_SRC', () => {
+  it('maps every enjoyment value to a flat-emoji SVG path', () => {
+    for (const value of FOOD_ENJOYMENT_VALUES) {
+      expect(FOOD_ENJOYMENT_ICON_SRC[value]).toMatch(/^\/emoji-flat\/.+\.svg$/);
+    }
+  });
+});
+
+describe('allergen types', () => {
+  it('exposes the four allergen types with label keys', () => {
+    expect([...ALLERGEN_TYPE_VALUES]).toEqual(['FOOD', 'MEDICINE', 'ENVIRONMENT', 'OTHER']);
+    for (const value of ALLERGEN_TYPE_VALUES) {
+      expect(typeof ALLERGEN_TYPE_LABELS[value]).toBe('string');
+      expect(ALLERGEN_TYPE_LABELS[value].length).toBeGreaterThan(0);
+    }
+  });
+
+  it('validates allergen type values', () => {
+    for (const value of ALLERGEN_TYPE_VALUES) {
+      expect(isValidAllergenType(value)).toBe(true);
+    }
+    expect(isValidAllergenType('food')).toBe(false);
+    expect(isValidAllergenType('')).toBe(false);
+    expect(isValidAllergenType(null)).toBe(false);
+    expect(isValidAllergenType(undefined)).toBe(false);
+  });
+});
+
+describe('deriveFeedAllergens', () => {
+  it('returns an empty list for empty input or when no feed had a reaction', () => {
+    expect(deriveFeedAllergens([])).toEqual([]);
+    expect(deriveFeedAllergens([
+      { time: at('2026-07-01T09:00:00Z'), food: 'Carrot', hadReaction: false },
+    ])).toEqual([]);
+  });
+
+  it('groups reaction-flagged solids feeds case-insensitively by food text', () => {
+    const entries = deriveFeedAllergens([
+      { time: at('2026-07-02T09:00:00Z'), food: 'carrot', hadReaction: true, reactionDescription: 'hives' },
+      { time: at('2026-07-01T09:00:00Z'), food: '  Carrot ', hadReaction: true, reactionDescription: 'redness' },
+    ]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].name).toBe('Carrot');
+    expect(entries[0].reactions.map(r => r.description)).toEqual(['redness', 'hives']);
+    expect(entries[0].firstReactionAt).toBe('2026-07-01T09:00:00.000Z');
+  });
+
+  it('groups feeds without a food description into one generic entry, sorted last', () => {
+    const entries = deriveFeedAllergens([
+      { time: at('2026-07-01T09:00:00Z'), hadReaction: true, reactionDescription: 'spit up' },
+      { time: at('2026-07-02T09:00:00Z'), food: '   ', hadReaction: true },
+      { time: at('2026-07-03T09:00:00Z'), food: 'Apple', hadReaction: true },
+    ]);
+    expect(entries.map(e => e.name)).toEqual(['Apple', null]);
+    expect(entries[1].reactions).toHaveLength(2);
+    expect(entries[1].firstReactionAt).toBe('2026-07-01T09:00:00.000Z');
+  });
+
+  it('excludes soft-deleted feed logs', () => {
+    expect(deriveFeedAllergens([
+      { time: at('2026-07-01T09:00:00Z'), food: 'Carrot', hadReaction: true, deletedAt: at('2026-07-02T00:00:00Z') },
+    ])).toEqual([]);
+  });
+});
+
+describe('mergeAllergens', () => {
+  const derivedPeanut = {
+    foodId: 'peanut',
+    foodName: 'Peanut Butter',
+    commonAllergen: true,
+    reactions: [{ time: '2026-07-05T09:00:00.000Z', description: 'redness' }],
+    firstReactionAt: '2026-07-05T09:00:00.000Z',
+  };
+
+  it('returns an empty list for empty inputs', () => {
+    expect(mergeAllergens([], [])).toEqual([]);
+    expect(mergeAllergens([], [], [])).toEqual([]);
+  });
+
+  it('passes through derived-only and manual-only entries with their source and date', () => {
+    const merged = mergeAllergens(
+      [derivedPeanut],
+      [{ id: 'm1', name: 'Cats', allergenType: 'ENVIRONMENT', reactionDescription: 'sneezing', notes: 'notice', createdAt: '2026-06-01T00:00:00.000Z' }]
+    );
+    expect(merged.map(e => e.name)).toEqual(['Cats', 'Peanut Butter']);
+
+    const [cats, peanut] = merged;
+    expect(cats.sources).toEqual(['manual']);
+    expect(cats.allergenType).toBe('ENVIRONMENT');
+    expect(cats.manualId).toBe('m1');
+    expect(cats.reactionDescriptions).toEqual(['sneezing']);
+    expect(cats.notes).toBe('notice');
+    expect(cats.dateAdded).toBe('2026-06-01T00:00:00.000Z');
+
+    expect(peanut.sources).toEqual(['food-log']);
+    expect(peanut.allergenType).toBe('FOOD');
+    expect(peanut.manualId).toBeNull();
+    expect(peanut.commonAllergen).toBe(true);
+    expect(peanut.reactionDescriptions).toEqual(['redness']);
+    expect(peanut.dateAdded).toBe('2026-07-05T09:00:00.000Z');
+  });
+
+  it('dedupes case-insensitively; manual wins metadata, both descriptions kept, earliest date wins', () => {
+    const merged = mergeAllergens(
+      [derivedPeanut],
+      [{ id: 'm1', name: 'peanut BUTTER', allergenType: 'FOOD', reactionDescription: 'swelling', notes: 'epi pen in bag', createdAt: '2026-07-01T00:00:00.000Z' }]
+    );
+    expect(merged).toHaveLength(1);
+    const [entry] = merged;
+    expect(entry.name).toBe('peanut BUTTER'); // manual display name wins
+    expect(entry.sources).toEqual(['manual', 'food-log']);
+    expect(entry.manualId).toBe('m1');
+    expect(entry.commonAllergen).toBe(true); // derived flag kept
+    expect(entry.reactionDescriptions).toEqual(['swelling', 'redness']); // manual first
+    expect(entry.reactions).toHaveLength(1); // derived reaction events kept
+    expect(entry.notes).toBe('epi pen in bag');
+    expect(entry.dateAdded).toBe('2026-07-01T00:00:00.000Z'); // earliest of the two
+  });
+
+  it('merges feed-derived reactions into a matching food-log entry and sorts events', () => {
+    const merged = mergeAllergens(
+      [derivedPeanut],
+      [],
+      [{
+        name: 'Peanut butter',
+        reactions: [{ time: '2026-07-02T09:00:00.000Z', description: 'hives' }],
+        firstReactionAt: '2026-07-02T09:00:00.000Z',
+      }]
+    );
+    expect(merged).toHaveLength(1);
+    expect(merged[0].sources).toEqual(['food-log', 'feed']);
+    expect(merged[0].reactions.map(r => r.time)).toEqual([
+      '2026-07-02T09:00:00.000Z',
+      '2026-07-05T09:00:00.000Z',
+    ]);
+    // Derived descriptions fold in chronologically (feed reaction predates the food-log one)
+    expect(merged[0].reactionDescriptions).toEqual(['hives', 'redness']);
+    expect(merged[0].dateAdded).toBe('2026-07-02T09:00:00.000Z');
+  });
+
+  it('keeps the generic feed entry (name null) and sorts it last', () => {
+    const merged = mergeAllergens(
+      [],
+      [{ id: 'm1', name: 'Zebra grass', createdAt: '2026-06-01T00:00:00.000Z' }],
+      [{
+        name: null,
+        reactions: [{ time: '2026-07-01T09:00:00.000Z', description: null }],
+        firstReactionAt: '2026-07-01T09:00:00.000Z',
+      }]
+    );
+    expect(merged.map(e => e.name)).toEqual(['Zebra grass', null]);
+    expect(merged[1].sources).toEqual(['feed']);
+    expect(merged[1].dateAdded).toBe('2026-07-01T09:00:00.000Z');
+  });
+
+  it('skips soft-deleted and blank-named manual entries and defaults invalid types to OTHER', () => {
+    const merged = mergeAllergens([], [
+      { id: 'm1', name: 'Dust', createdAt: '2026-06-01T00:00:00.000Z', deletedAt: '2026-06-02T00:00:00.000Z' },
+      { id: 'm2', name: '   ', createdAt: '2026-06-01T00:00:00.000Z' },
+      { id: 'm3', name: 'Latex', allergenType: 'bogus', createdAt: '2026-06-01T00:00:00.000Z' },
+    ]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].name).toBe('Latex');
+    expect(merged[0].allergenType).toBe('OTHER');
+  });
+
+  it('does not duplicate identical derived reaction descriptions', () => {
+    const merged = mergeAllergens([{
+      ...derivedPeanut,
+      reactions: [
+        { time: '2026-07-05T09:00:00.000Z', description: 'redness' },
+        { time: '2026-07-06T09:00:00.000Z', description: 'redness' },
+      ],
+    }], []);
+    expect(merged[0].reactionDescriptions).toEqual(['redness']);
+  });
+});
+
+describe('buildNewFoodsForRange', () => {
+  const banana = { id: 'banana', name: 'Banana', commonAllergen: false };
+  const peanut = { id: 'peanut', name: 'Peanut Butter', commonAllergen: true };
+  const start = at('2026-07-01T00:00:00Z');
+  const end = at('2026-07-31T23:59:59Z');
+
+  it('returns an empty list for empty input', () => {
+    expect(buildNewFoodsForRange([], start, end)).toEqual([]);
+  });
+
+  it('includes only foods whose first-ever try falls inside the range', () => {
+    const logs = [
+      // banana first tried in June — repeat July try is not "new"
+      { foodId: 'banana', food: banana, time: at('2026-06-15T09:00:00Z'), enjoyment: 'LIKED' },
+      { foodId: 'banana', food: banana, time: at('2026-07-02T09:00:00Z'), enjoyment: 'LOVED' },
+      // peanut first tried in July
+      { foodId: 'peanut', food: peanut, time: at('2026-07-03T09:00:00Z'), enjoyment: 'NEUTRAL' },
+    ];
+    const entries = buildNewFoodsForRange(logs, start, end);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toEqual({
+      foodId: 'peanut',
+      foodName: 'Peanut Butter',
+      commonAllergen: true,
+      firstTryTime: '2026-07-03T09:00:00.000Z',
+      enjoyment: 'NEUTRAL',
+      hadReaction: false,
+    });
+  });
+
+  it('uses the latest in-range enjoyment and flags any in-range reaction, sorted oldest first', () => {
+    const logs = [
+      { foodId: 'peanut', food: peanut, time: at('2026-07-03T09:00:00Z'), enjoyment: 'LIKED' },
+      { foodId: 'peanut', food: peanut, time: at('2026-07-10T09:00:00Z'), enjoyment: 'HATED', hadReaction: true },
+      { foodId: 'banana', food: banana, time: at('2026-07-01T09:00:00Z') },
+    ];
+    const entries = buildNewFoodsForRange(logs, start, end);
+    expect(entries.map(e => e.foodId)).toEqual(['banana', 'peanut']);
+    expect(entries[1].enjoyment).toBe('HATED');
+    expect(entries[1].hadReaction).toBe(true);
+    expect(entries[0].enjoyment).toBeNull();
+  });
+
+  it('ignores soft-deleted logs when identifying first tries', () => {
+    const logs = [
+      { foodId: 'banana', food: banana, time: at('2026-06-15T09:00:00Z'), deletedAt: at('2026-06-16T00:00:00Z') },
+      { foodId: 'banana', food: banana, time: at('2026-07-02T09:00:00Z') },
+    ];
+    const entries = buildNewFoodsForRange(logs, start, end);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].firstTryTime).toBe('2026-07-02T09:00:00.000Z');
   });
 });
 
