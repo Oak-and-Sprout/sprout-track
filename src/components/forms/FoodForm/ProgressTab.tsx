@@ -9,6 +9,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
 import {
   buildFoodTryList,
+  formatAmountsByUnit,
   FOOD_ENJOYMENT_DISPLAY_ORDER,
   FOOD_ENJOYMENT_LABELS,
   UNIQUE_FOOD_GOAL,
@@ -217,6 +218,9 @@ const ProgressTab: React.FC<ProgressTabProps> = ({
                     </div>
                     <div className="mt-1 text-xs text-gray-500 food-history-item-meta">
                       {entry.tryCount} {entry.tryCount === 1 ? t('try') : t('tries')}
+                      {formatAmountsByUnit(entry.totalAmounts) && (
+                        <>{' • '}{formatAmountsByUnit(entry.totalAmounts)}</>
+                      )}
                       {' • '}
                       {t('First try')}: {formatDate(entry.firstTryTime)}
                     </div>

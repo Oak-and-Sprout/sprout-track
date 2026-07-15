@@ -471,6 +471,8 @@ export interface FoodLogCreate {
   babyId: string;
   foodId: string;
   time: string;
+  amount?: number | null;
+  unitAbbr?: string | null;
   enjoyment?: FoodEnjoyment | null;
   hadReaction?: boolean;
   reactionDescription?: string;

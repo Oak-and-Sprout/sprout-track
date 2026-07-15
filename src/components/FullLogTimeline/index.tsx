@@ -105,7 +105,8 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       notes?: string;
       bottleType?: string;
     } => {
-      return 'amount' in act;
+      // Food logs (issue #203) also carry an amount but are searched separately
+      return 'amount' in act && !('foodId' in act);
     };
     
     const isDiaperActivity = (act: any): act is { 
@@ -284,7 +285,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
-              return 'amount' in activity;
+              return 'amount' in activity && !('foodId' in activity);
             case 'diaper':
               return 'condition' in activity;
             case 'note':
@@ -343,7 +344,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
-              return 'amount' in activity;
+              return 'amount' in activity && !('foodId' in activity);
             case 'diaper':
               return 'condition' in activity;
             case 'note':

@@ -75,6 +75,8 @@ export function isValidAllergenType(value: unknown): value is AllergenTypeValue 
 export interface FoodLogLike {
   foodId: string;
   time: Date | string;
+  amount?: number | null;
+  unitAbbr?: string | null;
   enjoyment?: string | null;
   hadReaction?: boolean;
   reactionDescription?: string | null;
@@ -240,6 +242,21 @@ export interface FoodTryListEntry {
   latestEnjoyment: FoodEnjoymentValue | null;
   /** True when any non-deleted try was reaction-flagged. */
   hadReaction: boolean;
+  /** Amount totals keyed by lowercase unit abbreviation (e.g. { tbsp: 3, g: 20 }). */
+  totalAmounts: Record<string, number>;
+}
+
+/**
+ * Format per-unit amount totals for display (e.g. '3 tbsp, 20 g').
+ * Returns '' when there are no amounts. Units sort alphabetically for a
+ * stable rendering across days.
+ */
+export function formatAmountsByUnit(amounts: Record<string, number>): string {
+  return Object.entries(amounts)
+    .filter(([, total]) => total > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([unit, total]) => `${Math.round(total * 100) / 100} ${unit.toLowerCase()}`)
+    .join(', ');
 }
 
 /**
@@ -265,10 +282,15 @@ export function buildFoodTryList(logs: FoodLogWithFood[]): FoodTryListEntry[] {
         latestEnjoyment: null,
         latestEnjoymentTime: null,
         hadReaction: false,
+        totalAmounts: {},
       };
       entriesByFoodId.set(log.foodId, entry);
     }
     entry.tryCount += 1;
+    if (typeof log.amount === 'number' && log.amount > 0) {
+      const unit = (log.unitAbbr || 'g').toLowerCase();
+      entry.totalAmounts[unit] = (entry.totalAmounts[unit] || 0) + log.amount;
+    }
     if (time < entry.firstTryTime) entry.firstTryTime = time;
     if (time > entry.latestTryTime) entry.latestTryTime = time;
     if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {

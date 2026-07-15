@@ -13,6 +13,16 @@ const foodInclude = {
   },
 } as const;
 
+/** True when `value` is a usable amount (positive finite number) or empty (null/undefined). */
+function isValidAmount(value: unknown): boolean {
+  return value == null || (typeof value === 'number' && Number.isFinite(value) && value > 0);
+}
+
+/** Normalize a client-sent unitAbbr to a trimmed string or null. */
+function normalizeUnitAbbr(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 /**
  * Format a food log (with the joined food) into a FoodLogResponse
  */
@@ -69,11 +79,20 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       );
     }
 
+    if (!isValidAmount(body.amount)) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'Amount must be a positive number' },
+        { status: 400 }
+      );
+    }
+
     const foodLog = await prisma.foodLog.create({
       data: {
         babyId: body.babyId,
         foodId: body.foodId,
         time: toUTC(body.time),
+        amount: body.amount ?? null,
+        unitAbbr: body.amount != null ? normalizeUnitAbbr(body.unitAbbr) : null,
         enjoyment: body.enjoyment ?? null,
         hadReaction: body.hadReaction === true,
         reactionDescription: body.reactionDescription && body.reactionDescription.trim() ? body.reactionDescription : null,
@@ -164,11 +183,25 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       );
     }
 
+    if (body.amount !== undefined && !isValidAmount(body.amount)) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'Amount must be a positive number' },
+        { status: 400 }
+      );
+    }
+
     const foodLog = await prisma.foodLog.update({
       where: { id },
       data: {
         ...(body.time && { time: toUTC(body.time) }),
         ...(body.foodId && { foodId: body.foodId }),
+        ...(body.amount !== undefined && { amount: body.amount }),
+        ...((body.amount !== undefined || body.unitAbbr !== undefined) && {
+          // Unit is only meaningful alongside an amount; clearing the amount clears the unit
+          unitAbbr: (body.amount !== undefined ? body.amount : existingFoodLog.amount) != null
+            ? normalizeUnitAbbr(body.unitAbbr)
+            : null,
+        }),
         ...(body.enjoyment !== undefined && { enjoyment: body.enjoyment }),
         ...(body.hadReaction !== undefined && { hadReaction: body.hadReaction === true }),
         ...(body.reactionDescription !== undefined && {

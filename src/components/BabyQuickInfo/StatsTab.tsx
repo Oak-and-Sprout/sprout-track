@@ -325,7 +325,7 @@ const StatsTab: React.FC<StatsTabProps> = ({
 
       // Calculate feed amounts
       dayActivities.forEach(a => {
-        if ('amount' in a && a.amount && typeof a.amount === 'number') {
+        if ('amount' in a && 'type' in a && a.amount && typeof a.amount === 'number') {
           totalFeedAmount += a.amount;
           feedAmountCount++;
 

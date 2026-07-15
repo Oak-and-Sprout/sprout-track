@@ -170,6 +170,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       select: {
         foodId: true,
         time: true,
+        amount: true,
+        unitAbbr: true,
         enjoyment: true,
         hadReaction: true,
         reactionDescription: true,

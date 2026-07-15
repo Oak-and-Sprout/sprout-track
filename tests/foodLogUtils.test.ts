@@ -10,6 +10,7 @@ import {
   deriveFeedAllergens,
   mergeAllergens,
   buildFoodTryList,
+  formatAmountsByUnit,
   buildNewFoodsForRange,
   countFirstTriesInRange,
   toDateParam,
@@ -296,6 +297,40 @@ describe('buildFoodTryList', () => {
     ]);
     expect(entry.foodName).toBe('');
     expect(entry.tryCount).toBe(1);
+  });
+
+  it('sums amounts per unit case-insensitively, defaulting missing units to g', () => {
+    const logs = [
+      { foodId: 'banana', food: banana, time: at('2026-07-01T09:00:00Z'), amount: 2, unitAbbr: 'TBSP' },
+      { foodId: 'banana', food: banana, time: at('2026-07-02T09:00:00Z'), amount: 1.5, unitAbbr: 'tbsp' },
+      { foodId: 'banana', food: banana, time: at('2026-07-03T09:00:00Z'), amount: 20, unitAbbr: 'G' },
+      { foodId: 'banana', food: banana, time: at('2026-07-04T09:00:00Z'), amount: 5 },
+      { foodId: 'banana', food: banana, time: at('2026-07-05T09:00:00Z') }, // no amount
+    ];
+    const [entry] = buildFoodTryList(logs);
+    expect(entry.tryCount).toBe(5);
+    expect(entry.totalAmounts).toEqual({ tbsp: 3.5, g: 25 });
+  });
+
+  it('leaves totalAmounts empty when no try recorded an amount', () => {
+    const [entry] = buildFoodTryList([
+      { foodId: 'banana', food: banana, time: at('2026-07-01T09:00:00Z') },
+    ]);
+    expect(entry.totalAmounts).toEqual({});
+  });
+});
+
+describe('formatAmountsByUnit', () => {
+  it('formats per-unit totals sorted by unit with lowercase symbols', () => {
+    expect(formatAmountsByUnit({ tbsp: 3, g: 20 })).toBe('20 g, 3 tbsp');
+  });
+
+  it('rounds totals to two decimals and skips zero totals', () => {
+    expect(formatAmountsByUnit({ tbsp: 1.005 + 0.5, g: 0 })).toBe('1.51 tbsp');
+  });
+
+  it('returns an empty string for no amounts', () => {
+    expect(formatAmountsByUnit({})).toBe('');
   });
 });
 

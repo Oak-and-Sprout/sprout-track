@@ -1064,6 +1064,8 @@ model Food {
 model FoodLog {
   id                  String         @id @default(uuid())
   time                DateTime
+  amount              Float? // Optional amount eaten, in unitAbbr
+  unitAbbr            String? // Unit for amount (e.g. TBSP, G); plain string, no FK
   enjoyment           FoodEnjoyment?
   hadReaction         Boolean        @default(false)
   reactionDescription String? // Description of the reaction (redness, swelling, ...)

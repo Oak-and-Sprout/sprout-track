@@ -579,7 +579,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, 
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'amount' in selectedActivity ? selectedActivity : undefined}
+            activity={'amount' in selectedActivity && !('foodId' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
           />
           <DiaperForm

@@ -317,6 +317,9 @@ const TimelineV2ActivityList = ({
                                       const foodLog = activity as any;
                                       const enjoyment: unknown = foodLog.enjoyment;
                                       const parts = [];
+                                      if (foodLog.amount) {
+                                        parts.push(`${foodLog.amount} ${unitSymbol(foodLog.unitAbbr)}`.trim());
+                                      }
                                       if (isValidEnjoyment(enjoyment)) {
                                         parts.push(t(FOOD_ENJOYMENT_LABELS[enjoyment]));
                                       }

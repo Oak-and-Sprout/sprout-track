@@ -12,7 +12,8 @@ import { Checkbox } from '@/src/components/ui/checkbox';
 import { Switch } from '@/src/components/ui/switch';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
-import { ChevronDown, TriangleAlert } from 'lucide-react';
+import { ChevronDown, Minus, Plus, TriangleAlert } from 'lucide-react';
+import { useUnit } from '@/src/hooks/useUnit';
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
@@ -47,8 +48,10 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   onFormStateChange,
 }) => {
   const { t } = useLocalization();
+  const { unitSymbol } = useUnit();
   const uid = useId();
   const foodNameId = `${uid}-food-name`;
+  const amountId = `${uid}-amount`;
   const allergenId = `${uid}-common-allergen`;
   const reactionDescriptionId = `${uid}-reaction-description`;
   const notesId = `${uid}-notes`;
@@ -61,6 +64,8 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     return isNaN(d.getTime()) ? new Date() : d;
   });
   const [foodName, setFoodName] = useState(activity?.food?.name || '');
+  const [amount, setAmount] = useState('');
+  const [unit, setUnit] = useState('TBSP');
   const [commonAllergen, setCommonAllergen] = useState(false);
   const [allergenTouched, setAllergenTouched] = useState(false);
   const [enjoyment, setEnjoyment] = useState<FoodEnjoymentValue | null>(null);
@@ -94,6 +99,25 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
 
   useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
 
+  // Fetch the family's default solids unit once when the form opens; an edited
+  // log's stored unit (applied in the init effect below) is preserved.
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken');
+    fetch('/api/settings', {
+      cache: 'no-store',
+      headers: { 'Authorization': authToken ? `Bearer ${authToken}` : '' },
+    })
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => {
+        const defaultSolidsUnit = data?.success && data.data?.defaultSolidsUnit ? data.data.defaultSolidsUnit : 'TBSP';
+        if (!activity?.unitAbbr) {
+          setUnit(defaultSolidsUnit);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load photos already attached to the edited log
   useEffect(() => {
     if (!activity?.id || !photosEnabled) return;
@@ -126,6 +150,10 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   useEffect(() => {
     if (activity && !isInitialized) {
       setFoodName(activity.food?.name || '');
+      setAmount(activity.amount != null ? activity.amount.toString() : '');
+      if (activity.unitAbbr) {
+        setUnit(activity.unitAbbr);
+      }
       setEnjoyment(
         FOOD_ENJOYMENT_VALUES.includes(activity.enjoyment as FoodEnjoymentValue)
           ? (activity.enjoyment as FoodEnjoymentValue)
@@ -163,6 +191,27 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       setCommonAllergen(false);
     }
   }, [matchedFood, allergenTouched]);
+
+  // Amount steppers (optional field, modeled on the old solids feed form)
+  const amountStep = unit === 'G' ? 5 : 0.5;
+
+  const handleAmountChange = (newAmount: string) => {
+    if (newAmount === '' || /^\d*\.?\d*$/.test(newAmount)) {
+      setAmount(newAmount);
+    }
+  };
+
+  const incrementAmount = () => {
+    const current = parseFloat(amount || '0');
+    setAmount((current + amountStep).toFixed(unit === 'G' ? 0 : 1));
+  };
+
+  const decrementAmount = () => {
+    const current = parseFloat(amount || '0');
+    if (current >= amountStep) {
+      setAmount((current - amountStep).toFixed(unit === 'G' ? 0 : 1));
+    }
+  };
 
   const handleFoodSelect = (food: FoodResponse) => {
     setFoodName(food.name);
@@ -290,10 +339,15 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         return;
       }
 
+      const parsedAmount = parseFloat(amount);
+      const hasAmount = Number.isFinite(parsedAmount) && parsedAmount > 0;
+
       const payload: FoodLogCreate = {
         babyId,
         foodId,
         time: toUTCString(selectedDateTime) || selectedDateTime.toISOString(),
+        amount: hasAmount ? parsedAmount : null,
+        unitAbbr: hasAmount ? unit : null,
         enjoyment: enjoyment as FoodLogCreate['enjoyment'],
         hadReaction,
         reactionDescription: hadReaction && reactionDescription.trim() ? reactionDescription.trim() : undefined,
@@ -377,6 +431,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       // Reset form if not editing
       if (!activity) {
         setFoodName('');
+        setAmount('');
         setEnjoyment(null);
         setHadReaction(false);
         setReactionDescription('');
@@ -504,6 +559,65 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
           <p className="text-xs text-gray-500 mt-1 food-form-helper-text">
             {t('Check this box if the food is a known common allergen (e.g. peanut, egg, milk, tree nuts, soy, wheat, fish, shellfish, sesame).')}
           </p>
+        </div>
+
+        {/* Amount (optional) — modeled on the old solids feed form */}
+        <div>
+          <Label className="form-label" htmlFor={amountId}>{t('Amount (')}{unitSymbol(unit)})</Label>
+          <div className="flex items-center justify-center mb-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={decrementAmount}
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              aria-label={t('Decrease amount')}
+            >
+              <Minus className="h-5 w-5 text-white" aria-hidden="true" />
+            </Button>
+            <Input
+              id={amountId}
+              type="text"
+              value={amount}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              className="w-24 mx-3 text-center"
+              placeholder={t("Amount")}
+              inputMode="decimal"
+              disabled={isSubmitting}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={incrementAmount}
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              aria-label={t('Increase amount')}
+            >
+              <Plus className="h-5 w-5 text-white" aria-hidden="true" />
+            </Button>
+          </div>
+          <div className="mt-2 flex space-x-2">
+            <Button
+              type="button"
+              variant={unit === 'TBSP' ? 'default' : 'outline'}
+              className="w-full"
+              onClick={() => setUnit('TBSP')}
+              disabled={isSubmitting}
+            >
+              {t('tbsp')}
+            </Button>
+            <Button
+              type="button"
+              variant={unit === 'G' ? 'default' : 'outline'}
+              className="w-full"
+              onClick={() => setUnit('G')}
+              disabled={isSubmitting}
+            >
+              {t('g')}
+            </Button>
+          </div>
         </div>
 
         {/* Enjoyment Picker */}

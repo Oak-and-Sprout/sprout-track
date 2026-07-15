@@ -242,7 +242,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
-              return 'amount' in activity;
+              return 'amount' in activity && !('foodId' in activity);
             case 'diaper':
               return 'condition' in activity;
             case 'medicine':
@@ -366,7 +366,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'amount' in selectedActivity ? selectedActivity : undefined}
+            activity={'amount' in selectedActivity && !('foodId' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
           />
           <DiaperForm

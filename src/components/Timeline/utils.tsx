@@ -218,6 +218,9 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       { label: t('Food'), value: foodLog.food?.name || t('unknown') },
       { label: t('Time'), value: formatTime(foodLog.time, settings, true, t) },
     ];
+    if (foodLog.amount) {
+      foodDetails.push({ label: t('Amount'), value: `${foodLog.amount} ${getSymbol(foodLog.unitAbbr, t)}`.trim() });
+    }
     if (isValidEnjoyment(enjoyment)) {
       foodDetails.push({ label: t('Enjoyment'), value: t(FOOD_ENJOYMENT_LABELS[enjoyment]) });
     }
@@ -716,6 +719,9 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     const enjoyment: unknown = foodLog.enjoyment;
     const time = formatTime(foodLog.time, settings, true, t);
     const parts = [time];
+    if (foodLog.amount) {
+      parts.push(`${foodLog.amount} ${getSymbol(foodLog.unitAbbr, t)}`.trim());
+    }
     if (isValidEnjoyment(enjoyment)) {
       parts.push(t(FOOD_ENJOYMENT_LABELS[enjoyment]));
     }
