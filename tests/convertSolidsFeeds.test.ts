@@ -7,6 +7,7 @@ import {
   composeReactionDescription,
   filterUnconverted,
   buildFoodLogData,
+  placeFoodTile,
 } from '../scripts/convert-solids-feeds-core';
 
 // SOLIDS feed -> FoodLog conversion decision rules: catalog-name resolution
@@ -160,5 +161,68 @@ describe('buildFoodLogData', () => {
     expect(data.deletedAt).toBe(deletedAt);
     expect(data.caretakerId).toBeNull();
     expect(data.familyId).toBeNull();
+  });
+});
+
+describe('placeFoodTile', () => {
+  it('inserts food immediately after a visible feed tile', () => {
+    const result = placeFoodTile({
+      order: ['sleep', 'feed', 'diaper', 'note'],
+      visible: ['sleep', 'feed', 'diaper'],
+    });
+    expect(result.changed).toBe(true);
+    expect(result.order).toEqual(['sleep', 'feed', 'food', 'diaper', 'note']);
+    expect(result.visible).toContain('food');
+  });
+
+  it('appends food at the end when feed is hidden, still visible', () => {
+    const result = placeFoodTile({
+      order: ['sleep', 'feed', 'diaper'],
+      visible: ['sleep', 'diaper'], // feed hidden
+    });
+    expect(result.changed).toBe(true);
+    expect(result.order).toEqual(['sleep', 'feed', 'diaper', 'food']);
+    expect(result.visible).toContain('food');
+  });
+
+  it('appends food at the end when feed is missing from the order', () => {
+    const result = placeFoodTile({ order: ['sleep', 'diaper'], visible: ['sleep', 'diaper'] });
+    expect(result.changed).toBe(true);
+    expect(result.order).toEqual(['sleep', 'diaper', 'food']);
+    expect(result.visible).toContain('food');
+  });
+
+  it('never moves an already-placed food tile (user re-orders stick)', () => {
+    const result = placeFoodTile({
+      order: ['food', 'sleep', 'feed'],
+      visible: ['food', 'sleep', 'feed'],
+    });
+    expect(result.changed).toBe(false);
+    expect(result.order).toEqual(['food', 'sleep', 'feed']);
+    expect(result.visible).toEqual(['food', 'sleep', 'feed']);
+  });
+
+  it('only restores visibility when food is ordered but not visible', () => {
+    const result = placeFoodTile({
+      order: ['feed', 'food', 'sleep'],
+      visible: ['feed', 'sleep'],
+    });
+    expect(result.changed).toBe(true);
+    expect(result.order).toEqual(['feed', 'food', 'sleep']);
+    expect(result.visible).toEqual(['feed', 'sleep', 'food']);
+  });
+
+  it('handles missing or malformed arrays', () => {
+    const result = placeFoodTile({});
+    expect(result.changed).toBe(true);
+    expect(result.order).toEqual(['food']);
+    expect(result.visible).toEqual(['food']);
+  });
+
+  it('adds food only once', () => {
+    const first = placeFoodTile({ order: ['feed'], visible: ['feed'] });
+    const second = placeFoodTile({ order: first.order, visible: first.visible });
+    expect(second.changed).toBe(false);
+    expect(second.order.filter((a: string) => a === 'food')).toHaveLength(1);
   });
 });

@@ -91,6 +91,42 @@ function buildFoodLogData(feed) {
   };
 }
 
+/**
+ * Place the 'food' activity tile immediately after 'feed' in one caretaker's
+ * saved activity settings ({ order, visible } arrays).
+ *
+ * - No-op when 'food' is already in the order — the caretaker has seen (and
+ *   possibly re-arranged) the tile, so repeated runs never move it back.
+ * - When 'feed' is hidden (not in visible) or missing from the order, 'food'
+ *   is appended at the end instead — the same spot the activity-settings
+ *   API's auto-merge would give it.
+ * - 'food' is always made visible.
+ *
+ * @param {{ order?: string[], visible?: string[] }} entry
+ * @returns {{ changed: boolean, order: string[], visible: string[] }}
+ */
+function placeFoodTile(entry) {
+  const order = Array.isArray(entry.order) ? [...entry.order] : [];
+  const visible = Array.isArray(entry.visible) ? [...entry.visible] : [];
+  let changed = false;
+
+  if (!order.includes('food')) {
+    const feedIndex = order.indexOf('feed');
+    if (feedIndex !== -1 && visible.includes('feed')) {
+      order.splice(feedIndex + 1, 0, 'food');
+    } else {
+      order.push('food');
+    }
+    changed = true;
+  }
+  if (!visible.includes('food')) {
+    visible.push('food');
+    changed = true;
+  }
+
+  return { changed, order, visible };
+}
+
 module.exports = {
   GENERIC_FOOD_NAME,
   normalizeFoodName,
@@ -99,4 +135,5 @@ module.exports = {
   composeReactionDescription,
   filterUnconverted,
   buildFoodLogData,
+  placeFoodTile,
 };

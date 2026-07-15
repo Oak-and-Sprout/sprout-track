@@ -25,7 +25,52 @@ const {
   resolveCatalogFoodName,
   filterUnconverted,
   buildFoodLogData,
+  placeFoodTile,
 } = require('./convert-solids-feeds-core');
+
+/**
+ * Place the 'food' activity tile next to 'feed' in every caretaker's saved
+ * activity settings (Settings.activitySettings JSON, keyed by caretaker).
+ * Skips entries that already contain 'food', so later user re-orders stick.
+ *
+ * @returns {Promise<number>} number of caretaker entries updated
+ */
+async function placeFoodTiles(prisma) {
+  const rows = await prisma.settings.findMany({
+    where: { activitySettings: { not: null } },
+    select: { id: true, activitySettings: true },
+  });
+
+  let updatedEntries = 0;
+  for (const row of rows) {
+    try {
+      const all = JSON.parse(row.activitySettings);
+      if (!all || typeof all !== 'object') continue;
+
+      let rowChanged = false;
+      for (const key of Object.keys(all)) {
+        const entry = all[key];
+        if (!entry || typeof entry !== 'object') continue;
+        const placed = placeFoodTile(entry);
+        if (placed.changed) {
+          all[key] = { ...entry, order: placed.order, visible: placed.visible };
+          rowChanged = true;
+          updatedEntries++;
+        }
+      }
+
+      if (rowChanged) {
+        await prisma.settings.update({
+          where: { id: row.id },
+          data: { activitySettings: JSON.stringify(all) },
+        });
+      }
+    } catch (error) {
+      console.error(`Solids conversion: failed to place food tile for settings ${row.id}, skipping. ${error.message}`);
+    }
+  }
+  return updatedEntries;
+}
 
 /**
  * Convert all remaining SOLIDS FeedLog rows into Food + FoodLog records.
@@ -34,6 +79,11 @@ const {
  * @returns {Promise<{ total: number, converted: number, skipped: number, errors: number }>}
  */
 async function convertSolidsFeeds(prisma) {
+  // Place the food tile next to feed in saved tile orders. Runs on every
+  // startup/restore (independently of whether any feeds remain to convert)
+  // but only touches entries that don't have the food tile yet.
+  const tileEntriesUpdated = await placeFoodTiles(prisma);
+
   // All SOLIDS feeds (soft-deleted ones convert to soft-deleted food logs)
   const feeds = await prisma.feedLog.findMany({
     where: { type: 'SOLIDS' },
@@ -41,7 +91,7 @@ async function convertSolidsFeeds(prisma) {
   });
 
   if (feeds.length === 0) {
-    return { total: 0, converted: 0, skipped: 0, errors: 0 };
+    return { total: 0, converted: 0, skipped: 0, errors: 0, tileEntriesUpdated };
   }
 
   // Guard against double-conversion: skip feeds already linked from a food log
@@ -109,17 +159,21 @@ async function convertSolidsFeeds(prisma) {
     converted,
     skipped: feeds.length - pending.length,
     errors,
+    tileEntriesUpdated,
   };
 }
 
 /** One-line human-readable summary of a conversion result. */
 function summarizeConversion(result) {
+  const tileSuffix = result.tileEntriesUpdated > 0
+    ? ` Food tile placed for ${result.tileEntriesUpdated} caretaker setting(s).`
+    : '';
   if (result.total === 0) {
-    return 'Solids conversion: no SOLIDS feeds found, nothing to do.';
+    return `Solids conversion: no SOLIDS feeds found, nothing to do.${tileSuffix}`;
   }
   return (
     `Solids conversion: ${result.converted} feed(s) converted, ${result.skipped} skipped (already converted)` +
-    (result.errors > 0 ? `, ${result.errors} error(s)` : '') + '.'
+    (result.errors > 0 ? `, ${result.errors} error(s)` : '') + `.${tileSuffix}`
   );
 }
 
