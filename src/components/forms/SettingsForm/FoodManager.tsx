@@ -166,7 +166,7 @@ export default function FoodManager() {
   }
 
   return (
-    <ul className="rounded-xl border-2 border-slate-200 divide-y divide-slate-100 overflow-hidden">
+    <ul className="settings-manager-list rounded-xl border-2 border-slate-200 divide-y divide-gray-200 overflow-hidden">
       {foods.map((food) => (
         <FoodRow
           key={food.id}

@@ -5,3 +5,12 @@
 html.dark .settings-manager-item-name {
   color: #f3f4f6 !important; /* gray-100 */
 }
+
+/* Outer frame matches input borders; row dividers match accordion items */
+html.dark .settings-manager-list {
+  border-color: #4b5563 !important; /* gray-600 — same as input-dark */
+}
+
+html.dark .settings-manager-list > * + * {
+  border-color: #374151 !important; /* gray-700 — same as accordion-item-dark */
+}
