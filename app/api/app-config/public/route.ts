@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       appConfig = await prisma.appConfig.create({
         data: {
           adminPass: 'admin', // Default password (will be encrypted in main endpoint)
-          rootDomain: 'localhost',
+          rootDomain: 'localhost:3000',
           enableHttps: false,
         },
       });

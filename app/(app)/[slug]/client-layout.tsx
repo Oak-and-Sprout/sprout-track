@@ -29,6 +29,7 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
+import { PwaServiceWorker } from '@/src/components/PwaServiceWorker';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
 import { cacheDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 import {
@@ -1042,6 +1043,7 @@ export default function AppLayout({
           <BabyProvider>
             <ThemeProvider>
               <ToastProvider>
+                <PwaServiceWorker />
                 <DynamicTitle />
                 <AppContent>{children}</AppContent>
               </ToastProvider>

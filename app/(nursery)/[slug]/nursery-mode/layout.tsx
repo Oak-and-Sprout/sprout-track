@@ -8,6 +8,7 @@ import { BabyProvider } from '@/app/context/baby';
 
 import { ThemeProvider } from '@/src/context/theme';
 import { ToastProvider } from '@/src/components/ui/toast';
+import { PwaServiceWorker } from '@/src/components/PwaServiceWorker';
 
 const newsreader = Newsreader({
   subsets: ['latin'],
@@ -55,6 +56,7 @@ export default function NurseryLayout({
             <BabyProvider>
               <ThemeProvider>
                 <ToastProvider>
+                  <PwaServiceWorker />
                   {children}
                 </ToastProvider>
               </ThemeProvider>

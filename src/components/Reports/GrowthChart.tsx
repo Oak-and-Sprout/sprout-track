@@ -1075,7 +1075,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       {/* Legend info */}
       <div className={cn(growthChartStyles.legendInfo, "growth-chart-legend-info")}>
         <p className={cn(growthChartStyles.legendText, "growth-chart-legend-text")}>
-          {t('CDC Growth Chart for')} {selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls'} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
+          {t('CDC Growth Chart for')} {t(selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls')} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
         </p>
         <p className={cn(growthChartStyles.legendSubtext, "growth-chart-legend-subtext")}>
           {t('Percentile lines show how your baby compares to other children of the same age and sex. The 50th percentile represents the median.')}
