@@ -516,7 +516,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
                 key={value}
                 type="button"
                 variant="ghost"
-                className={`px-1 py-1 h-16 ${enjoyment === value ? 'bg-teal-100 food-enjoyment-selected' : ''}`}
+                className={`px-1 py-1 h-16 hover:scale-110 hover:shadow-lg ${enjoyment === value ? 'bg-teal-100 food-enjoyment-selected' : ''}`}
                 onClick={() => setEnjoyment(prev => (prev === value ? null : value))}
                 disabled={isSubmitting}
                 aria-pressed={enjoyment === value}
