@@ -27,6 +27,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 
 - **Food combobox** over the family catalog (`GET /api/food`). Typing a name that doesn't match an existing food (case-insensitively) creates the catalog entry on save (`POST /api/food`); a duplicate-name race is tolerated by refetching and matching.
 - **Common allergen** checkbox is user-controlled for new foods, with helper text explaining when to check it (keyword auto-suggestion was removed — it only worked for English food names). For existing foods it mirrors the catalog flag and is read-only here.
+- **Amount** is an optional stepper input with a TBSP / G unit toggle (defaults to the family's `defaultSolidsUnit` setting, falling back to TBSP). It round-trips when editing and is sent as `amount`/`unitAbbr` (null when empty).
 - **Enjoyment** is an optional 5-option segmented picker (Hated / Disliked / Neutral / Liked / Loved); tapping the selected option clears it.
 - **Reaction occurred** switch reveals a description textarea; the description is only sent when the switch is on.
 - **Photos** use the shared `PhotoAttachments` component with `activityType: 'foodLog'` links (only rendered when the deployment has photos enabled).
@@ -35,7 +36,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 
 ### Progress tab
 
-- Fetches `GET /api/food-log/progress?babyId=` (all-time counter, enjoyment breakdown, allergens) and `GET /api/food-log?babyId=` (per-food history via the pure `buildFoodTryList()` helper in `src/utils/foodLogUtils.ts`).
+- Fetches `GET /api/food-log/progress?babyId=` (all-time counter, enjoyment breakdown, allergens) and `GET /api/food-log?babyId=` (per-food history via the pure `buildFoodTryList()` helper in `src/utils/foodLogUtils.ts`). History rows include per-unit amount totals (e.g. "3 tbsp, 20 g") when tries recorded amounts.
 - Progress bar caps at 100% but the counter keeps counting past the 100-food goal.
 - Refreshes automatically after a save in the Log Food tab (`refreshTrigger`).
 
