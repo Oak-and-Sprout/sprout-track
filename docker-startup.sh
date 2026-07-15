@@ -125,6 +125,10 @@ echo "Seeding database..."
 # It only creates/updates what doesn't exist, so it's safe to run on every startup
 npx prisma db seed
 
+echo "Converting legacy solids feeds to food logs..."
+# Idempotent: converted feeds are deleted, so reruns find nothing to do
+node scripts/convert-solids-feeds.js
+
 # Notification setup (only if enabled)
 if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then
   echo ""

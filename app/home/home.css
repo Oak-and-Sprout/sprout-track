@@ -19,12 +19,15 @@
   border-bottom: 1px solid #e5e7eb;
   width: 100%;
   overflow: visible;
+  /* Keep the nav below the iPhone status bar in PWA/standalone (viewport-fit: cover);
+     padding (not margin) so the blurred surface still extends under the translucent bar */
+  padding-top: env(safe-area-inset-top);
 }
 
 .saas-nav {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 calc(1rem + env(safe-area-inset-right)) 0 calc(1rem + env(safe-area-inset-left));
 }
 
 .saas-nav-content {
@@ -643,6 +646,8 @@
 .saas-footer {
   background-color: #ffffff;
   color: #111827;
+  /* Clear the iPhone home indicator in PWA/standalone */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .saas-footer-content {

@@ -8,6 +8,7 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
 import { useUnit } from '@/src/hooks/useUnit';
+import { FOOD_ENJOYMENT_LABELS, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 import { useAuthedImage, useInView, photoFileUrl } from '@/src/hooks/useAuthedImage';
 import { getVisibleThumbnails } from '@/src/utils/photoUtils';
 import { TimelinePhotoInfo } from '@/app/api/types';
@@ -249,6 +250,7 @@ const TimelineV2ActivityList = ({
                             if (bgClass.includes('bg-[#F3C4A2]')) return '#F3C4A2'; // peach - play activity
                             if (bgClass.includes('border-red-500')) return '#EF4444'; // red - vaccine
                             if (bgClass.includes('border-[#e11d48]')) return '#e11d48'; // rose - photo
+                            if (bgClass.includes('bg-[#BBD444]')) return '#BBD444'; // lime - food
                             return '#9ca3af'; // default gray
                           };
                           
@@ -258,6 +260,7 @@ const TimelineV2ActivityList = ({
                           // Check play and pump FIRST since they also have duration and startTime
                           let activityTypeClass = '';
                           if ('photoLogId' in activity) activityTypeClass = 'photo';
+                          else if ('foodId' in activity) activityTypeClass = 'food';
                           else if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) activityTypeClass = 'play';
                           else if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
                           else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
@@ -308,6 +311,26 @@ const TimelineV2ActivityList = ({
                                 </Label>
                                 <div className="text-xs text-gray-600 event-details">
                                   {(() => {
+
+                                    // Food log (issue #203) - foodId is unique to food logs
+                                    if ('foodId' in activity) {
+                                      const foodLog = activity as any;
+                                      const enjoyment: unknown = foodLog.enjoyment;
+                                      const parts = [];
+                                      if (foodLog.amount) {
+                                        parts.push(`${foodLog.amount} ${unitSymbol(foodLog.unitAbbr)}`.trim());
+                                      }
+                                      if (isValidEnjoyment(enjoyment)) {
+                                        parts.push(t(FOOD_ENJOYMENT_LABELS[enjoyment]));
+                                      }
+                                      if (foodLog.isFirstTry) parts.push(t('First try!'));
+                                      if (foodLog.hadReaction) parts.push(t('Reaction'));
+                                      if (foodLog.notes) {
+                                        const notes = foodLog.notes.length > 30 ? foodLog.notes.substring(0, 30) + '...' : foodLog.notes;
+                                        parts.push(notes);
+                                      }
+                                      return parts.length > 0 ? parts.join(' • ') : t('Food');
+                                    }
 
                                     // Breast milk adjustment before pump
                                     if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
@@ -364,6 +387,7 @@ const TimelineV2ActivityList = ({
                                           duration = `${activity.amount} ${t('min')}`;
                                         }
                                         const parts = [side, duration].filter(Boolean);
+                                        if ((activity as any).hadReaction) parts.push(t('Reaction'));
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
@@ -378,6 +402,7 @@ const TimelineV2ActivityList = ({
                                           parts.push(t(bottleType));
                                         }
                                         parts.push(`${activity.amount} ${unit}`);
+                                        if ((activity as any).hadReaction) parts.push(t('Reaction'));
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
@@ -393,6 +418,7 @@ const TimelineV2ActivityList = ({
                                         } else {
                                           parts.push(`${activity.amount} ${unit}`);
                                         }
+                                        if ((activity as any).hadReaction) parts.push(t('Reaction'));
                                         if ((activity as any).notes) {
                                           const notes = translateNotes((activity as any).notes);
                                           const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;

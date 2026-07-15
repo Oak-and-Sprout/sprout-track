@@ -1,4 +1,5 @@
 import { Baby } from '@prisma/client';
+import { BabyAllergenResponse, FoodProgressResponse } from '@/app/api/types';
 
 /**
  * Types for the BabyQuickInfo component
@@ -7,7 +8,7 @@ import { Baby } from '@prisma/client';
 /**
  * Tab types
  */
-export type Tab = 'notifications' | 'contacts' | 'stats';
+export type Tab = 'notifications' | 'contacts' | 'allergens' | 'stats';
 
 /**
  * Props for the BabyQuickInfo component
@@ -67,6 +68,42 @@ export interface ContactsTabProps {
    * The currently selected baby
    */
   selectedBaby: Baby;
+}
+
+/**
+ * Props for the AllergensTab component
+ */
+export interface AllergensTabProps {
+  /**
+   * The currently selected baby
+   */
+  selectedBaby: Baby;
+
+  /**
+   * Allergens derived from reaction-flagged food logs (progress endpoint)
+   */
+  derivedAllergens: FoodProgressResponse['allergens'];
+
+  /**
+   * Allergens derived from reaction-flagged feed logs (progress endpoint)
+   */
+  feedAllergens: FoodProgressResponse['feedAllergens'];
+
+  /**
+   * Manually recorded allergens (baby-allergen endpoint)
+   */
+  manualAllergens: BabyAllergenResponse[];
+
+  /**
+   * Called after a manual allergen is added or deleted so the parent refetches
+   */
+  onAllergensChanged: () => void;
+
+  /**
+   * Called when the user follows a "View in log" link so the parent can close
+   * the modal (navigation may target the page already underneath it)
+   */
+  onNavigate?: () => void;
 }
 
 /**

@@ -16,6 +16,7 @@ import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { SleepLocationSummary } from '@/app/api/types';
 import { getDuplicateSuggestions } from '@/src/utils/sleepLocationUtils';
+import './settings-managers.css';
 
 type RowAction =
   | { name: string; type: 'rename'; value: string }
@@ -175,7 +176,7 @@ export default function SleepLocationManager() {
 
   return (
     <div>
-      <ul className="rounded-xl border-2 border-slate-200 divide-y divide-slate-100 overflow-hidden">
+      <ul className="settings-manager-list rounded-xl border-2 border-slate-200 divide-y divide-gray-200 overflow-hidden">
         {locations.map((location) => (
           <LocationRow
             key={location.name}
@@ -257,7 +258,7 @@ function LocationRow({
   return (
     <li className="px-3 py-1.5">
       <div className="flex items-center gap-2 min-h-7">
-        <span className={`text-sm truncate ${name !== name.trim() ? 'font-mono' : ''} ${hidden ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+        <span className={`text-sm truncate ${name !== name.trim() ? 'font-mono' : ''} ${hidden ? 'text-gray-400 line-through' : 'text-gray-900 settings-manager-item-name'}`}>
           {displayName}
         </span>
         {count > 0 && <span className="text-xs text-gray-500 whitespace-nowrap">{count} {t('uses')}</span>}

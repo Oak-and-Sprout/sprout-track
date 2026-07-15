@@ -6,7 +6,7 @@ import { checkWritePermission } from '../../utils/writeProtection';
 import { isPhotosEnabled, photosDisabledResponse } from '../photo-service';
 import { MAX_PHOTOS_PER_ACTIVITY } from '@/src/utils/photoUtils';
 
-const LINKABLE_TYPES = ['photo', 'feed', 'milestone', 'bath', 'play', 'measurement'] as const;
+const LINKABLE_TYPES = ['photo', 'feed', 'milestone', 'bath', 'play', 'measurement', 'foodLog'] as const;
 type LinkableType = (typeof LINKABLE_TYPES)[number];
 
 /** Verify the target activity exists in this family. */
@@ -24,6 +24,8 @@ async function findActivity(activityType: LinkableType, activityId: string, fami
       return prisma.playLog.findFirst({ where: { id: activityId, familyId } });
     case 'measurement':
       return prisma.measurement.findFirst({ where: { id: activityId, familyId } });
+    case 'foodLog':
+      return prisma.foodLog.findFirst({ where: { id: activityId, familyId } });
   }
 }
 

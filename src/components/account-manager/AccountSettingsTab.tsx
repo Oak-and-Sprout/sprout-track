@@ -542,7 +542,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               localStorage.removeItem('unlockTime');
               localStorage.removeItem('caretakerId');
               
-              window.location.href = '/';
+              window.location.href = '/?src=account-closed';
               return 0;
             }
             return prev - 1;

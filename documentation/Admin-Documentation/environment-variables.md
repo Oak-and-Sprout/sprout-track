@@ -80,7 +80,7 @@ You do not need to create the `.env` file manually. The setup process handles it
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_VERSION` | `"1.5.0"` | Application version string |
+| `APP_VERSION` | `"1.6.0"` | Application version string |
 | `TZ` | -- | Timezone for the container (Docker only, e.g., `America/New_York`) |
 
 ### SaaS Mode (Not Needed for Self-Hosting)

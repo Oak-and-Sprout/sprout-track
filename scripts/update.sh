@@ -89,6 +89,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Convert legacy solids feeds to food logs (idempotent, safe to rerun)
+echo "Converting legacy solids feeds to food logs..."
+node "$SCRIPT_DIR/convert-solids-feeds.js"
+if [ $? -ne 0 ]; then
+    echo "Warning: Solids feed conversion had issues. Continuing deployment."
+fi
+
 # Reset changelog seen status so all users see "New Updates" badge
 echo "Resetting changelog seen status..."
 node "$SCRIPT_DIR/reset-changelog-seen.js"

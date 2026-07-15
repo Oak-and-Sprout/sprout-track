@@ -5,6 +5,13 @@ import { withAuthContext, AuthResult } from '../../../../utils/auth';
 import { formatForResponse } from '../../../../utils/timezone';
 import { groupBreastFeedSessions, SESSION_TOLERANCE_MS } from '../../../../../../src/utils/feedSessionUtils';
 import {
+  buildNewFoodsForRange,
+  computeFoodProgress,
+  deriveAllergens,
+  deriveFeedAllergens,
+  mergeAllergens,
+} from '../../../../../../src/utils/foodLogUtils';
+import {
   calculateZScore,
   zScoreToPercentile,
   ageInMonths,
@@ -105,6 +112,11 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     // Medicine / Supplements
     medicineLogs,
     vaccines,
+    // Foods & allergens (all-time — first tries and the static allergen profile)
+    allFoodLogs,
+    allFoods,
+    manualAllergens,
+    reactionFeedLogs,
     // All log counts for days tracked + caretaker activity
     feedDates,
     sleepDates,
@@ -151,6 +163,28 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     // Medicine logs with medicine info
     prisma.medicineLog.findMany({ where: { ...baseWhere, time: { gte: start, lte: end } }, include: { medicine: true } }),
     prisma.vaccineLog.findMany({ where: { ...baseWhere, time: { gte: start, lte: end } }, orderBy: { time: 'asc' } }),
+
+    // All-time food logs (first-ever tries must consider the full history)
+    prisma.foodLog.findMany({
+      where: baseWhere,
+      select: {
+        foodId: true,
+        time: true,
+        amount: true,
+        unitAbbr: true,
+        enjoyment: true,
+        hadReaction: true,
+        reactionDescription: true,
+        food: { select: { id: true, name: true, commonAllergen: true } },
+      },
+    }),
+    // Include soft-deleted foods so historical reactions keep their names
+    prisma.food.findMany({ where: { familyId: userFamilyId }, select: { id: true, name: true, commonAllergen: true } }),
+    prisma.babyAllergen.findMany({ where: baseWhere }),
+    prisma.feedLog.findMany({
+      where: { ...baseWhere, hadReaction: true },
+      select: { time: true, food: true, hadReaction: true, reactionDescription: true, reactionCause: true },
+    }),
 
     // Dates for days tracked (select only the time/date field for counting distinct dates)
     prisma.feedLog.findMany({ where: { ...baseWhere, time: { gte: start, lte: end } }, select: { time: true, caretakerId: true } }),
@@ -578,6 +612,17 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     date: formatForResponse(v.time) || v.time.toISOString(),
   }));
 
+  // ─── Foods & Allergens (issue #203 follow-up) ───
+  const newFoods = buildNewFoodsForRange(allFoodLogs, start, end);
+  const foodProgress = computeFoodProgress(allFoodLogs);
+  // Static (not month-dependent): every known allergen — derived from
+  // reaction-flagged food/feed logs plus manually recorded entries
+  const knownAllergens = mergeAllergens(
+    deriveAllergens(allFoodLogs, allFoods),
+    manualAllergens,
+    deriveFeedAllergens(reactionFeedLogs)
+  );
+
   // ─── Caretaker activity ───
   const caretakerCounts = new Map<string, number>();
   const countCaretaker = (caretakerId: string | null) => {
@@ -688,6 +733,12 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       medicines,
       vaccines: vaccineList,
     },
+    foods: {
+      newFoods,
+      newFoodCount: newFoods.length,
+      uniqueFoodCount: foodProgress.uniqueFoodCount,
+    },
+    allergens: knownAllergens,
     caretakers,
   };
 

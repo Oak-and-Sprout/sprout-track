@@ -8,6 +8,7 @@ import { BabyProvider } from '@/app/context/baby';
 
 import { ThemeProvider } from '@/src/context/theme';
 import { ToastProvider } from '@/src/components/ui/toast';
+import { PwaServiceWorker } from '@/src/components/PwaServiceWorker';
 
 const newsreader = Newsreader({
   subsets: ['latin'],
@@ -20,7 +21,9 @@ export default function NurseryLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const handleLogout = async () => {
+  // `reason` becomes a short `src` query param on the destination so unexpected
+  // bounces to the homepage can be diagnosed from the resulting URL (issue #209)
+  const handleLogout = async (reason: string = 'logout-user') => {
     const token = localStorage.getItem('authToken');
 
     try {
@@ -42,7 +45,7 @@ export default function NurseryLayout({
     localStorage.removeItem('attempts');
     localStorage.removeItem('lockoutTime');
 
-    window.location.href = '/';
+    window.location.href = `/?src=${reason}`;
   };
 
   return (
@@ -53,6 +56,7 @@ export default function NurseryLayout({
             <BabyProvider>
               <ThemeProvider>
                 <ToastProvider>
+                  <PwaServiceWorker />
                   {children}
                 </ToastProvider>
               </ThemeProvider>

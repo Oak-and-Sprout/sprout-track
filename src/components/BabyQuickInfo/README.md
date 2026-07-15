@@ -4,9 +4,10 @@ A comprehensive tabbed component that displays information about a baby, includi
 
 ## Features
 
-- Responsive tabbed interface with three tabs:
+- Responsive tabbed interface with these tabs:
   - **Notifications**: Shows last activities (poop, bath, measurements) and upcoming events
   - **Contacts**: Lists contacts associated with the baby
+  - **Allergens**: Combined allergen list — entries derived from reaction-flagged food/feed logs (read-only, with a "From food log"/"From feed log" tag, the date first recorded, and a link to that day in the log timeline) merged with manually recorded allergens (name + type badge + optional reaction description; inline add form and soft delete)
   - **Quick Stats**: Displays detailed statistics about the baby's activities
 - Vertical tab navigation on medium and larger screens for better organization
 - Displays in a full-page form that slides in from the right
@@ -63,6 +64,7 @@ The component follows a modular structure:
 - `index.tsx` - Main component implementation
 - `NotificationsTab.tsx` - Notifications tab implementation
 - `ContactsTab.tsx` - Contacts tab implementation
+- `AllergensTab.tsx` - Allergens tab implementation (merged derived + manual allergen list)
 - `StatsTab.tsx` - Quick stats tab implementation
 - `baby-quick-info.styles.ts` - Style definitions using TailwindCSS
 - `baby-quick-info.css` - Dark mode style overrides
@@ -95,6 +97,8 @@ The component relies on several API endpoints:
 - `/api/baby-upcoming-events` - Fetches upcoming calendar events for a baby
 - `/api/contact` - Fetches all contacts
 - `/api/timeline` - Fetches recent activities for a baby
+- `/api/food-log/progress` - Fetches allergens derived from reaction-flagged food/feed logs
+- `/api/baby-allergen` - Lists, creates, and soft-deletes manually recorded allergens
 
 ## Mobile Considerations (React Native)
 

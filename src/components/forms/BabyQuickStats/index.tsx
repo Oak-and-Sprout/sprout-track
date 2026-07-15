@@ -18,11 +18,16 @@ import FormPage, { FormPageContent, FormPageFooter } from '@/src/components/ui/f
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
 import CardVisual from '@/src/components/reporting/CardVisual';
-import { Clock, Moon, Sun, Utensils, Droplet, Loader2 } from 'lucide-react';
+import { Clock, Moon, Sun, Utensils, Droplet, Loader2, TriangleAlert } from 'lucide-react';
 import { diaper } from '@lucide/lab';
 import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
+import { useTimezone } from '@/app/context/timezone';
 import { countBreastFeedSessions } from '@/src/utils/feedSessionUtils';
+import { BabyAllergenResponse, FoodProgressResponse } from '@/app/api/types';
+import { mergeAllergens, ALLERGEN_TYPE_LABELS } from '@/src/utils/foodLogUtils';
+
+import './baby-quick-stats.css';
 
 /**
  * BabyQuickStats Component
@@ -58,6 +63,63 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   const [activities, setActivities] = useState<any[]>(initialActivities);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Combined allergen profile: derived from reaction-flagged food/feed logs
+  // plus manually recorded allergens (issue #203 follow-up)
+  const [foodAllergens, setFoodAllergens] = useState<FoodProgressResponse['allergens']>([]);
+  const [feedAllergens, setFeedAllergens] = useState<FoodProgressResponse['feedAllergens']>([]);
+  const [manualAllergens, setManualAllergens] = useState<BabyAllergenResponse[]>([]);
+
+  useEffect(() => {
+    if (!selectedBaby) {
+      setFoodAllergens([]);
+      setFeedAllergens([]);
+      setManualAllergens([]);
+      return;
+    }
+
+    const fetchAllergens = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const fetchOptions = {
+          cache: 'no-store' as RequestCache,
+          headers: {
+            'Authorization': authToken ? `Bearer ${authToken}` : '',
+          },
+        };
+        const [progressRes, manualRes] = await Promise.all([
+          fetch(`/api/food-log/progress?babyId=${selectedBaby.id}`, fetchOptions),
+          fetch(`/api/baby-allergen?babyId=${selectedBaby.id}`, fetchOptions),
+        ]);
+        if (progressRes.ok) {
+          const data = await progressRes.json();
+          setFoodAllergens(data.success && data.data?.allergens ? data.data.allergens : []);
+          setFeedAllergens(data.success && data.data?.feedAllergens ? data.data.feedAllergens : []);
+        } else {
+          setFoodAllergens([]);
+          setFeedAllergens([]);
+        }
+        if (manualRes.ok) {
+          const data = await manualRes.json();
+          setManualAllergens(data.success && Array.isArray(data.data) ? data.data : []);
+        } else {
+          setManualAllergens([]);
+        }
+      } catch {
+        setFoodAllergens([]);
+        setFeedAllergens([]);
+        setManualAllergens([]);
+      }
+    };
+
+    fetchAllergens();
+  }, [selectedBaby]);
+
+  // Same merged list the BabyQuickInfo Allergens tab shows, kept compact here
+  const mergedAllergens = useMemo(
+    () => mergeAllergens(foodAllergens, manualAllergens, feedAllergens),
+    [foodAllergens, manualAllergens, feedAllergens]
+  );
   
   // Fetch activities for the selected baby
   useEffect(() => {
@@ -132,6 +194,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
   }, [selectedBaby, family?.id]);
 
   const { t } = useLocalization();
+  const { formatDate } = useTimezone();
   const mainPeriodLabelId = useId();
   const comparePeriodLabelId = useId();
 
@@ -374,7 +437,7 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
 
       // Calculate feed amounts
       dayActivities.forEach(a => {
-        if ('amount' in a && a.amount && typeof a.amount === 'number') {
+        if ('amount' in a && 'type' in a && a.amount && typeof a.amount === 'number') {
           totalFeedAmount += a.amount;
           feedAmountCount++;
         }
@@ -572,6 +635,55 @@ export const BabyQuickStats: React.FC<BabyQuickStatsProps> = ({
                     comparativeValue={compareStats.avgPoops.toFixed(1)}
                     trend="neutral"
                   />
+                </div>
+              )}
+
+              {/* Allergens & Reactions - derived (food/feed logs) + manual entries (issue #203) */}
+              {mergedAllergens.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 mb-2 baby-quick-stats-allergen-title">
+                    <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-500" />
+                    {t('Allergens & Reactions')}
+                  </h3>
+                  <div className="space-y-2">
+                    {mergedAllergens.map((entry) => (
+                      <div
+                        key={`${entry.name ?? 'generic-feed'}-${entry.manualId ?? 'derived'}`}
+                        className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 baby-quick-stats-allergen-item"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-sm text-gray-800 baby-quick-stats-allergen-name">
+                            {entry.name ?? t('Formula / bottle feed')}
+                          </span>
+                          <span className="flex items-center gap-1.5 flex-shrink-0">
+                            {entry.manualId && (
+                              <span className="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700 baby-quick-stats-allergen-type-badge">
+                                {t(ALLERGEN_TYPE_LABELS[entry.allergenType])}
+                              </span>
+                            )}
+                            {entry.commonAllergen && (
+                              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 baby-quick-stats-allergen-badge">
+                                {t('Common allergen')}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="mt-1 space-y-0.5">
+                          {entry.reactions.map((reaction, index) => (
+                            <div key={index} className="text-xs text-gray-600 baby-quick-stats-allergen-reaction">
+                              {formatDate(reaction.time)}
+                              {reaction.description ? ` — ${reaction.description}` : ''}
+                            </div>
+                          ))}
+                          {entry.reactions.length === 0 && entry.reactionDescriptions.length > 0 && (
+                            <div className="text-xs text-gray-600 baby-quick-stats-allergen-reaction">
+                              {entry.reactionDescriptions.join(' • ')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </>

@@ -196,8 +196,8 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
         }
       }
       
-      // Feed activities
-      if ('amount' in activity && activity.amount) {
+      // Feed activities (food logs also carry an amount but have no `type`)
+      if ('amount' in activity && activity.amount && 'type' in activity) {
         const time = new Date(activity.time);
         
         // Only count feeds that occurred on the selected day

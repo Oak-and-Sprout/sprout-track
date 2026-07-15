@@ -5,6 +5,8 @@ import { useLocalization } from '@/src/context/localization';
 import { formatPumpNote, PumpNoteLabels } from '@/src/utils/nursery/activityDetail';
 import { loadPumpSession, savePumpSession, clearPumpSession } from '@/src/utils/nursery/pumpSession';
 import { ActivityHookArgs, ActivityView, ActionButton, AmountPrompt, formatMMSS, undoDeleteLog } from './types';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
+import type { BottleUnit } from '@/src/utils/defaultBottleUnit';
 
 type PumpSide = 'left' | 'right' | 'both';
 type PumpPhase = 'idle' | 'timing' | 'paused' | 'selecting_action';
@@ -26,23 +28,38 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [resumeTime, setResumeTime] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [defaultUnit, setDefaultUnit] = useState('OZ');
+  const [defaultUnit, setDefaultUnit] = useState<BottleUnit>(() => readCachedDefaultBottleUnit());
   const [amountLeft, setAmountLeft] = useState('');
   const [amountRight, setAmountRight] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const refreshDefaultUnit = useCallback(async () => {
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const res = await fetch('/api/settings', {
+        cache: 'no-store',
+        headers: { Authorization: authToken ? `Bearer ${authToken}` : '' },
+      });
+      const data = await res.json();
+      const unit = cacheDefaultBottleUnit(data.success && data.data?.defaultBottleUnit);
+      if (unit) setDefaultUnit(unit);
+    } catch { /* keep the cached/default unit */ }
+  }, []);
+
   // Fetch bottle/pump amount unit default (same setting FeedTile uses).
   useEffect(() => {
-    const fetchDefaultUnit = async () => {
-      try {
-        const authToken = localStorage.getItem('authToken');
-        const res = await fetch('/api/settings', { headers: { Authorization: authToken ? `Bearer ${authToken}` : '' } });
-        const data = await res.json();
-        if (data.success && data.data?.defaultBottleUnit) setDefaultUnit(data.data.defaultBottleUnit);
-      } catch { /* use default */ }
+    refreshDefaultUnit();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshDefaultUnit();
     };
-    fetchDefaultUnit();
-  }, []);
+    window.addEventListener('focus', refreshDefaultUnit);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', refreshDefaultUnit);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshDefaultUnit]);
 
   // Guards the persistence effect below against writing a stale ('idle') snapshot
   // in the same render pass this rehydration effect fires in — state updates from
@@ -262,6 +279,15 @@ export function usePumpActions({ babyId, toUTCString, onLog, onUndoable, enableB
       { key: 'stored', label: t('Stored'), onClick: () => submitPump('STORED'), disabled: submitting },
       { key: 'fed', label: t('Fed'), onClick: () => submitPump('FED'), disabled: submitting },
       { key: 'discarded', label: t('Discarded'), onClick: () => submitPump('DISCARDED'), disabled: submitting },
+      // Back out of Select Action into a paused session (mirrors handlePause) so
+      // the timer state survives an accidental Stop.
+      {
+        key: 'cancel',
+        label: t('Cancel'),
+        onClick: () => { setPauseAccumulated(elapsed); setResumeTime(null); setPhase('paused'); },
+        disabled: submitting,
+        cancel: true,
+      },
     ];
   } else if ((phase === 'timing' || phase === 'paused') && activeSide) {
     const isPaused = phase === 'paused';

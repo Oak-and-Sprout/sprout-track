@@ -31,6 +31,17 @@ describe('buildLinkTargets', () => {
     });
     expect(targets.map((t) => t.activityType)).toEqual(['photo', 'feed', 'bath']);
   });
+
+  it('carries foodLog targets through for the food tracker (issue #203)', () => {
+    const targets = buildLinkTargets({
+      feed: ['f1'],
+      foodLog: ['fl1', 'fl2'],
+    });
+    expect(targets).toEqual([
+      { activityType: 'feed', ids: ['f1'] },
+      { activityType: 'foodLog', ids: ['fl1', 'fl2'] },
+    ]);
+  });
 });
 
 describe('groupPhotoLinks', () => {

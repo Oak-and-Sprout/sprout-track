@@ -11,7 +11,9 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { Check, ArrowLeftRight, Pause, Play } from 'lucide-react';
+import { Check, ArrowLeftRight, Pause, Play, TriangleAlert } from 'lucide-react';
+import { Textarea } from '@/src/components/ui/textarea';
+import { Switch } from '@/src/components/ui/switch';
 import { useTimezone } from '@/app/context/timezone';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
@@ -19,13 +21,13 @@ import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { newFeedSessionId } from '@/src/utils/feedSessionUtils';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 import './feed-form.css';
 
 // Import subcomponents
 import BreastFeedForm from './BreastFeedForm';
 import LinkedFeedsSection from './LinkedFeedsSection';
 import BottleFeedForm from './BottleFeedForm';
-import SolidsFeedForm from './SolidsFeedForm';
 import { useLocalization } from '@/src/context/localization';
 
 interface FeedFormProps {
@@ -83,10 +85,12 @@ export default function FeedForm({
     time: initialTime,
     type: '' as FeedType | '',
     amount: '',
-    unit: 'OZ', // Default unit
+    unit: readCachedDefaultBottleUnit() as string,
     side: '' as BreastSide | '',
-    food: '',
     notes: '',
+    hadReaction: false,
+    reactionDescription: '',
+    reactionCause: '',
     bottleType: '',
     breastMilkAmount: '',
     formulaAmount: '',
@@ -100,8 +104,7 @@ export default function FeedForm({
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string>('');
   const [defaultSettings, setDefaultSettings] = useState({
-    defaultBottleUnit: 'OZ',
-    defaultSolidsUnit: 'TBSP',
+    defaultBottleUnit: readCachedDefaultBottleUnit() as string,
   });
 
   // Editing state for session duration inputs (null = not editing, use formatted value)
@@ -128,8 +131,11 @@ export default function FeedForm({
   }, [isOpen, activity?.id, photosEnabled]);
 
   // Whether the current mode ends in a call to handleSubmit (vs. Start/End Feed's own API calls)
-  const showPhotosSection = photosEnabled && !(isFeeding && activeFeedData && !activity) &&
+  const endsInSubmit = !(isFeeding && activeFeedData && !activity) &&
     !(formData.type === 'BREAST' && !isFeeding && !activity && !manualEntry);
+  const showPhotosSection = photosEnabled && endsInSubmit;
+  // Reaction toggle applies to all feed types once one is selected
+  const showReactionSection = !!formData.type && endsInSubmit;
 
   // Live timer for active breastfeed session
   const [liveElapsed, setLiveElapsed] = useState(0);
@@ -233,15 +239,15 @@ export default function FeedForm({
       if (!response.ok) return;
       
       const data = await response.json();
-      if (data.success && data.data?.type) {
+      // SOLIDS is not pre-selected: new solids feeds can no longer be created
+      // here (solids eating is logged via the Food activity)
+      if (data.success && data.data?.type && data.data.type !== 'SOLIDS') {
         // Set the last feed type
         setFormData(prev => ({
           ...prev,
           type: data.data.type,
           // For breast feeding, also set the side
           ...(data.data.type === 'BREAST' && { side: data.data.side || '' }),
-          // For solids, also set the food
-          ...(data.data.type === 'SOLIDS' && { food: data.data.food || '' })
         }));
         
         // If it's bottle feeding, also fetch the last amount
@@ -258,6 +264,7 @@ export default function FeedForm({
     try {
       const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/settings', {
+        cache: 'no-store',
         headers: {
           'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
@@ -266,16 +273,19 @@ export default function FeedForm({
       
       const data = await response.json();
       if (data.success && data.data) {
+        const defaultBottleUnit = cacheDefaultBottleUnit(data.data.defaultBottleUnit) || 'OZ';
         setDefaultSettings({
-          defaultBottleUnit: data.data.defaultBottleUnit || 'OZ',
-          defaultSolidsUnit: data.data.defaultSolidsUnit || 'TBSP',
+          defaultBottleUnit,
         });
         
-        // Set the default unit from settings
-        setFormData(prev => ({
-          ...prev,
-          unit: data.data.defaultBottleUnit || 'OZ'
-        }));
+        // Set the default unit from settings (new entries only — when editing
+        // an existing activity its stored unit must be preserved).
+        if (!activity) {
+          setFormData(prev => ({
+            ...prev,
+            unit: defaultBottleUnit
+          }));
+        }
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -355,11 +365,12 @@ export default function FeedForm({
         type: activity.type,
         amount: activity.amount?.toString() || '',
         unit: activity.unitAbbr ||
-          (activity.type === 'BOTTLE' ? defaultSettings.defaultBottleUnit :
-           activity.type === 'SOLIDS' ? defaultSettings.defaultSolidsUnit : ''),
+          (activity.type === 'BOTTLE' ? defaultSettings.defaultBottleUnit : ''),
         side: activity.side || '',
-        food: activity.food || '',
         notes: (activity as any).notes || '',
+        hadReaction: (activity as any).hadReaction === true,
+        reactionDescription: (activity as any).reactionDescription || '',
+        reactionCause: (activity as any).reactionCause || '',
         bottleType: activityBottleType,
         breastMilkAmount: activityBottleType === 'Formula\\Breast' && activityBmAmount != null
           ? activityBmAmount.toString() : '',
@@ -433,18 +444,11 @@ export default function FeedForm({
   }, [isOpen, activity, initialTime]);
 
   useEffect(() => {
-    if (formData.type === 'BOTTLE' || formData.type === 'SOLIDS') {
-      if (!activity) {
-        fetchLastAmount(formData.type);
-
-        if (formData.type === 'BOTTLE') {
-          setFormData(prev => ({ ...prev, unit: defaultSettings.defaultBottleUnit }));
-        } else if (formData.type === 'SOLIDS') {
-          setFormData(prev => ({ ...prev, unit: defaultSettings.defaultSolidsUnit }));
-        }
-      }
+    if (formData.type === 'BOTTLE' && !activity) {
+      fetchLastAmount(formData.type);
+      setFormData(prev => ({ ...prev, unit: defaultSettings.defaultBottleUnit }));
     }
-  }, [formData.type, babyId, defaultSettings.defaultBottleUnit, defaultSettings.defaultSolidsUnit]);
+  }, [formData.type, babyId, defaultSettings.defaultBottleUnit]);
 
   const handleAmountChange = (newAmount: string) => {
     // Allow any numeric values
@@ -459,14 +463,8 @@ export default function FeedForm({
   const incrementAmount = () => {
     const currentAmount = parseFloat(formData.amount || '0');
     // Different step sizes for different units
-    let step = 0.5; // Default for OZ and TBSP
-    if (formData.unit === 'ML') {
-      step = 5;
-    } else if (formData.unit === 'G') {
-      step = 5; // 1 grams increments for grams
-    }
-    
-    const newAmount = (currentAmount + step).toFixed(formData.unit === 'G' ? 0 : 1);
+    const step = formData.unit === 'ML' ? 5 : 0.5; // 0.5 for OZ
+    const newAmount = (currentAmount + step).toFixed(1);
     setFormData(prev => ({
       ...prev,
       amount: newAmount
@@ -476,15 +474,9 @@ export default function FeedForm({
   const decrementAmount = () => {
     const currentAmount = parseFloat(formData.amount || '0');
     // Different step sizes for different units
-    let step = 0.5; // Default for OZ and TBSP
-    if (formData.unit === 'ML') {
-      step = 5;
-    } else if (formData.unit === 'G') {
-      step = 1; // 1 gram increments for grams
-    }
-    
+    const step = formData.unit === 'ML' ? 5 : 0.5; // 0.5 for OZ
     if (currentAmount >= step) {
-      const newAmount = (currentAmount - step).toFixed(formData.unit === 'G' ? 0 : 1);
+      const newAmount = (currentAmount - step).toFixed(1);
       setFormData(prev => ({
         ...prev,
         amount: newAmount
@@ -590,12 +582,6 @@ export default function FeedForm({
       }
     }
 
-    // For solids feeding, validate amount
-    if (formData.type === 'SOLIDS' && (!formData.amount || parseFloat(formData.amount) <= 0)) {
-      setValidationError(t('Please enter a valid amount for solids feeding'));
-      return;
-    }
-
     // Stop timer if it's running
     if (isTimerRunning) {
       stopTimer();
@@ -657,8 +643,10 @@ export default function FeedForm({
         amount: '',
         unit: defaultSettings.defaultBottleUnit,
         side: '' as BreastSide | '',
-        food: '',
         notes: '',
+        hadReaction: false,
+        reactionDescription: '',
+        reactionCause: '',
         bottleType: '',
         breastMilkAmount: '',
         formulaAmount: '',
@@ -750,8 +738,8 @@ export default function FeedForm({
         ...(sessionId && { sessionId }),
         feedDuration: duration
       }),
-      ...((formData.type === 'BOTTLE' || formData.type === 'SOLIDS') && {
-        amount: formData.type === 'BOTTLE' && formData.bottleType === 'Formula\\Breast'
+      ...(formData.type === 'BOTTLE' && {
+        amount: formData.bottleType === 'Formula\\Breast'
           ? parseFloat(formData.breastMilkAmount || '0') + parseFloat(formData.formulaAmount || '0')
           : parseFloat(formData.amount),
         unitAbbr: formData.unit,
@@ -759,9 +747,12 @@ export default function FeedForm({
       ...(formData.type === 'BOTTLE' && formData.bottleType === 'Formula\\Breast' && {
         breastMilkAmount: parseFloat(formData.breastMilkAmount || '0'),
       }),
-      ...(formData.type === 'SOLIDS' && formData.food && { food: formData.food }),
       ...(formData.type === 'BOTTLE' && formData.bottleType && { bottleType: formData.bottleType }),
       ...(formData.notes && { notes: formData.notes }),
+      // Always sent so editing can clear a previously flagged reaction
+      hadReaction: formData.hadReaction,
+      reactionDescription: formData.hadReaction ? formData.reactionDescription : '',
+      reactionCause: formData.hadReaction ? formData.reactionCause : '',
     };
 
     console.log('Payload being sent:', payload); // Debug log for payload
@@ -906,8 +897,10 @@ export default function FeedForm({
       amount: '',
       unit: defaultSettings.defaultBottleUnit,
       side: '' as BreastSide | '',
-      food: '',
       notes: '',
+      hadReaction: false,
+      reactionDescription: '',
+      reactionCause: '',
       bottleType: '',
       breastMilkAmount: '',
       formulaAmount: '',
@@ -916,7 +909,7 @@ export default function FeedForm({
       rightDuration: 0,
       activeBreast: ''
     });
-    
+
     // Reset initialization flag
     setIsInitialized(false);
     setManualEntry(false);
@@ -1032,7 +1025,7 @@ export default function FeedForm({
             {/* Feed Type Selection - Full width on all screens */}
             <div>
               <label id={`${formId}-type-label`} className="form-label">{t('Type')}</label>
-              <div className="flex justify-between items-center gap-3 mt-2" role="group" aria-labelledby={`${formId}-type-label`}>
+              <div className="flex justify-center items-center gap-20 mt-2" role="group" aria-labelledby={`${formId}-type-label`}>
                   {/* Breast Feed Button */}
                   <button
                     type="button"
@@ -1077,27 +1070,6 @@ export default function FeedForm({
                     )}
                   </button>
                   
-                  {/* Solids Button */}
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, type: 'SOLIDS' })}
-                    disabled={loading}
-                    className={`relative flex flex-col items-center justify-center p-2 rounded-full w-24 h-24 transition-all feed-type-button ${formData.type === 'SOLIDS' 
-                      ? 'bg-blue-100 ring-2 ring-blue-500 shadow-md feed-type-selected' 
-                      : 'bg-gray-50 hover:bg-gray-100'}`}
-                  >
-                    <img 
-                      src="/solids-128.png" 
-                      alt="Solids" 
-                      className="w-16 h-16 object-contain" 
-                    />
-                    <span className="text-xs font-medium mt-1">{t('Solids')}</span>
-                    {formData.type === 'SOLIDS' && (
-                      <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-1">
-                        <Check className="h-3 w-3 text-white" aria-hidden="true" />
-                      </div>
-                    )}
-                  </button>
                 </div>
               </div>
             
@@ -1496,20 +1468,47 @@ export default function FeedForm({
               />
             )}
             
-            {formData.type === 'SOLIDS' && (
-              <SolidsFeedForm
-                amount={formData.amount}
-                unit={formData.unit}
-                food={formData.food}
-                notes={formData.notes}
-                loading={loading}
-                onAmountChange={handleAmountChange}
-                onUnitChange={(unit) => setFormData(prev => ({ ...prev, unit }))}
-                onFoodChange={(food) => setFormData({ ...formData, food })}
-                onNotesChange={(notes) => setFormData(prev => ({ ...prev, notes }))}
-                onIncrement={incrementAmount}
-                onDecrement={decrementAmount}
-              />
+            {showReactionSection && (
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="form-label !mb-0 flex items-center gap-1.5">
+                    <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-500" />
+                    {t('Reaction occurred')}
+                  </label>
+                  <Switch
+                    checked={formData.hadReaction}
+                    onCheckedChange={(hadReaction: boolean) => setFormData(prev => ({ ...prev, hadReaction }))}
+                    disabled={loading}
+                    aria-label={t('Reaction occurred')}
+                  />
+                </div>
+                {formData.hadReaction && (
+                  <>
+                    <div className="mt-2">
+                      <label className="form-label" htmlFor={`${formId}-reaction-cause`}>{t('What caused the reaction?')}</label>
+                      <Input
+                        id={`${formId}-reaction-cause`}
+                        value={formData.reactionCause}
+                        onChange={(e) => setFormData(prev => ({ ...prev, reactionCause: e.target.value }))}
+                        className="w-full"
+                        placeholder={t("Formula name, food...")}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <label className="form-label" htmlFor={`${formId}-reaction-description`}>{t('Describe the reaction')}</label>
+                      <Textarea
+                        id={`${formId}-reaction-description`}
+                        value={formData.reactionDescription}
+                        onChange={(e) => setFormData(prev => ({ ...prev, reactionDescription: e.target.value }))}
+                        className="w-full min-h-[60px]"
+                        placeholder={t("Redness, swelling, hives...")}
+                        disabled={loading}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             )}
 
             {showPhotosSection && (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
-import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse, VaccineLogResponse, PhotoLogResponse, TimelinePhotoInfo } from '../types';
+import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse, VaccineLogResponse, FoodLogResponse, PhotoLogResponse, TimelinePhotoInfo } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { buildLinkTargets, groupPhotoLinks } from './timeline-photo-links';
@@ -8,13 +8,15 @@ import { isPhotosEnabled } from '../photos/photo-service';
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
-  SleepLogResponse | FeedLogResponse | DiaperLogResponse | NoteResponse | BathLogResponse | PumpLogResponse | PlayLogResponse | MilestoneResponse | MeasurementResponse | MedicineLogResponse | BreastMilkAdjustmentResponse | VaccineLogResponse
+  SleepLogResponse | FeedLogResponse | DiaperLogResponse | NoteResponse | BathLogResponse | PumpLogResponse | PlayLogResponse | MilestoneResponse | MeasurementResponse | MedicineLogResponse | BreastMilkAdjustmentResponse | VaccineLogResponse | FoodLogResponse
   | (Omit<PhotoLogResponse, 'photos'> & { photoLogId: string; photos: TimelinePhotoInfo[] })
 ) & {
   caretakerId?: string | null;
   caretakerName?: string;
   medicine?: MedicineResponse;
   photos?: TimelinePhotoInfo[];
+  /** Food logs only: this log is its food's all-time earliest try. */
+  isFirstTry?: boolean;
 };
 
 type ActivityType = ActivityTypeWithCaretaker;
@@ -152,7 +154,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 
     // Get recent activities from each type with caretaker information
     const emptyPromise = Promise.resolve([]);
-    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, playLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments, vaccineLogs, photoLogs] = await Promise.all([
+    const [sleepLogs, feedLogs, diaperLogs, noteLogs, bathLogs, pumpLogs, playLogs, milestoneLogs, measurementLogs, medicineLogs, breastMilkAdjustments, vaccineLogs, foodLogs, photoLogs] = await Promise.all([
       shouldFetch('sleep') ? prisma.sleepLog.findMany({
         where: {
           babyId,
@@ -370,6 +372,26 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         },
         orderBy: { time: 'desc' }
       }) : emptyPromise,
+      shouldFetch('food') ? prisma.foodLog.findMany({
+        where: {
+          babyId,
+          deletedAt: null, // Food logs are soft-deleted
+          ...(startDateUTC && endDateUTC ? {
+            time: {
+              gte: startDateUTC,
+              lte: endDateUTC
+            }
+          } : {}),
+          familyId, // Filter by the verified family ID
+        },
+        include: {
+          caretaker: true,
+          food: {
+            select: { id: true, name: true, commonAllergen: true }
+          }
+        },
+        orderBy: { time: 'desc' }
+      }) : emptyPromise,
       photosEnabled && shouldFetch('photo') ? prisma.photoLog.findMany({
         where: {
           babyId,
@@ -398,6 +420,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       play: playLogs.map((l: any) => l.id),
       milestone: milestoneLogs.map((l: any) => l.id),
       measurement: measurementLogs.map((l: any) => l.id),
+      foodLog: foodLogs.map((l: any) => l.id),
       photo: photoLogs.map((l: any) => l.id),
     });
 
@@ -637,6 +660,44 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         };
       });
 
+    // Food logs: mark each log that is its food's all-time earliest try so the
+    // client can show a "First try!" badge (issue #203)
+    const firstTryTimeByFoodId = new Map<string, number>();
+    if (foodLogs.length > 0) {
+      const firstTries = await prisma.foodLog.groupBy({
+        by: ['foodId'],
+        where: {
+          babyId,
+          familyId,
+          deletedAt: null,
+          foodId: { in: Array.from(new Set(foodLogs.map((l: any) => l.foodId))) },
+        },
+        _min: { time: true },
+      });
+      for (const row of firstTries) {
+        if (row._min.time) {
+          firstTryTimeByFoodId.set(row.foodId, new Date(row._min.time).getTime());
+        }
+      }
+    }
+
+    // Format food logs
+    const formattedFoodLogs: ActivityTypeWithCaretaker[] = foodLogs
+      .map((log: any) => {
+        const { caretaker, ...logWithoutCaretaker } = log;
+        return {
+          ...logWithoutCaretaker,
+          time: formatForResponse(log.time) || '',
+          createdAt: formatForResponse(log.createdAt) || '',
+          updatedAt: formatForResponse(log.updatedAt) || '',
+          deletedAt: formatForResponse(log.deletedAt),
+          caretakerId: log.caretakerId,
+          caretakerName: caretaker ? caretaker.name : undefined,
+          isFirstTry: firstTryTimeByFoodId.get(log.foodId) === new Date(log.time).getTime(),
+          photos: photosFor('foodLog', log.id),
+        };
+      });
+
     // Format photo logs
     const formattedPhotoLogs: ActivityTypeWithCaretaker[] = photoLogs
       .map((log: any) => {
@@ -668,6 +729,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       ...formattedMedicineLogs,
       ...formattedBreastMilkAdjustments,
       ...formattedVaccineLogs,
+      ...formattedFoodLogs,
       ...formattedPhotoLogs
     ]
     .sort((a, b) => getActivityTime(b) - getActivityTime(a));

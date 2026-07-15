@@ -1,6 +1,17 @@
 // Service Worker for Push Notifications
 // Handles push events and notification clicks
 
+// Required for Android Chrome PWA installability (WebAPK)
+self.addEventListener('fetch', () => {});
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 // Handle skip waiting message (for service worker updates)
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {

@@ -63,6 +63,20 @@ export const styles = {
   contactDetail: "flex items-center text-xs text-gray-600",
   contactIcon: "h-3 w-3 mr-1 text-gray-400",
   
+  // Allergens tab
+  allergensContainer: "space-y-4",
+  allergenItem: "rounded-lg bg-gray-50 border border-gray-100 shadow-sm px-3 py-2",
+  allergenName: "font-medium text-sm text-gray-800",
+  allergenBadge: "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700",
+  allergenTypeBadge: "inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700",
+  allergenSourceTag: "inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600",
+  allergenReaction: "text-xs text-gray-600",
+  allergenNotes: "text-xs text-gray-600 italic",
+  allergenMeta: "text-xs text-gray-500",
+  allergenForm: "space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3",
+  allergenFormTitle: "text-sm font-semibold text-gray-800",
+  allergenFormError: "text-xs text-red-500",
+
   // Stats tab
   statsContainer: "space-y-4",
   statsGrid: "grid grid-cols-2 gap-4 md:grid-cols-3",

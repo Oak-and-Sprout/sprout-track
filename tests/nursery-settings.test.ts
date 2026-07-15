@@ -17,8 +17,16 @@ describe('normalizeNurserySettings', () => {
     expect(out.hue).toBe(230);
     expect(out.dim).toBe(15);
     expect(out.sat).toBe(25);
-    expect(out.acts).toEqual({ feed: true, pump: false, diaper: false, sleep: true });
+    expect(out.acts).toEqual({ feed: true, pump: false, diaper: false, sleep: true, food: false });
     expect(out.scene).toBe('ambient');
+  });
+  it('defaults acts.food to false when missing from stored settings', () => {
+    const out = normalizeNurserySettings({ v: 1, acts: { feed: true, pump: true, diaper: true, sleep: true } });
+    expect(out.acts.food).toBe(false);
+  });
+  it('preserves an explicit acts.food = true', () => {
+    const out = normalizeNurserySettings({ v: 1, acts: { food: true } });
+    expect(out.acts.food).toBe(true);
   });
   it('clamps ranges', () => {
     const out = normalizeNurserySettings({ ...NURSERY_DEFAULTS, hue: 900, dim: -4, starlit: { density: 9999, aura: true } });

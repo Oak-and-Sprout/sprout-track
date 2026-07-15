@@ -1,4 +1,5 @@
-import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, ActiveActivity, VaccineLog, VaccineDocument } from '@prisma/client';
+import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, ActiveActivity, VaccineLog, VaccineDocument, Food, FoodLog, FoodEnjoyment, BabyAllergen, AllergenType } from '@prisma/client';
+import type { MergedAllergen, NewFoodEntry } from '@/src/utils/foodLogUtils';
 
 // Family types
 export interface Family {
@@ -139,6 +140,9 @@ export interface FeedLogCreate {
   endTime?: string;
   feedDuration?: number; // Duration in seconds for feeding time
   notes?: string;
+  hadReaction?: boolean;
+  reactionDescription?: string;
+  reactionCause?: string; // What caused the reaction (e.g. a formula name like "Similac")
   bottleType?: string;
   breastMilkAmount?: number;
   sessionId?: string; // Links breast feeds belonging to the same nursing session
@@ -437,9 +441,93 @@ export interface VaccineLogCreate {
   contactIds?: string[];
 }
 
+// Food types (issue #203)
+export type FoodResponse = Omit<Food, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  /** Non-deleted food logs pointing at this food (list responses only). */
+  foodLogCount?: number;
+};
+
+/** Result of POST /api/food/merge (Settings > Foods). */
+export interface FoodMergeResult {
+  /** FoodLog rows re-pointed from the source food to the target. */
+  movedCount: number;
+}
+
+export interface FoodCreate {
+  name: string;
+  commonAllergen?: boolean;
+  notes?: string;
+}
+
+export interface FoodUpdate extends Partial<FoodCreate> {
+  id: string;
+}
+
+// Food log types (issue #203)
+export type FoodLogResponse = Omit<FoodLog, 'time' | 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  time: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  food?: { id: string; name: string; commonAllergen: boolean };
+};
+
+export interface FoodLogCreate {
+  babyId: string;
+  foodId: string;
+  time: string;
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: FoodEnjoyment | null;
+  hadReaction?: boolean;
+  reactionDescription?: string;
+  notes?: string;
+  feedLogId?: string;
+}
+
+// All-time food-try progress for a baby ("100 foods before 1")
+export interface FoodProgressResponse {
+  uniqueFoodCount: number;
+  totalTries: number;
+  byEnjoyment: Record<FoodEnjoyment, number>;
+  allergens: {
+    foodId: string;
+    foodName: string;
+    commonAllergen: boolean;
+    reactions: { time: string; description: string | null }[];
+    firstReactionAt: string;
+  }[];
+  /** Allergens derived from reaction-flagged feed logs (name null = generic bottle/formula feed). */
+  feedAllergens: {
+    name: string | null;
+    reactions: { time: string; description: string | null }[];
+    firstReactionAt: string;
+  }[];
+}
+
+// Manual baby allergen types (food tracker follow-up)
+export type BabyAllergenResponse = Omit<BabyAllergen, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export interface BabyAllergenCreate {
+  babyId: string;
+  name: string;
+  allergenType: AllergenType;
+  reactionDescription?: string;
+  notes?: string;
+}
+
+export type BabyAllergenUpdate = Partial<Omit<BabyAllergenCreate, 'babyId'>>;
+
 // Photo types
 export interface PhotoLinkInfo {
-  activityType: string; // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement'
+  activityType: string; // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement' | 'foodLog'
   activityId: string;
 }
 
@@ -661,6 +749,15 @@ export interface MonthlyReport {
       date: string;
     }[];
   };
+  foods: {
+    /** Foods whose first-ever try falls in the reporting month, oldest first. */
+    newFoods: NewFoodEntry[];
+    newFoodCount: number;
+    /** All-time unique foods tried (running total toward 100). */
+    uniqueFoodCount: number;
+  };
+  /** All known allergens (derived + manual) — static, not month-dependent. */
+  allergens: MergedAllergen[];
   caretakers: {
     name: string;
     totalLogs: number;

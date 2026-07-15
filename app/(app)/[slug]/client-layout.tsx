@@ -29,7 +29,15 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
+import { PwaServiceWorker } from '@/src/components/PwaServiceWorker';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
+import { cacheDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
+import {
+  logoutDestination,
+  refreshAuthToken,
+  shouldIdleLogout,
+  validateFamilySlugWithRetry,
+} from '@/src/utils/session-timeout';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -100,26 +108,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
     isRefreshingRef.current = true;
 
     try {
-      const response = await fetch('/api/auth/refresh-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data?.token) {
-          localStorage.setItem('authToken', data.data.token);
-          // Reset unlock time for PIN-based users
-          if (localStorage.getItem('unlockTime')) {
-            localStorage.setItem('unlockTime', Date.now().toString());
-          }
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error('Error refreshing access token:', error);
-      return false;
+      // Shared single-flight refresh (also used by the global 401 interceptor)
+      return await refreshAuthToken();
     } finally {
       isRefreshingRef.current = false;
     }
@@ -167,12 +157,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
       }
       
       const settingsResponse = await fetch(settingsUrl, {
+        cache: 'no-store',
         headers: authToken ? {
           'Authorization': `Bearer ${authToken}`
         } : {}
       });
       if (settingsResponse.ok) {
         const settingsData = await settingsResponse.json();
+        if (settingsData.success) {
+          cacheDefaultBottleUnit(settingsData.data?.defaultBottleUnit);
+        }
         if (settingsData.success && settingsData.data.familyName) {
           setFamilyName(settingsData.data.familyName);
         }
@@ -248,7 +242,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                     router.push(`/${familySlug}/resume-setup`);
                     return;
                   } else {
-                    router.push('/');
+                    router.push('/?src=setup-locked');
                     return;
                   }
                 }
@@ -312,11 +306,13 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
   };
   
-  const handleLogout = async () => {
+  // `reason` becomes a short `src` query param on the destination so unexpected
+  // bounces to the homepage can be diagnosed from the resulting URL (issue #209)
+  const handleLogout = async (reason: string = 'logout-user') => {
     // Get the token to invalidate it server-side
     const token = localStorage.getItem('authToken');
     const currentCaretakerId = localStorage.getItem('caretakerId');
-    
+
     // Check if this is an account holder
     let isAccountAuth = false;
     if (token) {
@@ -368,14 +364,9 @@ function AppContent({ children }: { children: React.ReactNode }) {
     setSelectedBaby(null);
     setBabies([]);
     
-    // Account holders go to home page, PIN users go to family root (which shows login UI)
-    if (isAccountAuth) {
-      router.push('/');
-    } else if (familySlug) {
-      router.push(`/${familySlug}`);
-    } else {
-      router.push('/login');
-    }
+    // Account holders go to the home page with the login modal open,
+    // PIN users go to family root (which shows login UI)
+    router.push(logoutDestination({ isAccountAuth, familySlug, reason }));
   };
 
 
@@ -468,26 +459,25 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
   }, [family?.id, pathname, familySlug]);
   
-  // Validate family slug exists
+  // Validate family slug exists. Transient failures (network hiccup, 5xx) are
+  // retried and never treated as "family not found" (issue #209, candidate 3).
   const validateFamilySlug = useCallback(async (slug: string) => {
-    try {
-      const response = await fetch(`/api/family/by-slug/${encodeURIComponent(slug)}`);
-      const data = await response.json();
-      
-      // If family doesn't exist, redirect to home
-      if (!data.success || !data.data) {
-        console.log(`Family slug "${slug}" not found, redirecting to home...`);
-        router.push('/');
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error validating family slug:', error);
-      // On error, redirect to home to be safe
-      router.push('/');
+    const outcome = await validateFamilySlugWithRetry(slug);
+
+    if (outcome === 'not-found') {
+      // The API definitively answered that the family doesn't exist
+      console.log(`Family slug "${slug}" not found, redirecting to home...`);
+      router.push('/?src=slug-404');
       return false;
     }
+
+    if (outcome === 'transient') {
+      // Network/server hiccup — stay on the page instead of bouncing to home
+      console.error(`Could not validate family slug "${slug}" (transient error), staying on page`);
+      return false;
+    }
+
+    return true;
   }, [router]);
 
   // Validate family slug on mount
@@ -562,7 +552,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             refreshAccessToken().then(success => {
               if (!success) {
                 console.log('Refresh failed, logging out...');
-                handleLogout();
+                handleLogout('logout-refresh-failed');
               }
             });
             return;
@@ -583,7 +573,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         
       } catch (error) {
         console.error('Error parsing JWT token:', error);
-        handleLogout();
+        handleLogout('logout-jwt-error');
         return;
       }
       
@@ -591,15 +581,19 @@ function AppContent({ children }: { children: React.ReactNode }) {
       // (This check is skipped if we're already on root slug page due to early return above)
       // This code only runs for authenticated users on sub-routes
       
-      // Check for idle timeout (separate from token expiration)
-      if (unlockTime) {
-        const lastActivity = parseInt(unlockTime);
-        const idleTimeSeconds = parseInt(localStorage.getItem('idleTimeSeconds') || '1800', 10);
-        if (Date.now() - lastActivity > idleTimeSeconds * 1000) {
-          // Session expired due to inactivity, redirect to login
-          console.log('Session expired due to inactivity, logging out...');
-          handleLogout();
-        }
+      // Check for idle timeout (separate from token expiration).
+      // Account holders and system admins are exempt — their sessions are
+      // bounded by the refresh-token window, not the caretaker idle timeout.
+      if (shouldIdleLogout({
+        isAccountAuth,
+        isSysAdmin,
+        unlockTime,
+        idleTimeSeconds: localStorage.getItem('idleTimeSeconds'),
+        now: Date.now(),
+      })) {
+        // Session expired due to inactivity, redirect to login
+        console.log('Session expired due to inactivity, logging out...');
+        handleLogout('logout-idle');
       }
     };
     
@@ -788,7 +782,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       {shouldShowAppUI && (
-        <div className="min-h-screen flex">
+        <div className="h-dvh flex">
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-teal-700 focus:shadow-md"
@@ -809,16 +803,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
               onSettingsClick={() => {
                 setSettingsOpen(true);
               }}
-              onLogout={handleLogout}
+              onLogout={() => handleLogout()}
               isAdmin={isAdmin}
-              className="h-screen sticky top-0"
+              className="h-dvh sticky top-0"
               familySlug={familySlug}
               familyName={family?.name || familyName}
             />
           )}
           
           {/* Main content area */}
-          <div className={`flex flex-col flex-1 min-h-screen ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
+          <div className={`flex flex-col flex-1 h-dvh ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
             <header className="w-full bg-gradient-to-r from-teal-600 to-teal-700 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
               <div className="mx-auto py-2">
                 <div className="flex justify-between items-center h-16"> {/* Fixed height for consistency */}
@@ -889,7 +883,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             {/* Account Expiration Banner - shows for both account users and caretakers */}
             <AccountExpirationBanner isAccountAuth={isAccountAuth} />
             
-            <main id="main-content" className="flex-1 relative z-0">
+            <main id="main-content" className="flex-1 min-h-0 overflow-y-auto relative z-0">
               {children}
             </main>
           </div>
@@ -909,7 +903,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 setSettingsOpen(true);
                 setSideNavOpen(false);
               }}
-              onLogout={handleLogout}
+              onLogout={() => handleLogout()}
               isAdmin={isAdmin}
               familySlug={familySlug}
               familyName={family?.name || familyName}
@@ -987,8 +981,10 @@ export default function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Define handleLogout function within the layout scope
-  const handleLogout = async () => {
+  // Define handleLogout function within the layout scope.
+  // `reason` becomes a short `src` query param on the destination so unexpected
+  // bounces to the homepage can be diagnosed from the resulting URL (issue #209)
+  const handleLogout = async (reason: string = 'logout-user') => {
     // Get the token to invalidate it server-side
     const token = localStorage.getItem('authToken');
     const currentCaretakerId = localStorage.getItem('caretakerId');
@@ -1034,17 +1030,10 @@ export default function AppLayout({
       window.dispatchEvent(caretakerChangedEvent);
     }
 
-    // Redirect to home page for account holders or family root (which shows login UI) for PIN users
-    if (isAccountAuth) {
-      window.location.href = '/';
-    } else {
-      const familySlug = window.location.pathname.split('/')[1];
-      if (familySlug) {
-        window.location.href = `/${familySlug}`;
-      } else {
-        window.location.href = '/login';
-      }
-    }
+    // Redirect account holders to the home page (with the login modal open)
+    // and PIN users to family root (which shows login UI)
+    const familySlug = window.location.pathname.split('/')[1];
+    window.location.href = logoutDestination({ isAccountAuth, familySlug, reason });
   };
 
   return (
@@ -1054,6 +1043,7 @@ export default function AppLayout({
           <BabyProvider>
             <ThemeProvider>
               <ToastProvider>
+                <PwaServiceWorker />
                 <DynamicTitle />
                 <AppContent>{children}</AppContent>
               </ToastProvider>

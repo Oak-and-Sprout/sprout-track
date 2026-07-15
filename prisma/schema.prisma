@@ -32,6 +32,22 @@ enum FeedType {
   SOLIDS
 }
 
+enum FoodEnjoyment {
+  HATED
+  DISLIKED
+  NEUTRAL
+  LIKED
+  LOVED
+}
+
+// Type of a manually recorded allergen (food tracker follow-up)
+enum AllergenType {
+  FOOD
+  MEDICINE
+  ENVIRONMENT
+  OTHER
+}
+
 enum BreastSide {
   LEFT
   RIGHT
@@ -201,6 +217,9 @@ model Family {
   photos         Photo[]
   photoLogs      PhotoLog[]
   externalImportRecords ExternalImportRecord[]
+  foods          Food[]
+  foodLogs       FoodLog[]
+  babyAllergens  BabyAllergen[]
 }
 
 // New model for family membership
@@ -256,6 +275,8 @@ model Baby {
   apiKeys      ApiKey[]
   photos       Photo[]
   photoLogs    PhotoLog[]
+  foodLogs     FoodLog[]
+  babyAllergens BabyAllergen[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -307,6 +328,8 @@ model Caretaker {
   vaccineLogs   VaccineLog[]
   photos        Photo[]
   photoLogs     PhotoLog[]
+  foodLogs      FoodLog[]
+  babyAllergens BabyAllergen[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -373,6 +396,9 @@ model FeedLog {
   side         BreastSide?
   food         String? // Description of solid foods
   notes        String? // Optional notes for any feed type
+  hadReaction  Boolean     @default(false) // True when this feed caused a reaction (e.g. a formula intolerance)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
+  reactionCause String? // What caused the reaction (e.g. a formula name like "Similac")
   bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
   breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
   sessionId    String? // Groups breast feeds into one nursing session; a unique value opts a feed out of heuristic grouping
@@ -604,7 +630,7 @@ model PhotoLink {
   id           String   @id @default(uuid())
   photo        Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
   photoId      String
-  activityType String // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement'
+  activityType String // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement' | 'foodLog'
   activityId   String // Polymorphic - no FK
   createdAt    DateTime @default(now())
 
@@ -1010,6 +1036,92 @@ model ContactVaccine {
   @@id([contactId, vaccineLogId])
   @@index([contactId])
   @@index([vaccineLogId])
+}
+
+// Food tracking - family-scoped catalog of foods (issue #203)
+model Food {
+  id             String    @id @default(uuid())
+  name           String
+  commonAllergen Boolean   @default(false)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+
+  // Relationships
+  foodLogs FoodLog[] // Logs of food tries
+
+  @@index([name])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+// Food log table to track when a baby tries a food (issue #203)
+model FoodLog {
+  id                  String         @id @default(uuid())
+  time                DateTime
+  amount              Float? // Optional amount eaten, in unitAbbr
+  unitAbbr            String? // Unit for amount (e.g. TBSP, G); plain string, no FK
+  enjoyment           FoodEnjoyment?
+  hadReaction         Boolean        @default(false)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
+  notes               String?
+  feedLogId           String? // Optional soft link to the SOLIDS FeedLog this try happened in (no FK)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+
+  // Relationships
+  food        Food       @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  foodId      String
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([time])
+  @@index([foodId])
+  @@index([babyId])
+  @@index([caretakerId])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+// Manually recorded allergens for a baby (food tracker follow-up).
+// Complements the allergen profile derived from reaction-flagged FoodLogs.
+model BabyAllergen {
+  id                  String       @id @default(uuid())
+  name                String
+  allergenType        AllergenType @default(FOOD)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
+  notes               String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deletedAt           DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+
+  // Relationships
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([name])
+  @@index([babyId])
+  @@index([caretakerId])
+  @@index([deletedAt])
+  @@index([familyId])
 }
 
 // New model for family setup invitations

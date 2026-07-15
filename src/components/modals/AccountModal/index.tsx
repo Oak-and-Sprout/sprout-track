@@ -260,7 +260,26 @@ export default function AccountModal({
           email: result.data.user.email,
           familySlug: result.data.user.familySlug || null,
         }));
-        
+
+        // Get the AUTH_LIFE and IDLE_TIME values for client-side timeout checks
+        // (mirrors AccountLogin.tsx; without these the app falls back to a
+        // 30-minute idle window — issue #209)
+        try {
+          const authLifeResponse = await fetch('/api/settings/auth-life');
+          const authLifeData = await authLifeResponse.json();
+          if (authLifeData.success) {
+            localStorage.setItem('authLifeSeconds', authLifeData.data.toString());
+          }
+
+          const idleTimeResponse = await fetch('/api/settings/idle-time');
+          const idleTimeData = await idleTimeResponse.json();
+          if (idleTimeData.success) {
+            localStorage.setItem('idleTimeSeconds', idleTimeData.data.toString());
+          }
+        } catch (settingsError) {
+          console.error('Error fetching session timeout settings:', settingsError);
+        }
+
         // Clear form
         setFormData({
           email: '',

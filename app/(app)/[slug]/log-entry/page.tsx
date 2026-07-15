@@ -22,21 +22,66 @@ import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MedicineForm from '@/src/components/forms/MedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import FoodForm from '@/src/components/forms/FoodForm';
 import PhotoForm from '@/src/components/forms/PhotoForm';
 import PhotoDetail from '@/src/components/PhotoDetail';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
 import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
 import { fetchPhotosEnabled, fetchPhotos } from '@/src/utils/photoClientApi';
 
 function HomeContent(): React.ReactElement {
-  const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
+  const { selectedBaby, setSelectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
   const { family } = useFamily();
   const { t } = useLocalization();
   const params = useParams();
   const familySlug = params?.slug as string;
-  
+  const searchParams = useSearchParams();
+  const dateParam = searchParams?.get('date') ?? null;
+  const babyIdParam = searchParams?.get('babyId') ?? null;
+
+  // Optional ?date=YYYY-MM-DD deep link (e.g. from allergen entries) — invalid
+  // or missing values fall back to today. Memoized on the param VALUE so the
+  // Date identity (and thus TimelineV2's sync effect) only changes when the
+  // date param itself changes, not on unrelated query updates.
+  const initialTimelineDate = React.useMemo(() => {
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      const [year, month, day] = dateParam.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+        return date;
+      }
+    }
+    return undefined;
+  }, [dateParam]);
+
+  // Optional ?babyId= deep link — switch the selected baby when the link
+  // targets a different one (e.g. a "View in log" allergen link). Keyed on
+  // the param only: a manual baby switch must not snap back to the URL baby.
+  useEffect(() => {
+    if (!babyIdParam || babyIdParam === selectedBaby?.id) return;
+    const selectBabyFromParam = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/api/baby', {
+          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          const baby = data.data.find((b: any) => b.id === babyIdParam && !b.inactive);
+          if (baby) setSelectedBaby(baby);
+        }
+      } catch (error) {
+        console.error('Error selecting baby from URL:', error);
+      }
+    };
+    selectBabyFromParam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [babyIdParam]);
+
+
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [showFeedModal, setShowFeedModal] = useState(false);
   const [showDiaperModal, setShowDiaperModal] = useState(false);
@@ -48,6 +93,7 @@ function HomeContent(): React.ReactElement {
   const [showMedicineModal, setShowMedicineModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showVaccineModal, setShowVaccineModal] = useState<boolean>(false);
+  const [showFoodModal, setShowFoodModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [photosEnabled, setPhotosEnabled] = useState(false);
   const [detailPhoto, setDetailPhoto] = useState<PhotoResponse | null>(null);
@@ -520,6 +566,7 @@ function HomeContent(): React.ReactElement {
           onMedicineClick={() => setShowMedicineModal(true)}
           onPlayClick={() => setShowActivityModal(true)}
           onVaccineClick={() => setShowVaccineModal(true)}
+          onFoodClick={() => setShowFoodModal(true)}
           onPhotoClick={() => setShowPhotoModal(true)}
           photosEnabled={photosEnabled}
         />
@@ -554,6 +601,7 @@ function HomeContent(): React.ReactElement {
           <TimelineV2
             babyId={selectedBaby.id}
             refreshTrigger={refreshTrigger}
+            initialDate={initialTimelineDate}
             onLatestStatusReady={handleLatestStatusReady}
             onActivityDeleted={() => {
               triggerRefresh();
@@ -800,6 +848,19 @@ function HomeContent(): React.ReactElement {
         isOpen={showVaccineModal}
         onClose={() => setShowVaccineModal(false)}
         babyId={selectedBaby?.id || ''}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            triggerRefresh();
+          }
+        }}
+      />
+
+      {/* Food Form */}
+      <FoodForm
+        isOpen={showFoodModal}
+        onClose={() => setShowFoodModal(false)}
+        babyId={selectedBaby?.id}
         initialTime={localTime}
         onSuccess={() => {
           if (selectedBaby?.id) {

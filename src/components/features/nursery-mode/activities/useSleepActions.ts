@@ -189,12 +189,15 @@ export function useSleepActions({ babyId, toUTCString, onLog, onUndoable, sleepL
     ];
   } else if (phase === 'selecting_location') {
     statusText = t('Select Location');
-    buttons = LOCATIONS.map(loc => ({
-      key: loc,
-      label: t(loc),
-      onClick: () => startSleep(loc),
-      disabled: submitting,
-    }));
+    buttons = [
+      ...LOCATIONS.map(loc => ({
+        key: loc,
+        label: t(loc),
+        onClick: () => startSleep(loc),
+        disabled: submitting,
+      })),
+      { key: 'cancel', label: t('Cancel'), onClick: () => setPhase('awake'), cancel: true },
+    ];
   } else {
     buttons = [
       { key: 'startSleep', label: t('Start Sleep'), onClick: () => setPhase('selecting_location'), wide: true, keepOpen: true },

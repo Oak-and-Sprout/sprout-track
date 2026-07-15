@@ -168,8 +168,8 @@ export function AccountButton({
     setIsLoggedIn(false);
     setAccountStatus(null);
     
-    // Redirect to home page
-    window.location.href = '/';
+    // Redirect to home page (reason code identifies deliberate logouts — issue #209)
+    window.location.href = '/?src=logout-user';
   };
 
   const handleFamilyLink = () => {

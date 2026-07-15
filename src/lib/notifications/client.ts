@@ -87,6 +87,29 @@ export function clearVapidCache(): void {
 }
 
 /**
+ * Register service worker for PWA installability (lightweight, no activation wait)
+ */
+export async function registerPwaServiceWorker(): Promise<void> {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  if (!window.isSecureContext) {
+    console.warn('PWA service worker requires HTTPS (or localhost)');
+    return;
+  }
+
+  try {
+    await navigator.serviceWorker.register('/sw.js', {
+      scope: '/',
+      updateViaCache: 'none',
+    });
+  } catch (error) {
+    console.warn('PWA service worker registration failed:', error);
+  }
+}
+
+/**
  * Register service worker
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {

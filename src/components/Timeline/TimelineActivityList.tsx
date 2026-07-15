@@ -43,7 +43,7 @@ const TimelineActivityList = ({
         case 'sleep':
           return 'duration' in activity;
         case 'feed':
-          return 'amount' in activity;
+          return 'amount' in activity && !('foodId' in activity);
         case 'diaper':
           return 'condition' in activity;
         case 'note':
@@ -442,7 +442,7 @@ const TimelineActivityList = ({
                                             return [location, duration, quality].filter(Boolean).join(' • ');
                                           }
                                           
-                                          if ('amount' in activity) {
+                                          if ('amount' in activity && !('foodId' in activity)) {
                                             // Feed activity
                                             if (activity.type === 'BREAST') {
                                               const side = activity.side ? activity.side.charAt(0) + activity.side.slice(1).toLowerCase() : '';

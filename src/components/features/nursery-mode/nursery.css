@@ -88,12 +88,43 @@
 }
 
 /* ---- foreground layout ---- */
-.nursery-fg { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; padding: clamp(20px, 3.2vw, 48px); }
+/* min-height: 0 is load-bearing — without it this flex item grows to its content,
+   overflowing the clipped stage (hiding the footer) and the activity scroller never
+   engages because nothing inside is ever height-constrained. */
+.nursery-fg { position: relative; z-index: 2; flex: 1; min-height: 0; display: flex; flex-direction: column; --fgpad: clamp(20px, 3.2vw, 48px); padding: calc(var(--fgpad) + env(safe-area-inset-top)) calc(var(--fgpad) + env(safe-area-inset-right)) var(--fgpad) calc(var(--fgpad) + env(safe-area-inset-left)); }
 .nursery-topbar { display: flex; justify-content: flex-end; align-items: center; gap: clamp(20px, 2.5vw, 40px); }
 .nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
 .nursery-ghost:hover { color: #fff; }
 .nursery-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(18px, 3.4vh, 52px); width: 100%; min-height: 0; }
-.nursery-clockwrap { text-align: center; min-height: 0; }
+/* The activity grid scrolls beneath the pinned clock/baby/date block when it can't fit,
+   fading out at both edges (invisible scrollbar); 'safe center' keeps the top reachable.
+   The vertical padding matches the fade depth so nothing sits faded at rest. */
+.nursery-actscroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
+  overflow-y: auto;
+  /* overflow-y forces the x-axis to clip (and the mask confines painting to the box),
+     which would shear card shadows at the grid edge — bleed into the stage padding
+     with negative margins, restored by matching horizontal padding, so the clip/mask
+     box is wider than the grid while the vertical fades stay put. */
+  margin-left: calc(-1 * (var(--fgpad) + env(safe-area-inset-left)));
+  margin-right: calc(-1 * (var(--fgpad) + env(safe-area-inset-right)));
+  padding: 26px calc(var(--fgpad) + env(safe-area-inset-right)) 26px calc(var(--fgpad) + env(safe-area-inset-left));
+  mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);
+  scrollbar-width: none;
+}
+.nursery-actscroll::-webkit-scrollbar { display: none; }
+/* Never shrinks: the activity scroller below absorbs all vertical overflow, and a
+   shrunken clock block lets the date paint into the scroller so cards ride over it
+   and the top fade lands above the date instead of below. */
+.nursery-clockwrap { text-align: center; flex-shrink: 0; }
 .nursery-clock { display: flex; align-items: baseline; justify-content: center; }
 /* vh-capped so a short viewport shrinks the clock rather than pushing the activity cards off screen */
 .nursery-clock .time { font-weight: 400; font-size: clamp(48px, min(11.5vw, 12vh), 168px); line-height: .9; letter-spacing: -.01em; text-shadow: 0 2px 40px rgba(0,0,0,.25); }
@@ -105,7 +136,8 @@
 .nursery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 1.6vw, 26px); width: min(1080px, 92vw); }
 .nursery-card { --fs-scale: 1; border-radius: 22px; padding: clamp(18px, 1.7vw, 28px); border: 1px solid rgba(255,255,255,var(--cardline, .14)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,var(--cardbg, .08)); box-shadow: 0 8px 40px rgba(0,0,0,.18); }
 /* a card asking a question (pump amount/action, sleep location) takes over the whole grid — animated via framer-motion's layout prop on the component; button text scales up 1.5x via --fs-scale */
-.nursery-card.question { --fs-scale: 1.5; grid-column: 1 / -1; grid-row: 1 / -1; min-height: clamp(440px, 58vh, 620px); z-index: 10; display: flex; flex-direction: column; justify-content: center; }
+/* scroll-margin matches the scroller's fade depth so the snap-to-top on open doesn't land the card's header under the fade */
+.nursery-card.question { --fs-scale: 1.5; grid-column: 1 / -1; grid-row: 1 / -1; min-height: clamp(440px, 58vh, 620px); z-index: 10; display: flex; flex-direction: column; justify-content: center; scroll-margin-top: 26px; }
 .nursery-card-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: clamp(12px, 1.4vw, 20px); }
 .nursery-card-h .lhs { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .nursery-card-h h3 { font-size: clamp(20px, 1.9vw, 30px); font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
@@ -126,7 +158,49 @@
 .nursery-abtn:hover { background: rgba(255,255,255, calc(var(--btnbg, .1) + .08)); }
 .nursery-abtn:active { transform: scale(.96); }
 .nursery-abtn.wide { flex: none; width: 100%; }
-.nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
+/* Wrapped picker buttons (food catalog, sleep locations): long names wrap inside the
+   button instead of forcing a nowrap button wider than the card/viewport. */
+.nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; max-width: 100%; white-space: normal; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
+/* Long picker lists (food catalog, sleep locations) scroll inside the expanded card,
+   fading out at the top/bottom edges; the scrollbar track is invisible. */
+.nursery-card.question .nursery-card-actions.wrap {
+  max-height: 42vh;
+  overflow-y: auto;
+  padding-top: 22px;
+  padding-bottom: 22px;
+  mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.28) transparent;
+}
+.nursery-card.question .nursery-card-actions.wrap::-webkit-scrollbar { width: 6px; }
+.nursery-card.question .nursery-card-actions.wrap::-webkit-scrollbar-track { background: transparent; }
+.nursery-card.question .nursery-card-actions.wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 3px; }
+
+/* Search field shown above long pickers; a cancel button sits beside it. */
+.nursery-search-row { display: flex; gap: clamp(8px, .8vw, 12px); margin-bottom: clamp(8px, .8vw, 12px); }
+/* 16px font floor — anything smaller makes iOS Safari zoom the page when the field gains focus. */
+.nursery-search-input { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,var(--btnline, .16)); background: rgba(255,255,255,var(--btnbg, .1)); color: #fff; border-radius: 14px; padding: clamp(10px, 1vw, 14px) clamp(12px, 1.2vw, 16px); font-size: clamp(16px, 1.3vw, 18px); }
+.nursery-search-input::placeholder { color: rgba(255,255,255,.45); }
+.nursery-search-input:focus { outline: none; border-color: rgba(255,255,255,.4); }
+.nursery-search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* Enjoyment emoji (same Fluent SVGs as the FoodForm picker) render ~2x the text size;
+   the negative margins collapse them back to one line-height so button size is unchanged. */
+.nursery-btn-emoji { display: block; height: 2.4em; width: 2.4em; margin: -0.7em auto; }
+
+/* Big-tile modal button list — scrolls (invisible track) when the dialog is height-capped;
+   .masked adds the same top/bottom fade the cards picker uses. */
+.nursery-modal-list { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.28) transparent; }
+.nursery-modal-list::-webkit-scrollbar { width: 6px; }
+.nursery-modal-list::-webkit-scrollbar-track { background: transparent; }
+.nursery-modal-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 3px; }
+.nursery-modal-list.masked {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  mask-image: linear-gradient(to bottom, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
 
 /* active-session glow — a ring floated off the card, colored to match the icon */
 .nursery-card.active, .nursery-tile.active { position: relative; }
@@ -181,7 +255,7 @@
 .nursery-tqa-btn.emphasized { background: rgba(255,255,255,.16); }
 .nursery-tqa-btn:disabled { opacity: .5; }
 
-.nursery-footer { position: relative; z-index: 2; text-align: center; padding-bottom: clamp(16px, 2.4vh, 34px); }
+.nursery-footer { position: relative; z-index: 2; text-align: center; padding-bottom: calc(clamp(16px, 2.4vh, 34px) + env(safe-area-inset-bottom)); }
 .nursery-footer .m { font-size: clamp(11px, 1vw, 14px); font-weight: 600; letter-spacing: .34em; color: rgba(255,255,255,.5); }
 .nursery-footer .l { font-size: clamp(10px, .85vw, 12px); font-weight: 600; letter-spacing: .24em; color: rgba(255,255,255,.34); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .nursery-dotlock { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
@@ -203,12 +277,19 @@
 @media (max-width: 680px) {
   .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
   .nursery-bg { position: fixed; }
-  .nursery-fg { padding: 18px 15px; }
-  .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 26px; }
+  .nursery-fg { --fgpad: 15px; padding: calc(18px + env(safe-area-inset-top)) calc(var(--fgpad) + env(safe-area-inset-right)) 18px calc(var(--fgpad) + env(safe-area-inset-left)); }
+  .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 0; }
+  /* Same pinned-clock treatment as desktop: the activity area is the scroll
+     context (the fixed inset-0 stage never grows, so page scrolling can't work).
+     Horizontal bleed margins/padding inherit --fgpad from .nursery-fg above. */
+  .nursery-actscroll { padding-top: 18px; padding-bottom: 18px; mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
   .nursery-grid { grid-template-columns: 1fr; width: 100%; max-width: 520px; gap: 14px; }
   .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
   .nursery-tilegrid.two { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 340px; }
   .nursery-card { padding: 17px; border-radius: 18px; }
+  /* Expanded question cards size to their content on phones (no desktop min-height)
+     and drop the 1.5x button-text scale so the picker fits the narrow viewport. */
+  .nursery-card.question { min-height: 0; --fs-scale: 1.15; scroll-margin-top: 18px; }
   /* vh-capped (not just vw) so the clock actually shrinks on short mobile viewports
      instead of eating space the activity cards need. */
   .nursery-clock .time { font-size: clamp(40px, min(15vw, 8vh), 84px); }
@@ -222,7 +303,7 @@
 /* ---- settings drawer ---- */
 .nursery-ovl { position: fixed; inset: 0; background: rgba(6,8,15,.5); z-index: 40; animation: nursery-fade .2s; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 @keyframes nursery-fade { from { opacity: 0; } }
-.nursery-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: #14161f; border-left: 1px solid rgba(255,255,255,.08); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); color: #fff; }
+.nursery-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: #14161f; border-left: 1px solid rgba(255,255,255,.08); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); color: #fff; padding-top: env(safe-area-inset-top); }
 @media (prefers-reduced-motion: no-preference) {
   .nursery-drawer { animation: nursery-slidein .26s cubic-bezier(.22,1,.36,1); }
 }
@@ -234,7 +315,7 @@
 .nursery-dw-h h2 { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
 .nursery-dw-h .close { background: none; border: none; color: rgba(255,255,255,.55); font-size: 17px; cursor: pointer; }
 .nursery-dw-h .close:hover { color: #fff; }
-.nursery-dw-b { flex: 1; overflow-y: auto; padding: 4px 26px 40px; display: flex; flex-direction: column; gap: 26px; }
+.nursery-dw-b { flex: 1; overflow-y: auto; padding: 4px 26px calc(40px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 26px; }
 .nursery-dw-b::-webkit-scrollbar { width: 8px; }
 .nursery-dw-b::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 99px; }
 .nursery-slabel { font-size: 12px; font-weight: 700; letter-spacing: .16em; color: rgba(255,255,255,.45); text-transform: uppercase; margin-bottom: 11px; }

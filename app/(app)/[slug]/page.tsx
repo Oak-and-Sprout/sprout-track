@@ -8,6 +8,7 @@ import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { FamilyResponse } from '@/app/api/types';
+import { familyStateRedirect, validateFamilySlugWithRetry } from '@/src/utils/session-timeout';
 
 function FamilySlugPageContent() {
   const router = useRouter();
@@ -31,24 +32,26 @@ function FamilySlugPageContent() {
         return;
       }
 
-      try {
-        const response = await fetch(`/api/family/by-slug/${encodeURIComponent(familySlug)}`);
-        const data = await response.json();
-        
-        // If family doesn't exist, redirect to home
-        if (!data.success || !data.data) {
-          console.log(`Family slug "${familySlug}" not found, redirecting to home...`);
-          router.push('/');
-          return;
-        }
-        
-        // Family exists, allow page to continue loading
-        setSlugValidated(true);
-      } catch (error) {
-        console.error('Error validating family slug:', error);
-        // On error, redirect to home to be safe
-        router.push('/');
+      // Transient failures (network hiccup, 5xx) are retried and never treated
+      // as "family not found" (issue #209, candidate 3)
+      const outcome = await validateFamilySlugWithRetry(familySlug);
+
+      if (outcome === 'not-found') {
+        // The API definitively answered that the family doesn't exist
+        console.log(`Family slug "${familySlug}" not found, redirecting to home...`);
+        router.push('/?src=slug-404');
+        return;
       }
+
+      if (outcome === 'transient') {
+        // Network/server hiccup — stay on the validating state instead of
+        // bouncing to home; a reload retries
+        console.error(`Could not validate family slug "${familySlug}" (transient error), staying on page`);
+        return;
+      }
+
+      // Family exists, allow page to continue loading
+      setSlugValidated(true);
     };
 
     validateSlug();
@@ -144,34 +147,34 @@ function FamilySlugPageContent() {
     checkAuth();
   }, [slugValidated]); // Only depend on slugValidated to prevent loops
 
-  // Check if family is inactive and redirect to root
+  // Redirect home only for a definitively-inactive family. A missing family is
+  // NOT treated as "gone" here — that path bounced valid families to the
+  // marketing homepage on resumed PWAs (issue #209 follow-up). Slug-not-found
+  // is handled by validateFamilySlugWithRetry above.
   useEffect(() => {
-    // Only check after slug is validated and family context has finished loading
     if (!slugValidated || familyLoading) return;
 
-    // Don't redirect system admins - they can access any family
+    let isSysAdmin = false;
     const authToken = localStorage.getItem('authToken');
     if (authToken) {
       try {
         const payload = authToken.split('.')[1];
-        const decodedPayload = JSON.parse(atob(payload));
-        if (decodedPayload.isSysAdmin) {
-          // System admins can access any family, don't redirect
-          return;
-        }
+        isSysAdmin = JSON.parse(atob(payload)).isSysAdmin || false;
       } catch (error) {
         // Ignore parsing errors
       }
     }
 
-    if (family && family.isActive === false) {
-      // Family exists but is inactive - redirect to root
-      router.push('/');
-    } else if (!family && familySlug) {
-      // Family not found for the given slug - redirect to root
-      router.push('/');
+    const redirect = familyStateRedirect({
+      slugValidated,
+      familyLoading,
+      isSysAdmin,
+      familyIsActive: family ? family.isActive : null,
+    });
+    if (redirect) {
+      router.push(`/?src=${redirect}`);
     }
-  }, [family, familyLoading, familySlug, router, slugValidated]);
+  }, [family, familyLoading, router, slugValidated]);
 
   // Handle successful authentication
   const handleUnlock = (caretakerId?: string) => {

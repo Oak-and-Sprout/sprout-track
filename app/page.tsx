@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FamilyResponse } from './api/types';
 import { ThemeProvider } from '@/src/context/theme';
 import ComingSoon from './home/page';
 import { useLocalization } from '@/src/context/localization';
+import { resolveRootRedirect } from '@/src/utils/pwa-root-redirect';
 
 export default function HomePage() {
   const { t } = useLocalization();
@@ -13,14 +14,43 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [families, setFamilies] = useState<FamilyResponse[]>([]);
   const [deploymentMode, setDeploymentMode] = useState<string>('selfhosted');
+  const [redirecting, setRedirecting] = useState(false);
+  // Set once the standalone guard has issued a redirect, so the deployment-mode
+  // effect below doesn't race it to a different destination (e.g. family-select).
+  const guardRedirectedRef = useRef(false);
+
+  // Standalone PWA guard: when the root renders inside an installed app
+  // (start_url '/'), bounce to the last-used family instead of showing the
+  // marketing/root page. sessionStorage flag prevents a dead slug from
+  // ping-ponging '/' -> '/slug' -> 404 -> '/' (issue #209 follow-up).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true; // iOS Safari
+    const { redirectTo } = resolveRootRedirect({
+      isStandalone,
+      storedFamilyJson: localStorage.getItem('selectedFamily'),
+      alreadyBounced: sessionStorage.getItem('pwaRootBounced') === '1',
+    });
+    if (redirectTo) {
+      sessionStorage.setItem('pwaRootBounced', '1');
+      guardRedirectedRef.current = true;
+      setRedirecting(true);
+      router.replace(redirectTo);
+    }
+  }, [router]);
 
   useEffect(() => {
     // This page handles all routing logic for the root path
     // Individual family pages handle their own authentication checks
     const checkDeploymentMode = async () => {
+      // The standalone PWA guard already redirected to the last-used family;
+      // don't run the root routing logic and override it.
+      if (guardRedirectedRef.current) return;
       try {
         setLoading(true);
-        
+
         // Check deployment mode first
         const configResponse = await fetch('/api/deployment-config');
         const configData = await configResponse.json();
@@ -121,7 +151,7 @@ export default function HomePage() {
   }, [router]);
 
   // Return loading state while checking deployment mode
-  if (loading) {
+  if (redirecting || loading) {
     return <div className="flex items-center justify-center h-screen">{t('Loading...')}</div>;
   }
   

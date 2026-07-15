@@ -55,6 +55,17 @@ export interface HealthSectionProps extends SectionProps {
   health: MonthlyReport['health'];
 }
 
+export interface FoodsSectionProps extends SectionProps {
+  foods: MonthlyReport['foods'];
+}
+
+export interface AllergensBoxProps extends SectionProps {
+  allergens: MonthlyReport['allergens'];
+  /** Baby the report is for — included in "View in log" deep links */
+  babyId?: string;
+  isPdfExport?: boolean;
+}
+
 export interface CaretakerSectionProps extends SectionProps {
   caretakers: MonthlyReport['caretakers'];
 }

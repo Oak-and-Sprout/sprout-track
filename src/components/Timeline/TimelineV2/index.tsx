@@ -11,6 +11,7 @@ import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import FoodForm from '@/src/components/forms/FoodForm';
 import PhotoForm from '@/src/components/forms/PhotoForm';
 import PhotoDetail from '@/src/components/PhotoDetail';
 import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
@@ -20,18 +21,28 @@ import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
 import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, PhotoResponse } from '@/app/api/types';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, FoodLogResponse, PhotoResponse } from '@/app/api/types';
 import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
-const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
+const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [defaultBottleUnit, setDefaultBottleUnit] = useState(() => readCachedDefaultBottleUnit());
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo' | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => initialDate ?? new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
+
+  // React to ?date= deep-link changes after mount (in-app navigation to the
+  // same route doesn't remount; the parent memoizes initialDate on the param
+  // value, so a new identity means the requested day actually changed)
+  useEffect(() => {
+    if (!initialDate) return;
+    setSelectedDate(prev => (prev.toDateString() === initialDate.toDateString() ? prev : initialDate));
+  }, [initialDate]);
 
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
   // Selected day ±1 so daily stats can group breast-feed sessions across midnight
@@ -130,7 +141,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
     try {
       const authToken = localStorage.getItem('authToken');
-      const unit = settings?.defaultBottleUnit || 'OZ';
+      const unit = settings?.defaultBottleUnit || defaultBottleUnit;
       const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=${unit}`, {
         headers: {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
@@ -270,24 +281,42 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     setActiveFilter(activeFilter === filter ? null : filter);
   };
 
-  // Fetch settings
-  useEffect(() => {
-    const fetchSettings = async () => {
+  // Fetch settings and refresh them when a warm PWA becomes active again.
+  const refreshSettings = useCallback(async () => {
+    try {
       const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/settings', {
+        cache: 'no-store',
         headers: {
           'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setSettings(data.data);
-        }
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.success) {
+        setSettings(data.data);
+        const unit = cacheDefaultBottleUnit(data.data?.defaultBottleUnit);
+        if (unit) setDefaultBottleUnit(unit);
       }
-    };
-    fetchSettings();
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
   }, []);
+
+  useEffect(() => {
+    refreshSettings();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshSettings();
+    };
+    window.addEventListener('focus', refreshSettings);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', refreshSettings);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshSettings]);
 
   // Initial fetch when babyId changes
   useEffect(() => {
@@ -302,7 +331,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     if (babyId) {
       fetchBreastMilkBalance(babyId);
     }
-  }, [babyId, settings?.defaultBottleUnit]);
+  }, [babyId, settings?.defaultBottleUnit, defaultBottleUnit]);
 
   // Handle refreshTrigger from parent (form submissions in log-entry page)
   useEffect(() => {
@@ -371,7 +400,11 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
-              return 'amount' in activity;
+              // Bottle and breast feeds only; any unconverted SOLIDS feeds
+              // are left out (solids live under the food filter now) and
+              // breast-milk adjustments (amount without type) stay excluded
+              return 'amount' in activity && 'type' in activity &&
+                     (activity as any).type !== 'SOLIDS';
             case 'diaper':
               return 'condition' in activity && 'type' in activity &&
                      (activity.type === 'WET' || activity.type === 'BOTH');
@@ -396,6 +429,9 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
               return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
             case 'vaccine':
               return 'vaccineName' in activity;
+            case 'food':
+              // Food logs (issue #203) - foodId is unique to food logs
+              return 'foodId' in activity;
             case 'photo':
               // Match what the Photos Today stat counts: standalone photo
               // logs plus any activity with attached photos
@@ -439,7 +475,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -474,7 +510,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         isHeatmapVisible={isHeatmapVisible}
         onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
         breastMilkBalance={breastMilkTrackingEnabled ? breastMilkBalance : undefined}
-        defaultBottleUnit={settings?.defaultBottleUnit}
+        defaultBottleUnit={settings?.defaultBottleUnit || defaultBottleUnit}
         enableBreastMilkTracking={breastMilkTrackingEnabled}
       />
 
@@ -541,7 +577,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'amount' in selectedActivity ? selectedActivity : undefined}
+            activity={'amount' in selectedActivity && !('foodId' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
           />
           <DiaperForm
@@ -649,6 +685,17 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             babyId={selectedActivity.babyId}
             initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
             activity={'vaccineName' in selectedActivity ? (selectedActivity as unknown as VaccineLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
+          />
+          <FoodForm
+            isOpen={editModalType === 'food'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
+            activity={'foodId' in selectedActivity ? (selectedActivity as unknown as FoodLogResponse) : undefined}
             onSuccess={handleFormSuccess}
           />
           <PhotoForm

@@ -15,6 +15,12 @@ export interface ActionButton {
   wide?: boolean;
   /** True when this button only advances to another decision screen (not a final log/action) — BigTile's modal stays open instead of closing. */
   keepOpen?: boolean;
+  /** Accessible name when the visible label isn't descriptive text (e.g. emoji-only enjoyment buttons). */
+  ariaLabel?: string;
+  /** Rendered as an image (at ~2x text size) in place of the label text; set ariaLabel too. */
+  iconSrc?: string;
+  /** Backs out of the current decision screen. Pickers with a search field render it beside the search input instead of in the button list. */
+  cancel?: boolean;
 }
 
 export interface AmountPromptField {
@@ -30,8 +36,15 @@ export interface AmountPrompt {
   fields: AmountPromptField[];
 }
 
+/** Optional search field shown above a long picker's button list (e.g. the food catalog). */
+export interface SearchPrompt {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string; // localized
+}
+
 export interface ActivityView {
-  id: 'feed' | 'pump' | 'diaper' | 'sleep';
+  id: 'feed' | 'pump' | 'diaper' | 'sleep' | 'food';
   icon: IconName; // bottle | pump | diaper | moon
   label: string; // localized
   statusText: string | null; // active timer line, e.g. "Left Side — 4:12 · L: 4:12 R: 0:00"
@@ -39,13 +52,14 @@ export interface ActivityView {
   /** True while a decision screen is showing (e.g. pump's amount/action step, sleep's location picker) — the card expands to fill the grid in cards layout. */
   question: boolean;
   amountPrompt?: AmountPrompt | null;
+  searchPrompt?: SearchPrompt | null;
   buttons: ActionButton[];
   /** When true, buttons keep their intrinsic size and wrap to new rows instead of shrinking to fit one row (e.g. sleep's location picker, which can have many options). */
   buttonsWrap?: boolean;
 }
 
 export interface UndoInfo {
-  tileId: 'feed' | 'pump' | 'diaper' | 'sleep';
+  tileId: 'feed' | 'pump' | 'diaper' | 'sleep' | 'food';
   message: string;
   /** Reverts the just-logged action (delete the entry, or resume a session); resolves true on success. */
   undo: () => Promise<boolean>;

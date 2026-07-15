@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactElement, CSSProperties } from 'react';
+import { ReactElement, CSSProperties, useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Badge } from './Badge';
 import { ActivityView, TileLog } from './types';
@@ -22,11 +22,26 @@ export interface ActivityCardProps {
  * animation, and sibling cards are passed `dimmed` to fade out.
  */
 export function ActivityCard({ view, log, iconColor, iconShape, dimmed = false }: ActivityCardProps): ReactElement {
-  const { buttons, statusText, active, question, amountPrompt, buttonsWrap } = view;
+  const { buttons, statusText, active, question, amountPrompt, searchPrompt, buttonsWrap } = view;
   const prefersReducedMotion = useReducedMotion();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Opening a decision screen from a scrolled-down grid would otherwise keep the old
+  // scroll offset, starting the expanded card with its header out of view above.
+  useEffect(() => {
+    if (question) {
+      cardRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+    }
+  }, [question, prefersReducedMotion]);
+
+  // With a search field, its row hosts the cancel action so backing out never
+  // requires scrolling to the bottom of a long picker list.
+  const headerButtons = searchPrompt ? buttons.filter(b => b.cancel) : [];
+  const listButtons = searchPrompt ? buttons.filter(b => !b.cancel) : buttons;
 
   return (
     <motion.div
+      ref={cardRef}
       layout={!prefersReducedMotion}
       animate={{ opacity: dimmed ? 0 : 1 }}
       transition={{ duration: prefersReducedMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
@@ -62,19 +77,45 @@ export function ActivityCard({ view, log, iconColor, iconShape, dimmed = false }
           ))}
         </div>
       )}
+      {searchPrompt && (
+        <div className="nursery-search-row">
+          <input
+            type="search"
+            className="nursery-search-input"
+            value={searchPrompt.value}
+            onChange={e => searchPrompt.onChange(e.target.value)}
+            placeholder={searchPrompt.placeholder}
+            aria-label={searchPrompt.placeholder}
+          />
+          {headerButtons.map(btn => (
+            <button
+              key={btn.key}
+              type="button"
+              onClick={btn.onClick}
+              disabled={btn.disabled}
+              className="nursery-abtn"
+              style={{ flex: '0 0 auto', opacity: btn.disabled ? 0.5 : undefined }}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className={`nursery-card-actions${buttonsWrap ? ' wrap' : ''}`}>
-        {buttons.map(btn => {
-          const wide = btn.wide || buttons.length === 1;
+        {listButtons.map(btn => {
+          const wide = btn.wide || listButtons.length === 1;
           return (
             <button
               key={btn.key}
               type="button"
               onClick={btn.onClick}
               disabled={btn.disabled}
+              aria-label={btn.ariaLabel}
+              title={btn.iconSrc ? btn.ariaLabel ?? btn.label : undefined}
               className={`nursery-abtn${wide ? ' wide' : ''}`}
               style={btn.disabled ? { opacity: 0.5 } : undefined}
             >
-              {btn.label}
+              {btn.iconSrc ? <img src={btn.iconSrc} alt="" aria-hidden="true" className="nursery-btn-emoji" /> : btn.label}
             </button>
           );
         })}

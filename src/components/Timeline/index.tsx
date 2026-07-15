@@ -19,12 +19,14 @@ import TimelineActivityList from './TimelineActivityList';
 import TimelineActivityDetails from './TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from './utils';
 import { PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
 const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [defaultBottleUnit, setDefaultBottleUnit] = useState(() => readCachedDefaultBottleUnit());
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo' | null>(null);
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
@@ -102,7 +104,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
     }
     try {
       const authToken = localStorage.getItem('authToken');
-      const unit = settings?.defaultBottleUnit || 'OZ';
+      const unit = settings?.defaultBottleUnit || defaultBottleUnit;
       const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=${unit}`, {
         headers: {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
@@ -155,6 +157,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
     const fetchSettings = async () => {
       const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/settings', {
+        cache: 'no-store',
         headers: {
           'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
@@ -163,6 +166,8 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
         const data = await response.json();
         if (data.success) {
           setSettings(data.data);
+          const unit = cacheDefaultBottleUnit(data.data?.defaultBottleUnit);
+          if (unit) setDefaultBottleUnit(unit);
         }
       }
     };
@@ -181,7 +186,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
     if (babyId) {
       fetchBreastMilkBalance(babyId);
     }
-  }, [babyId, settings?.defaultBottleUnit]);
+  }, [babyId, settings?.defaultBottleUnit, defaultBottleUnit]);
 
   useEffect(() => {
     if (!babyId) return;
@@ -237,7 +242,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
-              return 'amount' in activity;
+              return 'amount' in activity && !('foodId' in activity);
             case 'diaper':
               return 'condition' in activity;
             case 'medicine':
@@ -294,7 +299,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'photo') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
@@ -361,7 +366,7 @@ const Timeline = ({ activities, onActivityDeleted }: LegacyTimelineProps) => {
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'amount' in selectedActivity ? selectedActivity : undefined}
+            activity={'amount' in selectedActivity && !('foodId' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
           />
           <DiaperForm

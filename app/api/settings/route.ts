@@ -54,7 +54,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     return NextResponse.json<ApiResponse<SettingsResponse>>({
       success: true,
       data: toSettingsResponse(settings),
-    });
+    }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     console.error('Error fetching settings:', error);
     return NextResponse.json<ApiResponse<SettingsResponse>>(
@@ -193,7 +193,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     return NextResponse.json<ApiResponse<SettingsResponse>>({
       success: true,
       data: toSettingsResponse(settings),
-    });
+    }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     console.error('Error updating settings:', error);
     return NextResponse.json<ApiResponse<SettingsResponse>>(
