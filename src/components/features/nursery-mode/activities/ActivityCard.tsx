@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactElement, CSSProperties } from 'react';
+import { ReactElement, CSSProperties, useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Badge } from './Badge';
 import { ActivityView, TileLog } from './types';
@@ -24,6 +24,15 @@ export interface ActivityCardProps {
 export function ActivityCard({ view, log, iconColor, iconShape, dimmed = false }: ActivityCardProps): ReactElement {
   const { buttons, statusText, active, question, amountPrompt, searchPrompt, buttonsWrap } = view;
   const prefersReducedMotion = useReducedMotion();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Opening a decision screen from a scrolled-down grid would otherwise keep the old
+  // scroll offset, starting the expanded card with its header out of view above.
+  useEffect(() => {
+    if (question) {
+      cardRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+    }
+  }, [question, prefersReducedMotion]);
 
   // With a search field, its row hosts the cancel action so backing out never
   // requires scrolling to the bottom of a long picker list.
@@ -32,6 +41,7 @@ export function ActivityCard({ view, log, iconColor, iconShape, dimmed = false }
 
   return (
     <motion.div
+      ref={cardRef}
       layout={!prefersReducedMotion}
       animate={{ opacity: dimmed ? 0 : 1 }}
       transition={{ duration: prefersReducedMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}

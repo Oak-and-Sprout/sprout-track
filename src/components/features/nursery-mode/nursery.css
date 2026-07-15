@@ -136,7 +136,8 @@
 .nursery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 1.6vw, 26px); width: min(1080px, 92vw); }
 .nursery-card { --fs-scale: 1; border-radius: 22px; padding: clamp(18px, 1.7vw, 28px); border: 1px solid rgba(255,255,255,var(--cardline, .14)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(255,255,255,var(--cardbg, .08)); box-shadow: 0 8px 40px rgba(0,0,0,.18); }
 /* a card asking a question (pump amount/action, sleep location) takes over the whole grid — animated via framer-motion's layout prop on the component; button text scales up 1.5x via --fs-scale */
-.nursery-card.question { --fs-scale: 1.5; grid-column: 1 / -1; grid-row: 1 / -1; min-height: clamp(440px, 58vh, 620px); z-index: 10; display: flex; flex-direction: column; justify-content: center; }
+/* scroll-margin matches the scroller's fade depth so the snap-to-top on open doesn't land the card's header under the fade */
+.nursery-card.question { --fs-scale: 1.5; grid-column: 1 / -1; grid-row: 1 / -1; min-height: clamp(440px, 58vh, 620px); z-index: 10; display: flex; flex-direction: column; justify-content: center; scroll-margin-top: 26px; }
 .nursery-card-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: clamp(12px, 1.4vw, 20px); }
 .nursery-card-h .lhs { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .nursery-card-h h3 { font-size: clamp(20px, 1.9vw, 30px); font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
@@ -288,7 +289,7 @@
   .nursery-card { padding: 17px; border-radius: 18px; }
   /* Expanded question cards size to their content on phones (no desktop min-height)
      and drop the 1.5x button-text scale so the picker fits the narrow viewport. */
-  .nursery-card.question { min-height: 0; --fs-scale: 1.15; }
+  .nursery-card.question { min-height: 0; --fs-scale: 1.15; scroll-margin-top: 18px; }
   /* vh-capped (not just vw) so the clock actually shrinks on short mobile viewports
      instead of eating space the activity cards need. */
   .nursery-clock .time { font-size: clamp(40px, min(15vw, 8vh), 84px); }
