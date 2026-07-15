@@ -77,7 +77,7 @@ export const activityTileStyles = {
       milestone: '/milestone-128.png',
       medicine: '/med-128.png',
       vaccine: '/vaccine-128.png',
-      food: '/solids-128.png',
+      food: '/food-256.png',
       default: '/default-128.png'
     }
   },
