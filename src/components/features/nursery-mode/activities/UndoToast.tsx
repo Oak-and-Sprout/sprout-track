@@ -32,7 +32,7 @@ export function UndoToast({ undo, onUndo, onDismiss }: UndoToastProps): ReactEle
       aria-live="polite"
       style={{
         position: 'fixed',
-        bottom: 'clamp(24px, 5vh, 48px)',
+        bottom: 'calc(clamp(24px, 5vh, 48px) + env(safe-area-inset-bottom))',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 300,

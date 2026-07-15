@@ -88,7 +88,7 @@
 }
 
 /* ---- foreground layout ---- */
-.nursery-fg { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; padding: clamp(20px, 3.2vw, 48px); }
+.nursery-fg { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; padding: calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-top)) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-right)) clamp(20px, 3.2vw, 48px) calc(clamp(20px, 3.2vw, 48px) + env(safe-area-inset-left)); }
 .nursery-topbar { display: flex; justify-content: flex-end; align-items: center; gap: clamp(20px, 2.5vw, 40px); }
 .nursery-ghost { background: none; border: none; color: rgba(255,255,255,.62); font-size: clamp(15px, 1.35vw, 19px); letter-spacing: .01em; padding: 6px 2px; transition: color .15s; }
 .nursery-ghost:hover { color: #fff; }
@@ -181,7 +181,7 @@
 .nursery-tqa-btn.emphasized { background: rgba(255,255,255,.16); }
 .nursery-tqa-btn:disabled { opacity: .5; }
 
-.nursery-footer { position: relative; z-index: 2; text-align: center; padding-bottom: clamp(16px, 2.4vh, 34px); }
+.nursery-footer { position: relative; z-index: 2; text-align: center; padding-bottom: calc(clamp(16px, 2.4vh, 34px) + env(safe-area-inset-bottom)); }
 .nursery-footer .m { font-size: clamp(11px, 1vw, 14px); font-weight: 600; letter-spacing: .34em; color: rgba(255,255,255,.5); }
 .nursery-footer .l { font-size: clamp(10px, .85vw, 12px); font-weight: 600; letter-spacing: .24em; color: rgba(255,255,255,.34); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .nursery-dotlock { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
@@ -203,7 +203,7 @@
 @media (max-width: 680px) {
   .nursery-stage { height: auto; min-height: 100vh; min-height: 100dvh; }
   .nursery-bg { position: fixed; }
-  .nursery-fg { padding: 18px 15px; }
+  .nursery-fg { padding: calc(18px + env(safe-area-inset-top)) calc(15px + env(safe-area-inset-right)) 18px calc(15px + env(safe-area-inset-left)); }
   .nursery-center { gap: 14px; justify-content: flex-start; padding: 6px 0 26px; }
   .nursery-grid { grid-template-columns: 1fr; width: 100%; max-width: 520px; gap: 14px; }
   .nursery-tilegrid { grid-template-columns: repeat(2, 1fr); width: 100%; max-width: 420px; }
@@ -222,7 +222,7 @@
 /* ---- settings drawer ---- */
 .nursery-ovl { position: fixed; inset: 0; background: rgba(6,8,15,.5); z-index: 40; animation: nursery-fade .2s; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 @keyframes nursery-fade { from { opacity: 0; } }
-.nursery-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: #14161f; border-left: 1px solid rgba(255,255,255,.08); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); color: #fff; }
+.nursery-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: #14161f; border-left: 1px solid rgba(255,255,255,.08); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); color: #fff; padding-top: env(safe-area-inset-top); }
 @media (prefers-reduced-motion: no-preference) {
   .nursery-drawer { animation: nursery-slidein .26s cubic-bezier(.22,1,.36,1); }
 }
@@ -234,7 +234,7 @@
 .nursery-dw-h h2 { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
 .nursery-dw-h .close { background: none; border: none; color: rgba(255,255,255,.55); font-size: 17px; cursor: pointer; }
 .nursery-dw-h .close:hover { color: #fff; }
-.nursery-dw-b { flex: 1; overflow-y: auto; padding: 4px 26px 40px; display: flex; flex-direction: column; gap: 26px; }
+.nursery-dw-b { flex: 1; overflow-y: auto; padding: 4px 26px calc(40px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 26px; }
 .nursery-dw-b::-webkit-scrollbar { width: 8px; }
 .nursery-dw-b::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 99px; }
 .nursery-slabel { font-size: 12px; font-weight: 700; letter-spacing: .16em; color: rgba(255,255,255,.45); text-transform: uppercase; margin-bottom: 11px; }
