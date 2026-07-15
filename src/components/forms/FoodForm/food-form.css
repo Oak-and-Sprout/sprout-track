@@ -59,10 +59,6 @@ html.dark .food-progress-hero-goal {
 }
 
 html.dark .food-progress-hero-label,
-html.dark .food-progress-total-tries {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
 html.dark .food-progress-apple-outline {
   color: #4b5563 !important; /* gray-600 — visible outline on dark surfaces */
 }

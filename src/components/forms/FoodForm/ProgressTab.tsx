@@ -97,37 +97,31 @@ const ProgressTab: React.FC<ProgressTabProps> = ({
 
       {!isLoading && !error && (
         <div className="space-y-6">
-          {/* Hero counter */}
-          <div className="text-center">
-            <div className="text-4xl font-bold text-gray-800 food-progress-hero-count">
-              {uniqueFoodCount}
-              <span className="text-lg font-medium text-gray-500 food-progress-hero-goal"> / {UNIQUE_FOOD_GOAL}</span>
-            </div>
-            <p className="mt-1 text-sm text-gray-600 food-progress-hero-label">{t('Unique foods tried')}</p>
+          {/* Hero counter — apple fills bottom-up with progress toward the 100-food goal */}
+          <div className="flex items-center justify-center gap-4">
             <div
-              className="mt-3 flex justify-center"
+              className="relative h-16 w-16 flex-shrink-0"
               role="progressbar"
               aria-valuenow={uniqueFoodCount}
               aria-valuemin={0}
               aria-valuemax={UNIQUE_FOOD_GOAL}
               aria-label={t('Unique foods tried')}
             >
-              {/* Apple fills bottom-up with progress toward the 100-food goal */}
-              <div className="relative h-16 w-16">
-                <Apple className="h-16 w-16 text-gray-300 food-progress-apple-outline" aria-hidden="true" />
-                <div
-                  className="absolute inset-0 overflow-hidden transition-all duration-500"
-                  style={{ clipPath: `inset(${100 - progressPercent}% 0 0 0)` }}
-                >
-                  <Apple className="h-16 w-16 text-[#84CC16]" fill="#84CC16" aria-hidden="true" />
-                </div>
+              <Apple className="h-16 w-16 text-gray-300 food-progress-apple-outline" aria-hidden="true" />
+              <div
+                className="absolute inset-0 overflow-hidden transition-all duration-500"
+                style={{ clipPath: `inset(${100 - progressPercent}% 0 0 0)` }}
+              >
+                <Apple className="h-16 w-16 text-[#84CC16]" fill="#84CC16" aria-hidden="true" />
               </div>
             </div>
-            {progress && progress.totalTries > 0 && (
-              <p className="mt-2 text-xs text-gray-500 food-progress-total-tries">
-                {progress.totalTries} {t('total tries')}
-              </p>
-            )}
+            <div className="text-left">
+              <div className="text-4xl font-bold text-gray-800 food-progress-hero-count">
+                {uniqueFoodCount}
+                <span className="text-lg font-medium text-gray-500 food-progress-hero-goal"> / {UNIQUE_FOOD_GOAL}</span>
+              </div>
+              <p className="mt-1 text-sm text-gray-600 food-progress-hero-label">{t('Unique foods tried')}</p>
+            </div>
           </div>
 
           {/* Enjoyment breakdown */}
