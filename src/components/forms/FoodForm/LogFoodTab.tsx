@@ -516,14 +516,19 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
                 key={value}
                 type="button"
                 variant="ghost"
-                className={`px-1 py-1 h-16 hover:scale-110 hover:shadow-lg ${enjoyment === value ? 'bg-teal-100 food-enjoyment-selected' : ''}`}
+                className={`group px-1 py-1 h-16 ${enjoyment === value ? 'bg-teal-100 food-enjoyment-selected' : ''}`}
                 onClick={() => setEnjoyment(prev => (prev === value ? null : value))}
                 disabled={isSubmitting}
                 aria-pressed={enjoyment === value}
                 aria-label={t(FOOD_ENJOYMENT_LABELS[value])}
                 title={t(FOOD_ENJOYMENT_LABELS[value])}
               >
-                <img src={ENJOYMENT_ICON_SRC[value]} alt="" aria-hidden="true" className="h-14 w-14" />
+                <img
+                  src={ENJOYMENT_ICON_SRC[value]}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-14 w-14 transition-all duration-200 group-hover:scale-110 group-hover:drop-shadow-lg"
+                />
               </Button>
             ))}
           </div>
