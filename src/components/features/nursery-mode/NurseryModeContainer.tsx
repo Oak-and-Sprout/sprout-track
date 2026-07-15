@@ -386,7 +386,7 @@ export function NurseryModeContainer() {
           {!isLandscape && (
             <ClockBlock babyName={babyName} babies={clockBabies} selectedBabyId={selectedBaby?.id} onSelectBaby={handleSelectBaby} />
           )}
-          {selectedBaby && activityArea}
+          {selectedBaby && <div className="nursery-actscroll">{activityArea}</div>}
         </div>
       </div>
 
