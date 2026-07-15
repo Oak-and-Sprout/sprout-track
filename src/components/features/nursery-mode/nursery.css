@@ -127,6 +127,7 @@
 .nursery-abtn:active { transform: scale(.96); }
 .nursery-abtn.wide { flex: none; width: 100%; }
 .nursery-card-actions.wrap .nursery-abtn { flex: 0 0 auto; padding-left: clamp(16px, 1.6vw, 24px); padding-right: clamp(16px, 1.6vw, 24px); }
+.nursery-card.question .nursery-card-actions.wrap { max-height: 42vh; overflow-y: auto; }
 
 /* active-session glow — a ring floated off the card, colored to match the icon */
 .nursery-card.active, .nursery-tile.active { position: relative; }

@@ -1,7 +1,7 @@
 # Nursery Mode
 
 A full-screen, kiosk-style view for a bedside tablet: a live clock, quick-log
-tiles for feed/pump/diaper/sleep, and a customizable animated backdrop (scene).
+tiles for feed/pump/diaper/sleep/food, and a customizable animated backdrop (scene).
 Ported from the `nursery.jsx` prototype in `documentation/Implementation/`,
 split into an engine/scenes/activities/drawer architecture so each concern is
 independently testable.
@@ -109,8 +109,12 @@ the container can render either a `ActivityCard` (cards layout) or `BigTile`
 - `usePumpActions` — left/right/both timers with resume support.
 - `useDiaperActions` — wet/dirty/both instant log.
 - `useSleepActions` — location picker → sleeping timer → wake.
+- `useFoodActions` — one-tap food-try logging against the family food catalog
+  (frequency-ordered picker), with a transient after-log enjoyment prompt that
+  PUTs onto the just-created entry. Off by default (`acts.food`); pure helpers
+  live in `src/utils/nursery/foodActivity.ts`.
 
-Bottle and diaper logs are undoable (`onUndoable` → `UndoInfo`); sleep/pump
+Bottle, diaper, and food logs are undoable (`onUndoable` → `UndoInfo`); sleep/pump
 sessions are not (they're multi-step, so a mis-tap is cheap to correct by
 tapping again). `activities/types.ts` also holds `formatMMSS`/`formatHMMSS`
 duration formatters shared by the timer-driven activities.
@@ -176,6 +180,7 @@ Pure logic extracted to `src/utils/nursery/` is covered in `tests/`:
 - `nursery-backdrop-style.test.ts` — `scenes/backdropStyle.ts` (CSS pattern
   generation for tapestry backdrops).
 - `nursery-photo-scene.test.ts` — `PhotoScene`'s `photoIdFromSrc` helper.
+- `nursery-food-activity.test.ts` — `foodActivity.ts` (picker sorting, meta-line note).
 
 Component/hook behavior (drawer interactions, activity state machines, the
 container's polling/undo flow) is exercised manually via the running app —
