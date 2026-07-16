@@ -131,7 +131,7 @@ export default function MeasurementForm({
             const settings = data.data;
             setDefaultUnits({
               height: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm',
-              weight: settings.defaultWeightUnit === 'KG' ? 'kg' : 'lb',
+              weight: settings.defaultWeightUnit === 'KG' ? 'kg' : settings.defaultWeightUnit === 'G' ? 'g' : 'lb',
               headCircumference: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm', // Using height unit for head circumference
               temperature: settings.defaultTempUnit === 'F' ? '°F' : '°C',
             });
@@ -215,6 +215,8 @@ export default function MeasurementForm({
           case 'WEIGHT':
             if (activity.unit === 'kg') {
               updatedFormData.weight = { value: String(activity.value), unit: 'kg' };
+            } else if (activity.unit === 'g') {
+              updatedFormData.weight = { value: String(activity.value), unit: 'g' };
             } else {
               // Both 'lb' and legacy 'oz' use the lb/oz dual input
               const decimalLbs = activity.unit === 'oz' ? activity.value / 16 : activity.value;
@@ -755,6 +757,16 @@ export default function MeasurementForm({
                     className="px-2 py-1 h-9"
                   >
                     kg
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.weight.unit === 'g' ? 'default' : 'outline'}
+                    onClick={() => handleUnitChange('weight', 'g')}
+                    disabled={loading}
+                    className="px-2 py-1 h-9"
+                  >
+                    g
                   </Button>
                 </div>
               </div>
