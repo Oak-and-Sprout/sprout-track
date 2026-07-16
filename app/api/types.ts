@@ -663,6 +663,7 @@ export interface MonthlyReport {
     daysTracked: number;
     isCurrentMonth: boolean;
   };
+  growthStandard: 'CDC' | 'WHO';
   growth: {
     weight: GrowthMetric | null;
     length: GrowthMetric | null;

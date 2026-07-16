@@ -42,6 +42,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           defaultHeightUnit: 'IN',
           defaultWeightUnit: 'LB',
           defaultTempUnit: 'F',
+          growthChartStandard: 'CDC',
           enableBreastMilkTracking: true,
           includeSolidsInFeedTimer: true,
           dateFormat: 'MM/DD/YYYY',
@@ -113,6 +114,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     const userFields: (keyof Settings)[] = [
       'defaultBottleUnit', 'defaultSolidsUnit',
       'defaultHeightUnit', 'defaultWeightUnit', 'defaultTempUnit',
+      'growthChartStandard',
     ];
 
     // Additional fields only admins can update
@@ -154,6 +156,17 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
             );
           }
           (data as any)[field] = quota;
+          continue;
+        }
+        if (field === 'growthChartStandard') {
+          const validStandards = ['CDC', 'WHO'];
+          if (!validStandards.includes(body[field])) {
+            return NextResponse.json<ApiResponse<null>>(
+              { success: false, error: 'growthChartStandard must be CDC or WHO' },
+              { status: 400 }
+            );
+          }
+          (data as any)[field] = body[field];
           continue;
         }
         (data as any)[field] = body[field];

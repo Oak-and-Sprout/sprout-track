@@ -221,10 +221,11 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
   // Fetch family settings for display units
   const familySettings = await prisma.settings.findFirst({
     where: { familyId: userFamilyId },
-    select: { defaultWeightUnit: true, defaultHeightUnit: true },
+    select: { defaultWeightUnit: true, defaultHeightUnit: true, growthChartStandard: true },
   });
   const displayWeightUnit = (familySettings?.defaultWeightUnit || 'LB').toUpperCase();
   const displayHeightUnit = (familySettings?.defaultHeightUnit || 'IN').toUpperCase();
+  const growthStandard = (familySettings?.growthChartStandard || 'CDC') as 'CDC' | 'WHO';
 
   // Unit conversion helpers (matching GrowthChart.tsx logic)
   function toCdcUnit(value: number, unit: string, type: 'weight' | 'length' | 'head_circumference'): number {
@@ -278,11 +279,23 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     };
   }
 
-  // Pre-fetch all CDC rows for all 3 measurement types (for both metrics and charts)
+  // Pre-fetch all growth chart rows for all 3 measurement types (for both metrics and charts)
+  const growthWhere = sex ? { sex } : undefined;
+  const growthOrder = { orderBy: { ageMonths: 'asc' } as const };
+  const isWho = growthStandard === 'WHO';
   const [allCdcWeight, allCdcLength, allCdcHead] = await Promise.all([
-    sex ? prisma.cdcWeightForAge.findMany({ where: { sex }, orderBy: { ageMonths: 'asc' } }) : Promise.resolve([]),
-    sex ? prisma.cdcLengthForAge.findMany({ where: { sex }, orderBy: { ageMonths: 'asc' } }) : Promise.resolve([]),
-    sex ? prisma.cdcHeadCircumferenceForAge.findMany({ where: { sex }, orderBy: { ageMonths: 'asc' } }) : Promise.resolve([]),
+    sex ? (isWho
+      ? prisma.whoWeightForAge.findMany({ where: growthWhere, ...growthOrder })
+      : prisma.cdcWeightForAge.findMany({ where: growthWhere, ...growthOrder })
+    ) : Promise.resolve([]),
+    sex ? (isWho
+      ? prisma.whoLengthForAge.findMany({ where: growthWhere, ...growthOrder })
+      : prisma.cdcLengthForAge.findMany({ where: growthWhere, ...growthOrder })
+    ) : Promise.resolve([]),
+    sex ? (isWho
+      ? prisma.whoHeadCircumferenceForAge.findMany({ where: growthWhere, ...growthOrder })
+      : prisma.cdcHeadCircumferenceForAge.findMany({ where: growthWhere, ...growthOrder })
+    ) : Promise.resolve([]),
   ]);
 
   function getCdcRows(cdcTable: 'weight' | 'length' | 'head_circumference') {
@@ -682,6 +695,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       daysTracked,
       isCurrentMonth,
     },
+    growthStandard,
     growth: {
       weight: weightMetric,
       length: lengthMetric,

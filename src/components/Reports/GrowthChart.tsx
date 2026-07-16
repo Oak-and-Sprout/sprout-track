@@ -51,6 +51,7 @@ interface MeasurementData {
 interface Settings {
   defaultWeightUnit: string;
   defaultHeightUnit: string;
+  growthChartStandard: 'CDC' | 'WHO';
 }
 
 interface ChartDataPoint {
@@ -438,6 +439,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
             setSettings({
               defaultWeightUnit: data.data.defaultWeightUnit || 'LB',
               defaultHeightUnit: data.data.defaultHeightUnit || 'IN',
+              growthChartStandard: data.data.growthChartStandard || 'CDC',
             });
           }
         }
@@ -462,7 +464,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
         const sex = genderToCdcSex(selectedBaby.gender);
 
         const response = await fetch(
-          `/api/cdc-growth-data?sex=${sex}&type=${measurementType}`,
+          `/api/cdc-growth-data?sex=${sex}&type=${measurementType}&standard=${settings?.growthChartStandard || 'CDC'}`,
           {
             cache: 'no-store',
             headers: {
@@ -493,7 +495,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     };
 
     fetchCdcData();
-  }, [selectedBaby, measurementType]);
+  }, [selectedBaby, measurementType, settings?.growthChartStandard]);
 
   // Fetch baby measurements
   useEffect(() => {
@@ -1080,7 +1082,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       {/* Legend info */}
       <div className={cn(growthChartStyles.legendInfo, "growth-chart-legend-info")}>
         <p className={cn(growthChartStyles.legendText, "growth-chart-legend-text")}>
-          {t('CDC Growth Chart for')} {t(selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls')} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
+          {settings?.growthChartStandard || 'CDC'} {t('Growth Chart for')} {t(selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls')} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
         </p>
         <p className={cn(growthChartStyles.legendSubtext, "growth-chart-legend-subtext")}>
           {t('Percentile lines show how your baby compares to other children of the same age and sex. The 50th percentile represents the median.')}
