@@ -62,10 +62,25 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     }
 
     const body = await req.json();
-    const { babyId, side } = body;
+    const { babyId, side, startTime: requestedStartTime } = body;
 
     if (!babyId || !side) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'babyId and side are required' }, { status: 400 });
+    }
+
+    let startTime: Date | undefined;
+    if (requestedStartTime !== undefined) {
+      if (typeof requestedStartTime !== 'string' || !requestedStartTime.trim()) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Start time must be a valid date' }, { status: 400 });
+      }
+
+      startTime = new Date(requestedStartTime);
+      if (Number.isNaN(startTime.getTime())) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Start time must be a valid date' }, { status: 400 });
+      }
+      if (startTime.getTime() > Date.now()) {
+        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Start time cannot be in the future' }, { status: 400 });
+      }
     }
 
     // Verify baby belongs to family
@@ -82,7 +97,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'An active breastfeed session already exists for this baby.' }, { status: 409 });
     }
 
-    const session = await startBreastfeedSession({ babyId, side, familyId: userFamilyId, caretakerId });
+    const session = await startBreastfeedSession({ babyId, side, familyId: userFamilyId, caretakerId, startTime });
 
     return NextResponse.json<ApiResponse<ActiveBreastFeedResponse>>({
       success: true,

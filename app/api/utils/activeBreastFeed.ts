@@ -27,6 +27,7 @@ export interface StartSessionParams {
   side: BreastSide;
   familyId: string;
   caretakerId?: string | null;
+  startTime?: Date;
 }
 
 /**
@@ -34,8 +35,8 @@ export interface StartSessionParams {
  * first; a concurrent start still races on the babyId unique constraint, so
  * catch Prisma P2002 and treat it as "already active".
  */
-export async function startBreastfeedSession({ babyId, side, familyId, caretakerId }: StartSessionParams): Promise<ActiveBreastFeed> {
-  const now = new Date();
+export async function startBreastfeedSession({ babyId, side, familyId, caretakerId, startTime }: StartSessionParams): Promise<ActiveBreastFeed> {
+  const sessionStartTime = startTime ?? new Date();
   return prisma.activeBreastFeed.create({
     data: {
       babyId,
@@ -43,8 +44,8 @@ export async function startBreastfeedSession({ babyId, side, familyId, caretaker
       isPaused: false,
       leftDuration: 0,
       rightDuration: 0,
-      currentSideStartTime: now,
-      sessionStartTime: now,
+      currentSideStartTime: sessionStartTime,
+      sessionStartTime,
       familyId,
       caretakerId,
     },

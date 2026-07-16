@@ -927,18 +927,22 @@ export default function FeedForm({
     setLoading(true);
     try {
       const authToken = localStorage.getItem('authToken');
+      const startTime = toUTCString(selectedDateTime);
       const response = await fetch('/api/active-breastfeed', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
-        body: JSON.stringify({ babyId, side }),
+        body: JSON.stringify({ babyId, side, ...(startTime ? { startTime } : {}) }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        showToast({ variant: 'error', title: t('Error'), message: errorData.error || t('Failed to start breastfeed'), duration: 5000 });
+        const localizedError = errorData.error === 'Start time must be a valid date' || errorData.error === 'Start time cannot be in the future'
+          ? t(errorData.error)
+          : errorData.error || t('Failed to start breastfeed');
+        showToast({ variant: 'error', title: t('Error'), message: localizedError, duration: 5000 });
         return;
       }
 
