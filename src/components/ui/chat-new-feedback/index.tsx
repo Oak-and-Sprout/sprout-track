@@ -7,7 +7,7 @@ import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
-import { chatNewFeedbackStyles as styles } from './chat-new-feedback.styles';
+import { chatNewFeedbackDefault, chatNewFeedbackSb } from './chat-new-feedback.sb';
 import type { ChatNewFeedbackProps, ChatNewFeedbackRef } from './chat-new-feedback.types';
 import './chat-new-feedback.css';
 
@@ -18,6 +18,7 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
   showBackButton = false,
   hideHeader = false,
   hideFooter = false,
+  appearance = 'default',
   onCanSendChange,
   className,
 }, ref) {
@@ -29,6 +30,8 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const c = appearance === 'storybook' ? chatNewFeedbackSb : chatNewFeedbackDefault;
+  const sb = appearance === 'storybook';
 
   const canSend = !!(subject.trim() && (message.trim() || selectedFiles.length > 0) && !sending && !sent);
 
@@ -73,20 +76,20 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
   }));
 
   return (
-    <div className={cn(styles.container, 'chat-new-feedback-container', className)}>
+    <div className={cn(c.container, className)}>
       {/* Header */}
       {!hideHeader && (
-        <div className={cn(styles.header, 'chat-new-feedback-header')}>
+        <div className={c.header}>
           {showBackButton && onBack && (
-            <button onClick={onBack} className={styles.backButton} aria-label={t('Back')}>
+            <button onClick={onBack} className={c.backButton} aria-label={t('Back')}>
               <ChevronLeft className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           )}
-          <div className={styles.headerContent}>
-            <div className={cn(styles.headerTitle, 'chat-new-feedback-title')}>
+          <div className={c.headerContent}>
+            <div className={c.headerTitle}>
               {t('New feedback')}
             </div>
-            <div className={cn(styles.headerDescription, 'chat-new-feedback-description')}>
+            <div className={c.headerDescription}>
               {t('Send a message to the Sprout Track team')}
             </div>
           </div>
@@ -94,45 +97,69 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
       )}
 
       {/* Form Body */}
-      <div className={cn(styles.formBody, 'chat-new-feedback-form-body')}>
+      <div className={c.formBody}>
         {sent && (
-          <div className={cn(styles.successBanner, 'chat-new-feedback-success')}>
-            <CheckCircle className="h-[18px] w-[18px] text-emerald-500 flex-shrink-0" aria-hidden="true" />
-            <span className={cn(styles.successText, 'chat-new-feedback-success-text')}>
+          <div className={c.successBanner}>
+            <CheckCircle className={c.successIcon} aria-hidden="true" />
+            <span className={c.successText}>
               {t("Sent! We'll get back to you soon.")}
             </span>
           </div>
         )}
 
-        <div className={styles.fieldGroup}>
-          <label className={cn(styles.fieldLabel, 'chat-new-feedback-label')}>
+        <div className={c.fieldGroup}>
+          <label className={c.fieldLabel} htmlFor={sb ? 'sb-fb-subject' : undefined}>
             {t('Subject')}
           </label>
-          <Input
-            type="text"
-            value={subject}
-            onChange={e => setSubject(e.target.value)}
-            placeholder={t("What's on your mind?")}
-            disabled={sending || sent}
-          />
+          {sb ? (
+            <input
+              id="sb-fb-subject"
+              type="text"
+              className="sb-fi"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              placeholder={t("What's on your mind?")}
+              disabled={sending || sent}
+            />
+          ) : (
+            <Input
+              type="text"
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              placeholder={t("What's on your mind?")}
+              disabled={sending || sent}
+            />
+          )}
         </div>
 
         <div>
-          <label className={cn(styles.fieldLabel, 'chat-new-feedback-label')}>
+          <label className={c.fieldLabel} htmlFor={sb ? 'sb-fb-message' : undefined}>
             {t('Message')}
           </label>
-          <Textarea
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            placeholder={t('Share your feedback, suggestions, or report any issues...')}
-            rows={8}
-            disabled={sending || sent}
-            className="min-h-[160px]"
-          />
+          {sb ? (
+            <textarea
+              id="sb-fb-message"
+              className="sb-fi min-h-[160px]"
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder={t('Share your feedback, suggestions, or report any issues...')}
+              rows={8}
+              disabled={sending || sent}
+            />
+          ) : (
+            <Textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder={t('Share your feedback, suggestions, or report any issues...')}
+              rows={8}
+              disabled={sending || sent}
+              className="min-h-[160px]"
+            />
+          )}
         </div>
 
         {/* File upload */}
-        <div className={styles.fileUploadArea}>
+        <div className={c.fileUploadArea}>
           <input
             ref={fileInputRef}
             type="file"
@@ -144,24 +171,24 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={sending || sent}
-            className={cn(styles.fileUploadButton, 'chat-new-feedback-upload-button')}
+            className={c.fileUploadButton}
           >
             <ImagePlus className="h-4 w-4" aria-hidden="true" />
             {t('Attach images')}
           </button>
 
           {selectedFiles.length > 0 && (
-            <div className={styles.filePreviewGrid}>
+            <div className={c.filePreviewGrid}>
               {selectedFiles.map((file, idx) => (
-                <div key={idx} className={cn(styles.filePreviewItem, 'chat-new-feedback-preview-item')}>
+                <div key={idx} className={c.filePreviewItem}>
                   <img
                     src={URL.createObjectURL(file)}
                     alt={file.name}
-                    className={styles.filePreviewImage}
+                    className={c.filePreviewImage}
                   />
                   <button
                     onClick={() => removeFile(idx)}
-                    className={styles.filePreviewDelete}
+                    className={c.filePreviewDelete}
                     aria-label={t('Remove image')}
                   >
                     <X className="h-2.5 w-2.5 text-white" aria-hidden="true" />
@@ -175,23 +202,18 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
 
       {/* Footer */}
       {!hideFooter && (
-        <div className={cn(styles.footer, 'chat-new-feedback-footer')}>
+        <div className={c.footer}>
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className={cn(
-              styles.sendButton,
-              canSend
-                ? styles.sendButtonActive
-                : cn(styles.sendButtonInactive, 'chat-new-feedback-send-inactive'),
-            )}
+            className={cn(c.sendButton, canSend ? c.sendButtonActive : c.sendButtonInactive)}
           >
             <Send className="h-3.5 w-3.5" color={canSend ? '#fff' : '#a3a39b'} aria-hidden="true" />
             {sending ? t('Sending...') : t('Send feedback')}
           </button>
           <button
             onClick={onCancel}
-            className={cn(styles.cancelButton, 'chat-new-feedback-cancel')}
+            className={c.cancelButton}
           >
             {t('Cancel')}
           </button>
