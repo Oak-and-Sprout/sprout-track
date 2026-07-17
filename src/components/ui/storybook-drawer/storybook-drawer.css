@@ -156,8 +156,7 @@ textarea.sb-fi { resize: vertical; min-height: 110px; }
 
 /* conversation */
 .sb-chat-msgs { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 6px 1px 10px; }
-.sb-chat-date { display: flex; align-items: center; gap: 12px; color: var(--sub); font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 8px 0 10px; }
-.sb-chat-date::before, .sb-chat-date::after { content: ""; flex: 1; border-top: 1px solid var(--hair); }
+.sb-chat-date { text-align: center; color: var(--sub); font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 8px 0 10px; }
 .sb-chat-av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; flex-shrink: 0; }
 .sb-chat-av-mine { background: var(--teal); color: #fffdf6; }
 .sb-chat-av-team { background: var(--apricot); color: #fdf6ec; }
