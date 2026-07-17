@@ -1,8 +1,9 @@
-'use client';
+import type { Metadata } from 'next';
+import TermsPage from './terms-client';
 
-import React from 'react';
-import { LegalPage } from '@/src/components/landing/LegalPage';
+export const metadata: Metadata = {
+  title: 'Terms of Use — Sprout Track',
+  description: 'The terms of use for the Sprout Track baby tracking application.',
+};
 
-export default function TermsPage() {
-  return <LegalPage file="/terms_of_use.md" />;
-}
+export default TermsPage;

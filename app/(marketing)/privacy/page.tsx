@@ -1,8 +1,10 @@
-'use client';
+import type { Metadata } from 'next';
+import PrivacyPage from './privacy-client';
 
-import React from 'react';
-import { LegalPage } from '@/src/components/landing/LegalPage';
+export const metadata: Metadata = {
+  title: 'Privacy Policy — Sprout Track',
+  description:
+    'How Sprout Track handles your family’s data: no ads, no data brokers, no selling. Your baby’s data is not a product.',
+};
 
-export default function PrivacyPage() {
-  return <LegalPage file="/privacy_policy.md" />;
-}
+export default PrivacyPage;

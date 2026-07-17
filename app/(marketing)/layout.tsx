@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 import { LocalizationProvider } from '@/src/context/localization';
 import { ThemeProvider } from '@/src/context/theme';
 import AccountModal from '@/src/components/modals/AccountModal';
@@ -15,38 +14,19 @@ import '@/src/components/landing/landing.css';
 
 /**
  * Shared chrome for the SaaS marketing pages (/features, /pricing, /terms,
- * /privacy). Self-hosted deployments are redirected to '/'.
+ * /privacy). Deployment-mode gating lives in middleware.ts (self-hosted
+ * requests are redirected to '/' before rendering), so these pages prerender
+ * with full, crawlable HTML.
  */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const [isSaas, setIsSaas] = useState<boolean | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [accountModalMode, setAccountModalMode] = useState<LandingModalMode>('register');
   const [showAccountManager, setShowAccountManager] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/deployment-config')
-      .then((response) => response.json())
-      .then((result) => {
-        if (result.success && result.data?.deploymentMode === 'saas') {
-          setIsSaas(true);
-        } else {
-          setIsSaas(false);
-          router.replace('/');
-        }
-      })
-      .catch(() => {
-        setIsSaas(false);
-        router.replace('/');
-      });
-  }, [router]);
 
   const openAccountModal = (mode: LandingModalMode) => {
     setAccountModalMode(mode);
     setShowAccountModal(true);
   };
-
-  if (!isSaas) return null;
 
   return (
     <LocalizationProvider>
