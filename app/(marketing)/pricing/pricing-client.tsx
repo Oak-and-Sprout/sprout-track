@@ -23,7 +23,8 @@ export default function PricingPage() {
         photoClass="ld-pagehead-photo"
         centered
       />
-      <section id="plans">
+      <section id="plans" style={{ position: 'relative', overflow: 'hidden' }}>
+        <img className="ld-sprite" src="/landing/teddy-waving.svg" alt="" width={100} style={{ top: 40, left: '5%', transform: 'rotate(-5deg)' }} />
         <div className="ld-wrap">
           <div className="ld-plans">
             {LANDING_PLANS.map((plan) => (
@@ -33,7 +34,8 @@ export default function PricingPage() {
           <SelfHostCallout />
         </div>
       </section>
-      <section className="ld-alt">
+      <section className="ld-alt" style={{ position: 'relative', overflow: 'hidden' }}>
+        <img className="ld-sprite" src="/landing/puppy-sleeping.svg" alt="" width={96} style={{ bottom: 20, right: '6%', opacity: 0.85, transform: 'rotate(3deg)' }} />
         <div className="ld-wrap">
           <div className="ld-sect-head ld-sect-head-center">
             <h2>{t('Fair questions')}</h2>
@@ -46,6 +48,7 @@ export default function PricingPage() {
         sub={t('No card required. Set up takes about two minutes.')}
         ctaLabel={t('Start my free trial')}
         onCtaClick={() => openAccountModal('register')}
+        sprite={<img className="ld-sprite" src="/landing/star-sparkle.svg" alt="" width={76} style={{ top: 30, left: '9%', transform: 'rotate(-10deg)' }} />}
       />
     </>
   );

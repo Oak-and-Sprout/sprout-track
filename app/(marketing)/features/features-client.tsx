@@ -26,7 +26,10 @@ export default function FeaturesPage() {
         <section style={{ paddingBottom: 56 }}>
           <div className="ld-wrap">
             <div className="ld-sect-head">
-              <h2>{t('Track all of it')}</h2>
+              <h2 style={{ position: 'relative', display: 'inline-block' }}>
+                {t('Track all of it')}
+                <img className="ld-sprite" src="/landing/butterfly-open.svg" alt="" width={52} style={{ top: -34, right: -46, transform: 'rotate(12deg)' }} />
+              </h2>
               <p>{t('Every entry takes a couple of taps, remembers your last amounts, and records who logged it.')}</p>
             </div>
             <FeatureChips
@@ -35,7 +38,8 @@ export default function FeaturesPage() {
           </div>
         </section>
       </div>
-      <section className="ld-alt">
+      <section className="ld-alt" style={{ position: 'relative', overflow: 'hidden' }}>
+        <img className="ld-sprite" src="/landing/teddy-hugging.svg" alt="" width={104} style={{ bottom: 28, right: '4%', opacity: 0.9, transform: 'rotate(5deg)' }} />
         <div className="ld-wrap">
           <FeatureRow
             title={t('A care team, not an account')}
@@ -101,6 +105,7 @@ export default function FeaturesPage() {
         assure={t('No card required. Then $2.99/month, cancel anytime.')}
         ctaLabel={t('Start my free trial')}
         onCtaClick={() => openAccountModal('register')}
+        sprite={<img className="ld-sprite" src="/landing/star-shooting.svg" alt="" width={92} style={{ top: 32, right: '10%', transform: 'rotate(-8deg)' }} />}
       />
     </>
   );
