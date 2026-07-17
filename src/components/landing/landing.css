@@ -45,11 +45,11 @@
 .ld-frame-bar span{margin:0 auto;font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 14px;white-space:nowrap}
 /* floating art */
 .ld-sprite{position:absolute;pointer-events:none;user-select:none}
-/* pricing plans teddy: waves from the top-left corner of the first plan card, overlapping its border */
+/* pricing plans teddy: waves from the top-right corner of the first plan card, overlapping its border */
 .ld-plans{position:relative}
-.ld-sprite-plans-teddy{top:-52px;left:-30px;width:92px;z-index:1;transform:rotate(-6deg)}
+.ld-sprite-plans-teddy{top:-52px;left:calc(50% - 57px);width:92px;z-index:1;transform:rotate(6deg)}
 @media(max-width:900px){
-.ld-sprite.ld-sprite-plans-teddy{display:block;top:-48px;left:-6px;width:80px}
+.ld-sprite.ld-sprite-plans-teddy{display:block;top:-48px;left:auto;right:-6px;width:80px}
 }
 /* sections */
 .landing-root :where(section){padding:78px 0}
