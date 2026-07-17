@@ -190,13 +190,15 @@ function LoginPageContent() {
                   className="sb-fi"
                   type={showTokenPassword ? 'text' : 'password'}
                   value={tokenPassword}
-                  onChange={(e) => setTokenPassword(e.target.value)}
+                  onChange={(e) => { setTokenPassword(e.target.value); setTokenError(''); }}
+                  disabled={tokenLoading}
                   autoFocus
                   style={{ paddingRight: 44 }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowTokenPassword(!showTokenPassword)}
+                  disabled={tokenLoading}
                   aria-label={showTokenPassword ? t('Hide password') : t('Show password')}
                   style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sub)',
@@ -207,7 +209,7 @@ function LoginPageContent() {
               </div>
             </div>
             {tokenError && <p className="sb-form-error">{tokenError}</p>}
-            <button type="submit" className="sb-btn sb-wide" disabled={tokenLoading}>
+            <button type="submit" className="sb-btn sb-wide" disabled={tokenLoading || !tokenPassword.trim()}>
               {tokenLoading ? t('One moment…') : t('Continue to setup')}
             </button>
           </form>
