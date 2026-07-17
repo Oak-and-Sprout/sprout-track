@@ -172,7 +172,7 @@ img.ld-day-ic{object-fit:cover}
 
 /* pricing page (photo pagehead variant) */
 .ld-pagehead-photo{padding:64px 0 56px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--line);background-image:radial-gradient(90% 70% at 85% 10%,rgba(239,228,200,.75) 0%,rgba(247,241,226,.55) 60%),linear-gradient(rgba(247,241,226,.55),rgba(247,241,226,.62)),url("/landing/pricing-photo.jpg");background-repeat:no-repeat;background-size:auto,auto,cover;background-position:center,center,50% 30%}
-.ld-pagehead-photo h1{font-size:clamp(32px,4vw,46px);margin:12px 0 14px;line-height:1.12}
+.ld-pagehead-photo h1{font-size:clamp(32px,4vw,46px);margin:12px 0 14px;max-width:none;line-height:1.12}
 .ld-pagehead-photo p{font-size:19px;max-width:52ch;margin:0 auto;text-wrap:pretty}
 
 /* legal pages (terms, privacy) */
