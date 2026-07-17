@@ -1,98 +1,29 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/src/components/ui/button';
-import { ThemeToggle } from '@/src/components/ui/theme-toggle';
-import { AccountButton } from '@/src/components/ui/account-button';
+import Link from 'next/link';
+import { Shield } from 'lucide-react';
 import AccountModal from '@/src/components/modals/AccountModal';
 import AccountManager from '@/src/components/account-manager';
-import { useTheme } from '@/src/context/theme';
-import { Github, Users, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
-import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
-import TermsOfUseModal from '@/src/components/modals/terms-of-use';
 import { useLocalization } from '@/src/context/localization';
-import { LanguageSelector } from '@/src/components/ui/side-nav/language-selector';
-
-import './home.css';
+import { LandingNav, LandingModalMode } from '@/src/components/landing/LandingNav';
+import { LandingFooter } from '@/src/components/landing/LandingFooter';
+import { LandingHero } from '@/src/components/landing/LandingHero';
+import { DayStory } from '@/src/components/landing/DayStory';
+import { FeatureRow } from '@/src/components/landing/FeatureRow';
+import { CloseCta } from '@/src/components/landing/CloseCta';
+import { GITHUB_URL } from '@/src/components/landing/landing-data';
+import { literata, alegreyaSans } from '@/src/components/landing/fonts';
+import '@/src/components/landing/landing.css';
 
 const home = () => {
-  const { theme } = useTheme();
   const { t } = useLocalization();
-  const [currentActivity, setCurrentActivity] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [currentCaretakerVideo, setCurrentCaretakerVideo] = useState(0);
-  const [isCaretakerTransitioning, setIsCaretakerTransitioning] = useState(false);
-  
-  // Account modal state for verification and password reset
+
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [accountModalMode, setAccountModalMode] = useState<'login' | 'register' | 'verify' | 'reset-password'>('register');
+  const [accountModalMode, setAccountModalMode] = useState<LandingModalMode>('register');
   const [verificationToken, setVerificationToken] = useState<string | undefined>();
   const [resetToken, setResetToken] = useState<string | undefined>();
-  
-  // Privacy Policy and Terms of Use modal state
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
-  const [showTermsOfUse, setShowTermsOfUse] = useState(false);
-  
-  // Account Manager state
   const [showAccountManager, setShowAccountManager] = useState(false);
-  
-  // Form state
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
-  
-  // Localized activities array
-  const activities = [
-    t('Sleep'),
-    t('Bottle'),
-    t('Diapers'),
-    t('Baths'),
-    t('Milestones'),
-    t('Medicine')
-  ];
-
-  // Animated tagline effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setCurrentActivity((prev) => (prev + 1) % activities.length);
-        setIsAnimating(false);
-      }, 400); // Half of the transition duration
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [activities.length, t]);
-
-  // Caretaker video transition effect with different timing for each video and theme
-  useEffect(() => {
-    const scheduleNextTransition = () => {
-      // Different durations for each video and theme (in milliseconds)
-      // [light_mode_duration, dark_mode_duration]
-      const videoDurations = [
-        [15500, 14000], // AddCaretaker: Light 15.5s, Dark 14s
-        [7500, 9500]    // Login: Light 7.5s, Dark 9.5s
-      ];
-      
-      const themeIndex = theme === 'dark' ? 1 : 0;
-      const currentDuration = videoDurations[currentCaretakerVideo][themeIndex];
-      
-      const timeout = setTimeout(() => {
-        setIsCaretakerTransitioning(true);
-        setTimeout(() => {
-          setCurrentCaretakerVideo((prev) => (prev + 1) % 2);
-          setIsCaretakerTransitioning(false);
-        }, 100); // 100ms transition
-      }, currentDuration);
-      
-      return timeout;
-    };
-
-    const timeout = scheduleNextTransition();
-    return () => clearTimeout(timeout);
-  }, [currentCaretakerVideo, theme]);
 
   // Check for verification, password reset hashes, and upgrade query parameter on load
   useEffect(() => {
@@ -125,7 +56,6 @@ const home = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const upgrade = urlParams.get('upgrade');
       const login = urlParams.get('login');
-      const family = urlParams.get('family');
 
       if (upgrade === 'true') {
         // Show login modal for account upgrade
@@ -158,656 +88,130 @@ const home = () => {
     return () => window.removeEventListener('hashchange', checkHash);
   }, []);
 
-  // Email validation
-  const validateEmail = (emailValue: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailValue) {
-      setEmailError('Email is required');
-      return false;
-    }
-    if (!emailRegex.test(emailValue)) {
-      setEmailError('Please enter a valid email address');
-      return false;
-    }
-    setEmailError('');
-    return true;
-  };
-
-  // Handle form submission
-  const handleFormSubmit = async () => {
-    if (!validateEmail(email)) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    
-    try {
-      const response = await fetch('/api/beta-signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email,
-          firstName: firstName || undefined,
-          lastName: lastName || undefined
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to sign up');
-      }
-      
-      // Success - show success message
-      setShowSuccess(true);
-      setEmail('');
-      setFirstName('');
-      setLastName('');
-      
-      // Hide success message after 10 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 10000);
-    } catch (error) {
-      console.error('Error submitting signup:', error);
-      alert('There was an error signing up. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const openAccountModal = (mode: LandingModalMode) => {
+    setAccountModalMode(mode);
+    setShowAccountModal(true);
   };
 
   return (
-    <div className="saas-homepage">
-      {/* Header */}
-      <header className="saas-header">
-        <nav className="saas-nav">
-          <div className="saas-nav-content">
-            <div className="saas-logo">
-              <img 
-                src="/sprout-256.png" 
-                alt="Sprout Track Logo" 
-                className="saas-logo-image"
-              />
-              <span className="saas-logo-text">{t('Sprout Track')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <AccountButton 
-                label="Sign Up" 
-                showIcon={false}
-                variant="link"
-                initialMode="register"
-                onOpenAccountModal={(mode) => {
-                  setAccountModalMode(mode);
-                  setShowAccountModal(true);
-                }}
-                hideWhenLoggedIn={true}
-              />
-              <AccountButton 
-                label="Sign In" 
-                showIcon={false} 
-                initialMode="login"
-                onOpenAccountModal={(mode) => {
-                  setAccountModalMode(mode);
-                  setShowAccountModal(true);
-                }}
-                className="saas-account-btn"
-                onAccountManagerOpen={() => setShowAccountManager(true)}
-              />
-              <LanguageSelector />
-              <ThemeToggle variant="light" className="saas-theme-toggle" />
-            </div>
-          </div>
-        </nav>
-      </header>
+    <div className={`${literata.variable} ${alegreyaSans.variable} landing-root`}>
+      <LandingNav
+        onOpenAccountModal={openAccountModal}
+        onAccountManagerOpen={() => setShowAccountManager(true)}
+      />
 
-      {/* Hero Section */}
-      <section className="saas-hero">
-        <div className="saas-hero-content">
-          <div className="saas-hero-text">
-            <h1 className="saas-hero-title">
-              <span>{t('Easily track your baby\'s')}</span>
-              <br />
-              <span className={`saas-hero-animated-word ${isAnimating ? 'animating' : ''}`}>
-                {activities[currentActivity]}
-              </span>
-            </h1>
-            <p className="saas-hero-description">
-              {t('The complete baby tracking solution built by parents for parents. Monitor sleep, feeding, diapers, milestones, and more with our intuitive, family-friendly platform.')}
-            </p>
-            <p className="saas-hero-description">
-              <b>{t('Simple to use. Privacy-focused. Accessible anywhere.')}</b>
-            </p>
-            {/* <div className="saas-hero-actions">
-              <Button size="lg" className="saas-hero-cta">
-                Start Free Trial
-              </Button>
-              <Button variant="outline" size="lg" className="saas-hero-demo">
-                Watch Demo
-              </Button>
-            </div> */}
+      <LandingHero onTrialClick={() => openAccountModal('register')} />
+
+      {/* How families use it */}
+      <section className="ld-alt" style={{ position: 'relative', overflow: 'hidden' }}>
+        <img className="ld-sprite" src="/landing/kitten.svg" alt="" width={96} style={{ top: 40, right: '6%', opacity: 0.85, transform: 'rotate(5deg)' }} />
+        <div className="ld-wrap">
+          <div className="ld-sect-head">
+            <span className="ld-kick">{t('How families use it')}</span>
+            <h2>{t('One Tuesday, tracked together.')}</h2>
+            <p>{t('Every entry shows who logged it, and everyone sees it the moment it happens. Here is a real shape of a day:')}</p>
+          </div>
+          <DayStory />
+        </div>
+      </section>
+
+      {/* Built for 3 am hands */}
+      <section>
+        <div className="ld-wrap">
+          <div className="ld-sect-head">
+            <span className="ld-kick">{t('Built for 3 am hands')}</span>
+            <h2>{t('Fast enough to use one-handed, in the dark.')}</h2>
+          </div>
+          <FeatureRow
+            title={t('Log anything in two taps')}
+            paragraph={t('Sleep, feeds, diapers, pumping, medicine, baths, milestones, measurements. Big targets, sensible defaults, and the last amount pre-filled, because you are holding a baby with the other arm.')}
+            items={[
+              t('Timers for naps, nursing, and pumping sessions'),
+              t('Works on any phone, tablet, or laptop browser'),
+            ]}
+            figure={<img src="/landing/log-feeding.png" alt={t('Log Feeding on a phone: breast or bottle, bottle type, and amount stepper')} style={{ maxWidth: 'min(340px,100%)', margin: '0 auto', display: 'block' }} />}
+          />
+          <FeatureRow
+            flip
+            title={t('The whole day at a glance')}
+            paragraph={t('A daily summary up top, the full timeline below. Awake time, total sleep, ounces, diapers: the pediatrician’s questions, already answered.')}
+            items={[
+              t('Calendar, reports, and pattern heatmaps'),
+              t('Vaccine records with documents attached'),
+            ]}
+            figure={<img className="ld-shot" src="/landing/daily-log.png" alt={t('Sprout Track daily log with summary and timeline')} />}
+          />
+          <FeatureRow
+            title={t('Nursery mode, for the crib-side tablet')}
+            paragraph={t('A dimmed, always-on display made for the changing table. Tap once to log a feed or start a sleep timer, without waking anyone up.')}
+            items={[
+              t('Screen wake lock and adjustable dimming'),
+              t('Choose which activity tiles appear'),
+            ]}
+            figure={<img src="/landing/nursery-mode.png" alt={t('Nursery mode on a tablet: dimmed clock with one-tap feed, pump, diaper, and sleep tiles')} style={{ display: 'block', width: '100%' }} />}
+          />
+          <div style={{ textAlign: 'center', paddingTop: 34 }}>
+            <Link className="ld-btn" href="/features">{t('See every feature')}</Link>
           </div>
         </div>
       </section>
 
-      {/* Main Demo Video Section */}
-      <section className="saas-main-demo">
-        <div className="saas-main-demo-content">
-          <div className="saas-main-demo-video">
-            <div style={{borderRadius: '5px', backgroundColor: '#0d9488', overflow: 'hidden' }}>
-              <video 
-                src={theme === 'dark' ? '/DemoMainDark.mp4' : '/DemoMainLight.mp4'}
-                autoPlay
-                loop
-                muted
-                playsInline
-                style={{ 
-                  width: '100%', 
-                  height: 'auto',
-                  border: 'none'
-                }}
-              >
-                {t('Your browser does not support the video tag.')}
-              </video>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Transition Section with Concave Circle */}
-      <section className="saas-transition-section">
-        <div className="saas-transition-content"></div>
-      </section>
-
-      {/* Demo Section */}
-      <section id="demo" className="saas-cta">
-        <div className="saas-cta-content">
-          <h2 className="saas-cta-title">{t('Don\'t take our word for it - try it yourself!')}</h2>
-          <p className="saas-cta-description">
-            {t('Experience Sprout Track with our live demo environment based on realistic data.')}
-          </p>
-          <div className="saas-cta-actions">
-            <div className="max-w-md mx-auto space-y-4">
-              <Button
-                size="lg"
-                className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
-                asChild
-              >
-                <a href="/demo">
-                  {t('Try the Live Demo')}
-                </a>
-              </Button>
-              <div className="saas-demo-details">
-                <p className="saas-demo-details-title">
-                  {t('Demo Access Details:')}
-                </p>
-                <div className="saas-demo-details-grid">
-                  <div>
-                    <span className="saas-demo-label">{t('Login ID:')}</span>
-                    <span className="saas-demo-value">01</span>
-                  </div>
-                  <div>
-                    <span className="saas-demo-label">{t('PIN:')}</span>
-                    <span className="saas-demo-value">111111</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Feature Sections */}
-      {/* Adding Caretakers */}
-      <section className="saas-feature-section saas-feature-section-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <h3 className="saas-feature-title">
-                {t('Manage Your Care Team')}
-              </h3>
-              <p className="saas-feature-description">
-                {t('Add multiple caretakers to your family account. Parents, grandparents, babysitters, and daycare providers can all contribute to tracking your baby\'s activities with secure, individual access.')}
-              </p>
-              <ul className="saas-feature-list">
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-teal-500 rounded-full mr-3"></span>
-                  {t('Easy ID and Pin access for each caretaker (no account required)')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-teal-500 rounded-full mr-3"></span>
-                  {t('Everything accessible from your unique family web address')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-teal-500 rounded-full mr-3"></span>
-                  {t('Real-time sync across all devices')}
-                </li>
-              </ul>
-            </div>
-            <div className="order-1 lg:order-2 relative overflow-visible">
-              {/* Background icon - offset to bottom right */}
-              <div className="absolute bottom-16 -right-12 z-0">
-                <Users size={200} className="text-teal-500 opacity-20" aria-hidden="true" />
-              </div>
-              {/* Caretaker Demo Videos */}
-              <div className="relative z-10 max-w-sm mx-auto">
-                <div className="saas-demo-phone-video">
-                  <video 
-                    key={`${theme}-${currentCaretakerVideo}`}
-                    src={
-                      theme === 'dark' 
-                        ? (currentCaretakerVideo === 0 ? '/AddCaretakerDark.mp4' : '/LoginDark.mp4')
-                        : (currentCaretakerVideo === 0 ? '/AddCaretakerLight.mp4' : '/LoginLight.mp4')
-                    }
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    style={{ 
-                      width: '100%', 
-                      height: '100%',
-                      objectFit: 'cover',
-                      opacity: isCaretakerTransitioning ? 0 : 1,
-                      transition: 'opacity 400ms ease-in-out'
-                    }}
-                  >
-                    {t('Your browser does not support the video tag.')}
-                  </video>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Baby Stats */}
-      <section className="saas-feature-section saas-feature-section-gray">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="relative overflow-visible">
-              {/* Background icon - offset to bottom left */}
-              <div className="absolute bottom-16 -left-12 z-0">
-                <TrendingUp size={200} className="text-emerald-500 opacity-20" aria-hidden="true" />
-              </div>
-              {/* Baby Info Demo Video */}
-              <div className="relative z-10 max-w-sm mx-auto">
-                <div className="saas-demo-phone-video">
-                  <video 
-                    src={theme === 'dark' ? '/BabyInfoButtonDark.mp4' : '/BabyInfoButtonLight.mp4'}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    style={{ 
-                      width: '100%', 
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  >
-                    {t('Your browser does not support the video tag.')}
-                  </video>
-                </div>
-              </div>
-            </div>
-            <div>
-              <h3 className="saas-feature-title">
-                {t('Track Important Baby Info')}
-              </h3>
-              <p className="saas-feature-description">
-                {t('Instantly see your baby\'s latest events, check family contacts, and view trends for the past month—like average feedings, diapers, wake windows, sleep windows, and more—all in one place.')}
-              </p>
-              <ul className="saas-feature-list">
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('View the most recent important activities at a glance')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Quickly view emergency contacts')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Spot trends and changes in your baby\'s daily routines')}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Daily Stats */}
-      <section className="saas-feature-section saas-feature-section-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <h3 className="saas-feature-title">
-                {t('Daily Activity Overview')}
-              </h3>
-              <p className="saas-feature-description">
-                {t('Get a complete picture of your baby\'s day with intuitive daily summaries. See feeding times, diaper changes, sleep periods, and activities at a glance.')}
-              </p>
-              <ul className="saas-feature-list">
-                <li className="saas-feature-list-item">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Timeline view of daily activities')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Quick stats and totals for the day')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Filter for specific activities')}
-                </li>
-              </ul>
-            </div>
-            <div className="order-1 lg:order-2 relative overflow-visible">
-              {/* Background icon - offset to bottom right */}
-              <div className="absolute bottom-16 -right-12 z-0">
-                <BarChart3 size={200} className="text-teal-600 opacity-20" aria-hidden="true" />
-              </div>
-              {/* Daily Stats Demo Video */}
-              <div className="relative z-10 max-w-sm mx-auto">
-                <div className="saas-demo-phone-video">
-                  <video 
-                    src={theme === 'dark' ? '/DailyStatsDark.mp4' : '/DailyStatsLight.mp4'}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    style={{ 
-                      width: '100%', 
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  >
-                    {t('Your browser does not support the video tag.')}
-                  </video>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Calendar */}
-      <section className="saas-feature-section saas-feature-section-gray">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="relative overflow-visible">
-              {/* Background icon - offset to bottom left */}
-              <div className="absolute bottom-16 -left-12 z-0">
-                <Calendar size={200} className="text-teal-600 opacity-20" aria-hidden="true" />
-              </div>
-              {/* Calendar Demo Video */}
-              <div className="relative z-10 max-w-sm mx-auto">
-                <div className="saas-demo-phone-video">
-                  <video 
-                    src={theme === 'dark' ? '/CalendarDark.mp4' : '/CalendarLight.mp4'}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    style={{ 
-                      width: '100%', 
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  >
-                    {t('Your browser does not support the video tag.')}
-                  </video>
-                </div>
-              </div>
-            </div>
-            <div>
-              <h3 className="saas-feature-title">
-                {t('Schedule & Plan Ahead')}
-              </h3>
-              <p className="saas-feature-description">
-                {t('Keep track of appointments, caretaker schedules, and important events with our integrated calendar. Keep everyone in the loop!')}
-              </p>
-              <ul className="saas-feature-list">
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Help coordinate schedules between caretakers')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Keep track of appoitnments')}
-                </li>
-                <li className="saas-feature-list-item">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
-                  {t('Add custom events and reminders')}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section - Pricing Content */}
-      <section id="signup" className="py-16 bg-gradient-to-r from-teal-600 to-emerald-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              {t('Pricing made easy')}
-            </h2>
-            <p className="text-xl text-teal-100 mb-8">
-              {t('$2 subscription, or $12 for life')}
+      {/* Data privacy band */}
+      <section className="ld-alt">
+        <div className="ld-wrap" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'start', maxWidth: 880 }}>
+          <Shield size={52} strokeWidth={1.6} color="#0c6b62" aria-hidden="true" />
+          <div>
+            <h2 style={{ fontSize: 'clamp(24px,3vw,32px)', marginBottom: 10 }}>{t('Your baby’s data isn’t a product.')}</h2>
+            <p style={{ maxWidth: '60ch' }}>{t('Sprout Track is open source. No ads, no data brokers, no selling nap schedules to formula companies. Export everything whenever you like, and if you’d rather run it on your own server, the code is free and always will be.')}</p>
+            <p style={{ marginTop: 12 }}>
+              <a href={GITHUB_URL} rel="noopener">{t('Read the source on GitHub')}</a>
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Monthly Plan */}
-            <div className="saas-pricing-card saas-pricing-card-on-gradient">
-              <div className="mb-4">
-                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">{t('Monthly')}</h3>
-                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">{t('Perfect for trying out Sprout Track')}</p>
-              </div>
-              <div className="mb-6">
-                <span className="saas-pricing-card-price saas-pricing-card-price-on-gradient">$2</span>
-                <span className="saas-pricing-card-interval saas-pricing-card-interval-on-gradient">/month</span>
-              </div>
-              <ul className="saas-pricing-card-features">
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Unlimited babies and caretakers')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Track all activities')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Calendar and reminders')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Medicine tracking')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Data export')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Mobile-friendly interface')}</span>
-                </li>
-              </ul>
-            </div>
+        </div>
+      </section>
 
-            {/* Lifetime Plan */}
-            <div className="saas-pricing-card saas-pricing-card-highlighted saas-pricing-card-on-gradient">
-              <div className="saas-pricing-card-badge saas-pricing-card-badge-on-gradient">{t('BEST VALUE')}</div>
-              <div className="mb-4">
-                <h3 className="saas-pricing-card-title saas-pricing-card-title-on-gradient">{t('Lifetime')}</h3>
-                <p className="saas-pricing-card-description saas-pricing-card-description-on-gradient">{t('One-time payment, lifetime access')}</p>
-              </div>
-              <div className="mb-6">
-                <span className="saas-pricing-card-price saas-pricing-card-price-on-gradient">$12</span>
-                <span className="saas-pricing-card-interval saas-pricing-card-interval-on-gradient"> {t('for life')}</span>
-              </div>
-              <ul className="saas-pricing-card-features">
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Everything in Monthly')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Lifetime updates')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('No recurring payments')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Priority support forever')}</span>
-                </li>
-                <li className="saas-pricing-card-feature saas-pricing-card-feature-on-gradient">
-                  <span className="saas-pricing-card-check saas-pricing-card-check-on-gradient">✓</span>
-                  <span>{t('Best long-term value')}</span>
-                </li>
-              </ul>
-            </div>
+      {/* Pricing teaser */}
+      <section style={{ position: 'relative', overflow: 'hidden' }}>
+        <div className="ld-wrap" style={{ textAlign: 'center' }}>
+          <img className="ld-sprite" src="/landing/rocket.svg" alt="" width={84} style={{ top: 30, left: '7%', transform: 'rotate(-8deg)' }} />
+          <h2 style={{ fontSize: 'clamp(26px,3.2vw,38px)', marginBottom: 10 }}>{t('Pricing that respects a diaper budget.')}</h2>
+          <p style={{ maxWidth: '52ch', margin: '0 auto' }}>
+            {t('Hosted for')} <b>{t('$2.99 a month')}</b> {t('after your free trial, or')} <b>{t('$19.99 once')}</b> {t('and it’s yours for life. Self-hosting is free forever.')}
+          </p>
+          <div className="ld-cta-row" style={{ justifyContent: 'center' }}>
+            <Link className="ld-btn" href="/pricing">{t('See pricing')}</Link>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section - CTA Content */}
-      <section className="saas-feature-section saas-feature-section-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="saas-feature-title mb-6">
-            {t('Start Tracking Today')}
-          </h2>
-          <p className="saas-feature-description text-lg mb-8 max-w-2xl mx-auto">
-            {t('Ready to make tracking diaper changes and late-night feedings a breeze? Try Sprout Track free for 14 days — sleep not included!')}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700 font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
-              onClick={() => {
-                setAccountModalMode('register');
-                setShowAccountModal(true);
-              }}
-            >
-              {t('Click Here to Get Started')}
-            </Button>
-          </div>
-          <p className="saas-feature-description text-sm mt-6 max-w-lg mx-auto">
-            {t('No credit card or commitment required.')}
-          </p>
+      {/* From the maker */}
+      <section style={{ position: 'relative', overflow: 'hidden' }}>
+        <div className="ld-wrap" style={{ maxWidth: 880 }}>
+          <span className="ld-kick">{t('From the maker')}</span>
+          <h2 style={{ fontSize: 'clamp(24px,3vw,32px)', margin: '10px 0 12px' }}>{t('Built in Kansas City. Funded by families, not venture capital.')}</h2>
+          <p style={{ maxWidth: '62ch' }}>{t('Sprout Track is made by Open Glades LLC, an independent, one-developer shop in Kansas City. There are no investors expecting your data to become a revenue stream, and no growth team designing streaks to keep you hooked. Subscriptions pay for the servers; that’s the whole business model, and it’s why the price is $2.99.')}</p>
         </div>
       </section>
-      
 
-      {/* Footer */}
-      <footer className="saas-footer">
-        <div className="saas-footer-content">
-          <div className="saas-footer-brand">
-            <div className="saas-logo">
-              <img 
-                src="/sprout-256.png" 
-                alt="Sprout Track Logo" 
-                className="saas-logo-image"
-              />
-              <span className="saas-logo-text">{t('Sprout Track')}</span>
-            </div>
-            <p className="saas-footer-description">
-              {t('Sprouting into something amazing.')}
-            </p>
-          </div>
-          <div className="saas-footer-demo">
-            <Button 
-              size="lg" 
-              className="mb-4" 
-              asChild
-            >
-              <a href="/demo">
-                {t('Try the Demo')}
-              </a>
-            </Button>
-            <div className="space-y-1">
-              <p className="saas-footer-description text-sm">
-                <strong>{t('Demo Access:')}</strong>
-              </p>
-              <p className="saas-footer-description text-sm">
-                {t('Login ID: 01')}
-              </p>
-              <p className="saas-footer-description text-sm">
-                {t('PIN: 111111')}
-              </p>
-            </div>
-          </div>
-        </div>
-      <div className="saas-footer-bottom relative flex flex-col sm:flex-row items-center justify-center gap-4">
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <p className="saas-footer-copyright">
-            {t('© 2025 Oak and Sprout. All rights reserved.')}
-          </p>
-          <div className="flex items-center gap-4 text-sm">
-            <button
-              onClick={() => setShowPrivacyPolicy(true)}
-              className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors cursor-pointer underline-offset-4 hover:underline"
-            >
-              {t('Privacy Policy')}
-            </button>
-            <button
-              onClick={() => setShowTermsOfUse(true)}
-              className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors cursor-pointer underline-offset-4 hover:underline"
-            >
-              {t('Terms of Use')}
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 saas-footer-copyright">
-        <p>{t('Follow on')}</p>
-        <Button variant="outline" size="sm" asChild className="p-2">
-            <a 
-              href="https://github.com/Oak-and-Sprout/sprout-track" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="saas-github-link"
-              aria-label={t('GitHub')}
-            >
-              <Github size={16} aria-hidden="true" />
-            </a>
-          </Button>
-        </div>
-          <div style={{ width: '200px' }}>
-            <a href="https://www.buymeacoffee.com/joverton" className="group block">
-              <img 
-                src="https://img.buymeacoffee.com/button-api/?text=Support This Project&emoji=☕&slug=joverton&button_colour=008375&font_colour=ffffff&font_family=Inter&outline_colour=ffffff&coffee_colour=FFDD00" 
-                alt="Support This Project" 
-                style={{ width: '100%', height: 'auto', transition: 'transform 0.8s ease' }}
-                className="group-hover:scale-105"
-              />
-            </a>
-          </div>
-      </div>
-      </footer>
+      <CloseCta
+        alt
+        heading={t('Start tonight. The 3 am shift will thank you.')}
+        sub={t('Set up takes about two minutes. Invite the grandparents whenever you’re ready.')}
+        assure={t('14 days free, no card required. Cancel anytime.')}
+        ctaLabel={t('Start my free trial')}
+        onCtaClick={() => openAccountModal('register')}
+        sprite={<img className="ld-sprite" src="/landing/star.svg" alt="" width={96} style={{ top: 36, right: '12%', transform: 'rotate(10deg)' }} />}
+      />
 
-      {/* Account Modal for verification and other auth flows */}
-      <AccountModal 
-        open={showAccountModal} 
+      <LandingFooter />
+
+      <AccountModal
+        open={showAccountModal}
         onClose={() => setShowAccountModal(false)}
         initialMode={accountModalMode}
         verificationToken={verificationToken}
         resetToken={resetToken}
       />
-
-      {/* Privacy Policy Modal */}
-      <PrivacyPolicyModal 
-        open={showPrivacyPolicy} 
-        onClose={() => setShowPrivacyPolicy(false)} 
-      />
-
-      {/* Terms of Use Modal */}
-      <TermsOfUseModal 
-        open={showTermsOfUse} 
-        onClose={() => setShowTermsOfUse(false)} 
-      />
-
-      {/* Account Manager - This component is controlled by the page state */}
       <AccountManager
         isOpen={showAccountManager}
         onClose={() => setShowAccountManager(false)}

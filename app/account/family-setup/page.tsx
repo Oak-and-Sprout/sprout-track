@@ -13,7 +13,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
 import TermsOfUseModal from '@/src/components/modals/terms-of-use';import { useLocalization } from '@/src/context/localization';
 
-import '../../home/home.css';
+import './family-setup.css';
 
 interface AccountStatus {
   accountId: string;
