@@ -869,8 +869,8 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className="sb-alertbox">
               <b>{t('Logging is paused — your data is safe.')}</b>
               <p>{t('Everything your family tracked is still here. Renew and you pick up right where you left off.')}</p>
-              <button type="button" className="sb-btn sb-sm" onClick={handleRenewSubscription} disabled={renewingSubscription}>
-                {renewingSubscription ? t('One moment…') : t('Renew for $2.99/month')}
+              <button type="button" className="sb-btn sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Renew for $2.99/month')}
               </button>
             </div>
           </>
