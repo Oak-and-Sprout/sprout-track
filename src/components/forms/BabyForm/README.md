@@ -52,6 +52,7 @@ const handleEditBaby = (baby: Baby) => {
 | `baby` | Baby \| null | Yes | The baby object to edit (null when creating a new baby) |
 | `onBabyChange` | () => void | No | Callback function called after a baby is successfully created or updated |
 | `familyId` | string | No | The ID of the family this baby belongs to (for multi-family support) |
+| `appearance` | `'default' \| 'storybook'` | No | Defaults to `'default'` (the classic `FormPage` slide-in). `'storybook'` renders the form inside a stacked `StorybookDrawer` for use in the account manager (nests above the account-manager drawer via Radix portals). Both appearances share the same `formData` state, validation, and `handleSubmit` — only the presentation differs. |
 
 ## Features
 
