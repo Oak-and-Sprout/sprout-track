@@ -992,129 +992,51 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
       )}
 
       {/* Account Closure Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={cn(styles.sectionTitle, "account-manager-section-title text-red-700")}>
-            {t('Close Account')}
-          </h3>
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <AlertTriangle size={20} strokeWidth={1.8} style={{ color: 'var(--rust)' }} />
+          <h3 style={{ color: 'var(--rust)' }}>{t('Close account')}</h3>
         </div>
 
         {accountClosed ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
-            <div className="text-center py-8">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-white" aria-hidden="true" />
-                </div>
-              </div>
-              <h4 className="text-xl font-semibold text-gray-800 mb-2">
-                {t('Account Closed Successfully')}
-              </h4>
-              <p className="text-gray-600 mb-4">
-                {t('Your account has been closed and a confirmation email has been sent.')}
-              </p>
-              
-              <div className="bg-red-50 rounded-lg p-6 mb-4 max-w-md mx-auto">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="text-4xl font-bold text-red-600">
-                    {logoutCountdown}
-                  </div>
-                </div>
-                <p className="text-red-700 font-medium mb-3">
-                  {t('Logging out in')} {logoutCountdown} second{logoutCountdown !== 1 ? 's' : ''}...
-                </p>
-                <div className="w-full bg-red-200 rounded-full h-3">
-                  <div 
-                    className="bg-red-600 h-3 rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${((5 - logoutCountdown) / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-500">
-                <p>{t('Thank you for using Sprout Track.')}</p>
-                <p>{t('You will be redirected to the home page automatically.')}</p>
-              </div>
-            </div>
+          <div className="sb-alertbox">
+            <b>{t('Your account is closed.')}</b>
+            <p>{t('Signing you out in {seconds}s…').replace('{seconds}', String(logoutCountdown))}</p>
           </div>
         ) : confirmingClosure ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
-            <h4 className="text-lg font-medium mb-3 text-red-700">{t('Confirm Account Closure')}</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              {t('Please enter your password to confirm you want to permanently close your account.')}
+          <div className="sb-f-grid">
+            <p style={{ fontWeight: 700, color: 'var(--rust)', margin: 0 }}>
+              {t('This closes the book for good. Are you sure?')}
             </p>
-            <div className={cn(styles.formField, "account-manager-form-field")}>
-              <Label htmlFor="closurePassword">{t('Password')}</Label>
-              <Input
+            <div>
+              <label className="sb-fl" htmlFor="closurePassword">{t('Confirm with your password')}</label>
+              <input
                 id="closurePassword"
+                className="sb-fi"
                 type="password"
                 value={closurePasswordData.password}
-                onChange={(e) => setClosurePasswordData(prev => ({ ...prev, password: e.target.value }))}
+                onChange={(e) => setClosurePasswordData({ password: e.target.value })}
                 disabled={closurePasswordLoading || closingAccount}
-                placeholder="Enter your password"
               />
             </div>
-            
-            <div className={styles.buttonGroup}>
-              <Button
-                onClick={handleClosurePasswordConfirm}
-                disabled={closurePasswordLoading || closingAccount || !closurePasswordData.password}
-                variant="destructive"
-              >
-                {closurePasswordLoading || closingAccount ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                    {closingAccount ? 'Closing Account...' : 'Verifying...'}
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Close Account')}
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleClosureCancel}
-                disabled={closurePasswordLoading || closingAccount}
-              >
-                <X className="h-4 w-4 mr-2" aria-hidden="true" />
-                {t('Cancel')}
-              </Button>
+            {closurePasswordMessage && <p className="sb-form-error">{closurePasswordMessage}</p>}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" className="sb-btn sb-danger sb-solid sb-sm"
+                onClick={handleClosurePasswordConfirm} disabled={closurePasswordLoading || closingAccount || !closurePasswordData.password}>
+                {closurePasswordLoading || closingAccount ? t('One moment…') : t('Yes, close it')}
+              </button>
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleClosureCancel} disabled={closurePasswordLoading || closingAccount}>
+                {t('Keep my account')}
+              </button>
             </div>
-
-            {closurePasswordMessage && (
-              <div className={cn(
-                "mt-4 p-3 rounded-md text-sm",
-                closurePasswordMessage.startsWith('Error') || closurePasswordMessage.includes('incorrect')
-                  ? "bg-red-50 text-red-600 account-manager-error-message" 
-                  : "bg-green-50 text-green-600 account-manager-success-message"
-              )}>
-                <div className="flex items-center gap-2">
-                  {closurePasswordMessage.startsWith('Error') || closurePasswordMessage.includes('incorrect') ? (
-                    <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  {closurePasswordMessage}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
-          <div className={styles.formGroup}>
-            <p className="text-sm text-gray-600 mb-4 account-manager-info-text">
-              <AlertTriangle className="h-4 w-4 inline mr-1" aria-hidden="true" />
-              {t('Warning: Closing your account will permanently disable access to your')} {familyData ? "family" : "account"} {t('data. This action cannot be undone. Please download your data first if you want to keep it.')}
-            </p>
-            <Button
-              onClick={() => setConfirmingClosure(true)}
-              variant="destructive"
-            >
-              <AlertTriangle className="h-4 w-4 mr-2" aria-hidden="true" />
-              {t('Close Account')}
-            </Button>
-          </div>
+          <>
+            <p>{t("Closing your account permanently ends access to your family's data. Download your data first if you want to keep it.")}</p>
+            <button type="button" className="sb-btn sb-danger sb-sm" onClick={() => setConfirmingClosure(true)}>
+              {t('Close my account')}
+            </button>
+          </>
         )}
       </div>
 
