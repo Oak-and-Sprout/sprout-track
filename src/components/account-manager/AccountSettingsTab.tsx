@@ -13,11 +13,8 @@ import {
   User,
   Mail,
   Home,
-  Link,
   Download,
   AlertTriangle,
-  Edit,
-  Save,
   X,
   Loader2,
   CheckCircle,
@@ -582,80 +579,67 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Account Information Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-            {t('Account Information')}
-          </h3>
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <User size={20} strokeWidth={1.8} />
+          <h3>{t('Account')}</h3>
           {!editingAccount && !changingPassword && (
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEditingAccount(true);
-                  setAccountMessage('');
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
-                {t('Edit')}
-              </Button>
-            </div>
+            <button
+              type="button"
+              className="sb-btn sb-ghost sb-sm"
+              onClick={() => {
+                setEditingAccount(true);
+                setAccountMessage('');
+              }}
+            >
+              {t('Edit')}
+            </button>
           )}
         </div>
 
         {editingAccount ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
-            <div className={styles.formRow}>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="firstName">{t('First Name')}</Label>
-                <Input
+          <div className="sb-f-grid">
+            <div className="sb-f2">
+              <div>
+                <label className="sb-fl" htmlFor="firstName">{t('First name')}</label>
+                <input
                   id="firstName"
+                  className="sb-fi"
                   value={accountFormData.firstName}
                   onChange={(e) => setAccountFormData(prev => ({ ...prev, firstName: e.target.value }))}
                   disabled={savingAccount}
                 />
               </div>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="lastName">{t('Last Name')}</Label>
-                <Input
+              <div>
+                <label className="sb-fl" htmlFor="lastName">{t('Last name')}</label>
+                <input
                   id="lastName"
+                  className="sb-fi"
                   value={accountFormData.lastName}
                   onChange={(e) => setAccountFormData(prev => ({ ...prev, lastName: e.target.value }))}
                   disabled={savingAccount}
                 />
               </div>
             </div>
-            <div className={cn(styles.formField, "account-manager-form-field")}>
-              <Label htmlFor="email">{t('Email Address')}</Label>
-              <Input
+            <div>
+              <label className="sb-fl" htmlFor="email">{t('Email')}</label>
+              <input
                 id="email"
+                className="sb-fi"
                 type="email"
                 value={accountFormData.email}
                 onChange={(e) => setAccountFormData(prev => ({ ...prev, email: e.target.value }))}
                 disabled={savingAccount}
               />
             </div>
-            
-            <div className={styles.buttonGroup}>
-              <Button
-                onClick={handleAccountSave}
-                disabled={savingAccount}
-              >
-                {savingAccount ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                    {t('Saving...')}
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Save')}
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className="sb-btn sb-sm" onClick={handleAccountSave} disabled={savingAccount}>
+                {savingAccount ? t('Saving…') : t('Save')}
+              </button>
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
                 onClick={() => {
                   setEditingAccount(false);
                   setAccountFormData({
@@ -667,69 +651,52 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 }}
                 disabled={savingAccount}
               >
-                <X className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Cancel')}
-              </Button>
+              </button>
             </div>
           </div>
         ) : changingPassword ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
+          <div className="sb-f-grid">
             {passwordStep === 'confirm' ? (
               <>
-                <h4 className="text-lg font-medium mb-3">{t('Confirm Current Password')}</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  {t('Please enter your current password to confirm you want to change it.')}
-                </p>
-                <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="currentPassword">{t('Current Password')}</Label>
-                  <Input
+                <div>
+                  <label className="sb-fl" htmlFor="currentPassword">{t('Current password')}</label>
+                  <input
                     id="currentPassword"
+                    className="sb-fi"
                     type="password"
                     value={passwordFormData.currentPassword}
                     onChange={(e) => setPasswordFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
                     disabled={changingPasswordLoading}
-                    placeholder="Enter your current password"
                   />
                 </div>
-                
-                <div className={styles.buttonGroup}>
-                  <Button
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="sb-btn sb-sm"
                     onClick={handlePasswordConfirm}
                     disabled={changingPasswordLoading || !passwordFormData.currentPassword}
                   >
-                    {changingPasswordLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                        {t('Verifying...')}
-                      </>
-                    ) : (
-                      <>
-                        <Key className="h-4 w-4 mr-2" aria-hidden="true" />
-                        Continue
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
+                    {t('Continue')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-btn sb-ghost sb-sm"
                     onClick={handlePasswordCancel}
                     disabled={changingPasswordLoading}
                   >
-                    <X className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Cancel')}
-                  </Button>
+                  </button>
                 </div>
               </>
             ) : (
               <>
-                <h4 className="text-lg font-medium mb-3">{t('Set New Password')}</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  {t('Enter your new password. It must meet all the requirements below.')}
-                </p>
-                
-                <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="newPassword">{t('New Password')}</Label>
-                  <Input
+                <div>
+                  <label className="sb-fl" htmlFor="newPassword">{t('New password')}</label>
+                  <input
                     id="newPassword"
+                    className="sb-fi"
                     type="password"
                     value={passwordFormData.newPassword}
                     onChange={(e) => {
@@ -738,136 +705,87 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                       updatePasswordValidation(newPassword);
                     }}
                     disabled={changingPasswordLoading}
-                    placeholder="Enter new password"
                   />
+                  <div className="sb-reqs">
+                    <span className={passwordValidation.length ? 'sb-ok' : undefined}><i>✓</i>{t('8+ characters')}</span>
+                    <span className={passwordValidation.number ? 'sb-ok' : undefined}><i>✓</i>{t('A number')}</span>
+                    <span className={passwordValidation.lowercase ? 'sb-ok' : undefined}><i>✓</i>{t('A lowercase letter')}</span>
+                    <span className={passwordValidation.special ? 'sb-ok' : undefined}><i>✓</i>{t('A symbol')}</span>
+                    <span className={passwordValidation.uppercase ? 'sb-ok' : undefined}><i>✓</i>{t('An uppercase letter')}</span>
+                  </div>
                 </div>
 
-                <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="confirmPassword">{t('Confirm New Password')}</Label>
-                  <Input
+                <div>
+                  <label className="sb-fl" htmlFor="confirmPassword">{t('Confirm new password')}</label>
+                  <input
                     id="confirmPassword"
+                    className="sb-fi"
                     type="password"
                     value={passwordFormData.confirmPassword}
                     onChange={(e) => setPasswordFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     disabled={changingPasswordLoading}
-                    placeholder="Confirm new password"
                   />
                 </div>
 
-                {/* Password Requirements */}
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs font-medium text-gray-700 mb-2">{t('Password Requirements:')}</p>
-                  <div className="grid grid-cols-1 gap-1 text-xs">
-                    <div className={`flex items-center gap-2 ${passwordValidation.length ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.length ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.length && '✓'}
-                      </span>
-                      {t('At least 8 characters')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.lowercase ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.lowercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.lowercase && '✓'}
-                      </span>
-                      {t('One lowercase letter (a-z)')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.uppercase ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.uppercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.uppercase && '✓'}
-                      </span>
-                      {t('One uppercase letter (A-Z)')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.number ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.number ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.number && '✓'}
-                      </span>
-                      {t('One number (0-9)')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.special ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.special ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.special && '✓'}
-                      </span>
-                      {t('One special character (!@#$%^&*)')}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className={styles.buttonGroup}>
-                  <Button
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="sb-btn sb-sm"
                     onClick={handlePasswordChange}
                     disabled={changingPasswordLoading || !passwordFormData.newPassword || !passwordFormData.confirmPassword}
                   >
-                    {changingPasswordLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                        {t('Changing Password...')}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                        {t('Change Password')}
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
+                    {changingPasswordLoading ? t('Saving…') : t('Save')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-btn sb-ghost sb-sm"
                     onClick={handlePasswordCancel}
                     disabled={changingPasswordLoading}
                   >
-                    <X className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Cancel')}
-                  </Button>
+                  </button>
                 </div>
               </>
             )}
           </div>
         ) : (
-          <div className={styles.formGroup}>
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                  <Label className="font-medium">{accountStatus.firstName} {accountStatus.lastName}</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                  <Label>{accountStatus.email}</Label>
-                  {!accountStatus.verified && (
-                    <span className="text-amber-600 text-sm">{t('(Unverified)')}</span>
-                  )}
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
+          <>
+            <div className="sb-irow">
+              <User size={16} strokeWidth={1.8} />
+              <b>{accountStatus.firstName} {accountStatus.lastName || ''}</b>
+            </div>
+            <div className="sb-irow">
+              <Mail size={16} strokeWidth={1.8} />
+              {accountStatus.email}
+              {!accountStatus.verified && <span className="sb-chip sb-c-red">{t('Unverified')}</span>}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
                 onClick={() => {
                   setChangingPassword(true);
                   setPasswordMessage('');
                 }}
-                className="self-start"
               >
-                <Key className="h-4 w-4 mr-2" aria-hidden="true" />
-                {t('Reset Password')}
-              </Button>
+                <Key size={15} strokeWidth={1.8} />
+                {t('Reset password')}
+              </button>
             </div>
-          </div>
+          </>
         )}
 
         {(accountMessage || passwordMessage) && (
-          <div className={cn(
-            "mt-4 p-3 rounded-md text-sm",
-            (accountMessage && accountMessage.startsWith('Error')) || (passwordMessage && passwordMessage.startsWith('Error'))
-              ? "bg-red-50 text-red-600 account-manager-error-message" 
-              : "bg-green-50 text-green-600 account-manager-success-message"
-          )}>
-            <div className="flex items-center gap-2">
-              {((accountMessage && accountMessage.startsWith('Error')) || (passwordMessage && passwordMessage.startsWith('Error'))) ? (
-                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-              ) : (
-                <CheckCircle className="h-4 w-4" aria-hidden="true" />
-              )}
-              {passwordMessage || accountMessage}
-            </div>
-          </div>
+          <p
+            className={
+              (accountMessage && accountMessage.startsWith('Error')) || (passwordMessage && passwordMessage.startsWith('Error'))
+                ? 'sb-msg-err'
+                : 'sb-msg-ok'
+            }
+            style={{ marginTop: 12 }}
+          >
+            {passwordMessage || accountMessage}
+          </p>
         )}
       </div>
 
@@ -1080,96 +998,61 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
 
       {/* Family Information Section - Only show if family data exists */}
       {familyData && (
-        <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              {t('Family Information')}
-            </h3>
+        <div className="sb-sect">
+          <div className="sb-sect-hd">
+            <Home size={20} strokeWidth={1.8} />
+            <h3>{t('Family')}</h3>
             {!editingFamily && (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
                 onClick={() => {
                   setEditingFamily(true);
                   setFamilyMessage('');
                 }}
               >
-                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Edit')}
-              </Button>
+              </button>
             )}
           </div>
 
           {editingFamily ? (
-            <div className={cn(styles.formGroup, "account-manager-form-group")}>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="familyName">{t('Family Name')}</Label>
-                <Input
+            <div className="sb-f-grid">
+              <div>
+                <label className="sb-fl" htmlFor="familyName">{t('Family name')}</label>
+                <input
                   id="familyName"
+                  className="sb-fi"
                   value={familyFormData.name}
                   onChange={(e) => setFamilyFormData(prev => ({ ...prev, name: e.target.value }))}
                   disabled={savingFamily}
                 />
               </div>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="familySlug">{t('Family URL Slug')}</Label>
-                <div className="relative">
-                  <Input
-                    id="familySlug"
-                    value={familyFormData.slug}
-                    onChange={(e) => setFamilyFormData(prev => ({ ...prev, slug: e.target.value.toLowerCase() }))}
-                    disabled={savingFamily}
-                    className={slugError ? 'border-red-500' : ''}
-                  />
-                  {checkingSlug && (
-                    <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" aria-hidden="true" />
-                  )}
-                </div>
-                {/* Validation feedback */}
-                <div className="min-h-[20px] mt-1">
-                  {checkingSlug && (
-                    <div className="flex items-center gap-1 text-blue-600 text-sm">
-                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-                      {t('Checking availability...')}
-                    </div>
-                  )}
-                  {slugError && (
-                    <div className="flex items-center gap-1 text-red-600 text-sm account-manager-validation-error">
-                      <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-                      {slugError}
-                    </div>
-                  )}
-                  {!checkingSlug && !slugError && familyFormData.slug && familyFormData.slug !== familyData?.slug && (
-                    <div className="flex items-center gap-1 text-green-600 text-sm">
-                      <span className="h-3 w-3 rounded-full bg-green-600"></span>
-                      {t('URL is available')}
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm text-gray-500 mt-1 account-manager-info-text">
-                  {t('This is your family\'s unique URL identifier')}
-                </p>
+              <div>
+                <label className="sb-fl" htmlFor="familySlug">{t('Family link')}</label>
+                <input
+                  id="familySlug"
+                  className="sb-fi sb-mono"
+                  value={familyFormData.slug}
+                  onChange={(e) => setFamilyFormData(prev => ({ ...prev, slug: e.target.value.toLowerCase() }))}
+                  disabled={savingFamily}
+                />
+                <p className="sb-fh">{t("Your family's private address — share it with caretakers.")}</p>
+                {slugError && <p className="sb-form-error">{slugError}</p>}
               </div>
-              
-              <div className={styles.buttonGroup}>
-                <Button
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  className="sb-btn sb-sm"
                   onClick={handleFamilySave}
                   disabled={savingFamily || !!slugError || checkingSlug}
                 >
-                  {savingFamily ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                      {t('Saving...')}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                      {t('Save')}
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
+                  {savingFamily ? t('Saving…') : t('Save')}
+                </button>
+                <button
+                  type="button"
+                  className="sb-btn sb-ghost sb-sm"
                   onClick={() => {
                     setEditingFamily(false);
                     setFamilyFormData({
@@ -1181,74 +1064,40 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   }}
                   disabled={savingFamily}
                 >
-                  <X className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Cancel')}
-                </Button>
+                </button>
               </div>
             </div>
           ) : (
-            <div className={styles.formGroup}>
-              <div className="flex items-center gap-2 mb-2">
-                <Home className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                <Label className="font-medium">{familyData.name}</Label>
+            <>
+              <div className="sb-irow"><Home size={16} strokeWidth={1.8} /><b>{familyData.name}</b></div>
+              <div className="sb-irow">
+                <Key size={16} strokeWidth={1.8} />
+                <span className="sb-mono">{typeof window !== 'undefined' ? window.location.host : ''}/{familyData.slug}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Link className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                <Label className="font-mono text-sm">/{familyData.slug}</Label>
-              </div>
-            </div>
+            </>
           )}
 
           {familyMessage && (
-            <div className={cn(
-              "mt-4 p-3 rounded-md text-sm",
-              familyMessage.startsWith('Error') 
-                ? "bg-red-50 text-red-600 account-manager-error-message" 
-                : "bg-green-50 text-green-600 account-manager-success-message"
-            )}>
-              <div className="flex items-center gap-2">
-                {familyMessage.startsWith('Error') ? (
-                  <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                )}
-                {familyMessage}
-              </div>
-            </div>
+            <p className={familyMessage.startsWith('Error') ? 'sb-msg-err' : 'sb-msg-ok'} style={{ marginTop: 12 }}>
+              {familyMessage}
+            </p>
           )}
         </div>
       )}
 
-      {/* Data Download Section - Only show if family data exists */}
+      {/* Your data Section - Only show if family data exists */}
       {familyData && (
-        <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              {t('Download Your Data')}
-            </h3>
+        <div className="sb-sect">
+          <div className="sb-sect-hd">
+            <Download size={20} strokeWidth={1.8} />
+            <h3>{t('Your data')}</h3>
           </div>
-          
-          <div className={styles.formGroup}>
-            <p className="text-sm text-gray-600 mb-4 account-manager-info-text">
-              {t('Download a complete copy of your family\'s data including all activities, contacts, and settings.')}
-            </p>
-            <Button
-              onClick={handleDataDownload}
-              disabled={downloadingData}
-            >
-              {downloadingData ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                  {t('Preparing Download...')}
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" aria-hidden="true" />
-                  {t('Download Data')}
-                </>
-              )}
-            </Button>
-          </div>
+          <p>{t('Everything your family has logged — feeds, naps, contacts, settings — in one file, whenever you like.')}</p>
+          <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleDataDownload} disabled={downloadingData}>
+            <Download size={15} strokeWidth={1.8} />
+            {downloadingData ? t('Preparing…') : t('Download my data')}
+          </button>
         </div>
       )}
 
