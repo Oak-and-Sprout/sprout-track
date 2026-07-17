@@ -24,7 +24,7 @@ export default function PricingPage() {
         centered
       />
       <section id="plans" style={{ position: 'relative', overflow: 'hidden' }}>
-        <img className="ld-sprite" src="/landing/teddy-waving.svg" alt="" width={100} style={{ top: 40, left: '5%', transform: 'rotate(-5deg)' }} />
+        <img className="ld-sprite ld-sprite-plans-teddy" src="/landing/teddy-waving.svg" alt="" />
         <div className="ld-wrap">
           <div className="ld-plans">
             {LANDING_PLANS.map((plan) => (

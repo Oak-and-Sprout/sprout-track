@@ -45,6 +45,11 @@
 .ld-frame-bar span{margin:0 auto;font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 14px;white-space:nowrap}
 /* floating art */
 .ld-sprite{position:absolute;pointer-events:none;user-select:none}
+/* pricing plans teddy: corner art on desktop, tucked into the first card's blank top-right on mobile */
+.ld-sprite-plans-teddy{top:40px;left:5%;width:100px;transform:rotate(-5deg)}
+@media(max-width:900px){
+.ld-sprite.ld-sprite-plans-teddy{display:block;top:118px;left:auto;right:7%;width:86px;transform:rotate(5deg);z-index:1}
+}
 /* sections */
 .landing-root :where(section){padding:78px 0}
 .ld-sect-head{max-width:640px;margin-bottom:44px}
