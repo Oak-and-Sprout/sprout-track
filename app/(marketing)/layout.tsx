@@ -6,6 +6,7 @@ import { LocalizationProvider } from '@/src/context/localization';
 import { ThemeProvider } from '@/src/context/theme';
 import AccountModal from '@/src/components/modals/AccountModal';
 import AccountManager from '@/src/components/account-manager';
+import { ToastProvider } from '@/src/components/ui/toast';
 import { LandingNav, LandingModalMode } from '@/src/components/landing/LandingNav';
 import { LandingFooter } from '@/src/components/landing/LandingFooter';
 import { LandingActionsProvider } from '@/src/components/landing/landing-context';
@@ -50,6 +51,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
   return (
     <LocalizationProvider>
       <ThemeProvider>
+        <ToastProvider>
         <LandingActionsProvider value={{ openAccountModal }}>
           <div className={`${literata.variable} ${alegreyaSans.variable} landing-root`}>
             <LandingNav
@@ -69,6 +71,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             />
           </div>
         </LandingActionsProvider>
+        </ToastProvider>
       </ThemeProvider>
     </LocalizationProvider>
   );

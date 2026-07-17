@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Shield } from 'lucide-react';
 import AccountModal from '@/src/components/modals/AccountModal';
 import AccountManager from '@/src/components/account-manager';
+import { ToastProvider } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { LandingNav, LandingModalMode } from '@/src/components/landing/LandingNav';
 import { LandingFooter } from '@/src/components/landing/LandingFooter';
@@ -94,6 +95,7 @@ const home = () => {
   };
 
   return (
+    <ToastProvider>
     <div className={`${literata.variable} ${alegreyaSans.variable} landing-root`}>
       <LandingNav
         onOpenAccountModal={openAccountModal}
@@ -217,6 +219,7 @@ const home = () => {
         onClose={() => setShowAccountManager(false)}
       />
     </div>
+    </ToastProvider>
   );
 };
 
