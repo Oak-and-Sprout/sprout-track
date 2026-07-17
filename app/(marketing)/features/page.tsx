@@ -6,10 +6,10 @@ import { PageHead } from '@/src/components/landing/PageHead';
 import { FeatureRow } from '@/src/components/landing/FeatureRow';
 import { FeatureChips } from '@/src/components/landing/FeatureChips';
 import { CloseCta } from '@/src/components/landing/CloseCta';
+import { LandingButton } from '@/src/components/landing/LandingButton';
 import { useLandingActions } from '@/src/components/landing/landing-context';
 import { TRACKING_CHIPS, GITHUB_URL } from '@/src/components/landing/landing-data';
 import { supportedLanguages } from '@/src/localization/supported-languages-config';
-import Link from 'next/link';
 
 export default function FeaturesPage() {
   const { t } = useLocalization();
@@ -90,8 +90,8 @@ export default function FeaturesPage() {
             <p>{t('The same code that runs sprout-track.com is on GitHub. Host it yourself for free, or let us run it for $2.99 a month. Either way the data is yours: export it anytime.')}</p>
           </div>
           <div className="ld-cta-row">
-            <Link className="ld-btn" href="/pricing">{t('See pricing')}</Link>
-            <a className="ld-btn ld-ghost" href={GITHUB_URL} rel="noopener">{t('View on GitHub')}</a>
+            <LandingButton href="/pricing">{t('See pricing')}</LandingButton>
+            <LandingButton variant="ghost" href={GITHUB_URL} external>{t('View on GitHub')}</LandingButton>
           </div>
         </div>
       </section>

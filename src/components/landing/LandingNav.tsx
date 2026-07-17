@@ -35,9 +35,10 @@ export function LandingNav({ onOpenAccountModal, onAccountManagerOpen }: Landing
           <AccountButton
             label={t('Log in')}
             showIcon={false}
-            variant="link"
             initialMode="login"
+            unstyled
             className="ld-nav-login"
+            loggedInClassName="ld-btn"
             onOpenAccountModal={onOpenAccountModal}
             onAccountManagerOpen={onAccountManagerOpen}
           />
@@ -45,6 +46,7 @@ export function LandingNav({ onOpenAccountModal, onAccountManagerOpen }: Landing
             label={t('Start my free trial')}
             showIcon={false}
             initialMode="register"
+            unstyled
             className="ld-btn"
             hideWhenLoggedIn={true}
             onOpenAccountModal={onOpenAccountModal}

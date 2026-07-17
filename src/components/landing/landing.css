@@ -139,6 +139,12 @@
 .ld-nav-links a.ld-btn{color:#fdfaf0}
 .ld-nav-links a.ld-btn:hover{color:#fff}
 
+/* Pin nav button states so app-theme (html.dark) styles can never repaint them */
+.ld-nav-links button.ld-btn,html.dark .landing-root .ld-nav-links button.ld-btn{background:var(--teal);color:#fdfaf0;border:none;padding:10px 18px;font-size:15px}
+.ld-nav-links button.ld-btn:hover,html.dark .landing-root .ld-nav-links button.ld-btn:hover{background:var(--teal-deep);color:#fff}
+html.dark .landing-root .ld-nav-login{background:none;border:none;color:var(--body)}
+html.dark .landing-root .ld-nav-login:hover{color:var(--teal)}
+
 .ld-logo{white-space:nowrap}
 .ld-footer .ld-wrap>span{flex-shrink:0;white-space:nowrap}
 

@@ -8,6 +8,7 @@ import {
   formatFamilyCount,
 } from '@/src/utils/landing-stats';
 import { DEMO_URL } from './landing-data';
+import { LandingButton } from './LandingButton';
 
 interface LandingHeroProps {
   onTrialClick: () => void;
@@ -41,20 +42,21 @@ export function LandingHero({ onTrialClick }: LandingHeroProps) {
             {t('Sprout Track keeps parents, grandparents, and caretakers logging feeds, naps, and diapers in one shared place. The afternoon handoff stops needing a sticky note.')}
           </p>
           <div className="ld-cta-row" id="trial">
-            <button type="button" className="ld-btn ld-big" onClick={onTrialClick}>
+            <LandingButton size="big" onClick={onTrialClick}>
               {t('Start my free trial')}
-            </button>
-            <a
-              className="ld-btn ld-big ld-ghost"
+            </LandingButton>
+            <LandingButton
+              size="big"
+              variant="ghost"
               href={DEMO_URL}
-              rel="noopener"
+              external
               style={{ flexDirection: 'column', gap: 2, lineHeight: 1.25 }}
             >
               <span>{t('Poke around the live demo')}</span>
               <span className="ld-assure" style={{ margin: 0, fontSize: 13, fontWeight: 400 }}>
                 {t('ID: 01 · PIN: 111111')}
               </span>
-            </a>
+            </LandingButton>
           </div>
           <p className="ld-assure">{t('14 days free, no card required. Then $2.99/month, cancel anytime.')}</p>
           <p className="ld-proof">

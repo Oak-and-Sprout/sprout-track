@@ -5,6 +5,7 @@ import { Check } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { useLocalization } from '@/src/context/localization';
 import { LandingPlan } from './landing-data';
+import { LandingButton } from './LandingButton';
 
 interface PlanCardProps {
   plan: LandingPlan;
@@ -32,13 +33,9 @@ export function PlanCard({ plan, onSelect }: PlanCardProps) {
           </li>
         ))}
       </ul>
-      <button
-        type="button"
-        className={cn('ld-btn', 'ld-big', !plan.hot && 'ld-ghost')}
-        onClick={onSelect}
-      >
+      <LandingButton size="big" variant={plan.hot ? 'solid' : 'ghost'} onClick={onSelect}>
         {t(plan.cta)}
-      </button>
+      </LandingButton>
     </div>
   );
 }

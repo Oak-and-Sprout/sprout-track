@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Shield } from 'lucide-react';
 import AccountModal from '@/src/components/modals/AccountModal';
 import AccountManager from '@/src/components/account-manager';
@@ -13,6 +12,7 @@ import { LandingHero } from '@/src/components/landing/LandingHero';
 import { DayStory } from '@/src/components/landing/DayStory';
 import { FeatureRow } from '@/src/components/landing/FeatureRow';
 import { CloseCta } from '@/src/components/landing/CloseCta';
+import { LandingButton } from '@/src/components/landing/LandingButton';
 import { GITHUB_URL } from '@/src/components/landing/landing-data';
 import { literata, alegreyaSans } from '@/src/components/landing/fonts';
 import '@/src/components/landing/landing.css';
@@ -153,7 +153,7 @@ const home = () => {
             figure={<img src="/landing/nursery-mode.png" alt={t('Nursery mode on a tablet: dimmed clock with one-tap feed, pump, diaper, and sleep tiles')} style={{ display: 'block', width: '100%' }} />}
           />
           <div style={{ textAlign: 'center', paddingTop: 34 }}>
-            <Link className="ld-btn" href="/features">{t('See every feature')}</Link>
+            <LandingButton href="/features">{t('See every feature')}</LandingButton>
           </div>
         </div>
       </section>
@@ -181,7 +181,7 @@ const home = () => {
             {t('Hosted for')} <b>{t('$2.99 a month')}</b> {t('after your free trial, or')} <b>{t('$19.99 once')}</b> {t('and it’s yours for life. Self-hosting is free forever.')}
           </p>
           <div className="ld-cta-row" style={{ justifyContent: 'center' }}>
-            <Link className="ld-btn" href="/pricing">{t('See pricing')}</Link>
+            <LandingButton href="/pricing">{t('See pricing')}</LandingButton>
           </div>
         </div>
       </section>

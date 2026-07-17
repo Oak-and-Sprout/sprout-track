@@ -46,6 +46,20 @@ interface AccountButtonProps {
   hideFamilyDashboardLink?: boolean;
   onAccountManagerOpen?: () => void;
   onOpenAccountModal?: (mode: 'login' | 'register') => void;
+  /**
+   * Renders the trigger/guest button as a bare <button> styled only by the
+   * caller's classes — no Button variants or account-button state classes.
+   * Lets surfaces with their own design system (e.g. the landing pages)
+   * fully own the styling without fighting this component's CSS.
+   */
+  unstyled?: boolean;
+  /**
+   * Classes for the logged-in dropdown trigger when `unstyled` is set. One
+   * AccountButton can span both auth states (the landing "Log in" link
+   * becomes the account pill once logged in), so the two states may need
+   * different styling. Falls back to `className`.
+   */
+  loggedInClassName?: string;
 }
 
 export function AccountButton({
@@ -57,7 +71,9 @@ export function AccountButton({
   hideWhenLoggedIn = false,
   hideFamilyDashboardLink = false,
   onAccountManagerOpen,
-  onOpenAccountModal
+  onOpenAccountModal,
+  unstyled = false,
+  loggedInClassName
 }: AccountButtonProps) {
   const { t } = useLocalization();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -237,6 +253,11 @@ export function AccountButton({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
+          {unstyled ? (
+            <button type="button" className={loggedInClassName ?? className}>
+              {buttonText}
+            </button>
+          ) : (
           <Button
             variant="outline"
             size="sm"
@@ -255,6 +276,7 @@ export function AccountButton({
             )}
             {buttonText}
           </Button>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuLabel>
@@ -363,23 +385,31 @@ export function AccountButton({
     : 'account-button-guest';
   const displayLabel = label || t('Account');
 
+  const handleGuestClick = () => {
+    if (onOpenAccountModal) {
+      onOpenAccountModal(initialMode);
+    } else {
+      setShowAccountModal(true);
+    }
+  };
+
   return (
     <>
-      <Button 
+      {unstyled ? (
+        <button type="button" className={className} onClick={handleGuestClick}>
+          {displayLabel}
+        </button>
+      ) : (
+      <Button
         variant={buttonVariant}
-        size="sm" 
+        size="sm"
         className={`${buttonClass} ${className}`}
-        onClick={() => {
-          if (onOpenAccountModal) {
-            onOpenAccountModal(initialMode);
-          } else {
-            setShowAccountModal(true);
-          }
-        }}
+        onClick={handleGuestClick}
       >
         {showIcon && <User className="w-4 h-4 mr-2" aria-hidden="true" />}
         {displayLabel}
       </Button>
+      )}
       
       {!onOpenAccountModal && (
         <AccountModal 

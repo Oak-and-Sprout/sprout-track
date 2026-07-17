@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { cn } from '@/src/lib/utils';
+import { LandingButton } from './LandingButton';
 
 interface CloseCtaProps {
   heading: string;
@@ -22,9 +23,9 @@ export function CloseCta({ heading, sub, assure, ctaLabel, onCtaClick, sprite, a
         <h2>{heading}</h2>
         {sub && <p>{sub}</p>}
         <div className="ld-cta-row">
-          <button type="button" className="ld-btn ld-big" onClick={onCtaClick}>
+          <LandingButton size="big" onClick={onCtaClick}>
             {ctaLabel}
-          </button>
+          </LandingButton>
         </div>
         {assure && <p className="ld-assure">{assure}</p>}
       </div>
