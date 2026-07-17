@@ -8,6 +8,7 @@ import { Label } from '@/src/components/ui/label';
 import PaymentModal from './PaymentModal';
 import PaymentHistory from './PaymentHistory';
 import { useLocalization } from '@/src/context/localization';
+import { getSubscriptionView } from '@/src/utils/accountPresentation';
 
 import {
   User,
@@ -19,10 +20,7 @@ import {
   Loader2,
   CheckCircle,
   Key,
-  Crown,
-  Calendar,
   Shield,
-  CreditCard,
   Receipt
 } from 'lucide-react';
 
@@ -119,6 +117,18 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   } | null>(null);
   const [loadingSubscriptionStatus, setLoadingSubscriptionStatus] = useState(false);
   const [renewingSubscription, setRenewingSubscription] = useState(false);
+
+  // Storybook-style view of the subscription state, derived from account + subscription status
+  const subscriptionView = getSubscriptionView(
+    {
+      accountStatus: accountStatus.accountStatus,
+      planType: accountStatus.planType,
+      trialEnds: accountStatus.trialEnds,
+      planExpires: accountStatus.planExpires,
+      cancelAtPeriodEnd: subscriptionStatus?.cancelAtPeriodEnd,
+    },
+    new Date()
+  );
 
   // Check slug uniqueness
   const checkSlugUniqueness = useCallback(async (slug: string) => {
@@ -789,211 +799,91 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         )}
       </div>
 
-      {/* Account Status Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-            {t('Account Status')}
-          </h3>
+      {/* Subscription Section */}
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <Shield size={20} strokeWidth={1.8} />
+          <h3>{t('Subscription')}</h3>
         </div>
 
-        <div className={styles.formGroup}>
-          {accountStatus.betaparticipant ? (
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <Crown className="h-6 w-6 text-purple-600" aria-hidden="true" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-2">
-                    {t('Beta Participant')}
-                  </h4>
-                  <p className="text-purple-700 mb-3">
-                    {t('Thank you for being a beta participant and helping Sprout Track grow! You have full access to all features and functionality.')}
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-purple-600">
-                    <Shield className="h-4 w-4" aria-hidden="true" />
-                    <span className="font-medium">{t('Full Access')}</span>
-                  </div>
-                </div>
-              </div>
+        {accountStatus.betaparticipant ? (
+          <>
+            <div className="sb-status-line"><i /><span>{t('Beta access')}</span></div>
+            <p className="sb-status-sub">{t('Thanks for helping us test Sprout Track — everything is free for you.')}</p>
+          </>
+        ) : !accountStatus.hasFamily ? (
+          <>
+            <p className="sb-status-sub">
+              {t('Get started by creating your family to begin tracking activities.')}
+              {accountStatus.trialEnds && ` ${t('You have a trial that expires on')} ${new Date(accountStatus.trialEnds).toLocaleDateString()}.`}
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" className="sb-btn sb-sm" onClick={() => window.location.href = '/account/family-setup'}>
+                {t('Create Family')}
+              </button>
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Upgrade Plan')}
+              </button>
             </div>
-          ) : !accountStatus.hasFamily ? (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <Home className="h-6 w-6 text-blue-600" aria-hidden="true" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-blue-800 mb-2">
-                      {t('No Family Created Yet')}
-                    </h4>
-                    <p className="text-blue-700 mb-3">
-                      {t('Get started by creating your family to begin tracking activities.')}
-                    </p>
-                    {accountStatus.trialEnds && (
-                      <p className="text-sm text-blue-600 mb-3">
-                        {t('You have a trial that expires on')} {new Date(accountStatus.trialEnds).toLocaleDateString()}.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => window.location.href = '/account/family-setup'}
-                  className="flex-1"
-                >
-                  <Home className="h-4 w-4 mr-2" aria-hidden="true" />
-                  {t('Create Family')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                  {t('Upgrade Plan')}
-                </Button>
-              </div>
+          </>
+        ) : subscriptionView.kind === 'lifetime' ? (
+          <div className="sb-status-line"><i /><span>{t('Lifetime member')}</span></div>
+        ) : subscriptionView.kind === 'trial' ? (
+          <>
+            <div className="sb-status-line">
+              <i />
+              <span>{t('Free trial — {days} days left').replace('{days}', String(subscriptionView.daysLeft))}</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "w-3 h-3 rounded-full",
-                  accountStatus.accountStatus === 'active' ? "bg-green-500" :
-                  accountStatus.accountStatus === 'trial' ? "bg-blue-500" :
-                  accountStatus.accountStatus === 'expired' ? "bg-red-500" :
-                  accountStatus.accountStatus === 'closed' ? "bg-gray-500" :
-                  accountStatus.accountStatus === 'no_family' ? "bg-orange-500" :
-                  "bg-yellow-500"
-                )} />
-                <Label className="font-medium capitalize">
-                  {accountStatus.accountStatus.replace('_', ' ')} {t('Account')}
-                </Label>
-              </div>
-
-              {accountStatus.subscriptionActive && (
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={cn(
-                    "h-4 w-4",
-                    subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-600" : "text-green-600"
-                  )} aria-hidden="true" />
-                  <Label className={cn(
-                    "font-medium",
-                    subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-700" : "text-green-600"
-                  )}>
-                    {accountStatus.accountStatus === 'trial' ? 'Active Trial' :
-                     accountStatus.planType === 'full' ? 'Lifetime Member' :
-                     subscriptionStatus?.cancelAtPeriodEnd ? 'Subscription Active (Cancelled)' :
-                     'Subscription Active'}
-                  </Label>
-                </div>
-              )}
-
-              {accountStatus.trialEnds && accountStatus.accountStatus !== 'expired' && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                    <Label className="text-sm">
-                      {t('Trial ends')} {new Date(accountStatus.trialEnds).toLocaleDateString()}
-                    </Label>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowPaymentModal(true)}
-                    className="mt-2"
-                  >
-                    <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Upgrade')}
-                  </Button>
-                </>
-              )}
-
-              {accountStatus.planExpires && !accountStatus.trialEnds && accountStatus.planType !== 'full' && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                  <Label className="text-sm">
-                    {t('Subscription ends')} {new Date(accountStatus.planExpires).toLocaleDateString()}
-                  </Label>
-                </div>
-              )}
-
-              {accountStatus.accountStatus === 'expired' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                    <span className="font-medium">
-                      {accountStatus.trialEnds ? 'Trial Expired' : 'Subscription Expired'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-red-600 mt-1 mb-3">
-                    {accountStatus.trialEnds 
-                      ? 'Your trial has expired. Please subscribe to continue using Sprout Track.'
-                      : 'Your subscription has expired. Please renew your subscription to continue using Sprout Track.'
-                    }
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowPaymentModal(true)}
-                    variant="destructive"
-                  >
-                    <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {accountStatus.trialEnds ? 'Subscribe Now' : 'Renew Subscription'}
-                  </Button>
-                </div>
-              )}
-
-              {((accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial') || accountStatus.planType === 'full') && (
-                <div className="flex flex-col items-start sm:flex-row sm:justify-end gap-2 mt-3">
-                  {accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial' && !subscriptionStatus?.cancelAtPeriodEnd && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowPaymentModal(true)}
-                      className="self-start"
-                    >
-                      <CreditCard className="h-4 w-4 mr-2" aria-hidden="true" />
-                      {t('Manage Subscription')}
-                    </Button>
-                  )}
-                  {subscriptionStatus?.cancelAtPeriodEnd && (
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleRenewSubscription}
-                      disabled={renewingSubscription}
-                      className="self-start"
-                    >
-                      {renewingSubscription ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                          {t('Renewing...')}
-                        </>
-                      ) : (
-                        <>
-                          <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                          {t('Renew Subscription')}
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowPaymentHistory(true)}
-                    className="self-start"
-                  >
-                    <Receipt className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Payment History')}
-                  </Button>
-                </div>
-              )}
+            <p className="sb-status-sub">
+              {subscriptionView.endDate
+                ? t('Ends {date} · then $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString())
+                : t('Then $2.99/month')}
+            </p>
+            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+              {t('Start my subscription')}
+            </button>
+          </>
+        ) : subscriptionView.kind === 'active' ? (
+          <>
+            <div className="sb-status-line"><i /><span>{t('Active')}</span></div>
+            <p className="sb-status-sub">
+              {subscriptionView.endDate
+                ? (subscriptionView.cancelAtPeriodEnd
+                    ? t('Ends {date} · $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString())
+                    : t('Renews {date} · $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString()))
+                : t('$2.99/month')}
+            </p>
+            {subscriptionView.cancelAtPeriodEnd ? (
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleRenewSubscription} disabled={renewingSubscription}>
+                {renewingSubscription ? t('Renewing...') : t('Renew Subscription')}
+              </button>
+            ) : (
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Manage billing')}
+              </button>
+            )}
+          </>
+        ) : subscriptionView.kind === 'expired' ? (
+          <>
+            <div className="sb-status-line"><i className="sb-bad" /><span>{t('Expired')}</span></div>
+            <div className="sb-alertbox">
+              <b>{t('Logging is paused — your data is safe.')}</b>
+              <p>{t('Everything your family tracked is still here. Renew and you pick up right where you left off.')}</p>
+              <button type="button" className="sb-btn sb-sm" onClick={handleRenewSubscription} disabled={renewingSubscription}>
+                {renewingSubscription ? t('One moment…') : t('Renew for $2.99/month')}
+              </button>
             </div>
-          )}
-        </div>
+          </>
+        ) : null}
+
+        {(accountStatus.subscriptionActive || accountStatus.planType) && (
+          <div style={{ marginTop: 12 }}>
+            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentHistory(true)}>
+              <Receipt size={15} strokeWidth={1.8} />
+              {t('Payment history')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Family Information Section - Only show if family data exists */}
