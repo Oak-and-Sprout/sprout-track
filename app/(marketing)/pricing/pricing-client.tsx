@@ -24,9 +24,9 @@ export default function PricingPage() {
         centered
       />
       <section id="plans" style={{ position: 'relative', overflow: 'hidden' }}>
-        <img className="ld-sprite ld-sprite-plans-teddy" src="/landing/teddy-waving.svg" alt="" />
         <div className="ld-wrap">
           <div className="ld-plans">
+            <img className="ld-sprite ld-sprite-plans-teddy" src="/landing/teddy-waving.svg" alt="" />
             {LANDING_PLANS.map((plan) => (
               <PlanCard key={plan.id} plan={plan} onSelect={() => openAccountModal('register')} />
             ))}
