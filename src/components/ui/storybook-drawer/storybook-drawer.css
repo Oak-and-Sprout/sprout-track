@@ -2,7 +2,7 @@
    Light-only by design (locked "warm" tone; see 2026-07-17 reskin spec).
    Tokens are self-contained on each root class so the skin renders identically
    inside the dark-mode app, the landing pages, and standalone pages. */
-:where(.sb-pane, .sb-menu, .sb-toast, .sb-page) {
+:where(.sb-pane, .sb-menu, .sb-toast, .sb-page, .sb-acct-btn) {
   --paper: #f7f1e2; --paper2: #efe6d0; --card: #fffdf6; --ink: #26382f;
   --body: #3d5044; --sub: #6b7a6c; --line: #ddd2b8; --teal: #0c6b62;
   --teal-deep: #0a544d; --apricot: #c2691e; --rust: #9e2b25;

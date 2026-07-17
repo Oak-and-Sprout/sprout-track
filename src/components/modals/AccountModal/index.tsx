@@ -576,7 +576,7 @@ export default function AccountModal({
     register: { title: t('Create your account.'), sub: t('14 days free, no card needed.') },
     'forgot-password': {
       title: t('Reset your password.'),
-      sub: t("We'll email you a link. It works for one hour."),
+      sub: t("We'll email you a link. It works for 15 minutes."),
     },
     verify: { title: t('Verify your email.') },
     'reset-password': { title: t('Set a new password.') },
@@ -602,7 +602,7 @@ export default function AccountModal({
             </b>
             <p>
               {mode === 'forgot-password'
-                ? t("If that address has an account, a reset link is on its way. It works for one hour.")
+                ? t("If that address has an account, a reset link is on its way. It works for 15 minutes.")
                 : t('We sent a verification link to your email. Click it to finish setting up.')}
             </p>
           </div>
@@ -791,9 +791,9 @@ export default function AccountModal({
             {mode === 'register' && (
               <p className="sb-legal">
                 {t('By signing up you agree to our')}{' '}
-                <button type="button" onClick={() => setShowTermsOfUse(true)}>{t('Terms')}</button>
+                <button type="button" disabled={isSubmitting} onClick={() => setShowTermsOfUse(true)}>{t('Terms')}</button>
                 {' '}{t('and')}{' '}
-                <button type="button" onClick={() => setShowPrivacyPolicy(true)}>{t('Privacy Policy')}</button>.
+                <button type="button" disabled={isSubmitting} onClick={() => setShowPrivacyPolicy(true)}>{t('Privacy Policy')}</button>.
               </p>
             )}
             <div className="sb-auth-alt">
@@ -846,7 +846,7 @@ function PasswordChecklist({
     <div className="sb-reqs">
       {rules.map(([key, label]) => (
         <span key={key} className={validation[key] ? 'sb-ok' : undefined}>
-          <i>✓</i>
+          <i aria-hidden="true">✓</i>
           {t(label)}
         </span>
       ))}

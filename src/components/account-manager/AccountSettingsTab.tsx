@@ -717,11 +717,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     disabled={changingPasswordLoading}
                   />
                   <div className="sb-reqs">
-                    <span className={passwordValidation.length ? 'sb-ok' : undefined}><i>✓</i>{t('8+ characters')}</span>
-                    <span className={passwordValidation.number ? 'sb-ok' : undefined}><i>✓</i>{t('A number')}</span>
-                    <span className={passwordValidation.lowercase ? 'sb-ok' : undefined}><i>✓</i>{t('A lowercase letter')}</span>
-                    <span className={passwordValidation.special ? 'sb-ok' : undefined}><i>✓</i>{t('A symbol')}</span>
-                    <span className={passwordValidation.uppercase ? 'sb-ok' : undefined}><i>✓</i>{t('An uppercase letter')}</span>
+                    <span className={passwordValidation.length ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('8+ characters')}</span>
+                    <span className={passwordValidation.number ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('A number')}</span>
+                    <span className={passwordValidation.lowercase ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('A lowercase letter')}</span>
+                    <span className={passwordValidation.special ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('A symbol')}</span>
+                    <span className={passwordValidation.uppercase ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('An uppercase letter')}</span>
                   </div>
                 </div>
 
