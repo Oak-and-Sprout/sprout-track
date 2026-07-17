@@ -7,7 +7,7 @@ import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort, type TimeFormatSetting, type DateFormatSetting } from '@/src/utils/dateFormat';
-import { chatConversationStyles as styles } from './chat-conversation.styles';
+import { chatConversationDefault, chatConversationSb } from './chat-conversation.sb';
 import type { ChatConversationProps, ChatReplyBarProps, ChatMessage } from './chat-conversation.types';
 import type { FeedbackResponse } from '@/app/api/types';
 import './chat-conversation.css';
@@ -125,6 +125,7 @@ export function ChatConversation({
   formatDateTime,
   hideHeader = false,
   hideReplyBar = false,
+  appearance = 'default',
   className,
 }: ChatConversationProps) {
   const { theme } = useTheme();
@@ -138,6 +139,7 @@ export function ChatConversation({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const markedReadRef = useRef<string | null>(null);
+  const c = appearance === 'storybook' ? chatConversationSb : chatConversationDefault;
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -231,9 +233,9 @@ export function ChatConversation({
   // Empty state
   if (!thread) {
     return (
-      <div className={cn(styles.container, 'chat-conversation-container', className)}>
-        <div className={cn(styles.emptyState, 'chat-conversation-empty')}>
-          <MessageSquare className="h-8 w-8 chat-conversation-empty-icon" strokeWidth={1.5} aria-hidden="true" />
+      <div className={cn(c.container, className)}>
+        <div className={c.emptyState}>
+          <MessageSquare className={c.emptyIcon} strokeWidth={1.5} aria-hidden="true" />
           <span>{t('Select a conversation')}</span>
         </div>
       </div>
@@ -244,25 +246,25 @@ export function ChatConversation({
   const totalMessages = messages.length;
 
   return (
-    <div className={cn(styles.container, 'chat-conversation-container', className)}>
+    <div className={cn(c.container, className)}>
       {/* Header */}
       {!hideHeader && (
-        <div className={cn(styles.header, 'chat-conversation-header')}>
+        <div className={c.header}>
           {showBackButton && onBack && (
-            <button onClick={onBack} className={styles.backButton} aria-label={t('Back')}>
+            <button onClick={onBack} className={c.backButton} aria-label={t('Back')}>
               <ChevronLeft className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           )}
-          <div className={styles.headerContent}>
-            <div className={cn(styles.headerSubject, 'chat-conversation-subject')}>
+          <div className={c.headerContent}>
+            <div className={c.headerSubject}>
               {thread.subject}
             </div>
-            <div className={cn(styles.headerMeta, 'chat-conversation-meta')}>
+            <div className={c.headerMeta}>
               <span>{totalMessages} {t('message')}{totalMessages > 1 ? 's' : ''}</span>
               {isAdmin && thread.submitterName && thread.submitterName !== 'Admin' && (
                 <>
-                  <span className={cn(styles.headerMetaDivider, 'chat-conversation-meta-divider')}>·</span>
-                  <span className={cn(styles.headerMetaName, 'chat-conversation-meta-name')}>
+                  <span className={c.headerMetaDivider}>·</span>
+                  <span className={c.headerMetaName}>
                     {thread.submitterName}
                   </span>
                 </>
@@ -273,7 +275,7 @@ export function ChatConversation({
       )}
 
       {/* Messages */}
-      <div className={cn(styles.messagesArea, 'chat-conversation-messages')}>
+      <div className={c.messagesArea}>
         {messages.map((msg, idx) => {
           const isMine = isMessageMine(msg, isAdmin, viewerAccountId, viewerCaretakerId);
           const showDateBreak = idx === 0 || !isSameDay(messages[idx - 1].date, msg.date);
@@ -281,64 +283,56 @@ export function ChatConversation({
 
           // Avatar and name styling
           let avatarClass: string;
-          let avatarDarkClass: string;
           let nameClass: string;
-          let nameDarkClass: string;
           let displayName: string;
           let initials: string;
 
           if (isMine) {
             displayName = isAdmin ? t('You (Admin)') : (msg.name || t('You'));
             initials = isAdmin ? 'A' : getInitials(msg.name || 'You');
-            avatarClass = styles.avatarMine;
-            avatarDarkClass = 'chat-conversation-avatar-mine';
-            nameClass = styles.senderNameMine;
-            nameDarkClass = 'chat-conversation-sender-mine';
+            avatarClass = c.avatarMine;
+            nameClass = c.senderNameMine;
           } else if (msg.from === 'user') {
             displayName = msg.name || t('User');
             initials = getInitials(displayName);
-            avatarClass = styles.avatarUser;
-            avatarDarkClass = 'chat-conversation-avatar-user';
-            nameClass = styles.senderNameTheirs;
-            nameDarkClass = 'chat-conversation-sender-theirs';
+            avatarClass = c.avatarUser;
+            nameClass = c.senderNameTheirs;
           } else {
             displayName = t('Sprout Track Team');
             initials = 'ST';
-            avatarClass = styles.avatarAdmin;
-            avatarDarkClass = 'chat-conversation-avatar-admin';
-            nameClass = styles.senderNameTheirs;
-            nameDarkClass = 'chat-conversation-sender-theirs';
+            avatarClass = c.avatarAdmin;
+            nameClass = c.senderNameTheirs;
           }
 
           return (
             <div key={msg.id}>
               {showDateBreak && (
-                <div className={cn(styles.dateBreak, 'chat-conversation-date-break')}>
+                <div className={c.dateBreak}>
                   {formatDateLabel(msg.date, dateFormat)}
                 </div>
               )}
               <div className={cn(
-                styles.messageWrapper,
-                isMine ? styles.messageWrapperMine : styles.messageWrapperTheirs,
+                c.messageWrapper,
+                isMine ? c.messageWrapperMine : c.messageWrapperTheirs,
               )}>
                 {/* Sender label */}
                 {!sameSenderAsPrev && (
                   <div className={cn(
-                    styles.senderRow,
-                    isMine ? styles.senderRowMine : styles.senderRowTheirs,
+                    c.senderRow,
+                    isMine ? c.senderRowMine : c.senderRowTheirs,
                   )}>
-                    <div className={cn(styles.avatar, avatarClass, avatarDarkClass)}>
+                    <div className={cn(c.avatar, avatarClass)}>
                       {initials}
                     </div>
                     <div className={cn(
                       'flex items-center gap-1.5',
                       isMine ? 'flex-row-reverse' : 'flex-row',
                     )}>
-                      <span className={cn(nameClass, nameDarkClass)}>
+                      <span className={nameClass}>
                         {displayName}
                       </span>
                       {isAdmin && msg.from === 'user' && thread.familySlug && (
-                        <span className={cn(styles.familyTag, 'chat-conversation-family-tag')}>
+                        <span className={c.familyTag}>
                           {thread.familySlug}
                         </span>
                       )}
@@ -346,21 +340,17 @@ export function ChatConversation({
                   </div>
                 )}
                 {/* Bubble */}
-                <div className={cn(
-                  isMine
-                    ? cn(styles.bubbleMine, 'chat-conversation-bubble-mine')
-                    : cn(styles.bubbleTheirs, 'chat-conversation-bubble-theirs'),
-                )}>
+                <div className={isMine ? c.bubbleMine : c.bubbleTheirs}>
                   {msg.text && <div>{msg.text}</div>}
                   {/* Inline images */}
                   {msg.attachments && msg.attachments.length > 0 && (
-                    <div className={styles.attachmentGrid}>
+                    <div className={c.attachmentGrid}>
                       {msg.attachments.map(att => (
-                        <div key={att.id} className={styles.attachmentWrapper}>
+                        <div key={att.id} className={c.attachmentWrapper}>
                           <AuthImage
                             src={`/api/feedback/file/${att.id}`}
                             alt={att.originalName}
-                            className={styles.attachmentImage}
+                            className={c.attachmentImage}
                             onClick={() => {
                               const token = localStorage.getItem('authToken');
                               fetch(`/api/feedback/file/${att.id}`, {
@@ -375,20 +365,20 @@ export function ChatConversation({
                           />
                           {onDeleteAttachment && confirmDeleteId === att.id ? (
                             <div
-                              className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1.5 rounded-lg"
+                              className={c.confirmOverlay}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <span className="text-white text-[10px] font-medium">{t('Delete?')}</span>
+                              <span className={c.confirmLabel}>{t('Delete?')}</span>
                               <div className="flex gap-1.5">
                                 <button
                                   onClick={() => handleDeleteAttachment(att.id)}
-                                  className="px-2 py-0.5 rounded bg-red-500 text-white text-[10px] font-medium border-none cursor-pointer"
+                                  className={c.confirmYes}
                                 >
                                   {t('Yes')}
                                 </button>
                                 <button
                                   onClick={() => setConfirmDeleteId(null)}
-                                  className="px-2 py-0.5 rounded bg-gray-500 text-white text-[10px] font-medium border-none cursor-pointer"
+                                  className={c.confirmNo}
                                 >
                                   {t('No')}
                                 </button>
@@ -400,7 +390,7 @@ export function ChatConversation({
                                 e.stopPropagation();
                                 setConfirmDeleteId(att.id);
                               }}
-                              className={cn(styles.attachmentDeleteButton, 'chat-conversation-attachment-delete')}
+                              className={c.attachmentDeleteButton}
                               aria-label={t('Remove image')}
                             >
                               <X className="h-3 w-3 text-white" aria-hidden="true" />
@@ -413,9 +403,8 @@ export function ChatConversation({
                 </div>
                 {/* Timestamp */}
                 <span className={cn(
-                  styles.timestamp,
-                  'chat-conversation-timestamp',
-                  isMine ? styles.timestampMine : styles.timestampTheirs,
+                  c.timestamp,
+                  isMine ? c.timestampMine : c.timestampTheirs,
                 )}>
                   {formatTime(msg.date, timeFormat)}
                 </span>
@@ -428,17 +417,17 @@ export function ChatConversation({
 
       {/* Pending file previews */}
       {!hideReplyBar && pendingFiles.length > 0 && (
-        <div className={cn(styles.replyPreviewStrip, 'chat-conversation-preview-strip')}>
+        <div className={c.replyPreviewStrip}>
           {pendingFiles.map((file, idx) => (
-            <div key={idx} className={styles.replyPreviewItem}>
+            <div key={idx} className={c.replyPreviewItem}>
               <img
                 src={URL.createObjectURL(file)}
                 alt={file.name}
-                className={styles.replyPreviewImage}
+                className={c.replyPreviewImage}
               />
               <button
                 onClick={() => removePendingFile(idx)}
-                className={styles.replyPreviewDelete}
+                className={c.replyPreviewDelete}
                 aria-label={t('Remove image')}
               >
                 <X className="h-2.5 w-2.5 text-white" aria-hidden="true" />
@@ -450,7 +439,7 @@ export function ChatConversation({
 
       {/* Reply Input */}
       {!hideReplyBar && (
-        <div className={cn(styles.replyBar, 'chat-conversation-reply-bar')}>
+        <div className={c.replyBar}>
           <input
             ref={fileInputRef}
             type="file"
@@ -461,10 +450,10 @@ export function ChatConversation({
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className={cn(styles.replyAttachButton, 'chat-conversation-attach-button')}
+            className={c.replyAttachButton}
             aria-label={t('Attach images')}
           >
-            <ImagePlus className="h-[18px] w-[18px] text-gray-500" aria-hidden="true" />
+            <ImagePlus className={c.attachIcon} aria-hidden="true" />
           </button>
           <textarea
             ref={textareaRef}
@@ -475,20 +464,15 @@ export function ChatConversation({
             placeholder={t('Type a reply...')}
             rows={1}
             disabled={sending}
-            className={cn(styles.replyTextarea, 'chat-conversation-reply-textarea')}
+            className={c.replyTextarea}
           />
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className={cn(
-              styles.sendButton,
-              canSend
-                ? styles.sendButtonActive
-                : cn(styles.sendButtonInactive, 'chat-conversation-send-inactive'),
-            )}
+            className={cn(c.sendButton, canSend ? c.sendButtonActive : c.sendButtonInactive)}
             aria-label={t('Send')}
           >
-            <Send className="h-[15px] w-[15px]" color={canSend ? '#fff' : '#a3a39b'} aria-hidden="true" />
+            <Send className="h-[15px] w-[15px]" color={canSend ? c.sendIconColorOn : c.sendIconColorOff} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -504,6 +488,7 @@ export function ChatReplyBar({
   subject,
   familyId,
   onReply,
+  appearance = 'default',
   className,
 }: ChatReplyBarProps) {
   const { theme } = useTheme();
@@ -513,6 +498,7 @@ export function ChatReplyBar({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const c = appearance === 'storybook' ? chatConversationSb : chatConversationDefault;
 
   const canSend = (replyText.trim() || pendingFiles.length > 0) && !sending;
 
@@ -562,17 +548,17 @@ export function ChatReplyBar({
     <div className={cn('flex flex-col w-full', className)}>
       {/* Pending file previews */}
       {pendingFiles.length > 0 && (
-        <div className={cn('flex gap-2 flex-wrap mb-2', 'chat-conversation-preview-strip-inline')}>
+        <div className={c.replyPreviewStripInline}>
           {pendingFiles.map((file, idx) => (
-            <div key={idx} className={styles.replyPreviewItem}>
+            <div key={idx} className={c.replyPreviewItem}>
               <img
                 src={URL.createObjectURL(file)}
                 alt={file.name}
-                className={styles.replyPreviewImage}
+                className={c.replyPreviewImage}
               />
               <button
                 onClick={() => removePendingFile(idx)}
-                className={styles.replyPreviewDelete}
+                className={c.replyPreviewDelete}
                 aria-label={t('Remove image')}
               >
                 <X className="h-2.5 w-2.5 text-white" aria-hidden="true" />
@@ -592,10 +578,10 @@ export function ChatReplyBar({
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className={cn(styles.replyAttachButton, 'chat-conversation-attach-button')}
+          className={c.replyAttachButton}
           aria-label={t('Attach images')}
         >
-          <ImagePlus className="h-[18px] w-[18px] text-gray-500" aria-hidden="true" />
+          <ImagePlus className={c.attachIcon} aria-hidden="true" />
         </button>
         <textarea
           ref={textareaRef}
@@ -606,20 +592,15 @@ export function ChatReplyBar({
           placeholder={t('Type a reply...')}
           rows={1}
           disabled={sending}
-          className={cn(styles.replyTextarea, 'chat-conversation-reply-textarea')}
+          className={c.replyTextarea}
         />
         <button
           onClick={handleSend}
           disabled={!canSend}
-          className={cn(
-            styles.sendButton,
-            canSend
-              ? styles.sendButtonActive
-              : cn(styles.sendButtonInactive, 'chat-conversation-send-inactive'),
-          )}
+          className={cn(c.sendButton, canSend ? c.sendButtonActive : c.sendButtonInactive)}
           aria-label={t('Send')}
         >
-          <Send className="h-[15px] w-[15px]" color={canSend ? '#fff' : '#a3a39b'} aria-hidden="true" />
+          <Send className="h-[15px] w-[15px]" color={canSend ? c.sendIconColorOn : c.sendIconColorOff} aria-hidden="true" />
         </button>
       </div>
     </div>
