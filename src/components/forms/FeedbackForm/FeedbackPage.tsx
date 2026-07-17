@@ -15,6 +15,7 @@ import { ChatThreadList } from '@/src/components/ui/chat-thread-list';
 import { ChatConversation, ChatReplyBar } from '@/src/components/ui/chat-conversation';
 import { ChatNewFeedback } from '@/src/components/ui/chat-new-feedback';
 import type { ChatNewFeedbackRef } from '@/src/components/ui/chat-new-feedback/chat-new-feedback.types';
+import { getFeedbackDrawerHeader } from './feedbackDrawerHeader';
 
 interface FeedbackPageProps {
   isOpen: boolean;
@@ -114,12 +115,14 @@ export default function FeedbackPage({
   ) : undefined;
 
   if (appearance === 'storybook') {
+    const sbHeader = getFeedbackDrawerHeader(viewState, selectedThread, t);
     const sbFooter = isConversation ? (
       <ChatReplyBar
         threadId={selectedThread.id}
         subject={selectedThread.subject}
         familyId={selectedThread.familyId}
         onReply={sendReply}
+        appearance="storybook"
       />
     ) : isNewFeedback ? (
       <>
@@ -150,8 +153,8 @@ export default function FeedbackPage({
       <StorybookDrawer
         open={isOpen}
         onClose={onClose}
-        title={t('Send feedback.')}
-        subtitle={t("It lands straight in the developer's inbox.")}
+        title={sbHeader.title}
+        subtitle={sbHeader.subtitle}
         onBack={viewState !== 'list' ? handleBack : undefined}
         footer={sbFooter}
       >
@@ -166,6 +169,7 @@ export default function FeedbackPage({
             formatDateTime={formatDateTime}
             countUnread={countUnreadMessages}
             className="flex-1 min-h-0"
+            appearance="storybook"
           />
         )}
 
@@ -183,6 +187,7 @@ export default function FeedbackPage({
             hideHeader
             hideReplyBar
             className="flex-1 min-h-0"
+            appearance="storybook"
           />
         )}
 
@@ -195,6 +200,7 @@ export default function FeedbackPage({
             hideFooter
             onCanSendChange={setCanSendNew}
             className="flex-1 min-h-0"
+            appearance="storybook"
           />
         )}
       </StorybookDrawer>
