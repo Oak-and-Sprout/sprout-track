@@ -6,12 +6,10 @@ import LoginSecurity from '@/src/components/LoginSecurity';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
-import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
-import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';
-import { Label } from '@/src/components/ui/label';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { FamilyResponse } from '@/app/api/types';
+import { literata, alegreyaSans } from '@/src/components/landing/fonts';
+import '@/src/components/ui/storybook-drawer/storybook-drawer.css';
 
 function LoginPageContent() {
   const router = useRouter();
@@ -179,80 +177,41 @@ function LoginPageContent() {
   // Show token authentication form if we're in token setup mode
   if (isTokenSetupFlow) {
     return (
-      <div className="flex flex-col items-center">
-        <div className="w-full max-w-md mx-auto mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-          <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">
-            {t('Family Setup Invitation')}
-          </h2>
-          <p className="text-blue-700 dark:text-blue-300">
-            {t('Please enter the password provided with this setup invitation to continue.')}
-          </p>
-        </div>
-        
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
-              {t('Setup Authentication')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleTokenAuth} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="tokenPassword">{t('Setup Password')}</Label>
-                <div className="relative">
-                  <Input
-                    id="tokenPassword"
-                    type={showTokenPassword ? 'text' : 'password'}
-                    value={tokenPassword}
-                    onChange={(e) => {
-                      setTokenPassword(e.target.value);
-                      setTokenError('');
-                    }}
-                    placeholder={t('Enter setup password')}
-                    disabled={tokenLoading}
-                    autoFocus
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                    onClick={() => setShowTokenPassword(!showTokenPassword)}
-                    disabled={tokenLoading}
-                    aria-label={showTokenPassword ? t('Hide password') : t('Show password')}
-                  >
-                    {showTokenPassword ? (
-                      <EyeOff className="h-4 w-4" aria-hidden="true" />
-                    ) : (
-                      <Eye className="h-4 w-4" aria-hidden="true" />
-                    )}
-                  </Button>
-                </div>
+      <div className={`${literata.variable} ${alegreyaSans.variable} sb-page`}>
+        <div className="sb-card">
+          <h1>{t('Finish setting up.')}</h1>
+          <p>{t('Enter the setup password you were given to continue.')}</p>
+          <form onSubmit={handleTokenAuth} className="sb-f-grid">
+            <div>
+              <label className="sb-fl" htmlFor="tokenPassword">{t('Setup password')}</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="tokenPassword"
+                  className="sb-fi"
+                  type={showTokenPassword ? 'text' : 'password'}
+                  value={tokenPassword}
+                  onChange={(e) => setTokenPassword(e.target.value)}
+                  autoFocus
+                  style={{ paddingRight: 44 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowTokenPassword(!showTokenPassword)}
+                  aria-label={showTokenPassword ? t('Hide password') : t('Show password')}
+                  style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sub)',
+                    width: 34, height: 34, display: 'grid', placeItems: 'center' }}
+                >
+                  {showTokenPassword ? <EyeOff size={18} strokeWidth={1.8} /> : <Eye size={18} strokeWidth={1.8} />}
+                </button>
               </div>
-              
-              {tokenError && (
-                <div className="text-red-500 text-sm">
-                  {tokenError}
-                </div>
-              )}
-              
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={tokenLoading || !tokenPassword.trim()}
-              >
-                {tokenLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                    {t('Authenticating...')}
-                  </>
-                ) : (
-                  t('Continue to Setup')
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+            {tokenError && <p className="sb-form-error">{tokenError}</p>}
+            <button type="submit" className="sb-btn sb-wide" disabled={tokenLoading}>
+              {tokenLoading ? t('One moment…') : t('Continue to setup')}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
