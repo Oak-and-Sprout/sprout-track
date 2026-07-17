@@ -25,7 +25,7 @@ export function LandingNav({ onOpenAccountModal, onAccountManagerOpen }: Landing
     <header className="ld-nav">
       <div className="ld-wrap">
         <Link className="ld-logo" href="/">
-          <img src="/sprout-256.png" alt="" width={26} height={26} style={{ borderRadius: '50%' }} />
+          <img src="/sprout-256.png" alt="" width={52} height={52} style={{ borderRadius: '50%' }} />
           <span>{t('Sprout Track')}</span>
         </Link>
         <nav className="ld-nav-links">
