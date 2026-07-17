@@ -362,6 +362,7 @@ export function AccountButton({
         <FeedbackPage
           isOpen={showFeedback}
           onClose={() => setShowFeedback(false)}
+          appearance="storybook"
         />
       </DropdownMenu>
     );
