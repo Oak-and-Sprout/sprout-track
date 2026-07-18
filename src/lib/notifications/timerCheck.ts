@@ -6,6 +6,7 @@ import {
 } from './push';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
+import { parseFeedTimerTypes, buildFeedTimerWhere } from '@/src/utils/feedTimerConfig';
 
 /**
  * Parse warning time string (format: "HH:mm") to total minutes
@@ -81,10 +82,17 @@ async function getLastActivityTime(
 ): Promise<Date | null> {
   try {
     if (activityType === 'feed') {
+      // Issue #225: only feeds in the baby's configured categories reset the timer
+      const baby = await prisma.baby.findUnique({
+        where: { id: babyId },
+        select: { feedTimerTypes: true },
+      });
+      const feedTimerWhere = buildFeedTimerWhere(parseFeedTimerTypes(baby?.feedTimerTypes));
       const lastFeed = await prisma.feedLog.findFirst({
         where: {
           babyId,
           deletedAt: null,
+          ...feedTimerWhere,
         },
         orderBy: {
           time: 'desc',

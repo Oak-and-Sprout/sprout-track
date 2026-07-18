@@ -14,6 +14,7 @@ const CreateBabySchema = z.object({
   feedWarningTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   diaperWarningTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   feedTimerFrom: z.enum(['start', 'end']).optional(),
+  feedTimerTypes: z.string().nullable().optional(),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<Baby>>> {

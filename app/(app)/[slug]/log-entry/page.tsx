@@ -602,6 +602,7 @@ function HomeContent(): React.ReactElement {
             babyId={selectedBaby.id}
             refreshTrigger={refreshTrigger}
             initialDate={initialTimelineDate}
+            feedTimerTypes={selectedBaby.feedTimerTypes}
             onLatestStatusReady={handleLatestStatusReady}
             onActivityDeleted={() => {
               triggerRefresh();

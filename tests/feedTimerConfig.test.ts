@@ -1,0 +1,138 @@
+import { describe, it, expect } from 'vitest';
+import {
+  FEED_TIMER_CATEGORIES,
+  parseFeedTimerTypes,
+  feedCountsForTimer,
+  buildFeedTimerWhere,
+} from '@/src/utils/feedTimerConfig';
+
+// Issue #225: per-baby configuration of which feed categories reset the
+// "time since last feed" timer (breast feeds, breast-milk bottles, formula
+// bottles, other bottles, solids). null/invalid config = count everything.
+
+describe('FEED_TIMER_CATEGORIES', () => {
+  it('exposes the five supported categories', () => {
+    expect(FEED_TIMER_CATEGORIES).toEqual([
+      'BREAST',
+      'BOTTLE_BREAST_MILK',
+      'BOTTLE_FORMULA',
+      'BOTTLE_OTHER',
+      'SOLIDS',
+    ]);
+  });
+});
+
+describe('parseFeedTimerTypes', () => {
+  it('returns null for null/undefined (all feeds count)', () => {
+    expect(parseFeedTimerTypes(null)).toBeNull();
+    expect(parseFeedTimerTypes(undefined)).toBeNull();
+  });
+
+  it('returns null for invalid JSON', () => {
+    expect(parseFeedTimerTypes('not-json')).toBeNull();
+    expect(parseFeedTimerTypes('{"foo": 1}')).toBeNull();
+    expect(parseFeedTimerTypes('')).toBeNull();
+  });
+
+  it('returns null for an empty array (treated as "all")', () => {
+    expect(parseFeedTimerTypes('[]')).toBeNull();
+  });
+
+  it('parses a valid category list', () => {
+    expect(parseFeedTimerTypes('["BREAST","SOLIDS"]')).toEqual(['BREAST', 'SOLIDS']);
+  });
+
+  it('drops unknown values and returns null if none survive', () => {
+    expect(parseFeedTimerTypes('["BREAST","NOPE"]')).toEqual(['BREAST']);
+    expect(parseFeedTimerTypes('["NOPE"]')).toBeNull();
+  });
+});
+
+describe('feedCountsForTimer', () => {
+  it('counts everything when categories are null/undefined', () => {
+    expect(feedCountsForTimer({ type: 'BREAST' }, null)).toBe(true);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula' }, undefined)).toBe(true);
+    expect(feedCountsForTimer({ type: 'SOLIDS' }, null)).toBe(true);
+  });
+
+  it('matches BREAST feeds against the BREAST category', () => {
+    expect(feedCountsForTimer({ type: 'BREAST' }, ['BREAST'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'BREAST' }, ['BOTTLE_FORMULA'])).toBe(false);
+  });
+
+  it('matches SOLIDS feeds against the SOLIDS category', () => {
+    expect(feedCountsForTimer({ type: 'SOLIDS' }, ['SOLIDS'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'SOLIDS' }, ['BREAST'])).toBe(false);
+  });
+
+  it('maps bottle feeds by bottleType', () => {
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Breast Milk' }, ['BOTTLE_BREAST_MILK'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Breast Milk' }, ['BOTTLE_FORMULA'])).toBe(false);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula' }, ['BOTTLE_FORMULA'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula' }, ['BOTTLE_BREAST_MILK'])).toBe(false);
+  });
+
+  it('counts mixed Formula\\Breast bottles under either breast-milk or formula', () => {
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula\\Breast' }, ['BOTTLE_BREAST_MILK'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula\\Breast' }, ['BOTTLE_FORMULA'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula\\Breast' }, ['BREAST'])).toBe(false);
+  });
+
+  it('treats Milk, Other, unknown and missing bottle types as BOTTLE_OTHER', () => {
+    for (const bottleType of ['Milk', 'Other', 'Something Else', null, undefined]) {
+      expect(feedCountsForTimer({ type: 'BOTTLE', bottleType }, ['BOTTLE_OTHER'])).toBe(true);
+      expect(feedCountsForTimer({ type: 'BOTTLE', bottleType }, ['BOTTLE_FORMULA'])).toBe(false);
+    }
+  });
+
+  it('returns false for unknown feed types', () => {
+    expect(feedCountsForTimer({ type: 'WEIRD' }, ['BREAST'])).toBe(false);
+  });
+});
+
+describe('buildFeedTimerWhere', () => {
+  it('returns an empty clause when categories are null/undefined (no filtering)', () => {
+    expect(buildFeedTimerWhere(null)).toEqual({});
+    expect(buildFeedTimerWhere(undefined)).toEqual({});
+  });
+
+  it('builds a simple clause for BREAST only', () => {
+    expect(buildFeedTimerWhere(['BREAST'])).toEqual({
+      OR: [{ type: 'BREAST' }],
+    });
+  });
+
+  it('includes mixed bottles in both breast-milk and formula clauses', () => {
+    expect(buildFeedTimerWhere(['BOTTLE_BREAST_MILK'])).toEqual({
+      OR: [{ type: 'BOTTLE', bottleType: { in: ['Breast Milk', 'Formula\\Breast'] } }],
+    });
+    expect(buildFeedTimerWhere(['BOTTLE_FORMULA'])).toEqual({
+      OR: [{ type: 'BOTTLE', bottleType: { in: ['Formula', 'Formula\\Breast'] } }],
+    });
+  });
+
+  it('matches other bottles via null or unrecognized bottleType', () => {
+    expect(buildFeedTimerWhere(['BOTTLE_OTHER'])).toEqual({
+      OR: [
+        {
+          type: 'BOTTLE',
+          OR: [
+            { bottleType: null },
+            { bottleType: { notIn: ['Breast Milk', 'Formula', 'Formula\\Breast'] } },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('combines multiple categories into a single OR clause', () => {
+    const where = buildFeedTimerWhere(['BREAST', 'SOLIDS', 'BOTTLE_FORMULA']);
+    expect(where).toEqual({
+      OR: [
+        { type: 'BREAST' },
+        { type: 'BOTTLE', bottleType: { in: ['Formula', 'Formula\\Breast'] } },
+        { type: 'SOLIDS' },
+      ],
+    });
+  });
+});

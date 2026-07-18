@@ -17,6 +17,8 @@ import {
 } from '@/src/components/ui/select';
 import { useState, useEffect } from 'react';
 import { useLocalization } from '@/src/context/localization';
+import FeedTimerTypesField from '@/src/components/forms/FeedTimerTypesField';
+import { FEED_TIMER_CATEGORIES, FeedTimerCategory, parseFeedTimerTypes } from '@/src/utils/feedTimerConfig';
 
 interface BabyModalProps {
   open: boolean;
@@ -34,6 +36,7 @@ const defaultFormData = {
   feedWarningTime: '03:00',
   diaperWarningTime: '02:00',
   feedTimerFrom: 'start',
+  feedTimerTypes: [...FEED_TIMER_CATEGORIES] as FeedTimerCategory[],
 };
 
 export default function BabyModal({
@@ -62,6 +65,7 @@ export default function BabyModal({
         feedWarningTime: baby.feedWarningTime || '03:00',
         diaperWarningTime: baby.diaperWarningTime || '02:00',
         feedTimerFrom: (baby as any).feedTimerFrom || 'start',
+        feedTimerTypes: parseFeedTimerTypes((baby as any).feedTimerTypes) ?? [...FEED_TIMER_CATEGORIES],
       });
     } else if (!open) {
       setFormData(defaultFormData);
@@ -84,6 +88,10 @@ export default function BabyModal({
           id: baby?.id,
           birthDate: new Date(formData.birthDate),
           gender: formData.gender as Gender,
+          // null = all feeds count (default)
+          feedTimerTypes: formData.feedTimerTypes.length === FEED_TIMER_CATEGORIES.length
+            ? null
+            : JSON.stringify(formData.feedTimerTypes),
         }),
       });
 
@@ -221,6 +229,10 @@ export default function BabyModal({
               </SelectContent>
             </Select>
           </div>
+          <FeedTimerTypesField
+            value={formData.feedTimerTypes}
+            onChange={(feedTimerTypes) => setFormData({ ...formData, feedTimerTypes })}
+          />
           {isEditing && (
             <div className="flex items-center gap-3">
               <input

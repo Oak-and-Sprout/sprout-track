@@ -18,6 +18,7 @@ import { styles } from './setup-wizard.styles';
 import { BabySetupStageProps } from './setup-wizard.types';
 import { Gender } from '@prisma/client';
 import { useLocalization } from '@/src/context/localization';
+import FeedTimerTypesField from '@/src/components/forms/FeedTimerTypesField';
 
 /**
  * BabySetupStage Component
@@ -38,7 +39,9 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
   diaperWarningTime,
   setDiaperWarningTime,
   feedTimerFrom,
-  setFeedTimerFrom
+  setFeedTimerFrom,
+  feedTimerTypes,
+  setFeedTimerTypes
 }) => {
   const { t } = useLocalization();
   const { dateFormat } = useTimezone();
@@ -215,6 +218,13 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
             <SelectItem value="end">{t('End of feeding')}</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className={cn(styles.formGroup, "setup-wizard-form-group")}>
+        <FeedTimerTypesField
+          value={feedTimerTypes}
+          onChange={setFeedTimerTypes}
+        />
       </div>
     </div>
   );
