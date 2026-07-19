@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { isValidGrowthStandard } from '@/src/utils/growthStandard';
 
 // CDC growth data record type
 export interface CdcGrowthDataRecord {
@@ -35,7 +36,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const measurementType = searchParams.get('type') as MeasurementTypeParam | null; // weight, length, head_circumference
     const standard = (searchParams.get('standard') || 'CDC').toUpperCase(); // 'CDC' or 'WHO'
 
-    if (standard !== 'CDC' && standard !== 'WHO') {
+    if (!isValidGrowthStandard(standard)) {
       return NextResponse.json<ApiResponse<null>>(
         { success: false, error: 'standard must be CDC or WHO' },
         { status: 400 }

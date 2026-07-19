@@ -4,6 +4,7 @@ import { ApiResponse } from '../types';
 import { Settings } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
+import { isValidGrowthStandard } from '@/src/utils/growthStandard';
 
 // The family securityPin (login PIN) must never be returned to the client.
 type SettingsResponse = Omit<Settings, 'securityPin'>;
@@ -159,8 +160,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
           continue;
         }
         if (field === 'growthChartStandard') {
-          const validStandards = ['CDC', 'WHO'];
-          if (!validStandards.includes(body[field])) {
+          if (!isValidGrowthStandard(body[field])) {
             return NextResponse.json<ApiResponse<null>>(
               { success: false, error: 'growthChartStandard must be CDC or WHO' },
               { status: 400 }
