@@ -16,7 +16,7 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
-import { lbToLbOz } from '@/src/components/Timeline/utils';
+import { lbToLbOz, defaultWeightInputUnit } from '@/src/utils/weightUnits';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
@@ -131,7 +131,7 @@ export default function MeasurementForm({
             const settings = data.data;
             setDefaultUnits({
               height: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm',
-              weight: settings.defaultWeightUnit === 'KG' ? 'kg' : settings.defaultWeightUnit === 'G' ? 'g' : 'lb',
+              weight: defaultWeightInputUnit(settings.defaultWeightUnit),
               headCircumference: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm', // Using height unit for head circumference
               temperature: settings.defaultTempUnit === 'F' ? '°F' : '°C',
             });
