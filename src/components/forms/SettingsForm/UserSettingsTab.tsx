@@ -161,6 +161,32 @@ export default function UserSettingsTab({
         </div>
       </div>
 
+      {/* Growth Chart Standard */}
+      <div>
+        <h3 className="form-label mb-4">{t('Growth Chart Standard')}</h3>
+        <p className="text-sm text-gray-500 mb-4">{t('Choose which growth reference to use for percentile calculations.')}</p>
+        <div className="max-w-xs">
+          <Label className="form-label" htmlFor={`${idPrefix}-growth-standard`}>{t('Standard')}</Label>
+          <Select
+            value={settings?.growthChartStandard || 'CDC'}
+            onValueChange={(value: 'CDC' | 'WHO') => onSettingsChange({ growthChartStandard: value })}
+            disabled={loading}
+          >
+            <SelectTrigger id={`${idPrefix}-growth-standard`}>
+              <SelectValue placeholder={t("Select standard")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CDC">
+                {t('CDC')} — {t('0–36 months')}
+              </SelectItem>
+              <SelectItem value="WHO">
+                {t('WHO')} — {t('0–24 months')}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Notification Settings - Only show if enabled */}
       {deploymentConfig?.notificationsEnabled && (
         <NotificationSettings

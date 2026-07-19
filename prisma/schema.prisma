@@ -531,6 +531,7 @@ model Settings {
   photoQuotaMB        Int? // Per-family photo quota override in MB; null = use AppConfig default
   dateFormat          String   @default("MM/DD/YYYY") // "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD"
   timeFormat          String   @default("12h") // "12h" | "24h"
+  growthChartStandard String   @default("CDC") // "CDC" | "WHO" — growth chart standard for percentile calculations
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -1352,6 +1353,79 @@ model CdcHeadCircumferenceForAge {
   p90       Float // 90th percentile
   p95       Float // 95th percentile
   p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// WHO Growth Standard reference data for percentile calculations
+// Data from: WHO Multicentre Growth Reference Study (MGRS)
+// Uses LMS method for percentile calculations (same as CDC)
+
+// WHO Weight-for-age reference data (infants 0-24 months)
+model WhoWeightForAge {
+  id        String @id @default(uuid())
+  sex       Int // 1 = Male, 2 = Female
+  ageMonths Float // Age in months (0, 1, 2, ..., 24)
+  l         Float // L parameter (power in Box-Cox transformation)
+  m         Float // M parameter (median)
+  s         Float // S parameter (generalized coefficient of variation)
+  p3        Float // 3rd percentile
+  p5        Float // 5th percentile
+  p10       Float // 10th percentile
+  p25       Float // 25th percentile
+  p50       Float // 50th percentile (median)
+  p75       Float // 75th percentile
+  p90       Float // 90th percentile
+  p95       Float // 95th percentile
+  p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// WHO Length-for-age reference data (infants 0-24 months)
+model WhoLengthForAge {
+  id        String @id @default(uuid())
+  sex       Int
+  ageMonths Float
+  l         Float
+  m         Float
+  s         Float
+  p3        Float
+  p5        Float
+  p10       Float
+  p25       Float
+  p50       Float
+  p75       Float
+  p90       Float
+  p95       Float
+  p97       Float
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// WHO Head circumference-for-age reference data (infants 0-24 months)
+model WhoHeadCircumferenceForAge {
+  id        String @id @default(uuid())
+  sex       Int
+  ageMonths Float
+  l         Float
+  m         Float
+  s         Float
+  p3        Float
+  p5        Float
+  p10       Float
+  p25       Float
+  p50       Float
+  p75       Float
+  p90       Float
+  p95       Float
+  p97       Float
 
   @@unique([sex, ageMonths])
   @@index([sex])

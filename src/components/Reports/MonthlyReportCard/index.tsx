@@ -308,7 +308,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
       ) : (
         <>
           {/* Growth */}
-          <GrowthSummarySection growth={reportData.growth} babyName={selectedBaby.firstName} isPdfExport={isPdfMode} />
+          <GrowthSummarySection growth={reportData.growth} growthStandard={reportData.growthStandard} babyName={selectedBaby.firstName} isPdfExport={isPdfMode} />
 
           {/* Feeding */}
           <FeedingSection feeding={reportData.feeding} />
