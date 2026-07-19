@@ -177,10 +177,10 @@ export default function UserSettingsTab({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="CDC">
-                {t('CDC')} — {t('0–36 months')}
+                CDC — {t('0–36 months')}
               </SelectItem>
               <SelectItem value="WHO">
-                {t('WHO')} — {t('0–24 months')}
+                WHO — {t('0–24 months')}
               </SelectItem>
             </SelectContent>
           </Select>

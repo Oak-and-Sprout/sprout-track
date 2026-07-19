@@ -230,6 +230,15 @@ const GrowthSummarySection: React.FC<GrowthSummarySectionProps & { isPdfExport?:
   const { t } = useLocalization();
   const [activeChart, setActiveChart] = useState<ChartType>('weight');
 
+  const chartTitle = (type: ChartType, standard: 'CDC' | 'WHO'): string => {
+    const keys: Record<ChartType, { CDC: string; WHO: string }> = {
+      weight: { CDC: 'Weight-for-age (CDC)', WHO: 'Weight-for-age (WHO)' },
+      length: { CDC: 'Length-for-age (CDC)', WHO: 'Length-for-age (WHO)' },
+      headCircumference: { CDC: 'Head circ.-for-age (CDC)', WHO: 'Head circ.-for-age (WHO)' },
+    };
+    return t(keys[type][standard]);
+  };
+
   const hasAnyMeasurement = growth.weight || growth.length || growth.headCircumference;
   const hasAnyChartData = growth.chartData.weight.points.length > 0
     || growth.chartData.length.points.length > 0
@@ -262,13 +271,13 @@ const GrowthSummarySection: React.FC<GrowthSummarySectionProps & { isPdfExport?:
       {isPdfExport ? (
         <>
           {growth.chartData.weight.points.length > 0 && (
-            <GrowthChartCard chartData={growth.chartData.weight} title={`Weight-for-age (${growthStandard})`} babyName={babyName} disableAnimation />
+            <GrowthChartCard chartData={growth.chartData.weight} title={chartTitle('weight', growthStandard)} babyName={babyName} disableAnimation />
           )}
           {growth.chartData.length.points.length > 0 && (
-            <GrowthChartCard chartData={growth.chartData.length} title={`Length-for-age (${growthStandard})`} babyName={babyName} disableAnimation />
+            <GrowthChartCard chartData={growth.chartData.length} title={chartTitle('length', growthStandard)} babyName={babyName} disableAnimation />
           )}
           {growth.chartData.headCircumference.points.length > 0 && (
-            <GrowthChartCard chartData={growth.chartData.headCircumference} title={`Head circ.-for-age (${growthStandard})`} babyName={babyName} disableAnimation />
+            <GrowthChartCard chartData={growth.chartData.headCircumference} title={chartTitle('headCircumference', growthStandard)} babyName={babyName} disableAnimation />
           )}
         </>
       ) : (
@@ -298,7 +307,7 @@ const GrowthSummarySection: React.FC<GrowthSummarySectionProps & { isPdfExport?:
 
           {/* Active chart */}
           {activeChartData.points.length > 0 && (
-            <GrowthChartCard chartData={activeChartData} title={`${activeConfig.label}-for-age (${growthStandard})`} babyName={babyName} />
+            <GrowthChartCard chartData={activeChartData} title={chartTitle(activeChart, growthStandard)} babyName={babyName} />
           )}
         </>
       )}
