@@ -25,28 +25,30 @@ export default function SelectionBar({ count, onDownload, onDelete, onCancel }: 
 
   return (
     <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm text-white shadow-2xl photo-gallery-selection-bar">
-      <span className="font-medium">
+      <span className="font-medium whitespace-nowrap">
         {count} {t('selected')}
       </span>
 
       {confirmingDelete ? (
-        <>
-          <span className="text-slate-300">{t('Move to Trash?')}</span>
-          <button
-            type="button"
-            onClick={() => { setConfirmingDelete(false); onDelete(); }}
-            className="rounded-lg bg-red-500 px-2.5 py-1 text-xs font-medium hover:bg-red-600"
-          >
-            {t('Yes')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmingDelete(false)}
-            className="rounded-lg bg-slate-700 px-2.5 py-1 text-xs font-medium hover:bg-slate-600"
-          >
-            {t('No')}
-          </button>
-        </>
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="whitespace-nowrap text-slate-300">{t('Move to Trash?')}</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => { setConfirmingDelete(false); onDelete(); }}
+              className="rounded-lg bg-red-500 px-3 py-1 text-xs font-medium hover:bg-red-600"
+            >
+              {t('Yes')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(false)}
+              className="rounded-lg bg-slate-700 px-3 py-1 text-xs font-medium hover:bg-slate-600"
+            >
+              {t('No')}
+            </button>
+          </div>
+        </div>
       ) : (
         <>
           <button

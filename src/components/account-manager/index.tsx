@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import FormPage, { FormPageFooter } from '@/src/components/ui/form-page';
-import { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
-import { Button } from '@/src/components/ui/button';
-import { Loader2, Settings, Users, Download, AlertTriangle } from 'lucide-react';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { styles } from './account-manager.styles';
 import { AccountManagerProps, AccountStatus, FamilyData } from './account-manager.types';
@@ -34,20 +32,28 @@ const AccountManager: React.FC<AccountManagerProps> = ({
   onClose,
 }) => {
   const { t } = useLocalization();
-  
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [activeTab, setActiveTab] = useState<'account' | 'family'>('account');
+
   // Data states
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [familyData, setFamilyData] = useState<FamilyData | null>(null);
-  
+
   // Fetch data when the component opens
   useEffect(() => {
     if (isOpen) {
       fetchData();
     }
   }, [isOpen]);
+
+  // Fall back to the account tab if the family tab becomes unavailable
+  useEffect(() => {
+    if (!familyData) {
+      setActiveTab('account');
+    }
+  }, [familyData]);
   
   // Fetch all necessary data
   const fetchData = async () => {
@@ -118,116 +124,59 @@ const AccountManager: React.FC<AccountManagerProps> = ({
     fetchData();
   };
 
-  // Create tabs configuration - conditionally include family people tab
-  const tabs: FormPageTab[] = [
-    {
-      id: 'account-settings',
-      label: familyData ? 'Account' : 'Account',
-      icon: Settings,
-      content: (
-        <>
-          {/* Loading state */}
-          {isLoading && (
-            <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
-              <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading...')}</p>
-            </div>
-          )}
-          
-          {/* Error state */}
-          {error && (
-            <div className={cn(styles.errorContainer, "account-manager-error-container")}>
-              <div className="flex items-center gap-2 text-red-600 mb-2">
-                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-                <p className="font-medium">{t('Error')}</p>
-              </div>
-              <p className={cn("text-red-500 mb-4", "account-manager-error-text")}>{error}</p>
-              <Button 
-                variant="outline" 
-                onClick={fetchData} 
-                className="mt-2"
-              >
-                {t('Retry')}
-              </Button>
-            </div>
-          )}
-          
-          {/* Tab content */}
-          {!isLoading && !error && accountStatus && (
-            <AccountSettingsTab
-              accountStatus={accountStatus}
-              familyData={familyData}
-              onDataRefresh={handleDataRefresh}
-            />
-          )}
-        </>
-      )
-    }
-  ];
-
-  // Only add family people tab if family data exists
-  if (familyData) {
-    tabs.push({
-      id: 'family-people',
-      label: 'Family & People',
-      icon: Users,
-      content: (
-        <>
-          {/* Loading state */}
-          {isLoading && (
-            <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
-              <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
-              <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading...')}</p>
-            </div>
-          )}
-          
-          {/* Error state */}
-          {error && (
-            <div className={cn(styles.errorContainer, "account-manager-error-container")}>
-              <div className="flex items-center gap-2 text-red-600 mb-2">
-                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-                <p className="font-medium">{t('Error')}</p>
-              </div>
-              <p className={cn("text-red-500 mb-4", "account-manager-error-text")}>{error}</p>
-              <Button 
-                variant="outline" 
-                onClick={fetchData} 
-                className="mt-2"
-              >
-                {t('Retry')}
-              </Button>
-            </div>
-          )}
-          
-          {/* Tab content */}
-          {!isLoading && !error && accountStatus && familyData && (
-            <FamilyPeopleTab
-              familyData={familyData}
-              onDataRefresh={handleDataRefresh}
-            />
-          )}
-        </>
-      )
-    });
-  }
-  
   return (
-    <FormPage
-      isOpen={isOpen}
+    <StorybookDrawer
+      open={isOpen}
       onClose={onClose}
-      title="Account Manager"
-      description="Manage your account settings and family information"
-      tabs={tabs}
-      defaultActiveTab="account-settings"
+      title={t('Your account')}
+      art="butterfly"
+      headerExtras={
+        <nav className="sb-tabs">
+          <button
+            type="button"
+            className={`sb-tab${activeTab === 'account' ? ' sb-on' : ''}`}
+            onClick={() => setActiveTab('account')}
+          >
+            {t('Account')}
+          </button>
+          {familyData && (
+            <button
+              type="button"
+              className={`sb-tab${activeTab === 'family' ? ' sb-on' : ''}`}
+              onClick={() => setActiveTab('family')}
+            >
+              {t('Family & people')}
+            </button>
+          )}
+        </nav>
+      }
     >
-      <FormPageFooter>
-        <div className={cn(styles.footerContainer, "account-manager-footer-container")}>
-          <Button onClick={onClose} variant="outline">
-            {t('Close')}
-          </Button>
+      {isLoading ? (
+        <div className={cn(styles.loadingContainer, "account-manager-loading-container")}>
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
+          <p className={cn("mt-2 text-gray-600", "account-manager-loading-text")}>{t('Loading...')}</p>
         </div>
-      </FormPageFooter>
-    </FormPage>
+      ) : error ? (
+        <div className={cn(styles.errorContainer, "account-manager-error-container")}>
+          <div className="flex items-center gap-2 text-red-600 mb-2">
+            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+            <p className="font-medium">{t('Error')}</p>
+          </div>
+          <p className="sb-form-error">{error}</p>
+          <button type="button" className="sb-btn sb-ghost sb-sm mt-2" onClick={fetchData}>
+            {t('Retry')}
+          </button>
+        </div>
+      ) : activeTab === 'account' && accountStatus ? (
+        <AccountSettingsTab
+          accountStatus={accountStatus}
+          familyData={familyData}
+          onDataRefresh={handleDataRefresh}
+        />
+      ) : familyData ? (
+        <FamilyPeopleTab familyData={familyData} onDataRefresh={handleDataRefresh} />
+      ) : null}
+    </StorybookDrawer>
   );
 };
 

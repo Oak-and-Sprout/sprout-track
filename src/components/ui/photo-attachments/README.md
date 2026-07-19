@@ -6,7 +6,7 @@ A reusable photo attachment strip component that manages locally-pending files a
 
 - Display existing photo thumbnails with optional remove button
 - Show pending (not-yet-uploaded) photo thumbnails with remove functionality
-- Add new photos via camera or photo library picker
+- Two explicit add tiles: **Take Photo** (device camera) and **Library** (photo picker)
 - Enforce maximum photo count (default 4 per activity)
 - Object URL management: creates and revokes URLs automatically for pending thumbnails
 - Disabled state to prevent new additions while maintaining display
@@ -135,13 +135,13 @@ export function ActivityEditor() {
 
 3. **Accessibility**:
    - All interactive elements have aria-labels
-   - File input hidden and triggered via button click
+   - File inputs hidden and triggered via the tile buttons
    - Remove badges use small round button pattern with X icon
 
-4. **iOS Camera Behavior**:
-   - The input has `capture="environment"` to force camera on iOS
-   - Note: In some iOS versions, `capture="environment"` restricts to camera-only, blocking library access
-   - If needed, remove `capture` attribute to allow both camera and library via native picker
+4. **Camera vs. Library**:
+   - Two hidden inputs: the Take Photo input has `capture="environment"` (single file, opens the OS camera on touch devices); the Library input has **no** capture attribute and `multiple`, so mobile browsers show the photo picker
+   - Take Photo is routed through `useTakePhoto` (`src/components/ui/camera-capture/`): native capture input on touch-first devices, in-app `CameraCaptureModal` (getUserMedia) on desktops, library-picker fallback when no camera path exists
+   - Strategy decision is the pure `decideCameraStrategy` in `src/utils/photoUtils.ts` (unit tested)
 
 5. **Dark Mode**: Uses `html.dark` class selectors in `.css` file (not Tailwind `dark:` classes) to honor the app's in-app theme toggle
 
@@ -150,7 +150,9 @@ export function ActivityEditor() {
 Required translation keys in `en.json`:
 - `"View photo"` - aria-label for existing photo thumbnails
 - `"Remove photo"` - aria-label for remove buttons
-- `"Add photo"` - aria-label for add tile button
+- `"Take Photo"` - camera tile label / aria-label
+- `"Library"` - library tile label
+- `"Choose from Library"` - library tile aria-label
 - `"Attach up to 4 photos — they'll show on the timeline and in the gallery."` - Hint text below thumbnails
 
 ## File Upload Handling

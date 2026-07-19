@@ -11,6 +11,7 @@ import SecuritySetupStage from './SecuritySetupStage';
 import BabySetupStage from './BabySetupStage';
 import { Gender } from '@prisma/client';
 import { useLocalization } from '@/src/context/localization';
+import { FEED_TIMER_CATEGORIES, FeedTimerCategory } from '@/src/utils/feedTimerConfig';
 
 import './setup-wizard.css';
 
@@ -72,6 +73,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
   const [feedWarningTime, setFeedWarningTime] = useState('02:00');
   const [diaperWarningTime, setDiaperWarningTime] = useState('03:00');
   const [feedTimerFrom, setFeedTimerFrom] = useState('start');
+  const [feedTimerTypes, setFeedTimerTypes] = useState<FeedTimerCategory[]>([...FEED_TIMER_CATEGORIES]);
   
   // Error handling
   const [error, setError] = useState('');
@@ -315,6 +317,10 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             feedWarningTime,
             diaperWarningTime,
             feedTimerFrom,
+            // null = all feeds count (default)
+            feedTimerTypes: feedTimerTypes.length === FEED_TIMER_CATEGORIES.length
+              ? null
+              : JSON.stringify(feedTimerTypes),
             familyId: createdFamily?.id,
           }),
         });
@@ -568,6 +574,8 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             setDiaperWarningTime={setDiaperWarningTime}
             feedTimerFrom={feedTimerFrom}
             setFeedTimerFrom={setFeedTimerFrom}
+            feedTimerTypes={feedTimerTypes}
+            setFeedTimerTypes={setFeedTimerTypes}
           />
         )}
 

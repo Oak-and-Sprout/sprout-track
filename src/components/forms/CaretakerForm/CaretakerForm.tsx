@@ -16,6 +16,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
 import { caretakerFormStyles } from './caretaker-form.styles';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
@@ -32,6 +33,8 @@ interface CaretakerFormProps {
   isEditing: boolean;
   caretaker: (PrismaCaretaker & { loginId?: string }) | null;
   onCaretakerChange?: () => void;
+  /** 'storybook' renders the stacked storybook drawer (account manager); default is the classic FormPage. */
+  appearance?: 'default' | 'storybook';
 }
 
 const defaultFormData = {
@@ -49,6 +52,7 @@ export default function CaretakerForm({
   isEditing,
   caretaker,
   onCaretakerChange,
+  appearance = 'default',
 }: CaretakerFormProps) {
   const { t } = useLocalization();
   const { showToast } = useToast();
@@ -323,6 +327,104 @@ export default function CaretakerForm({
       setIsSubmitting(false);
     }
   };
+
+  if (appearance === 'storybook') {
+    return (
+      <StorybookDrawer
+        open={isOpen}
+        onClose={onClose}
+        onBack={onClose}
+        title={isEditing ? t('Edit caretaker') : t('Add a caretaker')}
+        subtitle={t('Anyone who helps — parents, grandparents, the nanny.')}
+        footer={
+          <>
+            <button type="button" className="sb-btn sb-ghost" onClick={onClose}>{t('Cancel')}</button>
+            <button type="submit" form="sb-caretaker-form" className="sb-btn" disabled={isSubmitting}>
+              {isSubmitting ? t('Saving…') : isEditing ? t('Save changes') : t('Add caretaker')}
+            </button>
+          </>
+        }
+      >
+        <form id="sb-caretaker-form" onSubmit={handleSubmit} className="sb-f-grid">
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbCtName">{t('Name')}</label>
+              <input id="sbCtName" className="sb-fi" value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbCtType">
+                {t('Relationship')} <span className="sb-fl-opt">({t('optional')})</span>
+              </label>
+              <input id="sbCtType" className="sb-fi" placeholder={t('Grandma, nanny, dad…')}
+                value={formData.type || ''}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <label className="sb-fl" htmlFor="sbCtRole">{t('Role')}</label>
+            <select id="sbCtRole" className="sb-fi" value={formData.role} disabled={isFirstCaretaker}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}>
+              <option value="USER">{t('Regular user')}</option>
+              <option value="ADMIN">{t('Administrator')}</option>
+            </select>
+            <p className="sb-fh">{t('Admins can edit family settings and people.')}</p>
+          </div>
+          <div className="sb-fgroup">
+            <b>{t('How they sign in')}</b>
+            <p className="sb-fh">{t("A 2-digit ID and a PIN — easy enough for grandma's phone.")}</p>
+            <div className="sb-f2">
+              <div>
+                <label className="sb-fl" htmlFor="sbCtId">{t('Login ID')}</label>
+                <input id="sbCtId" className="sb-fi" maxLength={2} inputMode="numeric" required
+                  value={formData.loginId}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    // Only allow digits up to 2 characters
+                    if (value.length <= 2) {
+                      setFormData({ ...formData, loginId: value });
+                    }
+                  }} />
+                {loginIdError && <p className="sb-form-error">{loginIdError}</p>}
+              </div>
+              <div>
+                <label className="sb-fl" htmlFor="sbCtPin">
+                  {t('PIN')} <span className="sb-fl-opt">({t('6–10 digits')})</span>
+                </label>
+                <input id="sbCtPin" className="sb-fi" type="password" maxLength={10} inputMode="numeric"
+                  required={!isEditing} placeholder="••••••"
+                  value={formData.securityPin}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 10) {
+                      setFormData({ ...formData, securityPin: value });
+                    }
+                  }} />
+              </div>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <label className="sb-fl" htmlFor="sbCtPin2">{t('Confirm PIN')}</label>
+              <input id="sbCtPin2" className="sb-fi" type="password" maxLength={10} inputMode="numeric"
+                required={!isEditing} placeholder={t('Same PIN again')}
+                value={confirmPin}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  if (value.length <= 10) {
+                    setConfirmPin(value);
+                  }
+                }} />
+            </div>
+          </div>
+          <label className="sb-fcheck">
+            <input type="checkbox" checked={formData.inactive} disabled={isFirstCaretaker}
+              onChange={(e) => setFormData({ ...formData, inactive: e.target.checked })} />
+            <span>{t("Mark as inactive — they keep their history but can't sign in.")}</span>
+          </label>
+          {error && <p className="sb-form-error">{error}</p>}
+        </form>
+      </StorybookDrawer>
+    );
+  }
 
   return (
     <FormPage 

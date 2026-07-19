@@ -34,6 +34,11 @@ export interface ContactFormProps {
    * Whether the form is in a loading state
    */
   isLoading?: boolean;
+
+  /**
+   * 'storybook' renders the stacked storybook drawer (account manager); default is the classic FormPage.
+   */
+  appearance?: 'default' | 'storybook';
 }
 
 /**

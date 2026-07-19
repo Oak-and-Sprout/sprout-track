@@ -246,6 +246,7 @@ model Baby {
   feedWarningTime   String    @default("03:00") // Default 3 hours
   diaperWarningTime String    @default("02:00") // Default 2 hours
   feedTimerFrom     String    @default("start") // "start" | "end" - count feed timer from start or end of feeding
+  feedTimerTypes    String? // JSON array of feed categories that reset the feed timer (issue #225); null = all feeds count
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?

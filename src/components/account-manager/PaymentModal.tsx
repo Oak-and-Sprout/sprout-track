@@ -68,7 +68,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       id: 'monthly',
       name: 'Monthly',
       description: 'Perfect for trying out Sprout Track',
-      price: 2.00,
+      price: 2.99,
       interval: 'month',
       stripePriceId: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID || '',
       features: [
@@ -84,7 +84,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       id: 'lifetime',
       name: 'Lifetime',
       description: 'One-time payment, lifetime access',
-      price: 12.00,
+      price: 19.99,
       interval: 'lifetime',
       stripePriceId: process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID || '',
       highlighted: true,

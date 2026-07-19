@@ -2,6 +2,17 @@
 
 A registration-focused modal component that provides account creation and login functionality for user accounts in Sprout Track.
 
+## Presentation
+
+Renders as a `StorybookDrawer` (`@/src/components/ui/storybook-drawer`) — a right slide-over
+in the v1-storybook skin (paper cream, Literata titles, teal accents) — instead of the
+Radix `Dialog` it previously used. All state, handlers, effects, and validation logic are
+unchanged; only the markup and styling changed. The five modes (login, register,
+forgot-password, verify, reset-password) each drive the drawer's title/subtitle via a
+`headings` map and render mode-specific `sb-*` form/status markup inside the drawer body.
+`account-modal.css` is no longer imported here — it stays on disk because
+`LoginSecurity`/`AccountLogin` (the family-slug login surface) still import and use it.
+
 ## Features
 
 - **Registration Focused**: Defaults to registration mode with clear transition to login

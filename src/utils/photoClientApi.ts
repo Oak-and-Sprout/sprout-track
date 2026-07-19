@@ -1,4 +1,5 @@
 import { PhotoListResponse, PhotoLogCreate, PhotoLogResponse, PhotoResponse, PhotoUploadResult } from '@/app/api/types';
+import { photosZipFileName, uniqueFileNames } from '@/src/utils/photoUtils';
 
 function authHeaders(): Record<string, string> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -87,11 +88,7 @@ export async function deletePhotoLog(id: string): Promise<void> {
   await jsonRequest<null>(`/api/photo-log?id=${id}`, { method: 'DELETE' });
 }
 
-/** Client-side download: fetch full-size blob and trigger a save. */
-export async function downloadPhoto(id: string, fileName: string): Promise<void> {
-  const response = await fetch(`/api/photos/file/${id}?size=full`, { headers: authHeaders() });
-  if (!response.ok) throw new Error('Failed to download photo');
-  const blob = await response.blob();
+function saveBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
@@ -100,6 +97,40 @@ export async function downloadPhoto(id: string, fileName: string): Promise<void>
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+async function fetchPhotoBlob(id: string): Promise<Blob> {
+  const response = await fetch(`/api/photos/file/${id}?size=full`, { headers: authHeaders() });
+  if (!response.ok) throw new Error('Failed to download photo');
+  return response.blob();
+}
+
+/** Client-side download: fetch full-size blob and trigger a save. */
+export async function downloadPhoto(id: string, fileName: string): Promise<void> {
+  saveBlob(await fetchPhotoBlob(id), fileName);
+}
+
+/**
+ * Bundles multiple photos into a single zip download. Browsers only honor
+ * one programmatic download per user gesture, so a per-photo loop silently
+ * drops all but the first — a zip is the only reliable multi-file delivery.
+ * Returns the number of photos that failed to fetch (they're skipped, the
+ * rest still ship in the zip). Throws only if NO photo could be fetched.
+ */
+export async function downloadPhotosAsZip(photos: { id: string; fileName: string }[]): Promise<number> {
+  const { default: JSZip } = await import('jszip');
+  const results = await Promise.allSettled(photos.map((photo) => fetchPhotoBlob(photo.id)));
+  const succeeded: { fileName: string; blob: Blob }[] = [];
+  results.forEach((result, i) => {
+    if (result.status === 'fulfilled') succeeded.push({ fileName: photos[i].fileName, blob: result.value });
+  });
+  if (succeeded.length === 0) throw new Error('Failed to download photos');
+  const zip = new JSZip();
+  const names = uniqueFileNames(succeeded.map((s) => s.fileName));
+  succeeded.forEach((entry, i) => zip.file(names[i], entry.blob));
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  saveBlob(zipBlob, photosZipFileName(new Date()));
+  return photos.length - succeeded.length;
 }
 
 let photosEnabledCache: boolean | null = null;

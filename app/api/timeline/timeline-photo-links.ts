@@ -37,3 +37,14 @@ export function groupPhotoLinks(rows: PhotoLinkRow[]): Map<string, TimelinePhoto
   }
   return photosByActivity;
 }
+
+/**
+ * Whether a photo-log entry still has at least one live linked photo. The
+ * batched PhotoLink query already excludes trashed photos, and purged photos
+ * cascade-delete their links, so a log whose every photo is soft- or
+ * hard-deleted simply has no entry in the map — such logs have nothing to
+ * show and should be hidden from the timeline.
+ */
+export function photoLogHasLivePhotos(photosByActivity: Map<string, TimelinePhotoInfo[]>, photoLogId: string): boolean {
+  return (photosByActivity.get(`photo:${photoLogId}`) || []).length > 0;
+}

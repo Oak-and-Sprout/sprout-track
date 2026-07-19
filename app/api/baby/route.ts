@@ -5,6 +5,7 @@ import { Gender } from '@prisma/client';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
+import { isValidFeedTimerTypes } from '@/src/utils/feedTimerConfig';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -19,7 +20,14 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     const requestBody = await req.json();
     const { familyId: bodyFamilyId, ...babyData } = requestBody;
     const body: BabyCreate = babyData;
-    
+
+    if (!isValidFeedTimerTypes(babyData.feedTimerTypes)) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'Invalid feed timer types' },
+        { status: 400 }
+      );
+    }
+
     // Determine target family ID - prefer auth context, but allow body override for setup auth, account auth, and sysadmin
     let targetFamilyId = userFamilyId;
     if (!userFamilyId && (isSetupAuth || isSysAdmin || isAccountAuth) && bodyFamilyId) {
@@ -85,7 +93,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     const requestBody = await req.json();
     const { id, familyId: bodyFamilyId, ...updateData } = requestBody;
     const body: BabyUpdate = { id, ...updateData };
-    
+
+    if (!isValidFeedTimerTypes(updateData.feedTimerTypes)) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'Invalid feed timer types' },
+        { status: 400 }
+      );
+    }
+
     // For system administrators, allow familyId to be specified in request body
     let targetFamilyId = userFamilyId;
     if (!userFamilyId && isSysAdmin && bodyFamilyId) {
