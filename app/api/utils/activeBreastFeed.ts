@@ -30,6 +30,38 @@ export interface StartSessionParams {
   startTime?: Date;
 }
 
+/** Client clocks drift; treat timestamps up to this far in the future as "now". */
+export const START_TIME_CLOCK_SKEW_MS = 2 * 60 * 1000;
+
+export type StartTimeResolution =
+  | { ok: true; startTime?: Date }
+  | { ok: false; error: string };
+
+/**
+ * Validate a client-requested session start time. Omitted input is fine
+ * (caller defaults to now); malformed input is rejected; timestamps within
+ * START_TIME_CLOCK_SKEW_MS of the future are clamped to server now, and
+ * anything further ahead is rejected.
+ */
+export function resolveRequestedStartTime(
+  requested: unknown,
+  now: Date = new Date()
+): StartTimeResolution {
+  if (requested === undefined) return { ok: true };
+  if (typeof requested !== 'string' || !requested.trim()) {
+    return { ok: false, error: 'Start time must be a valid date' };
+  }
+  const parsed = new Date(requested);
+  if (Number.isNaN(parsed.getTime())) {
+    return { ok: false, error: 'Start time must be a valid date' };
+  }
+  const aheadMs = parsed.getTime() - now.getTime();
+  if (aheadMs > START_TIME_CLOCK_SKEW_MS) {
+    return { ok: false, error: 'Start time cannot be in the future' };
+  }
+  return { ok: true, startTime: aheadMs > 0 ? now : parsed };
+}
+
 /**
  * Creates a new active session. Callers should check for an existing session
  * first; a concurrent start still races on the babyId unique constraint, so
