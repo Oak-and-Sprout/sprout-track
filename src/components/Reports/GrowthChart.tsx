@@ -18,6 +18,7 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
 import { toCdcWeightKg, fromCdcWeightKg, weightUnitLabel, formatChartValue } from '@/src/utils/weightUnits';
+import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
@@ -398,6 +399,22 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // True age in whole months (no buffer/clamp) for choosing the growth standard.
+  const babyAgeMonthsForStandard = useMemo((): number => {
+    if (!selectedBaby?.birthDate) return 0;
+    const now = new Date();
+    const birth = new Date(selectedBaby.birthDate);
+    let totalMonths =
+      (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+    if (now.getDate() - birth.getDate() < 0) totalMonths -= 1;
+    return totalMonths;
+  }, [selectedBaby]);
+
+  const effectiveStandard = effectiveGrowthStandard(
+    settings?.growthChartStandard,
+    babyAgeMonthsForStandard,
+  );
+
   // Zoom state
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -452,7 +469,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
         const sex = genderToCdcSex(selectedBaby.gender);
 
         const response = await fetch(
-          `/api/cdc-growth-data?sex=${sex}&type=${measurementType}&standard=${settings?.growthChartStandard || 'CDC'}`,
+          `/api/cdc-growth-data?sex=${sex}&type=${measurementType}&standard=${effectiveStandard}`,
           {
             cache: 'no-store',
             headers: {
@@ -483,7 +500,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     };
 
     fetchCdcData();
-  }, [selectedBaby, measurementType, settings?.growthChartStandard]);
+  }, [selectedBaby, measurementType, effectiveStandard]);
 
   // Fetch baby measurements
   useEffect(() => {
@@ -1070,7 +1087,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       {/* Legend info */}
       <div className={cn(growthChartStyles.legendInfo, "growth-chart-legend-info")}>
         <p className={cn(growthChartStyles.legendText, "growth-chart-legend-text")}>
-          {settings?.growthChartStandard || 'CDC'} {t('Growth Chart for')} {t(selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls')} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
+          {effectiveStandard === 'WHO' ? t('WHO Growth Chart for') : t('CDC Growth Chart for')} {t(selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls')} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
         </p>
         <p className={cn(growthChartStyles.legendSubtext, "growth-chart-legend-subtext")}>
           {t('Percentile lines show how your baby compares to other children of the same age and sex. The 50th percentile represents the median.')}
