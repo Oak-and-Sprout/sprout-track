@@ -939,10 +939,7 @@ export default function FeedForm({
 
       if (!response.ok) {
         const errorData = await response.json();
-        const localizedError = errorData.error === 'Start time must be a valid date' || errorData.error === 'Start time cannot be in the future'
-          ? t(errorData.error)
-          : errorData.error || t('Failed to start breastfeed');
-        showToast({ variant: 'error', title: t('Error'), message: localizedError, duration: 5000 });
+        showToast({ variant: 'error', title: t('Error'), message: t(errorData.error || 'Failed to start breastfeed'), duration: 5000 });
         return;
       }
 
