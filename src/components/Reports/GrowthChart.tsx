@@ -17,6 +17,7 @@ import { growthChartStyles } from './growth-chart.styles';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
+import { toCdcWeightKg, fromCdcWeightKg, weightUnitLabel } from '@/src/utils/weightUnits';
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
@@ -118,12 +119,7 @@ const convertToCdcUnit = (value: number, unit: string, type: GrowthMeasurementTy
   switch (type) {
     case 'weight':
       // CDC uses kg
-      if (normalizedUnit === 'LB') return value * 0.453592;
-      if (normalizedUnit === 'OZ') return value * 0.0283495;
-      if (normalizedUnit === 'G') return value / 1000;
-      if (normalizedUnit === 'KG') return value;
-      // Default: assume kg if no recognized unit
-      return value;
+      return toCdcWeightKg(value, normalizedUnit);
     case 'length':
     case 'head_circumference':
       // CDC uses cm
@@ -143,11 +139,8 @@ const convertFromCdcToDisplayUnit = (value: number, type: GrowthMeasurementType,
 
   switch (type) {
     case 'weight':
-      // CDC uses kg, convert to display unit
-      if (normalizedDisplayUnit === 'LB') return value / 0.453592;
-      if (normalizedDisplayUnit === 'OZ') return value / 0.0283495;
-      if (normalizedDisplayUnit === 'G') return value * 1000;
-      return value; // Keep kg
+      // CDC uses kg, convert to display unit (grams round to whole grams)
+      return fromCdcWeightKg(value, normalizedDisplayUnit);
     case 'length':
     case 'head_circumference':
       // CDC uses cm, convert to display unit
@@ -270,7 +263,7 @@ const getUnitLabel = (type: GrowthMeasurementType, settings: Settings | null): s
 
   switch (type) {
     case 'weight':
-      return settings.defaultWeightUnit === 'LB' ? 'lb' : 'kg';
+      return weightUnitLabel(settings.defaultWeightUnit);
     case 'length':
     case 'head_circumference':
       return settings.defaultHeightUnit === 'IN' ? 'in' : 'cm';
@@ -300,6 +293,10 @@ const getDisplayUnit = (type: GrowthMeasurementType, settings: Settings | null):
       return '';
   }
 };
+
+// Format a chart value for display: whole grams, 2 decimals otherwise
+const formatChartValue = (value: number, unitLabel: string): string =>
+  unitLabel === 'g' ? String(Math.round(value)) : value.toFixed(2);
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label, settings, measurementType, t }: any) => {
@@ -354,7 +351,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
               if (upper) {
                 lines.push(
                   <p key="upper" style={{ color: upper.color }}>
-                    {upper.name}: {upper.value?.toFixed(2)} {unitLabel}
+                    {upper.name}: {upper.value != null ? formatChartValue(upper.value, unitLabel) : ''} {unitLabel}
                   </p>
                 );
               }
@@ -366,7 +363,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
                     key="measurement"
                     className={cn(growthChartStyles.tooltipMeasurement, "growth-chart-tooltip-measurement")}
                   >
-                    {measurementPercentile.toFixed(1)}%: {measurementValue.toFixed(2)} {unitLabel}
+                    {measurementPercentile.toFixed(1)}%: {formatChartValue(measurementValue, unitLabel)} {unitLabel}
                   </p>
                 );
               }
@@ -375,7 +372,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
               if (lower) {
                 lines.push(
                   <p key="lower" style={{ color: lower.color }}>
-                    {lower.name}: {lower.value?.toFixed(2)} {unitLabel}
+                    {lower.name}: {lower.value != null ? formatChartValue(lower.value, unitLabel) : ''} {unitLabel}
                   </p>
                 );
               }
@@ -949,7 +946,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
           <ResponsiveContainer width="100%" height={400}>
             <LineChart
               data={chartData}
-              margin={{ top: 20, right: 30, left: 2, bottom: 15 }}
+              margin={{ top: 20, right: 30, left: 15, bottom: 15 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
               <XAxis
@@ -1055,7 +1052,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
             {measurementsWithPercentiles.map((m, idx) => (
               <div key={idx} className={cn(growthChartStyles.measurementItem, "growth-chart-measurement-item")}>
                 <div className={cn(growthChartStyles.measurementValue, "growth-chart-measurement-value")}>
-                  {m.displayValue.toFixed(2)} {unitLabel}
+                  {formatChartValue(m.displayValue, unitLabel)} {unitLabel}
                 </div>
                 <div className={cn(growthChartStyles.measurementPercentile, "growth-chart-measurement-percentile")}>
                   {m.percentile.toFixed(1)}{t('th percentile')}

@@ -4,6 +4,7 @@ import { Bath, MapPin, Ruler, Scale, RotateCw, StickyNote } from 'lucide-react';
 import { diaper } from '@lucide/lab';
 import { Icon } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { formatWeightDisplay } from '@/src/utils/weightUnits';
 import { styles, eventTypeColors } from './baby-quick-info.styles';
 import { NotificationsTabProps } from './baby-quick-info.types';
 import { useLocalization } from '@/src/context/localization';
@@ -143,7 +144,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({
               </div>
               <div className={cn(styles.activityContent, "baby-quick-info-activity-content")}>
                 <div className={cn(styles.activityTitle, "baby-quick-info-activity-title")}>
-                  {selectedBaby.firstName}{t('\'s weight:')} <span className={cn(styles.relativeTime)}>{lastActivities.lastMeasurements.weight.value} {lastActivities.lastMeasurements.weight.unit}</span>
+                  {selectedBaby.firstName}{t('\'s weight:')} <span className={cn(styles.relativeTime)}>{formatWeightDisplay(lastActivities.lastMeasurements.weight.value, lastActivities.lastMeasurements.weight.unit)}</span>
                 </div>
                 <div className={cn(styles.activityTime, "baby-quick-info-activity-time")}>
                   {formatRelativeTime(lastActivities.lastMeasurements.weight.date)}

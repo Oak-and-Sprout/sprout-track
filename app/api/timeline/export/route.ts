@@ -4,6 +4,7 @@ import { ApiResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { toUTC, formatForResponse } from '../../utils/timezone';
 import { objectArrayToCsv } from '../../utils/csv-export';
+import { legacyOzToLb } from '@/src/utils/weightUnits';
 import * as ExcelJS from 'exceljs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -152,6 +153,14 @@ function getAmount(activity: any, type: string): string {
     case 'medicine':
       return activity.doseAmount != null ? String(activity.doseAmount) : '';
     case 'measurement':
+      if (
+        activity.type === 'WEIGHT' &&
+        activity.value != null &&
+        (activity.unit || '').toLowerCase().trim() === 'oz'
+      ) {
+        // Legacy total-ounce weights export as decimal pounds for consistency
+        return String(legacyOzToLb(activity.value));
+      }
       return activity.value != null ? String(activity.value) : '';
     case 'breast-milk-adjustment':
       return activity.amount != null ? String(activity.amount) : '';
@@ -168,6 +177,9 @@ function getUnit(activity: any, type: string): string {
     case 'breast-milk-adjustment':
       return activity.unitAbbr || '';
     case 'measurement':
+      if (activity.type === 'WEIGHT' && (activity.unit || '').toLowerCase().trim() === 'oz') {
+        return 'lb';
+      }
       return activity.unit || '';
     default:
       return '';

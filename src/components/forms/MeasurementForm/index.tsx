@@ -16,7 +16,7 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
-import { lbToLbOz } from '@/src/components/Timeline/utils';
+import { lbToLbOz, defaultWeightInputUnit } from '@/src/utils/weightUnits';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
@@ -131,7 +131,7 @@ export default function MeasurementForm({
             const settings = data.data;
             setDefaultUnits({
               height: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm',
-              weight: settings.defaultWeightUnit === 'KG' ? 'kg' : 'lb',
+              weight: defaultWeightInputUnit(settings.defaultWeightUnit),
               headCircumference: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm', // Using height unit for head circumference
               temperature: settings.defaultTempUnit === 'F' ? '°F' : '°C',
             });
@@ -215,6 +215,8 @@ export default function MeasurementForm({
           case 'WEIGHT':
             if (activity.unit === 'kg') {
               updatedFormData.weight = { value: String(activity.value), unit: 'kg' };
+            } else if (activity.unit === 'g') {
+              updatedFormData.weight = { value: String(activity.value), unit: 'g' };
             } else {
               // Both 'lb' and legacy 'oz' use the lb/oz dual input
               const decimalLbs = activity.unit === 'oz' ? activity.value / 16 : activity.value;
@@ -755,6 +757,16 @@ export default function MeasurementForm({
                     className="px-2 py-1 h-9"
                   >
                     kg
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.weight.unit === 'g' ? 'default' : 'outline'}
+                    onClick={() => handleUnitChange('weight', 'g')}
+                    disabled={loading}
+                    className="px-2 py-1 h-9"
+                  >
+                    g
                   </Button>
                 </div>
               </div>

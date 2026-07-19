@@ -3,6 +3,7 @@ import prisma from '../../../../db';
 import { ApiResponse, MonthlyReport, GrowthMetric, GrowthChartData, GrowthChartPoint } from '../../../../types';
 import { withAuthContext, AuthResult } from '../../../../utils/auth';
 import { formatForResponse } from '../../../../utils/timezone';
+import { toCdcWeightKg, fromCdcWeightKg } from '@/src/utils/weightUnits';
 import { groupBreastFeedSessions, SESSION_TOLERANCE_MS } from '../../../../../../src/utils/feedSessionUtils';
 import {
   buildNewFoodsForRange,
@@ -226,26 +227,20 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
   const displayWeightUnit = (familySettings?.defaultWeightUnit || 'LB').toUpperCase();
   const displayHeightUnit = (familySettings?.defaultHeightUnit || 'IN').toUpperCase();
 
-  // Unit conversion helpers (matching GrowthChart.tsx logic)
+  // Unit conversion helpers (weight math shared with GrowthChart via weightUnits)
   function toCdcUnit(value: number, unit: string, type: 'weight' | 'length' | 'head_circumference'): number {
-    const u = (unit || '').toUpperCase().trim();
     if (type === 'weight') {
-      if (u === 'LB') return value * 0.453592;
-      if (u === 'OZ') return value * 0.0283495;
-      if (u === 'G') return value / 1000;
-      return value; // assume kg
+      return toCdcWeightKg(value, unit);
     }
     // length / head_circumference — CDC uses cm
+    const u = (unit || '').toUpperCase().trim();
     if (u === 'IN') return value * 2.54;
     return value; // assume cm
   }
 
   function fromCdcUnit(value: number, type: 'weight' | 'length' | 'head_circumference'): number {
     if (type === 'weight') {
-      if (displayWeightUnit === 'LB') return value / 0.453592;
-      if (displayWeightUnit === 'OZ') return value / 0.0283495;
-      if (displayWeightUnit === 'G') return value * 1000;
-      return value; // kg
+      return fromCdcWeightKg(value, displayWeightUnit);
     }
     // length / head — convert from cm to display unit
     if (displayHeightUnit === 'IN') return value / 2.54;
