@@ -349,6 +349,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           deletedAt: null,
           familyId: familyData.id,
           feedTimerFrom: (selectedBaby as any).feedTimerFrom || 'start',
+          feedTimerTypes: selectedBaby.feedTimerTypes ?? null,
         } : null}
         onBabyChange={handleBabyFormClose}
         appearance="storybook"

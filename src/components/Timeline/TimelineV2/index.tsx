@@ -21,12 +21,13 @@ import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
 import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
+import { parseFeedTimerTypes, feedCountsForTimer } from '@/src/utils/feedTimerConfig';
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, FoodLogResponse, PhotoResponse } from '@/app/api/types';
 import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
 import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
-const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
+const TimelineV2 = ({ babyId, refreshTrigger, initialDate, feedTimerTypes, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [defaultBottleUnit, setDefaultBottleUnit] = useState(() => readCachedDefaultBottleUnit());
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
@@ -60,6 +61,10 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, 
 
   const breastMilkTrackingEnabled = (settings as any)?.enableBreastMilkTracking ?? true;
 
+  // Issue #225: feed categories that reset the "time since last feed" timer
+  // (null = all feeds count)
+  const feedTimerCategories = useMemo(() => parseFeedTimerTypes(feedTimerTypes), [feedTimerTypes]);
+
   // Extract latest status data from activities and notify parent
   const emitLatestStatus = useCallback((activities: ActivityType[]) => {
     if (!onLatestStatusReady) return;
@@ -71,7 +76,8 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, 
       .filter((a) =>
         'amount' in a && 'type' in a &&
         ((a as any).type === 'BOTTLE' || (a as any).type === 'BREAST' || (a as any).type === 'SOLIDS') &&
-        'time' in a
+        'time' in a &&
+        feedCountsForTimer(a as any, feedTimerCategories)
       )
       .sort((a, b) => new Date((b as any).time).getTime() - new Date((a as any).time).getTime())[0];
 
@@ -132,7 +138,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, onLatestStatusReady, 
     }
 
     onLatestStatusReady(status);
-  }, [onLatestStatusReady]);
+  }, [onLatestStatusReady, feedTimerCategories]);
 
   const fetchBreastMilkBalance = async (babyId: string) => {
     if (!breastMilkTrackingEnabled) {

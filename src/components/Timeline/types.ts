@@ -39,6 +39,8 @@ export interface TimelineProps {
   refreshTrigger?: number;
   /** Initial selected day (e.g. from a ?date=YYYY-MM-DD deep link); defaults to today. */
   initialDate?: Date;
+  /** JSON config of feed categories that reset the feed timer (issue #225); null/omitted = all feeds count. */
+  feedTimerTypes?: string | null;
   onLatestStatusReady?: (data: LatestStatusData) => void;
   onActivityDeleted?: (dateFilter?: Date) => void;
 }
