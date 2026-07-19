@@ -3,7 +3,7 @@ import prisma from '../db';
 import { ApiResponse, SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MilestoneResponse, MeasurementResponse, MedicineLogResponse, MedicineResponse, BreastMilkAdjustmentResponse, VaccineLogResponse, FoodLogResponse, PhotoLogResponse, TimelinePhotoInfo } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
-import { buildLinkTargets, groupPhotoLinks } from './timeline-photo-links';
+import { buildLinkTargets, groupPhotoLinks, photoLogHasLivePhotos } from './timeline-photo-links';
 import { isPhotosEnabled } from '../photos/photo-service';
 
 // Extended activity types with caretaker information
@@ -698,8 +698,10 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         };
       });
 
-    // Format photo logs
+    // Format photo logs. Logs whose every photo has been trashed or purged
+    // have nothing to show — hide them from the timeline entirely.
     const formattedPhotoLogs: ActivityTypeWithCaretaker[] = photoLogs
+      .filter((log: any) => photoLogHasLivePhotos(photosByActivity, log.id))
       .map((log: any) => {
         const { caretaker, ...logWithoutCaretaker } = log;
         return {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildLinkTargets, groupPhotoLinks, PhotoLinkRow } from '@/app/api/timeline/timeline-photo-links';
+import { buildLinkTargets, groupPhotoLinks, photoLogHasLivePhotos, PhotoLinkRow } from '@/app/api/timeline/timeline-photo-links';
 
 describe('buildLinkTargets', () => {
   it('filters out types with empty id lists', () => {
@@ -95,5 +95,33 @@ describe('groupPhotoLinks', () => {
     const map = groupPhotoLinks([row('feed', 'f1', 'photo1')]);
     const photosFor = (activityType: string, activityId: string) => map.get(`${activityType}:${activityId}`);
     expect(photosFor('milestone', 'does-not-exist')).toBeUndefined();
+  });
+});
+
+describe('photoLogHasLivePhotos', () => {
+  const row = (activityType: string, activityId: string, photoId: string): PhotoLinkRow => ({
+    activityType,
+    activityId,
+    photo: { id: photoId, caption: null },
+  });
+
+  it('true when the log has at least one live linked photo', () => {
+    const map = groupPhotoLinks([row('photo', 'log1', 'p1')]);
+    expect(photoLogHasLivePhotos(map, 'log1')).toBe(true);
+  });
+
+  it('false when the log has no entry at all (all photos trashed or purged)', () => {
+    const map = groupPhotoLinks([]);
+    expect(photoLogHasLivePhotos(map, 'log1')).toBe(false);
+  });
+
+  it('false when other logs have photos but this one does not', () => {
+    const map = groupPhotoLinks([row('photo', 'otherLog', 'p1')]);
+    expect(photoLogHasLivePhotos(map, 'log1')).toBe(false);
+  });
+
+  it('only matches the photo activity type, not another activity with the same id', () => {
+    const map = groupPhotoLinks([row('feed', 'log1', 'p1')]);
+    expect(photoLogHasLivePhotos(map, 'log1')).toBe(false);
   });
 });
