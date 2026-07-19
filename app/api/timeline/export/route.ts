@@ -152,6 +152,14 @@ function getAmount(activity: any, type: string): string {
     case 'medicine':
       return activity.doseAmount != null ? String(activity.doseAmount) : '';
     case 'measurement':
+      if (
+        activity.type === 'WEIGHT' &&
+        activity.value != null &&
+        (activity.unit || '').toLowerCase().trim() === 'oz'
+      ) {
+        // Legacy total-ounce weights export as decimal pounds for consistency
+        return String(Math.round((activity.value / 16) * 10000) / 10000);
+      }
       return activity.value != null ? String(activity.value) : '';
     case 'breast-milk-adjustment':
       return activity.amount != null ? String(activity.amount) : '';
@@ -168,6 +176,9 @@ function getUnit(activity: any, type: string): string {
     case 'breast-milk-adjustment':
       return activity.unitAbbr || '';
     case 'measurement':
+      if (activity.type === 'WEIGHT' && (activity.unit || '').toLowerCase().trim() === 'oz') {
+        return 'lb';
+      }
       return activity.unit || '';
     default:
       return '';
