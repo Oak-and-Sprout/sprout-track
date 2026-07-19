@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useImperativeHandle, forwardRef, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useImperativeHandle, forwardRef, useEffect, useCallback } from 'react';
 import { cn } from '@/src/lib/utils';
-import { ChevronLeft, Send, CheckCircle, ImagePlus, X } from 'lucide-react';
+import { Camera, ChevronLeft, Send, CheckCircle, ImagePlus, X } from 'lucide-react';
+import { CameraCaptureModal, useTakePhoto } from '@/src/components/ui/camera-capture';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { useTheme } from '@/src/context/theme';
@@ -29,7 +30,6 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const c = appearance === 'storybook' ? chatNewFeedbackSb : chatNewFeedbackDefault;
   const sb = appearance === 'storybook';
 
@@ -46,6 +46,10 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
     }
     e.target.value = '';
   }, []);
+
+  const camera = useTakePhoto(useCallback((files: File[]) => {
+    setSelectedFiles(prev => [...prev, ...files]);
+  }, []));
 
   const removeFile = useCallback((index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
@@ -161,21 +165,39 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
         {/* File upload */}
         <div className={c.fileUploadArea}>
           <input
-            ref={fileInputRef}
+            ref={camera.libraryInputRef}
             type="file"
             multiple
             accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,image/gif"
             onChange={handleFileSelect}
             className="hidden"
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={sending || sent}
-            className={c.fileUploadButton}
-          >
-            <ImagePlus className="h-4 w-4" aria-hidden="true" />
-            {t('Attach images')}
-          </button>
+          <input
+            ref={camera.captureInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,image/gif"
+            capture="environment"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={camera.takePhoto}
+              disabled={sending || sent}
+              className={c.fileUploadButton}
+            >
+              <Camera className="h-4 w-4" aria-hidden="true" />
+              {t('Take Photo')}
+            </button>
+            <button
+              onClick={() => camera.libraryInputRef.current?.click()}
+              disabled={sending || sent}
+              className={c.fileUploadButton}
+            >
+              <ImagePlus className="h-4 w-4" aria-hidden="true" />
+              {t('Attach images')}
+            </button>
+          </div>
 
           {selectedFiles.length > 0 && (
             <div className={c.filePreviewGrid}>
@@ -219,6 +241,7 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
           </button>
         </div>
       )}
+      <CameraCaptureModal open={camera.cameraOpen} onClose={camera.closeCamera} onCapture={camera.handleCapture} />
     </div>
   );
 });

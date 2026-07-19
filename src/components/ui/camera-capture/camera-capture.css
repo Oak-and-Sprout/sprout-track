@@ -1,0 +1,6 @@
+/*
+ * The viewfinder well and its controls are intentionally near-black with
+ * white chrome in BOTH themes (they sit on live video, like a real camera),
+ * so they need no html.dark overrides. The surrounding dialog inherits the
+ * shared dialog dark styles.
+ */

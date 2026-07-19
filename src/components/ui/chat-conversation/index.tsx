@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/src/lib/utils';
-import { ChevronLeft, Send, MessageSquare, X, ImagePlus } from 'lucide-react';
+import { Camera, ChevronLeft, Send, MessageSquare, X, ImagePlus } from 'lucide-react';
+import { CameraCaptureModal, useTakePhoto } from '@/src/components/ui/camera-capture';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
@@ -137,8 +138,10 @@ export function ChatConversation({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const markedReadRef = useRef<string | null>(null);
+  const camera = useTakePhoto(useCallback((files: File[]) => {
+    setPendingFiles(prev => [...prev, ...files]);
+  }, []));
   const c = appearance === 'storybook' ? chatConversationSb : chatConversationDefault;
 
   // Auto-scroll to bottom
@@ -441,15 +444,30 @@ export function ChatConversation({
       {!hideReplyBar && (
         <div className={c.replyBar}>
           <input
-            ref={fileInputRef}
+            ref={camera.libraryInputRef}
             type="file"
             multiple
             accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,image/gif"
             onChange={handleFileSelect}
             className="hidden"
           />
+          <input
+            ref={camera.captureInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,image/gif"
+            capture="environment"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={camera.takePhoto}
+            className={c.replyAttachButton}
+            aria-label={t('Take Photo')}
+          >
+            <Camera className={c.attachIcon} aria-hidden="true" />
+          </button>
+          <button
+            onClick={() => camera.libraryInputRef.current?.click()}
             className={c.replyAttachButton}
             aria-label={t('Attach images')}
           >
@@ -476,6 +494,7 @@ export function ChatConversation({
           </button>
         </div>
       )}
+      <CameraCaptureModal open={camera.cameraOpen} onClose={camera.closeCamera} onCapture={camera.handleCapture} />
     </div>
   );
 }
@@ -497,7 +516,9 @@ export function ChatReplyBar({
   const [sending, setSending] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const camera = useTakePhoto(useCallback((files: File[]) => {
+    setPendingFiles(prev => [...prev, ...files]);
+  }, []));
   const c = appearance === 'storybook' ? chatConversationSb : chatConversationDefault;
 
   const canSend = (replyText.trim() || pendingFiles.length > 0) && !sending;
@@ -569,15 +590,30 @@ export function ChatReplyBar({
       )}
       <div className="flex items-end gap-2 w-full">
         <input
-          ref={fileInputRef}
+          ref={camera.libraryInputRef}
           type="file"
           multiple
           accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,image/gif"
           onChange={handleFileSelect}
           className="hidden"
         />
+        <input
+          ref={camera.captureInputRef}
+          type="file"
+          accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp,image/gif"
+          capture="environment"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={camera.takePhoto}
+          className={c.replyAttachButton}
+          aria-label={t('Take Photo')}
+        >
+          <Camera className={c.attachIcon} aria-hidden="true" />
+        </button>
+        <button
+          onClick={() => camera.libraryInputRef.current?.click()}
           className={c.replyAttachButton}
           aria-label={t('Attach images')}
         >
@@ -603,6 +639,7 @@ export function ChatReplyBar({
           <Send className="h-[15px] w-[15px]" color={canSend ? c.sendIconColorOn : c.sendIconColorOff} aria-hidden="true" />
         </button>
       </div>
+      <CameraCaptureModal open={camera.cameraOpen} onClose={camera.closeCamera} onCapture={camera.handleCapture} />
     </div>
   );
 }

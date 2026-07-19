@@ -108,6 +108,93 @@ export function filterTaggableMilestones<T extends { id: string; date: string | 
   });
 }
 
+export type CameraStrategy = 'native-capture' | 'webcam-modal' | 'library-only';
+
+export interface CameraCapabilityFlags {
+  coarsePointer: boolean; // matchMedia('(pointer: coarse)').matches
+  maxTouchPoints: number; // navigator.maxTouchPoints
+  hasMediaDevices: boolean; // !!navigator.mediaDevices?.getUserMedia
+}
+
+/**
+ * Touch-first devices (phones, iPads — including iPadOS "desktop-class"
+ * Safari, which still reports a coarse primary pointer) get the native
+ * camera intent via the file input's capture attribute; it needs no
+ * getUserMedia support. Fine-pointer devices with getUserMedia get the
+ * in-app webcam modal. Anything else falls back to the library picker.
+ */
+export function decideCameraStrategy(flags: CameraCapabilityFlags): CameraStrategy {
+  if (flags.coarsePointer && flags.maxTouchPoints > 0) return 'native-capture';
+  if (flags.hasMediaDevices) return 'webcam-modal';
+  return 'library-only';
+}
+
+export const CAPTURE_MIME = 'image/jpeg';
+export const CAPTURE_JPEG_QUALITY = 0.9;
+
+/** e.g. capture-2026-07-19-14-30-25.jpg (local time, zero-padded). */
+export function capturedPhotoFileName(now: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const parts = [now.getFullYear(), pad(now.getMonth() + 1), pad(now.getDate()), pad(now.getHours()), pad(now.getMinutes()), pad(now.getSeconds())];
+  return `capture-${parts.join('-')}.jpg`;
+}
+
+export type CameraErrorKind = 'permission-denied' | 'no-camera' | 'unknown';
+
+/** Maps getUserMedia DOMException names to UI error states. */
+export function mapGetUserMediaError(errorName: string | undefined): CameraErrorKind {
+  switch (errorName) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'permission-denied';
+    case 'NotFoundError':
+    case 'DevicesNotFoundError':
+    case 'OverconstrainedError':
+      return 'no-camera';
+    default:
+      return 'unknown';
+  }
+}
+
+export type CameraFacingMode = 'user' | 'environment';
+
+export function nextFacingMode(current: CameraFacingMode): CameraFacingMode {
+  return current === 'user' ? 'environment' : 'user';
+}
+
+/**
+ * De-duplicates file names for a zip archive: later duplicates get a
+ * " (2)", " (3)", … suffix before the extension. Suffixed names are checked
+ * against the whole result so they can't collide with a name that already
+ * exists in the input.
+ */
+export function uniqueFileNames(names: string[]): string[] {
+  const used = new Set<string>();
+  return names.map((name) => {
+    if (!used.has(name)) {
+      used.add(name);
+      return name;
+    }
+    const dot = name.lastIndexOf('.');
+    const base = dot > 0 ? name.slice(0, dot) : name;
+    const ext = dot > 0 ? name.slice(dot) : '';
+    let counter = 2;
+    let candidate = `${base} (${counter})${ext}`;
+    while (used.has(candidate)) {
+      counter += 1;
+      candidate = `${base} (${counter})${ext}`;
+    }
+    used.add(candidate);
+    return candidate;
+  });
+}
+
+/** e.g. photos-2026-07-19.zip (local date). */
+export function photosZipFileName(now: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `photos-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.zip`;
+}
+
 export function formatQuotaLabel(usedBytes: number, totalBytes: number): { usedGb: string; totalGb: string; percent: number } {
   const gb = 1024 * 1024 * 1024;
   const fmt = (n: number) => {

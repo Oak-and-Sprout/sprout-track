@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ChangeEvent, ReactElement } from 'react';
 import { useBaby } from '@/app/context/baby';
 import { useLocalization } from '@/src/context/localization';
 import { useAuthedImage, photoFileUrl } from '@/src/hooks/useAuthedImage';
+import { CameraCaptureModal, useTakePhoto } from '@/src/components/ui/camera-capture';
 import { fetchPhotos, uploadPhotos } from '@/src/utils/photoClientApi';
 import { PhotoResponse } from '@/app/api/types';
 
@@ -37,7 +38,33 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
   const [error, setError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFile = async (file: File) => {
+    if (!selectedBaby) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const result = await uploadPhotos([file], { babyId: selectedBaby.id });
+      const uploaded = result.photos[0];
+      if (uploaded) {
+        onPick(uploaded.id);
+        onClose();
+      } else {
+        // Per-file failure (quota exceeded, invalid file): the API reports it
+        // in errors[] with a human-readable message while still returning success.
+        setUploadError(result.errors[0]?.error || t('Failed to upload photo'));
+      }
+    } catch (err) {
+      console.error('Failed to upload photo:', err);
+      setUploadError(t('Failed to upload photo'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const camera = useTakePhoto((files) => {
+    if (files[0]) void uploadFile(files[0]);
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -62,29 +89,10 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
 
   if (!open) return null;
 
-  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     e.target.value = '';
-    if (!file || !selectedBaby) return;
-    setUploading(true);
-    setUploadError(null);
-    try {
-      const result = await uploadPhotos([file], { babyId: selectedBaby.id });
-      const uploaded = result.photos[0];
-      if (uploaded) {
-        onPick(uploaded.id);
-        onClose();
-      } else {
-        // Per-file failure (quota exceeded, invalid file): the API reports it
-        // in errors[] with a human-readable message while still returning success.
-        setUploadError(result.errors[0]?.error || t('Failed to upload photo'));
-      }
-    } catch (err) {
-      console.error('Failed to upload photo:', err);
-      setUploadError(t('Failed to upload photo'));
-    } finally {
-      setUploading(false);
-    }
+    if (file) void uploadFile(file);
   };
 
   return (
@@ -116,16 +124,28 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
           </button>
         </div>
 
-        <button
-          type="button"
-          className="nursery-togcard"
-          style={{ marginBottom: 16, minHeight: 44, opacity: uploading || !selectedBaby ? 0.55 : undefined }}
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading || !selectedBaby}
-        >
-          <div className="v">{uploading ? `${t('Loading')}...` : t('Upload photo')}</div>
-        </button>
-        <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleUpload} />
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+          <button
+            type="button"
+            className="nursery-togcard"
+            style={{ flex: 1, minHeight: 44, opacity: uploading || !selectedBaby ? 0.55 : undefined }}
+            onClick={camera.takePhoto}
+            disabled={uploading || !selectedBaby}
+          >
+            <div className="v">{uploading ? `${t('Loading')}...` : t('Take Photo')}</div>
+          </button>
+          <button
+            type="button"
+            className="nursery-togcard"
+            style={{ flex: 1, minHeight: 44, opacity: uploading || !selectedBaby ? 0.55 : undefined }}
+            onClick={() => camera.libraryInputRef.current?.click()}
+            disabled={uploading || !selectedBaby}
+          >
+            <div className="v">{uploading ? `${t('Loading')}...` : t('Choose from Library')}</div>
+          </button>
+        </div>
+        <input ref={camera.captureInputRef} type="file" accept="image/*" capture="environment" hidden onChange={handleUpload} />
+        <input ref={camera.libraryInputRef} type="file" accept="image/*" hidden onChange={handleUpload} />
 
         {uploadError && (
           <div style={{ padding: '0 0 16px', textAlign: 'center', color: 'rgba(255,255,255,.6)' }}>{uploadError}</div>
@@ -165,6 +185,7 @@ export function PhotoPicker({ open, onClose, onPick }: PhotoPickerProps): ReactE
           </div>
         )}
       </div>
+      <CameraCaptureModal open={camera.cameraOpen} onClose={camera.closeCamera} onCapture={camera.handleCapture} />
     </>
   );
 }
