@@ -73,3 +73,9 @@ export function formatWeightDisplay(value: number, unit: string): string {
   }
   return `${value} ${unit}`;
 }
+
+// Convert a legacy total-ounce weight value to decimal pounds (4-decimal rounded),
+// for machine-readable exports that keep numeric value + unit columns.
+export function legacyOzToLb(value: number): number {
+  return Math.round((value / 16) * 10000) / 10000;
+}

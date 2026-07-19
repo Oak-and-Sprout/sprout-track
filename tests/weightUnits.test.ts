@@ -6,6 +6,7 @@ import {
   weightUnitLabel,
   defaultWeightInputUnit,
   formatWeightDisplay,
+  legacyOzToLb,
 } from '@/src/utils/weightUnits';
 
 describe('lbToLbOz', () => {
@@ -164,5 +165,24 @@ describe('formatWeightDisplay', () => {
 
   it('normalizes unit case', () => {
     expect(formatWeightDisplay(7.5, 'LB')).toBe('7 lb 8 oz');
+  });
+});
+
+describe('legacyOzToLb', () => {
+  it('converts whole-pound ounce values', () => {
+    expect(legacyOzToLb(128)).toBe(8);
+  });
+
+  it('converts mixed lb/oz values', () => {
+    expect(legacyOzToLb(120)).toBe(7.5);
+  });
+
+  it('rounds to 4 decimal places', () => {
+    expect(legacyOzToLb(1)).toBe(0.0625);
+    expect(legacyOzToLb(100.007)).toBe(6.2504);
+  });
+
+  it('handles zero', () => {
+    expect(legacyOzToLb(0)).toBe(0);
   });
 });

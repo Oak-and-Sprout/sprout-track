@@ -4,6 +4,7 @@ import { ApiResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { toUTC, formatForResponse } from '../../utils/timezone';
 import { objectArrayToCsv } from '../../utils/csv-export';
+import { legacyOzToLb } from '@/src/utils/weightUnits';
 import * as ExcelJS from 'exceljs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -158,7 +159,7 @@ function getAmount(activity: any, type: string): string {
         (activity.unit || '').toLowerCase().trim() === 'oz'
       ) {
         // Legacy total-ounce weights export as decimal pounds for consistency
-        return String(Math.round((activity.value / 16) * 10000) / 10000);
+        return String(legacyOzToLb(activity.value));
       }
       return activity.value != null ? String(activity.value) : '';
     case 'breast-milk-adjustment':
