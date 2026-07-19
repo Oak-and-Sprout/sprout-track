@@ -270,7 +270,9 @@ const getUnitLabel = (type: GrowthMeasurementType, settings: Settings | null): s
 
   switch (type) {
     case 'weight':
-      return settings.defaultWeightUnit === 'LB' ? 'lb' : 'kg';
+      if (settings.defaultWeightUnit === 'LB') return 'lb';
+      // G (grams) auto-converts to kg for display in growth trends
+      return 'kg';
     case 'length':
     case 'head_circumference':
       return settings.defaultHeightUnit === 'IN' ? 'in' : 'cm';
@@ -291,8 +293,11 @@ const getDisplayUnit = (type: GrowthMeasurementType, settings: Settings | null):
   }
 
   switch (type) {
-    case 'weight':
-      return settings.defaultWeightUnit || 'KG';
+    case 'weight': {
+      const unit = settings.defaultWeightUnit || 'KG';
+      // G (grams) auto-converts to kg for display in growth trends
+      return unit === 'G' ? 'KG' : unit;
+    }
     case 'length':
     case 'head_circumference':
       return settings.defaultHeightUnit || 'CM';
@@ -949,7 +954,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
           <ResponsiveContainer width="100%" height={400}>
             <LineChart
               data={chartData}
-              margin={{ top: 20, right: 30, left: 2, bottom: 15 }}
+              margin={{ top: 20, right: 30, left: 15, bottom: 15 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
               <XAxis

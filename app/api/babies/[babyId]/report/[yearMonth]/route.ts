@@ -244,7 +244,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     if (type === 'weight') {
       if (displayWeightUnit === 'LB') return value / 0.453592;
       if (displayWeightUnit === 'OZ') return value / 0.0283495;
-      if (displayWeightUnit === 'G') return value * 1000;
+      // G (grams) auto-converts to kg for display in growth trends
       return value; // kg
     }
     // length / head — convert from cm to display unit
@@ -313,7 +313,10 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     }
 
     // Convert measurement to display unit for consistency with the chart
-    const expectedUnit = cdcTable === 'weight' ? displayWeightUnit : displayHeightUnit;
+    // G (grams) auto-converts to kg for display in growth trends
+    const expectedUnit = cdcTable === 'weight'
+      ? (displayWeightUnit === 'G' ? 'KG' : displayWeightUnit)
+      : displayHeightUnit;
     const storedUnit = (measurement.unit || '').toUpperCase().trim();
     let displayValue = measurement.value;
     let displayUnit = measurement.unit;
@@ -410,7 +413,9 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       }
       if (closest) {
         const storedUnit = (closest.unit || '').toUpperCase().trim();
-        const expectedDisplayUnit = cdcTable === 'weight' ? displayWeightUnit : displayHeightUnit;
+        const expectedDisplayUnit = cdcTable === 'weight'
+          ? (displayWeightUnit === 'G' ? 'KG' : displayWeightUnit)
+          : displayHeightUnit;
         if (storedUnit === expectedDisplayUnit || storedUnit === '') {
           point.measurement = closest.displayValue;
         } else {
