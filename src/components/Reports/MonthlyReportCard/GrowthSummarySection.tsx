@@ -236,7 +236,7 @@ const GrowthSummarySection: React.FC<GrowthSummarySectionProps & { isPdfExport?:
       length: { CDC: 'Length-for-age (CDC)', WHO: 'Length-for-age (WHO)' },
       headCircumference: { CDC: 'Head circ.-for-age (CDC)', WHO: 'Head circ.-for-age (WHO)' },
     };
-    return t(keys[type][standard]);
+    return keys[type][standard];
   };
 
   const hasAnyMeasurement = growth.weight || growth.length || growth.headCircumference;
@@ -249,7 +249,6 @@ const GrowthSummarySection: React.FC<GrowthSummarySectionProps & { isPdfExport?:
   }
 
   const activeChartData = growth.chartData[activeChart];
-  const activeConfig = chartTypeConfig.find(c => c.type === activeChart)!;
 
   return (
     <>
