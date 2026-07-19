@@ -117,6 +117,9 @@ async function main() {
   // Seed CDC growth chart data
   await seedCdcGrowthChartData();
 
+  // Seed WHO growth standard data
+  await seedWhoGrowthChartData();
+
   console.log('Seed script completed successfully!');
 }
 
@@ -342,6 +345,63 @@ async function seedCdcGrowthChartData(): Promise<void> {
   }
 
   console.log('CDC growth chart data seeding complete.');
+}
+
+/**
+ * Seeds WHO growth standard reference data from CSV files into separate tables
+ * Only inserts data if it doesn't already exist in each table
+ */
+async function seedWhoGrowthChartData(): Promise<void> {
+  console.log('Checking for WHO growth standard data...');
+
+  const documentationDir = path.join(__dirname, '..', 'documentation');
+
+  // Seed WHO weight-for-age data
+  const weightCount = await prisma.whoWeightForAge.count();
+  if (weightCount === 0) {
+    const weightFilePath = path.join(documentationDir, 'who-wtageinf.csv');
+    if (fs.existsSync(weightFilePath)) {
+      const weightData = parseCdcCsvFile(weightFilePath);
+      console.log(`Inserting ${weightData.length} records for WHO weight-for-age...`);
+      await prisma.whoWeightForAge.createMany({ data: weightData });
+    } else {
+      console.warn('Warning: who-wtageinf.csv not found');
+    }
+  } else {
+    console.log(`WHO Weight-for-age data already exists (${weightCount} records). Skipping.`);
+  }
+
+  // Seed WHO length-for-age data
+  const lengthCount = await prisma.whoLengthForAge.count();
+  if (lengthCount === 0) {
+    const lengthFilePath = path.join(documentationDir, 'who-lenageinf.csv');
+    if (fs.existsSync(lengthFilePath)) {
+      const lengthData = parseCdcCsvFile(lengthFilePath);
+      console.log(`Inserting ${lengthData.length} records for WHO length-for-age...`);
+      await prisma.whoLengthForAge.createMany({ data: lengthData });
+    } else {
+      console.warn('Warning: who-lenageinf.csv not found');
+    }
+  } else {
+    console.log(`WHO Length-for-age data already exists (${lengthCount} records). Skipping.`);
+  }
+
+  // Seed WHO head circumference-for-age data
+  const hcCount = await prisma.whoHeadCircumferenceForAge.count();
+  if (hcCount === 0) {
+    const hcFilePath = path.join(documentationDir, 'who-hcageinf.csv');
+    if (fs.existsSync(hcFilePath)) {
+      const hcData = parseCdcCsvFile(hcFilePath);
+      console.log(`Inserting ${hcData.length} records for WHO head-circumference-for-age...`);
+      await prisma.whoHeadCircumferenceForAge.createMany({ data: hcData });
+    } else {
+      console.warn('Warning: who-hcageinf.csv not found');
+    }
+  } else {
+    console.log(`WHO Head-circumference-for-age data already exists (${hcCount} records). Skipping.`);
+  }
+
+  console.log('WHO growth standard data seeding complete.');
 }
 
 main()

@@ -4,6 +4,7 @@ import { ApiResponse } from '../types';
 import { Settings } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
+import { isValidGrowthStandard } from '@/src/utils/growthStandard';
 
 // The family securityPin (login PIN) must never be returned to the client.
 type SettingsResponse = Omit<Settings, 'securityPin'>;
@@ -42,6 +43,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           defaultHeightUnit: 'IN',
           defaultWeightUnit: 'LB',
           defaultTempUnit: 'F',
+          growthChartStandard: 'CDC',
           enableBreastMilkTracking: true,
           includeSolidsInFeedTimer: true,
           dateFormat: 'MM/DD/YYYY',
@@ -113,6 +115,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     const userFields: (keyof Settings)[] = [
       'defaultBottleUnit', 'defaultSolidsUnit',
       'defaultHeightUnit', 'defaultWeightUnit', 'defaultTempUnit',
+      'growthChartStandard',
     ];
 
     // Additional fields only admins can update
@@ -154,6 +157,16 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
             );
           }
           (data as any)[field] = quota;
+          continue;
+        }
+        if (field === 'growthChartStandard') {
+          if (!isValidGrowthStandard(body[field])) {
+            return NextResponse.json<ApiResponse<null>>(
+              { success: false, error: 'growthChartStandard must be CDC or WHO' },
+              { status: 400 }
+            );
+          }
+          (data as any)[field] = body[field];
           continue;
         }
         (data as any)[field] = body[field];

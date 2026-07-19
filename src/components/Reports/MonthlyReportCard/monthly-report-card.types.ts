@@ -26,6 +26,7 @@ export interface SectionProps {
 
 export interface GrowthSummarySectionProps extends SectionProps {
   growth: MonthlyReport['growth'];
+  growthStandard: 'CDC' | 'WHO';
   babyName: string;
   isPdfExport?: boolean;
 }
