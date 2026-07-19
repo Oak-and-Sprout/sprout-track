@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/src/lib/utils';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { useLocalization } from '@/src/context/localization';
 import {
@@ -8,13 +9,14 @@ import {
   FeedTimerCategory,
 } from '@/src/utils/feedTimerConfig';
 
-export interface FeedTimerTypesFieldProps {
-  /** Currently selected categories (all categories = every feed counts). */
-  value: FeedTimerCategory[];
-  onChange: (value: FeedTimerCategory[]) => void;
-  /** Prefix for input ids/labels to keep them unique per form instance. */
-  idPrefix?: string;
-}
+import {
+  fieldDescription,
+  optionList,
+  optionRow,
+  optionLabel,
+} from './feed-timer-types-field.styles';
+import { FeedTimerTypesFieldProps } from './feed-timer-types-field.types';
+import './feed-timer-types-field.css';
 
 const CATEGORY_LABELS: Record<FeedTimerCategory, string> = {
   BREAST: 'Breast feeds',
@@ -50,18 +52,15 @@ export default function FeedTimerTypesField({
   return (
     <div>
       <span className="form-label">{t('Feed timer counts')}</span>
-      <p className="text-sm text-gray-500 mb-2">
+      <p className={cn(fieldDescription(), 'feed-timer-types-description')}>
         {t('Select which feed types reset the time since last feed')}
       </p>
-      <div className="space-y-2">
+      <div className={optionList()}>
         {FEED_TIMER_CATEGORIES.map((category) => {
           const checked = value.includes(category);
           const disabled = checked && value.length === 1;
           return (
-            <label
-              key={category}
-              className="flex items-center gap-2 cursor-pointer"
-            >
+            <label key={category} className={optionRow()}>
               <Checkbox
                 id={`${prefix}-feed-timer-${category}`}
                 variant="primary"
@@ -69,7 +68,11 @@ export default function FeedTimerTypesField({
                 disabled={disabled}
                 onCheckedChange={(next) => toggle(category, next)}
               />
-              <span className="text-sm">{t(CATEGORY_LABELS[category])}</span>
+              <span
+                className={cn(optionLabel(), 'feed-timer-types-option-label')}
+              >
+                {t(CATEGORY_LABELS[category])}
+              </span>
             </label>
           );
         })}

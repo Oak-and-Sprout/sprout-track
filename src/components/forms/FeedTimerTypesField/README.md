@@ -3,6 +3,13 @@
 Checkbox group used in baby forms to select which feed types reset the baby's
 "time since last feed" timer (issue #225).
 
+## File Structure
+
+- `index.tsx` — component implementation
+- `feed-timer-types-field.styles.ts` — light-mode Tailwind styles
+- `feed-timer-types-field.css` — dark-mode overrides (`html.dark` selectors)
+- `feed-timer-types-field.types.ts` — prop types
+
 ## Props
 
 | Prop | Type | Description |
