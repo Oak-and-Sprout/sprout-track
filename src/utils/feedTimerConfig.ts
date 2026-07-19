@@ -45,6 +45,30 @@ export function parseFeedTimerTypes(
 }
 
 /**
+ * Strict write-time validation for the stored JSON config. Unlike
+ * parseFeedTimerTypes (which reads leniently), this rejects anything the
+ * client shouldn't send: non-array JSON, empty arrays (the client stores
+ * null for "all feeds"), and unknown entries.
+ */
+export function isValidFeedTimerTypes(
+  json: string | null | undefined
+): boolean {
+  if (json === null || json === undefined) return true;
+  try {
+    const parsed: unknown = JSON.parse(json);
+    return (
+      Array.isArray(parsed) &&
+      parsed.length > 0 &&
+      parsed.every((c) =>
+        (FEED_TIMER_CATEGORIES as readonly string[]).includes(c as string)
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Whether a feed counts toward the timer for the given categories.
  * null/undefined categories = every feed counts.
  */

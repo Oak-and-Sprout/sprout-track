@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   FEED_TIMER_CATEGORIES,
   parseFeedTimerTypes,
+  isValidFeedTimerTypes,
   feedCountsForTimer,
   buildFeedTimerWhere,
 } from '@/src/utils/feedTimerConfig';
@@ -45,6 +46,35 @@ describe('parseFeedTimerTypes', () => {
   it('drops unknown values and returns null if none survive', () => {
     expect(parseFeedTimerTypes('["BREAST","NOPE"]')).toEqual(['BREAST']);
     expect(parseFeedTimerTypes('["NOPE"]')).toBeNull();
+  });
+});
+
+describe('isValidFeedTimerTypes', () => {
+  it('accepts null/undefined (all feeds count)', () => {
+    expect(isValidFeedTimerTypes(null)).toBe(true);
+    expect(isValidFeedTimerTypes(undefined)).toBe(true);
+  });
+
+  it('accepts a non-empty JSON array of known categories', () => {
+    expect(isValidFeedTimerTypes('["BREAST"]')).toBe(true);
+    expect(isValidFeedTimerTypes(JSON.stringify(FEED_TIMER_CATEGORIES))).toBe(true);
+  });
+
+  it('rejects malformed JSON and non-array JSON', () => {
+    expect(isValidFeedTimerTypes('not-json')).toBe(false);
+    expect(isValidFeedTimerTypes('')).toBe(false);
+    expect(isValidFeedTimerTypes('{"BREAST":true}')).toBe(false);
+    expect(isValidFeedTimerTypes('"BREAST"')).toBe(false);
+  });
+
+  it('rejects empty arrays (client stores null for "all")', () => {
+    expect(isValidFeedTimerTypes('[]')).toBe(false);
+  });
+
+  it('rejects arrays containing unknown or non-string entries', () => {
+    expect(isValidFeedTimerTypes('["BREAST","NOPE"]')).toBe(false);
+    expect(isValidFeedTimerTypes('["BREAST",1]')).toBe(false);
+    expect(isValidFeedTimerTypes('[null]')).toBe(false);
   });
 });
 
