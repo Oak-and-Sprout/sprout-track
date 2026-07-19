@@ -4,6 +4,7 @@ import { ApiResponse, MonthlyReport, GrowthMetric, GrowthChartData, GrowthChartP
 import { withAuthContext, AuthResult } from '../../../../utils/auth';
 import { formatForResponse } from '../../../../utils/timezone';
 import { toCdcWeightKg, fromCdcWeightKg } from '@/src/utils/weightUnits';
+import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
 import { groupBreastFeedSessions, SESSION_TOLERANCE_MS } from '../../../../../../src/utils/feedSessionUtils';
 import {
   buildNewFoodsForRange,
@@ -226,7 +227,10 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
   });
   const displayWeightUnit = (familySettings?.defaultWeightUnit || 'LB').toUpperCase();
   const displayHeightUnit = (familySettings?.defaultHeightUnit || 'IN').toUpperCase();
-  const growthStandard = (familySettings?.growthChartStandard || 'CDC') as 'CDC' | 'WHO';
+  // Choose the standard for the whole report from the baby's age at the end of the
+  // report month; WHO past 24 months automatically falls back to CDC.
+  const reportAgeMonths = ageInMonths(birthDate, endOfMonth);
+  const growthStandard = effectiveGrowthStandard(familySettings?.growthChartStandard, reportAgeMonths);
 
   // Unit conversion helpers (weight math shared with GrowthChart via weightUnits)
   function toCdcUnit(value: number, unit: string, type: 'weight' | 'length' | 'head_circumference'): number {
