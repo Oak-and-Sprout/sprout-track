@@ -378,9 +378,7 @@ async function seedWhoGrowthChartData(): Promise<void> {
     if (fs.existsSync(lengthFilePath)) {
       const lengthData = parseCdcCsvFile(lengthFilePath);
       console.log(`Inserting ${lengthData.length} records for WHO length-for-age...`);
-      for (const record of lengthData) {
-        await prisma.whoLengthForAge.create({ data: record });
-      }
+      await prisma.whoLengthForAge.createMany({ data: lengthData });
     } else {
       console.warn('Warning: who-lenageinf.csv not found');
     }
@@ -395,9 +393,7 @@ async function seedWhoGrowthChartData(): Promise<void> {
     if (fs.existsSync(hcFilePath)) {
       const hcData = parseCdcCsvFile(hcFilePath);
       console.log(`Inserting ${hcData.length} records for WHO head-circumference-for-age...`);
-      for (const record of hcData) {
-        await prisma.whoHeadCircumferenceForAge.create({ data: record });
-      }
+      await prisma.whoHeadCircumferenceForAge.createMany({ data: hcData });
     } else {
       console.warn('Warning: who-hcageinf.csv not found');
     }
