@@ -4,7 +4,7 @@ import { ApiResponse, ActiveBreastFeedResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession, SESSION_UPDATE_ACTIONS, SessionUpdateAction } from '../utils/activeBreastFeed';
+import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession, SESSION_UPDATE_ACTIONS, SessionUpdateAction, resolveRequestedStartTime } from '../utils/activeBreastFeed';
 
 function formatActiveBreastFeed(record: any): ActiveBreastFeedResponse {
   return {
@@ -68,20 +68,11 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'babyId and side are required' }, { status: 400 });
     }
 
-    let startTime: Date | undefined;
-    if (requestedStartTime !== undefined) {
-      if (typeof requestedStartTime !== 'string' || !requestedStartTime.trim()) {
-        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Start time must be a valid date' }, { status: 400 });
-      }
-
-      startTime = new Date(requestedStartTime);
-      if (Number.isNaN(startTime.getTime())) {
-        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Start time must be a valid date' }, { status: 400 });
-      }
-      if (startTime.getTime() > Date.now()) {
-        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Start time cannot be in the future' }, { status: 400 });
-      }
+    const startTimeResolution = resolveRequestedStartTime(requestedStartTime);
+    if (!startTimeResolution.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: startTimeResolution.error }, { status: 400 });
     }
+    const startTime = startTimeResolution.startTime;
 
     // Verify baby belongs to family
     const baby = await prisma.baby.findFirst({
