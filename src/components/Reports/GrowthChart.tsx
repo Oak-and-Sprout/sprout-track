@@ -17,7 +17,7 @@ import { growthChartStyles } from './growth-chart.styles';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
-import { toCdcWeightKg, fromCdcWeightKg, weightUnitLabel } from '@/src/utils/weightUnits';
+import { toCdcWeightKg, fromCdcWeightKg, weightUnitLabel, formatChartValue } from '@/src/utils/weightUnits';
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
@@ -293,10 +293,6 @@ const getDisplayUnit = (type: GrowthMeasurementType, settings: Settings | null):
       return '';
   }
 };
-
-// Format a chart value for display: whole grams, 2 decimals otherwise
-const formatChartValue = (value: number, unitLabel: string): string =>
-  unitLabel === 'g' ? String(Math.round(value)) : value.toFixed(2);
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label, settings, measurementType, t }: any) => {

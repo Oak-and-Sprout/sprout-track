@@ -7,6 +7,7 @@ import {
   defaultWeightInputUnit,
   formatWeightDisplay,
   legacyOzToLb,
+  formatChartValue,
 } from '@/src/utils/weightUnits';
 
 describe('lbToLbOz', () => {
@@ -184,5 +185,22 @@ describe('legacyOzToLb', () => {
 
   it('handles zero', () => {
     expect(legacyOzToLb(0)).toBe(0);
+  });
+});
+
+describe('formatChartValue', () => {
+  it('renders grams as whole numbers', () => {
+    expect(formatChartValue(3500, 'g')).toBe('3500');
+    expect(formatChartValue(3512.4, 'g')).toBe('3512');
+  });
+
+  it('renders non-gram units with 2 decimals', () => {
+    expect(formatChartValue(3.5, 'kg')).toBe('3.50');
+    expect(formatChartValue(7.5, 'lb')).toBe('7.50');
+    expect(formatChartValue(52.07, 'cm')).toBe('52.07');
+  });
+
+  it('falls back to 2 decimals when the unit is unknown or empty', () => {
+    expect(formatChartValue(3.5, '')).toBe('3.50');
   });
 });

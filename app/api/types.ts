@@ -768,6 +768,7 @@ export interface MonthlyReport {
 
 export interface GrowthChartData {
   points: GrowthChartPoint[];
+  unit?: string; // display unit of point values (e.g. 'g', 'kg', 'lb', 'cm', 'in')
 }
 
 export interface GrowthChartPoint {

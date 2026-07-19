@@ -363,7 +363,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     measurements: typeof allWeights,
     cdcTable: 'weight' | 'length' | 'head_circumference'
   ): GrowthChartData {
-    if (!sex || measurements.length === 0) return { points: [] };
+    const displayUnit = (cdcTable === 'weight' ? displayWeightUnit : displayHeightUnit).toLowerCase();
+    if (!sex || measurements.length === 0) return { points: [], unit: displayUnit };
 
     const cdcRows = getCdcRows(cdcTable).filter(r => r.ageMonths <= maxAgeMonths + 1);
 
@@ -421,7 +422,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       }
       points.push(point);
     }
-    return { points };
+    return { points, unit: displayUnit };
   }
 
   const weightChartData = buildChartData(allWeights, 'weight');

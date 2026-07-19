@@ -10,6 +10,7 @@ import { useLocalization } from '@/src/context/localization';
 import { reportCardStyles as s } from './monthly-report-card.styles';
 import type { GrowthSummarySectionProps } from './monthly-report-card.types';
 import type { GrowthMetric, GrowthChartData } from '@/app/api/types';
+import { formatChartValue } from '@/src/utils/weightUnits';
 
 type ChartType = 'weight' | 'length' | 'headCircumference';
 
@@ -70,7 +71,7 @@ function MetricCard({ label, metric }: { label: string; metric: GrowthMetric | n
 
 /** Custom tooltip mirroring the GrowthChart.tsx tooltip:
  *  Shows the baby's percentile + value sandwiched between the two closest percentile curves */
-function GrowthChartTooltip({ active, payload, label, babyName, t }: any) {
+function GrowthChartTooltip({ active, payload, label, babyName, unit, t }: any) {
   if (!active || !payload?.length) return null;
 
   const measurementPoint = payload.find((p: any) => p.dataKey === 'measurement');
@@ -109,7 +110,7 @@ function GrowthChartTooltip({ active, payload, label, babyName, t }: any) {
         if (upper) {
           lines.push(
             <p key="upper" style={{ color: upper.color }}>
-              {upper.name}: {Number(upper.value).toFixed(2)}
+              {upper.name}: {formatChartValue(Number(upper.value), unit || '')}
             </p>
           );
         }
@@ -117,7 +118,7 @@ function GrowthChartTooltip({ active, payload, label, babyName, t }: any) {
         if (measPercentile !== undefined) {
           lines.push(
             <p key="meas" className="font-semibold text-orange-600">
-              {Number(measPercentile).toFixed(1)}%: {Number(measValue).toFixed(2)}
+              {Number(measPercentile).toFixed(1)}%: {formatChartValue(Number(measValue), unit || '')}
             </p>
           );
         }
@@ -125,7 +126,7 @@ function GrowthChartTooltip({ active, payload, label, babyName, t }: any) {
         if (lower) {
           lines.push(
             <p key="lower" style={{ color: lower.color }}>
-              {lower.name}: {Number(lower.value).toFixed(2)}
+              {lower.name}: {formatChartValue(Number(lower.value), unit || '')}
             </p>
           );
         }
@@ -187,7 +188,7 @@ function GrowthChartCard({
               domain={[yMin, yMax]}
               tickFormatter={(v: number) => Number(v).toFixed(0)}
             />
-            <Tooltip content={<GrowthChartTooltip babyName={babyName} t={t} />} />
+            <Tooltip content={<GrowthChartTooltip babyName={babyName} unit={chartData.unit} t={t} />} />
 
             {/* Percentile curves */}
             {percentileLines.map(line => (

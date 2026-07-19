@@ -79,3 +79,8 @@ export function formatWeightDisplay(value: number, unit: string): string {
 export function legacyOzToLb(value: number): number {
   return Math.round((value / 16) * 10000) / 10000;
 }
+
+// Format a chart/tooltip value for display: whole numbers for grams, 2 decimals otherwise.
+export function formatChartValue(value: number, unitLabel: string): string {
+  return unitLabel === 'g' ? String(Math.round(value)) : value.toFixed(2);
+}
