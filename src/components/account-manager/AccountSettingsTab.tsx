@@ -8,24 +8,19 @@ import { Label } from '@/src/components/ui/label';
 import PaymentModal from './PaymentModal';
 import PaymentHistory from './PaymentHistory';
 import { useLocalization } from '@/src/context/localization';
+import { getSubscriptionView } from '@/src/utils/accountPresentation';
 
 import {
   User,
   Mail,
   Home,
-  Link,
   Download,
   AlertTriangle,
-  Edit,
-  Save,
   X,
   Loader2,
   CheckCircle,
   Key,
-  Crown,
-  Calendar,
   Shield,
-  CreditCard,
   Receipt
 } from 'lucide-react';
 
@@ -122,6 +117,18 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   } | null>(null);
   const [loadingSubscriptionStatus, setLoadingSubscriptionStatus] = useState(false);
   const [renewingSubscription, setRenewingSubscription] = useState(false);
+
+  // Storybook-style view of the subscription state, derived from account + subscription status
+  const subscriptionView = getSubscriptionView(
+    {
+      accountStatus: accountStatus.accountStatus,
+      planType: accountStatus.planType,
+      trialEnds: accountStatus.trialEnds,
+      planExpires: accountStatus.planExpires,
+      cancelAtPeriodEnd: subscriptionStatus?.cancelAtPeriodEnd,
+    },
+    new Date()
+  );
 
   // Check slug uniqueness
   const checkSlugUniqueness = useCallback(async (slug: string) => {
@@ -582,80 +589,67 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Account Information Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-            {t('Account Information')}
-          </h3>
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <User size={20} strokeWidth={1.8} />
+          <h3>{t('Account')}</h3>
           {!editingAccount && !changingPassword && (
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEditingAccount(true);
-                  setAccountMessage('');
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
-                {t('Edit')}
-              </Button>
-            </div>
+            <button
+              type="button"
+              className="sb-btn sb-ghost sb-sm"
+              onClick={() => {
+                setEditingAccount(true);
+                setAccountMessage('');
+              }}
+            >
+              {t('Edit')}
+            </button>
           )}
         </div>
 
         {editingAccount ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
-            <div className={styles.formRow}>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="firstName">{t('First Name')}</Label>
-                <Input
+          <div className="sb-f-grid">
+            <div className="sb-f2">
+              <div>
+                <label className="sb-fl" htmlFor="firstName">{t('First name')}</label>
+                <input
                   id="firstName"
+                  className="sb-fi"
                   value={accountFormData.firstName}
                   onChange={(e) => setAccountFormData(prev => ({ ...prev, firstName: e.target.value }))}
                   disabled={savingAccount}
                 />
               </div>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="lastName">{t('Last Name')}</Label>
-                <Input
+              <div>
+                <label className="sb-fl" htmlFor="lastName">{t('Last name')}</label>
+                <input
                   id="lastName"
+                  className="sb-fi"
                   value={accountFormData.lastName}
                   onChange={(e) => setAccountFormData(prev => ({ ...prev, lastName: e.target.value }))}
                   disabled={savingAccount}
                 />
               </div>
             </div>
-            <div className={cn(styles.formField, "account-manager-form-field")}>
-              <Label htmlFor="email">{t('Email Address')}</Label>
-              <Input
+            <div>
+              <label className="sb-fl" htmlFor="email">{t('Email')}</label>
+              <input
                 id="email"
+                className="sb-fi"
                 type="email"
                 value={accountFormData.email}
                 onChange={(e) => setAccountFormData(prev => ({ ...prev, email: e.target.value }))}
                 disabled={savingAccount}
               />
             </div>
-            
-            <div className={styles.buttonGroup}>
-              <Button
-                onClick={handleAccountSave}
-                disabled={savingAccount}
-              >
-                {savingAccount ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                    {t('Saving...')}
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Save')}
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className="sb-btn sb-sm" onClick={handleAccountSave} disabled={savingAccount}>
+                {savingAccount ? t('Saving…') : t('Save')}
+              </button>
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
                 onClick={() => {
                   setEditingAccount(false);
                   setAccountFormData({
@@ -667,69 +661,52 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 }}
                 disabled={savingAccount}
               >
-                <X className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Cancel')}
-              </Button>
+              </button>
             </div>
           </div>
         ) : changingPassword ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
+          <div className="sb-f-grid">
             {passwordStep === 'confirm' ? (
               <>
-                <h4 className="text-lg font-medium mb-3">{t('Confirm Current Password')}</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  {t('Please enter your current password to confirm you want to change it.')}
-                </p>
-                <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="currentPassword">{t('Current Password')}</Label>
-                  <Input
+                <div>
+                  <label className="sb-fl" htmlFor="currentPassword">{t('Current password')}</label>
+                  <input
                     id="currentPassword"
+                    className="sb-fi"
                     type="password"
                     value={passwordFormData.currentPassword}
                     onChange={(e) => setPasswordFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
                     disabled={changingPasswordLoading}
-                    placeholder="Enter your current password"
                   />
                 </div>
-                
-                <div className={styles.buttonGroup}>
-                  <Button
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="sb-btn sb-sm"
                     onClick={handlePasswordConfirm}
                     disabled={changingPasswordLoading || !passwordFormData.currentPassword}
                   >
-                    {changingPasswordLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                        {t('Verifying...')}
-                      </>
-                    ) : (
-                      <>
-                        <Key className="h-4 w-4 mr-2" aria-hidden="true" />
-                        Continue
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
+                    {t('Continue')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-btn sb-ghost sb-sm"
                     onClick={handlePasswordCancel}
                     disabled={changingPasswordLoading}
                   >
-                    <X className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Cancel')}
-                  </Button>
+                  </button>
                 </div>
               </>
             ) : (
               <>
-                <h4 className="text-lg font-medium mb-3">{t('Set New Password')}</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  {t('Enter your new password. It must meet all the requirements below.')}
-                </p>
-                
-                <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="newPassword">{t('New Password')}</Label>
-                  <Input
+                <div>
+                  <label className="sb-fl" htmlFor="newPassword">{t('New password')}</label>
+                  <input
                     id="newPassword"
+                    className="sb-fi"
                     type="password"
                     value={passwordFormData.newPassword}
                     onChange={(e) => {
@@ -738,438 +715,234 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                       updatePasswordValidation(newPassword);
                     }}
                     disabled={changingPasswordLoading}
-                    placeholder="Enter new password"
                   />
+                  <div className="sb-reqs">
+                    <span className={passwordValidation.length ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('8+ characters')}</span>
+                    <span className={passwordValidation.number ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('A number')}</span>
+                    <span className={passwordValidation.lowercase ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('A lowercase letter')}</span>
+                    <span className={passwordValidation.special ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('A symbol')}</span>
+                    <span className={passwordValidation.uppercase ? 'sb-ok' : undefined}><i aria-hidden="true">✓</i>{t('An uppercase letter')}</span>
+                  </div>
                 </div>
 
-                <div className={cn(styles.formField, "account-manager-form-field")}>
-                  <Label htmlFor="confirmPassword">{t('Confirm New Password')}</Label>
-                  <Input
+                <div>
+                  <label className="sb-fl" htmlFor="confirmPassword">{t('Confirm new password')}</label>
+                  <input
                     id="confirmPassword"
+                    className="sb-fi"
                     type="password"
                     value={passwordFormData.confirmPassword}
                     onChange={(e) => setPasswordFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     disabled={changingPasswordLoading}
-                    placeholder="Confirm new password"
                   />
                 </div>
 
-                {/* Password Requirements */}
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs font-medium text-gray-700 mb-2">{t('Password Requirements:')}</p>
-                  <div className="grid grid-cols-1 gap-1 text-xs">
-                    <div className={`flex items-center gap-2 ${passwordValidation.length ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.length ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.length && '✓'}
-                      </span>
-                      {t('At least 8 characters')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.lowercase ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.lowercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.lowercase && '✓'}
-                      </span>
-                      {t('One lowercase letter (a-z)')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.uppercase ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.uppercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.uppercase && '✓'}
-                      </span>
-                      {t('One uppercase letter (A-Z)')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.number ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.number ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.number && '✓'}
-                      </span>
-                      {t('One number (0-9)')}
-                    </div>
-                    <div className={`flex items-center gap-2 ${passwordValidation.special ? 'text-green-600' : 'text-gray-500'}`}>
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.special ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300'}`}>
-                        {passwordValidation.special && '✓'}
-                      </span>
-                      {t('One special character (!@#$%^&*)')}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className={styles.buttonGroup}>
-                  <Button
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="sb-btn sb-sm"
                     onClick={handlePasswordChange}
                     disabled={changingPasswordLoading || !passwordFormData.newPassword || !passwordFormData.confirmPassword}
                   >
-                    {changingPasswordLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                        {t('Changing Password...')}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                        {t('Change Password')}
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
+                    {changingPasswordLoading ? t('Saving…') : t('Save')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-btn sb-ghost sb-sm"
                     onClick={handlePasswordCancel}
                     disabled={changingPasswordLoading}
                   >
-                    <X className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Cancel')}
-                  </Button>
+                  </button>
                 </div>
               </>
             )}
           </div>
         ) : (
-          <div className={styles.formGroup}>
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                  <Label className="font-medium">{accountStatus.firstName} {accountStatus.lastName}</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                  <Label>{accountStatus.email}</Label>
-                  {!accountStatus.verified && (
-                    <span className="text-amber-600 text-sm">{t('(Unverified)')}</span>
-                  )}
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
+          <>
+            <div className="sb-irow">
+              <User size={16} strokeWidth={1.8} />
+              <b>{accountStatus.firstName} {accountStatus.lastName || ''}</b>
+            </div>
+            <div className="sb-irow">
+              <Mail size={16} strokeWidth={1.8} />
+              {accountStatus.email}
+              {!accountStatus.verified && <span className="sb-chip sb-c-red">{t('Unverified')}</span>}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
                 onClick={() => {
                   setChangingPassword(true);
                   setPasswordMessage('');
                 }}
-                className="self-start"
               >
-                <Key className="h-4 w-4 mr-2" aria-hidden="true" />
-                {t('Reset Password')}
-              </Button>
+                <Key size={15} strokeWidth={1.8} />
+                {t('Reset password')}
+              </button>
             </div>
-          </div>
+          </>
         )}
 
         {(accountMessage || passwordMessage) && (
-          <div className={cn(
-            "mt-4 p-3 rounded-md text-sm",
-            (accountMessage && accountMessage.startsWith('Error')) || (passwordMessage && passwordMessage.startsWith('Error'))
-              ? "bg-red-50 text-red-600 account-manager-error-message" 
-              : "bg-green-50 text-green-600 account-manager-success-message"
-          )}>
-            <div className="flex items-center gap-2">
-              {((accountMessage && accountMessage.startsWith('Error')) || (passwordMessage && passwordMessage.startsWith('Error'))) ? (
-                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-              ) : (
-                <CheckCircle className="h-4 w-4" aria-hidden="true" />
-              )}
-              {passwordMessage || accountMessage}
-            </div>
-          </div>
+          <p
+            className={
+              (accountMessage && accountMessage.startsWith('Error')) || (passwordMessage && passwordMessage.startsWith('Error'))
+                ? 'sb-msg-err'
+                : 'sb-msg-ok'
+            }
+            style={{ marginTop: 12 }}
+          >
+            {passwordMessage || accountMessage}
+          </p>
         )}
       </div>
 
-      {/* Account Status Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-            {t('Account Status')}
-          </h3>
+      {/* Subscription Section */}
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <Shield size={20} strokeWidth={1.8} />
+          <h3>{t('Subscription')}</h3>
         </div>
 
-        <div className={styles.formGroup}>
-          {accountStatus.betaparticipant ? (
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <Crown className="h-6 w-6 text-purple-600" aria-hidden="true" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-2">
-                    {t('Beta Participant')}
-                  </h4>
-                  <p className="text-purple-700 mb-3">
-                    {t('Thank you for being a beta participant and helping Sprout Track grow! You have full access to all features and functionality.')}
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-purple-600">
-                    <Shield className="h-4 w-4" aria-hidden="true" />
-                    <span className="font-medium">{t('Full Access')}</span>
-                  </div>
-                </div>
-              </div>
+        {accountStatus.betaparticipant ? (
+          <>
+            <div className="sb-status-line"><i /><span>{t('Beta access')}</span></div>
+            <p className="sb-status-sub">{t('Thanks for helping us test Sprout Track — everything is free for you.')}</p>
+          </>
+        ) : !accountStatus.hasFamily ? (
+          <>
+            <p className="sb-status-sub">
+              {t('Get started by creating your family to begin tracking activities.')}
+              {accountStatus.trialEnds && ` ${t('You have a trial that expires on')} ${new Date(accountStatus.trialEnds).toLocaleDateString()}.`}
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" className="sb-btn sb-sm" onClick={() => window.location.href = '/account/family-setup'}>
+                {t('Create Family')}
+              </button>
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Upgrade Plan')}
+              </button>
             </div>
-          ) : !accountStatus.hasFamily ? (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <Home className="h-6 w-6 text-blue-600" aria-hidden="true" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-blue-800 mb-2">
-                      {t('No Family Created Yet')}
-                    </h4>
-                    <p className="text-blue-700 mb-3">
-                      {t('Get started by creating your family to begin tracking activities.')}
-                    </p>
-                    {accountStatus.trialEnds && (
-                      <p className="text-sm text-blue-600 mb-3">
-                        {t('You have a trial that expires on')} {new Date(accountStatus.trialEnds).toLocaleDateString()}.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => window.location.href = '/account/family-setup'}
-                  className="flex-1"
-                >
-                  <Home className="h-4 w-4 mr-2" aria-hidden="true" />
-                  {t('Create Family')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                  {t('Upgrade Plan')}
-                </Button>
-              </div>
+          </>
+        ) : subscriptionView.kind === 'lifetime' ? (
+          <div className="sb-status-line"><i /><span>{t('Lifetime member')}</span></div>
+        ) : subscriptionView.kind === 'trial' ? (
+          <>
+            <div className="sb-status-line">
+              <i />
+              <span>{t('Free trial — {days} days left').replace('{days}', String(subscriptionView.daysLeft))}</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "w-3 h-3 rounded-full",
-                  accountStatus.accountStatus === 'active' ? "bg-green-500" :
-                  accountStatus.accountStatus === 'trial' ? "bg-blue-500" :
-                  accountStatus.accountStatus === 'expired' ? "bg-red-500" :
-                  accountStatus.accountStatus === 'closed' ? "bg-gray-500" :
-                  accountStatus.accountStatus === 'no_family' ? "bg-orange-500" :
-                  "bg-yellow-500"
-                )} />
-                <Label className="font-medium capitalize">
-                  {accountStatus.accountStatus.replace('_', ' ')} {t('Account')}
-                </Label>
-              </div>
-
-              {accountStatus.subscriptionActive && (
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={cn(
-                    "h-4 w-4",
-                    subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-600" : "text-green-600"
-                  )} aria-hidden="true" />
-                  <Label className={cn(
-                    "font-medium",
-                    subscriptionStatus?.cancelAtPeriodEnd ? "text-amber-700" : "text-green-600"
-                  )}>
-                    {accountStatus.accountStatus === 'trial' ? 'Active Trial' :
-                     accountStatus.planType === 'full' ? 'Lifetime Member' :
-                     subscriptionStatus?.cancelAtPeriodEnd ? 'Subscription Active (Cancelled)' :
-                     'Subscription Active'}
-                  </Label>
-                </div>
-              )}
-
-              {accountStatus.trialEnds && accountStatus.accountStatus !== 'expired' && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                    <Label className="text-sm">
-                      {t('Trial ends')} {new Date(accountStatus.trialEnds).toLocaleDateString()}
-                    </Label>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowPaymentModal(true)}
-                    className="mt-2"
-                  >
-                    <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Upgrade')}
-                  </Button>
-                </>
-              )}
-
-              {accountStatus.planExpires && !accountStatus.trialEnds && accountStatus.planType !== 'full' && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                  <Label className="text-sm">
-                    {t('Subscription ends')} {new Date(accountStatus.planExpires).toLocaleDateString()}
-                  </Label>
-                </div>
-              )}
-
-              {accountStatus.accountStatus === 'expired' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                    <span className="font-medium">
-                      {accountStatus.trialEnds ? 'Trial Expired' : 'Subscription Expired'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-red-600 mt-1 mb-3">
-                    {accountStatus.trialEnds 
-                      ? 'Your trial has expired. Please subscribe to continue using Sprout Track.'
-                      : 'Your subscription has expired. Please renew your subscription to continue using Sprout Track.'
-                    }
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowPaymentModal(true)}
-                    variant="destructive"
-                  >
-                    <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {accountStatus.trialEnds ? 'Subscribe Now' : 'Renew Subscription'}
-                  </Button>
-                </div>
-              )}
-
-              {((accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial') || accountStatus.planType === 'full') && (
-                <div className="flex flex-col items-start sm:flex-row sm:justify-end gap-2 mt-3">
-                  {accountStatus.subscriptionActive && accountStatus.planType === 'sub' && accountStatus.accountStatus !== 'trial' && !subscriptionStatus?.cancelAtPeriodEnd && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowPaymentModal(true)}
-                      className="self-start"
-                    >
-                      <CreditCard className="h-4 w-4 mr-2" aria-hidden="true" />
-                      {t('Manage Subscription')}
-                    </Button>
-                  )}
-                  {subscriptionStatus?.cancelAtPeriodEnd && (
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleRenewSubscription}
-                      disabled={renewingSubscription}
-                      className="self-start"
-                    >
-                      {renewingSubscription ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                          {t('Renewing...')}
-                        </>
-                      ) : (
-                        <>
-                          <Crown className="h-4 w-4 mr-2" aria-hidden="true" />
-                          {t('Renew Subscription')}
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowPaymentHistory(true)}
-                    className="self-start"
-                  >
-                    <Receipt className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Payment History')}
-                  </Button>
-                </div>
-              )}
+            <p className="sb-status-sub">
+              {subscriptionView.endDate
+                ? t('Ends {date} · then $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString())
+                : t('Then $2.99/month')}
+            </p>
+            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+              {t('Start my subscription')}
+            </button>
+          </>
+        ) : subscriptionView.kind === 'active' ? (
+          <>
+            <div className="sb-status-line"><i /><span>{t('Active')}</span></div>
+            <p className="sb-status-sub">
+              {subscriptionView.endDate
+                ? (subscriptionView.cancelAtPeriodEnd
+                    ? t('Ends {date} · $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString())
+                    : t('Renews {date} · $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString()))
+                : t('$2.99/month')}
+            </p>
+            {subscriptionView.cancelAtPeriodEnd ? (
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleRenewSubscription} disabled={renewingSubscription}>
+                {renewingSubscription ? t('Renewing...') : t('Renew Subscription')}
+              </button>
+            ) : (
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Manage billing')}
+              </button>
+            )}
+          </>
+        ) : subscriptionView.kind === 'expired' ? (
+          <>
+            <div className="sb-status-line"><i className="sb-bad" /><span>{t('Expired')}</span></div>
+            <div className="sb-alertbox">
+              <b>{t('Logging is paused — your data is safe.')}</b>
+              <p>{t('Everything your family tracked is still here. Renew and you pick up right where you left off.')}</p>
+              <button type="button" className="sb-btn sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Renew for $2.99/month')}
+              </button>
             </div>
-          )}
-        </div>
+          </>
+        ) : null}
+
+        {(accountStatus.subscriptionActive || accountStatus.planType) && (
+          <div style={{ marginTop: 12 }}>
+            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentHistory(true)}>
+              <Receipt size={15} strokeWidth={1.8} />
+              {t('Payment history')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Family Information Section - Only show if family data exists */}
       {familyData && (
-        <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              {t('Family Information')}
-            </h3>
+        <div className="sb-sect">
+          <div className="sb-sect-hd">
+            <Home size={20} strokeWidth={1.8} />
+            <h3>{t('Family')}</h3>
             {!editingFamily && (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
                 onClick={() => {
                   setEditingFamily(true);
                   setFamilyMessage('');
                 }}
               >
-                <Edit className="h-4 w-4 mr-2" aria-hidden="true" />
                 {t('Edit')}
-              </Button>
+              </button>
             )}
           </div>
 
           {editingFamily ? (
-            <div className={cn(styles.formGroup, "account-manager-form-group")}>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="familyName">{t('Family Name')}</Label>
-                <Input
+            <div className="sb-f-grid">
+              <div>
+                <label className="sb-fl" htmlFor="familyName">{t('Family name')}</label>
+                <input
                   id="familyName"
+                  className="sb-fi"
                   value={familyFormData.name}
                   onChange={(e) => setFamilyFormData(prev => ({ ...prev, name: e.target.value }))}
                   disabled={savingFamily}
                 />
               </div>
-              <div className={cn(styles.formField, "account-manager-form-field")}>
-                <Label htmlFor="familySlug">{t('Family URL Slug')}</Label>
-                <div className="relative">
-                  <Input
-                    id="familySlug"
-                    value={familyFormData.slug}
-                    onChange={(e) => setFamilyFormData(prev => ({ ...prev, slug: e.target.value.toLowerCase() }))}
-                    disabled={savingFamily}
-                    className={slugError ? 'border-red-500' : ''}
-                  />
-                  {checkingSlug && (
-                    <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" aria-hidden="true" />
-                  )}
-                </div>
-                {/* Validation feedback */}
-                <div className="min-h-[20px] mt-1">
-                  {checkingSlug && (
-                    <div className="flex items-center gap-1 text-blue-600 text-sm">
-                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-                      {t('Checking availability...')}
-                    </div>
-                  )}
-                  {slugError && (
-                    <div className="flex items-center gap-1 text-red-600 text-sm account-manager-validation-error">
-                      <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-                      {slugError}
-                    </div>
-                  )}
-                  {!checkingSlug && !slugError && familyFormData.slug && familyFormData.slug !== familyData?.slug && (
-                    <div className="flex items-center gap-1 text-green-600 text-sm">
-                      <span className="h-3 w-3 rounded-full bg-green-600"></span>
-                      {t('URL is available')}
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm text-gray-500 mt-1 account-manager-info-text">
-                  {t('This is your family\'s unique URL identifier')}
-                </p>
+              <div>
+                <label className="sb-fl" htmlFor="familySlug">{t('Family link')}</label>
+                <input
+                  id="familySlug"
+                  className="sb-fi sb-mono"
+                  value={familyFormData.slug}
+                  onChange={(e) => setFamilyFormData(prev => ({ ...prev, slug: e.target.value.toLowerCase() }))}
+                  disabled={savingFamily}
+                />
+                <p className="sb-fh">{t("Your family's private address — share it with caretakers.")}</p>
+                {slugError && <p className="sb-form-error">{slugError}</p>}
               </div>
-              
-              <div className={styles.buttonGroup}>
-                <Button
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  className="sb-btn sb-sm"
                   onClick={handleFamilySave}
                   disabled={savingFamily || !!slugError || checkingSlug}
                 >
-                  {savingFamily ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                      {t('Saving...')}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" aria-hidden="true" />
-                      {t('Save')}
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
+                  {savingFamily ? t('Saving…') : t('Save')}
+                </button>
+                <button
+                  type="button"
+                  className="sb-btn sb-ghost sb-sm"
                   onClick={() => {
                     setEditingFamily(false);
                     setFamilyFormData({
@@ -1181,201 +954,89 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   }}
                   disabled={savingFamily}
                 >
-                  <X className="h-4 w-4 mr-2" aria-hidden="true" />
                   {t('Cancel')}
-                </Button>
+                </button>
               </div>
             </div>
           ) : (
-            <div className={styles.formGroup}>
-              <div className="flex items-center gap-2 mb-2">
-                <Home className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                <Label className="font-medium">{familyData.name}</Label>
+            <>
+              <div className="sb-irow"><Home size={16} strokeWidth={1.8} /><b>{familyData.name}</b></div>
+              <div className="sb-irow">
+                <Key size={16} strokeWidth={1.8} />
+                <span className="sb-mono">{typeof window !== 'undefined' ? window.location.host : ''}/{familyData.slug}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Link className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                <Label className="font-mono text-sm">/{familyData.slug}</Label>
-              </div>
-            </div>
+            </>
           )}
 
           {familyMessage && (
-            <div className={cn(
-              "mt-4 p-3 rounded-md text-sm",
-              familyMessage.startsWith('Error') 
-                ? "bg-red-50 text-red-600 account-manager-error-message" 
-                : "bg-green-50 text-green-600 account-manager-success-message"
-            )}>
-              <div className="flex items-center gap-2">
-                {familyMessage.startsWith('Error') ? (
-                  <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                )}
-                {familyMessage}
-              </div>
-            </div>
+            <p className={familyMessage.startsWith('Error') ? 'sb-msg-err' : 'sb-msg-ok'} style={{ marginTop: 12 }}>
+              {familyMessage}
+            </p>
           )}
         </div>
       )}
 
-      {/* Data Download Section - Only show if family data exists */}
+      {/* Your data Section - Only show if family data exists */}
       {familyData && (
-        <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              {t('Download Your Data')}
-            </h3>
+        <div className="sb-sect">
+          <div className="sb-sect-hd">
+            <Download size={20} strokeWidth={1.8} />
+            <h3>{t('Your data')}</h3>
           </div>
-          
-          <div className={styles.formGroup}>
-            <p className="text-sm text-gray-600 mb-4 account-manager-info-text">
-              {t('Download a complete copy of your family\'s data including all activities, contacts, and settings.')}
-            </p>
-            <Button
-              onClick={handleDataDownload}
-              disabled={downloadingData}
-            >
-              {downloadingData ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                  {t('Preparing Download...')}
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" aria-hidden="true" />
-                  {t('Download Data')}
-                </>
-              )}
-            </Button>
-          </div>
+          <p>{t('Everything your family has logged — feeds, naps, contacts, settings — in one file, whenever you like.')}</p>
+          <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleDataDownload} disabled={downloadingData}>
+            <Download size={15} strokeWidth={1.8} />
+            {downloadingData ? t('Preparing…') : t('Download my data')}
+          </button>
         </div>
       )}
 
       {/* Account Closure Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={cn(styles.sectionTitle, "account-manager-section-title text-red-700")}>
-            {t('Close Account')}
-          </h3>
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <AlertTriangle size={20} strokeWidth={1.8} style={{ color: 'var(--rust)' }} />
+          <h3 style={{ color: 'var(--rust)' }}>{t('Close account')}</h3>
         </div>
 
         {accountClosed ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
-            <div className="text-center py-8">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-white" aria-hidden="true" />
-                </div>
-              </div>
-              <h4 className="text-xl font-semibold text-gray-800 mb-2">
-                {t('Account Closed Successfully')}
-              </h4>
-              <p className="text-gray-600 mb-4">
-                {t('Your account has been closed and a confirmation email has been sent.')}
-              </p>
-              
-              <div className="bg-red-50 rounded-lg p-6 mb-4 max-w-md mx-auto">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="text-4xl font-bold text-red-600">
-                    {logoutCountdown}
-                  </div>
-                </div>
-                <p className="text-red-700 font-medium mb-3">
-                  {t('Logging out in')} {logoutCountdown} second{logoutCountdown !== 1 ? 's' : ''}...
-                </p>
-                <div className="w-full bg-red-200 rounded-full h-3">
-                  <div 
-                    className="bg-red-600 h-3 rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${((5 - logoutCountdown) / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-500">
-                <p>{t('Thank you for using Sprout Track.')}</p>
-                <p>{t('You will be redirected to the home page automatically.')}</p>
-              </div>
-            </div>
+          <div className="sb-alertbox">
+            <b>{t('Your account is closed.')}</b>
+            <p>{t('Signing you out in {seconds}s…').replace('{seconds}', String(logoutCountdown))}</p>
           </div>
         ) : confirmingClosure ? (
-          <div className={cn(styles.formGroup, "account-manager-form-group")}>
-            <h4 className="text-lg font-medium mb-3 text-red-700">{t('Confirm Account Closure')}</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              {t('Please enter your password to confirm you want to permanently close your account.')}
+          <div className="sb-f-grid">
+            <p style={{ fontWeight: 700, color: 'var(--rust)', margin: 0 }}>
+              {t('This closes the book for good. Are you sure?')}
             </p>
-            <div className={cn(styles.formField, "account-manager-form-field")}>
-              <Label htmlFor="closurePassword">{t('Password')}</Label>
-              <Input
+            <div>
+              <label className="sb-fl" htmlFor="closurePassword">{t('Confirm with your password')}</label>
+              <input
                 id="closurePassword"
+                className="sb-fi"
                 type="password"
                 value={closurePasswordData.password}
-                onChange={(e) => setClosurePasswordData(prev => ({ ...prev, password: e.target.value }))}
+                onChange={(e) => setClosurePasswordData({ password: e.target.value })}
                 disabled={closurePasswordLoading || closingAccount}
-                placeholder="Enter your password"
               />
             </div>
-            
-            <div className={styles.buttonGroup}>
-              <Button
-                onClick={handleClosurePasswordConfirm}
-                disabled={closurePasswordLoading || closingAccount || !closurePasswordData.password}
-                variant="destructive"
-              >
-                {closurePasswordLoading || closingAccount ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                    {closingAccount ? 'Closing Account...' : 'Verifying...'}
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {t('Close Account')}
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleClosureCancel}
-                disabled={closurePasswordLoading || closingAccount}
-              >
-                <X className="h-4 w-4 mr-2" aria-hidden="true" />
-                {t('Cancel')}
-              </Button>
+            {closurePasswordMessage && <p className="sb-form-error">{closurePasswordMessage}</p>}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" className="sb-btn sb-danger sb-solid sb-sm"
+                onClick={handleClosurePasswordConfirm} disabled={closurePasswordLoading || closingAccount || !closurePasswordData.password}>
+                {closurePasswordLoading || closingAccount ? t('One moment…') : t('Yes, close it')}
+              </button>
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleClosureCancel} disabled={closurePasswordLoading || closingAccount}>
+                {t('Keep my account')}
+              </button>
             </div>
-
-            {closurePasswordMessage && (
-              <div className={cn(
-                "mt-4 p-3 rounded-md text-sm",
-                closurePasswordMessage.startsWith('Error') || closurePasswordMessage.includes('incorrect')
-                  ? "bg-red-50 text-red-600 account-manager-error-message" 
-                  : "bg-green-50 text-green-600 account-manager-success-message"
-              )}>
-                <div className="flex items-center gap-2">
-                  {closurePasswordMessage.startsWith('Error') || closurePasswordMessage.includes('incorrect') ? (
-                    <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  {closurePasswordMessage}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
-          <div className={styles.formGroup}>
-            <p className="text-sm text-gray-600 mb-4 account-manager-info-text">
-              <AlertTriangle className="h-4 w-4 inline mr-1" aria-hidden="true" />
-              {t('Warning: Closing your account will permanently disable access to your')} {familyData ? "family" : "account"} {t('data. This action cannot be undone. Please download your data first if you want to keep it.')}
-            </p>
-            <Button
-              onClick={() => setConfirmingClosure(true)}
-              variant="destructive"
-            >
-              <AlertTriangle className="h-4 w-4 mr-2" aria-hidden="true" />
-              {t('Close Account')}
-            </Button>
-          </div>
+          <>
+            <p>{t("Closing your account permanently ends access to your family's data. Download your data first if you want to keep it.")}</p>
+            <button type="button" className="sb-btn sb-danger sb-sm" onClick={() => setConfirmingClosure(true)}>
+              {t('Close my account')}
+            </button>
+          </>
         )}
       </div>
 

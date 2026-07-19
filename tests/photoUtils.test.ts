@@ -11,6 +11,12 @@ import {
   formatQuotaLabel,
   countUniquePhotoIds,
   filterTaggableMilestones,
+  decideCameraStrategy,
+  capturedPhotoFileName,
+  mapGetUserMediaError,
+  nextFacingMode,
+  uniqueFileNames,
+  photosZipFileName,
   MAX_PHOTO_FILE_SIZE,
   TRASH_RETENTION_DAYS,
 } from '@/src/utils/photoUtils';
@@ -164,5 +170,94 @@ describe('filterTaggableMilestones', () => {
   });
   it('empty input returns empty', () => {
     expect(filterTaggableMilestones([], now)).toEqual([]);
+  });
+});
+
+describe('decideCameraStrategy', () => {
+  it('phone (coarse pointer, touch, mediaDevices) uses the native camera intent', () => {
+    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 5, hasMediaDevices: true })).toBe('native-capture');
+  });
+  it('iPadOS desktop-class Safari (coarse pointer, 5 touch points) still uses native capture', () => {
+    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 5, hasMediaDevices: true })).toBe('native-capture');
+  });
+  it('native capture wins even without mediaDevices (capture attr needs no getUserMedia)', () => {
+    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 1, hasMediaDevices: false })).toBe('native-capture');
+  });
+  it('desktop with a webcam gets the in-app webcam modal', () => {
+    expect(decideCameraStrategy({ coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: true })).toBe('webcam-modal');
+  });
+  it('touch laptop (fine primary pointer, touch present) gets the webcam modal', () => {
+    expect(decideCameraStrategy({ coarsePointer: false, maxTouchPoints: 10, hasMediaDevices: true })).toBe('webcam-modal');
+  });
+  it('coarse pointer with zero touch points (e.g. TV remote) gets the webcam modal when available', () => {
+    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 0, hasMediaDevices: true })).toBe('webcam-modal');
+  });
+  it('no camera path at all (insecure context) degrades to library-only', () => {
+    expect(decideCameraStrategy({ coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: false })).toBe('library-only');
+  });
+});
+
+describe('capturedPhotoFileName', () => {
+  it('formats capture-YYYY-MM-DD-HH-mm-ss.jpg from local time', () => {
+    expect(capturedPhotoFileName(new Date(2026, 6, 19, 14, 30, 25))).toBe('capture-2026-07-19-14-30-25.jpg');
+  });
+  it('zero-pads single-digit month, day, and time parts', () => {
+    expect(capturedPhotoFileName(new Date(2026, 0, 5, 9, 8, 7))).toBe('capture-2026-01-05-09-08-07.jpg');
+  });
+});
+
+describe('mapGetUserMediaError', () => {
+  it('permission errors map to permission-denied', () => {
+    expect(mapGetUserMediaError('NotAllowedError')).toBe('permission-denied');
+    expect(mapGetUserMediaError('SecurityError')).toBe('permission-denied');
+  });
+  it('missing-device errors map to no-camera', () => {
+    expect(mapGetUserMediaError('NotFoundError')).toBe('no-camera');
+    expect(mapGetUserMediaError('DevicesNotFoundError')).toBe('no-camera');
+    expect(mapGetUserMediaError('OverconstrainedError')).toBe('no-camera');
+  });
+  it('anything else (including undefined) maps to unknown', () => {
+    expect(mapGetUserMediaError('AbortError')).toBe('unknown');
+    expect(mapGetUserMediaError(undefined)).toBe('unknown');
+  });
+});
+
+describe('nextFacingMode', () => {
+  it('round-trips both directions', () => {
+    expect(nextFacingMode('user')).toBe('environment');
+    expect(nextFacingMode('environment')).toBe('user');
+  });
+});
+
+describe('uniqueFileNames', () => {
+  it('passes distinct names through unchanged', () => {
+    expect(uniqueFileNames(['a.jpg', 'b.png'])).toEqual(['a.jpg', 'b.png']);
+  });
+  it('suffixes duplicates before the extension, keeping the first as-is', () => {
+    expect(uniqueFileNames(['IMG_1.jpg', 'IMG_1.jpg', 'IMG_1.jpg'])).toEqual(['IMG_1.jpg', 'IMG_1 (2).jpg', 'IMG_1 (3).jpg']);
+  });
+  it('handles names without an extension', () => {
+    expect(uniqueFileNames(['photo', 'photo'])).toEqual(['photo', 'photo (2)']);
+  });
+  it('a generated suffix never collides with a name already in the list', () => {
+    expect(uniqueFileNames(['a.jpg', 'a (2).jpg', 'a.jpg'])).toEqual(['a.jpg', 'a (2).jpg', 'a (3).jpg']);
+  });
+  it('preserves dots inside the base name', () => {
+    expect(uniqueFileNames(['baby.first.steps.jpg', 'baby.first.steps.jpg'])).toEqual([
+      'baby.first.steps.jpg',
+      'baby.first.steps (2).jpg',
+    ]);
+  });
+  it('empty input returns empty', () => {
+    expect(uniqueFileNames([])).toEqual([]);
+  });
+});
+
+describe('photosZipFileName', () => {
+  it('formats photos-YYYY-MM-DD.zip from local date', () => {
+    expect(photosZipFileName(new Date(2026, 6, 19, 14, 30, 25))).toBe('photos-2026-07-19.zip');
+  });
+  it('zero-pads month and day', () => {
+    expect(photosZipFileName(new Date(2026, 0, 5))).toBe('photos-2026-01-05.zip');
   });
 });

@@ -2,7 +2,7 @@ import { PhotoResponse } from '@/app/api/types';
 import { GalleryTypeFilter } from '@/src/utils/photoGalleryUtils';
 
 export type GalleryView = 'gallery' | 'trash';
-export type GalleryGrouping = 'month' | 'milestone' | 'all';
+export type GalleryGrouping = 'month' | 'milestone';
 
 /**
  * Full gallery UI state. Owned by `PhotoGallery/index.tsx` and passed down

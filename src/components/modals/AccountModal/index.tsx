@@ -1,18 +1,9 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/src/components/ui/dialog';
-import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';
 import { useState, useEffect, useRef } from 'react';
 import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
 import TermsOfUseModal from '@/src/components/modals/terms-of-use';
 import { useLocalization } from '@/src/context/localization';
-
-import './account-modal.css';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
+import { CheckCircle } from 'lucide-react';
 
 interface AccountModalProps {
   open: boolean;
@@ -580,552 +571,285 @@ export default function AccountModal({
     }
   }, [open, mode, showSuccess, isSubmitting, resetState]);
 
+  const headings: Record<typeof mode, { title: string; sub?: string }> = {
+    login: { title: t('Welcome back.'), sub: t("Sign in to your family's page.") },
+    register: { title: t('Create your account.'), sub: t('14 days free, no card needed.') },
+    'forgot-password': {
+      title: t('Reset your password.'),
+      sub: t("We'll email you a link. It works for 15 minutes."),
+    },
+    verify: { title: t('Verify your email.') },
+    'reset-password': { title: t('Set a new password.') },
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="account-modal-content !p-0 max-w-md">
-
-        <div className="account-modal-body">
-          {!showSuccess && (
-            <DialogHeader className="text-center mb-6">
-              <DialogTitle className="account-modal-title text-center">
-                {mode === 'login' 
-                  ? 'Welcome Back' 
-                  : mode === 'register' 
-                  ? 'Create Your Account' 
-                  : mode === 'verify'
-                  ? 'Email Verification'
-                  : 'Reset Password'
-                }
-              </DialogTitle>
-              <DialogDescription className="account-modal-description-green text-center">
-                {mode === 'login' 
-                  ? 'Sign in to access your family dashboard' 
-                  : mode === 'register'
-                  ? 'Start your 14 day trial and experience Sprout Track'
-                  : mode === 'verify'
-                  ? 'Verifying your email address...'
-                  : mode === 'reset-password'
-                  ? 'Reset your account password'
-                  : 'Enter your email to receive a password reset link'
-                }
-              </DialogDescription>
-              
-              {/* Mode toggle in header - hide during verification and reset-password */}
-              {mode !== 'verify' && mode !== 'reset-password' && (
-                <div className="mt-4 text-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {mode === 'login' 
-                      ? "Don't have an account?" 
-                      : mode === 'register'
-                      ? "Already have an account?"
-                      : "Remember your password?"
-                    }
-                  </span>
-                  {' '}
-                  <button
-                    type="button"
-                    onClick={toggleMode}
-                    className="text-sm ml-2 font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 transition-colors duration-200 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-sm px-1"
-                    disabled={isSubmitting}
-                  >
-                    {mode === 'login' 
-                      ? 'Create one' 
-                      : mode === 'register'
-                      ? 'Log in'
-                      : 'Back to login'
-                    }
-                  </button>
-                </div>
-              )}
-            </DialogHeader>
-          )}
-
-          {showSuccess ? (
-            <div className="account-modal-success">
-              <div className="account-modal-success-icon">✓</div>
-              <h3 className="account-modal-success-title">
-                {mode === 'forgot-password' ? 'Email Sent!' : 'Registration Successful!'}
-              </h3>
-              <p className="account-modal-success-message">
-                {mode === 'forgot-password' 
-                  ? 'If an account with that email exists, we\'ve sent password reset instructions. Check your email and follow the link to reset your password.'
-                  : 'Please check your email for verification instructions.'
-                }
+    <>
+      <StorybookDrawer
+        open={open}
+        onClose={onClose}
+        title={headings[mode].title}
+        subtitle={headings[mode].sub}
+        art={mode === 'register' ? 'star' : undefined}
+        className="sb-auth"
+      >
+        {showSuccess ? (
+          <div className="sb-success">
+            <CheckCircle size={34} strokeWidth={1.8} />
+            <b>
+              {mode === 'forgot-password'
+                ? t('Check your email.')
+                : t('Check your inbox.')}
+            </b>
+            <p>
+              {mode === 'forgot-password'
+                ? t("If that address has an account, a reset link is on its way. It works for 15 minutes.")
+                : t('We sent a verification link to your email. Click it to finish setting up.')}
+            </p>
+          </div>
+        ) : mode === 'verify' ? (
+          /* ── verify: keep the existing three sub-states, restyled ── */
+          verificationState === 'loading' ? (
+            <p className="sb-subtitle">{t('Verifying your email…')}</p>
+          ) : verificationState === 'success' || verificationState === 'already-verified' ? (
+            <div className="sb-success">
+              <CheckCircle size={34} strokeWidth={1.8} />
+              <b>{t('Email verified.')}</b>
+              <p>{verificationMessage}</p>
+              <p className="sb-fh">
+                {t('Taking you to sign in in {seconds}s…').replace(
+                  '{seconds}',
+                  String(verificationCountdown)
+                )}
               </p>
-            </div>
-          ) : mode === 'verify' ? (
-            <div className="account-modal-body">
-              {verificationState === 'loading' && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    {t('Verifying Your Account')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {t('Please wait while we verify your email address...')}
-                  </p>
-                </div>
-              )}
-
-              {verificationState === 'success' && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-2xl">✓</span>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    {t('Verification Successful!')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {verificationMessage}
-                  </p>
-                  
-                  <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-teal-700 dark:text-teal-300 mb-2">
-                      {t('Switching to login in')} {verificationCountdown} {t('seconds...')}
-                    </p>
-                    <div className="w-full bg-teal-200 dark:bg-teal-800 rounded-full h-2">
-                      <div 
-                        className="bg-teal-600 h-2 rounded-full transition-all duration-1000"
-                        style={{ width: `${((3 - verificationCountdown) / 3) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <Button 
-                    onClick={() => {
-                      setMode('login');
-                      setVerificationState('loading');
-                    }}
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                  >
-                    {t('Continue to Login')}
-                  </Button>
-                </div>
-              )}
-
-              {verificationState === 'error' && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-2xl">✕</span>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    {t('Verification Failed')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {verificationMessage}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <Button 
-                      onClick={() => {
-                        if (verificationToken) {
-                          handleVerification(verificationToken);
-                        }
-                      }}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      {t('Try Again')}
-                    </Button>
-                    <Button 
-                      onClick={() => setMode('register')}
-                      className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                    >
-                      {t('Create New Account')}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : mode === 'reset-password' ? (
-            <div className="account-modal-body">
-              {resetState === 'loading' && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-12 h-12 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    {t('Validating Reset Token')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {t('Please wait while we validate your password reset request...')}
-                  </p>
-                </div>
-              )}
-
-              {resetState === 'valid' && (
-                <div>
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                      {t('Set New Password')}
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {t('Enter your new password for')} {userEmail}
-                    </p>
-                  </div>
-
-                  <form onSubmit={handlePasswordResetSubmit} className="space-y-4">
-                    {/* New Password */}
-                    <div>
-                      <label className="account-modal-label">{t('New Password')}</label>
-                      <Input
-                        ref={newPasswordInputRef}
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) => {
-                          const newPassword = e.target.value;
-                          setFormData({ ...formData, password: newPassword });
-                          updatePasswordValidation(newPassword);
-                        }}
-                        placeholder="Enter new password"
-                        className="w-full"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div>
-                      <label className="account-modal-label">{t('Confirm New Password')}</label>
-                      <Input
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        placeholder="Confirm new password"
-                        className="w-full"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-
-                    {/* Password Requirements */}
-                    <div className="mt-3 space-y-2">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Password Requirements:')}</p>
-                      <div className="grid grid-cols-1 gap-1 text-xs">
-                        <div className={`flex items-center gap-2 ${passwordValidation.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.length ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.length && '✓'}
-                          </span>
-                          {t('At least 8 characters')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.lowercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.lowercase && '✓'}
-                          </span>
-                          {t('One lowercase letter (a-z)')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.uppercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.uppercase && '✓'}
-                          </span>
-                          {t('One uppercase letter (A-Z)')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.number ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.number && '✓'}
-                          </span>
-                          {t('One number (0-9)')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.special ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.special && '✓'}
-                          </span>
-                          {t('One special character (!@#$%^&*)')}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Error message */}
-                    {error && (
-                      <div className="account-modal-error">
-                        {error}
-                      </div>
-                    )}
-
-                    {/* Submit Button */}
-                    <Button 
-                      type="submit"
-                      className="account-modal-submit"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
-                    </Button>
-                  </form>
-                </div>
-              )}
-
-              {resetState === 'success' && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-2xl">✓</span>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    {t('Password Reset Successful!')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {resetMessage}
-                  </p>
-                  
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-green-700 dark:text-green-300 mb-2">
-                      {t('You can now log in with your new password! 🎉')}
-                    </p>
-                  </div>
-
-                  <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-teal-700 dark:text-teal-300 mb-2">
-                      {t('Redirecting to login in')} {resetCountdown} {t('seconds...')}
-                    </p>
-                    <div className="w-full bg-teal-200 dark:bg-teal-800 rounded-full h-2">
-                      <div 
-                        className="bg-teal-600 h-2 rounded-full transition-all duration-1000"
-                        style={{ width: `${((5 - resetCountdown) / 5) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <Button 
-                    onClick={() => {
-                      setMode('login');
-                      setResetState('loading');
-                    }}
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                  >
-                    {t('Go to Login')}
-                  </Button>
-                </div>
-              )}
-
-              {(resetState === 'invalid' || resetState === 'error') && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-2xl">✕</span>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    {resetState === 'invalid' ? 'Invalid Reset Link' : 'Reset Failed'}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {resetMessage}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    {resetState === 'invalid' && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        {t('Password reset links expire after 15 minutes for security.')}
-                      </p>
-                    )}
-                    <Button 
-                      onClick={() => window.location.reload()}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      {t('Try Again')}
-                    </Button>
-                    <Button 
-                      onClick={() => setMode('register')}
-                      className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                    >
-                      {t('Create New Account')}
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <button
+                type="button"
+                className="sb-btn sb-wide"
+                onClick={() => setMode('login')}
+              >
+                {t('Continue to sign in')}
+              </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email */}
+            <div className="sb-f-grid">
+              <p className="sb-form-error">{verificationMessage}</p>
+              <button
+                type="button"
+                className="sb-btn sb-wide"
+                onClick={() => verificationToken && handleVerification(verificationToken)}
+              >
+                {t('Try again')}
+              </button>
+              <div className="sb-auth-alt">
+                {t('Need a fresh start?')}{' '}
+                <button type="button" onClick={() => setMode('register')}>
+                  {t('Create a new account')}
+                </button>
+              </div>
+            </div>
+          )
+        ) : mode === 'reset-password' ? (
+          /* ── reset-password: keep the existing sub-states, restyled ── */
+          resetState === 'loading' ? (
+            <p className="sb-subtitle">{t('Checking your link…')}</p>
+          ) : resetState === 'valid' ? (
+            <form onSubmit={handlePasswordResetSubmit} className="sb-f-grid">
+              {userEmail && <p className="sb-fh">{userEmail}</p>}
               <div>
-                <label className="account-modal-label">{t('Email')}</label>
-                <Input
-                  ref={emailInputRef}
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Enter your email"
-                  className="w-full"
+                <label className="sb-fl" htmlFor="sbNewPassword">{t('New password')}</label>
+                <input
+                  id="sbNewPassword"
+                  ref={newPasswordInputRef}
+                  className="sb-fi"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value });
+                    updatePasswordValidation(e.target.value);
+                  }}
+                  required
+                  disabled={isSubmitting}
+                />
+                <PasswordChecklist validation={passwordValidation} t={t} />
+              </div>
+              <div>
+                <label className="sb-fl" htmlFor="sbConfirmPassword">{t('Confirm password')}</label>
+                <input
+                  id="sbConfirmPassword"
+                  className="sb-fi"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    setFormData({ ...formData, confirmPassword: e.target.value })
+                  }
                   required
                   disabled={isSubmitting}
                 />
               </div>
-
-              {/* Password - Not shown in forgot password mode */}
-              {mode !== 'forgot-password' && (
+              {error && <p className="sb-form-error">{error}</p>}
+              <button type="submit" className="sb-btn sb-wide" disabled={isSubmitting}>
+                {isSubmitting ? t('Saving…') : t('Save my new password')}
+              </button>
+            </form>
+          ) : resetState === 'success' ? (
+            <div className="sb-success">
+              <CheckCircle size={34} strokeWidth={1.8} />
+              <b>{t('Password updated.')}</b>
+              <p>{resetMessage}</p>
+              <p className="sb-fh">
+                {t('Taking you to sign in in {seconds}s…').replace(
+                  '{seconds}',
+                  String(resetCountdown)
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="sb-f-grid">
+              <p className="sb-form-error">{resetMessage}</p>
+              <div className="sb-auth-alt">
+                {t('Link expired?')}{' '}
+                <button type="button" onClick={showForgotPassword}>
+                  {t('Request a new one')}
+                </button>
+              </div>
+            </div>
+          )
+        ) : (
+          /* ── login / register / forgot-password form ── */
+          <form onSubmit={handleSubmit} className="sb-f-grid">
+            {mode === 'register' && (
+              <div className="sb-f2">
                 <div>
-                  <label className="account-modal-label">{t('Password')}</label>
-                  <Input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => {
-                      const newPassword = e.target.value;
-                      setFormData({ ...formData, password: newPassword });
-                      if (mode === 'register') {
-                        updatePasswordValidation(newPassword);
-                      }
-                    }}
-                    placeholder="Enter your password"
-                    className="w-full"
+                  <label className="sb-fl" htmlFor="sbFirstName">{t('First name')}</label>
+                  <input
+                    id="sbFirstName"
+                    ref={firstNameInputRef}
+                    className="sb-fi"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     required
                     disabled={isSubmitting}
                   />
-                  {mode === 'register' && (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Password Requirements:')}</p>
-                      <div className="grid grid-cols-1 gap-1 text-xs">
-                        <div className={`flex items-center gap-2 ${passwordValidation.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.length ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.length && '✓'}
-                          </span>
-                          {t('At least 8 characters')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.lowercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.lowercase && '✓'}
-                          </span>
-                          {t('One lowercase letter (a-z)')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.uppercase ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.uppercase && '✓'}
-                          </span>
-                          {t('One uppercase letter (A-Z)')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.number ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.number && '✓'}
-                          </span>
-                          {t('One number (0-9)')}
-                        </div>
-                        <div className={`flex items-center gap-2 ${passwordValidation.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${passwordValidation.special ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {passwordValidation.special && '✓'}
-                          </span>
-                          {t('One special character (!@#$%^&*)')}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              )}
-
-              {/* Registration fields */}
-              {mode === 'register' && (
+                <div>
+                  <label className="sb-fl" htmlFor="sbLastName">{t('Last name')}</label>
+                  <input
+                    id="sbLastName"
+                    className="sb-fi"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            )}
+            <div>
+              <label className="sb-fl" htmlFor="sbEmail">{t('Email')}</label>
+              <input
+                id="sbEmail"
+                ref={emailInputRef}
+                className="sb-fi"
+                type="email"
+                placeholder={t('you@example.com')}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+            {mode !== 'forgot-password' && (
+              <div>
+                <label className="sb-fl" htmlFor="sbPassword">{t('Password')}</label>
+                <input
+                  id="sbPassword"
+                  ref={passwordInputRef}
+                  className="sb-fi"
+                  type="password"
+                  placeholder={mode === 'register' ? t('Make it a good one') : t('Your password')}
+                  value={formData.password}
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value });
+                    if (mode === 'register') updatePasswordValidation(e.target.value);
+                  }}
+                  required
+                  disabled={isSubmitting}
+                />
+                {mode === 'register' && (
+                  <PasswordChecklist validation={passwordValidation} t={t} />
+                )}
+              </div>
+            )}
+            {error && <p className="sb-form-error">{error}</p>}
+            <button type="submit" className="sb-btn sb-wide" disabled={isSubmitting}>
+              {isSubmitting
+                ? t('One moment…')
+                : mode === 'login'
+                ? t('Sign me in')
+                : mode === 'register'
+                ? t('Start my free trial')
+                : t('Email me the link')}
+            </button>
+            {mode === 'register' && (
+              <p className="sb-legal">
+                {t('By signing up you agree to our')}{' '}
+                <button type="button" disabled={isSubmitting} onClick={() => setShowTermsOfUse(true)}>{t('Terms')}</button>
+                {' '}{t('and')}{' '}
+                <button type="button" disabled={isSubmitting} onClick={() => setShowPrivacyPolicy(true)}>{t('Privacy Policy')}</button>.
+              </p>
+            )}
+            <div className="sb-auth-alt">
+              {mode === 'login' && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="account-modal-label">{t('First Name')}</label>
-                      <Input
-                        type="text"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        placeholder="First name"
-                        className="w-full"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div>
-                      <label className="account-modal-label">{t('Last Name')}</label>
-                      <Input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        placeholder="Last name"
-                        className="w-full"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
+                  {t('New here?')}{' '}
+                  <button type="button" onClick={toggleMode} disabled={isSubmitting}>{t('Start your free trial')}</button>
+                  <br />
+                  {t('Forgot your password?')}{' '}
+                  <button type="button" onClick={showForgotPassword} disabled={isSubmitting}>{t('Reset it')}</button>
                 </>
               )}
-
-              {/* Error message */}
-              {error && (
-                <div className="account-modal-error">
-                  {error}
-                </div>
+              {mode === 'register' && (
+                <>
+                  {t('Already have an account?')}{' '}
+                  <button type="button" onClick={toggleMode} disabled={isSubmitting}>{t('Sign in')}</button>
+                </>
               )}
+              {mode === 'forgot-password' && (
+                <>
+                  {t('Remembered it?')}{' '}
+                  <button type="button" onClick={toggleMode} disabled={isSubmitting}>{t('Back to sign in')}</button>
+                </>
+              )}
+            </div>
+          </form>
+        )}
+      </StorybookDrawer>
+      <PrivacyPolicyModal open={showPrivacyPolicy} onClose={() => setShowPrivacyPolicy(false)} />
+      <TermsOfUseModal open={showTermsOfUse} onClose={() => setShowTermsOfUse(false)} />
+    </>
+  );
+}
 
-              {/* Submit button */}
-              <Button
-                type="submit"
-                className="account-modal-submit mt-2"
-                disabled={isSubmitting}
-              >
-                {isSubmitting 
-                  ? (mode === 'login' ? 'Signing in...' : mode === 'register' ? 'Creating account...' : 'Sending email...') 
-                  : (mode === 'login' ? 'Sign In' : mode === 'register' ? 'Create Account' : 'Send Reset Email')
-                }
-              </Button>
-
-              {/* Mode toggle and forgot password */}
-              <div className="space-y-3">
-                {/* Forgot Password link for login mode */}
-                {mode === 'login' && (
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={showForgotPassword}
-                      className="account-modal-toggle-button text-sm"
-                      disabled={isSubmitting}
-                    >
-                      {t('Forgot your password?')}
-                    </button>
-                  </div>
-                )}
-
-                {/* Privacy Policy and Terms of Use links for registration mode */}
-                {mode === 'register' && (
-                  <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-4">
-                    <p className="mb-2">{t('By creating an account, you agree to our')}</p>
-                    <div className="flex items-center justify-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() => setShowPrivacyPolicy(true)}
-                        className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 transition-colors cursor-pointer underline-offset-4 hover:underline"
-                        disabled={isSubmitting}
-                      >
-                        {t('Privacy Policy')}
-                      </button>
-                      <span className="text-gray-400">and</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowTermsOfUse(true)}
-                        className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 transition-colors cursor-pointer underline-offset-4 hover:underline"
-                        disabled={isSubmitting}
-                      >
-                        {t('Terms of Use')}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            </form>
-          )}
-        </div>
-      </DialogContent>
-
-      {/* Privacy Policy Modal */}
-      <PrivacyPolicyModal 
-        open={showPrivacyPolicy} 
-        onClose={() => setShowPrivacyPolicy(false)} 
-      />
-
-      {/* Terms of Use Modal */}
-      <TermsOfUseModal 
-        open={showTermsOfUse} 
-        onClose={() => setShowTermsOfUse(false)} 
-      />
-    </Dialog>
+function PasswordChecklist({
+  validation,
+  t,
+}: {
+  validation: { length: boolean; lowercase: boolean; uppercase: boolean; number: boolean; special: boolean };
+  t: (key: string) => string;
+}) {
+  const rules: Array<[keyof typeof validation, string]> = [
+    ['length', '8+ characters'],
+    ['number', 'A number'],
+    ['lowercase', 'A lowercase letter'],
+    ['special', 'A symbol'],
+    ['uppercase', 'An uppercase letter'],
+  ];
+  return (
+    <div className="sb-reqs">
+      {rules.map(([key, label]) => (
+        <span key={key} className={validation[key] ? 'sb-ok' : undefined}>
+          <i aria-hidden="true">✓</i>
+          {t(label)}
+        </span>
+      ))}
+    </div>
   );
 }

@@ -20,6 +20,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
 import { cn } from '@/src/lib/utils';
 import { babyFormStyles } from './baby-form.styles';
 import { useToast } from '@/src/components/ui/toast';
@@ -36,6 +37,8 @@ interface BabyFormProps {
   isEditing: boolean;
   baby: Baby | null;
   onBabyChange?: () => void;
+  /** 'storybook' renders the stacked storybook drawer (account manager); default is the classic FormPage. */
+  appearance?: 'default' | 'storybook';
 }
 
 const defaultFormData = {
@@ -56,6 +59,7 @@ export default function BabyForm({
   isEditing,
   baby,
   onBabyChange,
+  appearance = 'default',
 }: BabyFormProps) {
   const { t } = useLocalization();
   const { dateFormat } = useTimezone();
@@ -148,6 +152,116 @@ export default function BabyForm({
       setIsSubmitting(false);
     }
   };
+
+  if (appearance === 'storybook') {
+    return (
+      <StorybookDrawer
+        open={isOpen}
+        onClose={onClose}
+        onBack={onClose}
+        title={isEditing ? t('Edit baby') : t('Add a baby')}
+        subtitle={t('You can change any of this later.')}
+        footer={
+          <>
+            <button type="button" className="sb-btn sb-ghost" onClick={onClose}>{t('Cancel')}</button>
+            <button type="submit" form="sb-baby-form" className="sb-btn" disabled={isSubmitting}>
+              {isSubmitting ? t('Saving…') : isEditing ? t('Save changes') : t('Add baby')}
+            </button>
+          </>
+        }
+      >
+        <form id="sb-baby-form" onSubmit={handleSubmit} className="sb-f-grid">
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbBabyFirst">{t('First name')}</label>
+              <input id="sbBabyFirst" className="sb-fi" value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required />
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbBabyLast">{t('Last name')}</label>
+              <input id="sbBabyLast" className="sb-fi" value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required />
+            </div>
+          </div>
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbBabyBirthDate">{t('Birth date')}</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="sbBabyBirthDate"
+                    variant="input"
+                    className={cn(
+                      "sb-fi w-full justify-start text-left font-normal",
+                      !formData.birthDate && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {formData.birthDate ? formatDateLong(formData.birthDate, dateFormat) : t("Select date")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={formData.birthDate}
+                    onSelect={(date) => setFormData({ ...formData, birthDate: date })}
+                    maxDate={new Date()} // Can't select future dates
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbBabyGender">{t('Gender')}</label>
+              <select id="sbBabyGender" className="sb-fi" value={formData.gender || ''}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value as Gender })}>
+                <option value="">{t('Choose…')}</option>
+                <option value="MALE">{t('Boy')}</option>
+                <option value="FEMALE">{t('Girl')}</option>
+              </select>
+            </div>
+          </div>
+          <div className="sb-fgroup">
+            <b>{t('Gentle nudges')}</b>
+            <p className="sb-fh">{t("Sprout Track quietly warns whoever's on duty when it's been this long.")}</p>
+            <div className="sb-f2">
+              <div>
+                <label className="sb-fl" htmlFor="sbBabyFeed">
+                  {t('Since last feed')} <span className="sb-fl-opt">(hh:mm)</span>
+                </label>
+                <input id="sbBabyFeed" className="sb-fi" pattern="[0-9]{2}:[0-9]{2}" required
+                  value={formData.feedWarningTime}
+                  onChange={(e) => setFormData({ ...formData, feedWarningTime: e.target.value })} />
+              </div>
+              <div>
+                <label className="sb-fl" htmlFor="sbBabyDiaper">
+                  {t('Since last diaper')} <span className="sb-fl-opt">(hh:mm)</span>
+                </label>
+                <input id="sbBabyDiaper" className="sb-fi" pattern="[0-9]{2}:[0-9]{2}" required
+                  value={formData.diaperWarningTime}
+                  onChange={(e) => setFormData({ ...formData, diaperWarningTime: e.target.value })} />
+              </div>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <label className="sb-fl" htmlFor="sbBabyTimer">{t('Feed timer counts from')}</label>
+              <select id="sbBabyTimer" className="sb-fi" value={formData.feedTimerFrom}
+                onChange={(e) => setFormData({ ...formData, feedTimerFrom: e.target.value })}>
+                <option value="start">{t('Start of feeding')}</option>
+                <option value="end">{t('End of feeding')}</option>
+              </select>
+            </div>
+          </div>
+          {isEditing && (
+            <label className="sb-fcheck">
+              <input type="checkbox" checked={formData.inactive}
+                onChange={(e) => setFormData({ ...formData, inactive: e.target.checked })} />
+              <span>{t("Mark as inactive — their history stays, but they drop out of daily tracking.")}</span>
+            </label>
+          )}
+        </form>
+      </StorybookDrawer>
+    );
+  }
 
   return (
     <FormPage 

@@ -3,27 +3,19 @@ import { cn } from '@/src/lib/utils';
 import { styles } from './account-manager.styles';
 import { FamilyPeopleTabProps, BabyData, CaretakerData, ContactData } from './account-manager.types';
 import { Button } from '@/src/components/ui/button';
-import { Label } from '@/src/components/ui/label';
-import { 
-  Baby, 
-  Users, 
-  Phone, 
-  Plus, 
-  Edit, 
+import {
+  Baby,
+  Users,
+  Phone,
+  Plus,
   Loader2,
   AlertTriangle,
-  Calendar,
-  Clock,
-  Shield,
-  UserCheck,
-  UserX,
-  Mail,
-  MapPin
 } from 'lucide-react';
 import BabyForm from '@/src/components/forms/BabyForm';
 import CaretakerForm from '@/src/components/forms/CaretakerForm';
 import ContactForm from '@/src/components/forms/ContactForm';
 import { useLocalization } from '@/src/context/localization';
+import { genderChip, caretakerChips, nudgeShort } from '@/src/utils/accountPresentation';
 
 /**
  * FamilyPeopleTab Component
@@ -244,240 +236,102 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Babies Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Baby className="h-5 w-5 text-teal-600" aria-hidden="true" />
-            <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              {t('Babies')}
-            </h3>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddBaby}
-          >
-            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-            {t('Add Baby')}
-          </Button>
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <Baby size={20} strokeWidth={1.8} />
+          <h3>{t('Babies')}</h3>
+          <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleAddBaby}>
+            <Plus size={15} strokeWidth={1.8} />{t('Add baby')}
+          </button>
         </div>
-
-        {babies.length > 0 ? (
-          <div className={cn(styles.cardContainer, "account-manager-card-container")}>
-            {babies.map((baby) => (
-              <div key={baby.id} className={cn(styles.card, "account-manager-card")}>
-                <div className={cn(styles.cardHeader, "account-manager-card-header")}>
-                  <div>
-                    <h4 className={cn(styles.cardTitle, "account-manager-card-title")}>
-                      {baby.firstName} {baby.lastName}
-                    </h4>
-                    <p className={cn(styles.cardSubtitle, "account-manager-card-subtitle")}>
-                      {baby.age}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {baby.inactive && (
-                      <span className={cn(styles.badge, styles.badgeInactive, "account-manager-badge-inactive")}>
-                        {t('Inactive')}
-                      </span>
-                    )}
-                    {baby.gender && (
-                      <span className={cn(styles.badge, styles.badgeRole, "account-manager-badge-role")}>
-                        {baby.gender}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className={cn(styles.cardContent, "account-manager-card-content")}>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" aria-hidden="true" />
-                      <span>{t('Feed:')} {baby.feedWarningTime}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" aria-hidden="true" />
-                      <span>{t('Diaper:')} {baby.diaperWarningTime}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className={cn(styles.cardActions, "account-manager-card-actions")}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditBaby(baby)}
-                  >
-                    <Edit className="h-3 w-3 mr-1" aria-hidden="true" />
-                    {t('Edit')}
-                  </Button>
-                </div>
-              </div>
-            ))}
+        {babies.length === 0 ? (
+          <div className="sb-empty">
+            <Baby size={30} strokeWidth={1.8} />
+            <b>{t('No babies yet')}</b>
+            {t('Add your first baby to start tracking.')}
           </div>
         ) : (
-          <div className={cn(styles.emptyState, "account-manager-empty-state")}>
-            <Baby className="h-8 w-8 mx-auto mb-2 text-gray-400" aria-hidden="true" />
-            <p>{t('No babies added yet')}</p>
-            <p className="text-sm">{t('Add your first baby to start tracking')}</p>
-          </div>
+          babies.map((baby) => {
+            const chip = genderChip(baby.gender);
+            const meta = [
+              baby.age,
+              `${t('feed nudge')} ${nudgeShort(baby.feedWarningTime)}`,
+              `${t('diaper nudge')} ${nudgeShort(baby.diaperWarningTime)}`,
+            ].filter(Boolean).join(' · ');
+            return (
+              <div className="sb-prow" key={baby.id}>
+                <span className="sb-nm">{baby.firstName} {baby.lastName}</span>
+                {chip && <span className={`sb-chip sb-c-${chip.variant}`}>{t(chip.label)}</span>}
+                {baby.inactive && <span className="sb-chip sb-c-red">{t('Inactive')}</span>}
+                <span className="sb-meta">{meta}</span>
+                <span className="sb-sp" />
+                <button type="button" className="sb-edit" onClick={() => handleEditBaby(baby)}>{t('Edit')}</button>
+              </div>
+            );
+          })
         )}
       </div>
 
       {/* Caretakers Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" aria-hidden="true" />
-            <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              {t('Caretakers')}
-            </h3>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddCaretaker}
-          >
-            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-            {t('Add Caretaker')}
-          </Button>
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <Users size={20} strokeWidth={1.8} />
+          <h3>{t('Caretakers')}</h3>
+          <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleAddCaretaker}>
+            <Plus size={15} strokeWidth={1.8} />{t('Add caretaker')}
+          </button>
         </div>
-
-        {caretakers.length > 0 ? (
-          <div className={cn(styles.cardContainer, "account-manager-card-container")}>
-            {caretakers.map((caretaker) => (
-              <div key={caretaker.id} className={cn(styles.card, "account-manager-card")}>
-                <div className={cn(styles.cardHeader, "account-manager-card-header")}>
-                  <div>
-                    <h4 className={cn(styles.cardTitle, "account-manager-card-title")}>
-                      {caretaker.name}
-                    </h4>
-                    <p className={cn(styles.cardSubtitle, "account-manager-card-subtitle")}>
-                      {t('ID:')} {caretaker.loginId} {caretaker.type && `• ${caretaker.type}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {caretaker.inactive ? (
-                      <span className={cn(styles.badge, styles.badgeInactive, "account-manager-badge-inactive")}>
-                        <UserX className="h-3 w-3 mr-1" aria-hidden="true" />
-                        {t('Inactive')}
-                      </span>
-                    ) : (
-                      <span className={cn(styles.badge, styles.badgeActive, "account-manager-badge-active")}>
-                        <UserCheck className="h-3 w-3 mr-1" aria-hidden="true" />
-                        {t('Active')}
-                      </span>
-                    )}
-                    <span className={cn(styles.badge, styles.badgeRole, "account-manager-badge-role")}>
-                      <Shield className="h-3 w-3 mr-1" aria-hidden="true" />
-                      {caretaker.role}
-                    </span>
-                  </div>
-                </div>
-                <div className={cn(styles.cardActions, "account-manager-card-actions")}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditCaretaker(caretaker)}
-                  >
-                    <Edit className="h-3 w-3 mr-1" aria-hidden="true" />
-                    {t('Edit')}
-                  </Button>
-                </div>
-              </div>
-            ))}
+        {caretakers.length === 0 ? (
+          <div className="sb-empty">
+            <Users size={30} strokeWidth={1.8} />
+            <b>{t('No caretakers yet')}</b>
+            {t('Add the other people who help with the days.')}
           </div>
         ) : (
-          <div className={cn(styles.emptyState, "account-manager-empty-state")}>
-            <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" aria-hidden="true" />
-            <p>{t('No caretakers added yet')}</p>
-            <p className="text-sm">{t('Add caretakers to help manage your family')}</p>
-          </div>
+          caretakers.map((ct) => (
+            <div className="sb-prow" key={ct.id}>
+              <span className="sb-nm">{ct.name}</span>
+              {caretakerChips(ct.role, ct.inactive).map((chip) => (
+                <span key={chip.label} className={`sb-chip sb-c-${chip.variant}`}>{t(chip.label)}</span>
+              ))}
+              <span className="sb-meta">
+                {t('Signs in with ID {id}').replace('{id}', ct.loginId)}
+                {ct.type ? ` · ${ct.type}` : ''}
+              </span>
+              <span className="sb-sp" />
+              <button type="button" className="sb-edit" onClick={() => handleEditCaretaker(ct)}>{t('Edit')}</button>
+            </div>
+          ))
         )}
       </div>
 
       {/* Contacts Section */}
-      <div className={cn(styles.sectionBorder, "account-manager-section-border")}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Phone className="h-5 w-5 text-green-600" aria-hidden="true" />
-            <h3 className={cn(styles.sectionTitle, "account-manager-section-title")}>
-              {t('Contacts')}
-            </h3>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddContact}
-          >
-            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
-            {t('Add Contact')}
-          </Button>
+      <div className="sb-sect">
+        <div className="sb-sect-hd">
+          <Phone size={20} strokeWidth={1.8} />
+          <h3>{t('Contacts')}</h3>
+          <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleAddContact}>
+            <Plus size={15} strokeWidth={1.8} />{t('Add contact')}
+          </button>
         </div>
-
-        {contacts.length > 0 ? (
-          <div className={cn(styles.cardContainer, "account-manager-card-container")}>
-            {contacts.map((contact) => (
-              <div key={contact.id} className={cn(styles.card, "account-manager-card")}>
-                <div className={cn(styles.cardHeader, "account-manager-card-header")}>
-                  <div>
-                    <h4 className={cn(styles.cardTitle, "account-manager-card-title")}>
-                      {contact.name}
-                    </h4>
-                    <p className={cn(styles.cardSubtitle, "account-manager-card-subtitle")}>
-                      {contact.role}
-                    </p>
-                  </div>
-                </div>
-                <div className={cn(styles.cardContent, "account-manager-card-content")}>
-                  <div className="space-y-1 text-sm">
-                    {contact.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-3 w-3 text-gray-400" aria-hidden="true" />
-                        <a 
-                          href={`tel:${contact.phone.replace(/\D/g, '')}`}
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          {contact.phone}
-                        </a>
-                      </div>
-                    )}
-                    {contact.email && (
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-3 w-3 text-gray-400" aria-hidden="true" />
-                        <a 
-                          href={`mailto:${contact.email}`}
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          {contact.email}
-                        </a>
-                      </div>
-                    )}
-                    {contact.address && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-gray-400" aria-hidden="true" />
-                        <span className="text-gray-600">{contact.address}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className={cn(styles.cardActions, "account-manager-card-actions")}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditContact(contact)}
-                  >
-                    <Edit className="h-3 w-3 mr-1" aria-hidden="true" />
-                    {t('Edit')}
-                  </Button>
-                </div>
-              </div>
-            ))}
+        {contacts.length === 0 ? (
+          <div className="sb-empty">
+            <Phone size={30} strokeWidth={1.8} />
+            <b>{t('No contacts yet')}</b>
+            {t('The pediatrician, grandma, the sitter — the numbers you dig for at 2 am.')}
           </div>
         ) : (
-          <div className={cn(styles.emptyState, "account-manager-empty-state")}>
-            <Phone className="h-8 w-8 mx-auto mb-2 text-gray-400" aria-hidden="true" />
-            <p>{t('No contacts added yet')}</p>
-            <p className="text-sm">{t('Add contacts like doctors, family members, or caregivers')}</p>
-          </div>
+          contacts.map((contact) => {
+            const meta = [contact.role, contact.phone, contact.email].filter(Boolean).join(' · ');
+            return (
+              <div className="sb-prow" key={contact.id}>
+                <span className="sb-nm">{contact.name}</span>
+                <span className="sb-meta">{meta}</span>
+                <span className="sb-sp" />
+                <button type="button" className="sb-edit" onClick={() => handleEditContact(contact)}>{t('Edit')}</button>
+              </div>
+            );
+          })
         )}
       </div>
 
@@ -498,6 +352,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           feedTimerTypes: selectedBaby.feedTimerTypes ?? null,
         } : null}
         onBabyChange={handleBabyFormClose}
+        appearance="storybook"
       />
 
       <CaretakerForm
@@ -518,6 +373,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           accountId: null
         } : null}
         onCaretakerChange={handleCaretakerFormClose}
+        appearance="storybook"
       />
 
       <ContactForm
@@ -535,6 +391,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
         } : undefined}
         onSave={handleContactSave}
         onDelete={handleContactDelete}
+        appearance="storybook"
       />
     </div>
   );

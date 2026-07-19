@@ -45,6 +45,10 @@ html.dark .photo-gallery-month-heading {
   color: #94a3b8; /* slate-400 */
 }
 
+html.dark .photo-gallery-filter-label {
+  color: #94a3b8; /* slate-400 */
+}
+
 html.dark .photo-gallery-tile {
   background-color: #1e293b; /* slate-800 */
 }

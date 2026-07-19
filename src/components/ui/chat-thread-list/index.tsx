@@ -7,7 +7,7 @@ import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort } from '@/src/utils/dateFormat';
-import { chatThreadListStyles as styles } from './chat-thread-list.styles';
+import { chatThreadListDefault, chatThreadListSb } from './chat-thread-list.sb';
 import type { ChatThreadListProps } from './chat-thread-list.types';
 import './chat-thread-list.css';
 
@@ -19,6 +19,7 @@ export function ChatThreadList({
   showNewActive,
   hideNewButton,
   hideHeader,
+  appearance = 'default',
   isAdmin,
   formatDateTime,
   countUnread,
@@ -29,6 +30,7 @@ export function ChatThreadList({
   const { theme } = useTheme();
   const { t } = useLocalization();
   const { dateFormat } = useTimezone();
+  const c = appearance === 'storybook' ? chatThreadListSb : chatThreadListDefault;
 
   const getLastSenderLabel = (thread: typeof threads[0]): string => {
     const replies = thread.replies || [];
@@ -65,11 +67,11 @@ export function ChatThreadList({
   };
 
   return (
-    <div className={cn(styles.container, 'chat-thread-list-container', className)}>
+    <div className={cn(c.container, className)}>
       {/* Header */}
       {!hideHeader && (
-        <div className={cn(styles.header, 'chat-thread-list-header')}>
-          <span className={cn(styles.headerTitle, 'chat-thread-list-header-title')}>
+        <div className={c.header}>
+          <span className={c.headerTitle}>
             {t('Messages')}
           </span>
           {!hideNewButton && onNewThread && (
@@ -77,10 +79,8 @@ export function ChatThreadList({
               onClick={onNewThread}
               title={t('New feedback')}
               className={cn(
-                styles.toggleButton,
-                showNewActive
-                  ? cn(styles.toggleButtonActive, 'chat-thread-list-toggle-active')
-                  : cn(styles.toggleButtonInactive, 'chat-thread-list-toggle-inactive'),
+                c.toggleButton,
+                showNewActive ? c.toggleButtonActive : c.toggleButtonInactive,
               )}
             >
               {showNewActive
@@ -94,21 +94,21 @@ export function ChatThreadList({
 
       {/* Search (admin only) */}
       {onSearchChange && (
-        <div className={cn('chat-thread-list-search', styles.searchContainer)}>
+        <div className={c.searchContainer}>
           <input
             type="text"
             value={searchTerm || ''}
             onChange={e => onSearchChange(e.target.value)}
             placeholder={t('Search messages...')}
-            className={cn(styles.searchInput, 'chat-thread-list-search-input')}
+            className={c.searchInput}
           />
         </div>
       )}
 
       {/* Thread List */}
-      <div className={styles.list}>
+      <div className={c.list}>
         {threads.length === 0 ? (
-          <div className={cn(styles.emptyState, 'chat-thread-list-empty')}>
+          <div className={c.emptyState}>
             <MessageSquare className="h-8 w-8" aria-hidden="true" />
             <span>{t('No messages yet')}</span>
           </div>
@@ -123,28 +123,18 @@ export function ChatThreadList({
               <div
                 key={thread.id}
                 onClick={() => onSelectThread(thread.id)}
-                className={cn(
-                  styles.threadItem,
-                  'chat-thread-list-item',
-                  active
-                    ? cn(styles.threadItemActive, 'chat-thread-list-item-active')
-                    : styles.threadItemInactive,
-                )}
+                className={cn(c.threadItem, active ? c.threadItemActive : c.threadItemInactive)}
               >
                 <div className="flex items-center justify-between gap-2 mb-0.5">
                   <span
-                    className={cn(
-                      styles.threadSubject,
-                      'chat-thread-list-subject',
-                      hasUnread ? styles.threadSubjectUnread : styles.threadSubjectRead,
-                    )}
+                    className={cn(c.threadSubject, hasUnread ? c.threadSubjectUnread : c.threadSubjectRead)}
                   >
                     {thread.subject}
                   </span>
-                  {hasUnread && <div className={styles.unreadDot} />}
+                  {hasUnread && <div className={c.unreadDot} />}
                 </div>
-                <div className={cn(styles.threadMeta, 'chat-thread-list-meta')}>
-                  <span className={styles.threadMetaLeft}>
+                <div className={c.threadMeta}>
+                  <span className={c.threadMetaLeft}>
                     {getLastSenderLabel(thread)}
                     {isAdmin && thread.familySlug
                       ? ` · ${thread.familySlug}`
@@ -152,7 +142,7 @@ export function ChatThreadList({
                     }
                     {' · '}{msgCount} {t('msg')}{msgCount > 1 ? 's' : ''}
                   </span>
-                  <span className={cn(styles.threadMetaRight, 'chat-thread-list-meta-right')}>
+                  <span className={c.threadMetaRight}>
                     {getLastActivity(thread)}
                   </span>
                 </div>

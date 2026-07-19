@@ -3,6 +3,7 @@ import { ContactFormProps, ContactFormData, ContactFormErrors } from './contact-
 import { contactFormStyles as styles } from './contact-form.styles';
 import { AlertCircle, Loader2, Trash2, Mail, Phone, User, Briefcase } from 'lucide-react';
 import { FormPage, FormPageContent, FormPageFooter } from '@/src/components/ui/form-page';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import { useToast } from '@/src/components/ui/toast';
@@ -22,6 +23,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
   onSave,
   onDelete,
   isLoading: externalIsLoading = false,
+  appearance = 'default',
 }) => {
   const { showToast } = useToast();
   const { t } = useLocalization();
@@ -340,6 +342,75 @@ const ContactForm: React.FC<ContactFormProps> = ({
     }
   };
   
+  if (appearance === 'storybook') {
+    return (
+      <StorybookDrawer
+        open={isOpen}
+        onClose={onClose}
+        onBack={onClose}
+        title={contact ? t('Edit contact') : t('Add a contact')}
+        subtitle={t('The numbers everyone should be able to find.')}
+        footer={
+          <>
+            {contact && onDelete && (
+              <button type="button" className="sb-btn sb-danger sb-sm" style={{ marginRight: 'auto' }}
+                onClick={handleDelete} disabled={isLoading}>
+                {t('Delete')}
+              </button>
+            )}
+            <button type="button" className="sb-btn sb-ghost" onClick={onClose}>{t('Cancel')}</button>
+            <button type="button" className="sb-btn" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? t('Saving…') : t('Save contact')}
+            </button>
+          </>
+        }
+      >
+        <div className="sb-f-grid">
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbCoName">{t('Name')}</label>
+              <input id="sbCoName" className="sb-fi" placeholder={t('Dr. Alvarez')}
+                name="name"
+                value={formData.name}
+                onChange={handleChange} />
+              {errors.name && <p className="sb-form-error">{errors.name}</p>}
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbCoRole">{t('Role')}</label>
+              <input id="sbCoRole" className="sb-fi" placeholder={t('Pediatrician, grandma, sitter…')}
+                name="role"
+                value={formData.role}
+                onChange={handleChange} />
+              {errors.role && <p className="sb-form-error">{errors.role}</p>}
+            </div>
+          </div>
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbCoPhone">
+                {t('Phone')} <span className="sb-fl-opt">({t('optional')})</span>
+              </label>
+              <input id="sbCoPhone" className="sb-fi" type="tel" placeholder="(816) 555-0134"
+                name="phone"
+                value={formData.phone || ''}
+                onChange={handleChange} />
+              {errors.phone && <p className="sb-form-error">{errors.phone}</p>}
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbCoEmail">
+                {t('Email')} <span className="sb-fl-opt">({t('optional')})</span>
+              </label>
+              <input id="sbCoEmail" className="sb-fi" type="email" placeholder={t('name@example.com')}
+                name="email"
+                value={formData.email || ''}
+                onChange={handleChange} />
+              {errors.email && <p className="sb-form-error">{errors.email}</p>}
+            </div>
+          </div>
+        </div>
+      </StorybookDrawer>
+    );
+  }
+
   return (
     <FormPage
       isOpen={isOpen}

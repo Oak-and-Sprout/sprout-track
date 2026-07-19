@@ -6,6 +6,7 @@ import {
   FormPageFooter,
 } from '@/src/components/ui/form-page';
 import { Button } from '@/src/components/ui/button';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
 import { ChevronLeft, Plus, Send } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
@@ -14,10 +15,12 @@ import { ChatThreadList } from '@/src/components/ui/chat-thread-list';
 import { ChatConversation, ChatReplyBar } from '@/src/components/ui/chat-conversation';
 import { ChatNewFeedback } from '@/src/components/ui/chat-new-feedback';
 import type { ChatNewFeedbackRef } from '@/src/components/ui/chat-new-feedback/chat-new-feedback.types';
+import { getFeedbackDrawerHeader } from './feedbackDrawerHeader';
 
 interface FeedbackPageProps {
   isOpen: boolean;
   onClose: () => void;
+  appearance?: 'default' | 'storybook';
 }
 
 type ViewState = 'list' | 'conversation' | 'new';
@@ -25,6 +28,7 @@ type ViewState = 'list' | 'conversation' | 'new';
 export default function FeedbackPage({
   isOpen,
   onClose,
+  appearance = 'default',
 }: FeedbackPageProps) {
   const { t } = useLocalization();
   const { theme } = useTheme();
@@ -109,6 +113,99 @@ export default function FeedbackPage({
       <ChevronLeft className="h-5 w-5" aria-hidden="true" />
     </button>
   ) : undefined;
+
+  if (appearance === 'storybook') {
+    const sbHeader = getFeedbackDrawerHeader(viewState, selectedThread, t);
+    const sbFooter = isConversation ? (
+      <ChatReplyBar
+        threadId={selectedThread.id}
+        subject={selectedThread.subject}
+        familyId={selectedThread.familyId}
+        onReply={sendReply}
+        appearance="storybook"
+      />
+    ) : isNewFeedback ? (
+      <>
+        <button type="button" className="sb-btn sb-ghost" onClick={handleBack}>
+          {t('Cancel')}
+        </button>
+        <button
+          type="button"
+          className="sb-btn"
+          disabled={!canSendNew}
+          onClick={() => newFeedbackRef.current?.submit()}
+        >
+          {t('Send it')}
+        </button>
+      </>
+    ) : (
+      <>
+        <button type="button" className="sb-btn sb-ghost" onClick={onClose}>
+          {t('Cancel')}
+        </button>
+        <button type="button" className="sb-btn" onClick={handleNewToggle}>
+          {t('New feedback')}
+        </button>
+      </>
+    );
+
+    return (
+      <StorybookDrawer
+        open={isOpen}
+        onClose={onClose}
+        title={sbHeader.title}
+        subtitle={sbHeader.subtitle}
+        onBack={viewState !== 'list' ? handleBack : undefined}
+        footer={sbFooter}
+      >
+        {viewState === 'list' && (
+          <ChatThreadList
+            threads={threads}
+            selectedThreadId={selectedThreadId}
+            onSelectThread={handleSelectThread}
+            hideNewButton
+            hideHeader
+            isAdmin={false}
+            formatDateTime={formatDateTime}
+            countUnread={countUnreadMessages}
+            className="flex-1 min-h-0"
+            appearance="storybook"
+          />
+        )}
+
+        {viewState === 'conversation' && (
+          <ChatConversation
+            thread={selectedThread}
+            isAdmin={false}
+            viewerAccountId={submitterInfo.accountId}
+            viewerCaretakerId={submitterInfo.caretakerId}
+            onReply={sendReply}
+            onDeleteAttachment={deleteAttachment}
+            onBack={handleBack}
+            onMarkRead={markAsRead}
+            formatDateTime={formatDateTime}
+            hideHeader
+            hideReplyBar
+            className="flex-1 min-h-0"
+            appearance="storybook"
+          />
+        )}
+
+        {isNewFeedback && (
+          <ChatNewFeedback
+            ref={newFeedbackRef}
+            onSubmit={handleNewSubmit}
+            onCancel={handleBack}
+            hideHeader
+            hideFooter
+            onCanSendChange={setCanSendNew}
+            className="flex-1 min-h-0"
+            appearance="storybook"
+          />
+        )}
+      </StorybookDrawer>
+    );
+  }
 
   return (
     <FormPage
