@@ -1,7 +1,7 @@
 # PhotoGallery
 
 The `/[slug]/photos` page: a family-wide (optionally baby-scoped) photo
-gallery with month/milestone/all grouping, live search, type + favorites
+gallery with month/milestone grouping, live search, type + favorites
 filtering, a toggleable captions display, select mode with a floating
 selection bar, a full-screen keyboard-navigable lightbox, and a dedicated
 Trash view.
@@ -22,7 +22,7 @@ list narrows to that baby.
 
 ```typescript
 export type GalleryView = 'gallery' | 'trash';
-export type GalleryGrouping = 'month' | 'milestone' | 'all';
+export type GalleryGrouping = 'month' | 'milestone';
 
 export interface GalleryState {
   grouping: GalleryGrouping;
