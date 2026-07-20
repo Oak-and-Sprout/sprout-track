@@ -392,6 +392,16 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         } else if (activity.amount) {
           details.push({ label: t('Duration'), value: `${activity.amount} ${t('minutes')}` });
         }
+
+        if ((activity as any).pauseDuration && (activity as any).pauseDuration > 0) {
+          const p = (activity as any).pauseDuration as number;
+          const pm = Math.floor(p / 60);
+          const ps = p % 60;
+          details.push({
+            label: t('Pause'),
+            value: ps > 0 ? `${pm} ${t('min')} ${ps} ${t('sec')}` : `${pm} ${t('minutes')}`
+          });
+        }
       }
 
       // Show food for solids
@@ -840,8 +850,16 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
         } else if (activity.amount) {
           duration = `${activity.amount} ${t('min')}`;
         }
+
+        let pause = '';
+        if ((activity as any).pauseDuration && (activity as any).pauseDuration > 0) {
+          const p = (activity as any).pauseDuration as number;
+          const pm = Math.floor(p / 60);
+          const ps = p % 60;
+          pause = ps > 0 ? `${t('Pause')}: ${pm}${t('min')} ${ps}${t('sec')}` : `${t('Pause')}: ${pm} ${t('min')}`;
+        }
         
-        details = [side, duration].filter(Boolean).join(' • ');
+        details = [side, duration, pause].filter(Boolean).join(' • ');
       } else if (activity.type === 'BOTTLE') {
         // Use unitAbbr instead of hardcoded 'oz'
         const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();

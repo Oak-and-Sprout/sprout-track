@@ -389,6 +389,7 @@ model FeedLog {
   startTime    DateTime? // Used for breast feeding duration tracking
   endTime      DateTime? // Used for breast feeding duration tracking
   feedDuration Int? // Duration in seconds, useful for tracking actual feeding time
+  pauseDuration Int? // Total session pause in seconds (same value on all rows of a breastfeed session; null on non-breast rows and legacy rows)
   type         FeedType
   amount       Float? // Amount in specified unit
   unit         Unit?       @relation(fields: [unitAbbr], references: [unitAbbr])
@@ -1498,6 +1499,9 @@ model ActiveBreastFeed {
   isPaused             Boolean     @default(false)
   leftDuration         Int         @default(0) // Accumulated seconds for left side
   rightDuration        Int         @default(0) // Accumulated seconds for right side
+  pauseDuration        Int         @default(0) // Accumulated seconds paused within the session
+  pausedAt             DateTime?               // When the session was last paused (null when not paused)
+  firstSide            BreastSide?             // Side used first in the session (for ordering consolidated rows); null on legacy rows
   currentSideStartTime DateTime? // When current side started timing (null when paused)
   sessionStartTime     DateTime // When the overall session began
   createdAt            DateTime    @default(now())
