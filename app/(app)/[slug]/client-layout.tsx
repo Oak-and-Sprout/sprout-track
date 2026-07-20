@@ -437,10 +437,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
     };
   }, [checkScreenWidth]); // Remove fetchData from dependencies to prevent infinite loop
 
-  // Register this device for native push once inside the mobile shell
+  // Register this device for native push once inside the mobile shell (post-login only)
   useEffect(() => {
-    if (isNativeApp()) void registerNativePushToken();
-  }, []);
+    if (mounted && isUnlocked && isNativeApp()) void registerNativePushToken();
+  }, [mounted, isUnlocked]);
 
   // Watch for family changes and refetch data (only if authenticated and not on root slug page)
   useEffect(() => {
