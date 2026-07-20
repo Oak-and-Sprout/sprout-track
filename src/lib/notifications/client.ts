@@ -99,7 +99,9 @@ export async function registerPwaServiceWorker(): Promise<void> {
       isSecureContext: window.isSecureContext,
     })
   ) {
-    if (!window.isSecureContext) console.warn('PWA service worker requires HTTPS (or localhost)');
+    if (!isNativeApp() && 'serviceWorker' in navigator && !window.isSecureContext) {
+      console.warn('PWA service worker requires HTTPS (or localhost)');
+    }
     return;
   }
 
