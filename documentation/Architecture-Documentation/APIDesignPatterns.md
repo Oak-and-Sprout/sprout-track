@@ -201,6 +201,8 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 |----------|---------|
 | `GET /api/hooks/v1/babies/` | List babies |
 | `GET /api/hooks/v1/babies/[babyId]/activities/` | Recent activities |
+| `PUT /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Edit an existing activity |
+| `DELETE /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Delete an existing activity |
 | `GET /api/hooks/v1/babies/[babyId]/measurements/latest/` | Latest measurements |
 | `GET /api/hooks/v1/babies/[babyId]/status/` | Baby status summary |
 | `GET /api/hooks/v1/babies/[babyId]/reference/` | Reference data (valid enum values for activity fields) |
