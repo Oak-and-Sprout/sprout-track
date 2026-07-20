@@ -58,6 +58,9 @@ export interface SideNavProps {
    * The family name to display
    */
   familyName?: string;
+
+  /** Renders a "Switch Family" footer button (used inside the native mobile shell). */
+  onSwitchFamily?: () => void;
 }
 
 /**

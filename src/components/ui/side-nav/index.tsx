@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, Suspense } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
-import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2 } from 'lucide-react';
+import { X, Settings, LogOut, ArrowLeftRight, MessageSquare, CreditCard, Clock, Loader2 } from 'lucide-react';
 import NavCountBubble from '@/src/components/ui/nav-count-bubble';
 import { Badge } from '@/src/components/ui/badge';
 import { LanguageSelector } from './language-selector';
@@ -173,6 +173,7 @@ export const SideNav: React.FC<SideNavProps> = ({
   nonModal = false,
   familySlug,
   familyName,
+  onSwitchFamily,
 }) => {
   const { theme } = useTheme();
   const { isSaasMode } = useDeployment();
@@ -645,6 +646,15 @@ export const SideNav: React.FC<SideNavProps> = ({
           {/* Theme Toggle Component */}
           <ThemeToggle className="mb-2" />
           
+          {/* Switch Family Button - only rendered inside the native mobile shell */}
+          {onSwitchFamily && (
+            <FooterButton
+              icon={<ArrowLeftRight aria-hidden="true" />}
+              label={t('Switch Family')}
+              onClick={onSwitchFamily}
+            />
+          )}
+
           {/* Settings Button */}
           <FooterButton
             icon={<Settings aria-hidden="true" />}

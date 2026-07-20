@@ -39,6 +39,7 @@ import {
   validateFamilySlugWithRetry,
 } from '@/src/utils/session-timeout';
 import { navigateToShell } from '@/src/utils/native-bridge';
+import { isNativeApp } from '@/src/utils/native-app';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -806,6 +807,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 setSettingsOpen(true);
               }}
               onLogout={() => handleLogout()}
+              onSwitchFamily={
+                isNativeApp()
+                  ? () => navigateToShell({ type: 'loggedOut', reason: 'switch-family' })
+                  : undefined
+              }
               isAdmin={isAdmin}
               className="h-dvh sticky top-0"
               familySlug={familySlug}
@@ -906,6 +912,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 setSideNavOpen(false);
               }}
               onLogout={() => handleLogout()}
+              onSwitchFamily={
+                isNativeApp()
+                  ? () => navigateToShell({ type: 'loggedOut', reason: 'switch-family' })
+                  : undefined
+              }
               isAdmin={isAdmin}
               familySlug={familySlug}
               familyName={family?.name || familyName}
