@@ -185,7 +185,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       if (activity.side && activity.side.toLowerCase().includes(searchLower)) return true;
       if (activity.food && activity.food.toLowerCase().includes(searchLower)) return true;
       if (activity.notes && activity.notes.toLowerCase().includes(searchLower)) return true;
-      if (activity.bottleType && (activity.bottleType.toLowerCase().includes(searchLower) || t(activity.bottleType.replace('\\', '/')).toLowerCase().includes(searchLower))) return true;
+      if (activity.bottleType && (activity.bottleType.toLowerCase().includes(searchLower) || t(activity.bottleType).toLowerCase().includes(searchLower))) return true;
       return false;
     }
     

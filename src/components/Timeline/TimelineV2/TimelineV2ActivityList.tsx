@@ -398,8 +398,7 @@ const TimelineV2ActivityList = ({
                                         const unit = ((activity as any).unitAbbr || 'oz').toLowerCase();
                                         const parts = [];
                                         if ((activity as any).bottleType) {
-                                          const bottleType = (activity as any).bottleType.replace('\\', '/');
-                                          parts.push(t(bottleType));
+                                          parts.push(t((activity as any).bottleType));
                                         }
                                         parts.push(`${activity.amount} ${unit}`);
                                         if ((activity as any).hadReaction) parts.push(t('Reaction'));

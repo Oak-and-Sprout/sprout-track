@@ -250,7 +250,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
           let bmConsumed = 0;
           if (feedActivity.bottleType === 'Breast Milk' && feedActivity.amount) {
             bmConsumed = convertVolume(feedActivity.amount, feedActivity.unitAbbr || 'OZ', targetUnit);
-          } else if (feedActivity.bottleType === 'Formula\\Breast' && feedActivity.breastMilkAmount) {
+          } else if (feedActivity.bottleType === 'Formula/Breast' && feedActivity.breastMilkAmount) {
             bmConsumed = convertVolume(feedActivity.breastMilkAmount, feedActivity.unitAbbr || 'OZ', targetUnit);
           }
           if (bmConsumed > 0) {
