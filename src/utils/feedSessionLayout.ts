@@ -15,8 +15,6 @@ export interface SideBlock {
   duration: number;
 }
 
-const OTHER_SIDE: Record<BreastSide, BreastSide> = { LEFT: 'RIGHT', RIGHT: 'LEFT' };
-
 function addSeconds(date: Date, seconds: number): Date {
   return new Date(date.getTime() + seconds * 1000);
 }

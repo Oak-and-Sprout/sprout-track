@@ -58,6 +58,7 @@ export function applySessionAction(
         isPaused: false,
       };
     case 'pause':
+      if (state.isPaused) return {};
       return {
         leftDuration: accruedLeft,
         rightDuration: accruedRight,

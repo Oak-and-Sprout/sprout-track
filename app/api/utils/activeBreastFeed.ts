@@ -6,7 +6,6 @@ import { layoutBreastFeedSession } from '@/src/utils/feedSessionLayout';
 import { applySessionAction as pureApply, ActiveBreastFeedState } from '@/src/utils/feedSessionActions';
 
 export type SessionUpdateAction = 'switch' | 'pause' | 'resume' | 'swap';
-export type SessionActionUpdate = ReturnType<typeof pureApply> extends infer R ? R : never;
 
 export const SESSION_UPDATE_ACTIONS: SessionUpdateAction[] = ['switch', 'pause', 'resume', 'swap'];
 
@@ -107,7 +106,7 @@ export async function endBreastfeedSession(session: ActiveBreastFeed, opts: EndS
   const leftDur = opts.leftDuration !== undefined ? opts.leftDuration : finalLeftDuration;
   const rightDur = opts.rightDuration !== undefined ? opts.rightDuration : finalRightDuration;
 
-  const firstSide: BreastSide | null = session.firstSide ?? session.activeSide;
+  const firstSide: BreastSide | null = session.firstSide ?? (session.activeSide === 'LEFT' ? 'RIGHT' : 'LEFT');
   const blocks = layoutBreastFeedSession({
     sessionStartTime: session.sessionStartTime,
     firstSide,

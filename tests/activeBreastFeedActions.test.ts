@@ -30,6 +30,19 @@ describe('applySessionAction — pause accumulation', () => {
     });
   });
 
+  it('pause while already paused is a no-op (preserves original pausedAt)', () => {
+    const originalPausedAt = at('2026-07-20T21:10:00Z');
+    const session = makeSession({
+      leftDuration: 600,
+      isPaused: true,
+      pausedAt: originalPausedAt,
+      currentSideStartTime: null,
+    });
+    const now = at('2026-07-20T21:15:00Z');
+    const result = applySessionAction(session, 'pause', now);
+    expect(result).toEqual({});
+  });
+
   it('resume adds the pause gap to pauseDuration and clears pausedAt', () => {
     const session = makeSession({
       leftDuration: 600,
