@@ -669,6 +669,16 @@ export async function checkTimerExpirations(): Promise<number> {
                       null,
                       baby.id
                     );
+
+                    sendToDeviceTokens(
+                      {
+                        familyId: baby.familyId,
+                        caretakerId: preference.subscription.caretakerId,
+                        accountId: preference.subscription.accountId,
+                      },
+                      payload
+                    ).catch((error) => console.error('[FCM] medicine timer push failed:', error));
+
                     notificationsSent++;
                     console.log(`[TimerCheck] Medicine timer notification sent successfully for "${medicine.name}" (total: ${notificationsSent})`);
                   } catch (sendError) {
