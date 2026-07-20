@@ -40,6 +40,7 @@ import {
 } from '@/src/utils/session-timeout';
 import { navigateToShell } from '@/src/utils/native-bridge';
 import { isNativeApp } from '@/src/utils/native-app';
+import { registerNativePushToken } from '@/src/utils/native-push';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -435,6 +436,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
       window.removeEventListener('resize', checkScreenWidth);
     };
   }, [checkScreenWidth]); // Remove fetchData from dependencies to prevent infinite loop
+
+  // Register this device for native push once inside the mobile shell
+  useEffect(() => {
+    if (isNativeApp()) void registerNativePushToken();
+  }, []);
 
   // Watch for family changes and refetch data (only if authenticated and not on root slug page)
   useEffect(() => {
