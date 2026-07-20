@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Plus, X, ImageOff } from 'lucide-react';
+import React from 'react';
+import { Camera, Images, X, ImageOff } from 'lucide-react';
 import { useLocalization } from '@/src/context/localization';
 import { useAuthedImage, photoFileUrl } from '@/src/hooks/useAuthedImage';
+import { CameraCaptureModal, useTakePhoto } from '@/src/components/ui/camera-capture';
 import { MAX_PHOTOS_PER_ACTIVITY } from '@/src/utils/photoUtils';
 import { attachmentStyles } from './photo-attachments.styles';
 import { PhotoAttachmentsProps } from './photo-attachments.types';
@@ -51,8 +52,9 @@ function PendingThumb({ file, onRemove }: { file: File; onRemove?: () => void })
 }
 
 /**
- * Attachment strip: existing photo thumbs, locally-pending files, and a
- * dashed add tile (camera/library picker). Max 4 photos per activity.
+ * Attachment strip: existing photo thumbs, locally-pending files, and two
+ * dashed add tiles — Take Photo (device camera) and Library (photo picker).
+ * Max 4 photos per activity.
  */
 export function PhotoAttachments({
   pendingFiles,
@@ -64,13 +66,17 @@ export function PhotoAttachments({
   disabled = false,
 }: PhotoAttachmentsProps) {
   const { t } = useLocalization();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const total = existingPhotos.length + pendingFiles.length;
 
-  const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = Array.from(event.target.files || []);
+  const addFiles = (files: File[]) => {
     const room = maxPhotos - total;
-    onPendingFilesChange([...pendingFiles, ...selected.slice(0, room)]);
+    onPendingFilesChange([...pendingFiles, ...files.slice(0, room)]);
+  };
+
+  const camera = useTakePhoto(addFiles);
+
+  const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    addFiles(Array.from(event.target.files || []));
     event.target.value = '';
   };
 
@@ -89,15 +95,24 @@ export function PhotoAttachments({
           <PendingThumb key={`${file.name}-${index}`} file={file} onRemove={!disabled ? () => onPendingFilesChange(pendingFiles.filter((_, i) => i !== index)) : undefined} />
         ))}
         {total < maxPhotos && !disabled && (
-          <button type="button" className={`${attachmentStyles.addTile()} photo-attachments-add`} onClick={() => fileInputRef.current?.click()} aria-label={t('Add photo')}>
-            <Plus className="h-6 w-6" />
-          </button>
+          <>
+            <button type="button" className={`${attachmentStyles.addTile()} photo-attachments-add`} onClick={camera.takePhoto} aria-label={t('Take Photo')}>
+              <Camera className="h-5 w-5" />
+              <span className={attachmentStyles.tileLabel()}>{t('Take Photo')}</span>
+            </button>
+            <button type="button" className={`${attachmentStyles.addTile()} photo-attachments-add`} onClick={() => camera.libraryInputRef.current?.click()} aria-label={t('Choose from Library')}>
+              <Images className="h-5 w-5" />
+              <span className={attachmentStyles.tileLabel()}>{t('Library')}</span>
+            </button>
+          </>
         )}
       </div>
       <p className={`${attachmentStyles.hint()} photo-attachments-hint`}>
         {t("Attach up to 4 photos — they'll show on the timeline and in the gallery.")}
       </p>
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handleFilesSelected} />
+      <input ref={camera.captureInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFilesSelected} />
+      <input ref={camera.libraryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFilesSelected} />
+      <CameraCaptureModal open={camera.cameraOpen} onClose={camera.closeCamera} onCapture={camera.handleCapture} />
     </div>
   );
 }

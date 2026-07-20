@@ -7,6 +7,8 @@ export interface ChatNewFeedbackProps {
   hideHeader?: boolean;
   /** Hide the built-in footer (use when the parent renders actions separately) */
   hideFooter?: boolean;
+  /** Visual skin: 'storybook' renders sb-* classes (landing drawer), 'default' keeps the in-app look */
+  appearance?: 'default' | 'storybook';
   /** Expose whether the form can be submitted */
   onCanSendChange?: (canSend: boolean) => void;
   className?: string;

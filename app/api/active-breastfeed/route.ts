@@ -4,7 +4,7 @@ import { ApiResponse, ActiveBreastFeedResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession, SESSION_UPDATE_ACTIONS, SessionUpdateAction } from '../utils/activeBreastFeed';
+import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession, SESSION_UPDATE_ACTIONS, SessionUpdateAction, resolveRequestedStartTime } from '../utils/activeBreastFeed';
 
 function formatActiveBreastFeed(record: any): ActiveBreastFeedResponse {
   return {
@@ -62,11 +62,17 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     }
 
     const body = await req.json();
-    const { babyId, side } = body;
+    const { babyId, side, startTime: requestedStartTime } = body;
 
     if (!babyId || !side) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'babyId and side are required' }, { status: 400 });
     }
+
+    const startTimeResolution = resolveRequestedStartTime(requestedStartTime);
+    if (!startTimeResolution.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: startTimeResolution.error }, { status: 400 });
+    }
+    const startTime = startTimeResolution.startTime;
 
     // Verify baby belongs to family
     const baby = await prisma.baby.findFirst({
@@ -82,7 +88,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'An active breastfeed session already exists for this baby.' }, { status: 409 });
     }
 
-    const session = await startBreastfeedSession({ babyId, side, familyId: userFamilyId, caretakerId });
+    const session = await startBreastfeedSession({ babyId, side, familyId: userFamilyId, caretakerId, startTime });
 
     return NextResponse.json<ApiResponse<ActiveBreastFeedResponse>>({
       success: true,

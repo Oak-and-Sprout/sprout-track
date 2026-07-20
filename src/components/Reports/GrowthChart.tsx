@@ -17,6 +17,8 @@ import { growthChartStyles } from './growth-chart.styles';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
+import { toCdcWeightKg, fromCdcWeightKg, weightUnitLabel, formatChartValue } from '@/src/utils/weightUnits';
+import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
@@ -51,6 +53,7 @@ interface MeasurementData {
 interface Settings {
   defaultWeightUnit: string;
   defaultHeightUnit: string;
+  growthChartStandard: 'CDC' | 'WHO';
 }
 
 interface ChartDataPoint {
@@ -118,12 +121,7 @@ const convertToCdcUnit = (value: number, unit: string, type: GrowthMeasurementTy
   switch (type) {
     case 'weight':
       // CDC uses kg
-      if (normalizedUnit === 'LB') return value * 0.453592;
-      if (normalizedUnit === 'OZ') return value * 0.0283495;
-      if (normalizedUnit === 'G') return value / 1000;
-      if (normalizedUnit === 'KG') return value;
-      // Default: assume kg if no recognized unit
-      return value;
+      return toCdcWeightKg(value, normalizedUnit);
     case 'length':
     case 'head_circumference':
       // CDC uses cm
@@ -143,11 +141,8 @@ const convertFromCdcToDisplayUnit = (value: number, type: GrowthMeasurementType,
 
   switch (type) {
     case 'weight':
-      // CDC uses kg, convert to display unit
-      if (normalizedDisplayUnit === 'LB') return value / 0.453592;
-      if (normalizedDisplayUnit === 'OZ') return value / 0.0283495;
-      if (normalizedDisplayUnit === 'G') return value * 1000;
-      return value; // Keep kg
+      // CDC uses kg, convert to display unit (grams round to whole grams)
+      return fromCdcWeightKg(value, normalizedDisplayUnit);
     case 'length':
     case 'head_circumference':
       // CDC uses cm, convert to display unit
@@ -270,7 +265,7 @@ const getUnitLabel = (type: GrowthMeasurementType, settings: Settings | null): s
 
   switch (type) {
     case 'weight':
-      return settings.defaultWeightUnit === 'LB' ? 'lb' : 'kg';
+      return weightUnitLabel(settings.defaultWeightUnit);
     case 'length':
     case 'head_circumference':
       return settings.defaultHeightUnit === 'IN' ? 'in' : 'cm';
@@ -354,7 +349,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
               if (upper) {
                 lines.push(
                   <p key="upper" style={{ color: upper.color }}>
-                    {upper.name}: {upper.value?.toFixed(2)} {unitLabel}
+                    {upper.name}: {upper.value != null ? formatChartValue(upper.value, unitLabel) : ''} {unitLabel}
                   </p>
                 );
               }
@@ -366,7 +361,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
                     key="measurement"
                     className={cn(growthChartStyles.tooltipMeasurement, "growth-chart-tooltip-measurement")}
                   >
-                    {measurementPercentile.toFixed(1)}%: {measurementValue.toFixed(2)} {unitLabel}
+                    {measurementPercentile.toFixed(1)}%: {formatChartValue(measurementValue, unitLabel)} {unitLabel}
                   </p>
                 );
               }
@@ -375,7 +370,7 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
               if (lower) {
                 lines.push(
                   <p key="lower" style={{ color: lower.color }}>
-                    {lower.name}: {lower.value?.toFixed(2)} {unitLabel}
+                    {lower.name}: {lower.value != null ? formatChartValue(lower.value, unitLabel) : ''} {unitLabel}
                   </p>
                 );
               }
@@ -403,6 +398,22 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // True age in whole months (no buffer/clamp) for choosing the growth standard.
+  const babyAgeMonthsForStandard = useMemo((): number => {
+    if (!selectedBaby?.birthDate) return 0;
+    const now = new Date();
+    const birth = new Date(selectedBaby.birthDate);
+    let totalMonths =
+      (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+    if (now.getDate() - birth.getDate() < 0) totalMonths -= 1;
+    return totalMonths;
+  }, [selectedBaby]);
+
+  const effectiveStandard = effectiveGrowthStandard(
+    settings?.growthChartStandard,
+    babyAgeMonthsForStandard,
+  );
 
   // Zoom state
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -433,6 +444,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
             setSettings({
               defaultWeightUnit: data.data.defaultWeightUnit || 'LB',
               defaultHeightUnit: data.data.defaultHeightUnit || 'IN',
+              growthChartStandard: data.data.growthChartStandard || 'CDC',
             });
           }
         }
@@ -457,7 +469,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
         const sex = genderToCdcSex(selectedBaby.gender);
 
         const response = await fetch(
-          `/api/cdc-growth-data?sex=${sex}&type=${measurementType}`,
+          `/api/cdc-growth-data?sex=${sex}&type=${measurementType}&standard=${effectiveStandard}`,
           {
             cache: 'no-store',
             headers: {
@@ -488,7 +500,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     };
 
     fetchCdcData();
-  }, [selectedBaby, measurementType]);
+  }, [selectedBaby, measurementType, effectiveStandard]);
 
   // Fetch baby measurements
   useEffect(() => {
@@ -949,7 +961,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
           <ResponsiveContainer width="100%" height={400}>
             <LineChart
               data={chartData}
-              margin={{ top: 20, right: 30, left: 2, bottom: 15 }}
+              margin={{ top: 20, right: 30, left: 15, bottom: 15 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
               <XAxis
@@ -1055,7 +1067,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
             {measurementsWithPercentiles.map((m, idx) => (
               <div key={idx} className={cn(growthChartStyles.measurementItem, "growth-chart-measurement-item")}>
                 <div className={cn(growthChartStyles.measurementValue, "growth-chart-measurement-value")}>
-                  {m.displayValue.toFixed(2)} {unitLabel}
+                  {formatChartValue(m.displayValue, unitLabel)} {unitLabel}
                 </div>
                 <div className={cn(growthChartStyles.measurementPercentile, "growth-chart-measurement-percentile")}>
                   {m.percentile.toFixed(1)}{t('th percentile')}
@@ -1075,7 +1087,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       {/* Legend info */}
       <div className={cn(growthChartStyles.legendInfo, "growth-chart-legend-info")}>
         <p className={cn(growthChartStyles.legendText, "growth-chart-legend-text")}>
-          {t('CDC Growth Chart for')} {t(selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls')} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
+          {effectiveStandard === 'WHO' ? t('WHO Growth Chart for') : t('CDC Growth Chart for')} {t(selectedBaby.gender === 'MALE' ? 'Boys' : 'Girls')} {t('(Birth to')} {babyCurrentAgeMonths} {t('months)')}
         </p>
         <p className={cn(growthChartStyles.legendSubtext, "growth-chart-legend-subtext")}>
           {t('Percentile lines show how your baby compares to other children of the same age and sex. The 50th percentile represents the median.')}

@@ -3,6 +3,8 @@ import prisma from '../../../../db';
 import { ApiResponse, MonthlyReport, GrowthMetric, GrowthChartData, GrowthChartPoint } from '../../../../types';
 import { withAuthContext, AuthResult } from '../../../../utils/auth';
 import { formatForResponse } from '../../../../utils/timezone';
+import { toCdcWeightKg, fromCdcWeightKg } from '@/src/utils/weightUnits';
+import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
 import { groupBreastFeedSessions, SESSION_TOLERANCE_MS } from '../../../../../../src/utils/feedSessionUtils';
 import {
   buildNewFoodsForRange,
@@ -221,31 +223,29 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
   // Fetch family settings for display units
   const familySettings = await prisma.settings.findFirst({
     where: { familyId: userFamilyId },
-    select: { defaultWeightUnit: true, defaultHeightUnit: true },
+    select: { defaultWeightUnit: true, defaultHeightUnit: true, growthChartStandard: true },
   });
   const displayWeightUnit = (familySettings?.defaultWeightUnit || 'LB').toUpperCase();
   const displayHeightUnit = (familySettings?.defaultHeightUnit || 'IN').toUpperCase();
+  // Choose the standard for the whole report from the baby's age at the end of the
+  // report month; WHO past 24 months automatically falls back to CDC.
+  const reportAgeMonths = ageInMonths(birthDate, endOfMonth);
+  const growthStandard = effectiveGrowthStandard(familySettings?.growthChartStandard, reportAgeMonths);
 
-  // Unit conversion helpers (matching GrowthChart.tsx logic)
+  // Unit conversion helpers (weight math shared with GrowthChart via weightUnits)
   function toCdcUnit(value: number, unit: string, type: 'weight' | 'length' | 'head_circumference'): number {
-    const u = (unit || '').toUpperCase().trim();
     if (type === 'weight') {
-      if (u === 'LB') return value * 0.453592;
-      if (u === 'OZ') return value * 0.0283495;
-      if (u === 'G') return value / 1000;
-      return value; // assume kg
+      return toCdcWeightKg(value, unit);
     }
     // length / head_circumference — CDC uses cm
+    const u = (unit || '').toUpperCase().trim();
     if (u === 'IN') return value * 2.54;
     return value; // assume cm
   }
 
   function fromCdcUnit(value: number, type: 'weight' | 'length' | 'head_circumference'): number {
     if (type === 'weight') {
-      if (displayWeightUnit === 'LB') return value / 0.453592;
-      if (displayWeightUnit === 'OZ') return value / 0.0283495;
-      if (displayWeightUnit === 'G') return value * 1000;
-      return value; // kg
+      return fromCdcWeightKg(value, displayWeightUnit);
     }
     // length / head — convert from cm to display unit
     if (displayHeightUnit === 'IN') return value / 2.54;
@@ -278,11 +278,23 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     };
   }
 
-  // Pre-fetch all CDC rows for all 3 measurement types (for both metrics and charts)
+  // Pre-fetch all growth chart rows for all 3 measurement types (for both metrics and charts)
+  const growthWhere = sex ? { sex } : undefined;
+  const growthOrder = { orderBy: { ageMonths: 'asc' } as const };
+  const isWho = growthStandard === 'WHO';
   const [allCdcWeight, allCdcLength, allCdcHead] = await Promise.all([
-    sex ? prisma.cdcWeightForAge.findMany({ where: { sex }, orderBy: { ageMonths: 'asc' } }) : Promise.resolve([]),
-    sex ? prisma.cdcLengthForAge.findMany({ where: { sex }, orderBy: { ageMonths: 'asc' } }) : Promise.resolve([]),
-    sex ? prisma.cdcHeadCircumferenceForAge.findMany({ where: { sex }, orderBy: { ageMonths: 'asc' } }) : Promise.resolve([]),
+    sex ? (isWho
+      ? prisma.whoWeightForAge.findMany({ where: growthWhere, ...growthOrder })
+      : prisma.cdcWeightForAge.findMany({ where: growthWhere, ...growthOrder })
+    ) : Promise.resolve([]),
+    sex ? (isWho
+      ? prisma.whoLengthForAge.findMany({ where: growthWhere, ...growthOrder })
+      : prisma.cdcLengthForAge.findMany({ where: growthWhere, ...growthOrder })
+    ) : Promise.resolve([]),
+    sex ? (isWho
+      ? prisma.whoHeadCircumferenceForAge.findMany({ where: growthWhere, ...growthOrder })
+      : prisma.cdcHeadCircumferenceForAge.findMany({ where: growthWhere, ...growthOrder })
+    ) : Promise.resolve([]),
   ]);
 
   function getCdcRows(cdcTable: 'weight' | 'length' | 'head_circumference') {
@@ -368,7 +380,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     measurements: typeof allWeights,
     cdcTable: 'weight' | 'length' | 'head_circumference'
   ): GrowthChartData {
-    if (!sex || measurements.length === 0) return { points: [] };
+    const displayUnit = (cdcTable === 'weight' ? displayWeightUnit : displayHeightUnit).toLowerCase();
+    if (!sex || measurements.length === 0) return { points: [], unit: displayUnit };
 
     const cdcRows = getCdcRows(cdcTable).filter(r => r.ageMonths <= maxAgeMonths + 1);
 
@@ -426,7 +439,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       }
       points.push(point);
     }
-    return { points };
+    return { points, unit: displayUnit };
   }
 
   const weightChartData = buildChartData(allWeights, 'weight');
@@ -677,6 +690,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       daysTracked,
       isCurrentMonth,
     },
+    growthStandard,
     growth: {
       weight: weightMetric,
       length: lengthMetric,

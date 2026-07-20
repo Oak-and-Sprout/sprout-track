@@ -20,6 +20,12 @@ export const RESERVED_URLS = [
   'metadata',
   'page',
   'template',
+  // Marketing/static routes reserved URLs
+  'features',
+  'home',
+  'pricing',
+  'privacy',
+  'terms',
   // ST-Guardian reserved URLs
   'health',
   'logs',

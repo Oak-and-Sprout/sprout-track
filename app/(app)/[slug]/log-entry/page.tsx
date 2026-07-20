@@ -104,30 +104,6 @@ function HomeContent(): React.ReactElement {
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
   const [lastFeedEndTime, setLastFeedEndTime] = useState<Record<string, Date>>({});
   const [lastDiaperTime, setLastDiaperTime] = useState<Record<string, Date>>({});
-  const [includeSolidsInFeedTimer, setIncludeSolidsInFeedTimer] = useState(true);
-  const includeSolidsRef = useRef(true);
-
-  // Fetch family settings for feed timer configuration
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) return;
-        const response = await fetch('/api/settings', {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await response.json();
-        if (data.success && data.data) {
-          const value = data.data.includeSolidsInFeedTimer ?? true;
-          setIncludeSolidsInFeedTimer(value);
-          includeSolidsRef.current = value;
-        }
-      } catch (error) {
-        console.error('Error fetching settings:', error);
-      }
-    };
-    fetchSettings();
-  }, [family?.id]);
 
   // Check whether the Photos feature is enabled for this deployment
   useEffect(() => {
@@ -602,6 +578,7 @@ function HomeContent(): React.ReactElement {
             babyId={selectedBaby.id}
             refreshTrigger={refreshTrigger}
             initialDate={initialTimelineDate}
+            feedTimerTypes={selectedBaby.feedTimerTypes}
             onLatestStatusReady={handleLatestStatusReady}
             onActivityDeleted={() => {
               triggerRefresh();

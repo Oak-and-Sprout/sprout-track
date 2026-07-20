@@ -5,7 +5,7 @@ import { Camera } from 'lucide-react';
 import { PhotoResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { useLocalization } from '@/src/context/localization';
-import { fetchPhotos, togglePhotoFavorite, trashPhoto, downloadPhoto, bulkPhotoAction } from '@/src/utils/photoClientApi';
+import { fetchPhotos, togglePhotoFavorite, trashPhoto, downloadPhoto, downloadPhotosAsZip, bulkPhotoAction } from '@/src/utils/photoClientApi';
 import { filterGalleryPhotos, groupByMonth, groupByMilestone } from '@/src/utils/photoGalleryUtils';
 import { PhotoQuotaMeter } from '@/src/components/ui/photo-quota-meter';
 import PhotoForm from '@/src/components/forms/PhotoForm';
@@ -112,14 +112,11 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
     if (state.grouping === 'month') {
       return groupByMonth(filtered).map((g) => ({ key: g.monthKey, heading: formatMonthHeading(g.monthKey, language), photos: g.photos }));
     }
-    if (state.grouping === 'milestone') {
-      return groupByMilestone(filtered).map((g) => ({
-        key: g.milestoneTitle ?? '__none__',
-        heading: g.milestoneTitle || t('No milestone'),
-        photos: g.photos,
-      }));
-    }
-    return [{ key: 'all', heading: null, photos: filtered }];
+    return groupByMilestone(filtered).map((g) => ({
+      key: g.milestoneTitle ?? '__none__',
+      heading: g.milestoneTitle || t('No milestone'),
+      photos: g.photos,
+    }));
   }, [state.grouping, filtered, t, language]);
 
   const hasActiveFilters = !!state.query || state.typeFilter !== 'all' || state.favoritesOnly;
@@ -210,20 +207,23 @@ export default function PhotoGallery({ babyId }: PhotoGalleryProps) {
     }
   }, []);
 
+  // A single selection downloads the file directly; multiple selections ship
+  // as one zip — browsers only honor one programmatic download per gesture,
+  // so per-photo anchor clicks would silently drop all but the first.
   const handleBulkDownload = useCallback(async () => {
     setActionError(null);
-    let failures = 0;
-    for (const id of Array.from(state.selectedIds)) {
-      const photo = photos.find((p) => p.id === id);
-      if (!photo) continue;
-      try {
-        await downloadPhoto(photo.id, photo.originalName);
-      } catch (error) {
-        console.error('Error downloading photo:', error);
-        failures += 1;
+    const selected = photos.filter((p) => state.selectedIds.has(p.id));
+    try {
+      if (selected.length === 1) {
+        await downloadPhoto(selected[0].id, selected[0].originalName);
+      } else if (selected.length > 1) {
+        const failures = await downloadPhotosAsZip(selected.map((p) => ({ id: p.id, fileName: p.originalName })));
+        if (failures > 0) setActionError(t('Some photos failed to download'));
       }
+    } catch (error) {
+      console.error('Error downloading photos:', error);
+      setActionError(t('Some photos failed to download'));
     }
-    if (failures > 0) setActionError(t('Some photos failed to download'));
   }, [state.selectedIds, photos, t]);
 
   const handleBulkDelete = useCallback(async () => {

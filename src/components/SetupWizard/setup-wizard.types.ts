@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { Gender } from '@prisma/client';
+import type { FeedTimerCategory } from '@/src/utils/feedTimerConfig';
 
 /**
  * Types for the SetupWizard component
@@ -228,9 +229,19 @@ export interface BabySetupStageProps {
    * Feed timer counts from start or end of feeding
    */
   feedTimerFrom: string;
-  
+
   /**
    * Function to update feed timer from
    */
   setFeedTimerFrom: (value: string) => void;
+
+  /**
+   * Feed categories that reset the feed timer (issue #225); all = every feed counts
+   */
+  feedTimerTypes: FeedTimerCategory[];
+
+  /**
+   * Function to update feed timer types
+   */
+  setFeedTimerTypes: (value: FeedTimerCategory[]) => void;
 }

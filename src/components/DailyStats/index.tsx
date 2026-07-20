@@ -22,6 +22,7 @@ import { Card } from '@/src/components/ui/card';
 import { cardStyles } from '@/src/components/ui/card/card.styles';
 import { useTheme } from '@/src/context/theme';
 import { cn } from '@/src/lib/utils';
+import { formatWeightDisplay } from '@/src/utils/weightUnits';
 
 // Import component-specific files
 import './daily-stats.css';
@@ -475,10 +476,10 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
                 label: "Height", 
                 value: `${lastMeasurements['HEIGHT'].value} ${lastMeasurements['HEIGHT'].unit}` 
               }] : []),
-              ...(lastMeasurements['WEIGHT'] ? [{ 
-                icon: <Scale className="h-3 w-3 text-red-500" aria-hidden="true" />, 
-                label: "Weight", 
-                value: `${lastMeasurements['WEIGHT'].value} ${lastMeasurements['WEIGHT'].unit}` 
+              ...(lastMeasurements['WEIGHT'] ? [{
+                icon: <Scale className="h-3 w-3 text-red-500" aria-hidden="true" />,
+                label: "Weight",
+                value: formatWeightDisplay(lastMeasurements['WEIGHT'].value, lastMeasurements['WEIGHT'].unit)
               }] : []),
               ...(lastMeasurements['HEAD_CIRCUMFERENCE'] ? [{ 
                 icon: <RotateCw className="h-3 w-3 text-red-500" aria-hidden="true" />, 
@@ -623,10 +624,10 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
                 />
               )}
               {lastMeasurements['WEIGHT'] && (
-                <StatItem 
-                  icon={<Scale className="h-4 w-4 text-red-500" aria-hidden="true" />} 
-                  label="Weight" 
-                  value={`${lastMeasurements['WEIGHT'].value} ${lastMeasurements['WEIGHT'].unit}`} 
+                <StatItem
+                  icon={<Scale className="h-4 w-4 text-red-500" aria-hidden="true" />}
+                  label="Weight"
+                  value={formatWeightDisplay(lastMeasurements['WEIGHT'].value, lastMeasurements['WEIGHT'].unit)}
                 />
               )}
               {lastMeasurements['HEAD_CIRCUMFERENCE'] && (

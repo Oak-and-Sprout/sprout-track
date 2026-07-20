@@ -93,6 +93,7 @@ export interface BabyCreate {
   feedWarningTime?: string;
   diaperWarningTime?: string;
   feedTimerFrom?: string;
+  feedTimerTypes?: string | null;
 }
 
 export interface BabyUpdate extends Partial<BabyCreate> {
@@ -663,6 +664,7 @@ export interface MonthlyReport {
     daysTracked: number;
     isCurrentMonth: boolean;
   };
+  growthStandard: 'CDC' | 'WHO';
   growth: {
     weight: GrowthMetric | null;
     length: GrowthMetric | null;
@@ -767,6 +769,7 @@ export interface MonthlyReport {
 
 export interface GrowthChartData {
   points: GrowthChartPoint[];
+  unit?: string; // display unit of point values (e.g. 'g', 'kg', 'lb', 'cm', 'in')
 }
 
 export interface GrowthChartPoint {

@@ -1,21 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Home, AlertCircle, Settings, Users, Mail, MessageSquare } from 'lucide-react';
+import { User, LogOut, Home, AlertCircle, Settings, Users, Mail, MessageSquare, ChevronDown } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import AccountModal from '@/src/components/modals/AccountModal';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import { useLocalization } from '@/src/context/localization';
+import { literata, alegreyaSans } from '@/src/components/landing/fonts';
 
 import './account-button.css';
+import '@/src/components/ui/storybook-drawer/storybook-drawer.css';
 
 interface AccountStatus {
   accountId: string;
@@ -46,6 +47,20 @@ interface AccountButtonProps {
   hideFamilyDashboardLink?: boolean;
   onAccountManagerOpen?: () => void;
   onOpenAccountModal?: (mode: 'login' | 'register') => void;
+  /**
+   * Renders the trigger/guest button as a bare <button> styled only by the
+   * caller's classes — no Button variants or account-button state classes.
+   * Lets surfaces with their own design system (e.g. the landing pages)
+   * fully own the styling without fighting this component's CSS.
+   */
+  unstyled?: boolean;
+  /**
+   * Classes for the logged-in dropdown trigger when `unstyled` is set. One
+   * AccountButton can span both auth states (the landing "Log in" link
+   * becomes the account pill once logged in), so the two states may need
+   * different styling. Falls back to `className`.
+   */
+  loggedInClassName?: string;
 }
 
 export function AccountButton({
@@ -57,7 +72,9 @@ export function AccountButton({
   hideWhenLoggedIn = false,
   hideFamilyDashboardLink = false,
   onAccountManagerOpen,
-  onOpenAccountModal
+  onOpenAccountModal,
+  unstyled = false,
+  loggedInClassName
 }: AccountButtonProps) {
   const { t } = useLocalization();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -234,122 +251,118 @@ export function AccountButton({
       buttonText = t('Setup Family');
     }
 
+    const buttonIcon = !accountStatus.verified ? (
+      <AlertCircle size={16} strokeWidth={1.8} aria-hidden="true" />
+    ) : !accountStatus.hasFamily ? (
+      <Users size={16} strokeWidth={1.8} aria-hidden="true" />
+    ) : (
+      <User size={16} strokeWidth={1.8} aria-hidden="true" />
+    );
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className={`${buttonClass} ${className}`}
+          {unstyled ? (
+            <button type="button" className={loggedInClassName ?? className}>
+              {buttonText}
+            </button>
+          ) : (
+          <button
+            className={`${alegreyaSans.variable} sb-btn sb-sm sb-acct-btn ${buttonClass} ${loggedInClassName ?? className ?? ''}`}
           >
-            {showIcon && (
-              <>
-                {!accountStatus.verified ? (
-                  <AlertCircle className="w-4 h-4 mr-2" aria-hidden="true" />
-                ) : !accountStatus.hasFamily ? (
-                  <Users className="w-4 h-4 mr-2" aria-hidden="true" />
-                ) : (
-                  <User className="w-4 h-4 mr-2" aria-hidden="true" />
-                )}
-              </>
-            )}
+            {showIcon && buttonIcon}
             {buttonText}
-          </Button>
+            <ChevronDown size={15} strokeWidth={1.8} className="sb-chev" />
+          </button>
+          )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel>
-            <div className="flex flex-col space-y-1">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium leading-none">{accountStatus.firstName}</p>
-                {accountStatus.betaparticipant && (
-                  <div className="beta-badge">
-                    <span className="beta-badge-text">{t('✨ Beta User')}</span>
-                  </div>
-                )}
-              </div>
-              <p className="text-xs leading-none text-muted-foreground">
-                {accountStatus.email}
-              </p>
-              {accountStatus.betaparticipant && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium italic">
-                  {t('Thank you for being a beta user! 🙏')}
-                </p>
-              )}
-              {!accountStatus.verified && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                  {t('⚠️ Email verification required')}
-                </p>
-              )}
-              {accountStatus.verified && !accountStatus.hasFamily && (
-                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-                  {t('✅ Ready to setup family')}
-                </p>
-              )}
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          
+        <DropdownMenuContent
+          align="end"
+          sideOffset={10}
+          className={`${literata.variable} ${alegreyaSans.variable} sb-menu`}
+        >
+          <div className="sb-menu-id">
+            <b>{accountStatus.firstName} {accountStatus.lastName || ''}</b>
+            <span>{accountStatus.email}</span>
+            {accountStatus.betaparticipant && (
+              <span className="sb-chip sb-c-apr" style={{ display: 'inline-block', marginTop: 6 }}>
+                {t('Beta user')}
+              </span>
+            )}
+            {!accountStatus.verified && (
+              <span className="sb-msg-err" style={{ display: 'block', marginTop: 6 }}>
+                {t('Email verification required')}
+              </span>
+            )}
+            {accountStatus.verified && !accountStatus.hasFamily && (
+              <span className="sb-msg-ok" style={{ display: 'block', marginTop: 6 }}>
+                {t('Ready to set up your family')}
+              </span>
+            )}
+          </div>
+
           {/* Verification-specific options */}
           {!accountStatus.verified && (
             <>
-              <DropdownMenuItem onClick={handleResendVerification}>
-                <Mail className="w-4 h-4 mr-2" aria-hidden="true" />
+              <DropdownMenuItem onClick={handleResendVerification} className="sb-menu-item">
+                <Mail size={18} strokeWidth={1.8} aria-hidden="true" />
                 {t('Resend Verification Email')}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="sb-menu-sep" />
             </>
           )}
-          
+
           {/* Family setup option for verified users without family */}
           {accountStatus.verified && !accountStatus.hasFamily && (
             <>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleFamilySetup}
-                className="family-setup-gradient focus:family-setup-gradient"
+                className="sb-menu-item"
               >
-                <Users className="w-4 h-4 mr-2" aria-hidden="true" />
+                <Users size={18} strokeWidth={1.8} aria-hidden="true" />
                 {t('Set up your family')}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="sb-menu-sep" />
             </>
           )}
-          
+
           {/* Account Settings */}
           <DropdownMenuItem onClick={() => {
             onAccountManagerOpen?.();
-          }}>
-            <Settings className="w-4 h-4 mr-2" aria-hidden="true" />
-            {t('Account Settings')}
+          }} className="sb-menu-item">
+            <Settings size={18} strokeWidth={1.8} aria-hidden="true" />
+            {t('Account settings')}
           </DropdownMenuItem>
-          
+
           {/* Feedback option */}
-          <DropdownMenuItem onClick={() => setShowFeedback(true)}>
-            <MessageSquare className="w-4 h-4 mr-2" aria-hidden="true" />
-            {t('Send Feedback')}
+          <DropdownMenuItem onClick={() => setShowFeedback(true)} className="sb-menu-item">
+            <MessageSquare size={18} strokeWidth={1.8} aria-hidden="true" />
+            {t('Send feedback')}
           </DropdownMenuItem>
-          
+
           {/* Family dashboard link for verified users with family */}
           {!hideFamilyDashboardLink && accountStatus.verified && accountStatus.hasFamily && (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleFamilyLink}>
-                <Home className="w-4 h-4 mr-2" aria-hidden="true" />
+              <DropdownMenuSeparator className="sb-menu-sep" />
+              <DropdownMenuItem onClick={handleFamilyLink} className="sb-menu-item">
+                <Home size={18} strokeWidth={1.8} aria-hidden="true" />
                 {t('Go to Family Dashboard')}
               </DropdownMenuItem>
             </>
           )}
-          
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" aria-hidden="true" />
+
+          <DropdownMenuSeparator className="sb-menu-sep" />
+          <DropdownMenuItem onClick={handleLogout} className="sb-menu-item sb-out">
+            <LogOut size={18} strokeWidth={1.8} aria-hidden="true" />
             {t('Log out')}
           </DropdownMenuItem>
         </DropdownMenuContent>
-        
+
         {/* Feedback Page - always mounted so slide transition works */}
         <FeedbackPage
           isOpen={showFeedback}
           onClose={() => setShowFeedback(false)}
+          appearance="storybook"
         />
       </DropdownMenu>
     );
@@ -363,23 +376,31 @@ export function AccountButton({
     : 'account-button-guest';
   const displayLabel = label || t('Account');
 
+  const handleGuestClick = () => {
+    if (onOpenAccountModal) {
+      onOpenAccountModal(initialMode);
+    } else {
+      setShowAccountModal(true);
+    }
+  };
+
   return (
     <>
-      <Button 
+      {unstyled ? (
+        <button type="button" className={className} onClick={handleGuestClick}>
+          {displayLabel}
+        </button>
+      ) : (
+      <Button
         variant={buttonVariant}
-        size="sm" 
+        size="sm"
         className={`${buttonClass} ${className}`}
-        onClick={() => {
-          if (onOpenAccountModal) {
-            onOpenAccountModal(initialMode);
-          } else {
-            setShowAccountModal(true);
-          }
-        }}
+        onClick={handleGuestClick}
       >
         {showIcon && <User className="w-4 h-4 mr-2" aria-hidden="true" />}
         {displayLabel}
       </Button>
+      )}
       
       {!onOpenAccountModal && (
         <AccountModal 

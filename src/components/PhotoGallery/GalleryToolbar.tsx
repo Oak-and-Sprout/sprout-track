@@ -10,7 +10,6 @@ import { GalleryGrouping, GalleryToolbarProps } from './photo-gallery.types';
 const GROUPINGS: { value: GalleryGrouping; label: string }[] = [
   { value: 'month', label: 'Month' },
   { value: 'milestone', label: 'Milestone' },
-  { value: 'all', label: 'All' },
 ];
 
 const TYPE_CHIPS: { value: GalleryTypeFilter; label: string }[] = [
@@ -31,7 +30,19 @@ export default function GalleryToolbar({ state, onStateChange, trashCount }: Gal
 
   return (
     <div className="flex flex-col gap-3 photo-gallery-toolbar">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="relative w-full">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+        <Input
+          type="search"
+          value={state.query}
+          onChange={(e) => onStateChange({ query: e.target.value })}
+          placeholder={t('Search captions, milestones…')}
+          aria-label={t('Search captions, milestones…')}
+          className="pl-9"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div role="tablist" aria-label={t('Group by')} className="inline-flex rounded-full border border-gray-200 bg-gray-50 p-0.5 photo-gallery-seg">
           {GROUPINGS.map((g) => (
             <button
@@ -49,43 +60,34 @@ export default function GalleryToolbar({ state, onStateChange, trashCount }: Gal
           ))}
         </div>
 
-        <div className="relative flex-1 min-w-[160px]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
-          <Input
-            type="search"
-            value={state.query}
-            onChange={(e) => onStateChange({ query: e.target.value })}
-            placeholder={t('Search captions, milestones…')}
-            aria-label={t('Search captions, milestones…')}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 photo-gallery-chip"
+            onClick={() => onStateChange({ selectMode: !state.selectMode, selectedIds: new Set() })}
+          >
+            {state.selectMode ? t('Cancel') : t('Select')}
+          </button>
+
+          <button
+            type="button"
+            title={t('Trash')}
+            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 photo-gallery-chip"
+            onClick={() => onStateChange({ view: 'trash', selectMode: false, selectedIds: new Set() })}
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('Trash')}
+            {trashCount > 0 && (
+              <span className="rounded-full bg-gray-200 px-1.5 text-[11px] font-semibold text-gray-700 photo-gallery-trash-badge">
+                {trashCount}
+              </span>
+            )}
+          </button>
         </div>
-
-        <button
-          type="button"
-          className="rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 photo-gallery-chip"
-          onClick={() => onStateChange({ selectMode: !state.selectMode, selectedIds: new Set() })}
-        >
-          {state.selectMode ? t('Cancel') : t('Select')}
-        </button>
-
-        <button
-          type="button"
-          title={t('Trash')}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 photo-gallery-chip"
-          onClick={() => onStateChange({ view: 'trash', selectMode: false, selectedIds: new Set() })}
-        >
-          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-          {t('Trash')}
-          {trashCount > 0 && (
-            <span className="rounded-full bg-gray-200 px-1.5 text-[11px] font-semibold text-gray-700 photo-gallery-trash-badge">
-              {trashCount}
-            </span>
-          )}
-        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-gray-500 photo-gallery-filter-label">{t('Filter:')}</span>
         {TYPE_CHIPS.map((chip) => (
           <button
             key={chip.value}
