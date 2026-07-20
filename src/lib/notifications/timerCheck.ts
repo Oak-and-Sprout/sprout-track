@@ -6,7 +6,7 @@ import {
 } from './push';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
-import { parseFeedTimerTypes, buildFeedTimerWhere } from '@/src/utils/feedTimerConfig';
+import { parseFeedTimerTypes, buildFeedTimerWhere, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
 
 /**
  * Parse warning time string (format: "HH:mm") to total minutes
@@ -87,7 +87,8 @@ async function getLastActivityTime(
         where: { id: babyId },
         select: { feedTimerTypes: true },
       });
-      const feedTimerWhere = buildFeedTimerWhere(parseFeedTimerTypes(baby?.feedTimerTypes));
+      const categories = parseFeedTimerTypes(baby?.feedTimerTypes);
+      const feedTimerWhere = buildFeedTimerWhere(categories);
       const lastFeed = await prisma.feedLog.findFirst({
         where: {
           babyId,
@@ -103,11 +104,23 @@ async function getLastActivityTime(
           startTime: true,
         },
       });
-      if (!lastFeed) return null;
       // For breast feeds, use startTime (session start) instead of time (session end)
-      return (lastFeed.type === 'BREAST' && lastFeed.startTime)
-        ? lastFeed.startTime
-        : lastFeed.time;
+      let lastTime: Date | null = lastFeed
+        ? ((lastFeed.type === 'BREAST' && lastFeed.startTime) ? lastFeed.startTime : lastFeed.time)
+        : null;
+      // Issue #203: solids are logged in FoodLog, not FeedLog. When the FOOD
+      // category counts, the latest food entry can also reset the timer.
+      if (foodCountsForTimer(categories)) {
+        const lastFood = await prisma.foodLog.findFirst({
+          where: { babyId, deletedAt: null },
+          orderBy: { time: 'desc' },
+          select: { time: true },
+        });
+        if (lastFood && (!lastTime || lastFood.time.getTime() > lastTime.getTime())) {
+          lastTime = lastFood.time;
+        }
+      }
+      return lastTime;
     } else if (activityType === 'diaper') {
       const lastDiaper = await prisma.diaperLog.findFirst({
         where: {

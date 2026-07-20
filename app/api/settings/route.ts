@@ -45,7 +45,6 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           defaultTempUnit: 'F',
           growthChartStandard: 'CDC',
           enableBreastMilkTracking: true,
-          includeSolidsInFeedTimer: true,
           dateFormat: 'MM/DD/YYYY',
           timeFormat: '12h',
           familyId: targetFamilyId,
@@ -123,7 +122,6 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       'familyName', 'securityPin', 'authType',
       'enableDebugTimer', 'enableDebugTimezone',
       'enableBreastMilkTracking',
-      'includeSolidsInFeedTimer',
       'dateFormat', 'timeFormat',
       'photoQuotaMB',
     ];

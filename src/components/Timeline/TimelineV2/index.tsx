@@ -21,7 +21,7 @@ import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
 import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
-import { parseFeedTimerTypes, feedCountsForTimer } from '@/src/utils/feedTimerConfig';
+import { parseFeedTimerTypes, feedCountsForTimer, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, FoodLogResponse, PhotoResponse } from '@/app/api/types';
 import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
@@ -71,14 +71,19 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, feedTimerTypes, onLat
 
     const status: LatestStatusData = {};
 
-    // Find last feed time
+    // Find last feed time. Food (issue #203) lives in FoodLog and is
+    // discriminated by `foodId`; when the FOOD category counts it can reset the
+    // timer alongside breast/bottle feeds.
     const lastFeed = activities
-      .filter((a) =>
-        'amount' in a && 'type' in a &&
-        ((a as any).type === 'BOTTLE' || (a as any).type === 'BREAST' || (a as any).type === 'SOLIDS') &&
-        'time' in a &&
-        feedCountsForTimer(a as any, feedTimerCategories)
-      )
+      .filter((a) => {
+        if (!('time' in a)) return false;
+        if ('foodId' in a) return foodCountsForTimer(feedTimerCategories);
+        return (
+          'amount' in a && 'type' in a &&
+          ((a as any).type === 'BOTTLE' || (a as any).type === 'BREAST') &&
+          feedCountsForTimer(a as any, feedTimerCategories)
+        );
+      })
       .sort((a, b) => new Date((b as any).time).getTime() - new Date((a as any).time).getTime())[0];
 
     if (lastFeed) {

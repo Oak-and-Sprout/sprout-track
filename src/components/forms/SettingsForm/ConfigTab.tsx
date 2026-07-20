@@ -316,24 +316,6 @@ export default function ConfigTab({
         </div>
       </div>
 
-      {/* Feed Timer Settings */}
-      <div className="border-t border-slate-200 pt-6">
-        <h3 className="form-label mb-4">{t('Feed Timer')}</h3>
-        <div className="space-y-4">
-          <label className="flex items-center justify-between cursor-pointer">
-            <div>
-              <span className="form-label">{t('Include Solids in Feed Timer')}</span>
-              <p className="text-sm text-gray-500">{t('Include solid food feedings when calculating time since last feed')}</p>
-            </div>
-            <Checkbox
-              variant="primary"
-              checked={(settings as any)?.includeSolidsInFeedTimer ?? true}
-              onCheckedChange={(checked) => onSettingsChange({ includeSolidsInFeedTimer: checked } as any)}
-            />
-          </label>
-        </div>
-      </div>
-
       {/* Sleep Locations */}
       <div className="border-t border-slate-200 pt-6">
         <h3 className="form-label mb-4">{t('Sleep Locations')}</h3>

@@ -23,7 +23,7 @@ const CATEGORY_LABELS: Record<FeedTimerCategory, string> = {
   BOTTLE_BREAST_MILK: 'Breast milk bottles',
   BOTTLE_FORMULA: 'Formula bottles',
   BOTTLE_OTHER: 'Other bottles',
-  SOLIDS: 'Solids',
+  FOOD: 'Food',
 };
 
 /**

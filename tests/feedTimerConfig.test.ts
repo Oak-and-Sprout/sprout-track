@@ -4,12 +4,14 @@ import {
   parseFeedTimerTypes,
   isValidFeedTimerTypes,
   feedCountsForTimer,
+  foodCountsForTimer,
   buildFeedTimerWhere,
 } from '@/src/utils/feedTimerConfig';
 
 // Issue #225: per-baby configuration of which feed categories reset the
 // "time since last feed" timer (breast feeds, breast-milk bottles, formula
-// bottles, other bottles, solids). null/invalid config = count everything.
+// bottles, other bottles, food). null/invalid config = count everything.
+// The legacy 'SOLIDS' category maps to 'FOOD' (solids became FoodLog, #203).
 
 describe('FEED_TIMER_CATEGORIES', () => {
   it('exposes the five supported categories', () => {
@@ -18,7 +20,7 @@ describe('FEED_TIMER_CATEGORIES', () => {
       'BOTTLE_BREAST_MILK',
       'BOTTLE_FORMULA',
       'BOTTLE_OTHER',
-      'SOLIDS',
+      'FOOD',
     ]);
   });
 });
@@ -40,7 +42,12 @@ describe('parseFeedTimerTypes', () => {
   });
 
   it('parses a valid category list', () => {
-    expect(parseFeedTimerTypes('["BREAST","SOLIDS"]')).toEqual(['BREAST', 'SOLIDS']);
+    expect(parseFeedTimerTypes('["BREAST","FOOD"]')).toEqual(['BREAST', 'FOOD']);
+  });
+
+  it('maps the legacy SOLIDS category to FOOD', () => {
+    expect(parseFeedTimerTypes('["BREAST","SOLIDS"]')).toEqual(['BREAST', 'FOOD']);
+    expect(parseFeedTimerTypes('["SOLIDS"]')).toEqual(['FOOD']);
   });
 
   it('drops unknown values and returns null if none survive', () => {
@@ -82,17 +89,11 @@ describe('feedCountsForTimer', () => {
   it('counts everything when categories are null/undefined', () => {
     expect(feedCountsForTimer({ type: 'BREAST' }, null)).toBe(true);
     expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula' }, undefined)).toBe(true);
-    expect(feedCountsForTimer({ type: 'SOLIDS' }, null)).toBe(true);
   });
 
   it('matches BREAST feeds against the BREAST category', () => {
     expect(feedCountsForTimer({ type: 'BREAST' }, ['BREAST'])).toBe(true);
     expect(feedCountsForTimer({ type: 'BREAST' }, ['BOTTLE_FORMULA'])).toBe(false);
-  });
-
-  it('matches SOLIDS feeds against the SOLIDS category', () => {
-    expect(feedCountsForTimer({ type: 'SOLIDS' }, ['SOLIDS'])).toBe(true);
-    expect(feedCountsForTimer({ type: 'SOLIDS' }, ['BREAST'])).toBe(false);
   });
 
   it('maps bottle feeds by bottleType', () => {
@@ -117,6 +118,20 @@ describe('feedCountsForTimer', () => {
 
   it('returns false for unknown feed types', () => {
     expect(feedCountsForTimer({ type: 'WEIRD' }, ['BREAST'])).toBe(false);
+  });
+});
+
+describe('foodCountsForTimer', () => {
+  it('counts food when categories are null/undefined (all feeds count)', () => {
+    expect(foodCountsForTimer(null)).toBe(true);
+    expect(foodCountsForTimer(undefined)).toBe(true);
+  });
+
+  it('counts food only when the FOOD category is selected', () => {
+    expect(foodCountsForTimer(['FOOD'])).toBe(true);
+    expect(foodCountsForTimer(['BREAST', 'FOOD'])).toBe(true);
+    expect(foodCountsForTimer(['BREAST'])).toBe(false);
+    expect(foodCountsForTimer(['BOTTLE_FORMULA'])).toBe(false);
   });
 });
 
@@ -155,13 +170,19 @@ describe('buildFeedTimerWhere', () => {
     });
   });
 
+  it('adds no FeedLog clause for FOOD (food is a separate table)', () => {
+    // FOOD is not a FeedLog row, so selecting only FOOD matches no feeds.
+    expect(buildFeedTimerWhere(['FOOD'])).toEqual({ OR: [] });
+    // FOOD alongside real feed categories does not add a FeedLog clause.
+    expect(buildFeedTimerWhere(['BREAST', 'FOOD'])).toEqual({ OR: [{ type: 'BREAST' }] });
+  });
+
   it('combines multiple categories into a single OR clause', () => {
-    const where = buildFeedTimerWhere(['BREAST', 'SOLIDS', 'BOTTLE_FORMULA']);
+    const where = buildFeedTimerWhere(['BREAST', 'BOTTLE_FORMULA']);
     expect(where).toEqual({
       OR: [
         { type: 'BREAST' },
         { type: 'BOTTLE', bottleType: { in: ['Formula', 'Formula\\Breast'] } },
-        { type: 'SOLIDS' },
       ],
     });
   });

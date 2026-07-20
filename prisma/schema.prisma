@@ -527,7 +527,7 @@ model Settings {
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
   enableBreastMilkTracking Boolean @default(true) // Enable breast milk inventory tracking (stored/fed/discarded actions, adjustments, balance)
-  includeSolidsInFeedTimer Boolean @default(true) // Include solid food feedings when calculating time since last feed
+  includeSolidsInFeedTimer Boolean @default(true) // DEPRECATED (orphaned): superseded by per-baby Baby.feedTimerTypes; no longer read or written. Kept to avoid a destructive column drop.
   photoQuotaMB        Int? // Per-family photo quota override in MB; null = use AppConfig default
   dateFormat          String   @default("MM/DD/YYYY") // "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD"
   timeFormat          String   @default("12h") // "12h" | "24h"

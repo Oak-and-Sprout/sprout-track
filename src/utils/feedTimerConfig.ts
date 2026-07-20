@@ -9,8 +9,12 @@ export const FEED_TIMER_CATEGORIES = [
   'BOTTLE_BREAST_MILK',
   'BOTTLE_FORMULA',
   'BOTTLE_OTHER',
-  'SOLIDS',
+  'FOOD',
 ] as const;
+
+// Legacy category name: 'SOLIDS' feeds were migrated to the FoodLog table
+// (issue #203). Stored configs may still carry 'SOLIDS'; it maps to 'FOOD'.
+const LEGACY_SOLIDS = 'SOLIDS';
 
 export type FeedTimerCategory = (typeof FEED_TIMER_CATEGORIES)[number];
 
@@ -35,9 +39,11 @@ export function parseFeedTimerTypes(
   try {
     const parsed: unknown = JSON.parse(json);
     if (!Array.isArray(parsed)) return null;
-    const categories = parsed.filter((c): c is FeedTimerCategory =>
-      (FEED_TIMER_CATEGORIES as readonly string[]).includes(c as string)
-    );
+    const categories = parsed
+      .map((c) => (c === LEGACY_SOLIDS ? 'FOOD' : c))
+      .filter((c): c is FeedTimerCategory =>
+        (FEED_TIMER_CATEGORIES as readonly string[]).includes(c as string)
+      );
     return categories.length > 0 ? categories : null;
   } catch {
     return null;
@@ -59,8 +65,10 @@ export function isValidFeedTimerTypes(
     return (
       Array.isArray(parsed) &&
       parsed.length > 0 &&
-      parsed.every((c) =>
-        (FEED_TIMER_CATEGORIES as readonly string[]).includes(c as string)
+      parsed.every(
+        (c) =>
+          (FEED_TIMER_CATEGORIES as readonly string[]).includes(c as string) ||
+          c === LEGACY_SOLIDS
       )
     );
   } catch {
@@ -80,8 +88,6 @@ export function feedCountsForTimer(
   switch (feed.type) {
     case 'BREAST':
       return categories.includes('BREAST');
-    case 'SOLIDS':
-      return categories.includes('SOLIDS');
     case 'BOTTLE':
       switch (feed.bottleType) {
         case 'Breast Milk':
@@ -103,8 +109,22 @@ export function feedCountsForTimer(
 }
 
 /**
- * Build a Prisma where clause fragment selecting only feeds that count
- * toward the timer. Returns {} (no filtering) for null/undefined.
+ * Whether solid-food (FoodLog) entries reset the timer for the given
+ * categories. Food lives in a separate table (issue #203), so it is handled
+ * outside the FeedLog where clause. null/undefined = every feed counts, which
+ * includes food.
+ */
+export function foodCountsForTimer(
+  categories: readonly FeedTimerCategory[] | null | undefined
+): boolean {
+  if (!categories) return true;
+  return categories.includes('FOOD');
+}
+
+/**
+ * Build a Prisma where clause fragment selecting only FeedLog rows that count
+ * toward the timer. Returns {} (no filtering) for null/undefined. Food is not
+ * a FeedLog row — see foodCountsForTimer for the FoodLog side.
  */
 export function buildFeedTimerWhere(
   categories: readonly FeedTimerCategory[] | null | undefined
@@ -124,6 +144,5 @@ export function buildFeedTimerWhere(
       OR: [{ bottleType: null }, { bottleType: { notIn: KNOWN_BOTTLE_TYPES } }],
     });
   }
-  if (categories.includes('SOLIDS')) or.push({ type: 'SOLIDS' });
   return { OR: or };
 }

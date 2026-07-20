@@ -15,6 +15,7 @@ import { Check, ArrowLeftRight, Pause, Play, TriangleAlert } from 'lucide-react'
 import { Textarea } from '@/src/components/ui/textarea';
 import { Switch } from '@/src/components/ui/switch';
 import { useTimezone } from '@/app/context/timezone';
+import { resolveClientStartTime } from '@/src/utils/breastfeedStart';
 import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
@@ -101,6 +102,10 @@ export default function FeedForm({
   });
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  // Whether the user actually touched the date/time picker. If not, starting a
+  // breastfeed sends no start time so the server starts the session at "now"
+  // (avoids the seconds-since-top-of-minute offset from the seconds-less default).
+  const [dateTimeTouched, setDateTimeTouched] = useState(false);
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string>('');
   const [defaultSettings, setDefaultSettings] = useState({
@@ -295,7 +300,8 @@ export default function FeedForm({
   // Handle date/time change
   const handleDateTimeChange = (date: Date) => {
     setSelectedDateTime(date);
-    
+    setDateTimeTouched(true);
+
     // Also update the time in formData for compatibility with existing code
     // Format the date as ISO string for storage in formData
     const year = date.getFullYear();
@@ -312,7 +318,9 @@ export default function FeedForm({
     if (isOpen && !isInitialized) {
       // Fetch default settings when form opens
       fetchDefaultSettings();
-      
+      // Start each open with an untouched picker (default = start at "now").
+      setDateTimeTouched(false);
+
       if (activity) {
       // Editing mode - populate with activity data
       // Calculate feedDuration from different sources based on what's available
@@ -912,6 +920,7 @@ export default function FeedForm({
 
     // Reset initialization flag
     setIsInitialized(false);
+    setDateTimeTouched(false);
     setManualEntry(false);
     setPendingPhotoFiles([]);
     setAttachedPhotos([]);
@@ -927,7 +936,10 @@ export default function FeedForm({
     setLoading(true);
     try {
       const authToken = localStorage.getItem('authToken');
-      const startTime = toUTCString(selectedDateTime);
+      // Only backdate the session when the user actually set the time; otherwise
+      // omit startTime so the server starts it at "now" (timer opens at 0:00).
+      const clientStart = resolveClientStartTime(dateTimeTouched, selectedDateTime);
+      const startTime = clientStart ? toUTCString(clientStart) : undefined;
       const response = await fetch('/api/active-breastfeed', {
         method: 'POST',
         headers: {

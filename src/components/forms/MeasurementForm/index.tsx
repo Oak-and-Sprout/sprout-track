@@ -17,6 +17,7 @@ import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
 import { lbToLbOz, defaultWeightInputUnit } from '@/src/utils/weightUnits';
+import { convertWeightValue, convertLengthValue, convertTemperatureValue } from '@/src/utils/measurementConversion';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
@@ -291,37 +292,64 @@ export default function MeasurementForm({
 
   // Handle unit change for a specific measurement type
   const handleUnitChange = (type: keyof Omit<FormData, 'date' | 'notes'>, unit: string) => {
-    // When switching weight units, clear the lb/oz fields
+    const oldUnit = formData[type].unit;
+    if (oldUnit === unit) return;
+
     if (type === 'weight') {
+      // Current weight as a single decimal value in the old unit (lb = decimal pounds).
+      const currentDecimal = oldUnit === 'lb'
+        ? (parseFloat(weightLbs) || 0) + (parseFloat(weightOz) || 0) / 16
+        : parseFloat(formData.weight.value);
+      const hasValue = !isNaN(currentDecimal) && currentDecimal > 0;
+
       if (unit === 'lb') {
-        // Switching to lb — try to convert existing single value to lb/oz
-        const existing = parseFloat(formData.weight.value);
-        if (!isNaN(existing) && existing > 0) {
-          const { lbs, oz } = lbToLbOz(existing);
-          setWeightLbs(String(lbs));
+        // Convert to decimal pounds, then split into the lb/oz input fields.
+        if (hasValue) {
+          const decimalLbs = convertWeightValue(currentDecimal, oldUnit, 'lb');
+          const { lbs, oz } = lbToLbOz(decimalLbs);
+          setWeightLbs(lbs > 0 ? String(lbs) : '');
           setWeightOz(oz > 0 ? String(oz) : '');
+          setFormData(prev => ({ ...prev, weight: { value: String(parseFloat(decimalLbs.toFixed(4))), unit: 'lb' } }));
         } else {
           setWeightLbs('');
           setWeightOz('');
+          setFormData(prev => ({ ...prev, weight: { value: '', unit: 'lb' } }));
         }
-      } else {
-        // Switching away from lb — convert lb/oz to single value
-        const lbs = parseFloat(weightLbs) || 0;
-        const oz = parseFloat(weightOz) || 0;
-        if (lbs > 0 || oz > 0) {
-          const total = lbs + (oz / 16);
-          setFormData(prev => ({
-            ...prev,
-            weight: { value: String(parseFloat(total.toFixed(4))), unit }
-          }));
-          return;
-        }
+        return;
+      }
+
+      // Switching to kg or g — convert the magnitude and clear the lb/oz fields.
+      const value = hasValue
+        ? (unit === 'g'
+            ? String(Math.round(convertWeightValue(currentDecimal, oldUnit, 'g')))
+            : String(parseFloat(convertWeightValue(currentDecimal, oldUnit, 'kg').toFixed(2))))
+        : '';
+      setWeightLbs('');
+      setWeightOz('');
+      setFormData(prev => ({ ...prev, weight: { value, unit } }));
+      return;
+    }
+
+    if (type === 'height' || type === 'headCircumference') {
+      const current = parseFloat(formData[type].value);
+      if (!isNaN(current)) {
+        const converted = convertLengthValue(current, oldUnit, unit);
+        setFormData(prev => ({ ...prev, [type]: { value: String(parseFloat(converted.toFixed(2))), unit } }));
+        return;
       }
     }
-    setFormData(prev => ({
-      ...prev,
-      [type]: { ...prev[type], unit }
-    }));
+
+    if (type === 'temperature') {
+      const current = parseFloat(formData.temperature.value);
+      if (!isNaN(current)) {
+        const converted = convertTemperatureValue(current, oldUnit, unit);
+        setFormData(prev => ({ ...prev, temperature: { value: String(parseFloat(converted.toFixed(1))), unit } }));
+        return;
+      }
+    }
+
+    // No value to convert — just switch the unit.
+    setFormData(prev => ({ ...prev, [type]: { ...prev[type], unit } }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
