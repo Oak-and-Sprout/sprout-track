@@ -1,6 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { chooseWakeLockMechanism, getCapacitorPlugin } from '@/src/utils/native-app';
+
+interface KeepAwakePlugin {
+  keepAwake(): Promise<void>;
+  allowSleep(): Promise<void>;
+}
+
+function keepAwakePlugin(): KeepAwakePlugin | null {
+  return getCapacitorPlugin<KeepAwakePlugin>('KeepAwake');
+}
+
+function mechanism(): 'plugin' | 'browser' | 'none' {
+  return chooseWakeLockMechanism({
+    hasKeepAwakePlugin: keepAwakePlugin() !== null,
+    hasWakeLockApi: 'wakeLock' in navigator,
+  });
+}
 
 export function useWakeLock() {
   const [isActive, setIsActive] = useState(false);
@@ -8,12 +25,18 @@ export function useWakeLock() {
   const sentinelRef = useRef<WakeLockSentinel | null>(null);
 
   useEffect(() => {
-    setIsSupported('wakeLock' in navigator);
+    setIsSupported(mechanism() !== 'none');
   }, []);
 
   const request = useCallback(async () => {
-    if (!('wakeLock' in navigator)) return;
+    const how = mechanism();
+    if (how === 'none') return;
     try {
+      if (how === 'plugin') {
+        await keepAwakePlugin()!.keepAwake();
+        setIsActive(true);
+        return;
+      }
       sentinelRef.current = await navigator.wakeLock.request('screen');
       setIsActive(true);
       sentinelRef.current.addEventListener('release', () => {
@@ -26,6 +49,15 @@ export function useWakeLock() {
   }, []);
 
   const release = useCallback(async () => {
+    if (mechanism() === 'plugin') {
+      try {
+        await keepAwakePlugin()!.allowSleep();
+      } catch {
+        // Already released
+      }
+      setIsActive(false);
+      return;
+    }
     if (sentinelRef.current) {
       try {
         await sentinelRef.current.release();
@@ -39,7 +71,7 @@ export function useWakeLock() {
 
   // Auto-acquire on mount and re-acquire on visibility change
   useEffect(() => {
-    if (!('wakeLock' in navigator)) return;
+    if (mechanism() === 'none') return;
 
     request();
 
