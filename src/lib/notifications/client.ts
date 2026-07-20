@@ -3,6 +3,8 @@
  * Handles browser-side subscription operations
  */
 
+import { isNativeApp, shouldRegisterServiceWorker } from '@/src/utils/native-app';
+
 // Cache for VAPID public key with TTL
 interface VapidCache {
   key: string;
@@ -90,12 +92,14 @@ export function clearVapidCache(): void {
  * Register service worker for PWA installability (lightweight, no activation wait)
  */
 export async function registerPwaServiceWorker(): Promise<void> {
-  if (!('serviceWorker' in navigator)) {
-    return;
-  }
-
-  if (!window.isSecureContext) {
-    console.warn('PWA service worker requires HTTPS (or localhost)');
+  if (
+    !shouldRegisterServiceWorker({
+      isNative: isNativeApp(),
+      hasServiceWorker: 'serviceWorker' in navigator,
+      isSecureContext: window.isSecureContext,
+    })
+  ) {
+    if (!window.isSecureContext) console.warn('PWA service worker requires HTTPS (or localhost)');
     return;
   }
 
