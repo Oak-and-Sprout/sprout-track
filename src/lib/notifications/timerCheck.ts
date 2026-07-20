@@ -4,6 +4,7 @@ import {
   sendNotificationWithLogging,
   NotificationPayload,
 } from './push';
+import { sendToDeviceTokens } from './fcmPush';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
 import { parseFeedTimerTypes, buildFeedTimerWhere, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
@@ -239,6 +240,7 @@ async function sendTimerNotification(
     id: string;
     firstName: string;
     lastName: string;
+    familyId: string | null;
   },
   eventType: NotificationEventType,
   lastActivityTime: Date,
@@ -293,6 +295,17 @@ async function sendTimerNotification(
     null, // No activity type for timer events
     baby.id
   );
+
+  if (baby.familyId) {
+    sendToDeviceTokens(
+      {
+        familyId: baby.familyId,
+        caretakerId: preference.subscription.caretakerId,
+        accountId: preference.subscription.accountId,
+      },
+      payload
+    ).catch((error) => console.error('[FCM] timer push failed:', error));
+  }
 }
 
 /**

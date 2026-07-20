@@ -4,6 +4,7 @@ import {
   sendNotificationWithLogging,
   NotificationPayload,
 } from './push';
+import { sendToDeviceTokens } from './fcmPush';
 import { t, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
 
@@ -214,7 +215,7 @@ export async function notifyActivityCreated(
     // Get baby information for notification
     const baby = await prisma.baby.findUnique({
       where: { id: babyId },
-      select: { firstName: true },
+      select: { firstName: true, familyId: true },
     });
 
     if (!baby) {
@@ -331,6 +332,17 @@ export async function notifyActivityCreated(
       ).catch((error) => {
         console.error('Error sending activity notification:', error);
       });
+
+      if (baby.familyId) {
+        sendToDeviceTokens(
+          {
+            familyId: baby.familyId,
+            caretakerId: preference.subscription.caretakerId,
+            accountId: preference.subscription.accountId,
+          },
+          payload
+        ).catch((error) => console.error('[FCM] activity push failed:', error));
+      }
     }
   } catch (error) {
     console.error('Error in notifyActivityCreated:', error);
