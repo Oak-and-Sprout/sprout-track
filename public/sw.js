@@ -1,8 +1,11 @@
 // Service Worker for Push Notifications
 // Handles push events and notification clicks
 
-// Required for Android Chrome PWA installability (WebAPK)
-self.addEventListener('fetch', () => {});
+// NOTE: no 'fetch' listener here, ever. Any fetch handler — even a no-op —
+// makes iOS route all requests through WebKit's service worker process, which
+// intermittently fails to start in installed home-screen PWAs and hangs the
+// app on launch (issue #227). Chrome no longer requires a fetch handler for
+// installability (108+ mobile / 112+ desktop).
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
