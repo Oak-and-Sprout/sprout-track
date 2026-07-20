@@ -56,6 +56,7 @@ You do not need to create the `.env` file manually. The setup process handles it
 | `VAPID_PUBLIC_KEY` | -- | VAPID public key (Docker passthrough). Normally managed in the database via the admin UI. |
 | `VAPID_PRIVATE_KEY` | -- | VAPID private key (Docker passthrough). Normally managed in the database via the admin UI. |
 | `VAPID_SUBJECT` | `"mailto:notifications@sprouttrack.app"` | VAPID subject identifier |
+| `FCM_SERVICE_ACCOUNT_JSON` | (unset) | Inline Firebase service-account JSON enabling native (FCM/APNs) push for the mobile app. Unset = native push disabled; web push is unaffected. |
 
 ### Logging
 
