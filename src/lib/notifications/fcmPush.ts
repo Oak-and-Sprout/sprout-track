@@ -100,7 +100,7 @@ async function sendFcm(account: FcmServiceAccount, token: string, payload: Notif
   );
   if (res.ok) return { success: true, unregistered: false };
   const body = await res.text();
-  const unregistered = res.status === 404 || body.includes('UNREGISTERED');
+  const unregistered = res.status === 404 && body.includes('UNREGISTERED');
   console.error(`[FCM] send failed (${res.status}): ${body.slice(0, 300)}`);
   return { success: false, unregistered };
 }
