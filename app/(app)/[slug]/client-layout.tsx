@@ -38,6 +38,7 @@ import {
   shouldIdleLogout,
   validateFamilySlugWithRetry,
 } from '@/src/utils/session-timeout';
+import { navigateToShell } from '@/src/utils/native-bridge';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -366,6 +367,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     
     // Account holders go to the home page with the login modal open,
     // PIN users go to family root (which shows login UI)
+    if (navigateToShell({ type: 'loggedOut', reason })) return;
     router.push(logoutDestination({ isAccountAuth, familySlug, reason }));
   };
 
@@ -1033,6 +1035,7 @@ export default function AppLayout({
     // Redirect account holders to the home page (with the login modal open)
     // and PIN users to family root (which shows login UI)
     const familySlug = window.location.pathname.split('/')[1];
+    if (navigateToShell({ type: 'loggedOut', reason })) return;
     window.location.href = logoutDestination({ isAccountAuth, familySlug, reason });
   };
 
