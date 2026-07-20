@@ -1,5 +1,27 @@
 # Sprout Track Changelog
 
+## v1.6.1 - WHO Data, QoL Additions, Photo Functionality Cleanup, New Landing Page
+
+### Changes
+
+#### WHO Data (Thank you **t-dhruv**!)
+- Added WHO data and fallback to CDC data after 21 months of age
+- This can be changed in the settings page and shows up in the growth charts
+
+#### QoL Additions:
+- Added ability to backdate timers for breastfeeding - if you started feeding a few minutes ago, adjust the time and timer starts from the time you selected) - Thank you **philzx**!
+- Support for weight measurement in grams added back - Thank you **t-dhruv**!
+- Added per-baby feed timer resets (added in baby settings) - this gives you the ability to set which feed types reset the feed timer - Thank you **philzx**!
+
+#### Photo Functionality Updates
+- Fixed bug on delete that didn't remove log entries when all photos are removed
+- Adjusted the gallery page for better mobile viewing
+- Fixed bug where multi-select download did not bundle pictures together for download
+
+#### New Landing Page (sprout-track.com)
+- Updated the Sprout-Track.com landing page
+- Themed account management pages to match landing page
+
 ## v1.6.0 - Food & Allergens, PWA Improvements, Bugfixes
 
 ### Changes
