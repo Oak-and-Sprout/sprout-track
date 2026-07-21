@@ -27,6 +27,23 @@ describe('vendored bridge contract', () => {
     expect(decodeMessage(raw)).toBeNull();
   });
 
+  it('round-trips sessionInjected with token and optional caretakerId', () => {
+    const msg = { type: 'sessionInjected', slug: 'smith-family', token: 'jwt123' } as const;
+    expect(decodeMessage(encodeMessage(msg))?.msg).toEqual(msg);
+    const withId = { ...msg, caretakerId: '42' };
+    expect(decodeMessage(encodeMessage(withId))?.msg).toEqual(withId);
+  });
+
+  it('rejects sessionInjected without a token', () => {
+    expect(decodeMessage(JSON.stringify({ v: 1, msg: { type: 'sessionInjected', slug: 's' } }))).toBeNull();
+  });
+
+  it('rejects sessionInjected with a non-string caretakerId', () => {
+    expect(decodeMessage(JSON.stringify({
+      v: 1, msg: { type: 'sessionInjected', slug: 's', token: 't', caretakerId: 7 },
+    }))).toBeNull();
+  });
+
   it('matches the mobile repo source byte-for-byte after the vendor header', () => {
     // Drift guard: if this fails, re-copy from mobile-app-v1/shared/bridge-contract.ts.
     // Uses node fs because vitest runs in node environment.

@@ -10,7 +10,7 @@ export type WebToNativeMessage =
   | { type: 'registerPushToken'; jwt: string }
 
 export type NativeToWebMessage =
-  | { type: 'sessionInjected'; slug: string }
+  | { type: 'sessionInjected'; slug: string; token: string; caretakerId?: string }
   | { type: 'appResumed' }
 
 type AnyMessage = WebToNativeMessage | NativeToWebMessage
@@ -21,7 +21,9 @@ const VALIDATORS: Record<string, (m: Record<string, unknown>) => boolean> = {
   sessionExpired: () => true,
   loggedOut: m => typeof m.reason === 'string',
   registerPushToken: m => typeof m.jwt === 'string',
-  sessionInjected: m => typeof m.slug === 'string',
+  sessionInjected: m =>
+    typeof m.slug === 'string' && typeof m.token === 'string' &&
+    (m.caretakerId === undefined || typeof m.caretakerId === 'string'),
   appResumed: () => true,
 }
 
