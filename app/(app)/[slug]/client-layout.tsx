@@ -41,6 +41,7 @@ import {
 import { navigateToShell } from '@/src/utils/native-bridge';
 import { isNativeApp } from '@/src/utils/native-app';
 import { registerNativePushToken } from '@/src/utils/native-push';
+import { consumeInjectedSession } from '@/src/utils/native-session';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -85,6 +86,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [isUnlocked, setIsUnlocked] = useState(() => {
     // Only run this on client-side
     if (typeof window !== 'undefined') {
+      consumeInjectedSession(); // shell-handed session (native app): writes authToken/unlockTime, strips the fragment
       const unlockTime = localStorage.getItem('unlockTime');
       if (unlockTime && Date.now() - parseInt(unlockTime) <= 60 * 1000) {
         return true;
