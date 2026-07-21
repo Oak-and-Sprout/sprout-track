@@ -5,6 +5,7 @@ import { Settings } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
 import { isValidGrowthStandard } from '@/src/utils/growthStandard';
+import { resolveFamilyScope } from '../utils/family-scope';
 
 // The family securityPin (login PIN) must never be returned to the client.
 type SettingsResponse = Omit<Settings, 'securityPin'>;
@@ -14,21 +15,14 @@ function toSettingsResponse({ securityPin: _securityPin, ...rest }: Settings): S
 
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
-    const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
-    
-    // Determine target family ID - prefer auth context, but allow query parameter for setup auth, account auth, and sysadmin
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && (isSetupAuth || isSysAdmin || isAccountAuth)) {
-      const { searchParams } = new URL(req.url);
-      const queryFamilyId = searchParams.get('familyId');
-      if (queryFamilyId) {
-        targetFamilyId = queryFamilyId;
-      }
+    const { searchParams } = new URL(req.url);
+    const queryFamilyId = searchParams.get('familyId');
+
+    const scope = resolveFamilyScope(authContext, queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
+    const targetFamilyId = scope.familyId;
 
     let settings = await prisma.settings.findFirst({
       where: { familyId: targetFamilyId },
@@ -76,21 +70,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
   }
 
   try {
-    const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
-    
-    // Determine target family ID - prefer auth context, but allow query parameter for setup auth, account auth, and sysadmin
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && (isSetupAuth || isSysAdmin || isAccountAuth)) {
-      const { searchParams } = new URL(req.url);
-      const queryFamilyId = searchParams.get('familyId');
-      if (queryFamilyId) {
-        targetFamilyId = queryFamilyId;
-      }
+    const { searchParams } = new URL(req.url);
+    const queryFamilyId = searchParams.get('familyId');
+
+    const scope = resolveFamilyScope(authContext, queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
+    const targetFamilyId = scope.familyId;
 
     const body = await req.json();
     

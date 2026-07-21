@@ -6,6 +6,7 @@ import { toUTC, formatForResponse } from '../utils/timezone';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
 import { isValidFeedTimerTypes } from '@/src/utils/feedTimerConfig';
+import { resolveFamilyScope } from '../utils/family-scope';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -15,8 +16,6 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
   }
 
   try {
-    const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
-    
     const requestBody = await req.json();
     const { familyId: bodyFamilyId, ...babyData } = requestBody;
     const body: BabyCreate = babyData;
@@ -28,15 +27,14 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Determine target family ID - prefer auth context, but allow body override for setup auth, account auth, and sysadmin
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && (isSetupAuth || isSysAdmin || isAccountAuth) && bodyFamilyId) {
-      targetFamilyId = bodyFamilyId;
+    const { searchParams } = new URL(req.url);
+    const queryFamilyId = searchParams.get('familyId');
+
+    const scope = resolveFamilyScope(authContext, bodyFamilyId ?? queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
+    const targetFamilyId = scope.familyId;
 
     const baby = await prisma.baby.create({
       data: {
@@ -88,8 +86,6 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
   }
 
   try {
-    const { familyId: userFamilyId, isSysAdmin } = authContext;
-    
     const requestBody = await req.json();
     const { id, familyId: bodyFamilyId, ...updateData } = requestBody;
     const body: BabyUpdate = { id, ...updateData };
@@ -101,15 +97,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // For system administrators, allow familyId to be specified in request body
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && isSysAdmin && bodyFamilyId) {
-      targetFamilyId = bodyFamilyId;
+    const { searchParams } = new URL(req.url);
+    const queryFamilyId = searchParams.get('familyId');
+
+    const scope = resolveFamilyScope(authContext, bodyFamilyId ?? queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
+    const targetFamilyId = scope.familyId;
 
     const existingBaby = await prisma.baby.findFirst({
       where: { id, familyId: targetFamilyId },
@@ -166,11 +161,9 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
   }
 
   try {
-    const { familyId: userFamilyId, isSysAdmin } = authContext;
-    
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const familyId = searchParams.get('familyId');
+    const queryFamilyId = searchParams.get('familyId');
 
     if (!id) {
       return NextResponse.json<ApiResponse>(
@@ -182,15 +175,11 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // For system administrators, allow familyId to be specified as query parameter
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && isSysAdmin && familyId) {
-      targetFamilyId = familyId;
+    const scope = resolveFamilyScope(authContext, queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
+    const targetFamilyId = scope.familyId;
 
     // Verify baby belongs to user's family before deleting
     const existingBaby = await prisma.baby.findFirst({
@@ -230,22 +219,16 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
 
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
-    const { familyId: userFamilyId, isSysAdmin } = authContext;
-    
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const familyId = searchParams.get('familyId');
-    
-    // For system administrators, allow familyId to be specified as query parameter
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && isSysAdmin && familyId) {
-      targetFamilyId = familyId;
+    const queryFamilyId = searchParams.get('familyId');
+
+    const scope = resolveFamilyScope(authContext, queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
-    
+    const targetFamilyId = scope.familyId;
+
     if (id) {
       const baby = await prisma.baby.findFirst({
         where: { 
