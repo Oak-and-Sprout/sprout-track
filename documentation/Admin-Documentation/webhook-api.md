@@ -9,10 +9,12 @@
 
 The Sprout Track Webhook API allows external services to read and write baby activity data over HTTP. Any service that can make HTTP requests can integrate with it -- Home Assistant, Grafana, Node-RED, n8n, IFTTT, shell scripts, cron jobs, NFC automations, physical buttons, and more.
 
-**Two directions of data flow:**
+**Four verbs:**
 
 - **GET** -- Poll Sprout Track for current state, recent activities, and reference data (dashboards, sensors, monitoring)
 - **POST** -- Push new events into Sprout Track (physical buttons, automations, voice assistants)
+- **PUT** -- Correct an existing record (fix an amount, adjust times)
+- **DELETE** -- Remove a record logged in error
 
 ---
 
@@ -74,7 +76,7 @@ All API requests from public/external networks must use HTTPS. Plain HTTP is all
 | Method | Limit |
 |--------|-------|
 | GET | 60 requests per minute per key |
-| POST | 30 requests per minute per key |
+| POST / PUT / DELETE | 30 requests per minute per key |
 
 Every response includes rate limit headers:
 
@@ -386,7 +388,7 @@ Breastfeeds also support timer actions backed by the same live session as the in
 }
 ```
 
-Ending creates one `FeedLog` per side that accrued time (with `startTime`, `endTime`, `feedDuration` in seconds, linked by a shared `sessionId` so they count as one nursing session) and returns the created log ids and durations.
+Ending creates one `FeedLog` per side that accrued time, linked by a shared `sessionId` so they count as one nursing session, and returns the created log ids and durations. The rows carry real sequential spans: the side used first starts at the session start, and the other side starts where the first ended plus any paused time, so each row's `startTime`/`endTime`/`feedDuration` (seconds) reflects when that side was actually in use. Each row also records `pauseDuration` -- the session's total paused seconds (same value on both rows; `null` on records created before this field existed).
 
 **action:** `start`, `switch`, `pause`, `resume`, `end`, or `log` (default when omitted)
 
@@ -497,7 +499,7 @@ Pump uses the same start/end/log pattern as sleep:
 { "type": "pump", "action": "log", "duration": 20, "leftAmount": 3, "rightAmount": 2, "unitAbbr": "OZ" }
 ```
 
-Optional fields: `leftAmount`, `rightAmount`, `totalAmount`, `unitAbbr`, `pumpAction` (STORED/USED/DISCARDED, default STORED)
+Optional fields: `leftAmount`, `rightAmount`, `totalAmount`, `unitAbbr`, `pumpAction` (`STORED`, `FED`, or `DISCARDED`; case-insensitive, default `STORED`; an unrecognized value returns `400 INVALID_PUMP_ACTION`)
 
 `totalAmount` is a writable field, not just a derived one: send it alone (without `leftAmount`/`rightAmount`) to record a total without attributing it to either side. If `totalAmount` and one or both sides are sent together, the explicit `totalAmount` wins over the sum of the sides. If only `leftAmount`/`rightAmount` are sent, `totalAmount` is derived as their sum. Explicit `0` on `leftAmount`/`rightAmount`/`totalAmount` is stored as `0` (a genuine empty pump), distinct from omitting the field entirely (stored as `null`, unknown).
 
@@ -593,6 +595,19 @@ For `sleep`, sending `endTime` without `duration` recomputes `duration` (whole m
 
 For `medicine`/`supplement`, an explicit `null` for `amount` or `doseAmount` returns `400` rather than silently recording a zero dose (the underlying `doseAmount` column cannot be null).
 
+For `feed`, `duration` (or `feedDuration`) is in minutes, matching POST -- it is stored as `feedDuration` in seconds.
+
+**PUT error codes:**
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `INVALID_ROUTE` | 400 | Missing `babyId`/`activityId` in the path |
+| `INVALID_JSON` | 400 | Body is not a JSON object |
+| `INVALID_ACTIVITY_TYPE` | 400 | `type` missing or not one of the ten supported types |
+| `INVALID_FIELD` | 400 | Body includes a field the declared `type` doesn't accept |
+| `ACTIVITY_NOT_FOUND` | 404 | No matching, non-deleted activity of that type for this baby and family |
+| `INVALID_UPDATE` | 400 | A field failed validation (the message names the field), or no mutable field was sent |
+
 ```bash
 curl -s -X PUT \
   -H "Authorization: Bearer st_live_YOUR_KEY" \
@@ -615,7 +630,7 @@ curl -s -X DELETE \
   http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities/ACTIVITY_ID
 ```
 
-The hooks delete endpoint matches the current classic UI log behavior for these activity types: after confirming the row belongs to the API key's family and route baby, it hard-deletes the activity row. Add `?type=feed` if you already know the activity type and want to avoid type probing.
+The hooks delete endpoint matches the current classic UI log behavior for these activity types: after confirming the row belongs to the API key's family and route baby, it hard-deletes the activity row. Add `?type=feed` if you already know the activity type and want to avoid type probing -- `?type=` accepts the same ten activity type values as PUT. DELETE shares the 30 requests/minute write rate limit.
 
 The response includes `activityType`, `id`, `babyId`, `time` when applicable, and `status: "deleted"`.
 
