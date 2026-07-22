@@ -296,6 +296,16 @@ Create a new activity record.
 | `time` | No | ISO 8601 timestamp, defaults to now |
 | `caretakerName` | No | Matched against existing caretakers by name |
 
+**Unknown fields are rejected.** Each activity type has a fixed set of accepted fields (documented per type below, plus the common fields above). Sending a field the type doesn't recognize returns `400 INVALID_FIELD` listing the offending field name(s), instead of silently accepting and dropping it. This also applies to `caretakerName`: a name that doesn't match any of the family's caretakers now returns `400 CARETAKER_NOT_FOUND` with the list of available caretaker names, rather than creating the activity unattributed.
+
+**Common POST error codes (all activity types):**
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `INVALID_FIELD` | 400 | Body includes a field not accepted by the activity `type`, or a boolean field (`blowout`, `creamApplied`, `soapUsed`, `shampooUsed`) was sent as a non-boolean value |
+| `CARETAKER_NOT_FOUND` | 400 | `caretakerName` was sent but doesn't match any caretaker in the family; the message lists available names |
+| `INVALID_AMOUNT` | 400 | A numeric amount field (`amount`, `leftAmount`, `rightAmount`, `totalAmount`) is non-numeric, or a required amount (medicine/supplement `amount`) is missing/null |
+
 #### Feed
 
 ```json
@@ -320,6 +330,8 @@ Create a new activity record.
 | `other` | Auto-sets BOTTLE + bottleType "other" |
 
 Optional fields: `amount`, `unitAbbr`, `side` (LEFT/RIGHT/BOTH), `food`, `notes`, `bottleType`
+
+`amount` distinguishes an explicit `0` (stored as `0`) from an omitted value (stored as `null`). A non-numeric `amount` returns `400 INVALID_AMOUNT`.
 
 **Log a completed breastfeed with known duration:**
 ```json
@@ -392,7 +404,9 @@ Timer action responses include the live session state: `activeSide`, `isPaused`,
 
 **diaperType:** `WET`, `DIRTY`, or `BOTH`
 
-Optional fields: `condition`, `color`, `blowout` (boolean)
+Optional fields: `condition`, `color`, `blowout` (boolean), `creamApplied` (boolean)
+
+`blowout` and `creamApplied` both default to `false` when omitted. If sent, the value must be a real JSON boolean (`true`/`false`) — a truthy-but-not-boolean value (e.g. the string `"true"`, `1`) returns `400`. `creamApplied` is also included in the `GET /activities` response for diaper entries.
 
 #### Sleep
 
@@ -468,7 +482,9 @@ Pump uses the same start/end/log pattern as sleep:
 { "type": "pump", "action": "log", "duration": 20, "leftAmount": 3, "rightAmount": 2, "unitAbbr": "OZ" }
 ```
 
-Optional fields: `leftAmount`, `rightAmount`, `unitAbbr`, `pumpAction` (STORED/USED/DISCARDED, default STORED)
+Optional fields: `leftAmount`, `rightAmount`, `totalAmount`, `unitAbbr`, `pumpAction` (STORED/USED/DISCARDED, default STORED)
+
+`totalAmount` is a writable field, not just a derived one: send it alone (without `leftAmount`/`rightAmount`) to record a total without attributing it to either side. If `totalAmount` and one or both sides are sent together, the explicit `totalAmount` wins over the sum of the sides. If only `leftAmount`/`rightAmount` are sent, `totalAmount` is derived as their sum. Explicit `0` on `leftAmount`/`rightAmount`/`totalAmount` is stored as `0` (a genuine empty pump), distinct from omitting the field entirely (stored as `null`, unknown).
 
 #### Bath
 
@@ -482,7 +498,7 @@ Optional fields: `leftAmount`, `rightAmount`, `unitAbbr`, `pumpAction` (STORED/U
 }
 ```
 
-All fields optional. `soapUsed` and `shampooUsed` default to `true`. `bathType` is a free-form string (the app's defaults are `Full Bath`, `Sponge Bath`, and `Wipe Down`, but any custom value used in the app is valid).
+All fields optional. `soapUsed` and `shampooUsed` default to `true` when omitted (this is an existing quirk of the underlying schema default, not a new behavior). If either field is sent, it must be a real JSON boolean — a non-boolean value (e.g. the string `"false"`) returns `400`, rather than being silently coerced. `bathType` is a free-form string (the app's defaults are `Full Bath`, `Sponge Bath`, and `Wipe Down`, but any custom value used in the app is valid).
 
 #### Measurement
 
@@ -496,7 +512,7 @@ All fields optional. `soapUsed` and `shampooUsed` default to `true`. `bathType` 
 ```
 
 **measurementType:** `WEIGHT`, `HEIGHT`, `HEAD_CIRCUMFERENCE`, or `TEMPERATURE`
-`value` is required. `unit` is optional.
+`value` is required and must be a finite number (a missing/null `value` returns `400 VALUE_REQUIRED`; a non-numeric `value` returns `400 INVALID_VALUE`). `unit` is optional. `caretakerName`, if provided and resolved, is now attributed to the created measurement and echoed back by `GET /activities` (previously the caretaker link was accepted but silently discarded).
 
 #### Medicine
 
@@ -511,7 +527,9 @@ All fields optional. `soapUsed` and `shampooUsed` default to `true`. `bathType` 
 
 `medicineName` must match an active medicine configured for your family. If not found, the error response lists available medicines. Use the reference endpoint to look them up first.
 
-Optional fields: `amount`, `unitAbbr`, `notes`
+`amount` is required and must be a finite number — a missing, `null`, or non-numeric `amount` returns `400 INVALID_AMOUNT` rather than silently recording a dose of `0` (the underlying `doseAmount` column cannot be null, so previously an omitted amount fabricated a real zero-dose record).
+
+Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned by `GET /activities` (previously accepted but silently dropped).
 
 #### Supplement
 
@@ -526,7 +544,9 @@ Optional fields: `amount`, `unitAbbr`, `notes`
 
 `supplementName` must match an active supplement configured for your family. If not found, the error response lists available supplements. Use the reference endpoint (`?type=supplements`) to look them up first.
 
-Optional fields: `amount`, `unitAbbr`, `notes`
+`amount` is required and must be a finite number — a missing, `null`, or non-numeric `amount` returns `400 INVALID_AMOUNT` rather than silently recording a dose of `0` (the underlying `doseAmount` column cannot be null, so previously an omitted amount fabricated a real zero-dose record).
+
+Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned by `GET /activities` (previously accepted but silently dropped).
 
 #### Play
 
