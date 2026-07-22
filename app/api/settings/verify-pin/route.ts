@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../db';
 import { ApiResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
+import { resolveFamilyScope } from '../../utils/family-scope';
 
 /**
  * POST /api/settings/verify-pin
@@ -16,23 +17,17 @@ async function handler(
   authContext: AuthResult
 ): Promise<NextResponse<ApiResponse<{ valid: boolean }>>> {
   try {
-    const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
+    const { searchParams } = new URL(req.url);
+    const queryFamilyId = searchParams.get('familyId');
 
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && (isSetupAuth || isSysAdmin || isAccountAuth)) {
-      const { searchParams } = new URL(req.url);
-      const queryFamilyId = searchParams.get('familyId');
-      if (queryFamilyId) {
-        targetFamilyId = queryFamilyId;
-      }
-    }
-
-    if (!targetFamilyId) {
+    const scope = resolveFamilyScope(authContext, queryFamilyId);
+    if (!scope.ok) {
       return NextResponse.json<ApiResponse<{ valid: boolean }>>(
-        { success: false, error: 'User is not associated with a family.' },
-        { status: 403 }
+        { success: false, error: scope.error },
+        { status: scope.status }
       );
     }
+    const targetFamilyId = scope.familyId;
 
     const body = await req.json().catch(() => ({}));
     const pin = typeof body?.pin === 'string' ? body.pin : '';
