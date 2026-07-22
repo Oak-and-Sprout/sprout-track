@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import jwt from 'jsonwebtoken';
 import { logApiCall, getClientInfo } from './api-logger';
+import { setupTokenMayTarget } from './setup-token-scope';
 
 // Secret key for JWT signing - always sourced from the environment.
 // Using a getter function to always read the latest value from process.env
@@ -742,9 +743,12 @@ export function withAuthContext<T>(
             where: { token: authResult.setupToken }
           });
           
-          // Validate that the setup token exists and is associated with this family
-          // For active setup processes, the familyId might be set in the token
-          if (setupToken && (setupToken.familyId === familyId || !setupToken.familyId)) {
+          // Validate that the setup token exists and is authorized for this family.
+          // An unbound token (familyId still null) may only name a family on the
+          // pre-provisioning setup route — see setup-token-scope.ts — otherwise any
+          // unused invite could be pointed at an arbitrary family (PR #236 residual).
+          const { pathname } = new URL(req.url);
+          if (setupToken && setupTokenMayTarget(setupToken, familyId, pathname)) {
             // Create modified auth result with the family context
             const modifiedAuthResult = {
               ...authResult,
