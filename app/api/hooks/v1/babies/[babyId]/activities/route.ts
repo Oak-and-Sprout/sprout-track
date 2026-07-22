@@ -5,7 +5,7 @@ import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
 import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession } from '../../../../../utils/activeBreastFeed';
-import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, SLEEP_QUALITIES, normalizeEnumValue } from '../../../field-values';
+import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, PUMP_ACTIONS, SLEEP_QUALITIES, normalizeEnumValue } from '../../../field-values';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -622,6 +622,9 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         const pumpUnitResult = await resolveUnitAbbr(unitAbbr);
         if (pumpUnitResult.error) return hookError('INVALID_UNIT', pumpUnitResult.error, 400, rl.headers);
         unitAbbr = pumpUnitResult.value;
+        const pumpActionResult = normalizeRequiredEnumIfPresent(pumpAction, 'pumpAction', PUMP_ACTIONS);
+        if (pumpActionResult.error) return hookError('INVALID_PUMP_ACTION', pumpActionResult.error, 400, rl.headers);
+        const resolvedPumpAction = pumpActionResult.value ?? 'STORED';
 
         if (action === 'start') {
           result = await prisma.pumpLog.create({
@@ -645,7 +648,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           }
           result = await prisma.pumpLog.update({
             where: { id: activePump.id },
-            data: { endTime: time, duration: dur, leftAmount: endAmounts.left, rightAmount: endAmounts.right, totalAmount: endAmounts.total, unitAbbr: unitAbbr || null, pumpAction: pumpAction || 'STORED' },
+            data: { endTime: time, duration: dur, leftAmount: endAmounts.left, rightAmount: endAmounts.right, totalAmount: endAmounts.total, unitAbbr: unitAbbr || null, pumpAction: resolvedPumpAction },
           });
           notifyActivityCreated(babyId, 'pump', { caretakerId }, { totalAmount: endAmounts.total, unitAbbr }).catch(console.error);
           return hookSuccess({ activityType: 'pump', id: result.id, time: result.startTime.toISOString(), details: { action: 'end', duration: dur, isActive: false } }, { familyId, babyId }, rl.headers);
@@ -658,7 +661,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         }
         const endTime = pumpDuration ? new Date(time.getTime() + pumpDuration * 60000) : time;
         result = await prisma.pumpLog.create({
-          data: { startTime: time, endTime, duration: pumpDuration || null, leftAmount: logAmounts.left, rightAmount: logAmounts.right, totalAmount: logAmounts.total, unitAbbr: unitAbbr || null, pumpAction: pumpAction || 'STORED', babyId, caretakerId, familyId },
+          data: { startTime: time, endTime, duration: pumpDuration || null, leftAmount: logAmounts.left, rightAmount: logAmounts.right, totalAmount: logAmounts.total, unitAbbr: unitAbbr || null, pumpAction: resolvedPumpAction, babyId, caretakerId, familyId },
         });
         notifyActivityCreated(babyId, 'pump', { caretakerId }, { totalAmount: logAmounts.total, unitAbbr }).catch(console.error);
         return hookSuccess({ activityType: 'pump', id: result.id, time: result.startTime.toISOString(), details: { action: 'log', duration: pumpDuration } }, { familyId, babyId }, rl.headers);

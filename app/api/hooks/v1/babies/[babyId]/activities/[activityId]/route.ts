@@ -4,7 +4,7 @@ import prisma from '../../../../../../db';
 import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../../auth';
 import { checkRateLimit } from '../../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../../response';
-import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, SLEEP_QUALITIES, normalizeEnumValue } from '../../../../field-values';
+import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, PUMP_ACTIONS, SLEEP_QUALITIES, normalizeEnumValue } from '../../../../field-values';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -317,9 +317,8 @@ async function buildPumpData(body: JsonObject): Promise<{ data?: Prisma.PumpLogU
   if (notesError) return { error: notesError };
   const unitAbbrError = await assignUnitAbbr(data, body);
   if (unitAbbrError) return { error: unitAbbrError };
-  const pumpAction = requireEnum(body.pumpAction, 'pumpAction', ['STORED', 'FED', 'DISCARDED'] as const);
-  if (pumpAction.error) return { error: pumpAction.error };
-  if (pumpAction.value) data.pumpAction = pumpAction.value;
+  const pumpActionError = assignEnum(data, body, 'pumpAction', PUMP_ACTIONS);
+  if (pumpActionError) return { error: pumpActionError };
   const empty = ensureNonEmptyUpdate(data);
   return empty ? { error: empty } : { data: data as Prisma.PumpLogUpdateInput };
 }

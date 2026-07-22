@@ -5,6 +5,7 @@ import {
   DIAPER_COLORS,
   DIAPER_CONDITIONS,
   FEED_SIDES,
+  PUMP_ACTIONS,
   SLEEP_QUALITIES,
   normalizeEnumValue,
 } from '../app/api/hooks/v1/field-values';
@@ -27,6 +28,10 @@ describe('canonical field-value sets', () => {
     expect(BOTTLE_TYPES).toEqual(['Formula', 'Breast Milk', 'Formula/Breast', 'Milk', 'Other']);
     expect(FEED_SIDES).toEqual(['LEFT', 'RIGHT']);
   });
+
+  it('matches the pump action values verbatim', () => {
+    expect(PUMP_ACTIONS).toEqual(['STORED', 'FED', 'DISCARDED']);
+  });
 });
 
 describe('normalizeEnumValue', () => {
@@ -42,6 +47,8 @@ describe('normalizeEnumValue', () => {
     expect(normalizeEnumValue('sponge bath', BATH_TYPES)).toBe('Sponge Bath');
     expect(normalizeEnumValue('FORMULA/BREAST', BOTTLE_TYPES)).toBe('Formula/Breast');
     expect(normalizeEnumValue('left', FEED_SIDES)).toBe('LEFT');
+    expect(normalizeEnumValue('stored', PUMP_ACTIONS)).toBe('STORED');
+    expect(normalizeEnumValue('fed', PUMP_ACTIONS)).toBe('FED');
   });
 
   it('returns null when no case-insensitive match exists', () => {

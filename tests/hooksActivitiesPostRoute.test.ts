@@ -663,5 +663,46 @@ describe('hooks activities POST route', () => {
       expect(payload.error.code).toBe('INVALID_UNIT');
       expect(mocks.prisma.pumpLog.create).not.toHaveBeenCalled();
     });
+
+    it('normalizes a lowercase pumpAction to its canonical casing on a logged pump', async () => {
+      mocks.prisma.pumpLog.create.mockResolvedValue({ id: 'pump-7', startTime: new Date('2026-07-20T10:00:00Z') });
+
+      await POST(postRequest({ type: 'pump', action: 'log', duration: 1, pumpAction: 'stored' }) as any, routeContext);
+
+      expect(mocks.prisma.pumpLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ pumpAction: 'STORED' }),
+      }));
+    });
+
+    it('normalizes a lowercase pumpAction to its canonical casing when ending a pump session', async () => {
+      mocks.prisma.pumpLog.findFirst.mockResolvedValue({ id: 'pump-active', babyId: 'baby-1', startTime: new Date('2026-07-20T09:45:00Z'), endTime: null });
+      mocks.prisma.pumpLog.update.mockResolvedValue({ id: 'pump-active', startTime: new Date('2026-07-20T09:45:00Z') });
+
+      await POST(postRequest({ type: 'pump', action: 'end', pumpAction: 'fed' }) as any, routeContext);
+
+      expect(mocks.prisma.pumpLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ pumpAction: 'FED' }),
+      }));
+    });
+
+    it('rejects an unknown pumpAction, listing valid values', async () => {
+      const response = await POST(postRequest({ type: 'pump', action: 'log', duration: 1, pumpAction: 'ZZZ_BOGUS' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_PUMP_ACTION');
+      expect(payload.error.message).toContain('STORED');
+      expect(mocks.prisma.pumpLog.create).not.toHaveBeenCalled();
+    });
+
+    it('defaults pumpAction to STORED when omitted', async () => {
+      mocks.prisma.pumpLog.create.mockResolvedValue({ id: 'pump-8', startTime: new Date('2026-07-20T10:00:00Z') });
+
+      await POST(postRequest({ type: 'pump', action: 'log', duration: 1 }) as any, routeContext);
+
+      expect(mocks.prisma.pumpLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ pumpAction: 'STORED' }),
+      }));
+    });
   });
 });

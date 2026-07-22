@@ -23,6 +23,9 @@ export const BOTTLE_TYPES = ['Formula', 'Breast Milk', 'Formula/Breast', 'Milk',
 
 export const FEED_SIDES = ['LEFT', 'RIGHT'] as const;
 
+/** src/components/forms/PumpForm/index.tsx */
+export const PUMP_ACTIONS = ['STORED', 'FED', 'DISCARDED'] as const;
+
 /**
  * Case-insensitively matches `value` against `allowed`, returning the
  * canonical (allowed-list) casing on a match, or `null` if nothing matches.

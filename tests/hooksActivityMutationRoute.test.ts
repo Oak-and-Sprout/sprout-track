@@ -306,6 +306,29 @@ describe('hooks activity mutation route', () => {
       expect(payload.error.message).toContain('OZ');
       expect(mocks.prisma.medicineLog.update).not.toHaveBeenCalled();
     });
+
+    it('normalizes a lowercase pumpAction to canonical casing', async () => {
+      mocks.prisma.pumpLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.pumpLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z'), endTime: null, duration: 15, totalAmount: 3, unitAbbr: 'OZ', pumpAction: 'FED' });
+
+      await PUT(request('PUT', { type: 'pump', pumpAction: 'fed' }) as any, routeContext);
+
+      expect(mocks.prisma.pumpLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ pumpAction: 'FED' }),
+      }));
+    });
+
+    it('rejects an unknown pumpAction, listing valid values', async () => {
+      mocks.prisma.pumpLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'pump', pumpAction: 'ZZZ_BOGUS' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_UPDATE');
+      expect(payload.error.message).toContain('STORED');
+      expect(mocks.prisma.pumpLog.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('sleep duration recompute on PUT', () => {
