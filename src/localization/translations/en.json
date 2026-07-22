@@ -2567,5 +2567,12 @@
   "Your payment was processed, but we encountered an issue activating your account. Please contact support or try logging out and back in.": "Your payment was processed, but we encountered an issue activating your account. Please contact support or try logging out and back in.",
   "Your Personal PIN (6-10 digits)": "Your Personal PIN (6-10 digits)",
   "Your Personal Profile": "Your Personal Profile",
-  "Zero “did anyone change him?” texts sent today.": "Zero “did anyone change him?” texts sent today."
+  "Zero “did anyone change him?” texts sent today.": "Zero “did anyone change him?” texts sent today.",
+  "week": "week",
+  "month": "month",
+  "year": "year",
+  "day old": "day old",
+  "days old": "days old",
+  "month old": "month old",
+  "old": "old"
 }
