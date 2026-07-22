@@ -412,7 +412,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           'milk': { feedType: 'BOTTLE', bottleType: 'milk' },
           'other': { feedType: 'BOTTLE', bottleType: 'other' },
         };
-        const alias = feedType ? FEED_ALIASES[feedType] : undefined;
+        const alias = feedType ? (FEED_ALIASES[feedType] ?? FEED_ALIASES[String(feedType).toLowerCase()]) : undefined;
         if (!alias) {
           return hookError('INVALID_FEED_TYPE', 'feedType must be BREAST, BOTTLE, SOLIDS, formula, breast milk, milk, or other', 400, rl.headers);
         }

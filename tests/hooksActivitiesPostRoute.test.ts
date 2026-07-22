@@ -572,6 +572,19 @@ describe('hooks activities POST route', () => {
       }));
     });
 
+    it('accepts a mixed-case feedType alias identically to its lowercase form', async () => {
+      mocks.prisma.feedLog.create.mockResolvedValue({ id: 'feed-mixed-case', time: new Date('2026-07-20T10:00:00Z'), amount: null });
+
+      const response = await POST(postRequest({ type: 'feed', feedType: 'Breast', side: 'left' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.feedLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ type: 'BREAST', side: 'LEFT' }),
+      }));
+      expect(payload.data.details.type).toBe('BREAST');
+    });
+
     it('normalizes a lowercase feed bottleType to its canonical casing', async () => {
       mocks.prisma.feedLog.create.mockResolvedValue({ id: 'feed-3', time: new Date('2026-07-20T10:00:00Z'), amount: 4 });
 

@@ -625,6 +625,15 @@ silently dropping it, not a regression). Revisit if pump/measurement GET
 responses ever grow a `notes` field — at that point POST should accept it
 too, symmetrically with PUT.
 
+Same class of POST/PUT asymmetry shows up again with feed's
+`breastMilkAmount`/`startTime`/`endTime`: the hooks PUT route
+(`activities/[activityId]/route.ts`) accepts all three for feed updates, but
+POST rejects them as unsupported fields, and `GET /activities` never returns
+`breastMilkAmount` at all regardless of how the row was created. Revisit
+together with the pump/measurement `notes` case above — same underlying
+question of which fields should be POST-writable given what GET actually
+exposes.
+
 ### (h) Remaining item 9 documentation gaps
 
 `webhook-api.md` was updated alongside every fix commit in this batch, but
