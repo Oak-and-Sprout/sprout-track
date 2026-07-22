@@ -16,8 +16,7 @@
 - Pump totals can be logged without splitting between sides, diaper cream is now supported, medicine/supplement notes are saved, and a misspelled caretaker name now returns a clear error instead of logging the activity as nobody
 
 #### Security
-- Fixed a vulnerability where an authenticated user could target another family's data through the setup-flow APIs — all family context is now verified server-side
-- Tightened setup-invite tokens so an unused invite can no longer be pointed at an existing family
+- Fixed a security vulnerability and strengthened family-level access controls across the app — updating is recommended
 
 #### Bugfixes & Localization (Thank you **tionkje**!)
 - Mixed Formula/Breast bottles now display translated everywhere (the stored value was aligned with its translation key, with an automatic data migration)
