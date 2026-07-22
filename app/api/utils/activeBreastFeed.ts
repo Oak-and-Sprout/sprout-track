@@ -191,7 +191,10 @@ export async function endBreastfeedSession(session: ActiveBreastFeed, opts: EndS
     const log = await prisma.feedLog.create({
       data: {
         babyId: session.babyId,
-        time: now,
+        // Each side's `time` is its own start: the linked-session list shows
+        // `time`, and the edit form writes startTime back into `time` on
+        // update, so a session-end stamp here would disagree with both (#240)
+        time: block.startTime,
         type: 'BREAST',
         side: block.side,
         startTime: block.startTime,

@@ -9,6 +9,7 @@ import { useToast } from '@/src/components/ui/toast';
 import {
   groupBreastFeedSessions,
   newFeedSessionId,
+  breastFeedDisplayTime,
   BreastFeedSession,
 } from '@/src/utils/feedSessionUtils';
 
@@ -145,7 +146,7 @@ export default function LinkedFeedsSection({
     const side = feed.side === 'LEFT' ? t('Left Side') : feed.side === 'RIGHT' ? t('Right Side') : t('Breast');
     const seconds = feed.feedDuration || (feed.amount ? feed.amount * 60 : 0);
     const minutes = Math.round(seconds / 60);
-    return `${side} • ${minutes} ${t('min')} • ${formatDateTime(feed.time)}`;
+    return `${side} • ${minutes} ${t('min')} • ${formatDateTime(breastFeedDisplayTime(feed))}`;
   };
 
   const renderRow = (feed: FeedLogResponse, linked: boolean) => (

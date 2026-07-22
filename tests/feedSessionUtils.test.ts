@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   groupBreastFeedSessions,
   countBreastFeedSessions,
+  breastFeedDisplayTime,
 } from '@/src/utils/feedSessionUtils';
 
 // Issue #198: a nursing session using both sides is stored as two FeedLog rows
@@ -180,5 +181,37 @@ describe('explicit sessionId linking', () => {
     const sessions = groupBreastFeedSessions(rows);
     expect(sessions[0].sessionId).toBe('早');
     expect(sessions[1].sessionId).toBeNull();
+  });
+});
+
+// Issue #240: rows created by the timer before the fix stamp `time` with the
+// session end; displays must prefer startTime so those legacy rows still show
+// the side's actual start.
+describe('breastFeedDisplayTime', () => {
+  it('prefers startTime when present', () => {
+    expect(
+      breastFeedDisplayTime({
+        time: '2026-07-22T13:02:00.000Z',
+        startTime: '2026-07-22T13:00:00.000Z',
+      })
+    ).toBe('2026-07-22T13:00:00.000Z');
+  });
+
+  it('falls back to time when startTime is missing or null', () => {
+    expect(breastFeedDisplayTime({ time: '2026-07-22T13:02:00.000Z' })).toBe(
+      '2026-07-22T13:02:00.000Z'
+    );
+    expect(
+      breastFeedDisplayTime({ time: '2026-07-22T13:02:00.000Z', startTime: null })
+    ).toBe('2026-07-22T13:02:00.000Z');
+  });
+
+  it('serializes Date values to ISO strings', () => {
+    expect(
+      breastFeedDisplayTime({
+        time: '2026-07-22T13:02:00.000Z',
+        startTime: new Date('2026-07-22T13:00:00.000Z'),
+      })
+    ).toBe('2026-07-22T13:00:00.000Z');
   });
 });

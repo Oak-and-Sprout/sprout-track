@@ -152,6 +152,19 @@ export function newFeedSessionId(): string {
 }
 
 /**
+ * Timestamp to display for a breast feed row: the side's start when known.
+ * Rows created by the timer before v1.6.3 stamp `time` with the session end,
+ * so `time` alone is only trustworthy as a fallback (issue #240).
+ */
+export function breastFeedDisplayTime(row: {
+  time: string | Date;
+  startTime?: string | Date | null;
+}): string {
+  const value = row.startTime ?? row.time;
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+/**
  * Number of nursing sessions represented by the given feed logs
  * (linked or paired rows count once; non-BREAST rows are ignored).
  */
