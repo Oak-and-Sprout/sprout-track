@@ -1,6 +1,6 @@
 # Sprout Track -- Webhook API Documentation
 
-**Version:** 1.0
+**Version:** 1.1
 **Base Path:** `/api/hooks/v1`
 
 ---
