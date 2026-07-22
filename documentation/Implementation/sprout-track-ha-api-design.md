@@ -559,23 +559,25 @@ X-RateLimit-Reset: 1709985600
 
 ---
 
-## What's Deferred (v2 Considerations)
+## Mutation Endpoints
 
 ### PUT — Editing Existing Records
-
-You mentioned this and I think you're right to defer it. The main use case would be ending an active sleep session or updating a feed amount, but the `action: "end"` pattern on POST handles the sleep case already. A true PUT would need record IDs, partial update semantics, and conflict resolution — more complexity than v1 warrants.
-
-If you do add it later, it would look like:
 
 ```
 PUT /api/hooks/v1/babies/:babyId/activities/:activityId
 ```
 
-With a body containing only the fields to update. The `activityType` would be inferred from the record.
+The body must include `type` plus the fields to update. The route accepts the same ten hooks activity types as POST and rejects fields that do not belong to the declared type. It does not allow family, baby, caretaker, or relation reassignment except resolving medicine/supplement names to an existing family-owned `Medicine` row.
 
 ### DELETE — Removing Records
 
-Similar reasoning. Logging errors happen, but they can be fixed in the Sprout Track UI. Exposing delete via API adds risk without much HA-specific value.
+```
+DELETE /api/hooks/v1/babies/:babyId/activities/:activityId
+```
+
+The route verifies API-key write scope, baby access, family ownership, and `deletedAt: null` before deleting. Delete semantics intentionally match the classic UI routes for these ten activity logs: the row is hard-deleted after access checks. A `type` query parameter is optional; when omitted, the route probes the supported activity tables by id.
+
+## What's Deferred (v2 Considerations)
 
 ### Outgoing Webhooks (Sprout Track → External Services)
 
@@ -627,3 +629,5 @@ Consider a `/api/docs` or `/integrations/home-assistant` page that:
 | GET | `/api/hooks/v1/babies/:babyId/activities` | read | Recent activity log (filterable) |
 | GET | `/api/hooks/v1/babies/:babyId/measurements/latest` | read | Latest measurements by type |
 | POST | `/api/hooks/v1/babies/:babyId/activities` | write | Log a new activity |
+| PUT | `/api/hooks/v1/babies/:babyId/activities/:activityId` | write | Edit an existing activity |
+| DELETE | `/api/hooks/v1/babies/:babyId/activities/:activityId` | write | Delete an existing activity |

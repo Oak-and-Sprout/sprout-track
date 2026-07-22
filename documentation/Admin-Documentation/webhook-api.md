@@ -544,6 +544,40 @@ Optional fields: `duration` (minutes), `notes`, `activities` (sub-category strin
 
 ---
 
+### PUT /babies/:babyId/activities/:activityId
+
+Edit an existing activity record through API-key auth.
+
+`type` is required in the JSON body so the hooks route can validate fields against the correct activity model. Only fields valid for that activity type are accepted; `familyId`, `babyId`, and `caretakerId` cannot be reassigned through this endpoint.
+
+```bash
+curl -s -X PUT \
+  -H "Authorization: Bearer st_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"feed","amount":3,"unitAbbr":"OZ","notes":"Corrected amount"}' \
+  http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities/ACTIVITY_ID
+```
+
+**Supported types:** `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine`, and `supplement`.
+
+The response includes `activityType`, `id`, `babyId`, `time` when applicable, `status: "updated"`, and type-specific confirmation details.
+
+### DELETE /babies/:babyId/activities/:activityId
+
+Delete an existing activity record through API-key auth.
+
+```bash
+curl -s -X DELETE \
+  -H "Authorization: Bearer st_live_YOUR_KEY" \
+  http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities/ACTIVITY_ID
+```
+
+The hooks delete endpoint matches the current classic UI log behavior for these activity types: after confirming the row belongs to the API key's family and route baby, it hard-deletes the activity row. Add `?type=feed` if you already know the activity type and want to avoid type probing.
+
+The response includes `activityType`, `id`, `babyId`, `time` when applicable, and `status: "deleted"`.
+
+---
+
 ### GET /babies/:babyId/measurements/latest
 
 Returns the most recent measurement of each type.
