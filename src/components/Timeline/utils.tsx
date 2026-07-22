@@ -27,15 +27,16 @@ import {
   Apple
 } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
-import { 
-  ActivityType, 
-  ActivityDetails, 
-  ActivityDescription, 
-  ActivityStyle 
+import {
+  ActivityType,
+  ActivityDetails,
+  ActivityDescription,
+  ActivityStyle
 } from './types';
 import { getSymbol } from '@/src/hooks/useUnit';
 import { FOOD_ENJOYMENT_LABELS, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 import { lbToLbOz, formatWeightDisplay } from '@/src/utils/weightUnits';
+import { formatPauseDuration } from '@/src/utils/pauseDisplay';
 
 export { lbToLbOz, formatWeightDisplay };
 
@@ -373,14 +374,9 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
           details.push({ label: t('Duration'), value: `${activity.amount} ${t('minutes')}` });
         }
 
-        if ((activity as any).pauseDuration && (activity as any).pauseDuration > 0) {
-          const p = (activity as any).pauseDuration as number;
-          const pm = Math.floor(p / 60);
-          const ps = p % 60;
-          details.push({
-            label: t('Pause'),
-            value: ps > 0 ? `${pm} ${t('min')} ${ps} ${t('sec')}` : `${pm} ${t('minutes')}`
-          });
+        const pauseText = formatPauseDuration((activity as any).pauseDuration ?? 0, t);
+        if (pauseText) {
+          details.push({ label: t('Pause'), value: pauseText });
         }
       }
 
@@ -831,13 +827,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
           duration = `${activity.amount} ${t('min')}`;
         }
 
-        let pause = '';
-        if ((activity as any).pauseDuration && (activity as any).pauseDuration > 0) {
-          const p = (activity as any).pauseDuration as number;
-          const pm = Math.floor(p / 60);
-          const ps = p % 60;
-          pause = ps > 0 ? `${t('Pause')}: ${pm}${t('min')} ${ps}${t('sec')}` : `${t('Pause')}: ${pm} ${t('min')}`;
-        }
+        const pauseText = formatPauseDuration((activity as any).pauseDuration ?? 0, t);
+        const pause = pauseText ? `${t('Pause')}: ${pauseText}` : '';
         
         details = [side, duration, pause].filter(Boolean).join(' • ');
       } else if (activity.type === 'BOTTLE') {
