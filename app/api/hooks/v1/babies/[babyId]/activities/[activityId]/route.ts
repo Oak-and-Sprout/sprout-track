@@ -4,6 +4,7 @@ import prisma from '../../../../../../db';
 import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../../auth';
 import { checkRateLimit } from '../../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../../response';
+import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, SLEEP_QUALITIES, normalizeEnumValue } from '../../../../field-values';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -138,6 +139,51 @@ function assignBoolean(target: JsonObject, body: JsonObject, sourceField: string
   return null;
 }
 
+// Case-insensitively normalizes a known enum-like field to its canonical
+// casing; an unrecognized value is an error naming the valid set.
+function assignEnum(target: JsonObject, body: JsonObject, sourceField: string, allowed: readonly string[], targetField = sourceField): string | null {
+  const parsed = parseString(body[sourceField], sourceField);
+  if (parsed.error) return parsed.error;
+  if (parsed.value === undefined) return null;
+  if (parsed.value === null) {
+    target[targetField] = null;
+    return null;
+  }
+  const normalized = normalizeEnumValue(parsed.value, allowed);
+  if (!normalized) return `${sourceField} must be one of: ${allowed.join(', ')}`;
+  target[targetField] = normalized;
+  return null;
+}
+
+// bathType normalizes known values case-insensitively but passes unknown
+// values through verbatim — the app allows free-text custom bath types.
+function assignBathType(target: JsonObject, body: JsonObject): string | null {
+  const parsed = parseString(body.bathType, 'bathType');
+  if (parsed.error) return parsed.error;
+  if (parsed.value === undefined) return null;
+  target.bathType = parsed.value === null ? null : normalizeEnumValue(parsed.value, BATH_TYPES) ?? parsed.value;
+  return null;
+}
+
+// unitAbbr is matched case-insensitively against the Unit table and stored
+// using that table's canonical casing; an unrecognized value is an error
+// listing the units actually configured.
+async function assignUnitAbbr(target: JsonObject, body: JsonObject, sourceField = 'unitAbbr', targetField = sourceField): Promise<string | null> {
+  const parsed = parseString(body[sourceField], sourceField);
+  if (parsed.error) return parsed.error;
+  if (parsed.value === undefined) return null;
+  if (parsed.value === null) {
+    target[targetField] = null;
+    return null;
+  }
+  const units = await prisma.unit.findMany({ select: { unitAbbr: true } });
+  const abbrs = units.map((u) => u.unitAbbr);
+  const normalized = normalizeEnumValue(parsed.value, abbrs);
+  if (!normalized) return `${sourceField} must be one of: ${abbrs.join(', ') || 'no units configured'}`;
+  target[targetField] = normalized;
+  return null;
+}
+
 function timeFrom(body: JsonObject, explicitField: string): { value?: Date; error?: string } {
   if (body[explicitField] !== undefined) return parseDate(body[explicitField], explicitField);
   return parseDate(body.time, 'time');
@@ -169,7 +215,7 @@ function summary(
   };
 }
 
-function buildFeedData(body: JsonObject): { data?: Prisma.FeedLogUpdateInput; error?: string } {
+async function buildFeedData(body: JsonObject): Promise<{ data?: Prisma.FeedLogUpdateInput; error?: string }> {
   const data: JsonObject = {};
   const feedType = requireEnum(body.feedType, 'feedType', ['BREAST', 'BOTTLE', 'SOLIDS'] as const);
   if (feedType.error) return { error: feedType.error };
@@ -185,10 +231,16 @@ function buildFeedData(body: JsonObject): { data?: Prisma.FeedLogUpdateInput; er
     const error = assignNumber(data, body, field);
     if (error) return { error };
   }
-  for (const field of ['unitAbbr', 'side', 'food', 'notes', 'bottleType'] as const) {
+  for (const field of ['food', 'notes'] as const) {
     const error = assignString(data, body, field);
     if (error) return { error };
   }
+  const sideError = assignEnum(data, body, 'side', FEED_SIDES);
+  if (sideError) return { error: sideError };
+  const bottleTypeError = assignEnum(data, body, 'bottleType', BOTTLE_TYPES);
+  if (bottleTypeError) return { error: bottleTypeError };
+  const unitAbbrError = await assignUnitAbbr(data, body);
+  if (unitAbbrError) return { error: unitAbbrError };
   const empty = ensureNonEmptyUpdate(data);
   return empty ? { error: empty } : { data: data as Prisma.FeedLogUpdateInput };
 }
@@ -200,10 +252,10 @@ function buildDiaperData(body: JsonObject): { data?: Prisma.DiaperLogUpdateInput
   if (diaperType.value) data.type = diaperType.value;
   const timeError = assignDate(data, body, 'time', 'time');
   if (timeError) return { error: timeError };
-  for (const field of ['condition', 'color'] as const) {
-    const error = assignString(data, body, field);
-    if (error) return { error };
-  }
+  const conditionError = assignEnum(data, body, 'condition', DIAPER_CONDITIONS);
+  if (conditionError) return { error: conditionError };
+  const colorError = assignEnum(data, body, 'color', DIAPER_COLORS);
+  if (colorError) return { error: colorError };
   for (const field of ['blowout', 'creamApplied'] as const) {
     const error = assignBoolean(data, body, field);
     if (error) return { error };
@@ -224,10 +276,10 @@ function buildSleepData(body: JsonObject): { data?: Prisma.SleepLogUpdateInput; 
   if (endError) return { error: endError };
   const durationError = assignNumber(data, body, 'duration');
   if (durationError) return { error: durationError };
-  for (const field of ['location', 'quality'] as const) {
-    const error = assignString(data, body, field);
-    if (error) return { error };
-  }
+  const locationError = assignString(data, body, 'location');
+  if (locationError) return { error: locationError };
+  const qualityError = assignEnum(data, body, 'quality', SLEEP_QUALITIES);
+  if (qualityError) return { error: qualityError };
   const empty = ensureNonEmptyUpdate(data);
   return empty ? { error: empty } : { data: data as Prisma.SleepLogUpdateInput };
 }
@@ -244,7 +296,7 @@ function buildNoteData(body: JsonObject): { data?: Prisma.NoteUpdateInput; error
   return empty ? { error: empty } : { data: data as Prisma.NoteUpdateInput };
 }
 
-function buildPumpData(body: JsonObject): { data?: Prisma.PumpLogUpdateInput; error?: string } {
+async function buildPumpData(body: JsonObject): Promise<{ data?: Prisma.PumpLogUpdateInput; error?: string }> {
   const data: JsonObject = {};
   const start = timeFrom(body, 'startTime');
   if (start.error) return { error: start.error };
@@ -255,10 +307,10 @@ function buildPumpData(body: JsonObject): { data?: Prisma.PumpLogUpdateInput; er
     const error = assignNumber(data, body, field);
     if (error) return { error };
   }
-  for (const field of ['unitAbbr', 'notes'] as const) {
-    const error = assignString(data, body, field);
-    if (error) return { error };
-  }
+  const notesError = assignString(data, body, 'notes');
+  if (notesError) return { error: notesError };
+  const unitAbbrError = await assignUnitAbbr(data, body);
+  if (unitAbbrError) return { error: unitAbbrError };
   const pumpAction = requireEnum(body.pumpAction, 'pumpAction', ['STORED', 'FED', 'DISCARDED'] as const);
   if (pumpAction.error) return { error: pumpAction.error };
   if (pumpAction.value) data.pumpAction = pumpAction.value;
@@ -294,10 +346,10 @@ function buildBathData(body: JsonObject): { data?: Prisma.BathLogUpdateInput; er
   const data: JsonObject = {};
   const timeError = assignDate(data, body, 'time', 'time');
   if (timeError) return { error: timeError };
-  for (const field of ['bathType', 'notes'] as const) {
-    const error = assignString(data, body, field);
-    if (error) return { error };
-  }
+  const bathTypeError = assignBathType(data, body);
+  if (bathTypeError) return { error: bathTypeError };
+  const notesError = assignString(data, body, 'notes');
+  if (notesError) return { error: notesError };
   for (const field of ['soapUsed', 'shampooUsed'] as const) {
     const error = assignBoolean(data, body, field);
     if (error) return { error };
@@ -335,10 +387,10 @@ async function buildMedicineData(
   const amount = parseNumber(body.amount ?? body.doseAmount, body.amount !== undefined ? 'amount' : 'doseAmount');
   if (amount.error) return { error: amount.error };
   if (amount.value !== undefined) data.doseAmount = amount.value ?? 0;
-  for (const field of ['unitAbbr', 'notes'] as const) {
-    const error = assignString(data, body, field);
-    if (error) return { error };
-  }
+  const notesError = assignString(data, body, 'notes');
+  if (notesError) return { error: notesError };
+  const unitAbbrError = await assignUnitAbbr(data, body);
+  if (unitAbbrError) return { error: unitAbbrError };
 
   const nameField = isSupplement ? 'supplementName' : 'medicineName';
   const providedName = body[nameField] ?? (isSupplement ? body.medicineName : undefined);
@@ -421,7 +473,7 @@ async function updateActivity(type: ActivityType, activityId: string, babyId: st
 
   switch (type) {
     case 'feed': {
-      const built = buildFeedData(body);
+      const built = await buildFeedData(body);
       if (built.error) return { error: built.error, status: 400 };
       const row = await prisma.feedLog.update({ where: { id: activityId }, data: built.data! });
       return { result: summary(type, row.id, row.babyId, 'updated', row.time, { type: row.type, amount: row.amount, unitAbbr: row.unitAbbr, notes: row.notes }) };
@@ -445,7 +497,7 @@ async function updateActivity(type: ActivityType, activityId: string, babyId: st
       return { result: summary(type, row.id, row.babyId, 'updated', row.time, { content: row.content, category: row.category }) };
     }
     case 'pump': {
-      const built = buildPumpData(body);
+      const built = await buildPumpData(body);
       if (built.error) return { error: built.error, status: 400 };
       const row = await prisma.pumpLog.update({ where: { id: activityId }, data: built.data! });
       return { result: summary(type, row.id, row.babyId, 'updated', row.startTime, { startTime: row.startTime.toISOString(), endTime: toIso(row.endTime), duration: row.duration, totalAmount: row.totalAmount, unitAbbr: row.unitAbbr, pumpAction: row.pumpAction }) };

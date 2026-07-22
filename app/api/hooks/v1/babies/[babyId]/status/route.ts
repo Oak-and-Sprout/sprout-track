@@ -147,7 +147,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
       minutesAgo: minutesAgo(lastFeed.time),
       type: lastFeed.type,
       amount: lastFeed.amount,
-      unitAbbr: lastFeed.unit?.unitAbbr || null,
+      unitAbbr: lastFeed.unit?.unitAbbr || lastFeed.unitAbbr || null,
       bottleType: lastFeed.bottleType,
       caretakerName: lastFeed.caretaker?.name || null,
     } : null,

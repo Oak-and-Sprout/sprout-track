@@ -26,6 +26,9 @@ const mocks = vi.hoisted(() => {
         findFirst: vi.fn(),
         findMany: vi.fn(),
       },
+      unit: {
+        findMany: vi.fn(),
+      },
       activeBreastFeed: {
         findUnique: vi.fn(),
       },
@@ -116,6 +119,9 @@ beforeEach(() => {
   mocks.prisma.caretaker.findMany.mockResolvedValue([]);
   mocks.prisma.medicine.findFirst.mockResolvedValue({ id: 'medicine-1', name: 'Vitamin D', unitAbbr: 'ML' });
   mocks.prisma.medicine.findMany.mockResolvedValue([{ name: 'Vitamin D' }]);
+  mocks.prisma.unit.findMany.mockResolvedValue([
+    { unitAbbr: 'OZ' }, { unitAbbr: 'ML' }, { unitAbbr: 'LB' }, { unitAbbr: 'KG' }, { unitAbbr: 'G' }, { unitAbbr: 'TBSP' },
+  ]);
 });
 
 describe('hooks activities POST route', () => {
@@ -129,7 +135,7 @@ describe('hooks activities POST route', () => {
       expect(response.status).toBe(200);
       expect(payload.success).toBe(true);
       expect(mocks.prisma.feedLog.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ type: 'BOTTLE', bottleType: 'formula', amount: 4, unitAbbr: 'OZ' }),
+        data: expect.objectContaining({ type: 'BOTTLE', bottleType: 'Formula', amount: 4, unitAbbr: 'OZ' }),
       }));
     });
 
@@ -481,6 +487,168 @@ describe('hooks activities POST route', () => {
 
       expect(response.status).toBe(200);
       expect(payload.data.activities[0].caretakerName).toBe('Mom');
+    });
+  });
+
+  describe('8. enum-like field validation and normalization', () => {
+    it('normalizes a lowercase diaper condition to its canonical casing', async () => {
+      mocks.prisma.diaperLog.create.mockResolvedValue({ id: 'diaper-4', time: new Date('2026-07-20T10:00:00Z'), blowout: false, creamApplied: false });
+
+      await POST(postRequest({ type: 'diaper', diaperType: 'WET', condition: 'loose' }) as any, routeContext);
+
+      expect(mocks.prisma.diaperLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ condition: 'LOOSE' }),
+      }));
+    });
+
+    it('normalizes a lowercase diaper color to its canonical casing', async () => {
+      mocks.prisma.diaperLog.create.mockResolvedValue({ id: 'diaper-5', time: new Date('2026-07-20T10:00:00Z'), blowout: false, creamApplied: false });
+
+      await POST(postRequest({ type: 'diaper', diaperType: 'WET', color: 'yellow' }) as any, routeContext);
+
+      expect(mocks.prisma.diaperLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ color: 'YELLOW' }),
+      }));
+    });
+
+    it('rejects an unknown diaper condition, listing valid values', async () => {
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'WET', condition: 'ZZZ_BOGUS' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_CONDITION');
+      expect(payload.error.message).toContain('NORMAL');
+      expect(mocks.prisma.diaperLog.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects an unknown diaper color, listing valid values', async () => {
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'WET', color: 'purple' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_COLOR');
+      expect(payload.error.message).toContain('YELLOW');
+      expect(mocks.prisma.diaperLog.create).not.toHaveBeenCalled();
+    });
+
+    it('normalizes a lowercase sleep quality to its canonical casing', async () => {
+      mocks.prisma.sleepLog.create.mockResolvedValue({ id: 'sleep-2', startTime: new Date('2026-07-20T10:00:00Z') });
+
+      await POST(postRequest({ type: 'sleep', sleepType: 'NAP', action: 'start', quality: 'good' }) as any, routeContext);
+
+      expect(mocks.prisma.sleepLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ quality: 'GOOD' }),
+      }));
+    });
+
+    it('rejects an unknown sleep quality, listing valid values', async () => {
+      const response = await POST(postRequest({ type: 'sleep', sleepType: 'NAP', action: 'start', quality: 'meh' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_QUALITY');
+      expect(payload.error.message).toContain('EXCELLENT');
+      expect(mocks.prisma.sleepLog.create).not.toHaveBeenCalled();
+    });
+
+    it('normalizes a known bathType to its canonical display casing', async () => {
+      mocks.prisma.bathLog.create.mockResolvedValue({ id: 'bath-3', time: new Date('2026-07-20T10:00:00Z'), soapUsed: true, shampooUsed: true });
+
+      await POST(postRequest({ type: 'bath', bathType: 'sponge bath' }) as any, routeContext);
+
+      expect(mocks.prisma.bathLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ bathType: 'Sponge Bath' }),
+      }));
+    });
+
+    it('passes an unrecognized custom bathType through verbatim (no rejection)', async () => {
+      mocks.prisma.bathLog.create.mockResolvedValue({ id: 'bath-4', time: new Date('2026-07-20T10:00:00Z'), soapUsed: true, shampooUsed: true });
+
+      const response = await POST(postRequest({ type: 'bath', bathType: 'Baby Spa Day' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.bathLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ bathType: 'Baby Spa Day' }),
+      }));
+    });
+
+    it('normalizes a lowercase feed bottleType to its canonical casing', async () => {
+      mocks.prisma.feedLog.create.mockResolvedValue({ id: 'feed-3', time: new Date('2026-07-20T10:00:00Z'), amount: 4 });
+
+      await POST(postRequest({ type: 'feed', feedType: 'BOTTLE', bottleType: 'breast milk', amount: 4 }) as any, routeContext);
+
+      expect(mocks.prisma.feedLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ bottleType: 'Breast Milk' }),
+      }));
+    });
+
+    it('rejects an unknown feed bottleType, listing valid values', async () => {
+      const response = await POST(postRequest({ type: 'feed', feedType: 'BOTTLE', bottleType: 'Juice', amount: 4 }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_BOTTLE_TYPE');
+      expect(payload.error.message).toContain('Formula');
+      expect(mocks.prisma.feedLog.create).not.toHaveBeenCalled();
+    });
+
+    it('normalizes a lowercase feed side to its canonical casing on a logged (non-timer) feed', async () => {
+      mocks.prisma.feedLog.create.mockResolvedValue({ id: 'feed-4', time: new Date('2026-07-20T10:00:00Z'), amount: null });
+
+      await POST(postRequest({ type: 'feed', feedType: 'BREAST', side: 'left' }) as any, routeContext);
+
+      expect(mocks.prisma.feedLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ side: 'LEFT' }),
+      }));
+    });
+
+    it('rejects an unknown feed side, listing valid values', async () => {
+      const response = await POST(postRequest({ type: 'feed', feedType: 'BREAST', side: 'UP' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_SIDE');
+      expect(payload.error.message).toContain('LEFT');
+      expect(mocks.prisma.feedLog.create).not.toHaveBeenCalled();
+    });
+
+    it('resolves a lowercase feed unitAbbr against the Unit table to its canonical casing', async () => {
+      mocks.prisma.feedLog.create.mockResolvedValue({ id: 'feed-5', time: new Date('2026-07-20T10:00:00Z'), amount: 4 });
+
+      await POST(postRequest({ type: 'feed', feedType: 'BOTTLE', amount: 4, unitAbbr: 'oz' }) as any, routeContext);
+
+      expect(mocks.prisma.feedLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ unitAbbr: 'OZ' }),
+      }));
+    });
+
+    it('rejects an unrecognized feed unitAbbr, listing available units', async () => {
+      const response = await POST(postRequest({ type: 'feed', feedType: 'BOTTLE', amount: 4, unitAbbr: 'gallons' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_UNIT');
+      expect(payload.error.message).toContain('OZ');
+      expect(mocks.prisma.feedLog.create).not.toHaveBeenCalled();
+    });
+
+    it('resolves a medicine unitAbbr against the Unit table', async () => {
+      mocks.prisma.medicineLog.create.mockResolvedValue({ id: 'dose-5', time: new Date('2026-07-20T10:00:00Z'), doseAmount: 1, unitAbbr: 'ML', notes: null });
+
+      await POST(postRequest({ type: 'medicine', medicineName: 'Vitamin D', amount: 1, unitAbbr: 'ml' }) as any, routeContext);
+
+      expect(mocks.prisma.medicineLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ unitAbbr: 'ML' }),
+      }));
+    });
+
+    it('rejects an unrecognized pump unitAbbr, listing available units', async () => {
+      const response = await POST(postRequest({ type: 'pump', action: 'log', duration: 10, unitAbbr: 'gallons' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_UNIT');
+      expect(mocks.prisma.pumpLog.create).not.toHaveBeenCalled();
     });
   });
 });

@@ -5,6 +5,7 @@ import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
 import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession } from '../../../../../utils/activeBreastFeed';
+import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, SLEEP_QUALITIES, normalizeEnumValue } from '../../../field-values';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -76,6 +77,34 @@ function computePumpAmounts(
     total = null;
   }
   return { left, right, total };
+}
+
+// ── Helper: normalize an optional enum-like field, case-insensitively, to its
+// canonical casing. Absent/null/empty is left alone; a value that doesn't
+// match any allowed entry is an error naming the valid set. ──
+function normalizeRequiredEnumIfPresent(
+  value: unknown,
+  field: string,
+  allowed: readonly string[]
+): { value: string | null; error?: string } {
+  if (value === undefined || value === null || value === '') return { value: null };
+  if (typeof value !== 'string') return { value: null, error: `${field} must be a string` };
+  const normalized = normalizeEnumValue(value, allowed);
+  if (!normalized) return { value: null, error: `${field} must be one of: ${allowed.join(', ')}` };
+  return { value: normalized };
+}
+
+// ── Helper: resolve unitAbbr against the Unit table (case-insensitive, canonical casing) ──
+async function resolveUnitAbbr(unitAbbr: unknown): Promise<{ value: string | null; error?: string }> {
+  if (unitAbbr === undefined || unitAbbr === null || unitAbbr === '') return { value: null };
+  if (typeof unitAbbr !== 'string') return { value: null, error: 'unitAbbr must be a string' };
+  const units = await prisma.unit.findMany({ select: { unitAbbr: true } });
+  const abbrs = units.map((u) => u.unitAbbr);
+  const normalized = normalizeEnumValue(unitAbbr, abbrs);
+  if (!normalized) {
+    return { value: null, error: `unitAbbr must be one of: ${abbrs.join(', ') || 'no units configured'}` };
+  }
+  return { value: normalized };
 }
 
 // ── Helper: resolve caretaker by name ──
@@ -402,9 +431,11 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
 
         if (feedType === 'BREAST' && action && action !== 'log') {
           if (action === 'start') {
-            if (!side || !['LEFT', 'RIGHT'].includes(side)) {
+            const startSide = side ? normalizeEnumValue(side, FEED_SIDES) : null;
+            if (!startSide) {
               return hookError('SIDE_REQUIRED', 'side (LEFT or RIGHT) is required for action "start"', 400, rl.headers);
             }
+            side = startSide;
             const existing = await prisma.activeBreastFeed.findUnique({ where: { babyId } });
             if (existing) {
               return hookError('FEED_ALREADY_ACTIVE', 'An active breastfeed session already exists for this baby', 409, rl.headers);
@@ -437,8 +468,12 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           }
 
           // switch / pause / resume
-          if ((action === 'resume' || action === 'switch') && side && !['LEFT', 'RIGHT'].includes(side)) {
-            return hookError('INVALID_SIDE', 'side must be LEFT or RIGHT', 400, rl.headers);
+          if ((action === 'resume' || action === 'switch') && side) {
+            const normalizedSide = normalizeEnumValue(side, FEED_SIDES);
+            if (!normalizedSide) {
+              return hookError('INVALID_SIDE', 'side must be LEFT or RIGHT', 400, rl.headers);
+            }
+            side = normalizedSide;
           }
           const updated = await updateBreastfeedSession(session, action, action === 'resume' ? side : undefined);
           return hookSuccess({
@@ -469,6 +504,18 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           return hookError('INVALID_AMOUNT', feedAmount.error, 400, rl.headers);
         }
 
+        const bottleTypeResult = normalizeRequiredEnumIfPresent(bottleType, 'bottleType', BOTTLE_TYPES);
+        if (bottleTypeResult.error) return hookError('INVALID_BOTTLE_TYPE', bottleTypeResult.error, 400, rl.headers);
+        bottleType = bottleTypeResult.value;
+        const sideResult = normalizeRequiredEnumIfPresent(side, 'side', FEED_SIDES);
+        if (sideResult.error) return hookError('INVALID_SIDE', sideResult.error, 400, rl.headers);
+        side = sideResult.value;
+        const unitResult = await resolveUnitAbbr(unitAbbr);
+        if (unitResult.error) {
+          return hookError('INVALID_UNIT', unitResult.error, 400, rl.headers);
+        }
+        unitAbbr = unitResult.value;
+
         result = await prisma.feedLog.create({
           data: { time, type: feedType, amount: feedAmount.value, unitAbbr: unitAbbr || null, side: side || null, food: food || null, notes: notes || null, bottleType: bottleType || null, ...timedFields, babyId, caretakerId, familyId },
         });
@@ -486,17 +533,22 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         if (blowoutCheck.error) return hookError('INVALID_FIELD', blowoutCheck.error, 400, rl.headers);
         const creamCheck = requireBooleanIfPresent(creamApplied, 'creamApplied');
         if (creamCheck.error) return hookError('INVALID_FIELD', creamCheck.error, 400, rl.headers);
+        const conditionResult = normalizeRequiredEnumIfPresent(condition, 'condition', DIAPER_CONDITIONS);
+        if (conditionResult.error) return hookError('INVALID_CONDITION', conditionResult.error, 400, rl.headers);
+        const colorResult = normalizeRequiredEnumIfPresent(color, 'color', DIAPER_COLORS);
+        if (colorResult.error) return hookError('INVALID_COLOR', colorResult.error, 400, rl.headers);
 
         result = await prisma.diaperLog.create({
-          data: { time, type: diaperType, condition: condition || null, color: color || null, blowout: blowout === true, creamApplied: creamApplied === true, babyId, caretakerId, familyId },
+          data: { time, type: diaperType, condition: conditionResult.value, color: colorResult.value, blowout: blowout === true, creamApplied: creamApplied === true, babyId, caretakerId, familyId },
         });
         notifyActivityCreated(babyId, 'diaper', { caretakerId }, { type: diaperType }).catch(console.error);
         resetTimerNotificationState(babyId, 'diaper').catch(console.error);
-        return hookSuccess({ activityType: 'diaper', id: result.id, time: result.time.toISOString(), details: { type: diaperType, condition, color, blowout: result.blowout, creamApplied: result.creamApplied } }, { familyId, babyId }, rl.headers);
+        return hookSuccess({ activityType: 'diaper', id: result.id, time: result.time.toISOString(), details: { type: diaperType, condition: conditionResult.value, color: colorResult.value, blowout: result.blowout, creamApplied: result.creamApplied } }, { familyId, babyId }, rl.headers);
       }
 
       case 'sleep': {
-        const { sleepType, action, duration: sleepDuration, location, quality } = body;
+        const { sleepType, action, duration: sleepDuration, location } = body;
+        let { quality } = body;
         if (!action || !['start', 'end', 'log'].includes(action)) {
           return hookError('INVALID_ACTION', 'action must be start, end, or log', 400, rl.headers);
         }
@@ -506,6 +558,9 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         if (action !== 'end' && !sleepType) {
           return hookError('INVALID_SLEEP_TYPE', 'sleepType is required for start and log actions', 400, rl.headers);
         }
+        const qualityResult = normalizeRequiredEnumIfPresent(quality, 'quality', SLEEP_QUALITIES);
+        if (qualityResult.error) return hookError('INVALID_QUALITY', qualityResult.error, 400, rl.headers);
+        quality = qualityResult.value;
 
         if (action === 'start') {
           result = await prisma.sleepLog.create({
@@ -559,10 +614,14 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
       }
 
       case 'pump': {
-        const { action, duration: pumpDuration, leftAmount, rightAmount, totalAmount, unitAbbr, pumpAction } = body;
+        const { action, duration: pumpDuration, leftAmount, rightAmount, totalAmount, pumpAction } = body;
+        let { unitAbbr } = body;
         if (!action || !['start', 'end', 'log'].includes(action)) {
           return hookError('INVALID_ACTION', 'action must be start, end, or log', 400, rl.headers);
         }
+        const pumpUnitResult = await resolveUnitAbbr(unitAbbr);
+        if (pumpUnitResult.error) return hookError('INVALID_UNIT', pumpUnitResult.error, 400, rl.headers);
+        unitAbbr = pumpUnitResult.value;
 
         if (action === 'start') {
           result = await prisma.pumpLog.create({
@@ -606,11 +665,15 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
       }
 
       case 'bath': {
-        const { bathType, soapUsed, shampooUsed, notes } = body;
+        const { soapUsed, shampooUsed, notes } = body;
+        let { bathType } = body;
         const soapCheck = requireBooleanIfPresent(soapUsed, 'soapUsed');
         if (soapCheck.error) return hookError('INVALID_FIELD', soapCheck.error, 400, rl.headers);
         const shampooCheck = requireBooleanIfPresent(shampooUsed, 'shampooUsed');
         if (shampooCheck.error) return hookError('INVALID_FIELD', shampooCheck.error, 400, rl.headers);
+        // Known bath types are normalized to their canonical casing; unknown
+        // values are passed through verbatim — the app allows custom types.
+        if (typeof bathType === 'string' && bathType) bathType = normalizeEnumValue(bathType, BATH_TYPES) ?? bathType;
 
         result = await prisma.bathLog.create({
           data: { time, bathType: bathType || null, soapUsed: soapUsed !== false, shampooUsed: shampooUsed !== false, notes: notes || null, babyId, caretakerId, familyId },
@@ -638,7 +701,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
       }
 
       case 'medicine': {
-        const { medicineName, amount, unitAbbr, notes } = body;
+        const { medicineName, amount, notes } = body;
+        let { unitAbbr } = body;
         if (!medicineName) {
           return hookError('MEDICINE_NAME_REQUIRED', 'medicineName is required', 400, rl.headers);
         }
@@ -652,6 +716,9 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         if (doseAmount.value === null || doseAmount.value === undefined) {
           return hookError('INVALID_AMOUNT', 'amount is required for medicine type', 400, rl.headers);
         }
+        const medicineUnitResult = await resolveUnitAbbr(unitAbbr);
+        if (medicineUnitResult.error) return hookError('INVALID_UNIT', medicineUnitResult.error, 400, rl.headers);
+        unitAbbr = medicineUnitResult.value;
         const medicine = await prisma.medicine.findFirst({
           where: {
             familyId,
@@ -677,7 +744,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
       }
 
       case 'supplement': {
-        const { supplementName, medicineName: altName, amount, unitAbbr, notes } = body;
+        const { supplementName, medicineName: altName, amount, notes } = body;
+        let { unitAbbr } = body;
         const name = supplementName || altName;
         if (!name) {
           return hookError('SUPPLEMENT_NAME_REQUIRED', 'supplementName is required', 400, rl.headers);
@@ -692,6 +760,9 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         if (supplementDoseAmount.value === null || supplementDoseAmount.value === undefined) {
           return hookError('INVALID_AMOUNT', 'amount is required for supplement type', 400, rl.headers);
         }
+        const supplementUnitResult = await resolveUnitAbbr(unitAbbr);
+        if (supplementUnitResult.error) return hookError('INVALID_UNIT', supplementUnitResult.error, 400, rl.headers);
+        unitAbbr = supplementUnitResult.value;
         const supplement = await prisma.medicine.findFirst({
           where: {
             familyId,

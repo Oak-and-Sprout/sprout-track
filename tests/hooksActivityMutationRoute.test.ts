@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => {
       medicine: {
         findFirst: vi.fn(),
       },
+      unit: {
+        findMany: vi.fn(),
+      },
       sleepLog: delegate(),
       feedLog: delegate(),
       diaperLog: delegate(),
@@ -88,6 +91,9 @@ beforeEach(() => {
   mocks.prisma.apiKey.update.mockResolvedValue({});
   mocks.prisma.baby.findFirst.mockResolvedValue({ id: 'baby-1', familyId: 'family-1' });
   mocks.prisma.medicine.findFirst.mockResolvedValue({ id: 'medicine-1', name: 'Vitamin D' });
+  mocks.prisma.unit.findMany.mockResolvedValue([
+    { unitAbbr: 'OZ' }, { unitAbbr: 'ML' }, { unitAbbr: 'LB' }, { unitAbbr: 'KG' }, { unitAbbr: 'G' }, { unitAbbr: 'TBSP' },
+  ]);
 });
 
 describe('hooks activity mutation route', () => {
@@ -170,5 +176,135 @@ describe('hooks activity mutation route', () => {
     expect(response.status).toBe(404);
     expect(payload.error.code).toBe('ACTIVITY_NOT_FOUND');
     expect(mocks.prisma.feedLog.delete).not.toHaveBeenCalled();
+  });
+
+  describe('enum-like field validation and normalization', () => {
+    it('normalizes a lowercase diaper condition and color to canonical casing', async () => {
+      mocks.prisma.diaperLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.diaperLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), type: 'WET', condition: 'LOOSE', color: 'YELLOW', blowout: false, creamApplied: false });
+
+      await PUT(request('PUT', { type: 'diaper', condition: 'loose', color: 'yellow' }) as any, routeContext);
+
+      expect(mocks.prisma.diaperLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ condition: 'LOOSE', color: 'YELLOW' }),
+      }));
+    });
+
+    it('rejects an unknown diaper condition, listing valid values', async () => {
+      mocks.prisma.diaperLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'diaper', condition: 'ZZZ_BOGUS' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('NORMAL');
+      expect(mocks.prisma.diaperLog.update).not.toHaveBeenCalled();
+    });
+
+    it('normalizes a lowercase sleep quality to canonical casing', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z'), endTime: null, duration: 30, type: 'NAP', location: null, quality: 'GOOD' });
+
+      await PUT(request('PUT', { type: 'sleep', quality: 'good' }) as any, routeContext);
+
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ quality: 'GOOD' }),
+      }));
+    });
+
+    it('rejects an unknown sleep quality, listing valid values', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'sleep', quality: 'meh' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('EXCELLENT');
+      expect(mocks.prisma.sleepLog.update).not.toHaveBeenCalled();
+    });
+
+    it('normalizes a known bathType to canonical casing but passes an unrecognized custom type through verbatim', async () => {
+      mocks.prisma.bathLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.bathLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), bathType: 'Sponge Bath', soapUsed: true, shampooUsed: true, notes: null });
+
+      await PUT(request('PUT', { type: 'bath', bathType: 'sponge bath' }) as any, routeContext);
+
+      expect(mocks.prisma.bathLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ bathType: 'Sponge Bath' }),
+      }));
+
+      mocks.prisma.bathLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), bathType: 'Baby Spa Day', soapUsed: true, shampooUsed: true, notes: null });
+      await PUT(request('PUT', { type: 'bath', bathType: 'Baby Spa Day' }) as any, routeContext);
+
+      expect(mocks.prisma.bathLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ bathType: 'Baby Spa Day' }),
+      }));
+    });
+
+    it('normalizes feed bottleType and side to canonical casing', async () => {
+      mocks.prisma.feedLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.feedLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), type: 'BOTTLE', amount: 2, unitAbbr: 'OZ', notes: null });
+
+      await PUT(request('PUT', { type: 'feed', bottleType: 'breast milk', side: 'left' }) as any, routeContext);
+
+      expect(mocks.prisma.feedLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ bottleType: 'Breast Milk', side: 'LEFT' }),
+      }));
+    });
+
+    it('rejects an unknown feed bottleType, listing valid values', async () => {
+      mocks.prisma.feedLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'feed', bottleType: 'Juice' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('Formula');
+      expect(mocks.prisma.feedLog.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects an unknown feed side, listing valid values', async () => {
+      mocks.prisma.feedLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'feed', side: 'UP' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('LEFT');
+      expect(mocks.prisma.feedLog.update).not.toHaveBeenCalled();
+    });
+
+    it('resolves a lowercase feed unitAbbr against the Unit table to its canonical casing', async () => {
+      mocks.prisma.feedLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.feedLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), type: 'BOTTLE', amount: 2, unitAbbr: 'OZ', notes: null });
+
+      await PUT(request('PUT', { type: 'feed', unitAbbr: 'oz' }) as any, routeContext);
+
+      expect(mocks.prisma.feedLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ unitAbbr: 'OZ' }),
+      }));
+    });
+
+    it('rejects an unrecognized feed unitAbbr, listing available units', async () => {
+      mocks.prisma.feedLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'feed', unitAbbr: 'gallons' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('OZ');
+      expect(mocks.prisma.feedLog.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects an unrecognized medicine unitAbbr, listing available units', async () => {
+      mocks.prisma.medicineLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'medicine', unitAbbr: 'gallons' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('OZ');
+      expect(mocks.prisma.medicineLog.update).not.toHaveBeenCalled();
+    });
   });
 });

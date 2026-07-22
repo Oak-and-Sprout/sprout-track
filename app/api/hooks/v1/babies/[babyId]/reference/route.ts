@@ -3,8 +3,12 @@ import prisma from '../../../../../db';
 import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth';
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
+import { BATH_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, SLEEP_QUALITIES } from '../../../field-values';
 
-const VALID_TYPES = ['medicines', 'supplements', 'sleep-locations', 'play-categories', 'feed-types'] as const;
+const VALID_TYPES = [
+  'medicines', 'supplements', 'sleep-locations', 'play-categories', 'feed-types',
+  'diaper-conditions', 'diaper-colors', 'sleep-qualities', 'bath-types', 'units',
+] as const;
 type RefType = typeof VALID_TYPES[number];
 
 const DEFAULT_SLEEP_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
@@ -28,6 +32,19 @@ async function getMedicines(familyId: string, isSupplement: boolean = false) {
   return medicines;
 }
 
+// Dedup key that ignores case and underscore/space differences, so a legacy
+// enum token like "CAR_SEAT" collapses onto its display string "Car Seat".
+function sleepLocationDedupKey(loc: string): string {
+  return loc.toLowerCase().replace(/[\s_]+/g, '');
+}
+
+// A "display-cased" value is the kind the app shows in the UI: mixed case,
+// no underscores — preferred over an ALL_CAPS/underscore legacy token when
+// both collapse to the same dedup key.
+function isDisplayCased(loc: string): boolean {
+  return !loc.includes('_') && /[a-z]/.test(loc);
+}
+
 async function getSleepLocations(babyId: string) {
   const customLocations = await prisma.sleepLog.findMany({
     where: { babyId, deletedAt: null, location: { not: null } },
@@ -38,10 +55,20 @@ async function getSleepLocations(babyId: string) {
   const combined = [...DEFAULT_SLEEP_LOCATIONS, ...custom];
   const seen = new Map<string, string>();
   for (const loc of combined) {
-    const key = loc.toLowerCase();
-    if (!seen.has(key)) seen.set(key, loc);
+    const key = sleepLocationDedupKey(loc);
+    const existing = seen.get(key);
+    if (!existing || (!isDisplayCased(existing) && isDisplayCased(loc))) {
+      seen.set(key, loc);
+    }
   }
   return Array.from(seen.values());
+}
+
+async function getUnits() {
+  return prisma.unit.findMany({
+    select: { unitAbbr: true, unitName: true },
+    orderBy: { unitAbbr: 'asc' },
+  });
 }
 
 async function getPlayCategories(babyId: string, playType?: string) {
@@ -89,6 +116,21 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   }
   if (!typeParam || typeParam === 'feed-types') {
     data.feedTypes = FEED_TYPES;
+  }
+  if (!typeParam || typeParam === 'diaper-conditions') {
+    data.diaperConditions = DIAPER_CONDITIONS;
+  }
+  if (!typeParam || typeParam === 'diaper-colors') {
+    data.diaperColors = DIAPER_COLORS;
+  }
+  if (!typeParam || typeParam === 'sleep-qualities') {
+    data.sleepQualities = SLEEP_QUALITIES;
+  }
+  if (!typeParam || typeParam === 'bath-types') {
+    data.bathTypes = BATH_TYPES;
+  }
+  if (!typeParam || typeParam === 'units') {
+    data.units = await getUnits();
   }
 
   return hookSuccess(data, { familyId: ctx.familyId, babyId }, rl.headers);

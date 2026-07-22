@@ -305,6 +305,9 @@ Create a new activity record.
 | `INVALID_FIELD` | 400 | Body includes a field not accepted by the activity `type`, or a boolean field (`blowout`, `creamApplied`, `soapUsed`, `shampooUsed`) was sent as a non-boolean value |
 | `CARETAKER_NOT_FOUND` | 400 | `caretakerName` was sent but doesn't match any caretaker in the family; the message lists available names |
 | `INVALID_AMOUNT` | 400 | A numeric amount field (`amount`, `leftAmount`, `rightAmount`, `totalAmount`) is non-numeric, or a required amount (medicine/supplement `amount`) is missing/null |
+| `INVALID_UNIT` | 400 | `unitAbbr` (feed, pump, medicine, supplement) doesn't match any unit configured for your family; the message lists available `unitAbbr` values. Matching is case-insensitive — `"oz"` resolves to the stored `"OZ"` |
+
+**Validated enum-like fields:** `diaper.condition`, `diaper.color`, `sleep.quality`, `feed.bottleType`, and `feed.side` are matched case-insensitively against a canonical set and stored using that set's exact casing — sending `"loose"` stores `"LOOSE"`. An unrecognized value returns `400` naming the field's error code (`INVALID_CONDITION`, `INVALID_COLOR`, `INVALID_QUALITY`, `INVALID_BOTTLE_TYPE`, `INVALID_SIDE`) with the valid values listed. `bath.bathType` is normalized the same way for its known values, but an unrecognized `bathType` is accepted verbatim rather than rejected — the app supports free-text custom bath types. Use `GET /reference` (below) to discover every one of these sets, plus the family's configured units, ahead of time.
 
 #### Feed
 
@@ -324,14 +327,20 @@ Create a new activity record.
 | `BREAST` | Breastfeeding |
 | `BOTTLE` | Bottle (set `bottleType` separately) |
 | `SOLIDS` | Solid food |
-| `formula` | Auto-sets BOTTLE + bottleType "formula" |
-| `breast milk` | Auto-sets BOTTLE + bottleType "breast milk" |
-| `milk` | Auto-sets BOTTLE + bottleType "milk" |
-| `other` | Auto-sets BOTTLE + bottleType "other" |
+| `formula` | Auto-sets BOTTLE + bottleType "Formula" |
+| `breast milk` | Auto-sets BOTTLE + bottleType "Breast Milk" |
+| `milk` | Auto-sets BOTTLE + bottleType "Milk" |
+| `other` | Auto-sets BOTTLE + bottleType "Other" |
 
-Optional fields: `amount`, `unitAbbr`, `side` (LEFT/RIGHT/BOTH), `food`, `notes`, `bottleType`
+Optional fields: `amount`, `unitAbbr`, `side`, `food`, `notes`, `bottleType`
 
 `amount` distinguishes an explicit `0` (stored as `0`) from an omitted value (stored as `null`). A non-numeric `amount` returns `400 INVALID_AMOUNT`.
+
+**`side` values:** `LEFT`, `RIGHT` (case-insensitive; stored as the exact uppercase token). An unrecognized value returns `400 INVALID_SIDE`.
+
+**`bottleType` values:** `Formula`, `Breast Milk`, `Formula/Breast`, `Milk`, `Other` (case-insensitive; stored using this exact casing). An unrecognized value returns `400 INVALID_BOTTLE_TYPE`.
+
+`unitAbbr` is matched case-insensitively against your family's configured units (see `GET /reference?type=units`) and stored using that table's exact casing (e.g. `"oz"` is accepted and stored as `"OZ"`). An unrecognized value returns `400 INVALID_UNIT` listing the units actually configured.
 
 **Log a completed breastfeed with known duration:**
 ```json
@@ -408,6 +417,10 @@ Optional fields: `condition`, `color`, `blowout` (boolean), `creamApplied` (bool
 
 `blowout` and `creamApplied` both default to `false` when omitted. If sent, the value must be a real JSON boolean (`true`/`false`) — a truthy-but-not-boolean value (e.g. the string `"true"`, `1`) returns `400`. `creamApplied` is also included in the `GET /activities` response for diaper entries.
 
+**`condition` values:** `NORMAL`, `LOOSE`, `FIRM`, `OTHER` (case-insensitive; stored using this exact casing — sending `"loose"` stores `"LOOSE"`). An unrecognized value returns `400 INVALID_CONDITION`.
+
+**`color` values:** `YELLOW`, `BROWN`, `GREEN`, `BLACK`, `RED`, `OTHER` (case-insensitive; stored using this exact casing). An unrecognized value returns `400 INVALID_COLOR`.
+
 #### Sleep
 
 Sleep supports three actions:
@@ -454,6 +467,8 @@ Sleep supports three actions:
 **action:** `start`, `end`, or `log`
 Optional fields: `location`, `quality`, `duration` (minutes, required for `log`)
 
+**`quality` values:** `POOR`, `FAIR`, `GOOD`, `EXCELLENT` (case-insensitive; stored using this exact casing). An unrecognized value returns `400 INVALID_QUALITY`.
+
 > **Note:** If `sleepType` is provided on `end`, the sleep record's type is updated. If omitted, the type from `start` is preserved.
 
 #### Note
@@ -486,6 +501,8 @@ Optional fields: `leftAmount`, `rightAmount`, `totalAmount`, `unitAbbr`, `pumpAc
 
 `totalAmount` is a writable field, not just a derived one: send it alone (without `leftAmount`/`rightAmount`) to record a total without attributing it to either side. If `totalAmount` and one or both sides are sent together, the explicit `totalAmount` wins over the sum of the sides. If only `leftAmount`/`rightAmount` are sent, `totalAmount` is derived as their sum. Explicit `0` on `leftAmount`/`rightAmount`/`totalAmount` is stored as `0` (a genuine empty pump), distinct from omitting the field entirely (stored as `null`, unknown).
 
+`unitAbbr` is matched case-insensitively against your family's configured units and stored using that table's exact casing. An unrecognized value returns `400 INVALID_UNIT` listing the units actually configured.
+
 #### Bath
 
 ```json
@@ -498,7 +515,7 @@ Optional fields: `leftAmount`, `rightAmount`, `totalAmount`, `unitAbbr`, `pumpAc
 }
 ```
 
-All fields optional. `soapUsed` and `shampooUsed` default to `true` when omitted (this is an existing quirk of the underlying schema default, not a new behavior). If either field is sent, it must be a real JSON boolean — a non-boolean value (e.g. the string `"false"`) returns `400`, rather than being silently coerced. `bathType` is a free-form string (the app's defaults are `Full Bath`, `Sponge Bath`, and `Wipe Down`, but any custom value used in the app is valid).
+All fields optional. `soapUsed` and `shampooUsed` default to `true` when omitted (this is an existing quirk of the underlying schema default, not a new behavior). If either field is sent, it must be a real JSON boolean — a non-boolean value (e.g. the string `"false"`) returns `400`, rather than being silently coerced. `bathType`'s known values (`Full Bath`, `Sponge Bath`, `Wipe Down`) are matched case-insensitively and stored using this exact casing — sending `"sponge bath"` stores `"Sponge Bath"`. Any other value is accepted and stored verbatim, since the app also supports free-text custom bath types.
 
 #### Measurement
 
@@ -529,7 +546,7 @@ All fields optional. `soapUsed` and `shampooUsed` default to `true` when omitted
 
 `amount` is required and must be a finite number — a missing, `null`, or non-numeric `amount` returns `400 INVALID_AMOUNT` rather than silently recording a dose of `0` (the underlying `doseAmount` column cannot be null, so previously an omitted amount fabricated a real zero-dose record).
 
-Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned by `GET /activities` (previously accepted but silently dropped).
+Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned by `GET /activities` (previously accepted but silently dropped). If omitted, `unitAbbr` falls back to the medicine's configured unit. `unitAbbr`, when sent, is matched case-insensitively against your family's configured units and stored using that table's exact casing; an unrecognized value returns `400 INVALID_UNIT` listing the units actually configured.
 
 #### Supplement
 
@@ -546,7 +563,7 @@ Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned b
 
 `amount` is required and must be a finite number — a missing, `null`, or non-numeric `amount` returns `400 INVALID_AMOUNT` rather than silently recording a dose of `0` (the underlying `doseAmount` column cannot be null, so previously an omitted amount fabricated a real zero-dose record).
 
-Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned by `GET /activities` (previously accepted but silently dropped).
+Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned by `GET /activities` (previously accepted but silently dropped). If omitted, `unitAbbr` falls back to the medicine's configured unit. `unitAbbr`, when sent, is matched case-insensitively against your family's configured units and stored using that table's exact casing; an unrecognized value returns `400 INVALID_UNIT` listing the units actually configured.
 
 #### Play
 
@@ -569,6 +586,8 @@ Optional fields: `duration` (minutes), `notes`, `activities` (sub-category strin
 Edit an existing activity record through API-key auth.
 
 `type` is required in the JSON body so the hooks route can validate fields against the correct activity model. Only fields valid for that activity type are accepted; `familyId`, `babyId`, and `caretakerId` cannot be reassigned through this endpoint.
+
+The same enum-like field validation and normalization described under `POST /activities` above applies here: `condition`, `color`, `quality`, `bottleType`, `side`, and `unitAbbr` are validated and normalized to their canonical casing on update too, with the same error codes.
 
 ```bash
 curl -s -X PUT \
@@ -627,13 +646,13 @@ curl -s \
 
 ### GET /babies/:babyId/reference
 
-Returns valid values for use with POST endpoints. Use this to discover medicines, sleep locations, play categories, and feed types before creating activities.
+Returns valid values for use with POST endpoints. Use this to discover medicines, sleep locations, play categories, feed types, the enum-like field values validated by POST/PUT, and the family's configured units before creating activities.
 
 **Query Parameters:**
 
 | Param | Default | Description |
 |-------|---------|-------------|
-| `type` | all | `medicines`, `supplements`, `sleep-locations`, `play-categories`, or `feed-types` |
+| `type` | all | `medicines`, `supplements`, `sleep-locations`, `play-categories`, `feed-types`, `diaper-conditions`, `diaper-colors`, `sleep-qualities`, `bath-types`, or `units` |
 | `playType` | -- | Filter play categories by play type |
 
 ```bash
@@ -663,10 +682,20 @@ curl -s \
       { "value": "breast milk", "description": "Pumped breast milk bottle" },
       { "value": "milk", "description": "Milk bottle" },
       { "value": "other", "description": "Other bottle type" }
+    ],
+    "diaperConditions": ["NORMAL", "LOOSE", "FIRM", "OTHER"],
+    "diaperColors": ["YELLOW", "BROWN", "GREEN", "BLACK", "RED", "OTHER"],
+    "sleepQualities": ["POOR", "FAIR", "GOOD", "EXCELLENT"],
+    "bathTypes": ["Full Bath", "Sponge Bath", "Wipe Down"],
+    "units": [
+      { "unitAbbr": "ML", "unitName": "Milliliters" },
+      { "unitAbbr": "OZ", "unitName": "Ounces" }
     ]
   }
 }
 ```
+
+`sleepLocations` is deduplicated ignoring case and underscore/space differences, preferring the display-cased variant (e.g. a legacy `CAR_SEAT` value logged before validation existed collapses onto `Car Seat` rather than appearing as a separate duplicate entry). `units` lists every unit configured in the `Unit` table and is the same set `unitAbbr` is validated against on POST/PUT.
 
 ---
 
