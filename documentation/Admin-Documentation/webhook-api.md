@@ -589,6 +589,10 @@ Edit an existing activity record through API-key auth.
 
 The same enum-like field validation and normalization described under `POST /activities` above applies here: `condition`, `color`, `quality`, `bottleType`, `side`, and `unitAbbr` are validated and normalized to their canonical casing on update too, with the same error codes.
 
+For `sleep`, sending `endTime` without `duration` recomputes `duration` (whole minutes) from the effective start time (the `startTime` in the same request, or the record's existing `startTime` otherwise); an `endTime` before that start returns `400`, and an explicit `duration` in the request always takes precedence over the recompute.
+
+For `medicine`/`supplement`, an explicit `null` for `amount` or `doseAmount` returns `400` rather than silently recording a zero dose (the underlying `doseAmount` column cannot be null).
+
 ```bash
 curl -s -X PUT \
   -H "Authorization: Bearer st_live_YOUR_KEY" \

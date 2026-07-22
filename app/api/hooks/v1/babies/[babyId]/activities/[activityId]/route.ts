@@ -264,7 +264,7 @@ function buildDiaperData(body: JsonObject): { data?: Prisma.DiaperLogUpdateInput
   return empty ? { error: empty } : { data: data as Prisma.DiaperLogUpdateInput };
 }
 
-function buildSleepData(body: JsonObject): { data?: Prisma.SleepLogUpdateInput; error?: string } {
+function buildSleepData(body: JsonObject, existingStartTime: Date): { data?: Prisma.SleepLogUpdateInput; error?: string } {
   const data: JsonObject = {};
   const sleepType = requireEnum(body.sleepType, 'sleepType', ['NAP', 'NIGHT_SLEEP'] as const);
   if (sleepType.error) return { error: sleepType.error };
@@ -276,6 +276,12 @@ function buildSleepData(body: JsonObject): { data?: Prisma.SleepLogUpdateInput; 
   if (endError) return { error: endError };
   const durationError = assignNumber(data, body, 'duration');
   if (durationError) return { error: durationError };
+  if (data.endTime instanceof Date && body.duration === undefined) {
+    const effectiveStart = data.startTime instanceof Date ? data.startTime : existingStartTime;
+    const diffMs = data.endTime.getTime() - effectiveStart.getTime();
+    if (diffMs < 0) return { error: 'endTime must not be before startTime' };
+    data.duration = Math.round(diffMs / 60000);
+  }
   const locationError = assignString(data, body, 'location');
   if (locationError) return { error: locationError };
   const qualityError = assignEnum(data, body, 'quality', SLEEP_QUALITIES);
@@ -384,9 +390,11 @@ async function buildMedicineData(
   const data: JsonObject = {};
   const timeError = assignDate(data, body, 'time', 'time');
   if (timeError) return { error: timeError };
-  const amount = parseNumber(body.amount ?? body.doseAmount, body.amount !== undefined ? 'amount' : 'doseAmount');
+  const amountField = body.amount !== undefined ? 'amount' : 'doseAmount';
+  const amount = parseNumber(body.amount !== undefined ? body.amount : body.doseAmount, amountField);
   if (amount.error) return { error: amount.error };
-  if (amount.value !== undefined) data.doseAmount = amount.value ?? 0;
+  if (amount.value === null) return { error: `${amountField} must not be null` };
+  if (amount.value !== undefined) data.doseAmount = amount.value;
   const notesError = assignString(data, body, 'notes');
   if (notesError) return { error: notesError };
   const unitAbbrError = await assignUnitAbbr(data, body);
@@ -485,7 +493,7 @@ async function updateActivity(type: ActivityType, activityId: string, babyId: st
       return { result: summary(type, row.id, row.babyId, 'updated', row.time, { type: row.type, condition: row.condition, color: row.color, blowout: row.blowout, creamApplied: row.creamApplied }) };
     }
     case 'sleep': {
-      const built = buildSleepData(body);
+      const built = buildSleepData(body, existing.time!);
       if (built.error) return { error: built.error, status: 400 };
       const row = await prisma.sleepLog.update({ where: { id: activityId }, data: built.data! });
       return { result: summary(type, row.id, row.babyId, 'updated', row.startTime, { type: row.type, startTime: row.startTime.toISOString(), endTime: toIso(row.endTime), duration: row.duration, location: row.location, quality: row.quality }) };

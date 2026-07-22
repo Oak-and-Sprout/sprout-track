@@ -307,4 +307,72 @@ describe('hooks activity mutation route', () => {
       expect(mocks.prisma.medicineLog.update).not.toHaveBeenCalled();
     });
   });
+
+  describe('sleep duration recompute on PUT', () => {
+    it('recomputes duration in whole minutes from endTime and the body startTime when duration is omitted', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T09:00:00Z'), endTime: new Date('2026-07-18T10:30:00Z'), duration: 90, type: 'NAP', location: null, quality: null });
+
+      await PUT(request('PUT', { type: 'sleep', startTime: '2026-07-18T09:00:00.000Z', endTime: '2026-07-18T10:30:00.000Z' }) as any, routeContext);
+
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ duration: 90 }),
+      }));
+    });
+
+    it('recomputes duration from the existing row startTime when only endTime is provided', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T08:00:00Z') });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T08:00:00Z'), endTime: new Date('2026-07-18T08:45:00Z'), duration: 45, type: 'NAP', location: null, quality: null });
+
+      await PUT(request('PUT', { type: 'sleep', endTime: '2026-07-18T08:45:00.000Z' }) as any, routeContext);
+
+      const call = mocks.prisma.sleepLog.update.mock.calls[0][0];
+      expect(call.data.duration).toBe(45);
+      expect(call.data.startTime).toBeUndefined();
+    });
+
+    it('keeps an explicit duration even when endTime is also provided', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T08:00:00Z') });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T08:00:00Z'), endTime: new Date('2026-07-18T08:45:00Z'), duration: 999, type: 'NAP', location: null, quality: null });
+
+      await PUT(request('PUT', { type: 'sleep', endTime: '2026-07-18T08:45:00.000Z', duration: 999 }) as any, routeContext);
+
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ duration: 999 }),
+      }));
+    });
+
+    it('rejects an endTime earlier than the effective startTime', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T08:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'sleep', endTime: '2026-07-18T07:00:00.000Z' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_UPDATE');
+      expect(mocks.prisma.sleepLog.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('medicine/supplement PUT rejects a null dose', () => {
+    it('rejects a null amount for medicine PUT instead of fabricating a zero dose', async () => {
+      mocks.prisma.medicineLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'medicine', amount: null }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(mocks.prisma.medicineLog.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects a null doseAmount for supplement PUT instead of fabricating a zero dose', async () => {
+      mocks.prisma.medicineLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+
+      const response = await PUT(request('PUT', { type: 'supplement', doseAmount: null }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(mocks.prisma.medicineLog.update).not.toHaveBeenCalled();
+    });
+  });
 });
