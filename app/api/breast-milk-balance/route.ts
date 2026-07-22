@@ -49,13 +49,13 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       select: { amount: true, unitAbbr: true },
     });
 
-    // 3. Sum of bottle feeds with bottleType "Breast Milk" or "Formula\Breast"
+    // 3. Sum of bottle feeds with bottleType "Breast Milk" or "Formula/Breast"
     const feedLogs = await prisma.feedLog.findMany({
       where: {
         babyId,
         familyId: userFamilyId,
         type: 'BOTTLE',
-        bottleType: { in: ['Breast Milk', 'Formula\\Breast'] },
+        bottleType: { in: ['Breast Milk', 'Formula/Breast'] },
         deletedAt: null,
       },
       select: { amount: true, unitAbbr: true, bottleType: true, breastMilkAmount: true, sourcePumpId: true, notes: true },

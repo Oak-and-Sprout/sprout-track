@@ -100,7 +100,7 @@ All activity tracking models share a common structure. This consistency is criti
 | Model | Time Pattern | Key Fields |
 |-------|-------------|------------|
 | `SleepLog` | start/end/duration | `type` (NAP, NIGHT_SLEEP), `quality`, `location` |
-| `FeedLog` | time + optional start/end | `type` (BREAST, BOTTLE, SOLIDS), `amount`, `unitAbbr`, `side`, `food`, `bottleType`, `breastMilkAmount`, `sessionId` (groups breast feeds into one nursing session) |
+| `FeedLog` | time + optional start/end | `type` (BREAST, BOTTLE, SOLIDS), `amount`, `unitAbbr`, `side`, `food`, `bottleType` (mixed feeds store `"Formula/Breast"`), `breastMilkAmount`, `sessionId` (groups breast feeds into one nursing session), `pauseDuration` (total session pause in seconds, same value on both rows of a session; null on older records) |
 | `DiaperLog` | time | `type` (WET, DIRTY, BOTH), `condition`, `color`, `blowout`, `creamApplied` |
 | `BathLog` | time | `bathType` ("Full Bath", "Sponge Bath", "Wipe Down", or custom), `soapUsed`, `shampooUsed` |
 | `PlayLog` | start/end/duration | `type` (TUMMY_TIME, INDOOR_PLAY, OUTDOOR_PLAY, WALK, CUSTOM) |
@@ -116,7 +116,7 @@ All activity tracking models share a common structure. This consistency is criti
 Three models work together for breast milk tracking:
 - `PumpLog` — Records pumping sessions with `pumpAction` (STORED, FED, DISCARDED)
 - `BreastMilkAdjustment` — Manual inventory changes (initial stock, expired, spilled, donated)
-- `ActiveBreastFeed` — Persistent breastfeeding session state (one per baby, tracks side, duration, pause state)
+- `ActiveBreastFeed` — Persistent breastfeeding session state (one per baby, tracks side, per-side durations, accumulated `pauseDuration`/`pausedAt`, and `firstSide` — used to lay out the per-side `FeedLog` spans when the session ends)
 
 ### Active Play Sessions
 - `ActiveActivity` — Persistent play session state (one per baby, tracks play type, duration, pause state), the play-activity counterpart of `ActiveBreastFeed`

@@ -201,13 +201,18 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 |----------|---------|
 | `GET /api/hooks/v1/babies/` | List babies |
 | `GET /api/hooks/v1/babies/[babyId]/activities/` | Recent activities |
+| `POST /api/hooks/v1/babies/[babyId]/activities/` | Log a new activity (all ten types, plus feed/sleep/pump timer actions) |
+| `PUT /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Edit an existing activity |
+| `DELETE /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Delete an existing activity |
 | `GET /api/hooks/v1/babies/[babyId]/measurements/latest/` | Latest measurements |
 | `GET /api/hooks/v1/babies/[babyId]/status/` | Baby status summary |
 | `GET /api/hooks/v1/babies/[babyId]/reference/` | Reference data (valid enum values for activity fields) |
 
 **Authentication:** Uses API keys (not JWT). Keys are validated via SHA-256 hash lookup against the `ApiKey` model. Scoped by `familyId` and optionally `babyId`, with read/write permissions.
 
-**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts`.
+**Validation:** Request bodies are strict — fields not accepted by the declared activity type are rejected with `400 INVALID_FIELD` rather than silently dropped. Enum-like fields (`condition`, `color`, `quality`, `bottleType`, `side`, `pumpAction`, and the known `bathType` values) are matched case-insensitively against canonical sets in `app/api/hooks/v1/field-values.ts` and stored with canonical casing; `unitAbbr` is validated against the `Unit` table. `GET /reference` advertises every one of these sets.
+
+**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts` — GET 60/min per key; POST/PUT/DELETE 30/min per key.
 
 ## Notification Hooks
 
@@ -247,5 +252,8 @@ Logs request method, path, status code, response time, IP/user agent, and reques
 - `app/api/db.ts` — Prisma client singleton
 - `app/api/utils/with-logging.ts` — Request logging wrapper
 - `app/api/hooks/v1/` — External webhook API routes
+- `app/api/hooks/v1/field-values.ts` — Canonical enum-like field values + case-insensitive normalization for the webhook API
+- `app/api/utils/family-scope.ts` — `resolveFamilyScope()`: a client-sent familyId may only confirm the auth context's family, never override it (sysadmin excepted)
+- `app/api/utils/setup-token-scope.ts` — `setupTokenMayTarget()`: unbound setup tokens may bind a family only via `/api/setup/start`
 - `src/lib/notifications/activityHook.ts` — Post-activity notification triggers
 - `src/lib/notifications/timerCheck.ts` — Timer expiration checks

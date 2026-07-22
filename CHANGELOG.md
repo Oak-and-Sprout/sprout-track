@@ -1,5 +1,28 @@
 # Sprout Track Changelog
 
+## v1.6.2 - Breastfeeding Pause Tracking, Webhook Edit/Delete, Security Hardening
+
+### Changes
+
+#### Breastfeeding Timer Improvements (Thank you **philzx**!)
+- Pauses during a nursing session (burping, a quick break) are now tracked and shown in the feed's details
+- Each side's start and end times now reflect when that side was actually in use — the second side no longer appears to start at the beginning of the session
+- Fixed the pause display so short pauses read naturally (e.g. "17 sec" instead of "0 min 17 sec")
+
+#### Webhook API - Edit & Delete (Thank you **urbushey**!)
+- Activities can now be edited and deleted through the webhook API (`PUT`/`DELETE`), so integrations like Home Assistant can correct or remove entries — see the webhook documentation for details
+- The API now rejects unknown fields and invalid values instead of silently dropping them, so a typo in an automation can't quietly lose data
+- Field values (diaper condition/color, sleep quality, bottle type, units, and more) are validated case-insensitively and stored consistently with the app, and the reference endpoint now lists all valid values
+- Pump totals can be logged without splitting between sides, diaper cream is now supported, medicine/supplement notes are saved, and a misspelled caretaker name now returns a clear error instead of logging the activity as nobody
+
+#### Security
+- Fixed a security vulnerability and strengthened family-level access controls across the app — updating is recommended
+
+#### Bugfixes & Localization (Thank you **tionkje**!)
+- Mixed Formula/Breast bottles now display translated everywhere (the stored value was aligned with its translation key, with an automatic data migration)
+- Baby age labels ("18 weeks", "3 months old") are now translated instead of always showing in English
+- Filled in the new translations across all supported languages
+
 ## v1.6.1 - WHO Data, QoL Additions, Photo Functionality Cleanup, New Landing Page
 
 ### Changes

@@ -52,7 +52,7 @@ export default function BottleFeedForm({
   const { t } = useLocalization();
   const { unitSymbol } = useUnit();
   const formId = useId();
-  const bottleTypes = ['Formula', 'Breast Milk', 'Formula\\Breast', 'Milk', 'Other'];
+  const bottleTypes = ['Formula', 'Breast Milk', 'Formula/Breast', 'Milk', 'Other'];
   
   return (
     <div>
@@ -67,11 +67,11 @@ export default function BottleFeedForm({
             onClick={() => onBottleTypeChange(type)}
             disabled={loading}
           >
-            {t(type.replace('\\', '/'))}
+            {t(type)}
           </Button>
         ))}
       </div>
-      {bottleType === 'Formula\\Breast' ? (
+      {bottleType === 'Formula/Breast' ? (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
             <label htmlFor={`${formId}-breast-milk-amount`} className="form-label mb-2">{t('Breast Milk Amount')} ({unitSymbol(unit)})</label>

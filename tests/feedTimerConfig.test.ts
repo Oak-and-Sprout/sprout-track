@@ -103,10 +103,10 @@ describe('feedCountsForTimer', () => {
     expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula' }, ['BOTTLE_BREAST_MILK'])).toBe(false);
   });
 
-  it('counts mixed Formula\\Breast bottles under either breast-milk or formula', () => {
-    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula\\Breast' }, ['BOTTLE_BREAST_MILK'])).toBe(true);
-    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula\\Breast' }, ['BOTTLE_FORMULA'])).toBe(true);
-    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula\\Breast' }, ['BREAST'])).toBe(false);
+  it('counts mixed Formula/Breast bottles under either breast-milk or formula', () => {
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula/Breast' }, ['BOTTLE_BREAST_MILK'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula/Breast' }, ['BOTTLE_FORMULA'])).toBe(true);
+    expect(feedCountsForTimer({ type: 'BOTTLE', bottleType: 'Formula/Breast' }, ['BREAST'])).toBe(false);
   });
 
   it('treats Milk, Other, unknown and missing bottle types as BOTTLE_OTHER', () => {
@@ -149,10 +149,10 @@ describe('buildFeedTimerWhere', () => {
 
   it('includes mixed bottles in both breast-milk and formula clauses', () => {
     expect(buildFeedTimerWhere(['BOTTLE_BREAST_MILK'])).toEqual({
-      OR: [{ type: 'BOTTLE', bottleType: { in: ['Breast Milk', 'Formula\\Breast'] } }],
+      OR: [{ type: 'BOTTLE', bottleType: { in: ['Breast Milk', 'Formula/Breast'] } }],
     });
     expect(buildFeedTimerWhere(['BOTTLE_FORMULA'])).toEqual({
-      OR: [{ type: 'BOTTLE', bottleType: { in: ['Formula', 'Formula\\Breast'] } }],
+      OR: [{ type: 'BOTTLE', bottleType: { in: ['Formula', 'Formula/Breast'] } }],
     });
   });
 
@@ -163,7 +163,7 @@ describe('buildFeedTimerWhere', () => {
           type: 'BOTTLE',
           OR: [
             { bottleType: null },
-            { bottleType: { notIn: ['Breast Milk', 'Formula', 'Formula\\Breast'] } },
+            { bottleType: { notIn: ['Breast Milk', 'Formula', 'Formula/Breast'] } },
           ],
         },
       ],
@@ -182,7 +182,7 @@ describe('buildFeedTimerWhere', () => {
     expect(where).toEqual({
       OR: [
         { type: 'BREAST' },
-        { type: 'BOTTLE', bottleType: { in: ['Formula', 'Formula\\Breast'] } },
+        { type: 'BOTTLE', bottleType: { in: ['Formula', 'Formula/Breast'] } },
       ],
     });
   });

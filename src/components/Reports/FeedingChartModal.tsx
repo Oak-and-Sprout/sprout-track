@@ -356,7 +356,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                         key={type}
                         yAxisId="amount"
                         dataKey={type}
-                        name={t(type.replace('\\', '/'))}
+                        name={t(type)}
                         stackId="bottles"
                         fill={bottleData.colors[index]}
                       />
@@ -370,7 +370,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                     { key: 'count', label: t('Feed Count') },
                     ...bottleData.bottleTypes.map((type) => ({
                       key: type,
-                      label: t(type.replace('\\', '/')),
+                      label: t(type),
                     })),
                   ]}
                   rows={bottleData.data.map((point: any) => ({

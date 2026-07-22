@@ -86,7 +86,7 @@ export const GET = withAuthContext(async (req, authContext) => {
 ```
 - Passes `AuthResult` object to handler
 - Handles special cases:
-  - **Setup auth:** Extracts familyId from query params, validates setup token
+  - **Setup auth:** Extracts familyId from query params and validates it against the setup token via `setupTokenMayTarget()` (`app/api/utils/setup-token-scope.ts`): a token bound to a family requires an exact match; an unbound token may name a family only on `/api/setup/start`. Anything else fails closed with 403.
   - **System admin:** Extracts family context from URL path, query params, or referer header
 - Returns 401 if not authenticated
 
@@ -148,6 +148,18 @@ Expiration is **soft**: `getAuthenticatedUser()` never rejects an expired accoun
 ## Family-Level Authorization (The Golden Rule)
 
 **Never trust client-sent family context.** The only source of truth for a user's family is `authContext.familyId` from the middleware.
+
+Routes that accept an optional client-sent `familyId` (query param or body) resolve it through `resolveFamilyScope()` in `app/api/utils/family-scope.ts` rather than ad-hoc checks:
+
+```typescript
+const scope = resolveFamilyScope(authContext, requestedFamilyId);
+if (!scope.ok) {
+  return NextResponse.json({ success: false, error: scope.error }, { status: scope.status });
+}
+const targetFamilyId = scope.familyId;
+```
+
+For non-sysadmins the requested id may only *confirm* `authContext.familyId` — a mismatch returns 403, as does a missing family context. Sysadmins may target the requested family (cross-family access preserved). The setup-flow routes (`baby`, `caretaker`, `caretaker/system`, `settings`, `settings/verify-pin`) all use this helper.
 
 ### CRUD Authorization Patterns
 

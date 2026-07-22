@@ -219,7 +219,7 @@ export default function FeedForm({
           ...prev,
           amount: data.data.amount.toString(),
           unit: data.data.unitAbbr || prev.unit,
-          ...(lastBottleType === 'Formula\\Breast' && lastBmAmount != null ? {
+          ...(lastBottleType === 'Formula/Breast' && lastBmAmount != null ? {
             breastMilkAmount: lastBmAmount.toString(),
             formulaAmount: (data.data.amount - lastBmAmount).toString(),
           } : {}),
@@ -380,9 +380,9 @@ export default function FeedForm({
         reactionDescription: (activity as any).reactionDescription || '',
         reactionCause: (activity as any).reactionCause || '',
         bottleType: activityBottleType,
-        breastMilkAmount: activityBottleType === 'Formula\\Breast' && activityBmAmount != null
+        breastMilkAmount: activityBottleType === 'Formula/Breast' && activityBmAmount != null
           ? activityBmAmount.toString() : '',
-        formulaAmount: activityBottleType === 'Formula\\Breast' && activityBmAmount != null && activity.amount != null
+        formulaAmount: activityBottleType === 'Formula/Breast' && activityBmAmount != null && activity.amount != null
           ? (activity.amount - activityBmAmount).toString() : '',
         feedDuration: feedDuration,
         leftDuration: activity.side === 'LEFT' ? feedDuration : 0,
@@ -577,7 +577,7 @@ export default function FeedForm({
 
     // For bottle feeding, validate amount
     if (formData.type === 'BOTTLE') {
-      if (formData.bottleType === 'Formula\\Breast') {
+      if (formData.bottleType === 'Formula/Breast') {
         const bmAmt = parseFloat(formData.breastMilkAmount || '0');
         const fAmt = parseFloat(formData.formulaAmount || '0');
         if (bmAmt <= 0 || fAmt <= 0) {
@@ -747,12 +747,12 @@ export default function FeedForm({
         feedDuration: duration
       }),
       ...(formData.type === 'BOTTLE' && {
-        amount: formData.bottleType === 'Formula\\Breast'
+        amount: formData.bottleType === 'Formula/Breast'
           ? parseFloat(formData.breastMilkAmount || '0') + parseFloat(formData.formulaAmount || '0')
           : parseFloat(formData.amount),
         unitAbbr: formData.unit,
       }),
-      ...(formData.type === 'BOTTLE' && formData.bottleType === 'Formula\\Breast' && {
+      ...(formData.type === 'BOTTLE' && formData.bottleType === 'Formula/Breast' && {
         breastMilkAmount: parseFloat(formData.breastMilkAmount || '0'),
       }),
       ...(formData.type === 'BOTTLE' && formData.bottleType && { bottleType: formData.bottleType }),
