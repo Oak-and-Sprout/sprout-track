@@ -108,7 +108,7 @@ export function calculateBreastMilkBalance({
       return total + convertVolume(log.amount, log.unitAbbr || 'OZ', targetUnit);
     }
 
-    if (log.bottleType === 'Formula\\Breast' && log.breastMilkAmount != null) {
+    if (log.bottleType === 'Formula/Breast' && log.breastMilkAmount != null) {
       return total + convertVolume(log.breastMilkAmount, log.unitAbbr || 'OZ', targetUnit);
     }
 

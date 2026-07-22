@@ -68,7 +68,7 @@ const FeedingStatsSection: React.FC<FeedingStatsSectionProps> = ({ stats, activi
                   <div className={cn(styles.statCardSubLabel, "reports-stat-card-sublabel")}>
                     {stats.bottleFeeds.avgByType.map((bt, idx) => (
                       <span key={bt.type}>
-                        {bt.type}: {bt.avgAmount.toFixed(1)} {unitSymbol(bt.unit)} avg
+                        {t(bt.type)}: {bt.avgAmount.toFixed(1)} {unitSymbol(bt.unit)} avg
                         {idx < stats.bottleFeeds.avgByType.length - 1 ? ', ' : ''}
                       </span>
                     ))}

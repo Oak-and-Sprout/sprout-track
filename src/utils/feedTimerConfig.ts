@@ -23,7 +23,7 @@ export interface FeedTimerFeedLike {
   bottleType?: string | null;
 }
 
-const MIXED_BOTTLE = 'Formula\\Breast';
+const MIXED_BOTTLE = 'Formula/Breast';
 const BREAST_MILK_BOTTLES = ['Breast Milk', MIXED_BOTTLE];
 const FORMULA_BOTTLES = ['Formula', MIXED_BOTTLE];
 const KNOWN_BOTTLE_TYPES = ['Breast Milk', 'Formula', MIXED_BOTTLE];

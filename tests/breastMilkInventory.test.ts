@@ -57,7 +57,7 @@ describe('breast milk inventory', () => {
         {
           amount: 6,
           unitAbbr: 'ML',
-          bottleType: 'Formula\\Breast',
+          bottleType: 'Formula/Breast',
           breastMilkAmount: 2,
           sourcePumpId: null,
           notes: null,

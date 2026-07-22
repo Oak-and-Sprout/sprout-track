@@ -400,8 +400,8 @@ model FeedLog {
   hadReaction  Boolean     @default(false) // True when this feed caused a reaction (e.g. a formula intolerance)
   reactionDescription String? // Description of the reaction (redness, swelling, ...)
   reactionCause String? // What caused the reaction (e.g. a formula name like "Similac")
-  bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
-  breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
+  bottleType   String? // Type of bottle feed: formula, breast milk, formula/breast, milk, other
+  breastMilkAmount Float? // Breast milk amount used (for Formula/Breast mixed feeds)
   sessionId    String? // Groups breast feeds into one nursing session; a unique value opts a feed out of heuristic grouping
   sourcePumpId String? @unique // Links an automatic breast-milk feed to the pump session that created it
   createdAt    DateTime    @default(now())
