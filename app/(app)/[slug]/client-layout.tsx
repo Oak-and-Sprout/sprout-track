@@ -38,6 +38,17 @@ import {
   shouldIdleLogout,
   validateFamilySlugWithRetry,
 } from '@/src/utils/session-timeout';
+import { navigateToShell } from '@/src/utils/native-bridge';
+import { isNativeApp } from '@/src/utils/native-app';
+import {
+  decideNativeRelock,
+  readReauthMarker,
+  writeReauthMarker,
+  clearReauthMarker,
+  type NativeRelockDecision,
+} from '@/src/utils/native-relock';
+import { registerNativePushToken } from '@/src/utils/native-push';
+import { consumeInjectedSession } from '@/src/utils/native-session';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -82,6 +93,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const [isUnlocked, setIsUnlocked] = useState(() => {
     // Only run this on client-side
     if (typeof window !== 'undefined') {
+      consumeInjectedSession(); // shell-handed session (native app): writes authToken/unlockTime, strips the fragment
       const unlockTime = localStorage.getItem('unlockTime');
       if (unlockTime && Date.now() - parseInt(unlockTime) <= 60 * 1000) {
         return true;
@@ -101,6 +113,33 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const isRefreshingRef = useRef(false);
   const selectedBabyRef = useRef(selectedBaby);
   useEffect(() => { selectedBabyRef.current = selectedBaby; }, [selectedBaby]);
+
+  // Inside the native shell the web login must never be shown: if a family page
+  // loads locked (a handoff that didn't establish a session), hand control back
+  // to the shell so it can reconnect / re-authenticate. Computed once at mount;
+  // the loop guard falls back to the web login if repeated bounces don't stick.
+  const [relockDecision] = useState<NativeRelockDecision>(() => {
+    if (typeof window === 'undefined') return 'show-login';
+    const unlockTime = localStorage.getItem('unlockTime');
+    const unlocked = !!unlockTime && Date.now() - parseInt(unlockTime) <= 60 * 1000;
+    return decideNativeRelock({
+      unlocked,
+      native: isNativeApp(),
+      slug: familySlug,
+      marker: readReauthMarker(localStorage),
+      now: Date.now(),
+    });
+  });
+
+  useEffect(() => {
+    if (relockDecision !== 'return-to-shell') return;
+    writeReauthMarker(localStorage, { slug: familySlug, at: Date.now() });
+    navigateToShell({ type: 'sessionExpired' });
+  }, [relockDecision, familySlug]);
+
+  useEffect(() => {
+    if (isUnlocked) clearReauthMarker(localStorage);
+  }, [isUnlocked]);
 
   // Refresh the access token using the HTTP-only refresh token cookie
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
@@ -366,6 +405,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     
     // Account holders go to the home page with the login modal open,
     // PIN users go to family root (which shows login UI)
+    if (navigateToShell({ type: 'loggedOut', reason })) return;
     router.push(logoutDestination({ isAccountAuth, familySlug, reason }));
   };
 
@@ -432,6 +472,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
       window.removeEventListener('resize', checkScreenWidth);
     };
   }, [checkScreenWidth]); // Remove fetchData from dependencies to prevent infinite loop
+
+  // Register this device for native push once inside the mobile shell (post-login only)
+  useEffect(() => {
+    if (mounted && isUnlocked && isNativeApp()) void registerNativePushToken();
+  }, [mounted, isUnlocked]);
 
   // Watch for family changes and refetch data (only if authenticated and not on root slug page)
   useEffect(() => {
@@ -804,6 +849,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 setSettingsOpen(true);
               }}
               onLogout={() => handleLogout()}
+              onSwitchFamily={
+                isNativeApp()
+                  ? () => navigateToShell({ type: 'loggedOut', reason: 'switch-family' })
+                  : undefined
+              }
               isAdmin={isAdmin}
               className="h-dvh sticky top-0"
               familySlug={familySlug}
@@ -904,6 +954,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 setSideNavOpen(false);
               }}
               onLogout={() => handleLogout()}
+              onSwitchFamily={
+                isNativeApp()
+                  ? () => navigateToShell({ type: 'loggedOut', reason: 'switch-family' })
+                  : undefined
+              }
               isAdmin={isAdmin}
               familySlug={familySlug}
               familyName={family?.name || familyName}
@@ -913,7 +968,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Show page content without app UI when on root slug page and not authenticated */}
-      {!shouldShowAppUI && (
+      {!shouldShowAppUI && relockDecision === 'return-to-shell' && (
+        // Returning to the shell to reconnect — render the plain backdrop, never
+        // the web login, while the WebView navigates back to the native app.
+        <div className="min-h-screen bg-gradient-to-r from-teal-600 to-teal-700 pt-[env(safe-area-inset-top)]" />
+      )}
+      {!shouldShowAppUI && relockDecision !== 'return-to-shell' && (
         <div className="min-h-screen bg-gradient-to-r from-teal-600 to-teal-700 pt-[env(safe-area-inset-top)]">
           {children}
         </div>
@@ -1033,6 +1093,7 @@ export default function AppLayout({
     // Redirect account holders to the home page (with the login modal open)
     // and PIN users to family root (which shows login UI)
     const familySlug = window.location.pathname.split('/')[1];
+    if (navigateToShell({ type: 'loggedOut', reason })) return;
     window.location.href = logoutDestination({ isAccountAuth, familySlug, reason });
   };
 

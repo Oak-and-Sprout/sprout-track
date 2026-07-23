@@ -175,25 +175,39 @@ describe('filterTaggableMilestones', () => {
 
 describe('decideCameraStrategy', () => {
   it('phone (coarse pointer, touch, mediaDevices) uses the native camera intent', () => {
-    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 5, hasMediaDevices: true })).toBe('native-capture');
+    expect(decideCameraStrategy({ isNativeApp: false, coarsePointer: true, maxTouchPoints: 5, hasMediaDevices: true })).toBe('native-capture');
   });
   it('iPadOS desktop-class Safari (coarse pointer, 5 touch points) still uses native capture', () => {
-    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 5, hasMediaDevices: true })).toBe('native-capture');
+    expect(decideCameraStrategy({ isNativeApp: false, coarsePointer: true, maxTouchPoints: 5, hasMediaDevices: true })).toBe('native-capture');
   });
   it('native capture wins even without mediaDevices (capture attr needs no getUserMedia)', () => {
-    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 1, hasMediaDevices: false })).toBe('native-capture');
+    expect(decideCameraStrategy({ isNativeApp: false, coarsePointer: true, maxTouchPoints: 1, hasMediaDevices: false })).toBe('native-capture');
   });
   it('desktop with a webcam gets the in-app webcam modal', () => {
-    expect(decideCameraStrategy({ coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: true })).toBe('webcam-modal');
+    expect(decideCameraStrategy({ isNativeApp: false, coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: true })).toBe('webcam-modal');
   });
   it('touch laptop (fine primary pointer, touch present) gets the webcam modal', () => {
-    expect(decideCameraStrategy({ coarsePointer: false, maxTouchPoints: 10, hasMediaDevices: true })).toBe('webcam-modal');
+    expect(decideCameraStrategy({ isNativeApp: false, coarsePointer: false, maxTouchPoints: 10, hasMediaDevices: true })).toBe('webcam-modal');
   });
   it('coarse pointer with zero touch points (e.g. TV remote) gets the webcam modal when available', () => {
-    expect(decideCameraStrategy({ coarsePointer: true, maxTouchPoints: 0, hasMediaDevices: true })).toBe('webcam-modal');
+    expect(decideCameraStrategy({ isNativeApp: false, coarsePointer: true, maxTouchPoints: 0, hasMediaDevices: true })).toBe('webcam-modal');
   });
   it('no camera path at all (insecure context) degrades to library-only', () => {
-    expect(decideCameraStrategy({ coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: false })).toBe('library-only');
+    expect(decideCameraStrategy({ isNativeApp: false, coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: false })).toBe('library-only');
+  });
+});
+
+describe('decideCameraStrategy in the native app', () => {
+  it('always uses native capture inside the shell', () => {
+    expect(
+      decideCameraStrategy({ isNativeApp: true, coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: true })
+    ).toBe('native-capture');
+  });
+
+  it('is unchanged outside the shell', () => {
+    expect(
+      decideCameraStrategy({ isNativeApp: false, coarsePointer: false, maxTouchPoints: 0, hasMediaDevices: true })
+    ).toBe('webcam-modal');
   });
 });
 

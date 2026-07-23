@@ -166,6 +166,7 @@ model Account {
   // Relations
   feedback Feedback[]
   pushSubscriptions PushSubscription[]
+  deviceTokens DeviceToken[]
 
   @@index([email])
   @@index([verified])
@@ -209,6 +210,7 @@ model Family {
   familySetups   FamilySetup[]
   feedback       Feedback[]
   pushSubscriptions PushSubscription[]
+  deviceTokens   DeviceToken[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
   activeActivities  ActiveActivity[]
@@ -323,6 +325,7 @@ model Caretaker {
   familySetups  FamilySetup[]
   feedback      Feedback[]
   pushSubscriptions PushSubscription[]
+  deviceTokens  DeviceToken[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
   activeActivities  ActiveActivity[]
@@ -1520,6 +1523,29 @@ model PushSubscription {
   @@index([familyId])
   @@index([endpoint])
   @@index([failureCount])
+}
+
+// Native push device token model (iOS/Android)
+model DeviceToken {
+  id            String    @id @default(cuid())
+  token         String    @unique
+  platform      String // 'ios' | 'android'
+  accountId     String?
+  caretakerId   String?
+  familyId      String
+  failureCount  Int       @default(0)
+  lastFailureAt DateTime?
+  lastSuccessAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  account   Account?   @relation(fields: [accountId], references: [id])
+  caretaker Caretaker? @relation(fields: [caretakerId], references: [id])
+  family    Family     @relation(fields: [familyId], references: [id])
+
+  @@index([accountId])
+  @@index([caretakerId])
+  @@index([familyId])
 }
 
 // Notification preferences per subscription and baby

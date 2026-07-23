@@ -111,6 +111,7 @@ export function filterTaggableMilestones<T extends { id: string; date: string | 
 export type CameraStrategy = 'native-capture' | 'webcam-modal' | 'library-only';
 
 export interface CameraCapabilityFlags {
+  isNativeApp: boolean; // isNativeApp()
   coarsePointer: boolean; // matchMedia('(pointer: coarse)').matches
   maxTouchPoints: number; // navigator.maxTouchPoints
   hasMediaDevices: boolean; // !!navigator.mediaDevices?.getUserMedia
@@ -124,6 +125,7 @@ export interface CameraCapabilityFlags {
  * in-app webcam modal. Anything else falls back to the library picker.
  */
 export function decideCameraStrategy(flags: CameraCapabilityFlags): CameraStrategy {
+  if (flags.isNativeApp) return 'native-capture';
   if (flags.coarsePointer && flags.maxTouchPoints > 0) return 'native-capture';
   if (flags.hasMediaDevices) return 'webcam-modal';
   return 'library-only';

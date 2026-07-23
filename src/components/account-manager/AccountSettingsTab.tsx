@@ -9,6 +9,9 @@ import PaymentModal from './PaymentModal';
 import PaymentHistory from './PaymentHistory';
 import { useLocalization } from '@/src/context/localization';
 import { getSubscriptionView } from '@/src/utils/accountPresentation';
+import { isNativeApp } from '@/src/utils/native-app';
+import { openExternal, MANAGE_SUBSCRIPTION_URL } from '@/src/utils/external-link';
+import { shellSubscriptionControls } from '@/src/utils/shell-chrome';
 
 import {
   User,
@@ -21,7 +24,8 @@ import {
   CheckCircle,
   Key,
   Shield,
-  Receipt
+  Receipt,
+  ExternalLink
 } from 'lucide-react';
 
 /**
@@ -118,6 +122,15 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   const [loadingSubscriptionStatus, setLoadingSubscriptionStatus] = useState(false);
   const [renewingSubscription, setRenewingSubscription] = useState(false);
 
+  // Whether we're running inside the native Capacitor shell (IAP compliance:
+  // payment surfaces are hidden and replaced with an external-browser link).
+  // Read after mount only — isNativeApp() depends on navigator.userAgent,
+  // which isn't available during SSR/hydration.
+  const [inShell, setInShell] = useState(false);
+  React.useEffect(() => {
+    setInShell(isNativeApp());
+  }, []);
+
   // Storybook-style view of the subscription state, derived from account + subscription status
   const subscriptionView = getSubscriptionView(
     {
@@ -129,6 +142,8 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
     },
     new Date()
   );
+
+  const shellControls = shellSubscriptionControls(inShell, subscriptionView.kind, accountStatus.hasFamily);
 
   // Check slug uniqueness
   const checkSlugUniqueness = useCallback(async (slug: string) => {
@@ -821,9 +836,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               <button type="button" className="sb-btn sb-sm" onClick={() => window.location.href = '/account/family-setup'}>
                 {t('Create Family')}
               </button>
-              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
-                {t('Upgrade Plan')}
-              </button>
+              {!shellControls.showPaymentActions ? null : (
+                <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                  {t('Upgrade Plan')}
+                </button>
+              )}
             </div>
           </>
         ) : subscriptionView.kind === 'lifetime' ? (
@@ -839,9 +856,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 ? t('Ends {date} · then $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString())
                 : t('Then $2.99/month')}
             </p>
-            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
-              {t('Start my subscription')}
-            </button>
+            {!shellControls.showPaymentActions ? null : (
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Start my subscription')}
+              </button>
+            )}
           </>
         ) : subscriptionView.kind === 'active' ? (
           <>
@@ -853,7 +872,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     : t('Renews {date} · $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString()))
                 : t('$2.99/month')}
             </p>
-            {subscriptionView.cancelAtPeriodEnd ? (
+            {!shellControls.showPaymentActions ? null : subscriptionView.cancelAtPeriodEnd ? (
               <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleRenewSubscription} disabled={renewingSubscription}>
                 {renewingSubscription ? t('Renewing...') : t('Renew Subscription')}
               </button>
@@ -869,14 +888,28 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className="sb-alertbox">
               <b>{t('Logging is paused — your data is safe.')}</b>
               <p>{t('Everything your family tracked is still here. Renew and you pick up right where you left off.')}</p>
-              <button type="button" className="sb-btn sb-sm" onClick={() => setShowPaymentModal(true)}>
-                {t('Renew for $2.99/month')}
-              </button>
+              {!shellControls.showPaymentActions ? null : (
+                <button type="button" className="sb-btn sb-sm" onClick={() => setShowPaymentModal(true)}>
+                  {t('Renew for $2.99/month')}
+                </button>
+              )}
             </div>
           </>
         ) : null}
 
-        {(accountStatus.subscriptionActive || accountStatus.planType) && (
+        {shellControls.showWebNote && (
+          <p className="sb-status-sub" style={{ marginTop: 6 }}>
+            {t('Subscriptions are managed on the web, not in this app.')}
+          </p>
+        )}
+        {shellControls.showExternalManage && (
+          <button type="button" className="sb-btn sb-sm" onClick={() => openExternal(MANAGE_SUBSCRIPTION_URL)}>
+            <ExternalLink size={15} strokeWidth={1.8} />
+            {t('Manage your subscription at sprout-track.com')}
+          </button>
+        )}
+
+        {!inShell && (accountStatus.subscriptionActive || accountStatus.planType) && (
           <div style={{ marginTop: 12 }}>
             <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentHistory(true)}>
               <Receipt size={15} strokeWidth={1.8} />
@@ -1040,29 +1073,33 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         )}
       </div>
 
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        accountStatus={{
-          accountStatus: accountStatus.accountStatus,
-          planType: accountStatus.planType || null,
-          subscriptionActive: accountStatus.subscriptionActive,
-          trialEnds: accountStatus.trialEnds || null,
-          planExpires: accountStatus.planExpires || null,
-          subscriptionId: accountStatus.subscriptionId || null,
-        }}
-        onPaymentSuccess={() => {
-          setShowPaymentModal(false);
-          onDataRefresh();
-        }}
-      />
+      {/* Payment Modal - never mounted in-shell (IAP compliance) */}
+      {!inShell && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          accountStatus={{
+            accountStatus: accountStatus.accountStatus,
+            planType: accountStatus.planType || null,
+            subscriptionActive: accountStatus.subscriptionActive,
+            trialEnds: accountStatus.trialEnds || null,
+            planExpires: accountStatus.planExpires || null,
+            subscriptionId: accountStatus.subscriptionId || null,
+          }}
+          onPaymentSuccess={() => {
+            setShowPaymentModal(false);
+            onDataRefresh();
+          }}
+        />
+      )}
 
-      {/* Payment History Modal */}
-      <PaymentHistory
-        isOpen={showPaymentHistory}
-        onClose={() => setShowPaymentHistory(false)}
-      />
+      {/* Payment History Modal - never mounted in-shell (IAP compliance) */}
+      {!inShell && (
+        <PaymentHistory
+          isOpen={showPaymentHistory}
+          onClose={() => setShowPaymentHistory(false)}
+        />
+      )}
     </div>
   );
 };

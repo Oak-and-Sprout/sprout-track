@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { CameraStrategy, decideCameraStrategy } from '@/src/utils/photoUtils';
+import { isNativeApp } from '@/src/utils/native-app';
 
 /**
  * Decides how a "Take Photo" action should behave on this device:
@@ -19,6 +20,7 @@ export function useCameraStrategy(): CameraStrategy {
   const check = useCallback(() => {
     setStrategy(
       decideCameraStrategy({
+        isNativeApp: isNativeApp(),
         coarsePointer: window.matchMedia('(pointer: coarse)').matches,
         maxTouchPoints: navigator.maxTouchPoints,
         hasMediaDevices: !!navigator.mediaDevices?.getUserMedia,

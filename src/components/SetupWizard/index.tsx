@@ -349,21 +349,27 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
                 }
               }
             } else if (caretakers.length > 0) {
-              // Link account to first caretaker — need to find its ID
-              const caretakerListResponse = await fetch(`/api/family/${createdFamily?.id}/caretakers`, {
+              // Link account to the lowest-loginId caretaker — need to find its ID.
+              // /api/family/{id}/caretakers is sysadmin-gated and 403s for account JWTs, so use
+              // the account-accessible listing instead. That endpoint orders by name, so pick
+              // the lowest loginId rather than trusting list order.
+              const caretakerListResponse = await fetch(`/api/caretaker?familyId=${createdFamily?.id}`, {
                 headers: getAuthHeaders(),
               });
 
               if (caretakerListResponse.ok) {
                 const caretakerListData = await caretakerListResponse.json();
                 if (caretakerListData.success && caretakerListData.data?.length > 0) {
-                  // Find the first non-system caretaker
-                  const firstCaretaker = caretakerListData.data.find((c: { loginId: string }) => c.loginId !== '00');
-                  if (firstCaretaker) {
+                  // Find the non-system caretaker with the lowest loginId
+                  const lowestCaretaker = caretakerListData.data
+                    .filter((c: { loginId: string }) => c.loginId !== '00')
+                    .reduce((min: { loginId: string } | undefined, c: { loginId: string }) =>
+                      (!min || c.loginId < min.loginId) ? c : min, undefined);
+                  if (lowestCaretaker) {
                     await fetch('/api/accounts/link-caretaker', {
                       method: 'POST',
                       headers: getAuthHeaders(),
-                      body: JSON.stringify({ caretakerId: firstCaretaker.id }),
+                      body: JSON.stringify({ caretakerId: lowestCaretaker.id }),
                     });
                   }
                 }
