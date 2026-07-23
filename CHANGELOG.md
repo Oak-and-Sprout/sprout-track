@@ -1,5 +1,13 @@
 # Sprout Track Changelog
 
+## v1.6.3 - Hotfix: WHO data in Docker and Breast Feed Link Time Fix
+
+### Changes
+
+#### Hotfix
+- Added WHO data to include list when creating docker containers - Thank you **t-dhruv**!
+- Fixed linked time for breast feed sessions - Thanks for the heads up **tannermeade**!
+
 ## v1.6.2 - Breastfeeding Pause Tracking, Webhook Edit/Delete, Security Hardening
 
 ### Changes
