@@ -56,7 +56,45 @@ You do not need to create the `.env` file manually. The setup process handles it
 | `VAPID_PUBLIC_KEY` | -- | VAPID public key (Docker passthrough). Normally managed in the database via the admin UI. |
 | `VAPID_PRIVATE_KEY` | -- | VAPID private key (Docker passthrough). Normally managed in the database via the admin UI. |
 | `VAPID_SUBJECT` | `"mailto:notifications@sprouttrack.app"` | VAPID subject identifier |
-| `FCM_SERVICE_ACCOUNT_JSON` | (unset) | Inline Firebase service-account JSON enabling native (FCM/APNs) push for the mobile app. Unset = native push disabled; web push is unaffected. |
+| `FCM_SERVICE_ACCOUNT_JSON` | (unset) | Inline Firebase service-account JSON enabling the **Android** native-push transport (FCM HTTP v1). Unset = native push to Android devices disabled; web push is unaffected. |
+| `APNS_AUTH_KEY` | (unset) | APNs auth key (`.p8` contents) enabling the **iOS** native-push transport. PEM newlines may be literal `\n` — the loader unescapes them. |
+| `APNS_KEY_ID` | (unset) | Key ID for the APNs auth key above, from the Apple Developer portal. |
+| `APNS_TEAM_ID` | (unset) | Apple Developer Team ID; used as the APNs provider JWT issuer. |
+| `APNS_BUNDLE_ID` | (unset) | iOS app bundle identifier; sent as the `apns-topic` header on every push. |
+| `APNS_PRODUCTION` | `"false"` (unset = sandbox) | `"true"` routes APNs sends to `api.push.apple.com`; anything else (including unset) routes to `api.sandbox.push.apple.com`. **See the sandbox/production trap below.** |
+| `APPLE_TEAM_ID` | (unset) | Apple Developer Team ID used to template the `apple-app-site-association` (Universal Links) response as `{APPLE_TEAM_ID}.com.sprouttrack.app`. Not push-related — required for `/setup/*`, `/verify*`, `/passwordreset*` deep links to work on iOS. Often the same value as `APNS_TEAM_ID` (same Apple team) but configured separately since the two concerns are independent. |
+| `ANDROID_CERT_SHA256` | (unset) | SHA-256 fingerprint of the Android app signing certificate (Play App Signing), served from `/.well-known/assetlinks.json` to verify Android App Links. Not push-related. |
+
+### Native Push (mobile app, SaaS-only)
+
+`FCM_SERVICE_ACCOUNT_JSON` and the seven `APNS_*`/`APPLE_TEAM_ID`/
+`ANDROID_CERT_SHA256` variables above exist **only** to support the companion
+Capacitor mobile app (native push notifications and Universal/App Links). This
+is a SaaS-only feature — **self-hosted deployments should leave all of these
+unset.** There is no self-hosted use case for them: nothing else in the app
+reads them, and the mobile app itself gracefully degrades (device-token routes
+404, no permission prompt shown, deep links simply don't resolve to the app) with
+every one of them unset. See
+[NativeAppIntegration.md](../Architecture-Documentation/NativeAppIntegration.md)
+for the full architecture.
+
+**`APNS_PRODUCTION` sandbox/production trap.** APNs has two entirely separate
+hosts — `api.sandbox.push.apple.com` and `api.push.apple.com` — and a device
+token minted under one is rejected (`BadDeviceToken`) by the other. Which host a
+token belongs to is determined by how the *app binary* was signed and
+distributed, not by anything the server controls:
+
+- A **development build** (Xcode debug run) or a **TestFlight build** always
+  mints **sandbox** tokens.
+- Only an **App Store** build (or an ad-hoc/enterprise build signed for
+  distribution) mints **production** tokens.
+
+So `APNS_PRODUCTION=true` against a fleet of TestFlight testers' devices will
+send every push into `BadDeviceToken` failures — and the reverse, leaving it
+unset/`false` once the app is live on the App Store, does the same in the other
+direction. Set it to match how the *client binaries currently in the field* were
+built, not how the server happens to be deployed, and revisit it at each
+transition between TestFlight and App Store release.
 
 ### Logging
 

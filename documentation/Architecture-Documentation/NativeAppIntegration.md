@@ -13,7 +13,8 @@ That design ("one WebView, two owners") means the web app has to know when it is
 running inside the shell and behave slightly differently. This document describes
 that native-aware layer: how detection works, how the two sides hand control back
 and forth, which capabilities are swapped for native equivalents, what changes for
-app-store payment compliance, and the native push channel that sits beside web push.
+app-store payment compliance, the native push channel that sits beside web push,
+and the Universal/App Links the shell claims from the OS.
 
 **The invariant that governs all of it:** every native-aware branch is gated on
 detection of the shell's user agent and **no-ops in a normal browser**. Web users
@@ -188,17 +189,39 @@ re-renders can't retrigger navigation.
 Each of these swaps a browser API for the platform equivalent when — and only
 when — the shell provides it.
 
-### Wake lock → KeepAwake plugin
+### Wake lock and immersive mode — driven natively, not by this repo
 
-**File:** `src/hooks/useWakeLock.ts`
+**Files (mobile-app-v1, not this repo):**
+`ios/App/App/NurseryAwareViewController.swift`,
+`android/app/src/main/java/com/sprouttrack/app/NurseryAwareWebViewClient.java`
 
-Nursery mode keeps a wall-mounted tablet awake all day. The W3C Wake Lock API
-isn't reliably available in a Capacitor WebView, so the hook resolves its
-mechanism through `chooseWakeLockMechanism`: the `KeepAwake` Capacitor plugin
-wins if present, then `navigator.wakeLock`, then nothing. `isSupported` reflects
-the resolved mechanism rather than the browser API alone, and `request()` /
-`release()` branch on it. The plugin path has no sentinel and therefore no
-`release` event — `isActive` is set directly.
+Nursery mode keeps a wall-mounted tablet awake and full-screen all day. Earlier
+in this project's history the shell used the Capacitor `KeepAwake` plugin, driven
+from web-app JS via `navigator.wakeLock`-style calls. That doesn't work for this
+app: the shell's JS (and with it, any plugin bridge call) stops running once the
+WebView is handed to this remote server, so nothing on this side of the wire can
+invoke a plugin to hold or release a wake lock. `KeepAwake` has been **removed**
+as a shell dependency.
+
+Instead, the shell observes the WebView's own URL natively and toggles the OS
+idle timer and status bar directly, with no cooperation required from this repo:
+
+- **iOS**: `NurseryAwareViewController` (a `CAPBridgeViewController` subclass,
+  wired in via the storyboard's `customModule`) uses Key-Value Observing on
+  `webView.url`, which fires on `history.pushState` navigation and not just hard
+  page loads — so entering/leaving `/nursery-mode` via Next.js client-side
+  routing is caught. It toggles `UIApplication.shared.isIdleTimerDisabled` and
+  the status bar visibility, paired and idempotent (re-entering nursery mode
+  without leaving is a no-op), and resets the idle timer in `deinit` so it can
+  never be left disabled past the controller's lifetime.
+- **Android**: `NurseryAwareWebViewClient` overrides `doUpdateVisitedHistory` (not
+  `onPageStarted`, for the same client-side-navigation reason) and applies the
+  equivalent window-flag / immersive-mode toggle.
+
+Both sides match on the same rule: the URL's second path segment must equal
+`nursery-mode` exactly, not merely start with it (`/{slug}/nursery-mode`). This
+repo's job is only to keep that route stable — it has no wake-lock code of its
+own to maintain.
 
 ### Camera → OS capture
 
@@ -254,11 +277,20 @@ falls back to `window.open(url, '_blank', 'noopener')`, which the shell's WebVie
 also hands to the OS. `MANAGE_SUBSCRIPTION_URL` (`https://sprout-track.com/account`)
 is the single canonical destination.
 
-## Native push channel (FCM)
+## Native push channel
 
 Native push runs **beside** VAPID web push rather than replacing it — see
 [PWA and Notifications](./PWAAndNotifications.md) for the web-push architecture
-this mirrors. It is entirely opt-in per deployment.
+this mirrors. It is entirely opt-in per deployment, and **SaaS-only**: it exists
+to support the App Store / Play Store builds, which is a SaaS-hosted product.
+Self-hosted deployments leave the relevant env vars unset and are completely
+unaffected — no code path here behaves differently for them.
+
+There are **two independent transports**, not one: FCM for Android, and direct
+APNs (HTTP/2) for iOS. There is no Firebase iOS SDK anywhere in this stack —
+Apple devices never touch Firebase. A `nativePush.ts` dispatcher owns token
+selection, per-platform routing, and the token lifecycle; the transport modules
+only send one message to one token and report an outcome.
 
 ### `DeviceToken` model
 
@@ -268,7 +300,7 @@ Migration: `20260720201548_add_device_token`.
 ```
 DeviceToken {
   id            cuid
-  token         String  @unique   // FCM registration token
+  token         String            // FCM registration token or APNs device token
   platform      String            // 'ios' | 'android'
   accountId     String?           // owner (account auth)
   caretakerId   String?           // owner (PIN auth)
@@ -276,6 +308,8 @@ DeviceToken {
   failureCount  Int     @default(0)
   lastFailureAt DateTime?
   lastSuccessAt DateTime?
+
+  @@unique([token, familyId])
 }
 ```
 
@@ -283,52 +317,106 @@ Back-relations on `Account`, `Caretaker`, and `Family`; indexed on all three
 foreign keys. `platform` is a validated string rather than an enum, per the
 dual-database constraint.
 
+The unique key is the **composite** `(token, familyId)`, not `token` alone. The
+same physical device token can legitimately register itself into more than one
+family (a caretaker who belongs to two families installs one app), so `token`
+alone can't be unique — but a token is still unique *within* a family, which is
+what the registration upsert relies on. This has one consequence worth knowing:
+when a token comes back `UNREGISTERED`/`Unregistered` from the transport, the
+dispatcher deletes it **by token, across all families it appears in** (see
+`onUnregistered` in `nativePush.ts`) — a dead device token is dead everywhere,
+not just in the family that happened to trigger the send.
+
 ### Registration API
 
 **Files:** `app/api/notifications/device-tokens/route.ts`, `validation.ts`
 
 | Method | Behavior |
 |--------|----------|
-| `POST` | Upserts by `token`, stamping `familyId`/`accountId`/`caretakerId` from `authContext`. Returns `{ id }`. A token that moved to a different family or caretaker is re-owned rather than duplicated. |
-| `DELETE` | `?token=` — loads the record and deletes it only when `record.familyId === authContext.familyId`; otherwise 404. |
+| `POST` | Upserts on the composite `(token, familyId)` key, stamping `accountId`/`caretakerId` from `authContext`. Returns `{ id }`. A token that moved to a different caretaker within the same family is re-owned rather than duplicated; a token registering into a *new* family gets its own row. Requires `withAuthContext`; no family on the auth context is a `403`. |
+| `DELETE` | `?token=` — deletes **every row with that exact token**, across all families, with no auth check. See below for why. |
 
-Both use `withAuthContext`. Ownership comes **only** from the auth context — the
-client cannot name a family, caretaker, or account (the golden rule). No family on
-the auth context is a `403`. `parseDeviceTokenBody` is a pure validator: token must
-be a non-empty string ≤ 4096 chars after trimming, platform must be exactly `ios`
-or `android`.
+Both routes **404 when neither transport is configured** (`isFcmConfigured() ||
+isApnsConfigured()` is false) — on a self-hosted deployment they don't exist as
+far as a client can tell, the same posture as any other SaaS-only surface.
 
-### Send module
+`POST` uses `withAuthContext`; ownership comes **only** from the auth context —
+the client cannot name a family, caretaker, or account (the golden rule).
+`parseDeviceTokenBody` is a pure validator: token must be a non-empty string
+≤ 4096 chars after trimming, platform must be exactly `ios` or `android`.
 
-**File:** `src/lib/notifications/fcmPush.ts`
+**`DELETE` is unauthenticated by design.** This is a deliberate exception to the
+usual auth posture, not an oversight, and it is documented at the call site
+(`route.ts`, spec §D7):
 
-FCM **HTTP v1**, called directly with `fetch`. There is no `firebase-admin`
-dependency: a service-account JWT is signed with `jsonwebtoken` (RS256) and
-exchanged for an OAuth access token, which is cached in-process until one minute
-before expiry.
+- The device token itself is high-entropy and known only to the device that
+  registered it — presenting it back is self-authenticating for this one
+  narrow operation (delete-this-token), the same trust model as a bearer
+  capability URL.
+- The shell calls this specifically during **family removal**, a moment where it
+  has no JWT (the credential was already cleared, or was never re-acquired for
+  a background cleanup action) and acquiring one would mean firing a biometric
+  prompt just to unregister a push token — clearly disproportionate.
+- It is bounded tightly: the only thing this endpoint can do is delete rows
+  matching an exact, unguessable token. It grants no read access, no write
+  access to family data, and no enumeration oracle (`deleteMany` and the fixed
+  `{success: true}` response never reveal whether a row existed). Reviewer
+  verified this bounding during Task 3 of this pass.
+
+### Send modules
+
+**Files:** `src/lib/notifications/nativePush.ts` (dispatcher),
+`src/lib/notifications/fcmPush.ts` (Android transport),
+`src/lib/notifications/apnsPush.ts` (iOS transport)
+
+`sendToDeviceTokens({ familyId, caretakerId, accountId }, payload)` in
+`nativePush.ts` queries `DeviceToken` rows matching the family **and** one of the
+owners, then for each row:
+
+1. **Skips entirely** if that row's platform isn't configured
+   (`isApnsConfigured()` for `ios`, `isFcmConfigured()` for `android`) — no
+   transport call, no lifecycle write of any kind. This is the important
+   asymmetry to hold onto: an unconfigured platform is not a failure, it's a
+   no-op. Routing it through the failure path would be indistinguishable from a
+   real transient error and would accrue `failureCount` on every send attempt
+   forever, purely because that platform was never set up.
+2. Otherwise sends via the matching transport and applies the outcome: success
+   resets `failureCount` and stamps `lastSuccessAt`; an unregistered response
+   deletes the token (by token, across families — see above); any other
+   failure increments `failureCount` and stamps `lastFailureAt`.
+
+`fcmPush.ts` is a **pure transport**: FCM HTTP v1, called directly with `fetch`.
+There is no `firebase-admin` dependency — a service-account JWT is signed with
+`jsonwebtoken` (RS256) and exchanged for an OAuth access token, cached
+in-process until one minute before expiry. It does not touch the database or own
+any lifecycle decision; that all moved to `nativePush.ts`.
 
 - `loadFcmServiceAccount(env)` parses `FCM_SERVICE_ACCOUNT_JSON` and returns
   `null` on anything malformed. `isFcmConfigured()` is the boolean form.
 - `buildFcmMessage(token, payload)` reuses the web-push `NotificationPayload`
   shape, stringifies all `data` values (FCM requires string values), and maps
-  `payload.tag` to `android.collapse_key` + `apns-collapse-id` so repeat timer
-  notifications collapse on the device instead of stacking.
-- `sendToDeviceTokens({ familyId, caretakerId, accountId }, payload)` queries
-  tokens matching the family **and** one of the owners, sends to each, and
-  maintains the token lifecycle: success resets `failureCount` and stamps
-  `lastSuccessAt`; a `404` whose body contains `UNREGISTERED` **deletes** the
-  token; any other failure increments `failureCount` and stamps `lastFailureAt`.
-  Returns the number of successful sends. **An unconfigured deployment returns
-  `0` immediately** — no network calls, no errors.
+  `payload.tag` to `android.collapse_key` so repeat timer notifications collapse
+  on the device instead of stacking.
+- `sendOne(token, payload)` returns `{ success, unregistered }`; `unregistered`
+  is only ever `true` for a `404` whose body contains `UNREGISTERED`. Transient
+  5xx/network failures never set it.
 
-Only a genuine `UNREGISTERED` response deletes a token; transient 5xx/network
-failures never do.
+`apnsPush.ts` is the iOS equivalent: APNs over HTTP/2 (`node:http2`), configured
+via `APNS_AUTH_KEY` / `APNS_KEY_ID` / `APNS_TEAM_ID` / `APNS_BUNDLE_ID` /
+`APNS_PRODUCTION`. A provider JWT is signed (ES256) and cached for 45 minutes —
+Apple rejects provider tokens refreshed more than once per 20 minutes, so this
+cache is load-bearing, not an optimization. `unregistered` is only set for a
+`410` whose body contains `Unregistered`; a `400 BadDeviceToken` is treated as an
+ordinary failure, **not** a dead token, because it is far more often a
+sandbox/production host mismatch than a genuinely gone device (see
+[environment-variables.md](../Admin-Documentation/environment-variables.md) for
+that trap).
 
 ### Send sites
 
 Native sends are **fire-and-forget** (`.catch(console.error)`) alongside the
-existing `sendNotificationWithLogging` call at each site, so a failing FCM
-configuration can never delay or break web push:
+existing `sendNotificationWithLogging` call at each site, so a failing native
+push configuration can never delay or break web push:
 
 | Site | File |
 |------|------|
@@ -344,39 +432,110 @@ surface, and payloads are already localized per subscriber by
 
 Note that `NotificationLog` records the **web-push** attempt. Native sends are not
 individually logged; their health is observable through `DeviceToken.failureCount`
-/ `lastFailureAt` / `lastSuccessAt` and `[FCM]`-prefixed server logs.
+/ `lastFailureAt` / `lastSuccessAt` and `[FCM]`/`[APNs]`-prefixed server logs.
 
-### Client registration
+### Client registration — owned by the shell, not this repo
 
-**File:** `src/utils/native-push.ts`
-
-`registerNativePushToken()` is called from `client-layout.tsx` only when
-`mounted && isUnlocked && isNativeApp()` — **after login, never at first launch**,
-so the OS permission prompt arrives with context. It is idempotent per page
-session via a module-level `attempted` flag.
-
-Flow: fetch `GET /api/deployment-config` → require
-`shouldAttemptNativePush({ isNative, hasPlugin, nativePushEnabled })` → request
-permissions → subscribe to the plugin's `registration` event → `POST` the token
-and platform to `/api/notifications/device-tokens` with the current
-`authToken`. Any failure is logged and swallowed.
+There is **no `src/utils/native-push.ts` in this repo anymore.** Push permission,
+token acquisition, and registration are entirely the shell's responsibility
+(`mobile-app-v1/src/services/push.ts` and `push-opt-in.ts`), driven by the
+shell's own UI (a post-connect permission intro) rather than by this web app
+noticing it's unlocked. This repo's only involvement is serving the
+`/api/notifications/device-tokens` and `/api/deployment-config` endpoints the
+shell calls — there is nothing left here to register a token client-side.
 
 ### Deployment flag
 
-`GET /api/deployment-config` (unauthenticated) exposes
-`nativePushEnabled: isFcmConfigured()` beside the existing flags. This is what
-lets the client skip the permission prompt entirely on deployments that cannot
-deliver native push.
+`GET /api/deployment-config` (unauthenticated) exposes both a legacy flat flag
+and a per-platform breakdown:
+
+```json
+{ "nativePushEnabled": true, "nativePush": { "ios": true, "android": false } }
+```
+
+`nativePushEnabled` is kept for older shell builds that only know the flat
+shape — App Store/Play Store review latency means an installed shell can lag
+the server by a version or two, so both shapes have to keep working
+simultaneously. `nativePush.{ios,android}` is what a current shell build reads
+to decide, per platform, whether it's even worth prompting for permission.
+
+## Deep links
+
+**Files (mobile-app-v1, not this repo):**
+`src/services/deep-links.ts`, `app/.well-known/apple-app-site-association/route.ts`
+and `app/.well-known/assetlinks.json/route.ts` (this repo), and the Android
+manifest's `intent-filter` in `mobile-app-v1/android/app/src/main/AndroidManifest.xml`.
+
+The shell claims a handful of `https://sprout-track.com/...` paths as Universal
+Links (iOS) / App Links (Android), so tapping one of these in an email or a
+browser opens the app directly instead of (or before) the marketing site:
+
+| Path | Screen |
+|------|--------|
+| `/setup/{token}` | The family setup wizard, landing an admin-generated `FamilySetup` token straight into the shell's wizard flow. |
+| `/verify?token=...` | `AccountVerifyLink` — verifies the emailed confirmation token. |
+| `/passwordreset?token=...` | The account password-reset confirmation screen. |
+
+`/account` is **deliberately never claimed** — this is the one exclusion that
+matters. `MANAGE_SUBSCRIPTION_URL` (`https://sprout-track.com/account`) is where
+subscription management links out to, via `openExternal`, specifically so it
+opens in the **system browser** and not inside the app. Claiming `/account` as a
+deep link would silently defeat that and reopen the App Store payment-compliance
+problem the shell-chrome rules (above) exist to avoid. Marketing routes (`/`,
+`/pricing`, `/features`, `/privacy`, `/terms`, `/home`) are likewise left
+unclaimed on both platforms.
+
+Two platform mechanisms enforce the same claimed set, asymmetrically:
+
+- **iOS** is server-side: the AASA (`apple-app-site-association`) route in this
+  repo is the single source of truth (`claimedPaths()`), served with
+  `Cache-Control` and templated with `APPLE_TEAM_ID`. iOS fetches and caches it;
+  changing the claimed set here changes what iOS claims without an app update.
+- **Android** is baked into the shell's `AndroidManifest.xml` at build time —
+  three `pathPrefix` entries mirroring the same three paths. Changing the
+  claimed set on Android requires a new app build; `assetlinks.json` in this
+  repo (keyed by `ANDROID_CERT_SHA256`) only proves the app is allowed to claim
+  `sprout-track.com` at all, it doesn't say which paths.
+
+That asymmetry means the three path prefixes have to be kept in lockstep by hand
+across three places (the AASA route, the Android manifest, and the shell's own
+`screenForDeepLink` allow-list) — there's no single shared source across repos.
+All three currently use **unbounded prefix wildcards** (`/verify*`,
+`/passwordreset*`) rather than exact matches; a hypothetical future route like
+`/verify-email-changed` would silently become a deep link too. No such route
+exists today, so this is a known, accepted blast radius rather than a bug —
+flagged as a candidate for coordinated tightening in a future release.
+
+`AccountVerifyLink` exists as a **separate screen** from the shell's existing
+`AccountVerify` because they authenticate with different credentials: the
+emailed verification link carries a one-time token consumed by the
+unauthenticated `POST /api/accounts/verify`, whereas `AccountVerify`'s `token`
+prop is an account JWT used against the authenticated `GET /api/accounts/status`
+and whose success path unconditionally writes credentials to the vault — which a
+cold deep-link tap never has to offer.
+
+Account email links (verification and password reset) moved from the old hash
+form (`/#verify`, `/#passwordreset`) to real paths (`/verify`, `/passwordreset`)
+so they're linkable/deep-linkable at all — a fragment is never sent to the
+server or observable by a native URL-claiming mechanism. **The hash forms are
+kept working indefinitely** as a compatibility fallback, not deprecated on any
+timeline; anything that already has an old-style link in an inbox must keep
+working.
 
 ## Operations
 
 | Variable | Effect |
 |----------|--------|
-| `FCM_SERVICE_ACCOUNT_JSON` | Inline Firebase service-account JSON. Unset ⇒ native push disabled and `nativePushEnabled: false`; web push is unaffected either way. Documented in [environment-variables.md](../Admin-Documentation/environment-variables.md). |
+| `FCM_SERVICE_ACCOUNT_JSON` | Inline Firebase service-account JSON, enables the Android transport. Unset ⇒ Android native push disabled; web push is unaffected either way. |
+| `APNS_AUTH_KEY`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `APNS_PRODUCTION` | APNs provider credentials, enable the iOS transport. All four of the first group are required together; missing any one leaves iOS unconfigured. |
+| `APPLE_TEAM_ID`, `ANDROID_CERT_SHA256` | Not push-related — these back the AASA/assetlinks deep-link verification routes above. |
 
-Self-hosters who do not run the mobile app need to do nothing: the entire layer is
-inert without the shell's user agent, and the push channel is inert without the
-service account.
+Full details, including the `APNS_PRODUCTION` sandbox/production trap, are in
+[environment-variables.md](../Admin-Documentation/environment-variables.md).
+
+Self-hosters who do not run the mobile app need to do nothing: the entire native
+layer is inert without the shell's user agent, and each push transport is inert
+without its own configuration. Native push is a **SaaS-only** feature.
 
 Keep the shell's `appendUserAgent` version in `capacitor.config.ts` in sync with
 the app version — the detection regex accepts any version, but the UA string is
@@ -398,18 +557,18 @@ are thin wrappers that bind `window`/`navigator` and delegate.
 | `tests/native-relock.test.ts` | Three-way decision and the loop guard |
 | `tests/shell-chrome.test.ts` | Footer/CTA/subscription presentation rules |
 | `tests/external-link.test.ts` | Plugin vs `window.open` fallback |
-| `tests/native-push.test.ts` | Registration gate |
+| `tests/native-push-dispatch.test.ts` | Dispatcher: per-platform skip-when-unconfigured, success/failure/unregistered lifecycle |
 | `tests/device-token-validation.test.ts` | Body validator edge cases |
-| `tests/fcm-push.test.ts` | Service-account parsing, message shape, collapse keys |
+| `tests/device-tokens.test.ts` | Registration API: composite-key upsert, 404-when-unconfigured, unauthenticated DELETE |
+| `tests/fcm-push.test.ts` | Service-account parsing, message shape, collapse keys (Android transport) |
+| `tests/apns-push.test.ts` | Config parsing, JWT claims, response classification, sandbox/production host (iOS transport) |
 
 ## Known limitations
 
 - **Duplicate activity pushes.** Targeting iterates web-push subscriptions, so a
-  user with several browser subscriptions in one family receives one FCM push per
-  subscription for activity events. Timer events collapse on-device via the stable
-  `payload.tag`; activity events do not.
-- **No deep-link routing on tap.** A tapped native notification opens the app; it
-  does not navigate to the relevant baby or activity.
+  user with several browser subscriptions in one family receives one native push
+  per subscription for activity events. Timer events collapse on-device via the
+  stable `payload.tag`; activity events do not.
 - **Native sends are not in `NotificationLog`.** See above.
 - **Biometric gating is shell-side JS**, not OS-`accessControl`-backed Keychain.
   Nothing in this repo depends on that, but it bounds the security claim of the
@@ -418,6 +577,15 @@ are thin wrappers that bind `window`/`navigator` and delegate.
   the contract but have no sender or receiver in this repo — capabilities are
   resolved through Capacitor plugins directly instead. They are kept because the
   contract is shared and versioned.
+- **A human must open Xcode once** to reconcile automatic signing and the
+  Push/Associated-Domains capabilities with the Apple Developer portal before
+  this ships to a real device or TestFlight — this is not automatable from the
+  command line and hasn't been done as part of this pass.
+- **Manual device verification of nursery mode has not been run.** The native
+  URL-observation code above (KVO on iOS, `doUpdateVisitedHistory` on Android) is
+  unit-tested at the host level, but entering/exiting nursery mode on a real
+  device or simulator — confirming the screen actually stays awake, goes
+  immersive, and cleanly reverts — is still an open manual check.
 
 ## Key Files
 
@@ -426,14 +594,25 @@ are thin wrappers that bind `window`/`navigator` and delegate.
 - `src/utils/native-bridge.ts` — web → shell navigation
 - `src/utils/native-session.ts` — shell → web session injection
 - `src/utils/native-relock.ts` — locked-page decision + loop guard
-- `src/utils/native-push.ts` — client-side FCM token registration
 - `src/utils/shell-chrome.ts` — in-shell presentation rules (IAP compliance)
 - `src/utils/external-link.ts` — external-browser opener
-- `src/lib/notifications/fcmPush.ts` — FCM HTTP v1 send + token lifecycle
+- `src/lib/notifications/nativePush.ts` — push dispatcher: token query, per-platform routing, lifecycle
+- `src/lib/notifications/fcmPush.ts` — FCM HTTP v1 transport (Android)
+- `src/lib/notifications/apnsPush.ts` — APNs HTTP/2 transport (iOS)
 - `app/api/notifications/device-tokens/{route,validation}.ts` — token registration API
-- `app/(app)/[slug]/client-layout.tsx` — where handoff, relock, and push registration are wired
-- `src/hooks/useWakeLock.ts`, `src/hooks/useCameraStrategy.ts`, `src/utils/photoUtils.ts` — capability overrides
+- `app/api/deployment-config/route.ts` — exposes `nativePush`/`nativePushEnabled` to the shell
+- `app/.well-known/apple-app-site-association/route.ts` — claimed-paths source of truth for iOS
+- `app/.well-known/assetlinks.json/route.ts` — Android app-package verification (`ANDROID_CERT_SHA256`)
+- `app/(app)/[slug]/client-layout.tsx` — where session handoff and relock are wired (no longer push — see above)
+- `src/hooks/useCameraStrategy.ts`, `src/utils/photoUtils.ts` — capability overrides
 - `src/lib/notifications/client.ts` — service-worker suppression
 - `src/components/ui/side-nav/index.tsx`, `src/components/account-manager/AccountSettingsTab.tsx` — shell chrome consumers
-- `prisma/schema.prisma` — `DeviceToken` model
-- `docs/superpowers/plans/2026-07-20-native-aware-layer-and-push.md` — original implementation plan
+- `prisma/schema.prisma` — `DeviceToken` model (`@@unique([token, familyId])`)
+- `docs/superpowers/plans/2026-07-20-native-aware-layer-and-push.md` — original native-aware-layer implementation plan
+- `docs/superpowers/specs/2026-07-25-native-push-and-nursery-wake-design.md` — spec for this pass (dual-transport push, deep links, native nursery wake)
+
+**In `mobile-app-v1` (the shell repo, not this one):**
+- `src/services/push.ts`, `src/services/push-opt-in.ts` — permission, token acquisition, registration (owns the whole client side of push)
+- `src/services/deep-links.ts` — maps a claimed URL to a boot-time screen
+- `src/screens/AccountVerifyLink.tsx` — handles the emailed `/verify?token=` deep link
+- `ios/App/App/NurseryAwareViewController.swift`, `android/app/src/main/java/com/sprouttrack/app/NurseryAwareWebViewClient.java` — native nursery wake/immersive
