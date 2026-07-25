@@ -576,7 +576,6 @@ export default function SettingsForm({
       <ChangePinModal
         open={showChangePinModal}
         onClose={() => setShowChangePinModal(false)}
-        currentPin={settings?.securityPin || '111222'}
         onPinChange={(newPin) => handleSettingsChange({ securityPin: newPin })}
       />
     </>

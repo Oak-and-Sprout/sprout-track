@@ -6,10 +6,8 @@ import { checkIpLockout, recordFailedAttempt, resetFailedAttempts } from '../uti
 import { decrypt, isEncrypted } from '../utils/encryption';
 import { randomUUID } from 'crypto';
 import { logApiCall, getClientInfo } from '../utils/api-logger';
-import { ACCESS_TOKEN_LIFE, createRefreshToken, setRefreshTokenCookie } from '../utils/auth';
+import { ACCESS_TOKEN_LIFE, createRefreshToken, setRefreshTokenCookie, getJwtSecret } from '../utils/auth';
 
-// Secret key for JWT signing - in production, use environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
 const TOKEN_EXPIRATION = ACCESS_TOKEN_LIFE;
 
 // Authentication endpoint for caretakers or system PIN
@@ -86,7 +84,7 @@ export async function POST(req: NextRequest) {
               familySlug: null,
               isSysAdmin: true,
             },
-            JWT_SECRET,
+            getJwtSecret(),
             { expiresIn: `${TOKEN_EXPIRATION}s` }
           );
 
@@ -286,7 +284,7 @@ export async function POST(req: NextRequest) {
             tokenData.planType = targetFamily.account.planType;
           }
 
-          const token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: `${TOKEN_EXPIRATION}s` });
+          const token = jwt.sign(tokenData, getJwtSecret(), { expiresIn: `${TOKEN_EXPIRATION}s` });
           
           // Create response with token
           const response = NextResponse.json<ApiResponse<{ 
@@ -460,7 +458,7 @@ export async function POST(req: NextRequest) {
           tokenData.planType = targetFamily.account.planType;
         }
 
-        const token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: `${TOKEN_EXPIRATION}s` });
+        const token = jwt.sign(tokenData, getJwtSecret(), { expiresIn: `${TOKEN_EXPIRATION}s` });
         
         // Create response with token
         const response = NextResponse.json<ApiResponse<{ 

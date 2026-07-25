@@ -55,7 +55,7 @@ RUN if [ "$ENABLE_NOTIFICATIONS" = "true" ]; then \
       echo "Notification features disabled - skipping notification setup"; \
     fi
 
-# Create env directory and base .env file (ENC_HASH will be generated at container startup)
+# Create env directory and base .env file (ENC_HASH and JWT_SECRET are generated at container startup)
 # DATABASE_URL is set at runtime via environment variables
 RUN mkdir -p /app/env && \
     echo "Creating base .env file..." && \
@@ -70,10 +70,10 @@ RUN mkdir -p /app/env && \
     echo "AUTH_LIFE=86400" >> /app/env/.env && \
     echo "REFRESH_TOKEN_LIFE=604800" >> /app/env/.env && \
     echo "IDLE_TIME=604800" >> /app/env/.env && \
-    echo "APP_VERSION=1.3.4" >> /app/env/.env && \
+    echo "APP_VERSION=1.3.5" >> /app/env/.env && \
     echo "COOKIE_SECURE=false" >> /app/env/.env && \
     echo "ENABLE_NOTIFICATIONS=true" >> /app/env/.env && \
-    echo "Base .env file created (ENC_HASH will be generated at startup)" && \
+    echo "Base .env file created (ENC_HASH and JWT_SECRET are generated at startup)" && \
     # Create symlink so Next.js can find the env file at build time and runtime
     ln -sf /app/env/.env /app/.env
 

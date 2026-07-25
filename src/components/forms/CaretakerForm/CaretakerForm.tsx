@@ -69,9 +69,9 @@ export default function CaretakerForm({
         type: caretaker.type || '',
         role: caretaker.role || 'USER',
         inactive: caretaker.inactive || false,
-        securityPin: caretaker.securityPin || '',
+        securityPin: '', // never pre-filled — PINs are not returned by the API; blank means "keep current"
       });
-      setConfirmPin(caretaker.securityPin || '');
+      setConfirmPin('');
       setIsFirstCaretaker(false);
     } else if (!isOpen && !isSubmitting) {
       setFormData(defaultFormData);
@@ -164,6 +164,11 @@ export default function CaretakerForm({
   }, [isEditing, isOpen, caretaker?.id]);
 
   const validatePIN = () => {
+    // When editing, a blank PIN means "keep the current PIN" (the PIN is never sent
+    // back from the server), so skip validation and leave it unchanged.
+    if (isEditing && !formData.securityPin) {
+      return true;
+    }
     if (formData.securityPin.length < 6) {
       setError(t('PIN must be at least 6 digits'));
       return false;
@@ -245,11 +250,17 @@ export default function CaretakerForm({
       }
 
       // Prepare request body with family context for sysadmins
-      const requestBody = {
+      const requestBody: any = {
         ...formData,
         id: caretaker?.id,
         ...(isSysAdmin && familyId && { familyId })
       };
+
+      // When editing, only send securityPin if a new one was entered; a blank field
+      // means "keep the existing PIN" (and the server ignores a blank PIN anyway).
+      if (isEditing && !formData.securityPin) {
+        delete requestBody.securityPin;
+      }
 
       const response = await fetch('/api/caretaker', {
         method: isEditing ? 'PUT' : 'POST',
@@ -432,13 +443,13 @@ export default function CaretakerForm({
                 }
               }}
               className="w-full"
-              placeholder={t("Enter 6-10 digit PIN")}
+              placeholder={isEditing ? t("Leave blank to keep current PIN") : t("Enter 6-10 digit PIN")}
               minLength={6}
               maxLength={10}
               pattern="\d*"
-              required
+              required={!isEditing}
             />
-            <p className="text-xs text-gray-500 mt-1">{t('PIN must be between 6 and 10 digits')}</p>
+            <p className="text-xs text-gray-500 mt-1">{isEditing ? t('Leave blank to keep the current PIN, or enter a new 6-10 digit PIN') : t('PIN must be between 6 and 10 digits')}</p>
           </div>
           <div>
             <label className="form-label">{t('Confirm PIN')}</label>
@@ -456,10 +467,10 @@ export default function CaretakerForm({
               minLength={6}
               maxLength={10}
               pattern="\d*"
-              required
+              required={!isEditing}
             />
           </div>
-          
+
           {error && (
             <div className="text-sm text-red-500 font-medium">{error}</div>
           )}

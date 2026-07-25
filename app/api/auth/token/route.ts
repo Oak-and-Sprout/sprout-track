@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/app/api/db';
-import { ApiResponse } from '@/app/api/utils/auth';
+import { ApiResponse, getJwtSecret } from '@/app/api/utils/auth';
 import jwt from 'jsonwebtoken';
 
 interface TokenAuthRequest {
@@ -67,8 +67,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<T
     }
 
     // Create JWT token for setup session
-    const jwtSecret = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
-
     const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
     const authToken = jwt.sign(
       {
@@ -77,7 +75,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<T
         familyId: setupToken.familyId || null,
         exp: Math.floor(expiresAt / 1000),
       },
-      jwtSecret
+      getJwtSecret()
     );
 
     return NextResponse.json({

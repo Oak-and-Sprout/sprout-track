@@ -59,9 +59,9 @@ export default function CaretakerModal({
         name: caretaker.name,
         type: caretaker.type || '',
         role: caretaker.role || 'USER',
-        securityPin: caretaker.securityPin,
+        securityPin: '', // never pre-filled — PINs are not returned by the API; blank means "keep current"
       });
-      setConfirmPin(caretaker.securityPin);
+      setConfirmPin('');
       setIsFirstCaretaker(false);
     } else if (!open) {
       setFormData(defaultFormData);
@@ -96,6 +96,11 @@ export default function CaretakerModal({
   }, [isEditing, open]);
 
   const validatePIN = () => {
+    // When editing, a blank PIN means "keep the current PIN" (PINs are not returned
+    // by the API), so skip validation and leave it unchanged.
+    if (isEditing && !formData.securityPin) {
+      return true;
+    }
     if (formData.securityPin.length < 6) {
       setError('PIN must be at least 6 digits');
       return false;
@@ -139,15 +144,22 @@ export default function CaretakerModal({
       setIsSubmitting(true);
       setError('');
       
+      const requestBody: any = {
+        ...formData,
+        id: caretaker?.id,
+      };
+      // When editing, only send securityPin if a new one was entered; a blank field
+      // means "keep the existing PIN" (the server ignores a blank PIN anyway).
+      if (isEditing && !formData.securityPin) {
+        delete requestBody.securityPin;
+      }
+
       const response = await fetch('/api/caretaker', {
         method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          id: caretaker?.id,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -267,13 +279,13 @@ export default function CaretakerModal({
                 }
               }}
               className="w-full"
-              placeholder="Enter 6-10 digit PIN"
+              placeholder={isEditing ? 'Leave blank to keep current PIN' : 'Enter 6-10 digit PIN'}
               minLength={6}
               maxLength={10}
               pattern="\d*"
-              required
+              required={!isEditing}
             />
-            <p className="text-xs text-gray-500 mt-1">{t('PIN must be between 6 and 10 digits')}</p>
+            <p className="text-xs text-gray-500 mt-1">{isEditing ? t('Leave blank to keep the current PIN, or enter a new 6-10 digit PIN') : t('PIN must be between 6 and 10 digits')}</p>
           </div>
           <div>
             <label className="form-label">{t('Confirm PIN')}</label>
@@ -291,10 +303,10 @@ export default function CaretakerModal({
               minLength={6}
               maxLength={10}
               pattern="\d*"
-              required
+              required={!isEditing}
             />
           </div>
-          
+
           {error && (
             <div className="text-sm text-red-500 font-medium">{error}</div>
           )}

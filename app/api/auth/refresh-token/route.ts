@@ -5,11 +5,10 @@ import {
   createRefreshToken,
   setRefreshTokenCookie,
   ACCESS_TOKEN_LIFE,
+  getJwtSecret,
 } from '../../utils/auth';
 import jwt from 'jsonwebtoken';
 import prisma from '../../db';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
 
 /**
  * Refresh access token using the HTTP-only refresh token cookie.
@@ -166,7 +165,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Sign new access token
-    const newAccessToken = jwt.sign(accessTokenData, JWT_SECRET, {
+    const newAccessToken = jwt.sign(accessTokenData, getJwtSecret(), {
       expiresIn: `${ACCESS_TOKEN_LIFE}s`,
     });
 

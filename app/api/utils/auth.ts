@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import jwt from 'jsonwebtoken';
+import { logApiCall, getClientInfo } from './api-logger';
 
-// Secret key for JWT signing - in production, use environment variable
+// Secret key for JWT signing - always sourced from the environment.
 // Using a getter function to always read the latest value from process.env
-// This allows the secret to be updated when the .env file is reloaded after backup restore
-function getJwtSecret(): string {
-  return process.env.JWT_SECRET || 'baby-tracker-jwt-secret';
+// This allows the secret to be updated when the .env file is reloaded after backup restore.
+// Fails closed: an unset JWT_SECRET must never fall back to a shared/default value,
+// or tokens (including sysadmin tokens) could be forged. Mirrors getEncryptionKey().
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  return secret;
 }
 
 // Separate secret for refresh tokens to prevent token type confusion
 function getRefreshTokenSecret(): string {
-  return (process.env.JWT_SECRET || 'baby-tracker-jwt-secret') + '-refresh';
+  return getJwtSecret() + '-refresh';
 }
 
 // Access token lifetime (uses existing AUTH_LIFE env var, admin-configurable)
@@ -515,6 +522,35 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<AuthResult
 }
 
 /**
+ * Writes a metadata-only audit entry for a privileged (admin/sysadmin) API call.
+ * Captures who/when/what-endpoint/status without request or response bodies, so
+ * secrets and PII returned by these routes are never copied into the log database.
+ * Logs both allowed calls and denied (401/403) attempts. Fire-and-forget; never
+ * throws. Respects the ENABLE_LOG flag (also enforced inside logApiCall).
+ */
+function auditPrivilegedCall(
+  req: NextRequest,
+  authResult: AuthResult,
+  status: number,
+  startTime: number,
+  error?: string
+): void {
+  if (process.env.ENABLE_LOG !== 'true') return;
+  const { ip, userAgent } = getClientInfo(req);
+  logApiCall({
+    method: req.method,
+    path: new URL(req.url).pathname,
+    status,
+    durationMs: Date.now() - startTime,
+    ip,
+    userAgent,
+    caretakerId: authResult.caretakerId ?? undefined,
+    familyId: authResult.familyId ?? undefined,
+    error,
+  }).catch((err) => console.error('Failed to write audit log:', err));
+}
+
+/**
  * Middleware function to require authentication for API routes
  * @param handler The API route handler function
  * @returns A wrapped handler that checks authentication before proceeding
@@ -548,9 +584,11 @@ export function withAdminAuth<T>(
   handler: (req: NextRequest) => Promise<NextResponse<ApiResponse<T>>>
 ) {
   return async (req: NextRequest): Promise<NextResponse<ApiResponse<T | null>>> => {
+    const startTime = Date.now();
     const authResult = await getAuthenticatedUser(req);
-    
+
     if (!authResult.authenticated) {
+      auditPrivilegedCall(req, authResult, 401, startTime, 'Authentication required');
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -559,7 +597,7 @@ export function withAdminAuth<T>(
         { status: 401 }
       );
     }
-    
+
     // Check if user is an admin by role, system admin, or system caretaker
     let isSystemCaretaker = false;
     if (authResult.caretakerId) {
@@ -576,9 +614,10 @@ export function withAdminAuth<T>(
         console.error('Error checking system caretaker:', error);
       }
     }
-    
+
     // Allow access for: ADMIN role, system caretakers, or system administrators
     if (authResult.caretakerRole !== 'ADMIN' && !isSystemCaretaker && !authResult.isSysAdmin) {
+      auditPrivilegedCall(req, authResult, 403, startTime, 'Admin access required');
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -587,8 +626,15 @@ export function withAdminAuth<T>(
         { status: 403 }
       );
     }
-    
-    return handler(req);
+
+    let status = 500;
+    try {
+      const response = await handler(req);
+      status = response.status;
+      return response;
+    } finally {
+      auditPrivilegedCall(req, authResult, status, startTime);
+    }
   };
 }
 
@@ -601,9 +647,11 @@ export function withSysAdminAuth<T>(
   handler: (req: NextRequest) => Promise<NextResponse<ApiResponse<T>>>
 ) {
   return async (req: NextRequest): Promise<NextResponse<ApiResponse<T | null>>> => {
+    const startTime = Date.now();
     const authResult = await getAuthenticatedUser(req);
-    
+
     if (!authResult.authenticated) {
+      auditPrivilegedCall(req, authResult, 401, startTime, 'Authentication required');
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -612,9 +660,10 @@ export function withSysAdminAuth<T>(
         { status: 401 }
       );
     }
-    
+
     // Check if user is a system administrator
     if (!authResult.isSysAdmin) {
+      auditPrivilegedCall(req, authResult, 403, startTime, 'System administrator access required');
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -623,8 +672,15 @@ export function withSysAdminAuth<T>(
         { status: 403 }
       );
     }
-    
-    return handler(req);
+
+    let status = 500;
+    try {
+      const response = await handler(req);
+      status = response.status;
+      return response;
+    } finally {
+      auditPrivilegedCall(req, authResult, status, startTime);
+    }
   };
 }
 
