@@ -26,6 +26,7 @@ import { useParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
 import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
+import { STORAGE } from '@/constants';
 
 function HomeContent(): React.ReactElement {
   const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
@@ -58,7 +59,7 @@ function HomeContent(): React.ReactElement {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         if (!authToken) return;
         const response = await fetch('/api/settings', {
           headers: { 'Authorization': `Bearer ${authToken}` }
@@ -92,7 +93,7 @@ function HomeContent(): React.ReactElement {
   // Check for active breastfeed sessions
   const checkFeedStatus = useCallback(async (babyId: string) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(`/api/active-breastfeed?babyId=${babyId}`, {
         cache: 'no-store',
         headers: {
@@ -130,7 +131,7 @@ function HomeContent(): React.ReactElement {
   // Check for active activity sessions
   const checkActivityStatus = useCallback(async (babyId: string) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(`/api/active-activity?babyId=${babyId}`, {
         cache: 'no-store',
         headers: {
@@ -234,7 +235,7 @@ function HomeContent(): React.ReactElement {
   const handleFeedSwitch = async () => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=switch`, {
         method: 'PUT',
         headers: {
@@ -251,7 +252,7 @@ function HomeContent(): React.ReactElement {
   const handleFeedPause = async () => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=pause`, {
         method: 'PUT',
         headers: {
@@ -268,7 +269,7 @@ function HomeContent(): React.ReactElement {
   const handleFeedResume = async (side: 'LEFT' | 'RIGHT') => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=resume`, {
         method: 'PUT',
         headers: {
@@ -286,7 +287,7 @@ function HomeContent(): React.ReactElement {
   const handleFeedEnd = async () => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       await fetch(`/api/active-breastfeed?id=${activeFeedData.id}`, {
         method: 'DELETE',
         headers: {
@@ -310,7 +311,7 @@ function HomeContent(): React.ReactElement {
   const handleActivityStart = async (playType: string, subCategory: string, notes: string, existingDurationSeconds: number) => {
     if (!selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch('/api/active-activity', {
         method: 'POST',
         headers: {
@@ -336,7 +337,7 @@ function HomeContent(): React.ReactElement {
   const handleActivityPause = async () => {
     if (!activeActivityData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       await fetch(`/api/active-activity?id=${activeActivityData.id}&action=pause`, {
         method: 'PUT',
         headers: {
@@ -353,7 +354,7 @@ function HomeContent(): React.ReactElement {
   const handleActivityResume = async () => {
     if (!activeActivityData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       await fetch(`/api/active-activity?id=${activeActivityData.id}&action=resume`, {
         method: 'PUT',
         headers: {
@@ -370,7 +371,7 @@ function HomeContent(): React.ReactElement {
   const handleActivityEnd = async () => {
     if (!activeActivityData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(`/api/active-activity?id=${activeActivityData.id}`, {
         method: 'DELETE',
         headers: {

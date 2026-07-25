@@ -17,6 +17,7 @@ import { growthChartStyles } from './growth-chart.styles';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
+import { STORAGE } from '@/constants';
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
@@ -416,7 +417,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         const response = await fetch('/api/settings', {
           cache: 'no-store',
           headers: {
@@ -453,7 +454,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       setError(null);
 
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         const sex = genderToCdcSex(selectedBaby.gender);
 
         const response = await fetch(
@@ -496,7 +497,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       if (!selectedBaby) return;
 
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
 
         // Map chart type to API type
         const apiType = measurementType === 'weight' ? 'WEIGHT'

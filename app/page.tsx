@@ -6,6 +6,7 @@ import { FamilyResponse } from './api/types';
 import { ThemeProvider } from '@/src/context/theme';
 import ComingSoon from './home/page';
 import { useLocalization } from '@/src/context/localization';
+import { STORAGE } from '@/constants';
 
 export default function HomePage() {
   const { t } = useLocalization();
@@ -60,7 +61,7 @@ export default function HomePage() {
             const familySlug = familiesList[0].slug;
             
             // Check if user is already authenticated
-            const authToken = localStorage.getItem('authToken');
+            const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
             const unlockTime = localStorage.getItem('unlockTime');
             const accountUser = localStorage.getItem('accountUser');
             
@@ -88,7 +89,7 @@ export default function HomePage() {
             // If isAccountAuth is true, don't redirect - let them stay on homepage
           } else {
             // Multiple families case
-            const authToken = localStorage.getItem('authToken');
+            const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
             const accountUser = localStorage.getItem('accountUser');
             
             // Check if this is an account user (this logic only runs in self-hosted mode, 

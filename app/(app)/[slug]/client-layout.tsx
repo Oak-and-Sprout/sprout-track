@@ -30,10 +30,11 @@ import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
+import { STORAGE } from '@/constants';
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
   () => import('@/src/components/account-manager/PaymentModal'),
-  { 
+  {
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center p-4">
@@ -74,7 +75,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
     return false;
   });
-  
+
   const [caretakerName, setCaretakerName] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [showAccountManager, setShowAccountManager] = useState(false);
@@ -101,7 +102,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data?.token) {
-          localStorage.setItem('authToken', data.data.token);
+          localStorage.setItem(STORAGE.AUTH_TOKEN, data.data.token);
           // Reset unlock time for PIN-based users
           if (localStorage.getItem('unlockTime')) {
             localStorage.setItem('unlockTime', Date.now().toString());
@@ -122,11 +123,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const calculateAge = (birthday: Date) => {
     const today = new Date();
     const birthDate = new Date(birthday);
-    
+
     const ageInWeeks = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 7));
     const ageInMonths = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
     const ageInYears = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-    
+
     if (ageInMonths < 6) {
       return `${ageInWeeks} weeks`;
     } else if (ageInMonths < 24) {
@@ -139,9 +140,9 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const fetchData = async () => {
     try {
       // Get auth token once for all requests
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       let isSysAdmin = false;
-      
+
       // Check if user is system administrator
       if (authToken) {
         try {
@@ -152,13 +153,13 @@ function AppContent({ children }: { children: React.ReactNode }) {
           console.error('Error parsing JWT token:', error);
         }
       }
-      
+
       // Fetch settings
       let settingsUrl = '/api/settings';
       if (isSysAdmin && family?.id) {
         settingsUrl += `?familyId=${family.id}`;
       }
-      
+
       const settingsResponse = await fetch(settingsUrl, {
         headers: authToken ? {
           'Authorization': `Bearer ${authToken}`
@@ -170,7 +171,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           setFamilyName(settingsData.data.familyName);
         }
       }
-      
+
       // Fetch caretaker information if authenticated via PIN, or extract from JWT if account
       let accountUserInfo = null;
       if (authToken) {
@@ -193,7 +194,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           console.error('Error parsing JWT token for user info:', error);
         }
       }
-      
+
       // Only fetch caretaker info if not an account holder
       if (!accountUserInfo) {
         const caretakerId = localStorage.getItem('caretakerId');
@@ -213,7 +214,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       if (isSysAdmin && family?.id) {
         babiesUrl += `?familyId=${family.id}`;
       }
-      
+
       const babiesResponse = await fetch(babiesUrl, {
         headers: authToken ? {
           'Authorization': `Bearer ${authToken}`
@@ -224,7 +225,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         if (babiesData.success) {
           const activeBabies = babiesData.data.filter((baby: Baby) => !baby.inactive);
           setBabies(activeBabies);
-          
+
           // If no active babies, check setup status and redirect accordingly
           if (activeBabies.length === 0) {
             try {
@@ -250,7 +251,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
               console.error('Error checking setup status:', e);
             }
           }
-          
+
           // Get selected baby from URL, localStorage, or auto-select if only one exists
           const urlParams = new URLSearchParams(window.location.search);
           const babyId = urlParams.get('babyId');
@@ -291,11 +292,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
       localStorage.setItem('unlockTime', Date.now().toString());
     }
   };
-  
+
   const handleUnlock = (caretakerId?: string) => {
     setIsUnlocked(true);
     fetchData();
-    
+
     // Dispatch a custom event to notify components about caretaker change
     if (caretakerId) {
       const caretakerChangedEvent = new CustomEvent('caretakerChanged', {
@@ -304,12 +305,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(caretakerChangedEvent);
     }
   };
-  
+
   const handleLogout = async () => {
     // Get the token to invalidate it server-side
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const currentCaretakerId = localStorage.getItem('caretakerId');
-    
+
     // Check if this is an account holder
     let isAccountAuth = false;
     if (token) {
@@ -321,7 +322,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         console.error('Error parsing JWT token during logout:', error);
       }
     }
-    
+
     // Call the logout API to clear server-side cookies and invalidate the token
     try {
       await fetch('/api/auth/logout', {
@@ -334,15 +335,15 @@ function AppContent({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error during logout:', error);
     }
-    
+
     // Clear all client-side authentication data including JWT token
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(STORAGE.AUTH_TOKEN);
     localStorage.removeItem('accountUser'); // Clear account user info
     localStorage.removeItem('attempts');
     localStorage.removeItem('lockoutTime');
-    
+
     // Dispatch a custom event to notify components about caretaker change
     if (currentCaretakerId) {
       const caretakerChangedEvent = new CustomEvent('caretakerChanged', {
@@ -350,17 +351,17 @@ function AppContent({ children }: { children: React.ReactNode }) {
       });
       window.dispatchEvent(caretakerChangedEvent);
     }
-    
+
     // Reset state
     setIsUnlocked(false);
     setCaretakerName('');
     setIsAdmin(false);
     setSideNavOpen(false);
-    
+
     // Clear baby selection
     setSelectedBaby(null);
     setBabies([]);
-    
+
     // Account holders go to home page, PIN users go to family root (which shows login UI)
     if (isAccountAuth) {
       router.push('/');
@@ -377,7 +378,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const isWide = window.innerWidth > 600;
       setIsWideScreen(isWide);
-      
+
       // Automatically open side nav on wide screens, hide on small screens
       setSideNavOpen(isWide);
     }
@@ -385,12 +386,12 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Check if we're on root slug page - if so, don't fetch data (page handles login)
     const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const unlockTime = localStorage.getItem('unlockTime');
-    
+
     // Check if user is authenticated via account or is a system admin
     let isAccountAuth = false;
     let isSysAdmin = false;
@@ -412,7 +413,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     if (!isRootSlugPage || isAuthenticated) {
       fetchData();
     }
-    
+
     // Check screen width initially
     checkScreenWidth();
 
@@ -421,7 +422,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', updateUnlockTimer);
     window.addEventListener('mousemove', updateUnlockTimer);
     window.addEventListener('touchstart', updateUnlockTimer);
-    
+
     // Add resize listener
     window.addEventListener('resize', checkScreenWidth);
 
@@ -438,7 +439,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   // Watch for family changes and refetch data (only if authenticated and not on root slug page)
   useEffect(() => {
     const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const unlockTime = localStorage.getItem('unlockTime');
 
     let isAccountAuth = false;
@@ -460,20 +461,20 @@ function AppContent({ children }: { children: React.ReactNode }) {
       fetchData();
     }
   }, [family?.id, pathname, familySlug]);
-  
+
   // Validate family slug exists
   const validateFamilySlug = useCallback(async (slug: string) => {
     try {
       const response = await fetch(`/api/family/by-slug/${encodeURIComponent(slug)}`);
       const data = await response.json();
-      
+
       // If family doesn't exist, redirect to home
       if (!data.success || !data.data) {
         console.log(`Family slug "${slug}" not found, redirecting to home…`);
         router.push('/');
         return false;
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error validating family slug:', error);
@@ -486,25 +487,25 @@ function AppContent({ children }: { children: React.ReactNode }) {
   // Validate family slug on mount
   useEffect(() => {
     if (!mounted || !familySlug) return;
-    
+
     validateFamilySlug(familySlug);
   }, [mounted, familySlug, validateFamilySlug]);
 
   // Add continuous authentication check and redirect
   useEffect(() => {
     if (!mounted) return;
-    
+
     // Skip auth check entirely if we're on root slug page (page component handles login UI)
     const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
-    
+
     // Function to check authentication status
     const checkAuthStatus = () => {
       // If on root slug page, skip auth checks - page component handles it
       if (isRootSlugPage) {
         return;
       }
-      
-      const authToken = localStorage.getItem('authToken');
+
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const unlockTime = localStorage.getItem('unlockTime');
 
       // Check if user is authenticated via account or is a system admin
@@ -532,7 +533,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         }
         return;
       }
-      
+
       // Check if JWT token has expired and validate family access
       try {
         // JWT tokens are in format: header.payload.signature
@@ -540,7 +541,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         const payload = authToken.split('.')[1];
         // The payload is base64 encoded, so we need to decode it
         const decodedPayload = JSON.parse(atob(payload));
-        
+
         // Check if token has expired or is near expiry — attempt refresh
         if (decodedPayload.exp) {
           const expiresAt = decodedPayload.exp * 1000;
@@ -564,7 +565,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             refreshAccessToken();
           }
         }
-        
+
         // Check if user's family slug matches the current URL slug
         if (decodedPayload.familySlug && familySlug && decodedPayload.familySlug !== familySlug) {
           console.log('User trying to access different family. Redirecting to correct family…');
@@ -573,17 +574,17 @@ function AppContent({ children }: { children: React.ReactNode }) {
           router.push(`/${decodedPayload.familySlug}/${currentPath}`);
           return;
         }
-        
+
       } catch (error) {
         console.error('Error parsing JWT token:', error);
         handleLogout();
         return;
       }
-      
+
       // Check if user is on the family root page and authenticated - redirect to log-entry
       // (This check is skipped if we're already on root slug page due to early return above)
       // This code only runs for authenticated users on sub-routes
-      
+
       // Check for idle timeout (separate from token expiration)
       if (unlockTime) {
         const lastActivity = parseInt(unlockTime);
@@ -595,16 +596,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
         }
       }
     };
-    
+
     // Only set up auth checking if NOT on root slug page
     // Root slug page handles its own auth checking via page component
     if (!isRootSlugPage) {
       // Initial check
       checkAuthStatus();
-      
+
       // Set up continuous checking every second for sub-routes only
       const authCheckInterval = setInterval(checkAuthStatus, 1000);
-      
+
       return () => {
         clearInterval(authCheckInterval);
       };
@@ -616,14 +617,14 @@ function AppContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleOpenPayment = () => {
       // Check if user is an account user before opening modal
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       if (!authToken) return;
-      
+
       try {
         const payload = authToken.split('.')[1];
         const decodedPayload = JSON.parse(atob(payload));
         const isAccountUser = decodedPayload.isAccountAuth || false;
-        
+
         // Only open PaymentModal for account users
         if (!isAccountUser) {
           console.log('PaymentModal can only be opened by account users');
@@ -633,7 +634,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         console.error('Error parsing JWT token for payment modal:', error);
         return;
       }
-      
+
       // Fetch account status for PaymentModal
       const fetchAccountStatusForPayment = async () => {
         try {
@@ -642,7 +643,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
               'Authorization': `Bearer ${authToken}`
             }
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
@@ -661,10 +662,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
           console.error('Error fetching account status for payment modal:', error);
         }
       };
-      
+
       fetchAccountStatusForPayment();
     };
-    
+
     window.addEventListener('openPaymentModal', handleOpenPayment);
     return () => window.removeEventListener('openPaymentModal', handleOpenPayment);
   }, []);
@@ -701,7 +702,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   // Check unlock status based on JWT token and extract user info
   useEffect(() => {
     const checkUnlockStatus = () => {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const unlockTime = localStorage.getItem('unlockTime');
 
       // Check if user is authenticated via account or is a system admin
@@ -721,7 +722,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       // Account holders and system admins are automatically unlocked, PIN-based users need unlockTime
       const newUnlockState = !!(authToken && (isAccountAuth || isSysAdmin || unlockTime));
       setIsUnlocked(newUnlockState);
-      
+
       // Extract user information from JWT token
       if (authToken) {
         try {
@@ -730,7 +731,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           const payload = authToken.split('.')[1];
           // The payload is base64 encoded, so we need to decode it
           const decodedPayload = JSON.parse(atob(payload));
-          
+
           // Set caretaker name and admin status from token
           if (decodedPayload.name) {
             setCaretakerName(decodedPayload.name);
@@ -759,17 +760,17 @@ function AppContent({ children }: { children: React.ReactNode }) {
   // Helper function to add family slug to paths
   const withFamilySlug = (path: string) => {
     if (!familySlug) return path;
-    
+
     // If path starts with /, remove it
     if (path.startsWith('/')) {
       path = path.substring(1);
     }
-    
+
     // If path already includes the family slug, return as is
     if (path.startsWith(`${familySlug}/`)) {
       return `/${path}`;
     }
-    
+
     return `/${familySlug}/${path}`;
   };
 
@@ -787,7 +788,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             <SideNav
               isOpen={true}
               nonModal={true}
-              onClose={() => {}}
+              onClose={() => { }}
               currentPath={window.location.pathname}
               onNavigate={(path) => {
                 // Add family slug to navigation paths
@@ -803,7 +804,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
               familyName={family?.name || familyName}
             />
           )}
-          
+
           {/* Main content area */}
           <div className={`flex flex-col flex-1 min-h-screen ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
             <header className="w-full bg-gradient-to-r from-teal-600 to-teal-700 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
@@ -850,10 +851,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
                         {family?.name || familyName} - {pathname?.includes('/log-entry')
                           ? t('Log Entry')
                           : pathname?.includes('/calendar')
-                          ? t('Calendar')
-                          : pathname?.includes('/reports')
-                          ? t('Reports')
-                          : t('Full Log')}
+                            ? t('Calendar')
+                            : pathname?.includes('/reports')
+                              ? t('Reports')
+                              : t('Full Log')}
                       </span>
                     </div>
                   </div>
@@ -872,10 +873,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             </header>
-            
+
             {/* Account Expiration Banner - shows for both account users and caretakers */}
             <AccountExpirationBanner isAccountAuth={isAccountAuth} />
-            
+
             <main className="flex-1 relative z-0">
               {children}
             </main>
@@ -926,7 +927,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         familyId={family?.id}
         isAdmin={isAdmin}
       />
-      
+
       {/* Baby Quick Info Form */}
       <BabyQuickInfo
         isOpen={quickStatsOpen}
@@ -934,7 +935,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         selectedBaby={selectedBaby}
         calculateAge={calculateAge}
       />
-      
+
       {/* Debug components - only visible in development mode */}
       <DebugSessionTimer />
       <TimezoneDebug />
@@ -977,7 +978,7 @@ export default function AppLayout({
   // Define handleLogout function within the layout scope
   const handleLogout = async () => {
     // Get the token to invalidate it server-side
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const currentCaretakerId = localStorage.getItem('caretakerId');
 
     // Check if this is an account holder
@@ -1008,7 +1009,7 @@ export default function AppLayout({
     // Clear all client-side authentication data including JWT token
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(STORAGE.AUTH_TOKEN);
     localStorage.removeItem('accountUser'); // Clear account user info
     localStorage.removeItem('attempts');
     localStorage.removeItem('lockoutTime');

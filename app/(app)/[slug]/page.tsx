@@ -8,6 +8,7 @@ import { useFamily } from '@/src/context/family';
 import { useLocalization } from '@/src/context/localization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { FamilyResponse } from '@/app/api/types';
+import { STORAGE } from '@/constants';
 
 function FamilySlugPageContent() {
   const router = useRouter();
@@ -34,14 +35,14 @@ function FamilySlugPageContent() {
       try {
         const response = await fetch(`/api/family/by-slug/${encodeURIComponent(familySlug)}`);
         const data = await response.json();
-        
+
         // If family doesn't exist, redirect to home
         if (!data.success || !data.data) {
           console.log(`Family slug "${familySlug}" not found, redirecting to home…`);
           router.push('/');
           return;
         }
-        
+
         // Family exists, allow page to continue loading
         setSlugValidated(true);
       } catch (error) {
@@ -86,7 +87,7 @@ function FamilySlugPageContent() {
     setIsCheckingAuth(true);
 
     const checkAuth = () => {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const unlockTime = localStorage.getItem('unlockTime');
 
       // Check if user is authenticated via account or is a system admin
@@ -102,7 +103,7 @@ function FamilySlugPageContent() {
           // Check if token has expired
           if (decodedPayload.exp && decodedPayload.exp * 1000 < Date.now()) {
             // Token expired, clear it
-            localStorage.removeItem('authToken');
+            localStorage.removeItem(STORAGE.AUTH_TOKEN);
             localStorage.removeItem('unlockTime');
             localStorage.removeItem('caretakerId');
             setIsAuthenticated(false);
@@ -112,7 +113,7 @@ function FamilySlugPageContent() {
         } catch (error) {
           console.error('Error parsing JWT token:', error);
           // Invalid token, clear it
-          localStorage.removeItem('authToken');
+          localStorage.removeItem(STORAGE.AUTH_TOKEN);
           localStorage.removeItem('unlockTime');
           localStorage.removeItem('caretakerId');
           setIsAuthenticated(false);
@@ -150,7 +151,7 @@ function FamilySlugPageContent() {
     if (!slugValidated || familyLoading) return;
 
     // Don't redirect system admins - they can access any family
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     if (authToken) {
       try {
         const payload = authToken.split('.')[1];
@@ -239,11 +240,11 @@ function FamilySlugPageContent() {
           </Select>
         </div>
       )}
-      
-      <LoginSecurity 
-        onUnlock={handleUnlock} 
-        familySlug={familySlug} 
-        familyName={!familyLoading && family ? family.name : undefined} 
+
+      <LoginSecurity
+        onUnlock={handleUnlock}
+        familySlug={familySlug}
+        familyName={!familyLoading && family ? family.name : undefined}
       />
     </div>
   );
@@ -251,7 +252,7 @@ function FamilySlugPageContent() {
 
 export default function FamilySlugPage() {
   const { t } = useLocalization();
-  
+
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">

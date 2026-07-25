@@ -3,6 +3,8 @@
  * Handles browser-side subscription operations
  */
 
+import { STORAGE } from "@/constants";
+
 // Cache for VAPID public key with TTL
 interface VapidCache {
   key: string;
@@ -45,7 +47,7 @@ export async function getVapidPublicKey(): Promise<string> {
     return vapidCache.key;
   }
 
-  const authToken = localStorage.getItem('authToken');
+  const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
   const headers: HeadersInit = authToken
     ? { Authorization: `Bearer ${authToken}` }
     : {};
@@ -162,12 +164,12 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       stack: error?.stack,
       name: error?.name,
     });
-    
+
     // Check if it's a 404 error (service worker file not found)
     if (error?.message?.includes('404') || error?.message?.includes('Failed to fetch')) {
       throw new Error('Service worker file not found. Please ensure /sw.js is accessible.');
     }
-    
+
     throw new Error(`Failed to register service worker: ${error?.message || 'Unknown error'}`);
   }
 }
@@ -301,7 +303,7 @@ export async function sendSubscriptionToServer(
   deviceLabel?: string,
   userAgent?: string
 ): Promise<string> {
-  const authToken = localStorage.getItem('authToken');
+  const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -310,9 +312,9 @@ export async function sendSubscriptionToServer(
   console.log('Extracting subscription keys...');
   const keys = subscription.getKey
     ? {
-        p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
-        auth: arrayBufferToBase64(subscription.getKey('auth')),
-      }
+      p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+      auth: arrayBufferToBase64(subscription.getKey('auth')),
+    }
     : null;
 
   if (!keys) {
@@ -344,24 +346,24 @@ export async function sendSubscriptionToServer(
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Server error response:', errorText);
-    
+
     if (response.status === 503) {
       throw new Error('Push notifications are disabled');
     }
-    
+
     let error;
     try {
       error = JSON.parse(errorText);
     } catch {
       error = { error: errorText || 'Failed to register subscription' };
     }
-    
+
     throw new Error(error.error || 'Failed to register subscription');
   }
 
   const data = await response.json();
   console.log('Server response data:', { success: data.success, hasId: !!data.data?.id });
-  
+
   if (!data.success || !data.data?.id) {
     console.error('Invalid subscription response:', data);
     throw new Error('Invalid subscription response');
@@ -375,7 +377,7 @@ export async function sendSubscriptionToServer(
  */
 export async function unsubscribeFromPush(endpoint: string): Promise<void> {
   // Unsubscribe from server first
-  const authToken = localStorage.getItem('authToken');
+  const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
   const headers: HeadersInit = authToken
     ? { Authorization: `Bearer ${authToken}` }
     : {};
@@ -472,7 +474,7 @@ export async function checkSubscriptionStatus(): Promise<{
 
   // Check if registered on server
   try {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const headers: HeadersInit = authToken
       ? { Authorization: `Bearer ${authToken}` }
       : {};
@@ -535,12 +537,12 @@ function urlBase64ToUint8Array(base64String: string): BufferSource {
     for (let i = 0; i < rawData.length; ++i) {
       outputArray[i] = rawData.charCodeAt(i);
     }
-    
+
     // VAPID public key should be 65 bytes (uncompressed) or 87 characters in base64
     if (outputArray.length !== 65) {
       console.warn(`VAPID key length is ${outputArray.length} bytes, expected 65. This may cause issues.`);
     }
-    
+
     return outputArray;
   } catch (error: any) {
     console.error('Error converting VAPID key:', error);

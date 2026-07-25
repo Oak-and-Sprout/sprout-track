@@ -11,6 +11,7 @@ import { ActivityType as TimelineActivityType } from '@/src/components/Timeline/
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort } from '@/src/utils/dateFormat';
+import { STORAGE } from '@/constants';
 
 // Local helper to get activity time that works with reports ActivityType
 const getActivityTimeLocal = (activity: ActivityType): string => {
@@ -215,7 +216,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const authToken = typeof window !== 'undefined' ? localStorage.getItem(STORAGE.AUTH_TOKEN) : null;
         const response = await fetch('/api/settings', {
           cache: 'no-store',
           headers: {

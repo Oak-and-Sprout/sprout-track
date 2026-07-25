@@ -25,6 +25,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { formatDateDisplay } from '@/src/utils/dateFormat';
 
 import './reports.css';
+import { STORAGE } from '@/constants';
 
 /**
  * Reports Component
@@ -81,7 +82,7 @@ const Reports: React.FC<ReportsProps> = ({ className }) => {
         const url = `/api/timeline?babyId=${selectedBaby.id}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&extendSleepRange=true&_t=${timestamp}`;
 
         // Get auth token from localStorage
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
 
         const response = await fetch(url, {
           cache: 'no-store',

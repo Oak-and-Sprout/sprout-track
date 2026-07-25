@@ -7,6 +7,7 @@ import { Input } from '@/src/components/ui/input';
 import { useLocalization } from '@/src/context/localization';
 
 import '../modals/AccountModal/account-modal.css';
+import { STORAGE } from '@/constants';
 
 interface AccountLoginProps {
   lockoutTime: number | null;
@@ -72,7 +73,7 @@ export default function AccountLogin({
 
       if (response.ok && result.success) {
         // Store the token in localStorage
-        localStorage.setItem('authToken', result.data.token);
+        localStorage.setItem(STORAGE.AUTH_TOKEN, result.data.token);
 
         // Set unlock time for session management (account holders are considered "unlocked")
         localStorage.setItem('unlockTime', Date.now().toString());

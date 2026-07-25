@@ -13,6 +13,7 @@ import { cn } from '@/src/lib/utils';
 import { styles } from './setup-wizard.styles';
 import { SecuritySetupStageProps } from './setup-wizard.types';
 import { useLocalization } from '@/src/context/localization';
+import { STORAGE } from '@/constants';
 
 /**
  * SecuritySetupStage Component
@@ -44,7 +45,7 @@ const SecuritySetupStage: React.FC<SecuritySetupStageProps> = ({
   // Check for account authentication and auto-populate fields
   useEffect(() => {
     const checkAccountAuth = () => {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       if (!authToken) return;
 
       try {

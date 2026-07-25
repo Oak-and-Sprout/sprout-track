@@ -27,6 +27,7 @@ import { Loader2 } from 'lucide-react';
 import AccountExpirationBanner from '@/src/components/ui/account-expiration-banner';
 import NotificationSplashModal from '@/src/components/modals/NotificationSplashModal';
 import { checkPushSupport, checkSubscriptionStatus } from '@/src/lib/notifications/client';
+import { STORAGE } from '@/constants';
 
 // Lazy load PaymentModal to prevent Stripe initialization in self-hosted mode
 const PaymentModal = dynamic(
@@ -104,7 +105,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data?.token) {
-          localStorage.setItem('authToken', data.data.token);
+          localStorage.setItem(STORAGE.AUTH_TOKEN, data.data.token);
           // Reset unlock time for PIN-based users
           if (localStorage.getItem('unlockTime')) {
             localStorage.setItem('unlockTime', Date.now().toString());
@@ -142,7 +143,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const fetchData = async () => {
     try {
       // Get auth token once for all requests
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       let isSysAdmin = false;
 
       // Check if user is system administrator
@@ -297,7 +298,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     // Get the token to invalidate it server-side
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const currentCaretakerId = localStorage.getItem('caretakerId');
 
     // Check if this is an account holder
@@ -328,7 +329,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     // Clear all client-side authentication data including JWT token
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(STORAGE.AUTH_TOKEN);
     localStorage.removeItem('accountUser'); // Clear account user info
     localStorage.removeItem('attempts');
     localStorage.removeItem('lockoutTime');
@@ -394,7 +395,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
     // Check if we're on root slug page - if so, don't fetch data (page handles login)
     const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const unlockTime = localStorage.getItem('unlockTime');
 
     // Check if user is authenticated via account or is a system admin
@@ -443,7 +444,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   // Watch for family changes and refetch data (only if authenticated and not on root slug page)
   useEffect(() => {
     const isRootSlugPage = pathname === `/${familySlug}` || pathname === `/${familySlug}/`;
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const unlockTime = localStorage.getItem('unlockTime');
 
     let isAccountAuth = false;
@@ -509,7 +510,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const unlockTime = localStorage.getItem('unlockTime');
 
       // Check if user is authenticated via account or is a system admin
@@ -621,7 +622,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleOpenPayment = () => {
       // Check if user is an account user before opening modal
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       if (!authToken) return;
 
       try {
@@ -706,8 +707,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   // Check unlock status based on JWT token and extract user info
   useEffect(() => {
     const checkUnlockStatus = () => {
-      const authToken = localStorage.getItem('authToken');
-      const unlockTime = localStorage.getItem('unlockTime');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
+      const unlockTime = localStorage.getItem(STORAGE.UNLOCK_TIME);
 
       // Check if user is authenticated via account or is a system admin
       let isAccountAuth = false;
@@ -986,7 +987,7 @@ export default function AppLayout({
   // Define handleLogout function within the layout scope
   const handleLogout = async () => {
     // Get the token to invalidate it server-side
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const currentCaretakerId = localStorage.getItem('caretakerId');
 
     // Check if this is an account holder
@@ -1017,7 +1018,7 @@ export default function AppLayout({
     // Clear all client-side authentication data including JWT token
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(STORAGE.AUTH_TOKEN);
     localStorage.removeItem('accountUser'); // Clear account user info
     localStorage.removeItem('attempts');
     localStorage.removeItem('lockoutTime');

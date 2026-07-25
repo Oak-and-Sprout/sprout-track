@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { ActivityType } from '../types';
 import { getActivityTime } from '../utils';
+import { STORAGE } from '@/constants';
 
 interface CacheEntry {
   activities: ActivityType[];
@@ -96,7 +97,7 @@ export function useActivityCache() {
       url += `&types=${encodeURIComponent(types)}`;
     }
 
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const response = await fetch(url, {
       cache: 'no-store',
       signal,

@@ -27,6 +27,7 @@ import { Settings } from 'lucide-react';
 import { Checkbox } from '@/src/components/ui/checkbox';
 
 import './sleep-form.css';
+import { STORAGE } from '@/constants';
 
 // Note: DEFAULT_LOCATIONS are displayed as-is but could be localized if needed
 const DEFAULT_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
@@ -405,7 +406,7 @@ export default function SleepForm({
         };
 
         // Get auth token from localStorage
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
 
         response = await fetch(`/api/sleep-log?id=${activity.id}`, {
           method: 'PUT',

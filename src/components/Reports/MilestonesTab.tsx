@@ -16,6 +16,7 @@ import { MilestonesTabProps, MilestoneActivity } from './reports.types';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
+import { STORAGE } from '@/constants';
 
 interface MilestonesByAge {
   ageInMonths: number;
@@ -49,7 +50,7 @@ const MilestonesTab: React.FC<MilestonesTabProps> = () => {
       setError(null);
 
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
 
         const response = await fetch(`/api/milestone-log?babyId=${selectedBaby.id}`, {
           cache: 'no-store',

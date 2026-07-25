@@ -5,6 +5,7 @@ import { useTheme } from '@/src/context/theme';
 import { useLocalization } from '@/src/context/localization';
 
 import './account-expiration-banner.css';
+import { STORAGE } from '@/constants';
 
 interface AccountStatus {
   accountStatus: 'active' | 'inactive' | 'trial' | 'expired' | 'closed' | 'no_family';
@@ -33,7 +34,7 @@ export default function AccountExpirationBanner({
   const [userType, setUserType] = useState<'account' | 'caretaker' | null>(null);
 
   useEffect(() => {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     if (!authToken) {
       setLoading(false);
       return;

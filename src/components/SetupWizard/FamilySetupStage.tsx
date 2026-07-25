@@ -9,6 +9,7 @@ import { FamilySetupStageProps } from './setup-wizard.types';
 import { BackupRestore } from '@/src/components/BackupRestore';
 import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
 import { useLocalization } from '@/src/context/localization';
+import { STORAGE } from '@/constants';
 
 /**
  * FamilySetupStage Component
@@ -60,7 +61,7 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
     console.log('Database imported successfully during setup');
 
     // Clear all authentication data
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(STORAGE.AUTH_TOKEN);
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
 

@@ -7,6 +7,7 @@ import { BabyProvider } from '@/app/context/baby';
 
 import { ThemeProvider } from '@/src/context/theme';
 import { ToastProvider } from '@/src/components/ui/toast';
+import { STORAGE } from '@/constants';
 
 export default function NurseryLayout({
   children,
@@ -14,7 +15,7 @@ export default function NurseryLayout({
   children: React.ReactNode;
 }) {
   const handleLogout = async () => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(STORAGE.AUTH_TOKEN);
 
     try {
       await fetch('/api/auth/logout', {
@@ -30,7 +31,7 @@ export default function NurseryLayout({
 
     localStorage.removeItem('unlockTime');
     localStorage.removeItem('caretakerId');
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(STORAGE.AUTH_TOKEN);
     localStorage.removeItem('accountUser');
     localStorage.removeItem('attempts');
     localStorage.removeItem('lockoutTime');

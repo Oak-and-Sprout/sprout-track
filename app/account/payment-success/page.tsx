@@ -9,6 +9,7 @@ import { Label } from '@/src/components/ui/label';
 import { useLocalization } from '@/src/context/localization';
 
 import '../account.css';
+import { STORAGE } from '@/constants';
 
 /**
  * Payment Success Content Component
@@ -29,12 +30,12 @@ function PaymentSuccessContent() {
   // Get redirect URL based on family slug from JWT token
   const getRedirectUrl = useCallback((): string => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       if (authToken) {
         const payload = authToken.split('.')[1];
         const decodedPayload = JSON.parse(atob(payload));
         const familySlug = decodedPayload.familySlug;
-        
+
         // If we have a family slug, redirect to the family's log-entry page
         if (familySlug) {
           return `/${familySlug}/log-entry`;
@@ -43,7 +44,7 @@ function PaymentSuccessContent() {
     } catch (error) {
       console.error('Error parsing JWT token for redirect:', error);
     }
-    
+
     // Fallback to home page if no family slug found
     return '/';
   }, []);
@@ -58,7 +59,7 @@ function PaymentSuccessContent() {
       }
 
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         const response = await fetch('/api/accounts/payments/verify-session', {
           method: 'POST',
           headers: {
@@ -218,7 +219,7 @@ function PaymentSuccessContent() {
  */
 export default function PaymentSuccessPage() {
   const { t } = useLocalization();
-  
+
   return (
     <Suspense
       fallback={

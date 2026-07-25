@@ -11,6 +11,7 @@ import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { FamilyResponse } from '@/app/api/types';
+import { STORAGE } from '@/constants';
 
 function LoginPageContent() {
   const router = useRouter();
@@ -27,7 +28,7 @@ function LoginPageContent() {
   const [tokenLoading, setTokenLoading] = useState(false);
   const [showTokenPassword, setShowTokenPassword] = useState(false);
 
-  // Ref pentru a pune focus direct pe input la randare
+  // Ref for focus management
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
   // Check if this is a setup flow
@@ -65,10 +66,14 @@ function LoginPageContent() {
     }
   }, [isSetupFlow, isTokenSetupFlow]);
 
-  // Pune focus automat pe input-ul parolei când se deschide ecranul de invitație
+  // Autofocus input on screen mount safely
   useEffect(() => {
     if (isTokenSetupFlow && passwordInputRef.current) {
-      passwordInputRef.current.focus();
+      // Small timeout ensures the DOM has fully settled before requesting focus
+      const timer = setTimeout(() => {
+        passwordInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [isTokenSetupFlow]);
 
@@ -101,13 +106,17 @@ function LoginPageContent() {
       const data = await response.json();
 
       if (data.success && data.data) {
-        localStorage.setItem('authToken', data.data.token);
-        localStorage.setItem('unlockTime', Date.now().toString());
+        localStorage.setItem(STORAGE.AUTH_TOKEN, data.data.token);
+        localStorage.setItem(STORAGE.UNLOCK_TIME, Date.now().toString());
         router.push(`/setup/${setupToken}`);
       } else {
         setTokenError(data.error || t('Invalid password'));
         setTokenPassword('');
-        passwordInputRef.current?.focus(); // Returnează focusul pe input la eroare
+
+        // Let the screen reader read the error block FIRST before forcing focus change
+        setTimeout(() => {
+          passwordInputRef.current?.focus();
+        }, 200);
       }
     } catch (error) {
       console.error('Token authentication error:', error);
@@ -130,7 +139,7 @@ function LoginPageContent() {
 
   // Check if already authenticated on page load
   useEffect(() => {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     const unlockTime = localStorage.getItem('unlockTime');
 
     if (authToken && unlockTime) {
@@ -147,14 +156,14 @@ function LoginPageContent() {
             router.push('/');
           }
         } else {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('unlockTime');
-          localStorage.removeItem('caretakerId');
+          localStorage.removeItem(STORAGE.AUTH_TOKEN);
+          localStorage.removeItem(STORAGE.UNLOCK_TIME);
+          localStorage.removeItem(STORAGE.CARETAKER_ID);
         }
       } catch (error) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('unlockTime');
-        localStorage.removeItem('caretakerId');
+        localStorage.removeItem(STORAGE.AUTH_TOKEN);
+        localStorage.removeItem(STORAGE.UNLOCK_TIME);
+        localStorage.removeItem(STORAGE.CARETAKER_ID);
       }
     } else if (!isSetupFlow && !isTokenSetupFlow) {
       router.push('/');
@@ -164,7 +173,6 @@ function LoginPageContent() {
   if (isTokenSetupFlow) {
     return (
       <div className="flex flex-col items-center">
-        {/* Regiune marcată cu alert pentru cititoarele de ecran */}
         <div
           role="region"
           aria-label={t('Invitation notice')}
@@ -185,7 +193,7 @@ function LoginPageContent() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleTokenAuth} className="space-y-4">
+            <form onSubmit={handleTokenAuth} className="space-y-4" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="tokenPassword">{t('Setup Password')}</Label>
                 <div className="relative">
@@ -196,21 +204,29 @@ function LoginPageContent() {
                     value={tokenPassword}
                     onChange={(e) => {
                       setTokenPassword(e.target.value);
-                      setTokenError('');
+                      if (tokenError) setTokenError('');
                     }}
                     placeholder={t('Enter setup password')}
                     disabled={tokenLoading}
-                    className="pr-10" // Spațiu pentru a nu suprapune textul cu butonul de ochi
+                    className="pr-10"
+
+                    /* ACCESSIBILITY UPDATES FOR INPUT */
+                    aria-invalid={!!tokenError}
+                    aria-describedby={tokenError ? 'password-error' : undefined}
+                    required
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    /* Atribute ARIA esențiale pentru accesibilitatea butonului toggle */
-                    aria-label={showTokenPassword ? t('Hide password') : t('Show password')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 focus:ring-2 focus:ring-blue-500"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 focus-visible:ring-2 focus-visible:ring-blue-500 z-10"
                     onClick={() => setShowTokenPassword(!showTokenPassword)}
                     disabled={tokenLoading}
+
+                    /* ACCESSIBILITY UPDATES FOR TOGGLE BUTTON */
+                    aria-label={showTokenPassword ? t('Hide password') : t('Show password')}
+                    aria-controls="tokenPassword"
+                    aria-pressed={showTokenPassword}
                   >
                     {showTokenPassword ? (
                       <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -221,15 +237,21 @@ function LoginPageContent() {
                 </div>
               </div>
 
+              {/* ACCESSIBILITY UPDATES FOR ERROR BOX */}
               {tokenError && (
-                <div id="password-error" role="alert" aria-live='assertive' className="text-red-500 text-sm font-medium animate-pulse">
+                <div
+                  id="password-error"
+                  role="alert"
+                  aria-live="assertive"
+                  className="text-red-500 text-sm font-medium"
+                >
                   {tokenError}
                 </div>
               )}
 
               <Button
                 type="submit"
-                className="w-full focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                className="w-full focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                 disabled={tokenLoading || !tokenPassword.trim()}
               >
                 {tokenLoading ? (
@@ -265,10 +287,6 @@ function LoginPageContent() {
         </div>
       )}
 
-      {/* IMPORTANT: Asigură-te că în componentul intern <LoginSecurity /> 
-        ai aplicat logica keydown (pe care am scris-o în pasul anterior) 
-        pentru ca tastatura numerică de PIN să preia apăsările de taste!
-      */}
       <div className="w-full flex justify-center">
         <LoginSecurity
           onUnlock={handleUnlock}

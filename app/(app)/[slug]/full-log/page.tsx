@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation';
 import FullLogTimeline from '@/src/components/FullLogTimeline';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import { Baby as BabyIcon } from 'lucide-react';
+import { STORAGE } from '@/constants';
 
 function FullLogPage() {
   const { selectedBaby, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
@@ -47,7 +48,7 @@ function FullLogPage() {
         url += `&familyId=${family.id}`;
       }
 
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(url, {
         headers: authToken ? {
           'Authorization': `Bearer ${authToken}`

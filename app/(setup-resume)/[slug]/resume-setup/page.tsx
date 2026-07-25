@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useLocalization } from '@/src/context/localization';
 import SetupWizard from '@/src/components/SetupWizard';
+import { STORAGE } from '@/constants';
 
 interface SetupStatusData {
   setupStage: number;
@@ -41,7 +42,7 @@ export default function ResumeSetupPage() {
     const checkSetupStatus = async () => {
       try {
         // Check authentication
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         const unlockTime = localStorage.getItem('unlockTime');
 
         if (!authToken || !unlockTime) {

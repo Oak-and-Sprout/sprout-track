@@ -13,6 +13,7 @@ import TermsOfUseModal from '@/src/components/modals/terms-of-use';
 import { useLocalization } from '@/src/context/localization';
 
 import './account-modal.css';
+import { STORAGE } from '@/constants';
 
 interface AccountModalProps {
   open: boolean;
@@ -249,7 +250,7 @@ export default function AccountModal({
 
       if (response.ok && result.success) {
         // Store the token in localStorage
-        localStorage.setItem('authToken', result.data.token);
+        localStorage.setItem(STORAGE.AUTH_TOKEN, result.data.token);
         
         // Set unlock time for session management (account holders are considered "unlocked")
         localStorage.setItem('unlockTime', Date.now().toString());

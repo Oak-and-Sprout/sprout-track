@@ -14,6 +14,7 @@ import PrivacyPolicyModal from '@/src/components/modals/privacy-policy';
 import TermsOfUseModal from '@/src/components/modals/terms-of-use';import { useLocalization } from '@/src/context/localization';
 
 import '../../home/home.css';
+import { STORAGE } from '@/constants';
 
 interface AccountStatus {
   accountId: string;
@@ -41,7 +42,7 @@ export default function AccountFamilySetupPage() {
 
   useEffect(() => {
     const checkAccountStatus = async () => {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem(STORAGE.AUTH_TOKEN);
       
       if (!token) {
         // Not logged in - redirect to coming soon page
@@ -84,7 +85,7 @@ export default function AccountFamilySetupPage() {
           }
         } else {
           // Token might be invalid
-          localStorage.removeItem('authToken');
+          localStorage.removeItem(STORAGE.AUTH_TOKEN);
           localStorage.removeItem('accountUser');
           router.push('/coming-soon');
         }

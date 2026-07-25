@@ -4,6 +4,7 @@ import { Download, Loader2 } from 'lucide-react';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { FilterType } from './full-log-timeline.types';
+import { STORAGE } from '@/constants';
 
 interface FullLogExportButtonProps {
   babyId: string;
@@ -60,7 +61,7 @@ const FullLogExportButton: React.FC<FullLogExportButtonProps> = ({
         params.set('filter', activeFilter);
       }
 
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(`/api/timeline/export?${params.toString()}`, {
         headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
       });

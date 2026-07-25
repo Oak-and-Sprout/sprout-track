@@ -23,6 +23,7 @@ import ReportFooter from './ReportFooter';
 import { getElapsedDays } from './monthly-report-card.helpers';
 
 import './monthly-report-card.css';
+import { STORAGE } from '@/constants';
 
 const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
   const { t } = useLocalization();
@@ -68,7 +69,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({ className }) => {
     setError(null);
 
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(`/api/babies/${selectedBaby.id}/report/${yearMonth}`, {
         cache: 'no-store',
         headers: {

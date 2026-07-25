@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import enTranslations from '@/src/localization/translations/en.json';
 import { supportedLanguageCodes } from '@/src/localization/supported-languages-config';
+import { STORAGE } from '@/constants';
 
 /**
  * Interface for the localization context
@@ -12,17 +13,17 @@ interface LocalizationContextType {
    * Current language code (ISO 639-1, e.g., 'en', 'es', 'fr')
    */
   language: string;
-  
+
   /**
    * Whether the context is loading the language preference from the API
    */
   isLoading: boolean;
-  
+
   /**
    * Set the language preference (updates both API and localStorage)
    */
   setLanguage: (lang: string) => Promise<void>;
-  
+
   /**
    * Translation function - returns translated string for the given key
    */
@@ -41,7 +42,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     const savedLanguage = localStorage.getItem('language');
     return savedLanguage || 'en';
   });
-  
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [translations, setTranslations] = useState<Record<string, string>>(
     enTranslations as Record<string, string>
@@ -74,11 +75,11 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
    */
   const isSystemAdmin = useCallback((): boolean => {
     if (typeof window === 'undefined') return false;
-    
+
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       if (!authToken) return false;
-      
+
       const payload = authToken.split('.')[1];
       const decodedPayload = JSON.parse(atob(payload));
       return decodedPayload.isSysAdmin === true;
@@ -109,7 +110,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       if (!authToken) {
         // Not authenticated, use localStorage
         setIsLoading(false);
@@ -187,7 +188,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
     // Try to update via API if authenticated (for non-system admins)
     if (typeof window !== 'undefined') {
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         if (authToken) {
           const response = await fetch('/api/localization', {
             method: 'PUT',

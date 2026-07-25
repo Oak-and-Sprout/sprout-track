@@ -15,6 +15,7 @@ import PumpingChartModal, { PumpingChartMetric } from './PumpingChartModal';
 import { useLocalization } from '@/src/context/localization';
 import { useBaby } from '@/app/context/baby';
 import { useUnit } from '@/src/hooks/useUnit';
+import { STORAGE } from '@/constants';
 
 interface PumpingStatsSectionProps {
   stats: PumpStats;
@@ -53,7 +54,7 @@ const PumpingStatsSection: React.FC<PumpingStatsSectionProps> = ({ stats, activi
         return;
       }
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         const response = await fetch(
           `/api/breast-milk-balance?babyId=${selectedBaby.id}&unit=${stats.unit}`,
           {

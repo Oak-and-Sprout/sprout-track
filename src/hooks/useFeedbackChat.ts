@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { FeedbackResponse, FeedbackAttachmentResponse } from '@/app/api/types';
 import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
+import { STORAGE } from '@/constants';
 
 export interface SubmitterInfo {
   name: string;
@@ -47,7 +48,7 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
 
   const loadSubmitterInfo = useCallback(async () => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       if (!authToken) return;
 
       const payload = authToken.split('.')[1];

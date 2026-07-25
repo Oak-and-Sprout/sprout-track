@@ -17,6 +17,7 @@ import { RefreshCw, Loader2, CheckCircle, XCircle, AlertTriangle, ArrowUpCircle 
 import { useLocalization } from '@/src/context/localization';
 import { cn } from '@/src/lib/utils';
 import { guardianUpdateStyles } from './guardian-update.styles';
+import { STORAGE } from '@/constants';
 
 interface GuardianUpdateProps {
   isLoading: boolean;
@@ -41,7 +42,7 @@ export function GuardianUpdate({ isLoading, isSaving, onError }: GuardianUpdateP
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const getAuthHeaders = (): HeadersInit => {
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
     return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
   };
 

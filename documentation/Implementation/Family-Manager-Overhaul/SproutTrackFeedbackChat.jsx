@@ -44,21 +44,21 @@ const THREADS = [
 ];
 
 const SendArrow = ({ size = 16, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
   </svg>
 );
 
 const PlusIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
 );
 
 const XIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
 );
 
 const ChevronLeft = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
 );
 
 function ThreadList({ threads, selectedId, onSelect, onNewThread, showNew, isMobile, isAdmin }) {
@@ -83,13 +83,21 @@ function ThreadList({ threads, selectedId, onSelect, onNewThread, showNew, isMob
         <span style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a" }}>Messages</span>
         <button
           onClick={onNewThread}
+          name="newFeedBack"
+          aria-label="New feedback"
           title="New feedback"
           style={{
-            width: 28, height: 28, borderRadius: 7,
+            width: 28,
+            height: 28,
+            borderRadius: 7,
             background: showNew ? "#e5e3de" : "transparent",
-            border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#10b981", transition: "all 0.12s",
+            border: "1px solid #20c991",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#10b981",
+            transition: "all 0.12s",
           }}
         >
           {showNew ? <XIcon /> : <PlusIcon />}
@@ -337,15 +345,27 @@ function ConversationPane({ thread, replyText, setReplyText, onSend, isMobile, o
         flexShrink: 0,
       }}>
         <textarea
+          id="replyInput"
+          name="replyInput"
+          aria-label="Type your reply"
           value={replyText}
           onChange={e => setReplyText(e.target.value)}
-          placeholder="Type a reply..."
+          placeholder="Type a reply…"
           rows={1}
           style={{
-            flex: 1, padding: "9px 12px", border: "1px solid #dddbd6",
-            borderRadius: 20, fontSize: 13, color: "#1a1a1a",
-            background: "#f7f7f5", fontFamily: "inherit", resize: "none",
-            outline: "none", lineHeight: 1.5, maxHeight: 120, overflow: "auto",
+            flex: 1, 
+            padding: "9px 12px", 
+            border: "1px solid #dddbd6",
+            borderRadius: 20, 
+            fontSize: 13, 
+            color: "#1a1a1a",
+            background: "#f7f7f5", 
+            fontFamily: "inherit", 
+            resize: "none",
+            outline: "none", 
+            lineHeight: 1.5, 
+            maxHeight: 120, 
+            overflow: "auto",
             boxSizing: "border-box",
           }}
           onFocus={e => { e.currentTarget.style.borderColor = "#10b981"; e.currentTarget.style.background = "#fff"; }}
@@ -356,14 +376,23 @@ function ConversationPane({ thread, replyText, setReplyText, onSend, isMobile, o
           }}
         />
         <button
+          id="sendReplyButton"
+          name="sendReplyButton"
+          aria-label="Send reply"
           onClick={onSend}
           disabled={!replyText.trim()}
           style={{
-            width: 36, height: 36, borderRadius: "50%",
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
             background: replyText.trim() ? "#10b981" : "#e5e3de",
-            border: "none", cursor: replyText.trim() ? "pointer" : "default",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all 0.15s", flexShrink: 0,
+            border: "2px solid",
+            cursor: replyText.trim() ? "pointer" : "default",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.15s", 
+            flexShrink: 0,
           }}
         >
           <SendArrow size={15} color={replyText.trim() ? "#fff" : "#a3a39b"} />
@@ -400,8 +429,13 @@ function NewFeedbackPane({ onSubmit, onCancel, isMobile, onBack }) {
       }}>
         {isMobile && (
           <button onClick={onBack} style={{
-            background: "none", border: "none", cursor: "pointer", padding: 0,
-            color: "#10b981", display: "flex", alignItems: "center",
+            background: "none", 
+            border: "none", 
+            cursor: "pointer", 
+            padding: 0,
+            color: "#10b981", 
+            display: "flex", 
+            alignItems: "center",
           }}>
             <ChevronLeft />
           </button>
@@ -416,9 +450,14 @@ function NewFeedbackPane({ onSubmit, onCancel, isMobile, onBack }) {
       <div style={{ flex: 1, padding: "20px", background: "#fafaf8", overflowY: "auto" }}>
         {sent && (
           <div style={{
-            padding: "14px 16px", borderRadius: 10, marginBottom: 20,
-            background: "#ecfdf5", border: "1px solid #a7f3d0",
-            display: "flex", alignItems: "center", gap: 10,
+            padding: "14px 16px",
+            borderRadius: 10,
+            marginBottom: 20,
+            background: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
           }}>
             <svg width="18" height="18" viewBox="0 0 20 20" fill="#10b981">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -428,17 +467,24 @@ function NewFeedbackPane({ onSubmit, onCancel, isMobile, onBack }) {
         )}
 
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#6b6b63", display: "block", marginBottom: 6 }}>Subject</label>
+          <label htmlFor="subject" style={{ fontSize: 12, fontWeight: 500, color: "#6b6b63", display: "block", marginBottom: 6 }}>Subject</label>
           <input
             type="text"
+            id="subject"
             value={subject}
             onChange={e => setSubject(e.target.value)}
             placeholder="What's on your mind?"
             style={{
-              width: "100%", padding: "10px 12px",
-              border: "1px solid #dddbd6", borderRadius: 10,
-              fontSize: 13, color: "#1a1a1a", background: "#fff",
-              fontFamily: "inherit", outline: "none", boxSizing: "border-box",
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #dddbd6",
+              borderRadius: 10,
+              fontSize: 13,
+              color: "#1a1a1a",
+              background: "#fff",
+              fontFamily: "inherit",
+              outline: "none",
+              boxSizing: "border-box",
             }}
             onFocus={e => e.currentTarget.style.borderColor = "#10b981"}
             onBlur={e => e.currentTarget.style.borderColor = "#dddbd6"}
@@ -446,18 +492,26 @@ function NewFeedbackPane({ onSubmit, onCancel, isMobile, onBack }) {
         </div>
 
         <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#6b6b63", display: "block", marginBottom: 6 }}>Message</label>
+          <label htmlFor="message" style={{ fontSize: 12, fontWeight: 500, color: "#6b6b63", display: "block", marginBottom: 6 }}>Message</label>
           <textarea
+            id="message"
             value={message}
             onChange={e => setMessage(e.target.value)}
-            placeholder="Share your feedback, suggestions, or report any issues..."
+            placeholder="Share your feedback, suggestions, or report any issues…"
             rows={8}
             style={{
-              width: "100%", padding: "10px 12px",
-              border: "1px solid #dddbd6", borderRadius: 10,
-              fontSize: 13, lineHeight: 1.6, color: "#1a1a1a",
-              background: "#fff", fontFamily: "inherit", resize: "vertical",
-              outline: "none", boxSizing: "border-box", minHeight: 160,
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #dddbd6",
+              borderRadius: 10,
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "#1a1a1a",
+              background: "#fff",
+              fontFamily: "inherit",
+              resize: "vertical",
+              outline: "none", boxSizing: "border-box",
+              minHeight: 160,
             }}
             onFocus={e => e.currentTarget.style.borderColor = "#10b981"}
             onBlur={e => e.currentTarget.style.borderColor = "#dddbd6"}
@@ -470,31 +524,43 @@ function NewFeedbackPane({ onSubmit, onCancel, isMobile, onBack }) {
         padding: "12px 20px",
         borderTop: "1px solid #e5e3de",
         background: "#fff",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexShrink: 0
       }}>
         <button
           onClick={handleSend}
           disabled={!subject.trim() || !message.trim() || sent}
           style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 18px", borderRadius: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 18px",
+            borderRadius: 8,
             background: (subject.trim() && message.trim() && !sent) ? "#10b981" : "#e5e3de",
             color: (subject.trim() && message.trim() && !sent) ? "#fff" : "#a3a39b",
-            border: "none", fontSize: 13, fontWeight: 500,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 500,
             cursor: (subject.trim() && message.trim() && !sent) ? "pointer" : "default",
             fontFamily: "inherit", transition: "all 0.15s",
           }}
         >
           <SendArrow size={14} color={(subject.trim() && message.trim() && !sent) ? "#fff" : "#a3a39b"} />
-          {sent ? "Sending..." : "Send feedback"}
+          {sent ? "Sending…" : "Send feedback"}
         </button>
         <button
           onClick={onCancel}
           style={{
-            padding: "8px 14px", background: "transparent",
-            color: "#8a8a82", border: "1px solid #dddbd6", borderRadius: 8,
-            fontSize: 12, cursor: "pointer", fontFamily: "inherit",
+            padding: "8px 14px",
+            background: "transparent",
+            color: "#8a8a82",
+            border: "1px solid #dddbd6",
+            borderRadius: 8,
+            fontSize: 12,
+            cursor: "pointer",
+            fontFamily: "inherit",
           }}
         >
           Cancel

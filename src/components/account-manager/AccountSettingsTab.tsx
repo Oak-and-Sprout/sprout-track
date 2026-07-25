@@ -28,6 +28,7 @@ import {
   CreditCard,
   Receipt
 } from 'lucide-react';
+import { STORAGE } from '@/constants';
 
 /**
  * AccountSettingsTab Component
@@ -132,7 +133,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
 
     setCheckingSlug(true);
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(`/api/family/by-slug/${encodeURIComponent(slug)}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`

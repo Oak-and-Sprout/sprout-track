@@ -12,6 +12,7 @@ import VaccineHistoryTab from './VaccineHistoryTab';
 import { useLocalization } from '@/src/context/localization';
 
 import './vaccine-form.css';
+import { STORAGE } from '@/constants';
 
 /**
  * VaccineForm Component
@@ -49,7 +50,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({
     if (!isOpen) return;
     const fetchContacts = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         const response = await fetch('/api/contact', {
           headers: { 'Authorization': `Bearer ${authToken}` },
         });

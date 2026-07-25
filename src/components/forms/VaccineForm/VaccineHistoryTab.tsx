@@ -16,6 +16,7 @@ import {
 import { cn } from '@/src/lib/utils';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
+import { STORAGE } from '@/constants';
 
 /**
  * VaccineHistoryTab Component
@@ -43,7 +44,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
     try {
       setIsLoading(true);
       setError(null);
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
 
       const url = `/api/vaccine-log?babyId=${babyId}`;
 
@@ -94,7 +95,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
   // Download a document
   const handleDownloadDocument = async (documentId: string, originalName: string) => {
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const response = await fetch(`/api/vaccine-log/file/${documentId}`, {
         headers: { 'Authorization': `Bearer ${authToken}` },
       });
@@ -123,7 +124,7 @@ const VaccineHistoryTab: React.FC<VaccineHistoryTabProps> = ({
 
     setIsExporting(true);
     try {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       const url = `/api/vaccine-log/export?babyId=${babyId}`;
 
       const response = await fetch(url, {

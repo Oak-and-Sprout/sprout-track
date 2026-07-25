@@ -1,5 +1,6 @@
 'use client';
 
+import { STORAGE } from '@/constants';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 export interface NurseryModeSettings {
@@ -24,7 +25,7 @@ export function useNurserySettings(caretakerId: string | null) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const authToken = localStorage.getItem('authToken');
+        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
         const params = caretakerId ? `?caretakerId=${caretakerId}` : '';
         const res = await fetch(`/api/nursery-mode-settings${params}`, {
           headers: { Authorization: authToken ? `Bearer ${authToken}` : '' },
@@ -48,7 +49,7 @@ export function useNurserySettings(caretakerId: string | null) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         try {
-          const authToken = localStorage.getItem('authToken');
+          const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
           await fetch('/api/nursery-mode-settings', {
             method: 'POST',
             headers: {

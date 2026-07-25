@@ -1,3 +1,5 @@
+import { STORAGE } from "@/constants";
+
 /**
  * Utility function for handling account expiration errors in forms
  * 
@@ -61,7 +63,7 @@ export async function handleExpirationError(
   let isAccountUser = false;
   let isSysAdmin = false;
   try {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(STORAGE.AUTH_TOKEN);
     if (token) {
       const payload = token.split('.')[1];
       const decodedPayload = JSON.parse(atob(payload));
