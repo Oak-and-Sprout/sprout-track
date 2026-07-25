@@ -32,9 +32,35 @@ export function buildOwnerFilter(
  * Where-clause for GET: scopes to rows owned by this identity in this
  * family. familyId is nullable on the model (see the schema/migration
  * comments — required-with-no-default can't be added to a populated
- * Postgres table via `db push`), so a legacy row can have `familyId: null`
- * with the family only discoverable through its subscription. Both shapes
- * are matched; the owner filter (accountId/caretakerId) applies to both.
+ * Postgres table via `db push`), so a legacy row (a Postgres upgrade with no
+ * data-backfill step, or an SQLite row whose subscription vanished before
+ * this migration's LEFT JOIN backfill ran) can have `familyId`,
+ * `caretakerId`, AND `accountId` all null on the preference itself — the
+ * *subscription* is the only place that still knows who owns it. So the
+ * legacy branch's owner filter is evaluated against `subscription`'s
+ * columns, not the preference's own (null) ones — matching against the
+ * preference's own columns here would make every legacy row invisible to
+ * its actual owner (confirmed empirically: a row shaped exactly like a
+ * Postgres upgrade leaves it returned `[]` before this fix).
+ *
+ * Two things this deliberately does NOT do, both confirmed by executing the
+ * query and reading the generated SQL (not by inspecting the object shape —
+ * that was the mistake last round):
+ *
+ * 1. It does not rely on a nested `OR: []` to "fail closed" when there's no
+ *    owner id at all. Verified: `OR: [{ familyId, OR: [] }]` and
+ *    `{ OR: [branchA, { familyId: null, OR: [] }] }` both compile to a query
+ *    with the inner `OR: []` silently DROPPED — `familyId = ?` /
+ *    `familyId = ? OR familyId IS NULL`, not `1=0`. A top-level
+ *    `{ familyId, OR: [] }` *does* compile to `... AND 1=0` (this is what
+ *    the previous round's "M4 correction" actually verified), but a nested
+ *    one does not — Prisma optimizes it away once it's inside another OR.
+ *    So the no-owner-at-all case is short-circuited in plain JS instead,
+ *    before any Prisma query shape is built.
+ * 2. A non-empty nested OR (real ids present) is NOT dropped — verified with
+ *    seeded data across two families that the two-branch query below
+ *    returns exactly the caller's own row and nothing from the other
+ *    family. Only the empty-array case is fragile.
  */
 export function buildPreferencesWhere(args: {
   familyId: string;
@@ -42,10 +68,15 @@ export function buildPreferencesWhere(args: {
   caretakerId?: string | null;
 }) {
   const ownerFilter = buildOwnerFilter(args.accountId, args.caretakerId);
+  if (ownerFilter.length === 0) {
+    // No owner id at all — nothing can be owned. `id: { in: [] }` compiles
+    // to `1=0` regardless of nesting (verified), unlike an empty `OR`.
+    return { id: { in: [] as string[] } };
+  }
   return {
     OR: [
       { familyId: args.familyId, OR: ownerFilter },
-      { familyId: null, subscription: { familyId: args.familyId }, OR: ownerFilter },
+      { familyId: null, subscription: { familyId: args.familyId, OR: ownerFilter } },
     ],
   };
 }

@@ -28,28 +28,43 @@ describe('buildOwnerFilter', () => {
 });
 
 describe('buildPreferencesWhere', () => {
+  // These are shape/unit checks on the implementation choice, not proof of
+  // query behavior — Prisma's handling of nested OR arrays is exactly the
+  // thing an object-shape assertion got wrong last round (see the doc
+  // comment on buildPreferencesWhere). The actual behavioral proof — real
+  // rows in, real rows out, against the real generated SQL — lives in
+  // tests/notification-preferences-legacy-owner.test.ts.
+
   it('matches rows whose own familyId is set (the normal, post-migration case)', () => {
     const where = buildPreferencesWhere({ familyId: 'fam1', caretakerId: 'care1' });
     expect(where).toEqual({
       OR: [
         { familyId: 'fam1', OR: [{ caretakerId: 'care1' }] },
-        { familyId: null, subscription: { familyId: 'fam1' }, OR: [{ caretakerId: 'care1' }] },
+        { familyId: null, subscription: { familyId: 'fam1', OR: [{ caretakerId: 'care1' }] } },
       ],
     });
   });
 
-  it('the second branch also requires the owner filter, not just a matching subscription family', () => {
-    // Legacy rows (familyId: null) must still be scoped to the caller's
-    // own ownership, not just "anyone in the right family via subscription".
-    const where = buildPreferencesWhere({ familyId: 'fam1', accountId: 'acct1' });
-    const legacyBranch = where.OR[1] as { OR: unknown };
-    expect(legacyBranch.OR).toEqual([{ accountId: 'acct1' }]);
+  it("the legacy branch's owner filter is nested inside `subscription`, not the preference's own columns", () => {
+    // This is the exact shape Finding 1 was about: checking the owner
+    // filter against the preference row's own (null, for a legacy row)
+    // caretakerId/accountId instead of the subscription's would make every
+    // legacy row invisible to its real owner.
+    const where = buildPreferencesWhere({ familyId: 'fam1', accountId: 'acct1' }) as {
+      OR: [unknown, { subscription: { OR: unknown } }];
+    };
+    expect(where.OR[1].subscription.OR).toEqual([{ accountId: 'acct1' }]);
   });
 
-  it('fails closed when the session has no owner id at all', () => {
+  it('short-circuits to a sentinel that cannot match anything when the session has no owner id at all', () => {
+    // `id: { in: [] }` is used deliberately instead of a nested `OR: []` —
+    // verified by executing the query that a nested empty OR gets dropped
+    // (see doc comment), while `id: { in: [] }` compiles to `1=0`
+    // regardless of nesting. This test only pins that this function reaches
+    // for that shape, not that it works — the integration test proves it
+    // works.
     const where = buildPreferencesWhere({ familyId: 'fam1' });
-    expect(where.OR[0]).toEqual({ familyId: 'fam1', OR: [] });
-    expect(where.OR[1]).toEqual({ familyId: null, subscription: { familyId: 'fam1' }, OR: [] });
+    expect(where).toEqual({ id: { in: [] } });
   });
 });
 
