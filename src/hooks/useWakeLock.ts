@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { chooseWakeLockMechanism, getCapacitorPlugin } from '@/src/utils/native-app';
+import { chooseWakeLockMechanism, getCapacitorPlugin, isNativeApp } from '@/src/utils/native-app';
 
 interface KeepAwakePlugin {
   keepAwake(): Promise<void>;
@@ -71,6 +71,7 @@ export function useWakeLock() {
 
   // Auto-acquire on mount and re-acquire on visibility change
   useEffect(() => {
+    if (isNativeApp()) return; // native layer owns keep-awake in the shell
     if (mechanism() === 'none') return;
 
     request();

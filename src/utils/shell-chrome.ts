@@ -39,3 +39,17 @@ export function shellSubscriptionControls(
     showWebNote: manageable,
   };
 }
+
+/**
+ * Nursery mode's wake-lock and fullscreen toggles are browser-shaped affordances.
+ * Inside the shell the native layer keeps the screen awake and goes immersive for
+ * the whole nursery session, so the controls would be inert at best and
+ * contradictory at worst — the wake-lock card currently renders
+ * "Wake lock not supported" there.
+ */
+export function nurseryDisplayControls(isNative: boolean): {
+  showWakeLock: boolean;
+  showFullscreen: boolean;
+} {
+  return { showWakeLock: !isNative, showFullscreen: !isNative };
+}

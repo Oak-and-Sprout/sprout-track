@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sideNavFooterButtons, trialCtaMode, shellSubscriptionControls } from '@/src/utils/shell-chrome'
+import { sideNavFooterButtons, trialCtaMode, shellSubscriptionControls, nurseryDisplayControls } from '@/src/utils/shell-chrome'
 
 describe('sideNavFooterButtons', () => {
   it('web: switch-family, settings, logout', () => {
@@ -29,5 +29,15 @@ describe('shellSubscriptionControls', () => {
   it('shell + lifetime or no family: no external manage', () => {
     expect(shellSubscriptionControls(true, 'lifetime', true).showExternalManage).toBe(false)
     expect(shellSubscriptionControls(true, 'trial', false).showExternalManage).toBe(false)
+  })
+})
+
+describe('nurseryDisplayControls', () => {
+  it('shows both controls in a browser', () => {
+    expect(nurseryDisplayControls(false)).toEqual({ showWakeLock: true, showFullscreen: true })
+  })
+
+  it('hides both in the shell — the app owns keep-awake and immersive', () => {
+    expect(nurseryDisplayControls(true)).toEqual({ showWakeLock: false, showFullscreen: false })
   })
 })
