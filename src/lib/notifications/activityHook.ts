@@ -7,6 +7,7 @@ import {
 import { sendToDeviceTokens } from './nativePush';
 import { t, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
+import { routeForNotification } from './routes';
 
 /**
  * Activity type mapping for consistent naming
@@ -215,7 +216,7 @@ export async function notifyActivityCreated(
     // Get baby information for notification
     const baby = await prisma.baby.findUnique({
       where: { id: babyId },
-      select: { firstName: true, familyId: true },
+      select: { firstName: true, familyId: true, family: { select: { slug: true } } },
     });
 
     if (!baby) {
@@ -314,6 +315,8 @@ export async function notifyActivityCreated(
           eventType: NotificationEventType.ACTIVITY_CREATED,
           babyId,
           activityType: activityType.toLowerCase(),
+          familySlug: baby.family?.slug,
+          route: routeForNotification('activity'),
         },
       };
 

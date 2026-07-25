@@ -7,6 +7,7 @@ import {
 import { sendToDeviceTokens } from './nativePush';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
+import { routeForNotification } from './routes';
 import { parseFeedTimerTypes, buildFeedTimerWhere, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
 
 /**
@@ -241,6 +242,7 @@ async function sendTimerNotification(
     firstName: string;
     lastName: string;
     familyId: string | null;
+    family: { slug: string } | null;
   },
   eventType: NotificationEventType,
   lastActivityTime: Date,
@@ -280,6 +282,8 @@ async function sendTimerNotification(
     data: {
       eventType,
       babyId: baby.id,
+      familySlug: baby.family?.slug,
+      route: routeForNotification(activityType),
     },
   };
 
@@ -355,6 +359,7 @@ export async function checkTimerExpirations(): Promise<number> {
             feedWarningTime: true,
             diaperWarningTime: true,
             familyId: true,
+            family: { select: { slug: true } },
           },
         },
       },
@@ -645,6 +650,8 @@ export async function checkTimerExpirations(): Promise<number> {
                     data: {
                       eventType: NotificationEventType.MEDICINE_TIMER_EXPIRED,
                       babyId: baby.id,
+                      familySlug: baby.family?.slug,
+                      route: routeForNotification('medicine'),
                     },
                   };
 

@@ -42,6 +42,8 @@ export interface NotificationPayload {
     babyId: string;
     activityType?: string;
     url?: string; // For deep linking
+    familySlug?: string; // For native deep-link routing to the right family
+    route?: string; // Allow-listed target screen, see notifications/routes.ts
   };
 }
 

@@ -1,6 +1,19 @@
 import { sendEmail } from '@/src/lib/email';
 import prisma from '../db';
 
+/**
+ * Path-based, not fragment-based: Universal and App Links match on path, and a
+ * URL fragment is not part of that match. The legacy /#verify and /#passwordreset
+ * handlers stay in place indefinitely for links already sitting in inboxes.
+ */
+export function verificationLink(domainUrl: string, token: string): string {
+  return `${domainUrl}/verify?token=${token}`;
+}
+
+export function passwordResetLink(domainUrl: string, token: string): string {
+  return `${domainUrl}/passwordreset?token=${token}`;
+}
+
 async function getDomainUrl(): Promise<string> {
   try {
     let appConfig = await prisma.appConfig.findFirst();
@@ -27,7 +40,7 @@ async function getDomainUrl(): Promise<string> {
 
 export async function sendVerificationEmail(email: string, token: string, firstName: string) {
   const domainUrl = await getDomainUrl();
-  const verificationUrl = `${domainUrl}/#verify?token=${token}`;
+  const verificationUrl = verificationLink(domainUrl, token);
   
   const result = await sendEmail({
     to: email,
@@ -69,7 +82,7 @@ The Sprout Track Team`,
 
 export async function sendPasswordResetEmail(email: string, token: string, firstName: string) {
   const domainUrl = await getDomainUrl();
-  const resetUrl = `${domainUrl}/#passwordreset?token=${token}`;
+  const resetUrl = passwordResetLink(domainUrl, token);
   
   const result = await sendEmail({
     to: email,
