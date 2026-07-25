@@ -15,4 +15,13 @@ describe('routeForNotification', () => {
       expect(NOTIFICATION_ROUTES).toContain(routeForNotification(kind));
     }
   });
+
+  it('is not fooled by Object.prototype keys (prototype pollution guard)', () => {
+    for (const kind of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) {
+      const result = routeForNotification(kind);
+      expect(typeof result).toBe('string');
+      expect(result).toBe('log-entry');
+      expect(NOTIFICATION_ROUTES).toContain(result);
+    }
+  });
 });
