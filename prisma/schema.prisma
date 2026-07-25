@@ -1528,7 +1528,7 @@ model PushSubscription {
 // Native push device token model (iOS/Android)
 model DeviceToken {
   id            String    @id @default(cuid())
-  token         String    @unique
+  token         String
   platform      String // 'ios' | 'android'
   accountId     String?
   caretakerId   String?
@@ -1543,6 +1543,7 @@ model DeviceToken {
   caretaker Caretaker? @relation(fields: [caretakerId], references: [id])
   family    Family     @relation(fields: [familyId], references: [id])
 
+  @@unique([token, familyId])
   @@index([accountId])
   @@index([caretakerId])
   @@index([familyId])

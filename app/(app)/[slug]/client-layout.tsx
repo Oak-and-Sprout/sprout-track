@@ -47,7 +47,6 @@ import {
   clearReauthMarker,
   type NativeRelockDecision,
 } from '@/src/utils/native-relock';
-import { registerNativePushToken } from '@/src/utils/native-push';
 import { consumeInjectedSession } from '@/src/utils/native-session';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
@@ -472,11 +471,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
       window.removeEventListener('resize', checkScreenWidth);
     };
   }, [checkScreenWidth]); // Remove fetchData from dependencies to prevent infinite loop
-
-  // Register this device for native push once inside the mobile shell (post-login only)
-  useEffect(() => {
-    if (mounted && isUnlocked && isNativeApp()) void registerNativePushToken();
-  }, [mounted, isUnlocked]);
 
   // Watch for family changes and refetch data (only if authenticated and not on root slug page)
   useEffect(() => {

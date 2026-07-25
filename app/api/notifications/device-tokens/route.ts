@@ -3,8 +3,25 @@ import prisma from '../../db';
 import { ApiResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { parseDeviceTokenBody } from './validation';
+import { isFcmConfigured } from '../../../../src/lib/notifications/fcmPush';
+import { isApnsConfigured } from '../../../../src/lib/notifications/apnsPush';
+
+export function deviceTokenRoutesEnabled(flags: { fcm: boolean; apns: boolean }): boolean {
+  return flags.fcm || flags.apns;
+}
+
+export function upsertWhere(args: { token: string; familyId: string }) {
+  return { token_familyId: { token: args.token, familyId: args.familyId } };
+}
 
 async function handlePost(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<{ id: string }>>> {
+  if (!deviceTokenRoutesEnabled({ fcm: isFcmConfigured(), apns: isApnsConfigured() })) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: 'Not found.' },
+      { status: 404 }
+    );
+  }
+
   try {
     const { familyId, accountId, caretakerId } = authContext;
 
@@ -36,7 +53,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
       caretakerId: caretakerId ?? null,
     };
     const record = await prisma.deviceToken.upsert({
-      where: { token: parsed.token },
+      where: upsertWhere({ token: parsed.token, familyId }),
       update: data,
       create: { token: parsed.token, ...data },
     });
@@ -51,17 +68,20 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
   }
 }
 
-async function handleDelete(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<null>>> {
+// Spec D7: unauthenticated by design. The device token is high-entropy and held
+// only by the device that owns it, so presenting it is self-authenticating for
+// this one operation. The shell has no JWT when a family is removed, and
+// acquiring one would fire a biometric prompt on a delete action. Deleting a
+// push token grants no read or write access to family data.
+async function handleDelete(req: NextRequest): Promise<NextResponse<ApiResponse<null>>> {
+  if (!deviceTokenRoutesEnabled({ fcm: isFcmConfigured(), apns: isApnsConfigured() })) {
+    return NextResponse.json<ApiResponse<never>>(
+      { success: false, error: 'Not found.' },
+      { status: 404 }
+    );
+  }
+
   try {
-    const { familyId } = authContext;
-
-    if (!familyId) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'User is not associated with a family.' },
-        { status: 403 }
-      );
-    }
-
     const token = req.nextUrl.searchParams.get('token');
     if (!token) {
       return NextResponse.json<ApiResponse<null>>(
@@ -70,15 +90,8 @@ async function handleDelete(req: NextRequest, authContext: AuthResult): Promise<
       );
     }
 
-    const record = await prisma.deviceToken.findUnique({ where: { token } });
-    if (!record || record.familyId !== familyId) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'Device token not found.' },
-        { status: 404 }
-      );
-    }
-
-    await prisma.deviceToken.delete({ where: { token } });
+    // Exact full-token match only; never reveal whether a row existed.
+    await prisma.deviceToken.deleteMany({ where: { token } });
     return NextResponse.json<ApiResponse<null>>({ success: true });
   } catch (error: any) {
     console.error('Error deleting device token:', error);
@@ -90,4 +103,4 @@ async function handleDelete(req: NextRequest, authContext: AuthResult): Promise<
 }
 
 export const POST = withAuthContext(handlePost);
-export const DELETE = withAuthContext(handleDelete);
+export const DELETE = handleDelete; // unauthenticated by design — spec D7

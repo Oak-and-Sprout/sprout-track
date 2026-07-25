@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '../types';
 import { isNotificationsEnabled } from '../../../src/lib/notifications/config';
 import { isFcmConfigured } from '../../../src/lib/notifications/fcmPush';
+import { isApnsConfigured } from '../../../src/lib/notifications/apnsPush';
 
 /**
  * GET handler for deployment configuration
@@ -19,7 +20,10 @@ export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<an
       allowAccountRegistration: process.env.ALLOW_ACCOUNT_REGISTRATION === 'true',
       betaEnabled: process.env.BETA === '1',
       notificationsEnabled: await isNotificationsEnabled(),
-      nativePushEnabled: isFcmConfigured(),
+      // Retained for older shell builds that only know this flag (App Store
+      // review latency means they may lag the server by a version or two).
+      nativePushEnabled: isFcmConfigured() || isApnsConfigured(),
+      nativePush: { ios: isApnsConfigured(), android: isFcmConfigured() },
     };
 
     return NextResponse.json<ApiResponse<typeof config>>({
