@@ -4,6 +4,8 @@
 
 Sprout Track is a Progressive Web App with push notification support, Wake Lock API integration, and a dedicated nursery mode designed for wall-mounted tablets. The PWA architecture enables offline-capable, app-like behavior on mobile and desktop browsers.
 
+> **Running inside the native app?** When the web app is loaded by the Capacitor mobile shell, three things in this document behave differently: the service worker is not registered, wake lock uses the `KeepAwake` plugin instead of the browser API, and notifications are delivered through a second FCM channel rather than the service worker. See [Native App Integration](./NativeAppIntegration.md).
+
 ## PWA Installation
 
 ### Dynamic Manifest
@@ -31,6 +33,8 @@ The PWA manifest is generated dynamically per family so that "Add to Home Screen
 **File:** `public/sw.js`
 
 The service worker handles push notification display and click behavior. It is minimal — focused on notifications rather than offline caching.
+
+Registration is gated by `shouldRegisterServiceWorker()` (`src/utils/native-app.ts`): it requires service worker support, a secure context, **and** that the app is not running inside the native shell. Inside the shell there is nothing to install and native push does not route through the service worker.
 
 ### Push Event Handling
 When a push notification arrives:
@@ -127,6 +131,26 @@ For each expired timer:
 
 When an admin replies to user feedback, a push notification is sent directly to all of the author's active subscriptions, bypassing the `NotificationPreference` system.
 
+### Native Push Channel (FCM)
+
+Alongside every web-push send site above, the same payload is delivered to native
+device tokens through FCM HTTP v1 (`src/lib/notifications/fcmPush.ts`). The two
+channels are independent and complementary:
+
+| | Web push | Native push |
+|---|---|---|
+| Transport | Web Push / VAPID | FCM HTTP v1 (APNs behind it on iOS) |
+| Stored as | `PushSubscription` | `DeviceToken` |
+| Registered by | `src/lib/notifications/client.ts` (service worker) | `src/utils/native-push.ts` (Capacitor plugin) |
+| Enabled by | `NotificationConfig` + VAPID keys | `FCM_SERVICE_ACCOUNT_JSON` env var |
+| Display | `public/sw.js` | OS notification centre |
+| Logged in `NotificationLog` | Yes | No |
+
+Native sends are fire-and-forget beside the web-push call, and reuse the matched
+`NotificationPreference` and its localized payload — there is no separate
+preference surface. An unconfigured deployment no-ops with zero network calls.
+Full detail in [Native App Integration](./NativeAppIntegration.md).
+
 ### Failure Handling
 - `PushSubscription.failureCount` increments on send failure
 - `lastFailureAt` and `lastSuccessAt` tracked per subscription
@@ -153,6 +177,8 @@ Prevents the device screen from sleeping. Critical for nursery mode where a tabl
 - Re-acquires when page becomes visible again (after tab switch)
 - Gracefully handles browsers that don't support the API
 - Provides `isActive` and `isSupported` status
+
+The mechanism is resolved by `chooseWakeLockMechanism()` (`src/utils/native-app.ts`): the Capacitor `KeepAwake` plugin if the native shell injected it, otherwise `navigator.wakeLock`, otherwise unsupported. `isSupported` reflects the resolved mechanism, not the browser API alone.
 
 ## Fullscreen API
 
@@ -220,7 +246,9 @@ When enabled:
 - `public/manifest.json` — Static PWA manifest (root/marketing page)
 - `app/api/manifest/[slug]/route.ts` — Dynamic family-scoped manifest endpoint
 - `public/sw.js` — Service worker (push events, notification clicks)
-- `src/lib/notifications/push.ts` — Push notification sending
+- `src/lib/notifications/push.ts` — Push notification sending (web push / VAPID)
+- `src/lib/notifications/fcmPush.ts` — Native push sending (FCM HTTP v1)
+- `src/utils/native-push.ts` — Client-side native token registration
 - `src/lib/notifications/activityHook.ts` — Activity-triggered notifications
 - `src/lib/notifications/timerCheck.ts` — Timer expiration checks
 - `src/lib/notifications/feedbackHook.ts` — Feedback reply notifications

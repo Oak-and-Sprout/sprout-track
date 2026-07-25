@@ -231,6 +231,23 @@ The `FamilyProvider` (`src/context/family.tsx`) handles client-side auth:
 - Account expiration checked every 30 seconds in SaaS mode (soft check reading the JWT payload — expired users are not logged out; the UI shows expiration banners while writes are blocked server-side)
 - Provides `authenticatedFetch` wrapper for components
 
+### Session handoff from the native app
+
+When the app runs inside the Capacitor mobile shell there is a fourth way a
+session can begin: the shell logs in against `/api/auth` or
+`/api/accounts/login` itself, then navigates the WebView to the family page with
+the resulting JWT in a `#bridge-session=` fragment.
+`consumeInjectedSession()` (`src/utils/native-session.ts`) validates it, requires
+the message's slug to match the current path, writes the same `localStorage` keys
+the login screens write (`authToken`, `unlockTime`, `caretakerId`), and strips the
+fragment immediately.
+
+From the server's perspective nothing is special — it issued an ordinary token
+through an ordinary login endpoint. The corollary is that **inside the shell the
+web login UI must never render**: a family page that loads locked hands control
+back to the shell instead (`src/utils/native-relock.ts`). See
+[Native App Integration](./NativeAppIntegration.md).
+
 ## Key Files
 
 - `app/api/utils/auth.ts` — All auth middleware wrappers and `getAuthenticatedUser()`

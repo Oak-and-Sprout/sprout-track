@@ -10,6 +10,7 @@ These rules define the development patterns, conventions, and architecture for S
 - TailwindCSS: For utility-first styling (no CSS Modules, no Styled Components).
 - React Hooks (useState, useEffect, useContext): Used for all client-side state management, data fetching, and form handling.
 - PWA architecture with offline support, push notifications (VAPID), and Wake Lock API.
+- A companion Capacitor iOS/Android shell (separate repo) loads this app in its WebView; a native-aware layer in `src/utils/native-*.ts` adapts behavior when it detects the shell. See “Native Mobile Shell” below.
 
 ## Project Structure
 
@@ -183,6 +184,52 @@ export const GET = withAuthContext(handler);
 
 - `GET /api/localization` — returns current user’s language preference (requires JWT auth)
 - `PUT /api/localization` — updates language preference, body: `{ "language": "es" }` (validates ISO 639-1 code, checks write permissions for expired accounts)
+
+## Native Mobile Shell
+
+A Capacitor iOS/Android shell (separate repo, `mobile-app-v1`) loads **this** web app
+into its WebView. After pairing and login the shell hands the WebView over, so every
+screen the user sees in the app is this Next.js app. Full architecture:
+`documentation/Architecture-Documentation/NativeAppIntegration.md`.
+
+### The invariant
+
+**Every native-aware branch is gated on detection of the shell's user agent and must
+no-op in a normal browser.** Web users see no behavior change. If a change can't
+honor that, it doesn't belong in this layer.
+
+- Detection: `isNativeApp()` / `detectNativeApp(ua)` from `@/src/utils/native-app` —
+  matches the UA suffix `SproutTrackApp/<version> (ios|android)`.
+- Keep new logic as **pure functions in `src/utils/`** with a thin browser entry point,
+  so it's testable in the node-env Vitest setup (this is why `photoUtils`,
+  `shell-chrome`, `native-relock` etc. are shaped the way they are).
+
+### Rules that have bitten us
+
+- **Never read `isNativeApp()` inline during render.** It depends on `navigator`, so
+  it's `false` during SSR and true after hydration → hydration mismatch. Read it in a
+  `useEffect` into state (`inShell`), as `SideNav` and `AccountSettingsTab` do.
+- **Native ≠ plugin available.** The Capacitor bridge is only injected on allow-listed
+  hosts, so `isNativeApp() === true` with `getCapacitorPlugin(x) === null` is real.
+  Every plugin path needs a fallback (see `openExternal`).
+- **`src/utils/bridge-contract.ts` is vendored — do not edit it here.** Change
+  `mobile-app-v1/shared/bridge-contract.ts` first, re-copy, and ship both in the same
+  commit set. `tests/bridge-contract.test.ts` has a byte-for-byte drift guard.
+- **The web login must never render inside the shell.** If a family page loads locked,
+  `native-relock.ts` bounces back to the shell (with a 15 s loop guard). Don't add a
+  code path that renders login markup without consulting `decideNativeRelock`.
+- **App-store payment compliance is not optional.** No payment UI may be reachable in
+  the shell: gate on `src/utils/shell-chrome.ts` and **don't mount** `PaymentModal` /
+  `PaymentHistory` (not merely hide them). Subscription management links out via
+  `openExternal(MANAGE_SUBSCRIPTION_URL)`.
+- **Logout hands off, it doesn't navigate.** Use `if (navigateToShell({ type:
+  'loggedOut', reason })) return;` before the normal `router.push` — it returns `false`
+  in a browser, so one code path serves both.
+- Native push (`fcmPush.ts` + `DeviceToken`) sits **beside** VAPID web push, is
+  fire-and-forget at each send site, reuses the existing `NotificationPreference`
+  match, and no-ops entirely without `FCM_SERVICE_ACCOUNT_JSON`. Don't make web push
+  depend on it.
+- Device-token routes follow the golden rule: ownership comes only from `authContext`.
 
 ## Testing
 

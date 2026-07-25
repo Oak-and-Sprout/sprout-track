@@ -168,8 +168,9 @@ Measurement unit definitions with `unitAbbr` (unique), `unitName`, and `activity
 ## Notification Models
 
 - `PushSubscription` — Browser push subscription with endpoint, keys, `failureCount`
+- `DeviceToken` — Native (iOS/Android) push token for the mobile app: unique `token`, `platform`, owner (`accountId` or `caretakerId`), `familyId`, plus the same `failureCount` / `lastFailureAt` / `lastSuccessAt` lifecycle fields as `PushSubscription`. See [Native App Integration](./NativeAppIntegration.md).
 - `NotificationPreference` — Per-subscription, per-baby, per-event-type preferences
-- `NotificationLog` — Delivery tracking (success/failure, HTTP status, payload)
+- `NotificationLog` — Delivery tracking (success/failure, HTTP status, payload) — web push only
 
 ## CDC Growth Data
 
