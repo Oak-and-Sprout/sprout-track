@@ -7,7 +7,6 @@
  */
 
 import jwt from 'jsonwebtoken';
-import prisma from '../../../app/api/db';
 import type { NotificationPayload } from './push';
 
 export interface FcmServiceAccount {
@@ -83,12 +82,12 @@ async function getAccessToken(account: FcmServiceAccount): Promise<string> {
   return json.access_token;
 }
 
-interface FcmSendResult {
-  success: boolean;
-  unregistered: boolean;
-}
-
-async function sendFcm(account: FcmServiceAccount, token: string, payload: NotificationPayload): Promise<FcmSendResult> {
+export async function sendOne(
+  token: string,
+  payload: NotificationPayload
+): Promise<{ success: boolean; unregistered: boolean }> {
+  const account = loadFcmServiceAccount();
+  if (!account) return { success: false, unregistered: false };
   const accessToken = await getAccessToken(account);
   const res = await fetch(
     `https://fcm.googleapis.com/v1/projects/${account.projectId}/messages:send`,
@@ -103,49 +102,4 @@ async function sendFcm(account: FcmServiceAccount, token: string, payload: Notif
   const unregistered = res.status === 404 && body.includes('UNREGISTERED');
   console.error(`[FCM] send failed (${res.status}): ${body.slice(0, 300)}`);
   return { success: false, unregistered };
-}
-
-/**
- * Send `payload` to the device tokens belonging to the given caretaker/account
- * within the family. Returns the number of successful sends.
- */
-export async function sendToDeviceTokens(
-  target: { familyId: string; caretakerId?: string | null; accountId?: string | null },
-  payload: NotificationPayload
-): Promise<number> {
-  const account = loadFcmServiceAccount();
-  if (!account) return 0;
-  if (!target.caretakerId && !target.accountId) return 0;
-
-  const ownerFilter: object[] = [];
-  if (target.caretakerId) ownerFilter.push({ caretakerId: target.caretakerId });
-  if (target.accountId) ownerFilter.push({ accountId: target.accountId });
-
-  const tokens = await prisma.deviceToken.findMany({
-    where: { familyId: target.familyId, OR: ownerFilter },
-  });
-
-  let sent = 0;
-  for (const deviceToken of tokens) {
-    try {
-      const result = await sendFcm(account, deviceToken.token, payload);
-      if (result.success) {
-        sent += 1;
-        await prisma.deviceToken.update({
-          where: { id: deviceToken.id },
-          data: { failureCount: 0, lastSuccessAt: new Date() },
-        });
-      } else if (result.unregistered) {
-        await prisma.deviceToken.delete({ where: { id: deviceToken.id } });
-      } else {
-        await prisma.deviceToken.update({
-          where: { id: deviceToken.id },
-          data: { failureCount: { increment: 1 }, lastFailureAt: new Date() },
-        });
-      }
-    } catch (error) {
-      console.error('[FCM] unexpected send error:', error);
-    }
-  }
-  return sent;
 }

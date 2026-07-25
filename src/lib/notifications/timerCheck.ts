@@ -4,7 +4,7 @@ import {
   sendNotificationWithLogging,
   NotificationPayload,
 } from './push';
-import { sendToDeviceTokens } from './fcmPush';
+import { sendToDeviceTokens } from './nativePush';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
 import { parseFeedTimerTypes, buildFeedTimerWhere, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
