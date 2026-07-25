@@ -84,17 +84,20 @@ token minted under one is rejected (`BadDeviceToken`) by the other. Which host a
 token belongs to is determined by how the *app binary* was signed and
 distributed, not by anything the server controls:
 
-- A **development build** (Xcode debug run) or a **TestFlight build** always
-  mints **sandbox** tokens.
-- Only an **App Store** build (or an ad-hoc/enterprise build signed for
-  distribution) mints **production** tokens.
+- Only a **development build** (installed straight from Xcode, debug run) mints
+  **sandbox** tokens.
+- **TestFlight builds and App Store builds are both signed with an App Store
+  distribution profile** (`aps-environment: production` in the entitlements),
+  so both mint **production** tokens — TestFlight is not sandbox.
 
-So `APNS_PRODUCTION=true` against a fleet of TestFlight testers' devices will
-send every push into `BadDeviceToken` failures — and the reverse, leaving it
-unset/`false` once the app is live on the App Store, does the same in the other
-direction. Set it to match how the *client binaries currently in the field* were
-built, not how the server happens to be deployed, and revisit it at each
-transition between TestFlight and App Store release.
+So leaving `APNS_PRODUCTION` unset/`false` against a fleet of TestFlight
+testers' or App Store users' devices will send every push into
+`BadDeviceToken` failures — and the reverse, setting it `true` against
+Xcode-installed development builds, does the same in the other direction. Set
+it to match how the *client binaries currently in the field* were built, not
+how the server happens to be deployed: `false`/unset only while every device
+in the field is an Xcode development install, `true` from the first TestFlight
+build onward.
 
 ### Logging
 

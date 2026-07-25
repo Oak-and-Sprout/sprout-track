@@ -1,9 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import http2 from 'node:http2';
+
+// sendOne's timeout handling (below) needs a fake http2 session/stream - a real
+// socket would make the test either flaky (racing a live connection) or slow
+// (waiting out the real 10s timeout). jsonwebtoken is mocked alongside it
+// because providerToken() signs a real ES256 JWT with the (fake, non-EC)
+// APNS_AUTH_KEY from ENV below, which would throw before the fake http2
+// session is ever touched.
+vi.mock('node:http2', () => ({ default: { connect: vi.fn() } }));
+vi.mock('jsonwebtoken', () => ({ default: { sign: vi.fn(() => 'fake-jwt') } }));
+
 import {
   loadApnsConfig,
   buildApnsJwtClaims,
   buildApnsRequest,
   classifyApnsResponse,
+  sendOne,
 } from '@/src/lib/notifications/apnsPush';
 
 const ENV = {
@@ -104,5 +116,73 @@ describe('classifyApnsResponse', () => {
       success: false,
       unregistered: false,
     });
+  });
+});
+
+describe('sendOne timeout handling', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    Object.assign(process.env, ENV);
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    vi.clearAllMocks();
+  });
+
+  // A fake http2 session/stream: exposes just enough (setTimeout, on, request,
+  // destroy, close) for sendOne to drive, and lets the test fire the timeout
+  // callback directly instead of waiting on a real stalled socket.
+  function fakeSession() {
+    let sessionTimeoutCb: (() => void) | undefined;
+    let reqTimeoutCb: (() => void) | undefined;
+    const destroy = vi.fn();
+    const close = vi.fn();
+    const req = {
+      setTimeout: vi.fn((_ms: number, cb: () => void) => {
+        reqTimeoutCb = cb;
+      }),
+      on: vi.fn(),
+      end: vi.fn(),
+    };
+    const session = {
+      setTimeout: vi.fn((_ms: number, cb: () => void) => {
+        sessionTimeoutCb = cb;
+      }),
+      on: vi.fn(),
+      request: vi.fn(() => req),
+      destroy,
+      close,
+    };
+    return {
+      session,
+      destroy,
+      close,
+      fireSessionTimeout: () => sessionTimeoutCb?.(),
+      fireReqTimeout: () => reqTimeoutCb?.(),
+    };
+  }
+
+  it('resolves { success: false, unregistered: false } and destroys the session on a session-level stall', async () => {
+    const fake = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(fake.session as unknown as ReturnType<typeof http2.connect>);
+
+    const promise = sendOne('devtoken', { title: 'Feed due', body: 'Emma is due for a feed' });
+    fake.fireSessionTimeout();
+
+    await expect(promise).resolves.toEqual({ success: false, unregistered: false });
+    expect(fake.destroy).toHaveBeenCalled();
+  });
+
+  it('resolves { success: false, unregistered: false } and destroys the session on a request-level stall', async () => {
+    const fake = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(fake.session as unknown as ReturnType<typeof http2.connect>);
+
+    const promise = sendOne('devtoken', { title: 'Feed due', body: 'Emma is due for a feed' });
+    fake.fireReqTimeout();
+
+    await expect(promise).resolves.toEqual({ success: false, unregistered: false });
+    expect(fake.destroy).toHaveBeenCalled();
   });
 });

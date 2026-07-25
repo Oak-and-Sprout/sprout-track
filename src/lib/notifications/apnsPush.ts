@@ -103,11 +103,30 @@ export async function sendOne(
   const host = config.production ? 'https://api.push.apple.com' : 'https://api.sandbox.push.apple.com';
   const { path, headers, body } = buildApnsRequest(token, payload, config);
 
+  // One connection per send with no timeout means a stalled APNs endpoint
+  // leaves the promise unsettled and the socket open forever - under a real
+  // outage that leaks a socket per send. Both the session and the request get
+  // their own timeout so either a connect-level stall or a response-level
+  // stall is caught; `settled` guards against double-resolving if both (or a
+  // timeout racing an error/end event) fire.
+  const REQUEST_TIMEOUT_MS = 10_000;
+
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: { success: boolean; unregistered: boolean }) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
     const client = http2.connect(host);
+    client.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      client.destroy();
+      finish({ success: false, unregistered: false });
+    });
     client.on('error', () => {
       client.close();
-      resolve({ success: false, unregistered: false });
+      finish({ success: false, unregistered: false });
     });
 
     const req = client.request({
@@ -115,6 +134,10 @@ export async function sendOne(
       ':path': path,
       authorization: `bearer ${providerToken(config)}`,
       ...headers,
+    });
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      client.destroy();
+      finish({ success: false, unregistered: false });
     });
 
     let status = 0;
@@ -127,7 +150,7 @@ export async function sendOne(
     });
     req.on('error', () => {
       client.close();
-      resolve({ success: false, unregistered: false });
+      finish({ success: false, unregistered: false });
     });
     req.on('end', () => {
       client.close();
@@ -135,7 +158,7 @@ export async function sendOne(
       if (!result.success) {
         console.error(`[APNs] send failed (${status}): ${responseBody.slice(0, 300)}`);
       }
-      resolve(result);
+      finish(result);
     });
 
     req.end(body);
