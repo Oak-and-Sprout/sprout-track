@@ -1,14 +1,18 @@
 /**
  * Native push dispatcher. Owns the device-token query, per-platform routing, and
  * the token lifecycle; the transport modules (fcmPush, apnsPush) only send one
- * message and report an outcome. Unconfigured transports no-op, so a deployment
- * with FCM but no APNs delivers to Android and skips iOS.
+ * message and report an outcome. Rows for an unconfigured platform are skipped
+ * before any transport call or lifecycle write — a deployment with FCM but no
+ * APNs delivers to Android and silently skips iOS, rather than recording those
+ * skips as failures (an unconfigured transport's outcome is indistinguishable
+ * from a real transient failure, so the dispatcher must not let it reach
+ * onFailure).
  */
 
 import prisma from '../../../app/api/db';
 import type { NotificationPayload } from './push';
-import { sendOne as sendFcmOne } from './fcmPush';
-import { sendOne as sendApnsOne } from './apnsPush';
+import { sendOne as sendFcmOne, isFcmConfigured } from './fcmPush';
+import { sendOne as sendApnsOne, isApnsConfigured } from './apnsPush';
 
 export interface SendOutcome {
   success: boolean;
@@ -29,11 +33,23 @@ export interface NativePushDeps {
   onFailure: (id: string) => Promise<void>;
   /** Keyed on the token, not the row id: one dead token may own rows in several families. */
   onUnregistered: (token: string) => Promise<void>;
+  /**
+   * Gate on platform configuration *before* calling the transport. An
+   * unconfigured transport's `{ success: false, unregistered: false }` is
+   * indistinguishable from a real transient failure, so the dispatcher must
+   * not route unconfigured rows through onFailure — that would accumulate
+   * failureCount on every send attempt forever, purely because the platform
+   * was never set up.
+   */
+  fcmConfigured: () => boolean;
+  apnsConfigured: () => boolean;
 }
 
 const defaultDeps = (): NativePushDeps => ({
   sendFcm: sendFcmOne,
   sendApns: sendApnsOne,
+  fcmConfigured: isFcmConfigured,
+  apnsConfigured: isApnsConfigured,
   findTokens: ({ familyId, ownerFilter }) =>
     prisma.deviceToken.findMany({ where: { familyId, OR: ownerFilter } }),
   onSuccess: async (id) => {
@@ -70,11 +86,16 @@ export async function sendToDeviceTokens(
 
   let sent = 0;
   for (const row of tokens) {
+    const isIos = row.platform === 'ios';
+    if (isIos ? !deps.apnsConfigured() : !deps.fcmConfigured()) {
+      // Platform never configured — skip entirely, no transport call and no
+      // lifecycle write. This is not a failed send.
+      continue;
+    }
     try {
-      const result =
-        row.platform === 'ios'
-          ? await deps.sendApns(row.token, payload)
-          : await deps.sendFcm(row.token, payload);
+      const result = isIos
+        ? await deps.sendApns(row.token, payload)
+        : await deps.sendFcm(row.token, payload);
 
       if (result.success) {
         sent += 1;

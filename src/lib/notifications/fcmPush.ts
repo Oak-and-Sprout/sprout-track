@@ -1,9 +1,10 @@
 /**
- * Native push channel: FCM HTTP v1, called directly with fetch. Sits beside the
- * VAPID web-push path (push.ts) and mirrors its token-lifecycle handling:
- * unregistered tokens are deleted, transient failures increment failureCount.
- * Configured via FCM_SERVICE_ACCOUNT_JSON (inline Firebase service-account JSON);
- * unconfigured deployments no-op.
+ * Pure FCM (Android) transport: HTTP v1, called directly with fetch. Sends one
+ * message to one token and reports an outcome — it does not touch the
+ * database or own any token lifecycle; that's owned by the nativePush.ts
+ * dispatcher, which decides success/failure/unregistered handling and skips
+ * calling this module entirely when FCM isn't configured. Configured via
+ * FCM_SERVICE_ACCOUNT_JSON (inline Firebase service-account JSON).
  */
 
 import jwt from 'jsonwebtoken';

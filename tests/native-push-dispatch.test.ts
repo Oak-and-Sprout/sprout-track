@@ -12,6 +12,8 @@ function deps(overrides = {}) {
     onSuccess: vi.fn().mockResolvedValue(undefined),
     onFailure: vi.fn().mockResolvedValue(undefined),
     onUnregistered: vi.fn().mockResolvedValue(undefined),
+    fcmConfigured: vi.fn().mockReturnValue(true),
+    apnsConfigured: vi.fn().mockReturnValue(true),
     ...overrides,
   };
 }
@@ -76,5 +78,50 @@ describe('sendToDeviceTokens', () => {
         .mockResolvedValue({ success: true, unregistered: false }),
     });
     expect(await sendToDeviceTokens(TARGET, PAYLOAD, d)).toBe(1);
+  });
+
+  it('skips ios rows with no transport call or lifecycle write when APNs is unconfigured', async () => {
+    const d = deps({
+      findTokens: vi.fn().mockResolvedValue([
+        { id: '1', token: 'a', platform: 'android' },
+        { id: '2', token: 'b', platform: 'ios' },
+      ]),
+      apnsConfigured: vi.fn().mockReturnValue(false),
+    });
+    expect(await sendToDeviceTokens(TARGET, PAYLOAD, d)).toBe(1);
+    expect(d.sendFcm).toHaveBeenCalledWith('a', PAYLOAD);
+    expect(d.sendApns).not.toHaveBeenCalled();
+    expect(d.onSuccess).toHaveBeenCalledWith('1');
+    expect(d.onSuccess).not.toHaveBeenCalledWith('2');
+    expect(d.onFailure).not.toHaveBeenCalled();
+    expect(d.onUnregistered).not.toHaveBeenCalled();
+  });
+
+  it('returns 0 with no transport calls or lifecycle writes when neither platform is configured', async () => {
+    const d = deps({
+      findTokens: vi.fn().mockResolvedValue([
+        { id: '1', token: 'a', platform: 'android' },
+        { id: '2', token: 'b', platform: 'ios' },
+      ]),
+      fcmConfigured: vi.fn().mockReturnValue(false),
+      apnsConfigured: vi.fn().mockReturnValue(false),
+    });
+    expect(await sendToDeviceTokens(TARGET, PAYLOAD, d)).toBe(0);
+    expect(d.sendFcm).not.toHaveBeenCalled();
+    expect(d.sendApns).not.toHaveBeenCalled();
+    expect(d.onSuccess).not.toHaveBeenCalled();
+    expect(d.onFailure).not.toHaveBeenCalled();
+    expect(d.onUnregistered).not.toHaveBeenCalled();
+  });
+
+  it('does not count a skipped unconfigured-platform row toward the sent total', async () => {
+    const d = deps({
+      findTokens: vi.fn().mockResolvedValue([
+        { id: '1', token: 'a', platform: 'ios' },
+        { id: '2', token: 'b', platform: 'ios' },
+      ]),
+      apnsConfigured: vi.fn().mockReturnValue(false),
+    });
+    expect(await sendToDeviceTokens(TARGET, PAYLOAD, d)).toBe(0);
   });
 });
