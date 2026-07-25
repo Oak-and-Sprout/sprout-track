@@ -1570,7 +1570,14 @@ model NotificationPreference {
   enabled               Boolean                @default(true)
   caretakerId           String?
   accountId             String?
-  familyId              String
+  // Nullable, not required: a required column with no default cannot be
+  // added by `prisma db push` to a Postgres table that already has rows
+  // (confirmed empirically against this repo's Prisma version) — db push is
+  // exactly how docker-startup.sh deploys Postgres, and it has no `set -e`
+  // to catch the failure. Purely-additive nullable columns always push
+  // cleanly on both providers. resolvePreferenceOwner() and the GET query
+  // both tolerate a null familyId (falling back to `subscription`).
+  familyId              String?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime              @updatedAt
 
@@ -1579,7 +1586,7 @@ model NotificationPreference {
   baby         Baby              @relation(fields: [babyId], references: [id], onDelete: Cascade)
   caretaker    Caretaker?        @relation(fields: [caretakerId], references: [id], onDelete: SetNull)
   account      Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  family       Family            @relation(fields: [familyId], references: [id])
+  family       Family?           @relation(fields: [familyId], references: [id])
 
   @@unique([subscriptionId, babyId, eventType])
   @@index([subscriptionId])

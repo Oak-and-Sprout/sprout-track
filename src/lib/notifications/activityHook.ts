@@ -8,7 +8,7 @@ import { sendToDeviceTokens } from './nativePush';
 import { t, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
 import { routeForNotification } from './routes';
-import { resolvePreferenceOwner } from './preferenceOwner';
+import { resolvePreferenceOwner, nativeOwnerKey } from './preferenceOwner';
 
 /**
  * Activity type mapping for consistent naming
@@ -284,7 +284,14 @@ export async function notifyActivityCreated(
         })
       : matchingPreferences;
 
-    // Send notifications to all matching preferences
+    // Send notifications to all matching preferences. A single owner can
+    // appear in more than one preference row here (a web preference and a
+    // native preference for the same baby+eventType, or two web
+    // subscriptions belonging to the same account) — native push must still
+    // fire once per owner, not once per row, or the same device gets the
+    // same push twice. Web push is unaffected: each subscription is a
+    // distinct device/browser and always gets its own send.
+    const nativeSent = new Set<string>();
     for (const preference of filteredPreferences) {
       const owner = resolvePreferenceOwner(preference);
 
@@ -344,14 +351,18 @@ export async function notifyActivityCreated(
       }
 
       if (baby.familyId) {
-        sendToDeviceTokens(
-          {
-            familyId: baby.familyId,
-            caretakerId: owner.caretakerId,
-            accountId: owner.accountId,
-          },
-          payload
-        ).catch((error) => console.error('[FCM] activity push failed:', error));
+        const ownerKey = nativeOwnerKey(owner);
+        if (ownerKey && !nativeSent.has(ownerKey)) {
+          nativeSent.add(ownerKey);
+          sendToDeviceTokens(
+            {
+              familyId: baby.familyId,
+              caretakerId: owner.caretakerId,
+              accountId: owner.accountId,
+            },
+            payload
+          ).catch((error) => console.error('[FCM] activity push failed:', error));
+        }
       }
     }
   } catch (error) {

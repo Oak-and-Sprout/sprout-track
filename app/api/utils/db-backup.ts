@@ -186,6 +186,35 @@ function getModelDelegate(tableName: string): any {
 }
 
 /**
+ * NotificationPreference rows from a PRE-migration backup (taken before
+ * caretakerId/accountId/familyId existed on this table) have none of those
+ * columns — restoring one as-is leaves it invisible to
+ * GET /api/notifications/preferences and unreachable by activityHook.ts /
+ * timerCheck.ts, because ownership can only be found through `subscription`,
+ * which resolvePreferenceOwner() only reaches by joining, not by a raw
+ * inserted row. Backfill from the backup's own PushSubscription rows (keyed
+ * by subscriptionId) before insert, the same way the live migration does.
+ * Rows that already carry familyId (a post-migration backup) are left
+ * untouched. Pure and DB-free so it's testable without a fixture file.
+ */
+export function backfillNotificationPreferenceOwners(
+  rows: Record<string, any>[],
+  subscriptionOwners: Map<string, { familyId: string | null; caretakerId: string | null; accountId: string | null }>
+): Record<string, any>[] {
+  return rows.map((row) => {
+    if (row.familyId != null) return row;
+    const sub = row.subscriptionId ? subscriptionOwners.get(row.subscriptionId) : undefined;
+    if (!sub) return row;
+    return {
+      ...row,
+      familyId: sub.familyId ?? null,
+      caretakerId: row.caretakerId ?? sub.caretakerId ?? null,
+      accountId: row.accountId ?? sub.accountId ?? null,
+    };
+  });
+}
+
+/**
  * Import data from a SQLite .db file buffer into the current database via Prisma.
  * Used when restoring a SQLite backup onto PostgreSQL.
  */
@@ -220,8 +249,23 @@ export async function importFromSQLiteFile(buffer: Buffer): Promise<{ tablesImpo
         continue;
       }
 
-      const rows = db.prepare(`SELECT * FROM "${tableName}"`).all() as Record<string, any>[];
+      let rows = db.prepare(`SELECT * FROM "${tableName}"`).all() as Record<string, any>[];
       if (rows.length === 0) continue;
+
+      // Pre-migration backups have no caretakerId/accountId/familyId on
+      // NotificationPreference — backfill from the backup's own
+      // PushSubscription rows before insert (see
+      // backfillNotificationPreferenceOwners doc comment).
+      if (tableName === 'NotificationPreference' && existingTableNames.has('PushSubscription')) {
+        const subRows = db.prepare('SELECT "id", "familyId", "caretakerId", "accountId" FROM "PushSubscription"').all() as Array<{
+          id: string;
+          familyId: string | null;
+          caretakerId: string | null;
+          accountId: string | null;
+        }>;
+        const subscriptionOwners = new Map(subRows.map((s) => [s.id, { familyId: s.familyId, caretakerId: s.caretakerId, accountId: s.accountId }]));
+        rows = backfillNotificationPreferenceOwners(rows, subscriptionOwners);
+      }
 
       const convertedRows = rows.map(row => convertRow(tableName, row));
 

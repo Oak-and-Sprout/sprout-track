@@ -343,7 +343,7 @@ async function deleteExistingDemoFamily(demoFamily) {
     'breastMilkAdjustment', 'activeBreastFeed', 'vaccineLog',
 
     // Push subscriptions, feedback, API keys (have direct familyId)
-    'pushSubscription', 'feedback', 'apiKey',
+    'pushSubscription', 'notificationPreference', 'feedback', 'apiKey',
 
     // Calendar events (depend on babies/caretakers through junction tables)
     'calendarEvent',

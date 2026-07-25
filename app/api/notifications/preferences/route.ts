@@ -7,10 +7,16 @@ import { isNotificationsEnabled } from '../../../../src/lib/notifications/config
 
 /**
  * Builds the OR clause that scopes a query to "things this identity owns".
- * Fails CLOSED: if neither id is present the OR is empty, which Prisma
- * treats as "match nothing" — unlike `id ? { id } : {}`, where the `{}`
- * branch has no constraints and matches every row, silently turning the OR
- * into an unconditional true. Never use that shape for owner scoping.
+ * Only includes ids that are actually present. Correction: an earlier
+ * version of this comment (and this task's commit message / report) claimed
+ * the sibling `id ? { id } : {}` shape used elsewhere in this codebase was a
+ * live "matches every row" bug. It is not, on this repo's Prisma version
+ * (6.19.2): `OR: [{}, {...}]` drops the empty object rather than treating it
+ * as an unconditional match, and both `OR: []` and `OR: [{}, {}]` compile to
+ * `1=0` — Prisma already fails closed. This function is a clearer,
+ * behaviorally-equivalent way to build the same filter, not a fix for a
+ * real leak; `app/api/notifications/subscriptions/route.ts` was left
+ * untouched on that basis.
  */
 export function buildOwnerFilter(
   accountId?: string | null,
@@ -20,6 +26,28 @@ export function buildOwnerFilter(
   if (accountId) filter.push({ accountId });
   if (caretakerId) filter.push({ caretakerId });
   return filter;
+}
+
+/**
+ * Where-clause for GET: scopes to rows owned by this identity in this
+ * family. familyId is nullable on the model (see the schema/migration
+ * comments — required-with-no-default can't be added to a populated
+ * Postgres table via `db push`), so a legacy row can have `familyId: null`
+ * with the family only discoverable through its subscription. Both shapes
+ * are matched; the owner filter (accountId/caretakerId) applies to both.
+ */
+export function buildPreferencesWhere(args: {
+  familyId: string;
+  accountId?: string | null;
+  caretakerId?: string | null;
+}) {
+  const ownerFilter = buildOwnerFilter(args.accountId, args.caretakerId);
+  return {
+    OR: [
+      { familyId: args.familyId, OR: ownerFilter },
+      { familyId: null, subscription: { familyId: args.familyId }, OR: ownerFilter },
+    ],
+  };
 }
 
 /**
@@ -54,10 +82,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     }
 
     const preferences = await prisma.notificationPreference.findMany({
-      where: {
-        familyId,
-        OR: buildOwnerFilter(accountId, caretakerId),
-      },
+      where: buildPreferencesWhere({ familyId, accountId, caretakerId }),
       include: {
         subscription: {
           select: {
@@ -345,10 +370,13 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
           activityTypes: activityTypesJson,
           timerIntervalMinutes: timerIntervalMinutes ?? null,
           enabled: enabled !== undefined ? enabled : true,
-          // Stamp the owner directly too, so newly-created web preferences
-          // are self-describing from day one rather than relying on the
-          // subscription fallback in resolvePreferenceOwner(). subscription
-          // is guaranteed non-null here (fetched and verified above).
+          // Stamp the owner directly too, so a preference is self-describing
+          // even before resolvePreferenceOwner() falls back to it (native
+          // rows, or if this row's subscription is ever deleted out from
+          // under it). subscription is guaranteed non-null here (fetched and
+          // verified above). resolvePreferenceOwner() itself always prefers
+          // the live subscription when present, so this stamp is a fallback
+          // snapshot, not the value actually read on the hot path.
           caretakerId: subscription!.caretakerId,
           accountId: subscription!.accountId,
           familyId: subscription!.familyId,
@@ -357,6 +385,17 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
           activityTypes: activityTypesJson !== undefined ? activityTypesJson : undefined,
           timerIntervalMinutes: timerIntervalMinutes !== undefined ? timerIntervalMinutes : undefined,
           enabled: enabled !== undefined ? enabled : undefined,
+          // Re-stamp on every write too, so the snapshot self-heals if the
+          // subscription's owner changed since this row was created (shared
+          // tablet, PIN switch) instead of drifting forever. GET's owner
+          // scoping reads these columns directly (not through
+          // resolvePreferenceOwner, which needs a live subscription include
+          // it doesn't fetch), so a stale snapshot there would make a
+          // legitimately-reassigned subscription's preferences invisible to
+          // its new owner until the next PUT.
+          caretakerId: subscription!.caretakerId,
+          accountId: subscription!.accountId,
+          familyId: subscription!.familyId,
         },
       });
     } else {
