@@ -6,8 +6,27 @@ import { NotificationEventType } from '@prisma/client';
 import { isNotificationsEnabled } from '../../../../src/lib/notifications/config';
 
 /**
+ * Builds the OR clause that scopes a query to "things this identity owns".
+ * Fails CLOSED: if neither id is present the OR is empty, which Prisma
+ * treats as "match nothing" — unlike `id ? { id } : {}`, where the `{}`
+ * branch has no constraints and matches every row, silently turning the OR
+ * into an unconditional true. Never use that shape for owner scoping.
+ */
+export function buildOwnerFilter(
+  accountId?: string | null,
+  caretakerId?: string | null
+): Array<{ accountId: string } | { caretakerId: string }> {
+  const filter: Array<{ accountId: string } | { caretakerId: string }> = [];
+  if (accountId) filter.push({ accountId });
+  if (caretakerId) filter.push({ caretakerId });
+  return filter;
+}
+
+/**
  * GET handler for notification preferences
- * Returns all preferences for the authenticated user's subscriptions
+ * Returns all preferences owned by the authenticated user in their family —
+ * both web-push preferences (subscriptionId set) and native-push preferences
+ * (subscriptionId null, owned directly via caretakerId/accountId).
  */
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   // Check if notifications are enabled
@@ -34,23 +53,10 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Get all subscriptions for this user
-    const subscriptions = await prisma.pushSubscription.findMany({
-      where: {
-        familyId,
-        OR: [
-          accountId ? { accountId } : {},
-          caretakerId ? { caretakerId } : {},
-        ],
-      },
-    });
-
-    const subscriptionIds = subscriptions.map((s) => s.id);
-
-    // Get all preferences for these subscriptions
     const preferences = await prisma.notificationPreference.findMany({
       where: {
-        subscriptionId: { in: subscriptionIds },
+        familyId,
+        OR: buildOwnerFilter(accountId, caretakerId),
       },
       include: {
         subscription: {
@@ -87,8 +93,55 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
 }
 
 /**
+ * Resolves the owner for a *native* (subscription-less) preference from
+ * authContext only — never from the request body. This is the golden rule:
+ * family/owner scoping comes only from the authenticated session. Returns
+ * null when the session has neither identity, which the caller must treat
+ * as "cannot create an owned preference" (403), not as "owned by nobody".
+ */
+export function nativeOwnerFromAuthContext(authContext: {
+  accountId?: string | null;
+  caretakerId?: string | null;
+}): { accountId: string | null; caretakerId: string | null } | null {
+  if (!authContext.accountId && !authContext.caretakerId) return null;
+  return {
+    accountId: authContext.accountId ?? null,
+    caretakerId: authContext.caretakerId ?? null,
+  };
+}
+
+/**
+ * Where-clause for looking up an existing native preference to update.
+ * subscriptionId is nullable, and two rows that are both NULL in a column
+ * are NOT considered equal by a SQL unique constraint (true in both SQLite
+ * and Postgres) — so uniqueness for native rows can't be enforced at the
+ * database level the way the web (subscriptionId-keyed) rows are. This
+ * exact-match find-then-write is the applicationlevel substitute; see the
+ * task report for the residual race-condition caveat.
+ */
+export function buildNativePreferenceFindWhere(args: {
+  familyId: string;
+  babyId: string;
+  eventType: NotificationEventType;
+  caretakerId: string | null;
+  accountId: string | null;
+}) {
+  return {
+    subscriptionId: null,
+    familyId: args.familyId,
+    babyId: args.babyId,
+    eventType: args.eventType,
+    caretakerId: args.caretakerId,
+    accountId: args.accountId,
+  };
+}
+
+/**
  * PUT handler for updating notification preferences
- * Creates or updates a NotificationPreference record
+ * Creates or updates a NotificationPreference record. `subscriptionId` is
+ * optional: when present this is the original web-push path (byte-identical
+ * behavior); when absent this is the native-push path, where ownership is
+ * taken only from authContext (golden rule) rather than a PushSubscription.
  */
 async function handlePut(req: NextRequest, authContext: AuthResult) {
   // Check if notifications are enabled
@@ -125,39 +178,45 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       enabled,
     } = body;
 
-    if (!subscriptionId || !babyId || !eventType) {
+    if (!babyId || !eventType) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: 'Missing required fields: subscriptionId, babyId, eventType',
+          error: 'Missing required fields: babyId, eventType',
         },
         { status: 400 }
       );
     }
 
-    // Verify subscription belongs to user's family
-    const subscription = await prisma.pushSubscription.findUnique({
-      where: { id: subscriptionId },
-    });
+    // Web path only: verify the subscription belongs to the user's family.
+    // Native (subscription-less) preferences skip this — there is no
+    // PushSubscription to verify, and ownership is asserted from authContext
+    // instead (below).
+    let subscription: Awaited<ReturnType<typeof prisma.pushSubscription.findUnique>> = null;
+    if (subscriptionId) {
+      subscription = await prisma.pushSubscription.findUnique({
+        where: { id: subscriptionId },
+      });
 
-    if (!subscription) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: 'Subscription not found',
-        },
-        { status: 404 }
-      );
-    }
+      if (!subscription) {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: 'Subscription not found',
+          },
+          { status: 404 }
+        );
+      }
 
-    if (subscription.familyId !== familyId) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: 'Access denied',
-        },
-        { status: 403 }
-      );
+      if (subscription.familyId !== familyId) {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: 'Access denied',
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Verify baby belongs to user's family
@@ -265,29 +324,89 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       }
     }
 
-    // Create or update preference (upsert based on unique constraint)
-    const preference = await prisma.notificationPreference.upsert({
-      where: {
-        subscriptionId_babyId_eventType: {
+    let preference;
+
+    if (subscriptionId) {
+      // Web path — byte-identical to the original upsert. The DB-level
+      // unique constraint on (subscriptionId, babyId, eventType) still does
+      // all the concurrency-safety work here.
+      preference = await prisma.notificationPreference.upsert({
+        where: {
+          subscriptionId_babyId_eventType: {
+            subscriptionId,
+            babyId,
+            eventType,
+          },
+        },
+        create: {
           subscriptionId,
           babyId,
           eventType,
+          activityTypes: activityTypesJson,
+          timerIntervalMinutes: timerIntervalMinutes ?? null,
+          enabled: enabled !== undefined ? enabled : true,
+          // Stamp the owner directly too, so newly-created web preferences
+          // are self-describing from day one rather than relying on the
+          // subscription fallback in resolvePreferenceOwner(). subscription
+          // is guaranteed non-null here (fetched and verified above).
+          caretakerId: subscription!.caretakerId,
+          accountId: subscription!.accountId,
+          familyId: subscription!.familyId,
         },
-      },
-      create: {
-        subscriptionId,
-        babyId,
-        eventType,
-        activityTypes: activityTypesJson,
-        timerIntervalMinutes: timerIntervalMinutes ?? null,
-        enabled: enabled !== undefined ? enabled : true,
-      },
-      update: {
-        activityTypes: activityTypesJson !== undefined ? activityTypesJson : undefined,
-        timerIntervalMinutes: timerIntervalMinutes !== undefined ? timerIntervalMinutes : undefined,
-        enabled: enabled !== undefined ? enabled : undefined,
-      },
-    });
+        update: {
+          activityTypes: activityTypesJson !== undefined ? activityTypesJson : undefined,
+          timerIntervalMinutes: timerIntervalMinutes !== undefined ? timerIntervalMinutes : undefined,
+          enabled: enabled !== undefined ? enabled : undefined,
+        },
+      });
+    } else {
+      // Native path — ownership comes only from authContext (golden rule),
+      // never from the request body.
+      const owner = nativeOwnerFromAuthContext(authContext);
+      if (!owner) {
+        return NextResponse.json<ApiResponse<null>>(
+          {
+            success: false,
+            error: 'User is not associated with an account or caretaker.',
+          },
+          { status: 403 }
+        );
+      }
+
+      const existing = await prisma.notificationPreference.findFirst({
+        where: buildNativePreferenceFindWhere({
+          familyId,
+          babyId,
+          eventType,
+          caretakerId: owner.caretakerId,
+          accountId: owner.accountId,
+        }),
+      });
+
+      if (existing) {
+        preference = await prisma.notificationPreference.update({
+          where: { id: existing.id },
+          data: {
+            activityTypes: activityTypesJson !== undefined ? activityTypesJson : undefined,
+            timerIntervalMinutes: timerIntervalMinutes !== undefined ? timerIntervalMinutes : undefined,
+            enabled: enabled !== undefined ? enabled : undefined,
+          },
+        });
+      } else {
+        preference = await prisma.notificationPreference.create({
+          data: {
+            babyId,
+            eventType,
+            activityTypes: activityTypesJson,
+            timerIntervalMinutes: timerIntervalMinutes ?? null,
+            enabled: enabled !== undefined ? enabled : true,
+            caretakerId: owner.caretakerId,
+            accountId: owner.accountId,
+            familyId,
+          },
+        });
+      }
+    }
 
     return NextResponse.json<ApiResponse<typeof preference>>({
       success: true,

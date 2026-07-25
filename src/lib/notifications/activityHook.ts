@@ -8,6 +8,7 @@ import { sendToDeviceTokens } from './nativePush';
 import { t, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
 import { routeForNotification } from './routes';
+import { resolvePreferenceOwner } from './preferenceOwner';
 
 /**
  * Activity type mapping for consistent naming
@@ -227,7 +228,10 @@ export async function notifyActivityCreated(
     const babyName = baby.firstName;
     const actorName = await resolveActorName(actingUser);
 
-    // Query matching NotificationPreference records with user language
+    // Query matching NotificationPreference records with user language.
+    // subscription may be null (native-only preferences have no
+    // PushSubscription); caretakerId/accountId/familyId live directly on the
+    // preference row for exactly that case.
     const preferences = await prisma.notificationPreference.findMany({
       where: {
         babyId,
@@ -266,34 +270,35 @@ export async function notifyActivityCreated(
       }
     });
 
-    // Exclude the acting user's subscriptions so they don't get notified about their own action
+    // Exclude the acting user's own preferences so they don't get notified
+    // about their own action. Uses the resolved owner (preference's own
+    // columns, falling back to subscription) so this excludes correctly
+    // whether the preference is web (subscription-backed) or native
+    // (subscription-less).
     const filteredPreferences = actingUser
       ? matchingPreferences.filter((pref) => {
-          const sub = pref.subscription;
-          if (!sub) return true;
-          if (actingUser.accountId && sub.accountId === actingUser.accountId) return false;
-          if (actingUser.caretakerId && sub.caretakerId === actingUser.caretakerId) return false;
+          const owner = resolvePreferenceOwner(pref);
+          if (actingUser.accountId && owner.accountId === actingUser.accountId) return false;
+          if (actingUser.caretakerId && owner.caretakerId === actingUser.caretakerId) return false;
           return true;
         })
       : matchingPreferences;
 
     // Send notifications to all matching preferences
     for (const preference of filteredPreferences) {
-      if (!preference.subscription) {
-        continue;
-      }
+      const owner = resolvePreferenceOwner(preference);
 
       // Get user's language preference
       let userLanguage = DEFAULT_LANGUAGE;
-      if (preference.subscription.accountId) {
+      if (owner.accountId) {
         const account = await prisma.account.findUnique({
-          where: { id: preference.subscription.accountId },
+          where: { id: owner.accountId },
           select: { language: true },
         });
         userLanguage = account?.language || DEFAULT_LANGUAGE;
-      } else if (preference.subscription.caretakerId) {
+      } else if (owner.caretakerId) {
         const caretaker = await prisma.caretaker.findUnique({
-          where: { id: preference.subscription.caretakerId },
+          where: { id: owner.caretakerId },
           select: { language: true },
         });
         userLanguage = caretaker?.language || DEFAULT_LANGUAGE;
@@ -320,28 +325,30 @@ export async function notifyActivityCreated(
         },
       };
 
-      // Send notification (non-blocking)
-      sendNotificationWithLogging(
-        preference.subscription.id,
-        {
-          endpoint: preference.subscription.endpoint,
-          p256dh: preference.subscription.p256dh,
-          auth: preference.subscription.auth,
-        },
-        payload,
-        NotificationEventType.ACTIVITY_CREATED,
-        activityType.toLowerCase(),
-        babyId
-      ).catch((error) => {
-        console.error('Error sending activity notification:', error);
-      });
+      // Web push: unchanged, still requires a real subscription (endpoint/keys).
+      if (preference.subscription) {
+        sendNotificationWithLogging(
+          preference.subscription.id,
+          {
+            endpoint: preference.subscription.endpoint,
+            p256dh: preference.subscription.p256dh,
+            auth: preference.subscription.auth,
+          },
+          payload,
+          NotificationEventType.ACTIVITY_CREATED,
+          activityType.toLowerCase(),
+          babyId
+        ).catch((error) => {
+          console.error('Error sending activity notification:', error);
+        });
+      }
 
       if (baby.familyId) {
         sendToDeviceTokens(
           {
             familyId: baby.familyId,
-            caretakerId: preference.subscription.caretakerId,
-            accountId: preference.subscription.accountId,
+            caretakerId: owner.caretakerId,
+            accountId: owner.accountId,
           },
           payload
         ).catch((error) => console.error('[FCM] activity push failed:', error));

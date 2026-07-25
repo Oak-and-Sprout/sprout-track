@@ -29,6 +29,7 @@ import {
 } from '@/src/lib/notifications/client';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Loader2, Trash2, Bell, BellOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { isNativeApp } from '@/src/utils/native-app';
 
 const ALL_ACTIVITY_TYPES = [
   'feed', 'diaper', 'sleep', 'bath', 'pump', 'medicine', 'supplement', 'play', 'note', 'milestone', 'measurement',
@@ -53,7 +54,9 @@ interface PushSubscription {
 
 interface NotificationPreference {
   id: string;
-  subscriptionId: string;
+  // null for native-push preferences — there is no PushSubscription to hang
+  // one off of inside a WKWebView / Android System WebView.
+  subscriptionId: string | null;
   babyId: string;
   eventType: NotificationEventType;
   activityTypes: string | null;
@@ -64,12 +67,27 @@ interface NotificationPreference {
     id: string;
     deviceLabel: string | null;
     endpoint: string;
-  };
+  } | null;
   baby: {
     id: string;
     firstName: string;
     lastName: string;
   };
+}
+
+/**
+ * A "device" the per-baby preference grid is rendered for. In a normal
+ * browser this is one entry per registered PushSubscription. Inside the
+ * shell there is no PushSubscription at all (native push has no equivalent
+ * of a browser subscription to register), so it's a single synthetic entry
+ * with id: null — the shell's own push-intro screen is what actually
+ * requests OS permission and registers the DeviceToken; by the time this
+ * component renders, that's already done (or the user hasn't opted in, in
+ * which case toggling here is inert until they do).
+ */
+interface DeviceEntry {
+  id: string | null;
+  label: string;
 }
 
 export default function NotificationSettings({
@@ -86,6 +104,14 @@ export default function NotificationSettings({
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState<string | undefined>();
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
+  // isNativeApp() reads navigator, which doesn't exist during SSR — reading
+  // it inline during render would be false on the server and true after
+  // hydration, causing a hydration mismatch. Read it once into state instead
+  // (same pattern as side-nav and AccountSettingsTab).
+  const [inShell, setInShell] = useState(false);
+  useEffect(() => {
+    setInShell(isNativeApp());
+  }, []);
 
   // Fetch subscriptions and preferences
   const fetchData = async () => {
@@ -277,9 +303,10 @@ export default function NotificationSettings({
     }
   };
 
-  // Handle preference update
+  // Handle preference update. subscriptionId is null for the native (shell)
+  // device entry — the server derives ownership from the auth token instead.
   const handlePreferenceUpdate = async (
-    subscriptionId: string,
+    subscriptionId: string | null,
     babyId: string,
     eventType: NotificationEventType,
     updates: {
@@ -303,7 +330,7 @@ export default function NotificationSettings({
           Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          subscriptionId,
+          ...(subscriptionId ? { subscriptionId } : {}),
           babyId,
           eventType,
           ...updates,
@@ -329,9 +356,10 @@ export default function NotificationSettings({
     }
   };
 
-  // Get preference for a subscription, baby, and event type
+  // Get preference for a device (subscription id, or null for the native
+  // shell device), baby, and event type
   const getPreference = (
-    subscriptionId: string,
+    subscriptionId: string | null,
     babyId: string,
     eventType: NotificationEventType
   ): NotificationPreference | undefined => {
@@ -342,6 +370,13 @@ export default function NotificationSettings({
         p.eventType === eventType
     );
   };
+
+  // Devices to render the per-baby preference grid for. In the shell there
+  // is no PushSubscription — a single synthetic "this device" entry stands
+  // in for it, keyed by subscriptionId: null.
+  const deviceEntries: DeviceEntry[] = inShell
+    ? [{ id: null, label: t('This Device') }]
+    : subscriptions.map((s) => ({ id: s.id, label: s.deviceLabel || t('Device') }));
 
   // Parse activity types from JSON string
   const parseActivityTypes = (activityTypes: string | null): string[] => {
@@ -368,8 +403,12 @@ export default function NotificationSettings({
     <div className="border-t border-slate-200 pt-6">
       <h3 className="form-label mb-4">{t('Push Notifications')}</h3>
 
-      {/* Enable Notifications Button - show when browser isn't subscribed OR no server subscriptions */}
-      {(!isSubscribed || subscriptions.length === 0) && (
+      {/* Enable Notifications Button - show when browser isn't subscribed OR no server subscriptions.
+          Not shown in the shell: web-push subscribe (service worker, VAPID) can't work in a
+          WKWebView / Android System WebView, and OS permission + DeviceToken registration is
+          handled by the shell's own push-intro screen before this page is ever reached. The
+          per-baby grid below is the native "enable" surface instead. */}
+      {!inShell && (!isSubscribed || subscriptions.length === 0) && (
         <div className="mb-6">
           <Button
             onClick={handleEnableNotifications}
@@ -438,7 +477,7 @@ export default function NotificationSettings({
 
 
       {/* Per-Baby Configuration */}
-      {subscriptions.length > 0 && babies.length > 0 && (
+      {deviceEntries.length > 0 && babies.length > 0 && (
         <div className="space-y-6">
           <Label className="form-label">{t('Notification Preferences')}</Label>
           {babies.map((baby) => (
@@ -448,10 +487,10 @@ export default function NotificationSettings({
                 {baby.firstName} {baby.lastName}
               </Label>
 
-              {subscriptions.map((subscription) => (
-                <div key={subscription.id} className="space-y-4 pl-4 border-l-2 border-slate-200">
+              {deviceEntries.map((device) => (
+                <div key={device.id ?? 'native'} className="space-y-4 pl-4 border-l-2 border-slate-200">
                   <div className="text-sm text-gray-600">
-                    {subscription.deviceLabel || t('Device')}
+                    {device.label}
                   </div>
 
                   {/* Activity Created Preference */}
@@ -459,22 +498,22 @@ export default function NotificationSettings({
                     <div className="flex items-center justify-between">
                       <Label
                         className="text-sm"
-                        htmlFor={`activity-created-${subscription.id}-${baby.id}`}
+                        htmlFor={`activity-created-${device.id}-${baby.id}`}
                       >
                         {t('Activity Created')}
                       </Label>
                       <Switch
-                        id={`activity-created-${subscription.id}-${baby.id}`}
+                        id={`activity-created-${device.id}-${baby.id}`}
                         checked={
                           getPreference(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.ACTIVITY_CREATED
                           )?.enabled ?? false
                         }
                         onCheckedChange={(checked) =>
                           handlePreferenceUpdate(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.ACTIVITY_CREATED,
                             { enabled: checked }
@@ -485,7 +524,7 @@ export default function NotificationSettings({
                     </div>
                     {/* Activity Type Sub-Selections */}
                     {getPreference(
-                      subscription.id,
+                      device.id,
                       baby.id,
                       NotificationEventType.ACTIVITY_CREATED
                     )?.enabled && (
@@ -494,25 +533,25 @@ export default function NotificationSettings({
                           type="button"
                           className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                           onClick={() => {
-                            const key = `${subscription.id}-${baby.id}`;
+                            const key = `${device.id}-${baby.id}`;
                             setExpandedActivities((prev) => ({
                               ...prev,
                               [key]: !prev[key],
                             }));
                           }}
                         >
-                          {expandedActivities[`${subscription.id}-${baby.id}`] ? (
+                          {expandedActivities[`${device.id}-${baby.id}`] ? (
                             <ChevronUp className="h-3 w-3" aria-hidden="true" />
                           ) : (
                             <ChevronDown className="h-3 w-3" aria-hidden="true" />
                           )}
                           {t('Select Activities')}
                         </button>
-                        {expandedActivities[`${subscription.id}-${baby.id}`] && (
+                        {expandedActivities[`${device.id}-${baby.id}`] && (
                           <div className="grid grid-cols-2 gap-2 pl-2">
                             {ALL_ACTIVITY_TYPES.map((actType) => {
                               const pref = getPreference(
-                                subscription.id,
+                                device.id,
                                 baby.id,
                                 NotificationEventType.ACTIVITY_CREATED
                               );
@@ -541,7 +580,7 @@ export default function NotificationSettings({
                                       const saveTypes =
                                         newTypes.length === ALL_ACTIVITY_TYPES.length ? null : newTypes;
                                       handlePreferenceUpdate(
-                                        subscription.id,
+                                        device.id,
                                         baby.id,
                                         NotificationEventType.ACTIVITY_CREATED,
                                         { activityTypes: saveTypes }
@@ -567,22 +606,22 @@ export default function NotificationSettings({
                     <div className="flex items-center justify-between">
                       <Label
                         className="text-sm"
-                        htmlFor={`feed-timer-expired-${subscription.id}-${baby.id}`}
+                        htmlFor={`feed-timer-expired-${device.id}-${baby.id}`}
                       >
                         {t('Feed Timer Expired')}
                       </Label>
                       <Switch
-                        id={`feed-timer-expired-${subscription.id}-${baby.id}`}
+                        id={`feed-timer-expired-${device.id}-${baby.id}`}
                         checked={
                           getPreference(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.FEED_TIMER_EXPIRED
                           )?.enabled ?? false
                         }
                         onCheckedChange={(checked) =>
                           handlePreferenceUpdate(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.FEED_TIMER_EXPIRED,
                             { enabled: checked }
@@ -592,21 +631,21 @@ export default function NotificationSettings({
                       />
                     </div>
                     {getPreference(
-                      subscription.id,
+                      device.id,
                       baby.id,
                       NotificationEventType.FEED_TIMER_EXPIRED
                     )?.enabled && (
                       <Select
                         value={
                           getPreference(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.FEED_TIMER_EXPIRED
                           )?.timerIntervalMinutes?.toString() || 'null'
                         }
                         onValueChange={(value) =>
                           handlePreferenceUpdate(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.FEED_TIMER_EXPIRED,
                             {
@@ -638,22 +677,22 @@ export default function NotificationSettings({
                     <div className="flex items-center justify-between">
                       <Label
                         className="text-sm"
-                        htmlFor={`diaper-timer-expired-${subscription.id}-${baby.id}`}
+                        htmlFor={`diaper-timer-expired-${device.id}-${baby.id}`}
                       >
                         {t('Diaper Timer Expired')}
                       </Label>
                       <Switch
-                        id={`diaper-timer-expired-${subscription.id}-${baby.id}`}
+                        id={`diaper-timer-expired-${device.id}-${baby.id}`}
                         checked={
                           getPreference(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.DIAPER_TIMER_EXPIRED
                           )?.enabled ?? false
                         }
                         onCheckedChange={(checked) =>
                           handlePreferenceUpdate(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.DIAPER_TIMER_EXPIRED,
                             { enabled: checked }
@@ -663,21 +702,21 @@ export default function NotificationSettings({
                       />
                     </div>
                     {getPreference(
-                      subscription.id,
+                      device.id,
                       baby.id,
                       NotificationEventType.DIAPER_TIMER_EXPIRED
                     )?.enabled && (
                       <Select
                         value={
                           getPreference(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.DIAPER_TIMER_EXPIRED
                           )?.timerIntervalMinutes?.toString() || 'null'
                         }
                         onValueChange={(value) =>
                           handlePreferenceUpdate(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.DIAPER_TIMER_EXPIRED,
                             {
@@ -709,22 +748,22 @@ export default function NotificationSettings({
                     <div className="flex items-center justify-between">
                       <Label
                         className="text-sm"
-                        htmlFor={`medicine-timer-expired-${subscription.id}-${baby.id}`}
+                        htmlFor={`medicine-timer-expired-${device.id}-${baby.id}`}
                       >
                         {t('Medicine Timer Expired')}
                       </Label>
                       <Switch
-                        id={`medicine-timer-expired-${subscription.id}-${baby.id}`}
+                        id={`medicine-timer-expired-${device.id}-${baby.id}`}
                         checked={
                           getPreference(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.MEDICINE_TIMER_EXPIRED
                           )?.enabled ?? false
                         }
                         onCheckedChange={(checked) =>
                           handlePreferenceUpdate(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.MEDICINE_TIMER_EXPIRED,
                             { enabled: checked }
@@ -734,21 +773,21 @@ export default function NotificationSettings({
                       />
                     </div>
                     {getPreference(
-                      subscription.id,
+                      device.id,
                       baby.id,
                       NotificationEventType.MEDICINE_TIMER_EXPIRED
                     )?.enabled && (
                       <Select
                         value={
                           getPreference(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.MEDICINE_TIMER_EXPIRED
                           )?.timerIntervalMinutes?.toString() || 'null'
                         }
                         onValueChange={(value) =>
                           handlePreferenceUpdate(
-                            subscription.id,
+                            device.id,
                             baby.id,
                             NotificationEventType.MEDICINE_TIMER_EXPIRED,
                             {
