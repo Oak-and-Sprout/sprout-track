@@ -198,32 +198,34 @@ export function SettingsDrawer({
         <div className="nursery-dw-b">
 
           {/* Wake lock / fullscreen */}
-          <div className="nursery-sect">
-            {showWakeLock && (
-              <button
-                type="button"
-                className={'nursery-togcard' + (wakeLockActive ? ' on' : '')}
-                onClick={onToggleWakeLock}
-                disabled={!wakeLockSupported}
-                style={wakeLockSupported ? undefined : { opacity: 0.55, cursor: 'default' }}
-              >
-                <div className="k">{t('Screen wake lock')}</div>
-                <div className="v">
-                  {!wakeLockSupported
-                    ? t('Wake lock not supported')
-                    : wakeLockActive
-                      ? t('Active — screen will stay on')
-                      : t('Off — screen may sleep')}
-                </div>
-              </button>
-            )}
-            {showFullscreen && fullscreenSupported && (
-              <button type="button" className={'nursery-togcard' + (fullscreenActive ? ' on' : '')} onClick={onToggleFullscreen}>
-                <div className="k">{t('Fullscreen')}</div>
-                <div className="v">{fullscreenActive ? t('Active — immersive') : t('Inactive — tap to enter')}</div>
-              </button>
-            )}
-          </div>
+          {(showWakeLock || showFullscreen) && (
+            <div className="nursery-sect">
+              {showWakeLock && (
+                <button
+                  type="button"
+                  className={'nursery-togcard' + (wakeLockActive ? ' on' : '')}
+                  onClick={onToggleWakeLock}
+                  disabled={!wakeLockSupported}
+                  style={wakeLockSupported ? undefined : { opacity: 0.55, cursor: 'default' }}
+                >
+                  <div className="k">{t('Screen wake lock')}</div>
+                  <div className="v">
+                    {!wakeLockSupported
+                      ? t('Wake lock not supported')
+                      : wakeLockActive
+                        ? t('Active — screen will stay on')
+                        : t('Off — screen may sleep')}
+                  </div>
+                </button>
+              )}
+              {showFullscreen && fullscreenSupported && (
+                <button type="button" className={'nursery-togcard' + (fullscreenActive ? ' on' : '')} onClick={onToggleFullscreen}>
+                  <div className="k">{t('Fullscreen')}</div>
+                  <div className="v">{fullscreenActive ? t('Active — immersive') : t('Inactive — tap to enter')}</div>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Layout */}
           <div className="nursery-sect">
