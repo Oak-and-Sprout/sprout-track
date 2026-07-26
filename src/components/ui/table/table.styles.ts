@@ -23,6 +23,9 @@ export const tableStyles = {
   // Sortable header - adds cursor and prevents text selection
   headSortable: "cursor-pointer select-none",
 
+  // Sort button inside a sortable header - transparent reset so the th styling shows through unchanged
+  headSortButton: "flex w-full items-center cursor-pointer select-none bg-transparent border-0 p-0 m-0 text-left rounded-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
+
   // Sort icon container
   sortIcon: "ml-1 inline-flex items-center",
   

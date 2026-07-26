@@ -38,6 +38,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
 }) => {
 
   const { t } = useLocalization();
+  const recurrencePatternLabelId = React.useId();
   // Format date for input
   const formatDateForInput = (date?: Date) => {  
 
@@ -65,7 +66,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
           onCheckedChange={(checked) => onRecurringChange(checked === true)}
         />
         <label htmlFor="recurring" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-          <Repeat className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" />
+          <Repeat className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
           {t('Recurring event')}
         </label>
       </div>
@@ -75,11 +76,11 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
         <>
           {/* Recurrence pattern */}
           <div className={styles.fieldGroup}>
-            <label className="form-label">
+            <label id={recurrencePatternLabelId} className="form-label">
               {t('Recurrence Pattern')}
               <span className={styles.fieldRequired}>*</span>
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div role="group" aria-labelledby={recurrencePatternLabelId} className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {Object.values(RecurrencePattern).map((pattern) => (
                 <Button
                   key={pattern}
@@ -94,7 +95,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
             </div>
             {error?.recurrencePattern && (
               <div className={styles.fieldError}>
-                <AlertCircle className="h-3 w-3 inline mr-1" />
+                <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                 {error.recurrencePattern}
               </div>
             )}
@@ -120,7 +121,7 @@ const RecurrenceSelector: React.FC<RecurrenceSelectorProps> = ({
             </div>
             {error?.recurrenceEnd && (
               <div className={styles.fieldError}>
-                <AlertCircle className="h-3 w-3 inline mr-1" />
+                <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                 {error.recurrenceEnd}
               </div>
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { DiaperType } from '@prisma/client';
 import { DiaperLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
@@ -43,6 +43,7 @@ export default function DiaperForm({
   onSuccess,
 }: DiaperFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
   const params = useParams();
@@ -267,7 +268,7 @@ export default function DiaperForm({
             
             {/* Type Selection - Full width on all screens */}
             <div>
-              <label className="form-label">{t('Type')}</label>
+              <label htmlFor={`${formId}-type`} className="form-label">{t('Type')}</label>
               <Select
                 value={formData.type || ''}
                 onValueChange={(value: DiaperType) =>
@@ -275,7 +276,7 @@ export default function DiaperForm({
                 }
                 disabled={loading}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id={`${formId}-type`} className="w-full">
                   <SelectValue placeholder={t("Select type")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -317,7 +318,7 @@ export default function DiaperForm({
             {formData.type && formData.type !== 'WET' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="form-label">{t('Condition')}</label>
+                  <label htmlFor={`${formId}-condition`} className="form-label">{t('Condition')}</label>
                   <Select
                     value={formData.condition}
                     onValueChange={(value: string) =>
@@ -325,7 +326,7 @@ export default function DiaperForm({
                     }
                     disabled={loading}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id={`${formId}-condition`} className="w-full">
                       <SelectValue placeholder={t("Select condition")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -337,7 +338,7 @@ export default function DiaperForm({
                   </Select>
                 </div>
                 <div>
-                  <label className="form-label">{t('Color')}</label>
+                  <label htmlFor={`${formId}-color`} className="form-label">{t('Color')}</label>
                   <Select
                     value={formData.color}
                     onValueChange={(value: string) =>
@@ -345,7 +346,7 @@ export default function DiaperForm({
                     }
                     disabled={loading}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id={`${formId}-color`} className="w-full">
                       <SelectValue placeholder={t("Select color")} />
                     </SelectTrigger>
                     <SelectContent>

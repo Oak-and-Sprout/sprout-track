@@ -204,6 +204,7 @@ See [Initial Setup](documentation/Admin-Documentation/initial-setup.md) for deta
 
 
 
+
 # Local switch hosting from original to fork
 
 Perfect! Let's set up automatic Git-based updates using GitHub Container Registry (GHCR) + Podman's native auto-update. This way, when you push to your fork's main branch, the server auto-pulls and restarts.

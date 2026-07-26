@@ -1,7 +1,7 @@
 'use client';
 
 import { Caretaker as PrismaCaretaker, UserRole } from '@prisma/client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import {
@@ -16,6 +16,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
 import { caretakerFormStyles } from './caretaker-form.styles';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
@@ -32,6 +33,8 @@ interface CaretakerFormProps {
   isEditing: boolean;
   caretaker: (PrismaCaretaker & { loginId?: string }) | null;
   onCaretakerChange?: () => void;
+  /** 'storybook' renders the stacked storybook drawer (account manager); default is the classic FormPage. */
+  appearance?: 'default' | 'storybook';
 }
 
 const defaultFormData = {
@@ -49,9 +52,11 @@ export default function CaretakerForm({
   isEditing,
   caretaker,
   onCaretakerChange,
+  appearance = 'default',
 }: CaretakerFormProps) {
   const { t } = useLocalization();
   const { showToast } = useToast();
+  const formId = useId();
   const [formData, setFormData] = useState(defaultFormData);
   const [confirmPin, setConfirmPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -323,6 +328,104 @@ export default function CaretakerForm({
     }
   };
 
+  if (appearance === 'storybook') {
+    return (
+      <StorybookDrawer
+        open={isOpen}
+        onClose={onClose}
+        onBack={onClose}
+        title={isEditing ? t('Edit caretaker') : t('Add a caretaker')}
+        subtitle={t('Anyone who helps — parents, grandparents, the nanny.')}
+        footer={
+          <>
+            <button type="button" className="sb-btn sb-ghost" onClick={onClose}>{t('Cancel')}</button>
+            <button type="submit" form="sb-caretaker-form" className="sb-btn" disabled={isSubmitting}>
+              {isSubmitting ? t('Saving…') : isEditing ? t('Save changes') : t('Add caretaker')}
+            </button>
+          </>
+        }
+      >
+        <form id="sb-caretaker-form" onSubmit={handleSubmit} className="sb-f-grid">
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbCtName">{t('Name')}</label>
+              <input id="sbCtName" className="sb-fi" value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbCtType">
+                {t('Relationship')} <span className="sb-fl-opt">({t('optional')})</span>
+              </label>
+              <input id="sbCtType" className="sb-fi" placeholder={t('Grandma, nanny, dad…')}
+                value={formData.type || ''}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <label className="sb-fl" htmlFor="sbCtRole">{t('Role')}</label>
+            <select id="sbCtRole" className="sb-fi" value={formData.role} disabled={isFirstCaretaker}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}>
+              <option value="USER">{t('Regular user')}</option>
+              <option value="ADMIN">{t('Administrator')}</option>
+            </select>
+            <p className="sb-fh">{t('Admins can edit family settings and people.')}</p>
+          </div>
+          <div className="sb-fgroup">
+            <b>{t('How they sign in')}</b>
+            <p className="sb-fh">{t("A 2-digit ID and a PIN — easy enough for grandma's phone.")}</p>
+            <div className="sb-f2">
+              <div>
+                <label className="sb-fl" htmlFor="sbCtId">{t('Login ID')}</label>
+                <input id="sbCtId" className="sb-fi" maxLength={2} inputMode="numeric" required
+                  value={formData.loginId}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    // Only allow digits up to 2 characters
+                    if (value.length <= 2) {
+                      setFormData({ ...formData, loginId: value });
+                    }
+                  }} />
+                {loginIdError && <p className="sb-form-error">{loginIdError}</p>}
+              </div>
+              <div>
+                <label className="sb-fl" htmlFor="sbCtPin">
+                  {t('PIN')} <span className="sb-fl-opt">({t('6–10 digits')})</span>
+                </label>
+                <input id="sbCtPin" className="sb-fi" type="password" maxLength={10} inputMode="numeric"
+                  required={!isEditing} placeholder="••••••"
+                  value={formData.securityPin}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 10) {
+                      setFormData({ ...formData, securityPin: value });
+                    }
+                  }} />
+              </div>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <label className="sb-fl" htmlFor="sbCtPin2">{t('Confirm PIN')}</label>
+              <input id="sbCtPin2" className="sb-fi" type="password" maxLength={10} inputMode="numeric"
+                required={!isEditing} placeholder={t('Same PIN again')}
+                value={confirmPin}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  if (value.length <= 10) {
+                    setConfirmPin(value);
+                  }
+                }} />
+            </div>
+          </div>
+          <label className="sb-fcheck">
+            <input type="checkbox" checked={formData.inactive} disabled={isFirstCaretaker}
+              onChange={(e) => setFormData({ ...formData, inactive: e.target.checked })} />
+            <span>{t("Mark as inactive — they keep their history but can't sign in.")}</span>
+          </label>
+          {error && <p className="sb-form-error">{error}</p>}
+        </form>
+      </StorybookDrawer>
+    );
+  }
+
   return (
     <FormPage 
       isOpen={isOpen} 
@@ -336,8 +439,9 @@ export default function CaretakerForm({
       <form onSubmit={handleSubmit} className="h-full flex flex-col overflow-hidden">
         <FormPageContent className={caretakerFormStyles.content}>
           <div>
-            <label className="form-label">{t('Login ID')}</label>
+            <label htmlFor={`${formId}-loginId`} className="form-label">{t('Login ID')}</label>
             <Input
+              id={`${formId}-loginId`}
               value={formData.loginId}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, '');
@@ -363,8 +467,9 @@ export default function CaretakerForm({
             )}
           </div>
           <div>
-            <label className="form-label">{t('Name')}</label>
+            <label htmlFor={`${formId}-name`} className="form-label">{t('Name')}</label>
             <Input
+              id={`${formId}-name`}
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -375,8 +480,9 @@ export default function CaretakerForm({
             />
           </div>
           <div>
-            <label className="form-label">{t('Type (Optional)')}</label>
+            <label htmlFor={`${formId}-type`} className="form-label">{t('Type (Optional)')}</label>
             <Input
+              id={`${formId}-type`}
               value={formData.type}
               onChange={(e) =>
                 setFormData({ ...formData, type: e.target.value })
@@ -386,7 +492,7 @@ export default function CaretakerForm({
             />
           </div>
           <div>
-            <label className="form-label">{t('Role')}</label>
+            <label htmlFor={`${formId}-role`} className="form-label">{t('Role')}</label>
             <Select
               value={formData.role}
               onValueChange={(value) =>
@@ -394,7 +500,7 @@ export default function CaretakerForm({
               }
               disabled={isFirstCaretaker}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id={`${formId}-role`} className="w-full">
                 <SelectValue placeholder={t("Select a role")} />
               </SelectTrigger>
               <SelectContent>
@@ -416,13 +522,13 @@ export default function CaretakerForm({
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="inactive"
+              id={`${formId}-inactive`}
               checked={formData.inactive}
               onChange={(e) => setFormData({ ...formData, inactive: e.target.checked })}
               className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
               disabled={isFirstCaretaker}
             />
-            <label htmlFor="inactive" className="form-label mb-0">
+            <label htmlFor={`${formId}-inactive`} className="form-label mb-0">
               {t('Mark as inactive')}
             </label>
           </div>
@@ -432,8 +538,9 @@ export default function CaretakerForm({
             </p>
           )}
           <div>
-            <label className="form-label">{t('Security PIN')}</label>
+            <label htmlFor={`${formId}-securityPin`} className="form-label">{t('Security PIN')}</label>
             <Input
+              id={`${formId}-securityPin`}
               type="password"
               value={formData.securityPin}
               onChange={(e) => {
@@ -452,8 +559,9 @@ export default function CaretakerForm({
             <p className="text-xs text-gray-500 mt-1">{isEditing ? t('Leave blank to keep the current PIN, or enter a new 6-10 digit PIN') : t('PIN must be between 6 and 10 digits')}</p>
           </div>
           <div>
-            <label className="form-label">{t('Confirm PIN')}</label>
+            <label htmlFor={`${formId}-confirmPin`} className="form-label">{t('Confirm PIN')}</label>
             <Input
+              id={`${formId}-confirmPin`}
               type="password"
               value={confirmPin}
               onChange={(e) => {

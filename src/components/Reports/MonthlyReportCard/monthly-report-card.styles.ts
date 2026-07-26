@@ -29,6 +29,7 @@ export const reportCardStyles = {
   // Metric grid
   metricGrid4: 'grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6',
   metricGrid3: 'grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-6',
+  metricGrid2: 'grid grid-cols-2 gap-2.5 mb-6',
   metricCard: 'bg-gray-50 rounded-lg p-3',
   metricLabel: 'text-xs text-gray-500 m-0',
   metricValue: 'text-xl font-medium text-gray-900 mt-1 mb-0.5',
@@ -67,6 +68,26 @@ export const reportCardStyles = {
   milestoneTitle: 'text-sm font-medium text-gray-900 m-0 truncate',
   milestoneSub: 'text-xs text-gray-500 mt-0.5 m-0',
   milestoneEmpty: 'text-sm text-gray-400 italic',
+
+  // Foods section
+  foodsList: 'flex flex-col gap-2 mb-6',
+  foodRow: 'flex items-center gap-2.5 px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg',
+  foodEmoji: 'w-7 h-7 flex-shrink-0',
+  foodEmojiPlaceholder: 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium bg-gray-100 text-gray-500 flex-shrink-0',
+  foodInfo: 'flex-1 min-w-0',
+  foodName: 'text-sm font-medium text-gray-900 m-0 truncate',
+  foodSub: 'text-xs text-gray-500 mt-0.5 m-0',
+  foodReactionIcon: 'w-4 h-4 text-amber-500 flex-shrink-0',
+
+  // Known Allergens box (clean list matching the other bordered sections)
+  allergensBox: 'bg-white border border-gray-200 rounded-xl p-3 sm:p-4 mb-6',
+  allergensBoxTitle: 'text-sm font-semibold text-gray-900 mb-1.5 m-0 flex items-center gap-1.5',
+  allergenRow: 'py-1.5 border-b border-gray-100 last:border-b-0',
+  allergenRowName: 'text-sm font-medium text-gray-900 m-0',
+  allergenRowBadge: 'inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 ml-1.5 align-middle',
+  allergenRowDetail: 'text-xs text-gray-600 mt-0.5 m-0',
+  allergenRowMeta: 'text-xs text-gray-500 mt-0.5 m-0',
+  allergenRowLink: 'text-teal-700 hover:underline',
 
   // Health table
   healthTable: 'w-full text-sm',

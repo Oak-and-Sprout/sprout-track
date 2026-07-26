@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { ContactFormProps, ContactFormData, ContactFormErrors } from './contact-form.types';
 import { contactFormStyles as styles } from './contact-form.styles';
 import { AlertCircle, Loader2, Trash2, Mail, Phone, User, Briefcase } from 'lucide-react';
 import { FormPage, FormPageContent, FormPageFooter } from '@/src/components/ui/form-page';
+import { StorybookDrawer } from '@/src/components/ui/storybook-drawer';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
 import { useToast } from '@/src/components/ui/toast';
@@ -22,10 +23,12 @@ const ContactForm: React.FC<ContactFormProps> = ({
   onSave,
   onDelete,
   isLoading: externalIsLoading = false,
+  appearance = 'default',
 }) => {
   const { showToast } = useToast();
   const { t } = useLocalization();
-  
+  const formId = useId();
+
   // Local loading state
   const [isLoading, setIsLoading] = useState(externalIsLoading);
   
@@ -339,6 +342,75 @@ const ContactForm: React.FC<ContactFormProps> = ({
     }
   };
   
+  if (appearance === 'storybook') {
+    return (
+      <StorybookDrawer
+        open={isOpen}
+        onClose={onClose}
+        onBack={onClose}
+        title={contact ? t('Edit contact') : t('Add a contact')}
+        subtitle={t('The numbers everyone should be able to find.')}
+        footer={
+          <>
+            {contact && onDelete && (
+              <button type="button" className="sb-btn sb-danger sb-sm" style={{ marginRight: 'auto' }}
+                onClick={handleDelete} disabled={isLoading}>
+                {t('Delete')}
+              </button>
+            )}
+            <button type="button" className="sb-btn sb-ghost" onClick={onClose}>{t('Cancel')}</button>
+            <button type="button" className="sb-btn" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? t('Saving…') : t('Save contact')}
+            </button>
+          </>
+        }
+      >
+        <div className="sb-f-grid">
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbCoName">{t('Name')}</label>
+              <input id="sbCoName" className="sb-fi" placeholder={t('Dr. Alvarez')}
+                name="name"
+                value={formData.name}
+                onChange={handleChange} />
+              {errors.name && <p className="sb-form-error">{errors.name}</p>}
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbCoRole">{t('Role')}</label>
+              <input id="sbCoRole" className="sb-fi" placeholder={t('Pediatrician, grandma, sitter…')}
+                name="role"
+                value={formData.role}
+                onChange={handleChange} />
+              {errors.role && <p className="sb-form-error">{errors.role}</p>}
+            </div>
+          </div>
+          <div className="sb-f2">
+            <div>
+              <label className="sb-fl" htmlFor="sbCoPhone">
+                {t('Phone')} <span className="sb-fl-opt">({t('optional')})</span>
+              </label>
+              <input id="sbCoPhone" className="sb-fi" type="tel" placeholder="(816) 555-0134"
+                name="phone"
+                value={formData.phone || ''}
+                onChange={handleChange} />
+              {errors.phone && <p className="sb-form-error">{errors.phone}</p>}
+            </div>
+            <div>
+              <label className="sb-fl" htmlFor="sbCoEmail">
+                {t('Email')} <span className="sb-fl-opt">({t('optional')})</span>
+              </label>
+              <input id="sbCoEmail" className="sb-fi" type="email" placeholder={t('name@example.com')}
+                name="email"
+                value={formData.email || ''}
+                onChange={handleChange} />
+              {errors.email && <p className="sb-form-error">{errors.email}</p>}
+            </div>
+          </div>
+        </div>
+      </StorybookDrawer>
+    );
+  }
+
   return (
     <FormPage
       isOpen={isOpen}
@@ -357,7 +429,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
               {/* Name */}
               <div className={styles.fieldGroup}>
                 <label 
-                  htmlFor="name" 
+                  htmlFor={`${formId}-name`}
                   className="form-label"
                 >
                   {t('Name')}
@@ -366,18 +438,20 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 <div className="relative">
                   <Input
                     type="text"
-                    id="name"
+                    id={`${formId}-name`}
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full pl-9"
                     placeholder={t("Enter contact name")}
+                    aria-invalid={errors.name ? true : undefined}
+                    aria-describedby={errors.name ? `${formId}-name-error` : undefined}
                   />
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.name && (
-                  <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                  <div id={`${formId}-name-error`} role="alert" className={styles.fieldError}>
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.name}
                   </div>
                 )}
@@ -386,7 +460,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
               {/* Role */}
               <div className={styles.fieldGroup}>
                 <label 
-                  htmlFor="role" 
+                  htmlFor={`${formId}-role`}
                   className="form-label"
                 >
                   {t('Role')}
@@ -395,18 +469,20 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 <div className="relative">
                   <Input
                     type="text"
-                    id="role"
+                    id={`${formId}-role`}
                     name="role"
                     value={formData.role}
                     onChange={handleChange}
                     className="w-full pl-9"
                     placeholder={t("Enter contact role (e.g., Doctor, Family)")}
+                    aria-invalid={errors.role ? true : undefined}
+                    aria-describedby={errors.role ? `${formId}-role-error` : undefined}
                   />
-                  <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.role && (
-                  <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                  <div id={`${formId}-role-error`} role="alert" className={styles.fieldError}>
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.role}
                   </div>
                 )}
@@ -415,7 +491,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
               {/* Phone */}
               <div className={styles.fieldGroup}>
                 <label 
-                  htmlFor="phone" 
+                  htmlFor={`${formId}-phone`}
                   className="form-label"
                 >
                   {t('Phone Number')}
@@ -423,18 +499,20 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 <div className="relative">
                   <Input
                     type="tel"
-                    id="phone"
+                    id={`${formId}-phone`}
                     name="phone"
                     value={formData.phone || ''}
                     onChange={handleChange}
                     className="w-full pl-9"
                     placeholder={t("Enter phone number (optional)")}
+                    aria-invalid={errors.phone ? true : undefined}
+                    aria-describedby={errors.phone ? `${formId}-phone-error` : undefined}
                   />
-                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.phone && (
-                  <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                  <div id={`${formId}-phone-error`} role="alert" className={styles.fieldError}>
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.phone}
                   </div>
                 )}
@@ -443,7 +521,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
               {/* Email */}
               <div className={styles.fieldGroup}>
                 <label 
-                  htmlFor="email" 
+                  htmlFor={`${formId}-email`}
                   className="form-label"
                 >
                   {t('Email Address')}
@@ -451,18 +529,20 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 <div className="relative">
                   <Input
                     type="email"
-                    id="email"
+                    id={`${formId}-email`}
                     name="email"
                     value={formData.email || ''}
                     onChange={handleChange}
                     className="w-full pl-9"
                     placeholder={t("Enter email address (optional)")}
+                    aria-invalid={errors.email ? true : undefined}
+                    aria-describedby={errors.email ? `${formId}-email-error` : undefined}
                   />
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
                 {errors.email && (
-                  <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                  <div id={`${formId}-email-error`} role="alert" className={styles.fieldError}>
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.email}
                   </div>
                 )}
@@ -481,7 +561,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 onClick={handleDelete}
                 disabled={isLoading}
               >
-                <Trash2 className="h-4 w-4 mr-1.5" />
+                <Trash2 className="h-4 w-4 mr-1.5" aria-hidden="true" />
                 {t('Delete')}
               </Button>
             )}
@@ -504,7 +584,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
                     {t('Saving...')}
                   </>
                 ) : (

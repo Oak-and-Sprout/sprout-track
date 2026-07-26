@@ -19,7 +19,7 @@ setInterval(() => {
 
 export function checkRateLimit(
   keyId: string,
-  method: 'GET' | 'POST'
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
 ): { allowed: boolean; response?: NextResponse; headers: Record<string, string> } {
   const limit = method === 'GET' ? 60 : 30;
   const windowMs = 60_000;

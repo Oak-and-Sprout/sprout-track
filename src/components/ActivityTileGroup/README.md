@@ -83,6 +83,22 @@ Main component for displaying a group of activity tiles.
 - Sleep button toggles between "Start Sleep" and "End Sleep" based on current state
 - All buttons maintain consistent styling with the app's design system
 
+## Configure Menu Accessibility
+
+The "Configure" tile opens a dropdown for toggling tile visibility and reordering tiles. Reordering supports three input methods:
+
+- **Drag and drop** (mouse): each row has a drag handle and HTML5 drag events
+- **Touch**: long-press a row (150ms) and drag to a new position
+- **Keyboard**: each row has "Move up" and "Move down" controls (chevron icons) next to the drag handle
+
+Keyboard implementation notes:
+
+- The move up/down controls are Radix `DropdownMenuItem`s (role `menuitem`), so they participate in the menu's roving arrow-key focus and are announced by screen readers in menu mode; activation calls `onSelect` with `preventDefault()` so the menu stays open while reordering
+- The up item is disabled on the first row and the down item on the last row; Radix exposes `aria-disabled`, skips disabled items in arrow-key navigation, and ignores activation. Disabled styling uses `data-[disabled]` variants (with dark-mode rules in `activity-tile-group.css`) rather than `pointer-events-none`, which would retarget presses to the draggable row
+- Each item has a localized `aria-label` (e.g. "Move up Sleep"); decorative icons are `aria-hidden`
+- After a reorder the rows re-render (keyed DOM nodes are moved), so focus follows the moved item; a ref-based effect additionally restores focus, moving it to the opposite-direction sibling if the activated item became disabled at a boundary
+- Order changes made via the keyboard controls persist through the same debounced save as drag reordering
+
 ## Implementation Details
 
 The component uses the `ActivityTile` component from the UI components library to render each activity button. It also uses the `StatusBubble` component to display timing information for each activity.

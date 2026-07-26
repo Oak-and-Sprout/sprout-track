@@ -36,6 +36,7 @@ interface FamilyData {
   lastEntryAt?: string | null;
   caretakerCount?: number;
   babyCount?: number;
+  photoQuotaMB?: number | null;
 }
 
 interface FamilyViewProps {
@@ -92,13 +93,14 @@ export default function FamilyView({
           <TableHead variant="bold" sortable sortDirection={sortColumn === 'isActive' ? sortDirection : null} onSort={() => onSort('isActive')}>{t('Status')}</TableHead>
           <TableHead variant="bold" sortable sortDirection={sortColumn === 'caretakerCount' ? sortDirection : null} onSort={() => onSort('caretakerCount')}>{t('Members')}</TableHead>
           <TableHead variant="bold" sortable sortDirection={sortColumn === 'babyCount' ? sortDirection : null} onSort={() => onSort('babyCount')}>{t('Babies')}</TableHead>
+          <TableHead variant="bold">{t('Photo storage quota (MB)')}</TableHead>
           <TableHead variant="bold" className="text-right">{t('Actions')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {paginatedData.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+            <TableCell colSpan={9} className="text-center py-8 text-gray-500">
               {t('No families found.')}
             </TableCell>
           </TableRow>
@@ -129,12 +131,12 @@ export default function FamilyView({
                           className={`min-w-[150px] ${slugError ? 'border-red-500' : ''}`}
                         />
                         {checkingSlug && (
-                          <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                          <Loader2 aria-hidden="true" className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
                         )}
                       </div>
                       {slugError && (
                         <div className="flex items-center gap-1 text-red-600 text-xs">
-                          <AlertCircle className="h-3 w-3" />
+                          <AlertCircle className="h-3 w-3" aria-hidden="true" />
                           {slugError}
                         </div>
                       )}
@@ -168,6 +170,24 @@ export default function FamilyView({
                 </TableCell>
                 <TableCell>{family.caretakerCount || 0}</TableCell>
                 <TableCell>{family.babyCount || 0}</TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder={t('Default')}
+                      value={editingData.photoQuotaMB ?? ''}
+                      onChange={(e) => {
+                        if (e.target.value === '') { setEditingData(prev => ({ ...prev, photoQuotaMB: null })); return; }
+                        const parsed = parseInt(e.target.value, 10);
+                        if (!Number.isNaN(parsed)) setEditingData(prev => ({ ...prev, photoQuotaMB: parsed }));
+                      }}
+                      className="min-w-[100px]"
+                    />
+                  ) : (
+                    family.photoQuotaMB ?? t('Default')
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     {isEditing ? (
@@ -177,11 +197,12 @@ export default function FamilyView({
                           size="sm"
                           onClick={() => onSave(family)}
                           disabled={saving || !!slugError || checkingSlug}
+                          aria-label={t('Save')}
                         >
                           {saving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                           ) : (
-                            <Check className="h-4 w-4" />
+                            <Check className="h-4 w-4" aria-hidden="true" />
                           )}
                         </Button>
                         <Button
@@ -189,8 +210,9 @@ export default function FamilyView({
                           size="sm"
                           onClick={onCancelEdit}
                           disabled={saving}
+                          aria-label={t('Cancel')}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </>
                     ) : (
@@ -201,7 +223,7 @@ export default function FamilyView({
                           onClick={() => onEdit(family)}
                           title={t("Edit family")}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-4 w-4" aria-hidden="true" />
                         </Button>
                         <Button
                           variant="outline"
@@ -209,7 +231,7 @@ export default function FamilyView({
                           onClick={() => onViewCaretakers(family)}
                           title={t("View caretakers")}
                         >
-                          <Users className="h-4 w-4" />
+                          <Users className="h-4 w-4" aria-hidden="true" />
                         </Button>
                         <ShareButton
                           familySlug={family.slug}
@@ -225,7 +247,7 @@ export default function FamilyView({
                           onClick={() => onLogin(family)}
                           title={t("Login to family")}
                         >
-                          <LogIn className="h-4 w-4" />
+                          <LogIn className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </>
                     )}

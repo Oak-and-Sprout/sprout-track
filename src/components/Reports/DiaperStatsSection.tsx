@@ -35,7 +35,7 @@ const DiaperStatsSection: React.FC<DiaperStatsSectionProps> = ({ stats, activiti
     <>
       <AccordionItem value="diaper">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <Icon iconNode={diaper} className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-diaper-wet")} />
+          <Icon iconNode={diaper} aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-diaper-wet")} />
           <span>{t('Diaper Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>

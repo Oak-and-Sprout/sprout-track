@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { isValidGrowthStandard } from '@/src/utils/growthStandard';
 
 // CDC growth data record type
 export interface CdcGrowthDataRecord {
@@ -33,6 +34,14 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const { searchParams } = new URL(req.url);
     const sex = searchParams.get('sex'); // 1 = Male, 2 = Female
     const measurementType = searchParams.get('type') as MeasurementTypeParam | null; // weight, length, head_circumference
+    const standard = (searchParams.get('standard') || 'CDC').toUpperCase(); // 'CDC' or 'WHO'
+
+    if (!isValidGrowthStandard(standard)) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'standard must be CDC or WHO' },
+        { status: 400 }
+      );
+    }
 
     if (!sex || !measurementType) {
       return NextResponse.json<ApiResponse<null>>(
@@ -49,80 +58,83 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       );
     }
 
+    const selectFields = {
+      sex: true,
+      ageMonths: true,
+      l: true,
+      m: true,
+      s: true,
+      p3: true,
+      p5: true,
+      p10: true,
+      p25: true,
+      p50: true,
+      p75: true,
+      p90: true,
+      p95: true,
+      p97: true,
+    };
+
     let data: CdcGrowthDataRecord[];
 
-    switch (measurementType) {
-      case 'weight':
-        data = await prisma.cdcWeightForAge.findMany({
-          where: { sex: sexNum },
-          orderBy: { ageMonths: 'asc' },
-          select: {
-            sex: true,
-            ageMonths: true,
-            l: true,
-            m: true,
-            s: true,
-            p3: true,
-            p5: true,
-            p10: true,
-            p25: true,
-            p50: true,
-            p75: true,
-            p90: true,
-            p95: true,
-            p97: true,
-          },
-        });
-        break;
-      case 'length':
-        data = await prisma.cdcLengthForAge.findMany({
-          where: { sex: sexNum },
-          orderBy: { ageMonths: 'asc' },
-          select: {
-            sex: true,
-            ageMonths: true,
-            l: true,
-            m: true,
-            s: true,
-            p3: true,
-            p5: true,
-            p10: true,
-            p25: true,
-            p50: true,
-            p75: true,
-            p90: true,
-            p95: true,
-            p97: true,
-          },
-        });
-        break;
-      case 'head_circumference':
-        data = await prisma.cdcHeadCircumferenceForAge.findMany({
-          where: { sex: sexNum },
-          orderBy: { ageMonths: 'asc' },
-          select: {
-            sex: true,
-            ageMonths: true,
-            l: true,
-            m: true,
-            s: true,
-            p3: true,
-            p5: true,
-            p10: true,
-            p25: true,
-            p50: true,
-            p75: true,
-            p90: true,
-            p95: true,
-            p97: true,
-          },
-        });
-        break;
-      default:
-        return NextResponse.json<ApiResponse<null>>(
-          { success: false, error: 'Invalid measurement type. Use: weight, length, or head_circumference' },
-          { status: 400 }
-        );
+    if (standard === 'WHO') {
+      switch (measurementType) {
+        case 'weight':
+          data = await prisma.whoWeightForAge.findMany({
+            where: { sex: sexNum },
+            orderBy: { ageMonths: 'asc' },
+            select: selectFields,
+          });
+          break;
+        case 'length':
+          data = await prisma.whoLengthForAge.findMany({
+            where: { sex: sexNum },
+            orderBy: { ageMonths: 'asc' },
+            select: selectFields,
+          });
+          break;
+        case 'head_circumference':
+          data = await prisma.whoHeadCircumferenceForAge.findMany({
+            where: { sex: sexNum },
+            orderBy: { ageMonths: 'asc' },
+            select: selectFields,
+          });
+          break;
+        default:
+          return NextResponse.json<ApiResponse<null>>(
+            { success: false, error: 'Invalid measurement type. Use: weight, length, or head_circumference' },
+            { status: 400 }
+          );
+      }
+    } else {
+      switch (measurementType) {
+        case 'weight':
+          data = await prisma.cdcWeightForAge.findMany({
+            where: { sex: sexNum },
+            orderBy: { ageMonths: 'asc' },
+            select: selectFields,
+          });
+          break;
+        case 'length':
+          data = await prisma.cdcLengthForAge.findMany({
+            where: { sex: sexNum },
+            orderBy: { ageMonths: 'asc' },
+            select: selectFields,
+          });
+          break;
+        case 'head_circumference':
+          data = await prisma.cdcHeadCircumferenceForAge.findMany({
+            where: { sex: sexNum },
+            orderBy: { ageMonths: 'asc' },
+            select: selectFields,
+          });
+          break;
+        default:
+          return NextResponse.json<ApiResponse<null>>(
+            { success: false, error: 'Invalid measurement type. Use: weight, length, or head_circumference' },
+            { status: 400 }
+          );
+      }
     }
 
     return NextResponse.json<ApiResponse<CdcGrowthDataRecord[]>>({

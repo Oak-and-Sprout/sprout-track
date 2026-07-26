@@ -13,14 +13,23 @@ export function useUnit() {
   };
 }
 
+// t() returns the key itself when untranslated, so a composed key like
+// "unit.name.xyz" must never leak to the screen — fall back instead.
+function translateOrFallback(t: (key: string) => string, key: string, fallback: string) {
+  const translated = t(key);
+  return translated !== key ? translated : fallback;
+}
+
 export function getName(unitName: string | undefined | null, t: (key: string) => string) {
   unitName ??= "";
-  return t(`unit.name.${unitName}`) || t(unitName);
+  return translateOrFallback(t, `unit.name.${unitName}`, t(unitName));
 }
 
 export function getSymbol(unitAbbr: string | undefined | null, t: (key: string) => string) {
   unitAbbr ??= "";
-  return t(`unit.symbol.${abbrToName[unitAbbr]}`) || t(unitAbbr.toLowerCase());
+  const name = abbrToName[unitAbbr.toUpperCase()];
+  const fallback = t(unitAbbr.toLowerCase());
+  return name ? translateOrFallback(t, `unit.symbol.${name}`, fallback) : fallback;
 }
 
 const abbrToName: Record<string, string> = {

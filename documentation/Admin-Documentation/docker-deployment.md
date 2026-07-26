@@ -151,11 +151,11 @@ All named volumes persist across container restarts and upgrades. Your data, con
 
 The container automatically manages the `.env` file stored in the `sprout-track-env` volume:
 
-- **First run:** Creates a complete `.env` with all required defaults and generates encryption keys (`ENC_HASH`)
+- **First run:** Creates a complete `.env` with all required defaults and generates secrets (`ENC_HASH`, `JWT_SECRET`, `NOTIFICATION_CRON_SECRET`)
 - **Upgrades:** Adds any new environment variables introduced in newer versions without overwriting your existing settings
 - **Backup restore:** Fills in any missing variables after restoring a `.env` from an older backup. Database connection parameters (`DATABASE_PROVIDER`, `DATABASE_URL`, `LOG_DATABASE_URL`) are always preserved during restore, even if the backup came from a different database provider
 
-Your `ENC_HASH` (used for file encryption) is never overwritten once generated. See [Environment Variables](environment-variables.md) for the full reference.
+Your `ENC_HASH` (used for file encryption) and `JWT_SECRET` (used to sign auth tokens) are never overwritten once generated. See [Environment Variables](environment-variables.md) for the full reference.
 
 ## What Happens at Startup
 

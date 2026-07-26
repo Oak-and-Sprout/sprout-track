@@ -246,7 +246,7 @@ All core table components extend their respective HTML element props:
 - `TableBody` - Extends `React.HTMLAttributes<HTMLTableSectionElement>`
 - `TableFooter` - Extends `React.HTMLAttributes<HTMLTableSectionElement>`
 - `TableRow` - Extends `React.HTMLAttributes<HTMLTableRowElement>`
-- `TableHead` - Extends `React.ThHTMLAttributes<HTMLTableCellElement>`
+- `TableHead` - Extends `React.ThHTMLAttributes<HTMLTableCellElement>`. Also accepts `sortable?: boolean`, `sortDirection?: 'asc' | 'desc' | null`, and `onSort?: () => void`. When `sortable` is set, the header content is rendered inside a visually transparent native `<button type="button">` so sorting is keyboard-accessible (Tab + Enter/Space) with a focus-visible ring; `aria-sort` is set on the `<th>` and the sort chevron icons are `aria-hidden`. Clicking anywhere in the cell (including padding) still triggers `onSort`.
 - `TableCell` - Extends `React.TdHTMLAttributes<HTMLTableCellElement>`
 - `TableCaption` - Extends `React.HTMLAttributes<HTMLTableCaptionElement>`
 
@@ -425,6 +425,8 @@ The enhanced table components follow accessibility best practices:
 - Keyboard navigation for all interactive elements (including tabs)
 - Focus indicators for buttons, inputs, and tab triggers
 - Screen reader friendly text for pagination and tab information
+- Sortable column headers use a native button with `aria-sort` on the `<th>` and keyboard activation
+- Icon-only pagination buttons have localized `aria-label`s (First/Previous/Next/Last page) and `aria-current="page"` on the active page button; decorative icons are `aria-hidden`
 - Sufficient color contrast in both themes
 - Tab badge counts announced to screen readers
 

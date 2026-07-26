@@ -1,4 +1,5 @@
-import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, ActiveActivity, VaccineLog, VaccineDocument } from '@prisma/client';
+import { Baby, SleepLog, FeedLog, DiaperLog, MoodLog, Note, Caretaker, Settings as PrismaSettings, Gender, SleepType, SleepQuality, FeedType, BreastSide, DiaperType, Mood, PumpLog, PlayLog, Milestone, MilestoneCategory, Measurement, MeasurementType, Medicine, MedicineLog, EmailConfig as PrismaEmailConfig, EmailProviderType, BreastMilkAdjustment, ActiveBreastFeed, ActiveActivity, VaccineLog, VaccineDocument, Food, FoodLog, FoodEnjoyment, BabyAllergen, AllergenType } from '@prisma/client';
+import type { MergedAllergen, NewFoodEntry } from '@/src/utils/foodLogUtils';
 
 // Family types
 export interface Family {
@@ -19,6 +20,7 @@ export type FamilyResponse = Omit<Family, 'createdAt' | 'updatedAt'> & {
 export type FamilyManagementResponse = FamilyResponse & {
   caretakerCount: number;
   babyCount: number;
+  photoQuotaMB: number | null;
 };
 
 export interface FamilyCreate {
@@ -46,6 +48,24 @@ export interface ActivitySettings {
 // Sleep location settings types
 export interface SleepLocationSettings {
   hiddenLocations: string[];
+  customLocations?: string[]; // custom names persisted before any sleep entry uses them
+}
+
+// Sleep location management types (Settings > Sleep Locations)
+export interface SleepLocationSummary {
+  name: string;
+  count: number; // non-deleted SleepLog rows with this exact location
+  isDefault: boolean; // exact match in DEFAULT_SLEEP_LOCATIONS
+  hidden: boolean; // exact match in hiddenLocations
+}
+
+export interface SleepLocationRenameResult {
+  updatedCount: number;
+}
+
+// Bath type settings types
+export interface BathTypeSettings {
+  hiddenBathTypes: string[];
 }
 
 export interface ApiResponse<T = void> {
@@ -72,6 +92,8 @@ export interface BabyCreate {
   inactive?: boolean;
   feedWarningTime?: string;
   diaperWarningTime?: string;
+  feedTimerFrom?: string;
+  feedTimerTypes?: string | null;
 }
 
 export interface BabyUpdate extends Partial<BabyCreate> {
@@ -119,8 +141,12 @@ export interface FeedLogCreate {
   endTime?: string;
   feedDuration?: number; // Duration in seconds for feeding time
   notes?: string;
+  hadReaction?: boolean;
+  reactionDescription?: string;
+  reactionCause?: string; // What caused the reaction (e.g. a formula name like "Similac")
   bottleType?: string;
   breastMilkAmount?: number;
+  sessionId?: string; // Links breast feeds belonging to the same nursing session
 }
 
 // Active breastfeed session types
@@ -223,6 +249,7 @@ export interface EmailConfigUpdate extends Partial<Omit<PrismaEmailConfig, 'id' 
 export interface BathLog {
   id: string;
   time: Date;
+  bathType: string | null;
   soapUsed: boolean;
   shampooUsed: boolean;
   notes: string | null;
@@ -243,6 +270,7 @@ export type BathLogResponse = Omit<BathLog, 'time' | 'createdAt' | 'updatedAt' |
 export interface BathLogCreate {
   babyId: string;
   time: string;
+  bathType?: string | null;
   soapUsed?: boolean;
   shampooUsed?: boolean;
   notes?: string;
@@ -414,6 +442,151 @@ export interface VaccineLogCreate {
   contactIds?: string[];
 }
 
+// Food types (issue #203)
+export type FoodResponse = Omit<Food, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  /** Non-deleted food logs pointing at this food (list responses only). */
+  foodLogCount?: number;
+};
+
+/** Result of POST /api/food/merge (Settings > Foods). */
+export interface FoodMergeResult {
+  /** FoodLog rows re-pointed from the source food to the target. */
+  movedCount: number;
+}
+
+export interface FoodCreate {
+  name: string;
+  commonAllergen?: boolean;
+  notes?: string;
+}
+
+export interface FoodUpdate extends Partial<FoodCreate> {
+  id: string;
+}
+
+// Food log types (issue #203)
+export type FoodLogResponse = Omit<FoodLog, 'time' | 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  time: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  food?: { id: string; name: string; commonAllergen: boolean };
+};
+
+export interface FoodLogCreate {
+  babyId: string;
+  foodId: string;
+  time: string;
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: FoodEnjoyment | null;
+  hadReaction?: boolean;
+  reactionDescription?: string;
+  notes?: string;
+  feedLogId?: string;
+}
+
+// All-time food-try progress for a baby ("100 foods before 1")
+export interface FoodProgressResponse {
+  uniqueFoodCount: number;
+  totalTries: number;
+  byEnjoyment: Record<FoodEnjoyment, number>;
+  allergens: {
+    foodId: string;
+    foodName: string;
+    commonAllergen: boolean;
+    reactions: { time: string; description: string | null }[];
+    firstReactionAt: string;
+  }[];
+  /** Allergens derived from reaction-flagged feed logs (name null = generic bottle/formula feed). */
+  feedAllergens: {
+    name: string | null;
+    reactions: { time: string; description: string | null }[];
+    firstReactionAt: string;
+  }[];
+}
+
+// Manual baby allergen types (food tracker follow-up)
+export type BabyAllergenResponse = Omit<BabyAllergen, 'createdAt' | 'updatedAt' | 'deletedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export interface BabyAllergenCreate {
+  babyId: string;
+  name: string;
+  allergenType: AllergenType;
+  reactionDescription?: string;
+  notes?: string;
+}
+
+export type BabyAllergenUpdate = Partial<Omit<BabyAllergenCreate, 'babyId'>>;
+
+// Photo types
+export interface PhotoLinkInfo {
+  activityType: string; // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement' | 'foodLog'
+  activityId: string;
+}
+
+export interface PhotoResponse {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+  thumbSize: number;
+  takenAt: string;
+  caption: string | null;
+  babyId: string;
+  caretakerId: string | null;
+  milestoneId: string | null;
+  milestoneTitle: string | null;
+  isFavorite: boolean;
+  links: PhotoLinkInfo[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface PhotoListResponse {
+  photos: PhotoResponse[];
+  nextCursor: string | null;
+  trashCount: number;
+  quota: { usedBytes: number; totalBytes: number };
+}
+
+export interface PhotoUploadResult {
+  photos: PhotoResponse[];
+  errors: { fileName: string; error: string; index: number }[];
+  quota: { usedBytes: number; totalBytes: number };
+}
+
+export interface PhotoLogCreate {
+  babyId: string;
+  time: string;
+  photoIds: string[]; // 1-4
+}
+
+export interface PhotoLogResponse {
+  id: string;
+  time: string;
+  babyId: string;
+  caretakerId: string | null;
+  familyId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  photos: PhotoResponse[];
+}
+
+export interface TimelinePhotoInfo {
+  id: string;
+  caption: string | null;
+}
+
 // Beta Subscriber types
 export interface BetaSubscriberResponse {
   id: string;
@@ -491,6 +664,7 @@ export interface MonthlyReport {
     daysTracked: number;
     isCurrentMonth: boolean;
   };
+  growthStandard: 'CDC' | 'WHO';
   growth: {
     weight: GrowthMetric | null;
     length: GrowthMetric | null;
@@ -577,6 +751,15 @@ export interface MonthlyReport {
       date: string;
     }[];
   };
+  foods: {
+    /** Foods whose first-ever try falls in the reporting month, oldest first. */
+    newFoods: NewFoodEntry[];
+    newFoodCount: number;
+    /** All-time unique foods tried (running total toward 100). */
+    uniqueFoodCount: number;
+  };
+  /** All known allergens (derived + manual) — static, not month-dependent. */
+  allergens: MergedAllergen[];
   caretakers: {
     name: string;
     totalLogs: number;
@@ -586,6 +769,7 @@ export interface MonthlyReport {
 
 export interface GrowthChartData {
   points: GrowthChartPoint[];
+  unit?: string; // display unit of point values (e.g. 'g', 'kg', 'lb', 'cm', 'in')
 }
 
 export interface GrowthChartPoint {

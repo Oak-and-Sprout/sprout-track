@@ -16,7 +16,10 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
-import { lbToLbOz } from '@/src/components/Timeline/utils';
+import { lbToLbOz, defaultWeightInputUnit } from '@/src/utils/weightUnits';
+import { convertWeightValue, convertLengthValue, convertTemperatureValue } from '@/src/utils/measurementConversion';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
 interface MeasurementFormProps {
   isOpen: boolean;
@@ -94,6 +97,23 @@ export default function MeasurementForm({
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initializedTime, setInitializedTime] = useState<string | null>(null);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'measurement' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
 
   // Fetch default units from settings
   useEffect(() => {
@@ -112,7 +132,7 @@ export default function MeasurementForm({
             const settings = data.data;
             setDefaultUnits({
               height: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm',
-              weight: settings.defaultWeightUnit === 'KG' ? 'kg' : 'lb',
+              weight: defaultWeightInputUnit(settings.defaultWeightUnit),
               headCircumference: settings.defaultHeightUnit === 'IN' ? 'in' : 'cm', // Using height unit for head circumference
               temperature: settings.defaultTempUnit === 'F' ? '°F' : '°C',
             });
@@ -196,6 +216,8 @@ export default function MeasurementForm({
           case 'WEIGHT':
             if (activity.unit === 'kg') {
               updatedFormData.weight = { value: String(activity.value), unit: 'kg' };
+            } else if (activity.unit === 'g') {
+              updatedFormData.weight = { value: String(activity.value), unit: 'g' };
             } else {
               // Both 'lb' and legacy 'oz' use the lb/oz dual input
               const decimalLbs = activity.unit === 'oz' ? activity.value / 16 : activity.value;
@@ -250,6 +272,9 @@ export default function MeasurementForm({
       setInitializedTime(null);
       setWeightLbs('');
       setWeightOz('');
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, activity, initialTime]);
@@ -267,37 +292,64 @@ export default function MeasurementForm({
 
   // Handle unit change for a specific measurement type
   const handleUnitChange = (type: keyof Omit<FormData, 'date' | 'notes'>, unit: string) => {
-    // When switching weight units, clear the lb/oz fields
+    const oldUnit = formData[type].unit;
+    if (oldUnit === unit) return;
+
     if (type === 'weight') {
+      // Current weight as a single decimal value in the old unit (lb = decimal pounds).
+      const currentDecimal = oldUnit === 'lb'
+        ? (parseFloat(weightLbs) || 0) + (parseFloat(weightOz) || 0) / 16
+        : parseFloat(formData.weight.value);
+      const hasValue = !isNaN(currentDecimal) && currentDecimal > 0;
+
       if (unit === 'lb') {
-        // Switching to lb — try to convert existing single value to lb/oz
-        const existing = parseFloat(formData.weight.value);
-        if (!isNaN(existing) && existing > 0) {
-          const { lbs, oz } = lbToLbOz(existing);
-          setWeightLbs(String(lbs));
+        // Convert to decimal pounds, then split into the lb/oz input fields.
+        if (hasValue) {
+          const decimalLbs = convertWeightValue(currentDecimal, oldUnit, 'lb');
+          const { lbs, oz } = lbToLbOz(decimalLbs);
+          setWeightLbs(lbs > 0 ? String(lbs) : '');
           setWeightOz(oz > 0 ? String(oz) : '');
+          setFormData(prev => ({ ...prev, weight: { value: String(parseFloat(decimalLbs.toFixed(4))), unit: 'lb' } }));
         } else {
           setWeightLbs('');
           setWeightOz('');
+          setFormData(prev => ({ ...prev, weight: { value: '', unit: 'lb' } }));
         }
-      } else {
-        // Switching away from lb — convert lb/oz to single value
-        const lbs = parseFloat(weightLbs) || 0;
-        const oz = parseFloat(weightOz) || 0;
-        if (lbs > 0 || oz > 0) {
-          const total = lbs + (oz / 16);
-          setFormData(prev => ({
-            ...prev,
-            weight: { value: String(parseFloat(total.toFixed(4))), unit }
-          }));
-          return;
-        }
+        return;
+      }
+
+      // Switching to kg or g — convert the magnitude and clear the lb/oz fields.
+      const value = hasValue
+        ? (unit === 'g'
+            ? String(Math.round(convertWeightValue(currentDecimal, oldUnit, 'g')))
+            : String(parseFloat(convertWeightValue(currentDecimal, oldUnit, 'kg').toFixed(2))))
+        : '';
+      setWeightLbs('');
+      setWeightOz('');
+      setFormData(prev => ({ ...prev, weight: { value, unit } }));
+      return;
+    }
+
+    if (type === 'height' || type === 'headCircumference') {
+      const current = parseFloat(formData[type].value);
+      if (!isNaN(current)) {
+        const converted = convertLengthValue(current, oldUnit, unit);
+        setFormData(prev => ({ ...prev, [type]: { value: String(parseFloat(converted.toFixed(2))), unit } }));
+        return;
       }
     }
-    setFormData(prev => ({
-      ...prev,
-      [type]: { ...prev[type], unit }
-    }));
+
+    if (type === 'temperature') {
+      const current = parseFloat(formData.temperature.value);
+      if (!isNaN(current)) {
+        const converted = convertTemperatureValue(current, oldUnit, unit);
+        setFormData(prev => ({ ...prev, temperature: { value: String(parseFloat(converted.toFixed(1))), unit } }));
+        return;
+      }
+    }
+
+    // No value to convert — just switch the unit.
+    setFormData(prev => ({ ...prev, [type]: { ...prev[type], unit } }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -400,7 +452,13 @@ export default function MeasurementForm({
       
       // Get auth token from localStorage
       const authToken = localStorage.getItem('authToken');
-      
+
+      // Tracks which measurement record photos should be attached to. For a
+      // single edited/deleted measurement this is unambiguous; for a new
+      // entry that creates several measurement types at once, photos attach
+      // to the last one created (mirrors the FeedForm dual-side precedent).
+      let savedActivityId: string | undefined = activity?.id;
+
       // If editing an existing measurement, update it
       if (activity) {
         // Find the measurement that matches the activity type
@@ -494,6 +552,9 @@ export default function MeasurementForm({
             });
             throw new Error(errorData.error || 'Failed to delete measurement');
           }
+
+          // The measurement was removed, so there's no record left to attach photos to.
+          savedActivityId = undefined;
         }
       } else {
         // Create new measurements
@@ -506,7 +567,7 @@ export default function MeasurementForm({
             },
             body: JSON.stringify(measurement),
           });
-          
+
           if (!response.ok) {
             // Check if this is an account expiration error
             if (response.status === 403) {
@@ -541,12 +602,37 @@ export default function MeasurementForm({
             });
             throw new Error(errorData.error || `Failed to save ${measurement.type.toLowerCase()} measurement`);
           }
+
+          const savedMeasurement = await response.json();
+          savedActivityId = savedMeasurement.data?.id;
+        }
+      }
+
+      if (photosEnabled && savedActivityId) {
+        try {
+          for (const photoId of removedPhotoIds) {
+            await unlinkPhoto(photoId, 'measurement', savedActivityId);
+          }
+          if (pendingPhotoFiles.length > 0) {
+            const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+            for (const photo of result.photos) {
+              await linkPhoto(photo.id, 'measurement', savedActivityId);
+            }
+          }
+        } catch (photoError) {
+          console.error('Photo attachment failed:', photoError);
+          showToast({
+            variant: 'warning',
+            title: t('Warning'),
+            message: t('Measurement saved, but one or more photos failed to attach.'),
+            duration: 5000,
+          });
         }
       }
 
       onClose();
       onSuccess?.();
-      
+
       // Reset form data
       setSelectedDateTime(new Date(initialTime));
       setWeightLbs('');
@@ -559,6 +645,9 @@ export default function MeasurementForm({
         temperature: { value: '', unit: defaultUnits.temperature },
         notes: '',
       });
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     } catch (error) {
       console.error('Error saving measurements:', error);
       // Error toast already shown above for non-expiration errors
@@ -697,6 +786,16 @@ export default function MeasurementForm({
                   >
                     kg
                   </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.weight.unit === 'g' ? 'default' : 'outline'}
+                    onClick={() => handleUnitChange('weight', 'g')}
+                    disabled={loading}
+                    className="px-2 py-1 h-9"
+                  >
+                    g
+                  </Button>
                 </div>
               </div>
             </div>}
@@ -791,6 +890,22 @@ export default function MeasurementForm({
                 disabled={loading}
               />
             </div>
+
+            {photosEnabled && (
+              <div className="space-y-2">
+                <Label>{t('Photos')}</Label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
           </form>
         </FormPageContent>

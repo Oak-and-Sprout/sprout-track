@@ -129,28 +129,34 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     }
   };
   
+  const Container: React.ElementType = onClick ? 'button' : 'div';
+  const TitleTag: React.ElementType = onClick ? 'div' : 'h3';
+
   return (
-    <div 
+    <Container
+      type={onClick ? 'button' : undefined}
       className={cn(
         styles.container,
         'calendar-event',
+        onClick && 'w-full text-left appearance-none',
         className
       )}
       onClick={handleClick}
-      style={{ 
+      style={{
         borderLeftColor: event.color || '#14b8a6',
         cursor: onClick ? 'pointer' : 'default'
       }}
+      aria-label={onClick ? `${event.title}, ${formatDateTime(event.startTime)}` : undefined}
     >
       <div className={styles.header}>
-        <h3 className={styles.title}>{event.title}</h3>
+        <TitleTag className={styles.title}>{event.title}</TitleTag>
         <div className={styles.type}>{event.type.replace('_', ' ')}</div>
       </div>
       
       <div className={styles.content}>
         {/* Date and time */}
         <div className={styles.detail}>
-          <Calendar className={styles.icon} />
+          <Calendar aria-hidden="true" className={styles.icon} />
           <div>
             <div>{formatDateTime(event.startTime)}</div>
             {event.endTime && !event.allDay && (
@@ -164,7 +170,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
         {/* Location */}
         {event.location && (
           <div className={styles.detail}>
-            <MapPin className={styles.icon} />
+            <MapPin aria-hidden="true" className={styles.icon} />
             <div>{event.location}</div>
           </div>
         )}
@@ -172,7 +178,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
         {/* Recurrence */}
         {event.recurring && (
           <div className={styles.detail}>
-            <Repeat className={styles.icon} />
+            <Repeat aria-hidden="true" className={styles.icon} />
             <div>{getRecurrenceText()}</div>
           </div>
         )}
@@ -180,7 +186,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
         {/* Reminder */}
         {event.reminderTime !== null && (
           <div className={styles.detail}>
-            <Bell className={styles.icon} />
+            <Bell aria-hidden="true" className={styles.icon} />
             <div>{getReminderText()}</div>
           </div>
         )}
@@ -188,7 +194,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
         {/* People */}
         {(event.babies.length > 0 || event.caretakers.length > 0 || event.contacts.length > 0) && (
           <div className={styles.detail}>
-            <Users className={styles.icon} />
+            <Users aria-hidden="true" className={styles.icon} />
             <div className={styles.people}>
               {/* Babies */}
               {event.babies.length > 0 && (
@@ -230,7 +236,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </Container>
   );
 };
 

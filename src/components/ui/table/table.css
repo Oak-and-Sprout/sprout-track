@@ -148,3 +148,14 @@ html.dark .table-head-bold-sortable-dark:hover {
 html.dark .table-sort-icon-active-dark {
   color: #5eead4 !important; /* teal-300 - matches accent color */
 }
+
+/* Sort button focus ring dark mode - swap ring/offset colors so the
+   focus-visible ring stays visible against the dark header backgrounds */
+html.dark .table-sort-button-dark:focus-visible {
+  --tw-ring-color: #5eead4; /* teal-300 - matches accent color */
+  --tw-ring-offset-color: #374151; /* gray-700 - matches dark header bg */
+}
+
+html.dark .table-head-bold-dark .table-sort-button-dark:focus-visible {
+  --tw-ring-offset-color: #0d9488; /* teal-600 - matches bold header bg */
+}

@@ -9,6 +9,12 @@ import { useTimezone } from '@/app/context/timezone';
 
 import './time-entry.css';
 
+// Letter-spacing (in em) of the header time display — must stay in sync with the
+// Tailwind `tracking-wider` class on styles.timeDisplay (0.05em). The hour/minute
+// inputs inherit it, so their width calc must include it per character or the
+// content box is too narrow and the text overflows instead of centering.
+const HEADER_TRACKING_EM = 0.05;
+
 /**
  * TimeEntry Component
  * 
@@ -52,6 +58,13 @@ export function TimeEntry({
   };
   
   const [state, setState] = useState(getInitialValues);
+  // Raw text being typed into the hour/minute spinbutton inputs (null = not editing)
+  const [hourInput, setHourInput] = useState<string | null>(null);
+  const [minuteInput, setMinuteInput] = useState<string | null>(null);
+  // True while focus is arriving via pointer (mouse/touch) — suppresses the
+  // select-all that keyboard focus performs, so pointer users see no highlight flash
+  const hourFocusFromPointerRef = useRef(false);
+  const minuteFocusFromPointerRef = useRef(false);
   const clockFaceRef = useRef<HTMLDivElement>(null);
   const handRef = useRef<HTMLDivElement>(null);
   const accumulatedAngleRef = useRef<number | null>(null);
@@ -69,6 +82,25 @@ export function TimeEntry({
     if (maxTime && date > maxTime) return false;
     return true;
   }, [minTime, maxTime]);
+
+  // Build a Date from the given time parts (mirrors the Date-construction used
+  // by all selection paths) and, if valid, propagate it via onChange
+  const commitTime = (hours: number, minutes: number, isPM: boolean) => {
+    const baseDate = value instanceof Date && !isNaN(value.getTime()) ? new Date(value) : new Date();
+    const newHours24 = is24h
+      ? hours
+      : isPM
+        ? (hours === 12 ? 12 : hours + 12)
+        : (hours === 12 ? 0 : hours);
+    baseDate.setHours(newHours24);
+    baseDate.setMinutes(minutes);
+    baseDate.setSeconds(0);
+    baseDate.setMilliseconds(0);
+
+    if (isTimeValid(baseDate)) {
+      onChange(baseDate);
+    }
+  };
   
   // Update state when value prop changes, but preserve the current mode
   useEffect(() => {
@@ -100,6 +132,10 @@ export function TimeEntry({
       if (e.target === handRef.current || 
           (handRef.current && e.target instanceof Node && handRef.current.contains(e.target as Node))) {
         e.preventDefault();
+        // preventDefault suppresses the blur that would resync the header
+        // inputs, so discard any in-progress typed text before dragging
+        setHourInput(null);
+        setMinuteInput(null);
         setIsDragging(true);
         isDraggingRef.current = true;
         // Initialize previous angle with current angle when starting to drag
@@ -307,80 +343,104 @@ export function TimeEntry({
        mode: 'minutes' as 'hours' | 'minutes',
      };
 
-     // Calculate new date based on the *intended* state
-     const baseDate = value instanceof Date && !isNaN(value.getTime()) ? new Date(value) : new Date();
-     const newHours24 = is24h
-       ? newState.hours
-       : newState.isPM
-         ? (newState.hours === 12 ? 12 : newState.hours + 12)
-         : (newState.hours === 12 ? 0 : newState.hours);
-     baseDate.setHours(newHours24);
-     baseDate.setMinutes(newState.minutes);
-     baseDate.setSeconds(0);
-     baseDate.setMilliseconds(0);
-
-     // Update state *after* calculating the date
+     // Update state, then commit the date calculated from the *intended* state
      setState(newState);
-
-     if (isTimeValid(baseDate)) {
-       onChange(baseDate);
-     }
+     commitTime(newState.hours, newState.minutes, newState.isPM);
    };
- 
+
    // Handle minute selection
    const handleMinuteSelect = (minute: number) => {
      if (disabled) return;
- 
+
      const newState = {
        ...state,
        minutes: minute,
        mode: 'minutes' as 'hours' | 'minutes', // Explicitly keep in minutes mode
      };
- 
-     // Calculate new date based on the *intended* state
-     const baseDate = value instanceof Date && !isNaN(value.getTime()) ? new Date(value) : new Date();
-     const newHours24 = is24h
-       ? newState.hours
-       : newState.isPM
-         ? (newState.hours === 12 ? 12 : newState.hours + 12)
-         : (newState.hours === 12 ? 0 : newState.hours);
-     baseDate.setHours(newHours24);
-     baseDate.setMinutes(newState.minutes);
-     baseDate.setSeconds(0);
-     baseDate.setMilliseconds(0);
 
      setState(newState);
-
-     if (isTimeValid(baseDate)) {
-       onChange(baseDate);
-     }
+     commitTime(newState.hours, newState.minutes, newState.isPM);
    };
 
    // Handle AM/PM toggle
    const handlePeriodToggle = (isPM: boolean) => {
      if (disabled) return;
- 
+
      const newState = {
        ...state,
        isPM: isPM,
      };
- 
-     // Calculate new date based on the *intended* state
-     const baseDate = value instanceof Date && !isNaN(value.getTime()) ? new Date(value) : new Date();
-     const newHours24 = newState.isPM
-       ? (newState.hours === 12 ? 12 : newState.hours + 12)
-       : (newState.hours === 12 ? 0 : newState.hours);
-     baseDate.setHours(newHours24);
-     baseDate.setMinutes(newState.minutes); // Use existing minutes from newState
-     baseDate.setSeconds(0);
-     baseDate.setMilliseconds(0);
- 
-     // Update state *after* calculating the date
+
      setState(newState);
- 
-     if (isTimeValid(baseDate)) {
-       onChange(baseDate);
+     commitTime(newState.hours, newState.minutes, newState.isPM);
+   };
+
+   // ----- Keyboard (spinbutton) fallback for the hour/minute header inputs -----
+
+   const hourMin = is24h ? 0 : 1;
+   const hourMax = is24h ? 23 : 12;
+
+   // Step the hour up/down, wrapping at the bounds
+   const stepHours = (delta: number) => {
+     if (disabled) return;
+     const range = hourMax - hourMin + 1;
+     const next = ((state.hours - hourMin + delta + range) % range) + hourMin;
+     setHourInput(null);
+     setState(prev => ({ ...prev, hours: next }));
+     commitTime(next, state.minutes, state.isPM);
+   };
+
+   // Step the minutes up/down, wrapping at the bounds
+   const stepMinutes = (delta: number) => {
+     if (disabled) return;
+     const next = (state.minutes + delta + 60) % 60;
+     setMinuteInput(null);
+     setState(prev => ({ ...prev, minutes: next }));
+     commitTime(state.hours, next, state.isPM);
+   };
+
+   // Set an exact hour typed into the input, clamped to the valid range.
+   // The displayed text is normalized to the committed value on every keystroke
+   // so display, state, and aria-valuenow never diverge (a briefly cleared
+   // field stays empty and commits nothing until a digit is typed or blur).
+   const setTypedHours = (raw: string) => {
+     const digits = raw.replace(/\D/g, '').slice(0, 2);
+     if (digits === '') {
+       setHourInput('');
+       return;
      }
+     const clamped = Math.min(Math.max(parseInt(digits, 10), hourMin), hourMax);
+     setHourInput(clamped.toString());
+     setState(prev => ({ ...prev, hours: clamped }));
+     commitTime(clamped, state.minutes, state.isPM);
+   };
+
+   // Set an exact minute typed into the input, clamped to the valid range.
+   // Displayed text is normalized to the committed value (see setTypedHours).
+   const setTypedMinutes = (raw: string) => {
+     const digits = raw.replace(/\D/g, '').slice(0, 2);
+     if (digits === '') {
+       setMinuteInput('');
+       return;
+     }
+     const clamped = Math.min(Math.max(parseInt(digits, 10), 0), 59);
+     setMinuteInput(clamped.toString());
+     setState(prev => ({ ...prev, minutes: clamped }));
+     commitTime(state.hours, clamped, state.isPM);
+   };
+
+   const handleHourKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+     if (e.key === 'ArrowUp') { e.preventDefault(); stepHours(1); }
+     else if (e.key === 'ArrowDown') { e.preventDefault(); stepHours(-1); }
+     else if (e.key === 'Home') { e.preventDefault(); stepHours(hourMin - state.hours); }
+     else if (e.key === 'End') { e.preventDefault(); stepHours(hourMax - state.hours); }
+   };
+
+   const handleMinuteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+     if (e.key === 'ArrowUp') { e.preventDefault(); stepMinutes(1); }
+     else if (e.key === 'ArrowDown') { e.preventDefault(); stepMinutes(-1); }
+     else if (e.key === 'Home') { e.preventDefault(); stepMinutes(-state.minutes); }
+     else if (e.key === 'End') { e.preventDefault(); stepMinutes(59 - state.minutes); }
    };
  
    // Handle click on the clock face
@@ -593,8 +653,25 @@ export function TimeEntry({
     }
   };
   
+  // Text shown in the header inputs: raw text while typing, formatted value otherwise
+  const hourDisplay = hourInput !== null
+    ? hourInput
+    : (is24h ? state.hours.toString().padStart(2, '0') : state.hours.toString());
+  const minuteDisplay = minuteInput !== null
+    ? minuteInput
+    : state.minutes.toString().padStart(2, '0');
+
+  // Width of each header input: per-character advance is 1ch plus the inherited
+  // tracking-wider letter-spacing (HEADER_TRACKING_EM), plus px-1 padding (0.5rem).
+  // While a typed override is active, length is clamped to a minimum of 2 so a briefly
+  // cleared field doesn't reflow the header; steady state matches the old span width.
+  const hourLen = hourInput !== null ? Math.max(hourDisplay.length, 2) : hourDisplay.length;
+  const minuteLen = minuteInput !== null ? Math.max(minuteDisplay.length, 2) : minuteDisplay.length;
+  const hourWidth = `calc(${hourLen}ch + ${hourLen * HEADER_TRACKING_EM}em + 0.5rem)`;
+  const minuteWidth = `calc(${minuteLen}ch + ${minuteLen * HEADER_TRACKING_EM}em + 0.5rem)`;
+
   return (
-    <div 
+    <div
       className={cn(
         styles.container,
         'time-entry-container',
@@ -605,58 +682,106 @@ export function TimeEntry({
       {/* Time display header */}
       <div className={cn(styles.header, 'time-entry-header')}>
         <div className={cn(styles.timeDisplay, 'time-entry-time-display')}>
-          {/* Clickable Hour */}
-          <span
+          {/* Hour spinbutton (keyboard-accessible fallback for the dial) */}
+          <input
+            type="text"
+            inputMode="numeric"
+            role="spinbutton"
+            aria-label={t('Hours')}
+            aria-valuemin={hourMin}
+            aria-valuemax={hourMax}
+            aria-valuenow={state.hours}
+            disabled={disabled}
             className={cn(
-              "cursor-pointer px-1 rounded",
-              state.mode === 'hours' ? "bg-white/20 font-semibold" : "hover:bg-white/10"
+              "cursor-pointer px-1 rounded text-center caret-white",
+              "focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+              state.mode === 'hours' ? "bg-white/20 font-semibold" : "bg-transparent hover:bg-white/10"
             )}
-            onClick={() => setState(prev => ({ ...prev, mode: 'hours' }))}
-          >
-            {is24h ? state.hours.toString().padStart(2, '0') : state.hours}
-          </span>
+            style={{ width: hourWidth }}
+            value={hourDisplay}
+            onChange={(e) => setTypedHours(e.target.value)}
+            onKeyDown={handleHourKeyDown}
+            onPointerDown={() => { hourFocusFromPointerRef.current = true; }}
+            onFocus={(e) => {
+              setState(prev => ({ ...prev, mode: 'hours' }));
+              // Select-all only for keyboard focus — pointer users never saw
+              // a highlight flash on the original spans
+              if (!hourFocusFromPointerRef.current) e.target.select();
+            }}
+            onBlur={() => {
+              setHourInput(null);
+              hourFocusFromPointerRef.current = false;
+            }}
+          />
           :
-          {/* Clickable Minute */}
-          <span 
+          {/* Minute spinbutton (keyboard-accessible fallback for the dial) */}
+          <input
+            type="text"
+            inputMode="numeric"
+            role="spinbutton"
+            aria-label={t('Minutes')}
+            aria-valuemin={0}
+            aria-valuemax={59}
+            aria-valuenow={state.minutes}
+            disabled={disabled}
             className={cn(
-              "cursor-pointer px-1 rounded", 
-              state.mode === 'minutes' ? "bg-white/20 font-semibold" : "hover:bg-white/10"
+              "cursor-pointer px-1 rounded text-center caret-white",
+              "focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+              state.mode === 'minutes' ? "bg-white/20 font-semibold" : "bg-transparent hover:bg-white/10"
             )}
-            onClick={() => setState(prev => ({ ...prev, mode: 'minutes' }))}
-          >
-            {state.minutes.toString().padStart(2, '0')}
-          </span>
+            style={{ width: minuteWidth }}
+            value={minuteDisplay}
+            onChange={(e) => setTypedMinutes(e.target.value)}
+            onKeyDown={handleMinuteKeyDown}
+            onPointerDown={() => { minuteFocusFromPointerRef.current = true; }}
+            onFocus={(e) => {
+              setState(prev => ({ ...prev, mode: 'minutes' }));
+              // Select-all only for keyboard focus (see hour input)
+              if (!minuteFocusFromPointerRef.current) e.target.select();
+            }}
+            onBlur={() => {
+              setMinuteInput(null);
+              minuteFocusFromPointerRef.current = false;
+            }}
+          />
         </div>
         {!is24h && (
           <div className={cn(styles.amPmDisplay, 'time-entry-ampm-display')}>
-            <div
+            <button
+              type="button"
+              aria-pressed={!state.isPM}
+              disabled={disabled}
               className={cn(
                 styles.amPmButton,
                 !state.isPM && styles.amPmButtonSelected,
-                'time-entry-ampm-button',
+                'time-entry-ampm-button text-left',
                 !state.isPM && 'time-entry-ampm-button-selected'
               )}
               onClick={() => handlePeriodToggle(false)}
             >
               {t('AM')}
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              aria-pressed={state.isPM}
+              disabled={disabled}
               className={cn(
                 styles.amPmButton,
                 state.isPM && styles.amPmButtonSelected,
-                'time-entry-ampm-button',
+                'time-entry-ampm-button text-left',
                 state.isPM && 'time-entry-ampm-button-selected'
               )}
               onClick={() => handlePeriodToggle(true)}
             >
               {t('PM')}
-            </div>
+            </button>
           </div>
         )}
       </div>
       
-      {/* Clock face */}
-      <div className={cn(styles.clockContainer, 'time-entry-clock-container')}>
+      {/* Clock face — pointer-only; hidden from assistive tech (the header
+          spinbutton inputs are the non-visual path for setting the time) */}
+      <div aria-hidden="true" className={cn(styles.clockContainer, 'time-entry-clock-container')}>
         <div 
           ref={clockFaceRef}
           className={cn(styles.clockFace, 'time-entry-clock-face')}
@@ -704,6 +829,10 @@ export function TimeEntry({
              onMouseDown={(e) => {
                e.preventDefault();
                e.stopPropagation();
+               // preventDefault suppresses the blur that would resync the
+               // header inputs, so discard any in-progress typed text
+               setHourInput(null);
+               setMinuteInput(null);
                setIsDragging(true);
                isDraggingRef.current = true;
                setPreviousAngle(null);

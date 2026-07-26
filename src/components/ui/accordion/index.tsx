@@ -27,6 +27,21 @@ const AccordionContext = React.createContext<{
 });
 
 /**
+ * AccordionItem context for sharing item state with trigger and content
+ */
+const AccordionItemContext = React.createContext<{
+  value: string;
+  isExpanded: boolean;
+  triggerId: string | undefined;
+  contentId: string | undefined;
+}>({
+  value: "",
+  isExpanded: false,
+  triggerId: undefined,
+  contentId: undefined,
+});
+
+/**
  * Accordion component for displaying collapsible content panels
  *
  * A component that follows the project's design system and allows users
@@ -125,26 +140,37 @@ const AccordionItem = React.forwardRef<HTMLDivElement, AccordionItemProps>(
   ({ className, value, children, ...props }, ref) => {
     const { theme } = useTheme();
     const context = React.useContext(AccordionContext);
+    const baseId = React.useId();
 
     // Check if this item is expanded
     const isExpanded = context.type === "multiple"
-      ? context.value && context.value.split(',').includes(value)
+      ? Boolean(context.value && context.value.split(',').includes(value))
       : context.value === value;
 
+    // Context value shared with AccordionTrigger and AccordionContent
+    const itemContextValue = React.useMemo(() => ({
+      value,
+      isExpanded,
+      triggerId: `${baseId}-trigger`,
+      contentId: `${baseId}-content`,
+    }), [value, isExpanded, baseId]);
+
     return (
-      <div
-        ref={ref}
-        data-state={isExpanded ? "open" : "closed"}
-        data-value={value}
-        className={cn(
-          accordionStyles.item,
-          className,
-          theme === 'dark' && "accordion-item-dark"
-        )}
-        {...props}
-      >
-        {children}
-      </div>
+      <AccordionItemContext.Provider value={itemContextValue}>
+        <div
+          ref={ref}
+          data-state={isExpanded ? "open" : "closed"}
+          data-value={value}
+          className={cn(
+            accordionStyles.item,
+            className,
+            theme === 'dark' && "accordion-item-dark"
+          )}
+          {...props}
+        >
+          {children}
+        </div>
+      </AccordionItemContext.Provider>
     );
   }
 );
@@ -159,43 +185,20 @@ AccordionItem.displayName = "AccordionItem";
 const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerProps>(
   ({ className, children, ...props }, ref) => {
     const { theme } = useTheme();
-    const itemContext = React.useContext(AccordionContext);
-    
-    // Find the parent AccordionItem to get its value
-    const accordionItemElement = React.useRef<HTMLDivElement | null>(null);
-    const buttonRef = React.useCallback((node: HTMLButtonElement | null) => {
-      if (node) {
-        // Find the parent AccordionItem
-        let parent = node.parentElement;
-        while (parent && !parent.hasAttribute('data-state')) {
-          parent = parent.parentElement;
-        }
-        accordionItemElement.current = parent as HTMLDivElement;
-      }
-      
-      // Forward the ref
-      if (ref) {
-        if (typeof ref === 'function') {
-          ref(node);
-        } else {
-          ref.current = node;
-        }
-      }
-    }, [ref]);
-    
+    const accordionContext = React.useContext(AccordionContext);
+    const itemContext = React.useContext(AccordionItemContext);
+    const { value, isExpanded, triggerId, contentId } = itemContext;
+
     const handleClick = () => {
-      if (accordionItemElement.current) {
-        const value = accordionItemElement.current.getAttribute('data-value') || '';
-        itemContext.onValueChange(value);
-      }
+      accordionContext.onValueChange(value);
     };
-    
-    const isExpanded = accordionItemElement.current?.getAttribute('data-state') === 'open';
-    
+
     return (
       <button
-        ref={buttonRef}
+        ref={ref}
         type="button"
+        id={triggerId}
+        aria-controls={contentId}
         onClick={handleClick}
         className={cn(
           accordionStyles.trigger,
@@ -206,12 +209,13 @@ const AccordionTrigger = React.forwardRef<HTMLButtonElement, AccordionTriggerPro
         {...props}
       >
         {children}
-        <ChevronDown 
+        <ChevronDown
+          aria-hidden="true"
           className={cn(
             accordionStyles.icon,
             isExpanded && accordionStyles.iconExpanded,
             theme === 'dark' && "accordion-icon-dark"
-          )} 
+          )}
         />
       </button>
     );
@@ -228,42 +232,15 @@ AccordionTrigger.displayName = "AccordionTrigger";
 const AccordionContent = React.forwardRef<HTMLDivElement, AccordionContentProps>(
   ({ className, children, ...props }, ref) => {
     const { theme } = useTheme();
-    const context = React.useContext(AccordionContext);
-    const [itemValue, setItemValue] = React.useState<string>('');
-    const contentNodeRef = React.useRef<HTMLDivElement | null>(null);
-
-    // Find the parent AccordionItem's value on mount
-    React.useEffect(() => {
-      if (contentNodeRef.current) {
-        let parent = contentNodeRef.current.parentElement;
-        while (parent && !parent.hasAttribute('data-value')) {
-          parent = parent.parentElement;
-        }
-        if (parent) {
-          setItemValue(parent.getAttribute('data-value') || '');
-        }
-      }
-    }, []);
-
-    // Determine if expanded based on context
-    const isExpanded = context.type === "multiple"
-      ? context.value && context.value.split(',').includes(itemValue)
-      : context.value === itemValue;
-
-    const setRef = React.useCallback((node: HTMLDivElement | null) => {
-      contentNodeRef.current = node;
-      if (ref) {
-        if (typeof ref === 'function') {
-          ref(node);
-        } else {
-          ref.current = node;
-        }
-      }
-    }, [ref]);
+    const { isExpanded, triggerId, contentId } = React.useContext(AccordionItemContext);
 
     return (
       <div
-        ref={setRef}
+        ref={ref}
+        id={contentId}
+        role={isExpanded ? "region" : undefined}
+        aria-labelledby={triggerId}
+        aria-hidden={!isExpanded || undefined}
         className={cn(
           accordionStyles.content,
           !isExpanded && accordionStyles.contentClosed,

@@ -350,6 +350,7 @@ export interface PumpStats {
   avgLeftAmount: number;
   avgRightAmount: number;
   unit: string;
+  totalSessions: number;
 }
 
 // Bath stats

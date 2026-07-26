@@ -99,6 +99,7 @@ export interface BabyData {
   inactive: boolean;
   feedWarningTime: string;
   diaperWarningTime: string;
+  feedTimerTypes?: string | null;
   age?: string;
 }
 

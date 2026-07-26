@@ -124,7 +124,7 @@ const TimeInput = React.forwardRef<HTMLInputElement, TimeInputProps>(
         {/* Error message */}
         {showValidation && !isValid && errorMessage && (
           <div className={timeInputStyles.errorMessage}>
-            <AlertCircle className="h-3 w-3 inline mr-1" />
+            <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
             {errorMessage}
           </div>
         )}

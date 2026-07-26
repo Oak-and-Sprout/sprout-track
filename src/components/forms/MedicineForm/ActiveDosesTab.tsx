@@ -381,7 +381,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
           className="flex-1"
           disabled={!babyId}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           {t('Give Medicine')}
         </Button>
         <Button
@@ -390,7 +390,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
           variant="outline"
           disabled={!babyId}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
           {t('Give Supplement')}
         </Button>
       </div>
@@ -398,7 +398,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       {/* Loading state */}
       {isLoading && (
         <div className={cn(styles.loadingContainer, "medicine-form-loading-container")}>
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-600" aria-hidden="true" />
           <p className="mt-2 text-gray-600">{t('Loading active doses...')}</p>
         </div>
       )}
@@ -406,7 +406,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
       {/* Error state */}
       {error && (
         <div className={cn(styles.errorContainer, "medicine-form-error-container")}>
-          <AlertCircle className="h-8 w-8 text-red-500" />
+          <AlertCircle className="h-8 w-8 text-red-500" aria-hidden="true" />
           <p className="mt-2 text-red-500">{error}</p>
           <Button 
             variant="outline" 
@@ -428,7 +428,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
             </h3>
             {activeDoses.length === 0 ? (
               <div className={cn(styles.emptyState, "medicine-form-empty-state")}>
-                <PillBottle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <PillBottle className="h-12 w-12 mx-auto mb-2 text-gray-400" aria-hidden="true" />
                 <p>{t('No medicine doses in the last 60 days')}</p>
               </div>
             ) : (
@@ -441,7 +441,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                     <div className={cn(styles.doseHeader, "medicine-form-dose-header")}>
                       <div className="flex items-center">
                         <div className={cn(styles.iconContainer, "medicine-form-icon-container")}>
-                          <PillBottle className="h-4 w-4" />
+                          <PillBottle className="h-4 w-4" aria-hidden="true" />
                         </div>
                         <h3 className={cn(styles.doseName, "medicine-form-dose-name ml-2")}>
                           {dose.medicineName}
@@ -460,7 +460,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
 
                     <div className={cn(styles.doseInfo, "medicine-form-dose-info mt-3")}>
                       <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1 text-gray-500" />
+                        <Clock className="h-4 w-4 mr-1 text-gray-500" aria-hidden="true" />
                         <span className={cn(
                           dose.isSafe ? styles.countdownSafe : styles.countdownWarning,
                           dose.isSafe ? "medicine-form-countdown-safe" : "medicine-form-countdown-warning"
@@ -493,7 +493,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                               {dose.contacts.length}
                             </span>
                           </span>
-                          <ChevronDown className={cn(
+                          <ChevronDown aria-hidden="true" className={cn(
                             "h-4 w-4 text-gray-500 transition-transform duration-200 dark:text-gray-400",
                             expandedContacts[dose.id] && "rotate-180"
                           )} />
@@ -508,7 +508,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                                 <div className="mt-1 flex flex-row gap-4 text-xs">
                                   {contact.phone && (
                                     <div className="flex items-center">
-                                      <Phone className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                      <Phone className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" aria-hidden="true" />
                                       <a
                                         href={`tel:${contact.phone.replace(/\D/g, '')}`}
                                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
@@ -519,7 +519,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                                   )}
                                   {contact.email && (
                                     <div className="flex items-center">
-                                      <Mail className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" />
+                                      <Mail className="mr-1 h-3 w-3 text-gray-500 dark:text-gray-400" aria-hidden="true" />
                                       <a
                                         href={`mailto:${contact.email}`}
                                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
@@ -548,7 +548,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
             </h3>
             {todaySupplements.length === 0 ? (
               <div className={cn(styles.emptyState, "medicine-form-empty-state")}>
-                <Pill className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <Pill className="h-12 w-12 mx-auto mb-2 text-gray-400" aria-hidden="true" />
                 <p>{t('No supplements given today')}</p>
               </div>
             ) : (
@@ -558,7 +558,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
                     <div className={cn(styles.doseHeader, "medicine-form-dose-header")}>
                       <div className="flex items-center">
                         <div className={cn(styles.iconContainer, "medicine-form-icon-container")}>
-                          <Pill className="h-4 w-4" />
+                          <Pill className="h-4 w-4" aria-hidden="true" />
                         </div>
                         <h3 className={cn(styles.doseName, "medicine-form-dose-name ml-2")}>
                           {supplement.supplementName}

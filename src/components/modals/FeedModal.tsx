@@ -232,7 +232,11 @@ export default function FeedModal({
                 <SelectContent>
                   <SelectItem value="BREAST">{t('Breast')}</SelectItem>
                   <SelectItem value="BOTTLE">{t('Bottle')}</SelectItem>
-                  <SelectItem value="SOLIDS">{t('Solid Food')}</SelectItem>
+                  {/* Only when editing an existing SOLIDS feed — new solids
+                      eating is logged via the Food activity */}
+                  {activity?.type === 'SOLIDS' && (
+                    <SelectItem value="SOLIDS">{t('Solid Food')}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

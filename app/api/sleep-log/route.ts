@@ -5,6 +5,7 @@ import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse, calculateDurationMinutes } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
 import { notifyActivityCreated } from '@/src/lib/notifications/activityHook';
+import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
 
 async function handlePost(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -183,14 +184,15 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     
     // If locations flag is present, return unique custom locations
     if (locations === 'true') {
-      const defaultLocations = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
-      
+      const defaultLocations = DEFAULT_SLEEP_LOCATIONS;
+
       const sleepLogs = await prisma.sleepLog.findMany({
         where: {
           familyId: userFamilyId,
           location: {
             not: null
           },
+          deletedAt: null,
         },
         distinct: ['location'],
         select: {
@@ -198,8 +200,29 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         }
       });
       
-      const uniqueLocations = sleepLogs
-        .map(log => log.location)
+      // Include custom names persisted in settings (added via the manager
+      // before any sleep entry uses them)
+      const settings = await prisma.settings.findFirst({
+        where: { familyId: userFamilyId },
+        orderBy: { updatedAt: 'desc' },
+      });
+      let persistedLocations: string[] = [];
+      const rawLocationSettings = (settings as unknown as { sleepLocationSettings?: string } | null)?.sleepLocationSettings;
+      if (rawLocationSettings) {
+        try {
+          const parsed = JSON.parse(rawLocationSettings);
+          if (Array.isArray(parsed.customLocations)) {
+            persistedLocations = parsed.customLocations;
+          }
+        } catch {
+          // ignore malformed settings
+        }
+      }
+
+      const uniqueLocations = Array.from(new Set([
+        ...sleepLogs.map(log => log.location),
+        ...persistedLocations,
+      ]))
         .filter((location): location is string => location !== null && location.trim() !== '')
         .filter(location => !defaultLocations.some(
           def => def.toLowerCase() === location.toLowerCase()

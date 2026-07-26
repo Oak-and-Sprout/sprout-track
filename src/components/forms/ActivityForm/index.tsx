@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { PlayLogResponse, ActiveActivityResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
@@ -19,6 +19,8 @@ import { useTheme } from '@/src/context/theme';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
+import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 
 import './activity-form.css';
 
@@ -77,6 +79,7 @@ export default function ActivityForm({
   prefillData,
 }: ActivityFormProps) {
   const { t } = useLocalization();
+  const formId = useId();
   const { formatDate, toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -95,6 +98,23 @@ export default function ActivityForm({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
+  const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
+  const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
+
+  useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
+
+  useEffect(() => {
+    if (!isOpen || !activity?.id || !photosEnabled) return;
+    fetchPhotos({ babyId })
+      .then((data) => setAttachedPhotos(
+        data.photos
+          .filter((p) => p.links.some((l) => l.activityType === 'play' && l.activityId === activity.id))
+          .map((p) => ({ id: p.id, caption: p.caption }))
+      ))
+      .catch(() => {});
+  }, [isOpen, activity?.id, photosEnabled]);
 
   // Live timer state for active activity
   const [liveElapsed, setLiveElapsed] = useState(0);
@@ -252,6 +272,9 @@ export default function ActivityForm({
       setIsInitialized(true);
     } else if (!isOpen) {
       setIsInitialized(false);
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     }
   }, [isOpen, activity, initialTime]);
 
@@ -333,6 +356,31 @@ export default function ActivityForm({
         throw new Error(errorData.error || 'Failed to save activity');
       }
 
+      const savedActivity = await response.json();
+      const savedActivityId = activity?.id || savedActivity.data?.id;
+
+      if (photosEnabled && savedActivityId) {
+        try {
+          for (const photoId of removedPhotoIds) {
+            await unlinkPhoto(photoId, 'play', savedActivityId);
+          }
+          if (pendingPhotoFiles.length > 0) {
+            const result = await uploadPhotos(pendingPhotoFiles, { babyId });
+            for (const photo of result.photos) {
+              await linkPhoto(photo.id, 'play', savedActivityId);
+            }
+          }
+        } catch (photoError) {
+          console.error('Photo attachment failed:', photoError);
+          showToast({
+            variant: 'warning',
+            title: t('Warning'),
+            message: t('Activity saved, but one or more photos failed to attach.'),
+            duration: 5000,
+          });
+        }
+      }
+
       onClose();
       onSuccess?.();
 
@@ -342,6 +390,9 @@ export default function ActivityForm({
       setDuration('');
       setSubCategory('');
       setNotes('');
+      setPendingPhotoFiles([]);
+      setAttachedPhotos([]);
+      setRemovedPhotoIds([]);
     } catch (error) {
       console.error('Error saving activity:', error);
     } finally {
@@ -480,7 +531,7 @@ export default function ActivityForm({
                     className={cn(dateTimePickerButtonStyles, "date-time-picker-button whitespace-nowrap")}
                     disabled={loading}
                   >
-                    <Timer className="h-4 w-4" />
+                    <Timer className="h-4 w-4" aria-hidden="true" />
                     {duration ? t('Resume Timer') : t('Start Timer')}
                   </Button>
                 )}
@@ -497,7 +548,7 @@ export default function ActivityForm({
                         className="banner-btn activity-banner-btn-pause"
                         title={t('Pause Activity')}
                       >
-                        <Pause className="h-4 w-4" />
+                        <Pause className="h-4 w-4" aria-hidden="true" />
                       </button>
                     ) : (
                       <button
@@ -506,7 +557,7 @@ export default function ActivityForm({
                         className="banner-btn activity-banner-btn-resume"
                         title={t('Resume Activity')}
                       >
-                        <Play className="h-4 w-4" />
+                        <Play className="h-4 w-4" aria-hidden="true" />
                       </button>
                     )}
                     <button
@@ -515,7 +566,7 @@ export default function ActivityForm({
                       className="banner-btn activity-banner-btn-stop"
                       title={t('End Activity')}
                     >
-                      <Square className="h-4 w-4" />
+                      <Square className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 )}
@@ -524,8 +575,9 @@ export default function ActivityForm({
 
             {/* Duration */}
             <div>
-              <label className="form-label">{t('Duration (minutes)')}</label>
+              <label htmlFor={`${formId}-duration`} className="form-label">{t('Duration (minutes)')}</label>
               <Input
+                id={`${formId}-duration`}
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
@@ -539,11 +591,12 @@ export default function ActivityForm({
             {/* Sub-Category (not for Tummy Time) */}
             {playType !== 'TUMMY_TIME' && (
               <div>
-                <label className="form-label">{t('Sub-Category')}</label>
+                <label htmlFor={`${formId}-subcategory`} className="form-label">{t('Sub-Category')}</label>
                 <div className="relative">
                   <div className="relative w-full">
                     <div className="flex items-center w-full">
                       <Input
+                        id={`${formId}-subcategory`}
                         ref={inputRef}
                         value={subCategory}
                         onChange={handleCategoryInputChange}
@@ -554,6 +607,7 @@ export default function ActivityForm({
                         disabled={loading}
                       />
                       <ChevronDown
+                        aria-hidden="true"
                         className="absolute right-3 h-4 w-4 text-gray-500 activity-form-dropdown-icon"
                         onClick={() => {
                           setDropdownOpen(!dropdownOpen);
@@ -607,8 +661,9 @@ export default function ActivityForm({
 
             {/* Notes */}
             <div>
-              <label className="form-label">{t('Notes')}</label>
+              <label htmlFor={`${formId}-notes`} className="form-label">{t('Notes')}</label>
               <Textarea
+                id={`${formId}-notes`}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full min-h-[80px]"
@@ -616,6 +671,22 @@ export default function ActivityForm({
                 disabled={loading}
               />
             </div>
+
+            {photosEnabled && (
+              <div>
+                <label className="form-label">{t('Photos')}</label>
+                <PhotoAttachments
+                  pendingFiles={pendingPhotoFiles}
+                  onPendingFilesChange={setPendingPhotoFiles}
+                  existingPhotos={attachedPhotos}
+                  onRemoveExisting={(photoId) => {
+                    setAttachedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+                    setRemovedPhotoIds((prev) => [...prev, photoId]);
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
         </form>
       </FormPageContent>

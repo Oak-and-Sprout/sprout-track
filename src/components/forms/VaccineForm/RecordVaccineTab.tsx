@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { RecordVaccineTabProps } from './vaccine-form.types';
 import { VaccineDocumentResponse } from '@/app/api/types';
 import { CHILDHOOD_VACCINES } from '@/src/constants/vaccines';
@@ -36,6 +36,11 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
   onContactsUpdated,
 }) => {
   const { t } = useLocalization();
+  const uid = useId();
+  const vaccineNameId = `${uid}-vaccine-name`;
+  const doseNumberId = `${uid}-dose-number`;
+  const notesId = `${uid}-notes`;
+  const documentId = `${uid}-document`;
   const { toUTCString } = useTimezone();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -501,12 +506,13 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
 
         {/* Vaccine Name Combobox */}
         <div>
-          <Label className="form-label">{t('Vaccine Name')}</Label>
+          <Label className="form-label" htmlFor={vaccineNameId}>{t('Vaccine Name')}</Label>
           <div className="relative">
             <div className="relative w-full">
               <div className="flex items-center w-full">
                 <Input
                   ref={inputRef}
+                  id={vaccineNameId}
                   value={vaccineName}
                   onChange={handleVaccineInputChange}
                   onFocus={handleVaccineInputFocus}
@@ -517,6 +523,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                   required
                 />
                 <ChevronDown
+                  aria-hidden="true"
                   className="absolute right-3 h-4 w-4 text-gray-500 vaccine-form-dropdown-icon"
                   onClick={() => {
                     setDropdownOpen(!dropdownOpen);
@@ -569,8 +576,9 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
 
         {/* Dose Number */}
         <div>
-          <Label className="form-label">{t('Dose Number')}</Label>
+          <Label className="form-label" htmlFor={doseNumberId}>{t('Dose Number')}</Label>
           <select
+            id={doseNumberId}
             value={doseNumber}
             onChange={(e) => setDoseNumber(parseInt(e.target.value))}
             className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm vaccine-form-select"
@@ -599,8 +607,9 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
 
         {/* Notes */}
         <div>
-          <Label className="form-label">{t('Notes')}</Label>
+          <Label className="form-label" htmlFor={notesId}>{t('Notes')}</Label>
           <Textarea
+            id={notesId}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full min-h-[80px]"
@@ -611,11 +620,12 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
 
         {/* File Upload Section */}
         <div>
-          <Label className="form-label">{t('Documents')}</Label>
+          <Label className="form-label" htmlFor={documentId}>{t('Documents')}</Label>
           <div className="vaccine-form-upload-area rounded-md border border-dashed border-gray-300 p-3">
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
+                id={documentId}
                 type="file"
                 accept="image/*,.pdf"
                 onChange={handleFileChange}
@@ -629,11 +639,12 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                   size="sm"
                   onClick={() => activity?.id && handleUploadDocument(activity.id)}
                   disabled={isUploading}
+                  aria-label={t('Upload document')}
                 >
                   {isUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <Upload className="h-4 w-4" aria-hidden="true" />
                   )}
                 </Button>
               )}
@@ -662,7 +673,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                       onClick={() => handleDownloadDocument(doc.id, doc.originalName)}
                       title={t('Download')}
                     >
-                      <Download className="h-4 w-4 text-teal-600" />
+                      <Download className="h-4 w-4 text-teal-600" aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -671,7 +682,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
                       onClick={() => handleDeleteDocument(doc.id)}
                       title={t('Delete')}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 className="h-4 w-4 text-red-500" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -692,7 +703,7 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
           </Button>
           <Button type="submit" disabled={isSubmitting || !vaccineName.trim()}>
             {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
             ) : null}
             {activity ? t('Update') : t('Save')}
           </Button>

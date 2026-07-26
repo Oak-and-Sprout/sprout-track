@@ -62,13 +62,13 @@ You do not need to re-import your database. The script manages updates in place.
 
 ### From the UI
 
-The simplest way to back up is through the built-in backup tool, available in both the main app Settings page and the Family Manager settings page. Click **Backup Database** to download a backup.
+The simplest way to back up is through the built-in backup tool in the Family Manager settings page (App Configuration). Click **Backup Database** to download a backup.
 
 The backup is a `.zip` file containing:
 - **SQLite deployments:** `baby-tracker.db` (the database file) and `.env` (environment configuration)
 - **PostgreSQL deployments:** `data.json` (all data exported as JSON) and `.env` (environment configuration)
 
-Both formats include the `ENC_HASH` required to decrypt sensitive data. Backups from either database provider can be restored onto either provider (see [Migrating Between Database Providers](#migrating-between-database-providers)).
+The environment file is stored inside the zip as `YYYY-MM-DD.backup.env`. Both formats include the `ENC_HASH` required to decrypt sensitive data. Backups from either database provider can be restored onto either provider (see [Migrating Between Database Providers](#migrating-between-database-providers)).
 
 ### Docker Volume Backup
 
@@ -95,7 +95,7 @@ Creates a timestamped archive of the application and database (excludes `.next` 
 
 ### From the UI
 
-The backup tool in Settings and Family Manager also handles restores. Click **Restore Database** and upload either:
+The backup tool in the Family Manager settings also handles restores. Click **Restore Database** and upload either:
 
 - A `.zip` backup file (contains both the database and `.env` file)
 - A standalone `.db` file (database only)
@@ -150,7 +150,7 @@ You can migrate between SQLite and PostgreSQL at any time using the built-in bac
 
 ### SQLite to PostgreSQL
 
-1. **Back up your SQLite instance.** In the app, go to Settings (or Family Manager) and click **Backup Database**. This downloads a `.zip` file containing your `baby-tracker.db` file and `.env` configuration.
+1. **Back up your SQLite instance.** Go to the Family Manager settings and click **Backup Database**. This downloads a `.zip` file containing your `baby-tracker.db` file and `.env` configuration.
 
 2. **Set up your PostgreSQL server.** Create the databases on your PostgreSQL 14+ server:
 
@@ -181,7 +181,7 @@ You can migrate between SQLite and PostgreSQL at any time using the built-in bac
 
 ### PostgreSQL to SQLite
 
-1. **Back up your PostgreSQL instance.** In the app, go to Settings and click **Backup Database**. This downloads a `.zip` file containing `data.json` (all your data as JSON) and `.env` configuration.
+1. **Back up your PostgreSQL instance.** Go to the Family Manager settings and click **Backup Database**. This downloads a `.zip` file containing `data.json` (all your data as JSON) and `.env` configuration.
 
 2. **Start a SQLite instance.**
 

@@ -19,17 +19,14 @@ A modular form component for creating and editing feeding records for a baby. Th
   - `BottleFeedForm.tsx` - Manages bottle feeding with:
     - Amount input with increment/decrement controls
     - Unit selection (oz/ml)
-  
-  - `SolidsFeedForm.tsx` - Handles solids feeding with:
-    - Amount input with increment/decrement controls
-    - Unit selection (tbsp/g)
-    - Food description input
 
 ## Features
 
 - Create new feeding records
 - Edit existing feeding records
-- Support for different feeding types (Breast, Bottle, Solids)
+- Support for different feeding types (Breast, Bottle)
+- Solids eating is logged via the Food activity (FoodForm); legacy SOLIDS
+  feed records are converted to food logs at startup
 - Automatic fetching of last feeding amount for convenience
 - Timer functionality for tracking breastfeeding duration
 - Form validation for required fields
@@ -86,23 +83,20 @@ The component dynamically shows different fields based on the selected feeding t
 
 ### All Feeding Types
 - **Time**: Date and time of the feeding (required)
-- **Type**: Type of feeding (Breast, Bottle, Solids) (required)
+- **Type**: Type of feeding (Breast, Bottle) (required)
 
 ### Breast Feeding (BreastFeedForm)
 - **Side**: Which breast was used (Left or Right) (required)
+  - Editable when editing an existing record: a Left/Right toggle changes the recorded side, and the entered duration follows the newly selected side
 - **Duration**: Timer for tracking feeding duration with:
   - Start/pause controls for real-time tracking
   - Editable hours, minutes, and seconds fields for manual adjustment
   - Separate tracking for each breast's feeding time
+- **Active session side correction**: while a live session is running (or paused), a "Started on the wrong side? Fix it" button reassigns the time accrued so far to the other side via `PUT /api/active-breastfeed?action=swap` (distinct from Switch Side, which changes which side accrues time going forward)
 
 ### Bottle Feeding (BottleFeedForm)
 - **Amount**: Amount of milk/formula (with increment/decrement buttons)
 - **Unit**: Measurement unit (oz or ml)
-
-### Solids Feeding (SolidsFeedForm)
-- **Amount**: Amount of food (with increment/decrement buttons)
-- **Unit**: Measurement unit (tbsp or g)
-- **Food**: Description of the food given
 
 ## Implementation Details
 

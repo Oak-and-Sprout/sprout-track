@@ -41,7 +41,7 @@ export function AdminPasswordResetModal({
           {/* Warning Icon */}
           <div className="flex justify-center">
             <div className="rounded-full bg-amber-100 dark:bg-amber-900/20 p-3">
-              <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" />
+              <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-500" aria-hidden="true" />
             </div>
           </div>
 
@@ -53,7 +53,7 @@ export function AdminPasswordResetModal({
 
             {/* Password Display */}
             <div className="flex items-center justify-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-              <KeyRound className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <KeyRound className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
               <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
                 {t('Default Password:')} <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded font-mono text-blue-700 dark:text-blue-300">admin</code>
               </span>

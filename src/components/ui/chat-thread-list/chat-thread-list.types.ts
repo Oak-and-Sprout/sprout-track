@@ -8,6 +8,8 @@ export interface ChatThreadListProps {
   showNewActive?: boolean;
   hideNewButton?: boolean;
   hideHeader?: boolean;
+  /** Visual skin: 'storybook' renders sb-* classes (landing drawer), 'default' keeps the in-app look */
+  appearance?: 'default' | 'storybook';
   isAdmin: boolean;
   formatDateTime: (dateString: string | null) => string;
   countUnread: (thread: FeedbackResponse) => number;

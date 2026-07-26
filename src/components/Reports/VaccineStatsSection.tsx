@@ -45,7 +45,7 @@ const VaccineStatsSection: React.FC<VaccineStatsSectionProps> = ({
   return (
     <AccordionItem value="vaccines">
       <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-        <Syringe className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-measurement")} />
+        <Syringe aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-measurement")} />
         <span>{t('Vaccine History')}</span>
       </AccordionTrigger>
       <AccordionContent className={styles.accordionContent}>
@@ -110,7 +110,7 @@ const VaccineStatsSection: React.FC<VaccineStatsSectionProps> = ({
                     >
                       <div className="flex items-center flex-1 min-w-0">
                         <div className="flex-shrink-0 rounded-full bg-teal-100 p-1.5 reports-health-vaccine-icon-bg">
-                          <Syringe className="h-3.5 w-3.5 text-teal-600" />
+                          <Syringe aria-hidden="true" className="h-3.5 w-3.5 text-teal-600" />
                         </div>
                         <div className="ml-2 min-w-0 flex-1">
                           <div className="font-medium text-sm truncate reports-health-vaccine-name">
@@ -123,6 +123,7 @@ const VaccineStatsSection: React.FC<VaccineStatsSectionProps> = ({
                         </div>
                       </div>
                       <ChevronDown
+                        aria-hidden="true"
                         className={cn(
                           "h-4 w-4 text-gray-500 transition-transform duration-200",
                           isExpanded && "rotate-180"

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import '../../../(app)/[slug]/log-entry/no-activities.css';
-import { ActiveBreastFeedResponse, ActiveActivityResponse } from '@/app/api/types';
+import { ActiveBreastFeedResponse, ActiveActivityResponse, PhotoResponse } from '@/app/api/types';
 import { Card } from "@/src/components/ui/card";
 import { Baby as BabyIcon } from 'lucide-react';
 import TimelineV2 from '@/src/components/Timeline/TimelineV2';
@@ -22,19 +22,67 @@ import MilestoneForm from '@/src/components/forms/MilestoneForm';
 import MedicineForm from '@/src/components/forms/MedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
-import { useParams } from 'next/navigation';
+import FoodForm from '@/src/components/forms/FoodForm';
+import PhotoForm from '@/src/components/forms/PhotoForm';
+import PhotoDetail from '@/src/components/PhotoDetail';
+import { useParams, useSearchParams } from 'next/navigation';
 import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
 import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
 import { STORAGE } from '@/constants';
+import { fetchPhotosEnabled, fetchPhotos } from '@/src/utils/photoClientApi';
 
 function HomeContent(): React.ReactElement {
-  const { selectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
+  const { selectedBaby, setSelectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
   const { family } = useFamily();
   const { t } = useLocalization();
   const params = useParams();
   const familySlug = params?.slug as string;
-  
+  const searchParams = useSearchParams();
+  const dateParam = searchParams?.get('date') ?? null;
+  const babyIdParam = searchParams?.get('babyId') ?? null;
+
+  // Optional ?date=YYYY-MM-DD deep link (e.g. from allergen entries) — invalid
+  // or missing values fall back to today. Memoized on the param VALUE so the
+  // Date identity (and thus TimelineV2's sync effect) only changes when the
+  // date param itself changes, not on unrelated query updates.
+  const initialTimelineDate = React.useMemo(() => {
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      const [year, month, day] = dateParam.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+        return date;
+      }
+    }
+    return undefined;
+  }, [dateParam]);
+
+  // Optional ?babyId= deep link — switch the selected baby when the link
+  // targets a different one (e.g. a "View in log" allergen link). Keyed on
+  // the param only: a manual baby switch must not snap back to the URL baby.
+  useEffect(() => {
+    if (!babyIdParam || babyIdParam === selectedBaby?.id) return;
+    const selectBabyFromParam = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('/api/baby', {
+          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          const baby = data.data.find((b: any) => b.id === babyIdParam && !b.inactive);
+          if (baby) setSelectedBaby(baby);
+        }
+      } catch (error) {
+        console.error('Error selecting baby from URL:', error);
+      }
+    };
+    selectBabyFromParam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [babyIdParam]);
+
+
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [showFeedModal, setShowFeedModal] = useState(false);
   const [showDiaperModal, setShowDiaperModal] = useState(false);
@@ -46,36 +94,36 @@ function HomeContent(): React.ReactElement {
   const [showMedicineModal, setShowMedicineModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showVaccineModal, setShowVaccineModal] = useState<boolean>(false);
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [detailPhoto, setDetailPhoto] = useState<PhotoResponse | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [localTime, setLocalTime] = useState<string>('');
   const [sleepStartTime, setSleepStartTime] = useState<Record<string, Date>>({});
   const [lastSleepEndTime, setLastSleepEndTime] = useState<Record<string, Date>>({});
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
+  const [lastFeedEndTime, setLastFeedEndTime] = useState<Record<string, Date>>({});
   const [lastDiaperTime, setLastDiaperTime] = useState<Record<string, Date>>({});
-  const [includeSolidsInFeedTimer, setIncludeSolidsInFeedTimer] = useState(true);
-  const includeSolidsRef = useRef(true);
 
-  // Fetch family settings for feed timer configuration
+  // Check whether the Photos feature is enabled for this deployment
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
-        if (!authToken) return;
-        const response = await fetch('/api/settings', {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await response.json();
-        if (data.success && data.data) {
-          const value = data.data.includeSolidsInFeedTimer ?? true;
-          setIncludeSolidsInFeedTimer(value);
-          includeSolidsRef.current = value;
-        }
-      } catch (error) {
-        console.error('Error fetching settings:', error);
+    fetchPhotosEnabled().then(setPhotosEnabled);
+  }, []);
+
+  // Open the PhotoDetail drawer for a photo tapped inside the Photo Library tab
+  const handleOpenPhoto = useCallback(async (photoId: string) => {
+    if (!selectedBaby?.id) return;
+    try {
+      const result = await fetchPhotos({ babyId: selectedBaby.id });
+      const photo = result.photos.find((p) => p.id === photoId);
+      if (photo) {
+        setDetailPhoto(photo);
       }
-    };
-    fetchSettings();
-  }, [family?.id]);
+    } catch (error) {
+      console.error('Error fetching photo:', error);
+    }
+  }, [selectedBaby?.id]);
 
   const [activeFeedData, setActiveFeedData] = useState<ActiveBreastFeedResponse | null>(null);
   const [feedStartTime, setFeedStartTime] = useState<Record<string, Date>>({});
@@ -249,6 +297,40 @@ function HomeContent(): React.ReactElement {
     }
   };
 
+  const handleFeedSwap = async () => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=swap`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkFeedStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error correcting feed side:', error);
+    }
+  };
+
+  const handleFeedSwap = async () => {
+    if (!activeFeedData || !selectedBaby?.id) return;
+    try {
+      const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
+      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=swap`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+        },
+      });
+      await checkFeedStatus(selectedBaby.id);
+    } catch (error) {
+      console.error('Error correcting feed side:', error);
+    }
+  };
+
   const handleFeedPause = async () => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
@@ -403,6 +485,17 @@ function HomeContent(): React.ReactElement {
     if (data.lastFeedTime) {
       setLastFeedTime(prev => ({ ...prev, [selectedBaby.id]: data.lastFeedTime! }));
     }
+    // Always sync (set or clear) so a stale end time from an older breast feed
+    // doesn't linger after a feed with no end time (e.g. bottle) becomes the latest
+    setLastFeedEndTime(prev => {
+      const next = { ...prev };
+      if (data.lastFeedEndTime) {
+        next[selectedBaby.id] = data.lastFeedEndTime;
+      } else {
+        delete next[selectedBaby.id];
+      }
+      return next;
+    });
     if (data.lastDiaperTime) {
       setLastDiaperTime(prev => ({ ...prev, [selectedBaby.id]: data.lastDiaperTime! }));
     }
@@ -446,6 +539,7 @@ function HomeContent(): React.ReactElement {
           sleepStartTime={sleepStartTime}
           lastSleepEndTime={lastSleepEndTime}
           lastFeedTime={lastFeedTime}
+          lastFeedEndTime={lastFeedEndTime}
           lastDiaperTime={lastDiaperTime}
           feedStartTime={feedStartTime}
           updateUnlockTimer={updateUnlockTimer}
@@ -466,6 +560,9 @@ function HomeContent(): React.ReactElement {
           onMedicineClick={() => setShowMedicineModal(true)}
           onPlayClick={() => setShowActivityModal(true)}
           onVaccineClick={() => setShowVaccineModal(true)}
+          onFoodClick={() => setShowFoodModal(true)}
+          onPhotoClick={() => setShowPhotoModal(true)}
+          photosEnabled={photosEnabled}
         />
       )}
 
@@ -498,6 +595,8 @@ function HomeContent(): React.ReactElement {
           <TimelineV2
             babyId={selectedBaby.id}
             refreshTrigger={refreshTrigger}
+            initialDate={initialTimelineDate}
+            feedTimerTypes={selectedBaby.feedTimerTypes}
             onLatestStatusReady={handleLatestStatusReady}
             onActivityDeleted={() => {
               triggerRefresh();
@@ -512,7 +611,7 @@ function HomeContent(): React.ReactElement {
           {isCheckingAccountStatus ? (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-192px)] text-center bg-white border-t border-gray-200">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center animate-pulse">
-                <BabyIcon className="h-8 w-8 text-indigo-600" />
+                <BabyIcon className="h-8 w-8 text-indigo-600" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Loading')}…</h3>
               <p className="text-sm text-gray-500">
@@ -522,7 +621,7 @@ function HomeContent(): React.ReactElement {
           ) : isAccountAuth && accountStatus && !accountStatus.hasFamily ? (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-192px)] text-center bg-white border-t border-gray-200">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                <BabyIcon className="h-8 w-8 text-green-600" />
+                <BabyIcon className="h-8 w-8 text-green-600" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Family Setup Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
@@ -538,7 +637,7 @@ function HomeContent(): React.ReactElement {
           ) : isAccountAuth && accountStatus && !accountStatus.verified ? (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-192px)] text-center bg-white border-t border-gray-200">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 flex items-center justify-center">
-                <BabyIcon className="h-8 w-8 text-yellow-600" />
+                <BabyIcon className="h-8 w-8 text-yellow-600" aria-hidden="true" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-1">{t('Email Verification Required')}</h3>
               <p className="text-sm text-gray-500 mb-4">
@@ -602,6 +701,7 @@ function HomeContent(): React.ReactElement {
         onSwitch={handleFeedSwitch}
         onPause={handleFeedPause}
         onResume={handleFeedResume}
+        onSwap={handleFeedSwap}
         onSuccess={async () => {
           if (selectedBaby?.id) {
             triggerRefresh();
@@ -745,6 +845,45 @@ function HomeContent(): React.ReactElement {
         babyId={selectedBaby?.id || ''}
         initialTime={localTime}
         onSuccess={() => {
+          if (selectedBaby?.id) {
+            triggerRefresh();
+          }
+        }}
+      />
+
+      {/* Food Form */}
+      <FoodForm
+        isOpen={showFoodModal}
+        onClose={() => setShowFoodModal(false)}
+        babyId={selectedBaby?.id}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            triggerRefresh();
+          }
+        }}
+      />
+
+      {/* Photo Form */}
+      <PhotoForm
+        isOpen={showPhotoModal}
+        onClose={() => setShowPhotoModal(false)}
+        babyId={selectedBaby?.id}
+        initialTime={localTime}
+        onSuccess={() => {
+          if (selectedBaby?.id) {
+            triggerRefresh();
+          }
+        }}
+        onOpenPhoto={handleOpenPhoto}
+      />
+
+      {/* Photo Detail */}
+      <PhotoDetail
+        isOpen={!!detailPhoto}
+        onClose={() => setDetailPhoto(null)}
+        photo={detailPhoto}
+        onChanged={() => {
           if (selectedBaby?.id) {
             triggerRefresh();
           }

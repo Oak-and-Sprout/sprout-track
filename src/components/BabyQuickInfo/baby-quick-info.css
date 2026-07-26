@@ -88,6 +88,54 @@ html.dark .baby-quick-info-contact-icon {
   color: #6b7280 !important; /* gray-500 */
 }
 
+/* Allergen items */
+html.dark .baby-quick-info-allergen-item {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .baby-quick-info-allergen-name {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .baby-quick-info-allergen-badge {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important; /* amber-400 */
+}
+
+html.dark .baby-quick-info-allergen-type-badge {
+  background-color: rgba(13, 148, 136, 0.2) !important; /* teal-600 with opacity */
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .baby-quick-info-allergen-source-tag {
+  background-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .baby-quick-info-allergen-reaction,
+html.dark .baby-quick-info-allergen-notes {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .baby-quick-info-allergen-meta {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .baby-quick-info-allergen-link {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+html.dark .baby-quick-info-allergen-form {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .baby-quick-info-allergen-form-title {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
 /* Stats items */
 html.dark .baby-quick-info-stat-card {
   background-color: #1f2937 !important; /* gray-800 */

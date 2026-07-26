@@ -73,6 +73,8 @@ Supports `skip-waiting` for immediate activation of updated service workers.
    Fields: endpoint, p256dh, auth, familyId, caretakerId/accountId
 ```
 
+The `NotificationSplashModal` component (`src/components/modals/NotificationSplashModal/`) walks users through this flow — permission request, subscription, and initial per-baby preference setup — using the client helpers in `src/lib/notifications/client.ts`.
+
 ### Notification Preferences
 Granular control per subscription, per baby, per event type:
 
@@ -108,15 +110,22 @@ Runs on a schedule (via Docker dcron) to check for overdue timers:
 
 | Timer Type | Source | Threshold |
 |------------|--------|-----------|
-| Feed timer | Last `FeedLog.time` | `Baby.feedWarningTime` (default "03:00") |
+| Feed timer | Last `FeedLog.time` (breast feeds use `startTime`) | `Baby.feedWarningTime` (default "03:00") |
 | Diaper timer | Last `DiaperLog.time` | `Baby.diaperWarningTime` (default "02:00") |
 | Medicine timer | Last `MedicineLog.time` | `Medicine.doseMinTime` |
+
+The feed timer check is skipped while a baby has an active breastfeeding session (`ActiveBreastFeed`).
 
 For each expired timer:
 1. Finds subscriptions with matching `NotificationPreference` (event type + baby)
 2. Checks `timerIntervalMinutes` to avoid notification spam
 3. Sends push notification
 4. Updates `lastTimerNotifiedAt`
+
+#### Feedback Replies
+**File:** `src/lib/notifications/feedbackHook.ts`
+
+When an admin replies to user feedback, a push notification is sent directly to all of the author's active subscriptions, bypassing the `NotificationPreference` system.
 
 ### Failure Handling
 - `PushSubscription.failureCount` increments on send failure
@@ -189,10 +198,10 @@ The `useNurseryColors` hook generates a complete HSLA color palette from the set
 
 ## Docker Notification Setup
 
-Push notifications are enabled via Docker build arg:
+Push notifications are controlled via Docker build arg (enabled by default):
 
 ```dockerfile
-ARG ENABLE_NOTIFICATIONS=false
+ARG ENABLE_NOTIFICATIONS=true
 ```
 
 When enabled:
@@ -214,10 +223,12 @@ When enabled:
 - `src/lib/notifications/push.ts` — Push notification sending
 - `src/lib/notifications/activityHook.ts` — Activity-triggered notifications
 - `src/lib/notifications/timerCheck.ts` — Timer expiration checks
+- `src/lib/notifications/feedbackHook.ts` — Feedback reply notifications
 - `src/lib/notifications/config.ts` — VAPID key management
 - `src/lib/notifications/client.ts` — Client-side notification API
 - `src/lib/notifications/i18n.ts` — Notification translations
 - `src/lib/notifications/cleanup.ts` — Log retention cleanup
+- `src/components/modals/NotificationSplashModal/` — Onboarding UI for enabling notifications
 - `src/hooks/useWakeLock.ts` — Wake Lock API hook
 - `src/hooks/useFullscreen.ts` — Fullscreen API hook
 - `src/hooks/useNurserySettings.ts` — Nursery settings management

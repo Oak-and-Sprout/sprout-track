@@ -94,7 +94,11 @@ export default function ActiveActivityBanner({
         {/* Active state */}
         {!activeActivity.isPaused && (
           <div className="flex items-center justify-between">
-            <div className="flex flex-col min-w-0">
+            <button
+              type="button"
+              className="flex flex-col min-w-0 text-left"
+              onClick={(e) => { e.stopPropagation(); onOpenForm(); }}
+            >
               <span className="text-xs font-medium activity-banner-label">
                 {playTypeLabel}
               </span>
@@ -106,7 +110,7 @@ export default function ActiveActivityBanner({
                   {meta}
                 </span>
               )}
-            </div>
+            </button>
             <div className="flex gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
@@ -114,7 +118,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-pause"
                 title={t('Pause Activity')}
               >
-                <Pause className="h-5 w-5" />
+                <Pause className="h-5 w-5" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -122,7 +126,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-stop"
                 title={t('End Activity')}
               >
-                <Square className="h-5 w-5" />
+                <Square className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -131,7 +135,11 @@ export default function ActiveActivityBanner({
         {/* Paused state */}
         {activeActivity.isPaused && (
           <div className="flex items-center justify-between">
-            <div className="flex flex-col min-w-0">
+            <button
+              type="button"
+              className="flex flex-col min-w-0 text-left"
+              onClick={(e) => { e.stopPropagation(); onOpenForm(); }}
+            >
               <span className="text-xs font-medium activity-banner-paused-label">
                 {playTypeLabel} - {t('Paused')}
               </span>
@@ -143,7 +151,7 @@ export default function ActiveActivityBanner({
                   {meta}
                 </span>
               )}
-            </div>
+            </button>
             <div className="flex gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
@@ -151,7 +159,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-resume"
                 title={t('Resume Activity')}
               >
-                <Play className="h-5 w-5 mr-0.5" />
+                <Play className="h-5 w-5 mr-0.5" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -159,7 +167,7 @@ export default function ActiveActivityBanner({
                 className="banner-btn activity-banner-btn-stop"
                 title={t('End Activity')}
               >
-                <Square className="h-5 w-5" />
+                <Square className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           </div>

@@ -63,7 +63,7 @@ const DialogContent = React.forwardRef<
         {children}
         {!hideClose && (
           <DialogPrimitive.Close className={cn(dialogStyles.closeButton, "dialog-close-button")}>
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
             <span className="sr-only">{t('Close')}</span>
           </DialogPrimitive.Close>
         )}

@@ -27,7 +27,7 @@ export const babySelectorContainer = (gender: 'MALE' | 'FEMALE' | null | undefin
  */
 export const babySelectorContent = () => {
   return cn(
-    "flex flex-col items-start cursor-pointer"
+    "flex flex-col items-start cursor-pointer text-left"
   );
 };
 

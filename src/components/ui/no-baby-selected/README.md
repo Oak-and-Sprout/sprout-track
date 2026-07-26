@@ -6,7 +6,7 @@ A reusable component that displays a friendly message when no baby is selected i
 
 - Baby icon from Lucide React
 - Customizable title and description text
-- Uses the app's Label component for consistent typography
+- Semantic heading (`h2`) and paragraph elements styled with the app's label typography for consistency
 - Full light and dark mode support with smooth transitions
 - Responsive design that works on both mobile and desktop
 - Consistent styling with the rest of the application
@@ -103,7 +103,7 @@ The No Baby Selected component is built using:
 
 - React with TypeScript for type safety
 - Lucide React for the baby icon
-- The app's Label component for consistent text styling
+- Semantic `h2`/`p` elements sharing the app's label typography (`labelVariants`) for consistent text styling
 - Tailwind CSS for responsive design and animations
 - Theme context for dark mode support
 - CSS overrides for dark mode styling

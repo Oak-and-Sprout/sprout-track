@@ -225,6 +225,7 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
 
                     {/* Lane icon below current-time bar */}
                     <div
+                      aria-hidden="true"
                       className="absolute flex items-start justify-center pointer-events-none"
                       style={{
                         top: `${timeBarTopPercent}%`,

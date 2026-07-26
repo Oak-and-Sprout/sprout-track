@@ -129,6 +129,7 @@ Main component for creating and editing contacts.
 | `onSave` | `(contact: ContactFormData) => void` | Handler for when the form is submitted | Required |
 | `onDelete` | `(contactId: string) => void` | Handler for when a contact is deleted | `undefined` |
 | `isLoading` | `boolean` | Whether the form is in a loading state | `false` |
+| `appearance` | `'default' \| 'storybook'` | Defaults to `'default'` (the classic `FormPage` slide-in). `'storybook'` renders the form inside a stacked `StorybookDrawer` for use in the account manager. Both appearances share the same `formData` state, validation, `handleSubmit`, and `handleDelete` — only the presentation differs. | `'default'` |
 
 ### ContactFormData
 
