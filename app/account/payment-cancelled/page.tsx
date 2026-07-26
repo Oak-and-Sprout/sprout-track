@@ -45,7 +45,7 @@ export default function PaymentCancelledPage() {
           {/* Cancel Icon */}
           <div className="flex justify-center mb-6">
             <div className="w-20 h-20 bg-gray-400 rounded-full flex items-center justify-center">
-              <XCircle className="w-12 h-12 text-white" />
+              <XCircle className="w-12 h-12 text-white" aria-hidden="true" />
             </div>
           </div>
 
@@ -81,7 +81,7 @@ export default function PaymentCancelledPage() {
               onClick={() => router.push('/account')}
               className="w-full"
             >
-              <Home className="h-4 w-4 mr-2" />
+              <Home className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Return to Account')}
             </Button>
 
@@ -90,7 +90,7 @@ export default function PaymentCancelledPage() {
               variant="outline"
               className="w-full"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
               {t('Go Back')}
             </Button>
           </div>

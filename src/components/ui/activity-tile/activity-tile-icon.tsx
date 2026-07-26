@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Edit, Icon, LampWallDown, Trophy, Baby, Activity, Syringe } from 'lucide-react';
+import { Moon, Edit, Icon, LampWallDown, Trophy, Baby, Activity, Syringe, Camera } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { cn } from "@/src/lib/utils";
 import { activityTileStyles as styles } from './activity-tile.styles';
@@ -23,7 +23,7 @@ export function ActivityTileIcon({
   if (isButton && styles.icon.defaultIcons[variant]) {
     icon = <img
       src={styles.icon.defaultIcons[variant]}
-      alt={variant}
+      alt=""
       width={64}
       height={64}
       className={cn("object-contain", styles.icon.base)}
@@ -31,7 +31,9 @@ export function ActivityTileIcon({
   }
   // For timeline view, use Lucide icons (smaller icons)
   else if (!isButton) {
-    if ('type' in activity) {
+    if ('photoLogId' in activity) {
+      icon = <Camera className="h-4 w-4" color="#e11d48" />; // photo log
+    } else if ('type' in activity) {
       if ('duration' in activity) {
         icon = <Moon className={cn(styles.icon.base, styles.icon.variants[variant])} />;
       } else if ('amount' in activity) {
@@ -62,7 +64,7 @@ export function ActivityTileIcon({
   if (!icon && styles.icon.defaultIcons[variant]) {
     icon = <img
       src={styles.icon.defaultIcons[variant]}
-      alt={variant}
+      alt=""
       width={64}
       height={64}
       className={cn("object-contain", styles.icon.base)}
@@ -70,7 +72,7 @@ export function ActivityTileIcon({
   }
   
   return (
-    <div className={cn(
+    <div aria-hidden="true" className={cn(
       styles.iconContainer.base,
       styles.iconContainer.variants[variant],
       className

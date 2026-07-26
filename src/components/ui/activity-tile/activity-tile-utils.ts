@@ -21,7 +21,7 @@ export const getActivityTime = (activity: ActivityType): string => {
 /**
  * Determines the variant based on the activity type
  */
-export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine' | 'default' => {
+export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | 'diaper' | 'note' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine' | 'food' | 'default' => {
   // Check for play log before sleep (both have 'type' and 'duration' but play has 'activities')
   if ('type' in activity && 'startTime' in activity && 'activities' in activity) {
     const playTypes = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
@@ -37,6 +37,7 @@ export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | '
   }
   if ('doseAmount' in activity && 'medicineId' in activity) return 'medicine';
   if ('vaccineName' in activity) return 'vaccine';
+  if ('foodId' in activity) return 'food';
   if ('title' in activity && 'category' in activity) return 'milestone';
   if ('leftAmount' in activity || 'rightAmount' in activity) return 'pump';
   if ('content' in activity) return 'note';
@@ -61,6 +62,16 @@ export const useActivityDescription = () => {
    * Gets the description for an activity
    */
   const getActivityDescription = (activity: ActivityType) => {
+    // Photo log - check before the more generic field checks below
+    if ('photoLogId' in activity) {
+      const photos = (activity as any).photos as { caption?: string | null }[] | undefined;
+      const firstCaption = photos?.find((p) => p.caption)?.caption;
+      const count = photos?.length ?? 0;
+      return {
+        type: 'Photo',
+        details: firstCaption || (count === 1 ? '1 photo' : `${count} photos`)
+      };
+    }
     if ('type' in activity) {
       if ('duration' in activity) {
         const startTimeFormatted = activity.startTime ? formatDateTime(activity.startTime) : 'unknown';

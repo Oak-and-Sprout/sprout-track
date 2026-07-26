@@ -300,7 +300,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
       
       {/* Section Header */}
       <div className={backupRestoreStyles.header.container}>
-        <Settings className={backupRestoreStyles.header.icon} />
+        <Settings className={backupRestoreStyles.header.icon} aria-hidden="true" />
         <Label className={backupRestoreStyles.header.title}>
           {importOnly ? 'Import Previous Data' : 'Database Management'}
         </Label>
@@ -316,7 +316,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
             className={backupRestoreStyles.button.backup}
             disabled={isLoading || isSaving || state.isRestoring || state.isMigrating}
           >
-            <Download className={backupRestoreStyles.icon} />
+            <Download className={backupRestoreStyles.icon} aria-hidden="true" />
             {t('Backup Database')}
           </Button>
         )}
@@ -330,7 +330,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
           )}
           disabled={isLoading || isSaving || state.isRestoring || state.isMigrating}
         >
-          <Upload className={backupRestoreStyles.icon} />
+          <Upload className={backupRestoreStyles.icon} aria-hidden="true" />
           {state.isRestoring ? 'Importing...' : state.isMigrating ? 'Migrating...' : importOnly ? 'Import Database' : 'Restore Database'}
         </Button>
       </div>
@@ -357,7 +357,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
       {state.error && (
         <div className={backupRestoreStyles.error.container}>
           <div className={backupRestoreStyles.error.content}>
-            <X className={backupRestoreStyles.error.icon} />
+            <X className={backupRestoreStyles.error.icon} aria-hidden="true" />
             <span className={backupRestoreStyles.error.text}>{state.error}</span>
           </div>
         </div>
@@ -367,7 +367,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
       {state.success && (
         <div className={backupRestoreStyles.success.container}>
           <div className={backupRestoreStyles.success.content}>
-            <Save className={backupRestoreStyles.success.icon} />
+            <Save className={backupRestoreStyles.success.icon} aria-hidden="true" />
             <span className={backupRestoreStyles.success.text}>{state.success}</span>
           </div>
         </div>

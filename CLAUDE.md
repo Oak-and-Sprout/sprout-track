@@ -18,7 +18,7 @@ These rules define the development patterns, conventions, and architecture for S
   - `ui/` — base UI primitives (button, input, etc.), each with their own folder containing `index.tsx`, `styles.ts`, `types.ts`, `.css`, and `README.md`
   - `forms/` — form components built on top of `ui/` form page components
   - `modals/` — modal components
-  - Feature components live in their own named folders at the component root (e.g., `Calendar/`, `Timeline/`, `Reports/`, `DailyStats/`, `BabySelector/`, `SetupWizard/`) — there is no `features/` directory
+  - Feature components live in their own named folders at the component root (e.g., `Calendar/`, `Timeline/`, `Reports/`, `DailyStats/`, `BabySelector/`, `SetupWizard/`), with some grouped under `features/` (e.g., `features/nursery-mode/`)
   - Domain management components: `account-manager/`, `familymanager/`
 - Keep component files, styles, types, and documentation together in the same folder
 - Include README.md files for components documenting props, usage, and implementation details
@@ -164,6 +164,7 @@ export const GET = withAuthContext(handler);
 - Supported languages are configured in `src/localization/supported-languages.json`
 - English (`en.json`) is the fallback — always add keys here first
 - After adding or modifying keys, run `node scripts/check-missing-translations.js` to add missing keys to all other language files and sort everything
+- Once missing keys have been added to non-en.json files try to translate other translation files to their respective language as best as you can.
 
 ### Adding new user-facing text
 
@@ -185,10 +186,13 @@ export const GET = withAuthContext(handler);
 
 ## Testing
 
-- Write tests for all components, custom hooks, and services
-- Test error and loading states
+- Tests run with Vitest (`npm test` / `npm run test:watch`) and live in the top-level `tests/` folder as `*.test.ts` files (node environment, `@/` path alias available)
+- **Every new change or feature must include test scoping**: as part of planning any change, identify what new behavior needs tests and write them alongside the implementation — new functionality without tests is incomplete
+- **Review existing test coverage before adding tests**: check `tests/` for existing files covering the same area — update or extend them when behavior changes, and avoid duplicating coverage that already exists
+- Extract non-trivial logic (grouping, validation, calculations, data shaping) into pure functions in `src/utils/` or route-adjacent helper modules so it can be unit tested without a database or React renderer
+- Prefer test-first: write the failing test, watch it fail, then implement until green
+- Test error and edge cases, not just the happy path (empty inputs, whitespace, boundary values)
 - Verify accessibility features
-- Test responsive layouts
 - Implement integration tests for complex features
 
 ## Code Modification Guidelines

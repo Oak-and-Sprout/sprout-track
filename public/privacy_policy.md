@@ -1,22 +1,21 @@
 # Privacy Policy
 
-**Effective Date: August 4, 2025**
-
-**Last Updated: August 4, 2025**
+Effective Date: July 17, 2026 · Last Updated: July 17, 2026
 
 ## Introduction
 
-John Overton DBA Oak and Sprout ("we," "us," or "our") operates the Sprout Track mobile application ("App"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our App. Please read this Privacy Policy carefully. If you do not agree with the terms of this Privacy Policy, please do not access the App.
+Open Glades LLC ("we," "us," or "our") operates the Sprout Track application ("App"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our App. Please read this Privacy Policy carefully. If you do not agree with the terms of this Privacy Policy, please do not access the App.
 
 ## Our Commitment to Your Privacy
 
-**We do not sell, trade, or otherwise transfer your personal information or your baby's data to third parties.** Your family's privacy is fundamental to our service, and we are committed to protecting the information you entrust to us.
+We do not sell, trade, or otherwise transfer your personal information or your baby's data to third parties. Your family's privacy is fundamental to our service, and we are committed to protecting the information you entrust to us.
 
 ## Information We Collect
 
 ### Information You Provide to Us
 
 When you use Sprout Track, you may provide us with:
+
 - Account information (email address, username)
 - Baby profile information (name, date of birth, gender)
 - Care tracking data (feeding times, sleep schedules, diaper changes, growth measurements, milestones)
@@ -26,6 +25,7 @@ When you use Sprout Track, you may provide us with:
 ### Information Automatically Collected
 
 We may automatically collect certain information about your device and usage:
+
 - Device information (type, operating system, unique device identifiers)
 - App usage data (features used, frequency of use, performance data)
 - Log data (IP address, access times, app crashes)
@@ -35,17 +35,20 @@ We may automatically collect certain information about your device and usage:
 We use the information we collect solely for the following purposes:
 
 ### Providing and Maintaining Our Service
+
 - To enable app functionality and features
 - To save and sync your data across devices
 - To provide customer support
 
 ### Internal Business Purposes
+
 - To monitor and analyze app performance
 - To detect and prevent technical issues
 - To improve user experience and develop new features
 - To ensure the security and integrity of our service
 
 ### We DO NOT:
+
 - Sell your data to third parties
 - Share your data with advertisers
 - Use your baby's information for marketing purposes
@@ -54,7 +57,9 @@ We use the information we collect solely for the following purposes:
 ## Third-Party Tools and Services
 
 ### Limited Third-Party Integration
+
 Our App uses minimal third-party tools for essential functions such as:
+
 - Cloud infrastructure for data storage
 - Analytics tools for app performance monitoring
 - Crash reporting services
@@ -64,6 +69,7 @@ Our App uses minimal third-party tools for essential functions such as:
 ## Data Storage and Security
 
 We implement appropriate technical and organizational measures to protect your information against unauthorized access, alteration, disclosure, or destruction. This includes:
+
 - Encryption of data in transit and at rest
 - Regular security assessments
 - Limited access to personal information by employees
@@ -76,7 +82,9 @@ We retain your information only for as long as necessary to provide you with our
 ## Your Rights and Choices
 
 ### Access and Control
+
 You have the right to:
+
 - Access your personal information
 - Correct inaccurate data
 - Delete your account and associated data
@@ -84,6 +92,7 @@ You have the right to:
 - Opt-out of any non-essential data collection
 
 ### Account Deletion
+
 You can delete your account at any time through the App settings. This will permanently remove all your data from our servers.
 
 ## Children's Privacy
@@ -93,10 +102,13 @@ Sprout Track is designed for parents and caregivers to track infant and child ca
 ## International Users
 
 ### United States Operations
+
 Sprout Track is operated in the United States. If you are located outside the United States, please be aware that your information will be transferred to, stored, and processed in the United States.
 
 ### European Union Users
+
 For users in the European Union, we commit to adhering to EU privacy regulations, including the General Data Protection Regulation (GDPR). This includes:
+
 - Processing data only with your consent or for legitimate interests
 - Providing you with access to your data
 - Allowing you to correct or delete your data
@@ -112,6 +124,7 @@ California residents have additional rights under the California Consumer Privac
 ## Changes to This Privacy Policy
 
 We may update our Privacy Policy from time to time. We will notify you of any changes by:
+
 - Posting the new Privacy Policy in the App
 - Updating the "Last Updated" date
 - Sending you an email notification for material changes
@@ -126,12 +139,11 @@ In the unlikely event of a data breach that compromises your personal informatio
 
 If you have questions or concerns about this Privacy Policy or our data practices, please contact us at:
 
-**Email:** sprout-track@jroverton.com
+Open Glades LLC
+Email: sprout-track@jroverton.com
 
 ## Your Consent
 
 By using Sprout Track, you consent to our Privacy Policy and agree to its terms.
 
----
-
-**Remember:** We never sell your data. Your family's information stays private and is used only to provide you with the best baby tracking experience possible.
+*Remember: We never sell your data. Your family's information stays private and is used only to provide you with the best baby tracking experience possible.*

@@ -195,6 +195,10 @@ html.dark .reports-icon-measurement {
   color: #f87171 !important; /* red-400 */
 }
 
+html.dark .reports-icon-food {
+  color: #a3e635 !important; /* lime-400 - food tracker */
+}
+
 /* Milestones tab */
 html.dark .reports-age-header {
   border-color: #374151 !important; /* gray-700 */
@@ -507,6 +511,32 @@ html.dark .reports-health-vaccine-detail {
 }
 
 html.dark .reports-health-vaccine-detail-row {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* Stats tab - food tracker section (issue #203) */
+html.dark .reports-food-progress-track {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .reports-food-enjoyment-cell {
+  background-color: #1f2937 !important; /* gray-800 */
+}
+
+html.dark .reports-food-allergen-title {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reports-food-allergen-item {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .reports-food-allergen-item .text-gray-800 {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .reports-food-allergen-item .text-gray-600 {
   color: #d1d5db !important; /* gray-300 */
 }
 

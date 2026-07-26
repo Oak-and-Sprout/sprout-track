@@ -1,0 +1,14 @@
+html.dark .photo-attachments-add {
+  border-color: #475569;
+  background-color: #1e293b;
+  color: #94a3b8;
+}
+
+html.dark .photo-attachments-add:hover {
+  border-color: #14b8a6;
+  color: #2dd4bf;
+}
+
+html.dark .photo-attachments-hint {
+  color: #64748b;
+}

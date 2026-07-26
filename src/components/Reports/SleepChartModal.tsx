@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { DateRange } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateDisplay } from '@/src/utils/dateFormat';
@@ -136,6 +137,17 @@ const SleepChartModal: React.FC<SleepChartModalProps> = ({
                 />
               </LineChart>
             </ResponsiveContainer>
+            <ChartDataTable
+              caption={title}
+              columns={[
+                { key: 'date', label: t('Date') },
+                { key: 'value', label: metric === 'nightWakings' ? t('Wakings') : t('Sleep') },
+              ]}
+              rows={data.map((point) => ({
+                date: point.label,
+                value: metric === 'nightWakings' ? point.value : formatMinutes(point.value),
+              }))}
+            />
           </div>
         )}
       </ModalContent>

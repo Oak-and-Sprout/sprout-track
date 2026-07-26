@@ -5,6 +5,16 @@ html {
   height: 100%;
 }
 
+/* Scrollbars: transparent track everywhere (scrollbar-color inherits to all
+   scroll containers; component-specific rules still override) */
+html {
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent; /* gray-400 thumb */
+}
+
+html.dark {
+  scrollbar-color: rgba(75, 85, 99, 0.6) transparent; /* gray-600 thumb */
+}
+
 body {
   min-height: 100vh;
   background-repeat: no-repeat;

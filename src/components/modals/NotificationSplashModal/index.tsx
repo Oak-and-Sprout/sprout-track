@@ -234,7 +234,7 @@ export default function NotificationSplashModal({
             <DialogHeader>
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
-                  <Bell className="h-8 w-8 text-teal-600 dark:text-teal-400" />
+                  <Bell className="h-8 w-8 text-teal-600 dark:text-teal-400" aria-hidden="true" />
                 </div>
               </div>
               <DialogTitle className="text-center text-xl">
@@ -252,12 +252,12 @@ export default function NotificationSplashModal({
               >
                 {subscribing ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                     {t('Enabling...')}
                   </>
                 ) : (
                   <>
-                    <Bell className="h-4 w-4 mr-2" />
+                    <Bell className="h-4 w-4 mr-2" aria-hidden="true" />
                     {t('Enable Notifications')}
                   </>
                 )}
@@ -281,7 +281,7 @@ export default function NotificationSplashModal({
             <DialogHeader>
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" aria-hidden="true" />
                 </div>
               </div>
               <DialogTitle className="text-center text-xl">
@@ -326,9 +326,9 @@ export default function NotificationSplashModal({
                           }}
                         >
                           {expandedActivities[baby.id] ? (
-                            <ChevronUp className="h-3 w-3" />
+                            <ChevronUp className="h-3 w-3" aria-hidden="true" />
                           ) : (
-                            <ChevronDown className="h-3 w-3" />
+                            <ChevronDown className="h-3 w-3" aria-hidden="true" />
                           )}
                           {t('Select Activities')}
                         </button>

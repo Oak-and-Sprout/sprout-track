@@ -19,6 +19,7 @@ A full-screen form component for creating and editing caretaker profiles in the 
 | isEditing | boolean | Yes | Whether the form is in edit mode or create mode |
 | caretaker | PrismaCaretaker & { loginId?: string } \| null | Yes | The caretaker data to edit, or null for creating a new caretaker |
 | onCaretakerChange | () => void | No | Optional callback function that is called after a successful form submission |
+| appearance | `'default' \| 'storybook'` | No | Defaults to `'default'` (the classic `FormPage` slide-in). `'storybook'` renders the form inside a stacked `StorybookDrawer` for use in the account manager. Both appearances share the same state, validation, and `handleSubmit` — only the presentation differs. |
 
 ## Usage
 

@@ -45,7 +45,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     {...props}
   >
     {children}
-    <ChevronRight className={styles.chevronIcon} />
+    <ChevronRight className={styles.chevronIcon} aria-hidden="true" />
   </DropdownMenuPrimitive.SubTrigger>
 ))
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName
@@ -110,11 +110,11 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   >
     <span className={cn(styles.iconWrapper, "dropdown-menu-icon")}>
       <DropdownMenuPrimitive.ItemIndicator>
-        <Check className={cn(styles.checkIcon, "dropdown-menu-check-icon")} />
+        <Check className={cn(styles.checkIcon, "dropdown-menu-check-icon")} aria-hidden="true" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
-    {sortable && <GripVertical className={cn(styles.dragHandle, "dropdown-menu-icon", "dropdown-menu-drag-handle")} />}
+    {sortable && <GripVertical className={cn(styles.dragHandle, "dropdown-menu-icon", "dropdown-menu-drag-handle")} aria-hidden="true" />}
   </DropdownMenuPrimitive.CheckboxItem>
 ))
 DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName
@@ -130,7 +130,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   >
     <span className={cn(styles.iconWrapper, "dropdown-menu-icon")}>
       <DropdownMenuPrimitive.ItemIndicator>
-        <Circle className={cn(styles.circleIcon, "dropdown-menu-circle-icon")} />
+        <Circle className={cn(styles.circleIcon, "dropdown-menu-circle-icon")} aria-hidden="true" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}

@@ -11,24 +11,43 @@ import MeasurementForm from '@/src/components/forms/MeasurementForm';
 import GiveMedicineForm from '@/src/components/forms/GiveMedicineForm';
 import ActivityForm from '@/src/components/forms/ActivityForm';
 import VaccineForm from '@/src/components/forms/VaccineForm';
+import FoodForm from '@/src/components/forms/FoodForm';
+import PhotoForm from '@/src/components/forms/PhotoForm';
+import PhotoDetail from '@/src/components/PhotoDetail';
 import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse } from '@/app/api/types';
+import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
+import { parseFeedTimerTypes, feedCountsForTimer, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
+import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, FoodLogResponse, PhotoResponse } from '@/app/api/types';
+import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
-const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
+const TimelineV2 = ({ babyId, refreshTrigger, initialDate, feedTimerTypes, onLatestStatusReady, onActivityDeleted }: TimelineProps) => {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [defaultBottleUnit, setDefaultBottleUnit] = useState(() => readCachedDefaultBottleUnit());
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [editModalType, setEditModalType] = useState<'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo' | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => initialDate ?? new Date());
   const [isHeatmapVisible, setIsHeatmapVisible] = useState<boolean>(false);
 
+  // React to ?date= deep-link changes after mount (in-app navigation to the
+  // same route doesn't remount; the parent memoizes initialDate on the param
+  // value, so a new identity means the requested day actually changed)
+  useEffect(() => {
+    if (!initialDate) return;
+    setSelectedDate(prev => (prev.toDateString() === initialDate.toDateString() ? prev : initialDate));
+  }, [initialDate]);
+
   const [dateFilteredActivities, setDateFilteredActivities] = useState<ActivityType[]>([]);
+  // Selected day ±1 so daily stats can group breast-feed sessions across midnight
+  const [windowActivities, setWindowActivities] = useState<ActivityType[]>([]);
   const [heatmapActivities, setHeatmapActivities] = useState<ActivityType[]>([]);
 
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
@@ -42,27 +61,51 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
 
   const breastMilkTrackingEnabled = (settings as any)?.enableBreastMilkTracking ?? true;
 
+  // Issue #225: feed categories that reset the "time since last feed" timer
+  // (null = all feeds count)
+  const feedTimerCategories = useMemo(() => parseFeedTimerTypes(feedTimerTypes), [feedTimerTypes]);
+
   // Extract latest status data from activities and notify parent
   const emitLatestStatus = useCallback((activities: ActivityType[]) => {
     if (!onLatestStatusReady) return;
 
     const status: LatestStatusData = {};
 
-    // Find last feed time
+    // Find last feed time. Food (issue #203) lives in FoodLog and is
+    // discriminated by `foodId`; when the FOOD category counts it can reset the
+    // timer alongside breast/bottle feeds.
     const lastFeed = activities
-      .filter((a) =>
-        'amount' in a && 'type' in a &&
-        ((a as any).type === 'BOTTLE' || (a as any).type === 'BREAST' || (a as any).type === 'SOLIDS') &&
-        'time' in a
-      )
+      .filter((a) => {
+        if (!('time' in a)) return false;
+        if ('foodId' in a) return foodCountsForTimer(feedTimerCategories);
+        return (
+          'amount' in a && 'type' in a &&
+          ((a as any).type === 'BOTTLE' || (a as any).type === 'BREAST') &&
+          feedCountsForTimer(a as any, feedTimerCategories)
+        );
+      })
       .sort((a, b) => new Date((b as any).time).getTime() - new Date((a as any).time).getTime())[0];
 
     if (lastFeed) {
       const feedAny = lastFeed as any;
-      const feedTime = (feedAny.type === 'BREAST' && feedAny.startTime)
-        ? String(feedAny.startTime)
-        : feedAny.time;
-      status.lastFeedTime = new Date(feedTime);
+      if (feedAny.type === 'BREAST') {
+        // Linked/paired rows count as one feeding (#198): time the timer against
+        // the whole nursing session, not just its latest row
+        const breastFeeds = activities.filter((a) =>
+          'amount' in a && (a as any).type === 'BREAST' && 'time' in a
+        ) as any[];
+        const session = groupBreastFeedSessions(breastFeeds)
+          .find(s => s.rows.some((r: any) => r.id === feedAny.id));
+        const rows: any[] = session?.rows ?? [feedAny];
+        // Prefer explicit startTime/endTime; `time` only equals the session end
+        // for newly logged feeds and can hold the start time after an edit
+        const startMs = Math.min(...rows.map(r => new Date(r.startTime || r.time).getTime()));
+        const endMs = Math.max(...rows.map(r => new Date(r.endTime || r.time).getTime()));
+        status.lastFeedTime = new Date(startMs);
+        status.lastFeedEndTime = new Date(endMs);
+      } else {
+        status.lastFeedTime = new Date(feedAny.time);
+      }
     }
 
     // Find last diaper time
@@ -100,7 +143,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
 
     onLatestStatusReady(status);
-  }, [onLatestStatusReady]);
+  }, [onLatestStatusReady, feedTimerCategories]);
 
   const fetchBreastMilkBalance = async (babyId: string) => {
     if (!breastMilkTrackingEnabled) {
@@ -109,7 +152,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
     try {
       const authToken = localStorage.getItem('authToken');
-      const unit = settings?.defaultBottleUnit || 'OZ';
+      const unit = settings?.defaultBottleUnit || defaultBottleUnit;
       const response = await fetch(`/api/breast-milk-balance?babyId=${babyId}&unit=${unit}`, {
         headers: {
           ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
@@ -143,6 +186,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     try {
       const result = await activityCache.fetchWindow(babyId, date, 1);
       setDateFilteredActivities(result.activities);
+      setWindowActivities(result.allActivities);
       lastRefreshTimestamp.current = Date.now();
 
       // Only emit status when today is within the fetched window (prevents stale status on past dates)
@@ -159,6 +203,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     } catch (error) {
       console.error('Error fetching activities for date:', error);
       setDateFilteredActivities([]);
+      setWindowActivities([]);
     } finally {
       if (isAnimated) {
         setIsLoadingActivities(false);
@@ -173,13 +218,23 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     try {
       const activities = await activityCache.refreshDate(babyId, selectedDate);
       setDateFilteredActivities(activities);
+      // Rebuild the ±1 day window from cache around the refreshed day
+      const prevDay = new Date(selectedDate); prevDay.setDate(prevDay.getDate() - 1);
+      const nextDay = new Date(selectedDate); nextDay.setDate(nextDay.getDate() + 1);
+      const windowActs = [
+        ...(activityCache.getActivitiesForDate(activityCache.toDateKey(prevDay)) || []),
+        ...activities,
+        ...(activityCache.getActivitiesForDate(activityCache.toDateKey(nextDay)) || []),
+      ];
+      setWindowActivities(windowActs);
       lastRefreshTimestamp.current = Date.now();
 
-      // Only emit status when refreshing today's data
+      // Only emit status when refreshing today's data. Emit the full window so
+      // a nursing session that straddles midnight groups with its earlier row
       const todayKey = activityCache.toDateKey(new Date());
       const selectedKey = activityCache.toDateKey(selectedDate);
       if (todayKey === selectedKey) {
-        emitLatestStatus(activities);
+        emitLatestStatus(windowActs);
       }
     } catch (error) {
       console.error('Error refreshing current day:', error);
@@ -237,24 +292,42 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     setActiveFilter(activeFilter === filter ? null : filter);
   };
 
-  // Fetch settings
-  useEffect(() => {
-    const fetchSettings = async () => {
+  // Fetch settings and refresh them when a warm PWA becomes active again.
+  const refreshSettings = useCallback(async () => {
+    try {
       const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/settings', {
+        cache: 'no-store',
         headers: {
           'Authorization': authToken ? `Bearer ${authToken}` : '',
         },
       });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setSettings(data.data);
-        }
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.success) {
+        setSettings(data.data);
+        const unit = cacheDefaultBottleUnit(data.data?.defaultBottleUnit);
+        if (unit) setDefaultBottleUnit(unit);
       }
-    };
-    fetchSettings();
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
   }, []);
+
+  useEffect(() => {
+    refreshSettings();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshSettings();
+    };
+    window.addEventListener('focus', refreshSettings);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', refreshSettings);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshSettings]);
 
   // Initial fetch when babyId changes
   useEffect(() => {
@@ -269,7 +342,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     if (babyId) {
       fetchBreastMilkBalance(babyId);
     }
-  }, [babyId, settings?.defaultBottleUnit]);
+  }, [babyId, settings?.defaultBottleUnit, defaultBottleUnit]);
 
   // Handle refreshTrigger from parent (form submissions in log-entry page)
   useEffect(() => {
@@ -338,7 +411,11 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             case 'sleep':
               return 'duration' in activity;
             case 'feed':
-              return 'amount' in activity;
+              // Bottle and breast feeds only; any unconverted SOLIDS feeds
+              // are left out (solids live under the food filter now) and
+              // breast-milk adjustments (amount without type) stay excluded
+              return 'amount' in activity && 'type' in activity &&
+                     (activity as any).type !== 'SOLIDS';
             case 'diaper':
               return 'condition' in activity && 'type' in activity &&
                      (activity.type === 'WET' || activity.type === 'BOTH');
@@ -363,6 +440,13 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
               return 'activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type);
             case 'vaccine':
               return 'vaccineName' in activity;
+            case 'food':
+              // Food logs (issue #203) - foodId is unique to food logs
+              return 'foodId' in activity;
+            case 'photo':
+              // Match what the Photos Today stat counts: standalone photo
+              // logs plus any activity with attached photos
+              return 'photoLogId' in activity || !!(activity as any).photos?.length;
             default:
               return true;
           }
@@ -402,16 +486,31 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
     }
   };
 
-  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine') => {
+  const handleEdit = (activity: ActivityType, type: 'sleep' | 'feed' | 'diaper' | 'medicine' | 'note' | 'bath' | 'pump' | 'breast-milk-adjustment' | 'milestone' | 'measurement' | 'play' | 'vaccine' | 'food' | 'photo') => {
     setSelectedActivity(activity);
     setEditModalType(type);
   };
 
+  // Resolve a timeline thumbnail click to its full PhotoResponse for the detail drawer
+  const handlePhotoClick = useCallback(async (photoId: string) => {
+    if (!babyId) return;
+    try {
+      const result = await fetchPhotos({ babyId, limit: 200 });
+      const photo = result.photos.find((p) => p.id === photoId);
+      if (photo) setSelectedPhoto(photo);
+    } catch (error) {
+      console.error('Error fetching photo:', error);
+    }
+  }, [babyId]);
+
   return (
-    <div className="flex flex-col h-[calc(100vh-192px)]">
+    // app header (80px + 1px border) + activity tile row (117px) + 1px rounding margin —
+    // undershooting this budget gives the whole page a scrollbar
+    <div className="flex flex-col h-[calc(100vh-199px)]">
       {/* Daily Stats with Integrated Date Navigation */}
       <TimelineV2DailyStats
         activities={dateFilteredActivities}
+        windowActivities={windowActivities}
         heatmapActivities={heatmapActivities}
         date={selectedDate}
         isLoading={isLoadingActivities}
@@ -422,7 +521,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         isHeatmapVisible={isHeatmapVisible}
         onHeatmapToggle={() => setIsHeatmapVisible((prev) => !prev)}
         breastMilkBalance={breastMilkTrackingEnabled ? breastMilkBalance : undefined}
-        defaultBottleUnit={settings?.defaultBottleUnit}
+        defaultBottleUnit={settings?.defaultBottleUnit || defaultBottleUnit}
         enableBreastMilkTracking={breastMilkTrackingEnabled}
       />
 
@@ -436,6 +535,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             isAnimated={isFetchAnimated}
             selectedDate={selectedDate}
             onActivitySelect={(activity) => setSelectedActivity(activity)}
+            onPhotoClick={handlePhotoClick}
           />
         </div>
 
@@ -459,6 +559,15 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
         onClose={() => setSelectedActivity(null)}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        onPhotoClick={handlePhotoClick}
+      />
+
+      {/* Photo Detail - opened from a timeline thumbnail click */}
+      <PhotoDetail
+        isOpen={!!selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        photo={selectedPhoto}
+        onChanged={handleFormSuccess}
       />
 
       {/* Edit Forms */}
@@ -479,7 +588,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             onClose={() => setEditModalType(null)}
             babyId={selectedActivity.babyId}
             initialTime={getActivityTime(selectedActivity)}
-            activity={'amount' in selectedActivity ? selectedActivity : undefined}
+            activity={'amount' in selectedActivity && !('foodId' in selectedActivity) ? selectedActivity : undefined}
             onSuccess={handleFormSuccess}
           />
           <DiaperForm
@@ -587,6 +696,28 @@ const TimelineV2 = ({ babyId, refreshTrigger, onLatestStatusReady, onActivityDel
             babyId={selectedActivity.babyId}
             initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
             activity={'vaccineName' in selectedActivity ? (selectedActivity as unknown as VaccineLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
+          />
+          <FoodForm
+            isOpen={editModalType === 'food'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={'time' in selectedActivity && selectedActivity.time ? String(selectedActivity.time) : getActivityTime(selectedActivity)}
+            activity={'foodId' in selectedActivity ? (selectedActivity as unknown as FoodLogResponse) : undefined}
+            onSuccess={handleFormSuccess}
+          />
+          <PhotoForm
+            isOpen={editModalType === 'photo'}
+            onClose={() => {
+              setEditModalType(null);
+              setSelectedActivity(null);
+            }}
+            babyId={selectedActivity.babyId}
+            initialTime={getActivityTime(selectedActivity)}
+            activity={'photoLogId' in selectedActivity ? { photoLogId: (selectedActivity as any).photoLogId } : undefined}
             onSuccess={handleFormSuccess}
           />
         </>

@@ -81,7 +81,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
   if (!dateRange.from || !dateRange.to) {
     return (
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
-        <Grid3X3 className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
+        <Grid3X3 aria-hidden="true" className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
           {t('Select a date range to view heatmaps.')}
         </p>
@@ -92,7 +92,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
   if (isLoading) {
     return (
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
-        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+        <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-teal-600" />
         <p className={cn(styles.loadingText, "reports-loading-text")}>
           {t('Loading heatmap data...')}
         </p>
@@ -103,7 +103,7 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
   if (!heatmapData || !activities.length) {
     return (
       <div className={cn(styles.emptyContainer, "reports-empty-container")}>
-        <Grid3X3 className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
+        <Grid3X3 aria-hidden="true" className={cn(styles.placeholderIcon, "reports-placeholder-icon")} />
         <p className={cn(styles.emptyText, "reports-empty-text")}>
           {t('No activities recorded for this date range.')}
         </p>
@@ -124,9 +124,9 @@ const HeatmapsTab: React.FC<HeatmapsTabProps> = ({
           return (
             <div key={type} className="flex items-center gap-1">
               {iconConfig.isLabIcon ? (
-                <Icon iconNode={iconConfig.icon} className="h-3 w-3" style={{ color: colors.base }} />
+                <Icon iconNode={iconConfig.icon} aria-hidden="true" className="h-3 w-3" style={{ color: colors.base }} />
               ) : (
-                <iconConfig.icon className="h-3 w-3" style={{ color: colors.base }} />
+                <iconConfig.icon aria-hidden="true" className="h-3 w-3" style={{ color: colors.base }} />
               )}
               <span className="text-[10px] text-gray-500">{t(HEATMAP_LABELS[type])}</span>
             </div>

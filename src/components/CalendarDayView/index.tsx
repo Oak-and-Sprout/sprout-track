@@ -324,8 +324,9 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
     // Loading state
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 text-teal-500 calendar-day-view-loader animate-spin" />
+        <div role="status" className="flex items-center justify-center h-full">
+          <Loader2 aria-hidden="true" className="h-8 w-8 text-teal-500 calendar-day-view-loader animate-spin" />
+          <span className="sr-only">{t('Loading...')}</span>
         </div>
       );
     }
@@ -334,7 +335,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
     if (events.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-6">
-          <CalendarClock className="h-12 w-12 text-gray-400 calendar-day-view-empty-icon mb-2" />
+          <CalendarClock className="h-12 w-12 text-gray-400 calendar-day-view-empty-icon mb-2" aria-hidden="true" />
           <p className="text-gray-500 calendar-day-view-empty-text text-sm">
             {t('No events scheduled for this day')}
           </p>
@@ -350,7 +351,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
           {groupedEvents.morning.length > 0 && (
             <div className={styles.eventGroup}>
               <div className={styles.eventGroupHeader}>
-                <Sun className={styles.eventGroupIcon} />
+                <Sun className={styles.eventGroupIcon} aria-hidden="true" />
                 <h3 className={cn(
                   styles.eventGroupTitle,
                   'calendar-day-view-group-title'
@@ -375,7 +376,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
           {groupedEvents.afternoon.length > 0 && (
             <div className={styles.eventGroup}>
               <div className={styles.eventGroupHeader}>
-                <Coffee className={styles.eventGroupIcon} />
+                <Coffee className={styles.eventGroupIcon} aria-hidden="true" />
                 <h3 className={cn(
                   styles.eventGroupTitle,
                   'calendar-day-view-group-title'
@@ -400,7 +401,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
           {groupedEvents.evening.length > 0 && (
             <div className={styles.eventGroup}>
               <div className={styles.eventGroupHeader}>
-                <Moon className={styles.eventGroupIcon} />
+                <Moon className={styles.eventGroupIcon} aria-hidden="true" />
                 <h3 className={cn(
                   styles.eventGroupTitle,
                   'calendar-day-view-group-title'
@@ -450,7 +451,7 @@ export const CalendarDayView: React.FC<CalendarDayViewProps> = ({
               {t('Close')}
             </Button>
             <Button onClick={handleAddEvent}>
-              <PlusCircle className="mr-2 h-4 w-4" />
+              <PlusCircle className="mr-2 h-4 w-4" aria-hidden="true" />
               {t('Add Event')}
             </Button>
           </div>

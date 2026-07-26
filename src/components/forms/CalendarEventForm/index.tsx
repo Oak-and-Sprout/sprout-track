@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { cn } from '@/src/lib/utils';
 import { CalendarEventFormProps, CalendarEventFormData, CalendarEventFormErrors } from './calendar-event-form.types';
 import { Baby, Caretaker, Contact } from '@/src/components/CalendarEvent/calendar-event.types';
@@ -46,7 +46,8 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
 }) => {
   const { t } = useLocalization();
   const { showToast } = useToast();
-  
+  const formId = useId();
+
   // Helper function to get initial form data
   const getInitialFormData = (
     eventData: CalendarEventFormData | undefined, 
@@ -443,7 +444,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 />
                 {errors.title && (
                   <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.title}
                   </div>
                 )}
@@ -451,13 +452,13 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
 
               {/* Event type */}
               <div className={styles.fieldGroup}>
-                <Label htmlFor="type">
+                <Label htmlFor={`${formId}-type`} id={`${formId}-type-label`}>
                   {t('Event Type')}
                   <span className="text-red-500 ml-1">*</span>
                 </Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
+                    <Button id={`${formId}-type`} aria-labelledby={`${formId}-type-label ${formId}-type`} variant="outline" className="w-full justify-between">
                       {formData.type.charAt(0) + formData.type.slice(1).toLowerCase().replace('_', ' ')}
                     </Button>
                   </DropdownMenuTrigger>
@@ -479,7 +480,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                 </DropdownMenu>
                 {errors.type && (
                   <div className={styles.fieldError}>
-                    <AlertCircle className="h-3 w-3 inline mr-1" />
+                    <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                     {errors.type}
                   </div>
                 )}
@@ -521,7 +522,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   </div>
                   {errors.startTime && (
                     <div className={styles.fieldError}>
-                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                       {errors.startTime}
                     </div>
                   )}
@@ -543,7 +544,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   </div>
                   {errors.endTime && (
                     <div className={styles.fieldError}>
-                      <AlertCircle className="h-3 w-3 inline mr-1" />
+                      <AlertCircle className="h-3 w-3 inline mr-1" aria-hidden="true" />
                       {errors.endTime}
                     </div>
                   )}
@@ -565,7 +566,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                     className="w-full pl-8"
                     placeholder={t("Enter location (optional)")}
                   />
-                  <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                 </div>
               </div>
               
@@ -641,7 +642,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   htmlFor="reminderTime" 
                   className="form-label flex items-center"
                 >
-                  <Bell className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" />
+                  <Bell aria-hidden="true" className="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400" />
                   Remind me
                 </label>
                 <DropdownMenu>
@@ -896,7 +897,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
                   }}
                   disabled={isLoading}
                 >
-                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  <Trash2 className="h-4 w-4 mr-1.5" aria-hidden="true" />
                   {t('Delete')}
                 </Button>
               )}
@@ -918,7 +919,7 @@ const CalendarEventForm: React.FC<CalendarEventFormProps> = ({
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" aria-hidden="true" />
                     {t('Saving...')}
                   </>
                 ) : (

@@ -6,3 +6,11 @@ html.dark .timeline-details-label {
 html.dark .timeline-details-value {
   color: #e5e7eb !important; /* gray-200 */
 }
+
+html.dark .timeline-details-photo-thumb {
+  background-color: #374151; /* gray-700 */
+}
+
+html.dark .timeline-details-photo-hint {
+  color: #6b7280; /* gray-500 */
+}

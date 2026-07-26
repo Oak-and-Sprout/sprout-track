@@ -8,6 +8,7 @@ const NavCountBubble: React.FC<NavCountBubbleProps> = ({
   count,
   variant = 'default',
   className,
+  label,
 }) => {
   return (
     <span
@@ -18,6 +19,7 @@ const NavCountBubble: React.FC<NavCountBubbleProps> = ({
       )}
     >
       {count}
+      {label && <span className="sr-only"> {label}</span>}
     </span>
   );
 };

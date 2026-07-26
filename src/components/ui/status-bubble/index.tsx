@@ -113,27 +113,27 @@ export function StatusBubble({
       case 'sleeping':
         return {
           bgColor: styles.statusStyles.sleeping.bgColor,
-          icon: <Moon className={styles.icon} />
+          icon: <Moon className={styles.icon} aria-hidden="true" />
         };
       case 'awake':
         return {
           bgColor: styles.statusStyles.awake.bgColor,
-          icon: <Sun className={cn(styles.icon, styles.statusStyles.awake.iconColor)} />
+          icon: <Sun className={cn(styles.icon, styles.statusStyles.awake.iconColor)} aria-hidden="true" />
         };
       case 'feedActive':
         return {
           bgColor: styles.statusStyles.feedActive.bgColor,
-          icon: <Icon iconNode={bottleBaby} className={styles.icon} />
+          icon: <Icon iconNode={bottleBaby} className={styles.icon} aria-hidden="true" />
         };
       case 'feed':
         return {
           bgColor: isWarning ? styles.statusStyles.feed.warning : styles.statusStyles.feed.normal,
-          icon: <Icon iconNode={bottleBaby} className={styles.icon} />
+          icon: <Icon iconNode={bottleBaby} className={styles.icon} aria-hidden="true" />
         };
       case 'diaper':
         return {
           bgColor: isWarning ? styles.statusStyles.diaper.warning : styles.statusStyles.diaper.normal,
-          icon: <Icon iconNode={diaper} className={styles.icon} />
+          icon: <Icon iconNode={diaper} className={styles.icon} aria-hidden="true" />
         };
       default:
         return {
@@ -145,9 +145,38 @@ export function StatusBubble({
 
   const { bgColor, icon } = getStatusStyles();
 
+  const getStatusLabel = (): string => {
+    switch (status) {
+      case 'sleeping':
+        return t('Sleeping');
+      case 'awake':
+        return t('Awake');
+      case 'feedActive':
+        return t('Feeding');
+      case 'feed':
+        return t('Time since last feed');
+      case 'diaper':
+        return t('Time since last diaper');
+      default:
+        return '';
+    }
+  };
+
+  const labelHours = Math.floor(displayDuration / 60);
+  const labelMinutes = displayDuration % 60;
+  const durationLabel = [
+    labelHours > 0 ? `${labelHours} ${labelHours === 1 ? t('hour') : t('hours')}` : null,
+    `${labelMinutes} ${labelMinutes === 1 ? t('minute') : t('minutes')}`
+  ].filter(Boolean).join(' ');
+  const ariaLabel = status === 'feedActive'
+    ? t('Feeding')
+    : `${getStatusLabel()}, ${durationLabel}`;
+
   return (
     <div
       ref={screenEdgeAware ? bubbleRef : undefined}
+      role="img"
+      aria-label={ariaLabel}
       className={cn(
         styles.base,
         bgColor,

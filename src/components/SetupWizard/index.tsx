@@ -11,6 +11,7 @@ import SecuritySetupStage from './SecuritySetupStage';
 import BabySetupStage from './BabySetupStage';
 import { Gender } from '@prisma/client';
 import { useLocalization } from '@/src/context/localization';
+import { FEED_TIMER_CATEGORIES, FeedTimerCategory } from '@/src/utils/feedTimerConfig';
 
 import './setup-wizard.css';
 
@@ -71,6 +72,8 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
   const [babyGender, setBabyGender] = useState<Gender | ''>('');
   const [feedWarningTime, setFeedWarningTime] = useState('02:00');
   const [diaperWarningTime, setDiaperWarningTime] = useState('03:00');
+  const [feedTimerFrom, setFeedTimerFrom] = useState('start');
+  const [feedTimerTypes, setFeedTimerTypes] = useState<FeedTimerCategory[]>([...FEED_TIMER_CATEGORIES]);
   
   // Error handling
   const [error, setError] = useState('');
@@ -313,6 +316,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             gender: babyGender,
             feedWarningTime,
             diaperWarningTime,
+            feedTimerFrom,
+            // null = all feeds count (default)
+            feedTimerTypes: feedTimerTypes.length === FEED_TIMER_CATEGORIES.length
+              ? null
+              : JSON.stringify(feedTimerTypes),
             familyId: createdFamily?.id,
           }),
         });
@@ -492,11 +500,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
                   : "/SetupBaby-1024.png"
             }
             alt={
-              stage === 1 
-                ? "Family Setup" 
-                : stage === 2 
-                  ? "Security Setup" 
-                  : "Baby Setup"
+              stage === 1
+                ? t('Family Setup')
+                : stage === 2
+                  ? t('Security Setup')
+                  : t('Baby Setup')
             }
             width={128}
             height={128}
@@ -508,13 +516,13 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
               {t('Completing setup for')} <strong>{familyData.name}</strong>
             </p>
           )}
-          <div className={cn(styles.progressBar, "setup-wizard-progress-bar")}>
+          <div className={cn(styles.progressBar, "setup-wizard-progress-bar")} aria-hidden="true">
             <div 
               className={cn(styles.progressIndicator, "setup-wizard-progress-indicator")}
               style={{ width: `${(stage / 3) * 100}%` }}
             ></div>
           </div>
-          <p className={cn(styles.stepIndicator, "setup-wizard-step-indicator")}>
+          <p className={cn(styles.stepIndicator, "setup-wizard-step-indicator")} aria-live="polite">
             {t('Step')} {stage} {t('of 3')}
           </p>
         </div>
@@ -564,6 +572,10 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete, token, initialSet
             setFeedWarningTime={setFeedWarningTime}
             diaperWarningTime={diaperWarningTime}
             setDiaperWarningTime={setDiaperWarningTime}
+            feedTimerFrom={feedTimerFrom}
+            setFeedTimerFrom={setFeedTimerFrom}
+            feedTimerTypes={feedTimerTypes}
+            setFeedTimerTypes={setFeedTimerTypes}
           />
         )}
 

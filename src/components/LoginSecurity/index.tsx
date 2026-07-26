@@ -214,7 +214,7 @@ export default function LoginSecurity({ onUnlock, familySlug, familyName }: Logi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white login-container">
       {/* Language Selector - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-10">
         <LanguageSelector />
       </div>
       <div className="w-full max-w-md mx-auto p-6">

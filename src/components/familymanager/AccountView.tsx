@@ -111,12 +111,12 @@ export default function AccountView({
                 >
                   {account.verified ? (
                     <>
-                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      <ShieldCheck className="h-3 w-3 mr-1" aria-hidden="true" />
                       {t('Verified')}
                     </>
                   ) : (
                     <>
-                      <Shield className="h-3 w-3 mr-1" />
+                      <Shield className="h-3 w-3 mr-1" aria-hidden="true" />
                       {t('Unverified')}
                     </>
                   )}
@@ -147,11 +147,11 @@ export default function AccountView({
                     title={account.closed ? 'Reinstate account' : 'Close account'}
                   >
                     {updatingAccountId === account.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                     ) : account.closed ? (
-                      <CheckCircle className="h-4 w-4" />
+                      <CheckCircle className="h-4 w-4" aria-hidden="true" />
                     ) : (
-                      <XCircle className="h-4 w-4" />
+                      <XCircle className="h-4 w-4" aria-hidden="true" />
                     )}
                   </Button>
                 </div>

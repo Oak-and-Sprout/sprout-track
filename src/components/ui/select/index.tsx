@@ -38,7 +38,7 @@ const SelectTrigger = React.forwardRef<
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className={cn(styles.chevronIcon, "select-icon")} />
+        <ChevronDown className={cn(styles.chevronIcon, "select-icon")} aria-hidden="true" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -54,7 +54,7 @@ const SelectScrollUpButton = React.forwardRef<
     className={cn(styles.scrollButton, className, "select-icon")}
     {...props}
   >
-    <ChevronUp className="h-4 w-4" />
+    <ChevronUp className="h-4 w-4" aria-hidden="true" />
   </SelectPrimitive.ScrollUpButton>
 ))
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
@@ -68,7 +68,7 @@ const SelectScrollDownButton = React.forwardRef<
     className={cn(styles.scrollButton, className, "select-icon")}
     {...props}
   >
-    <ChevronDown className="h-4 w-4" />
+    <ChevronDown className="h-4 w-4" aria-hidden="true" />
   </SelectPrimitive.ScrollDownButton>
 ))
 SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
@@ -132,7 +132,7 @@ const SelectItem = React.forwardRef<
   >
     <span className={cn(styles.itemIndicatorWrapper, "select-icon")}>
       <SelectPrimitive.ItemIndicator>
-        <Check className={cn(styles.checkIcon, "select-check-icon")} />
+        <Check className={cn(styles.checkIcon, "select-check-icon")} aria-hidden="true" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

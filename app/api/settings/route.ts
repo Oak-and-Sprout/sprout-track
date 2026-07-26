@@ -4,6 +4,8 @@ import { ApiResponse } from '../types';
 import { Settings } from '@prisma/client';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
+import { isValidGrowthStandard } from '@/src/utils/growthStandard';
+import { resolveFamilyScope } from '../utils/family-scope';
 
 // The family securityPin (login PIN) must never be returned to the client.
 type SettingsResponse = Omit<Settings, 'securityPin'>;
@@ -13,21 +15,14 @@ function toSettingsResponse({ securityPin: _securityPin, ...rest }: Settings): S
 
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
-    const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
-    
-    // Determine target family ID - prefer auth context, but allow query parameter for setup auth, account auth, and sysadmin
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && (isSetupAuth || isSysAdmin || isAccountAuth)) {
-      const { searchParams } = new URL(req.url);
-      const queryFamilyId = searchParams.get('familyId');
-      if (queryFamilyId) {
-        targetFamilyId = queryFamilyId;
-      }
+    const { searchParams } = new URL(req.url);
+    const queryFamilyId = searchParams.get('familyId');
+
+    const scope = resolveFamilyScope(authContext, queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
+    const targetFamilyId = scope.familyId;
 
     let settings = await prisma.settings.findFirst({
       where: { familyId: targetFamilyId },
@@ -42,8 +37,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           defaultHeightUnit: 'IN',
           defaultWeightUnit: 'LB',
           defaultTempUnit: 'F',
+          growthChartStandard: 'CDC',
           enableBreastMilkTracking: true,
-          includeSolidsInFeedTimer: true,
           dateFormat: 'MM/DD/YYYY',
           timeFormat: '12h',
           familyId: targetFamilyId,
@@ -54,7 +49,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     return NextResponse.json<ApiResponse<SettingsResponse>>({
       success: true,
       data: toSettingsResponse(settings),
-    });
+    }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     console.error('Error fetching settings:', error);
     return NextResponse.json<ApiResponse<SettingsResponse>>(
@@ -75,21 +70,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
   }
 
   try {
-    const { familyId: userFamilyId, isSetupAuth, isSysAdmin, isAccountAuth } = authContext;
-    
-    // Determine target family ID - prefer auth context, but allow query parameter for setup auth, account auth, and sysadmin
-    let targetFamilyId = userFamilyId;
-    if (!userFamilyId && (isSetupAuth || isSysAdmin || isAccountAuth)) {
-      const { searchParams } = new URL(req.url);
-      const queryFamilyId = searchParams.get('familyId');
-      if (queryFamilyId) {
-        targetFamilyId = queryFamilyId;
-      }
+    const { searchParams } = new URL(req.url);
+    const queryFamilyId = searchParams.get('familyId');
+
+    const scope = resolveFamilyScope(authContext, queryFamilyId);
+    if (!scope.ok) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
-    
-    if (!targetFamilyId) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'User is not associated with a family.' }, { status: 403 });
-    }
+    const targetFamilyId = scope.familyId;
 
     const body = await req.json();
     
@@ -113,6 +101,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     const userFields: (keyof Settings)[] = [
       'defaultBottleUnit', 'defaultSolidsUnit',
       'defaultHeightUnit', 'defaultWeightUnit', 'defaultTempUnit',
+      'growthChartStandard',
     ];
 
     // Additional fields only admins can update
@@ -120,8 +109,8 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       'familyName', 'securityPin', 'authType',
       'enableDebugTimer', 'enableDebugTimezone',
       'enableBreastMilkTracking',
-      'includeSolidsInFeedTimer',
       'dateFormat', 'timeFormat',
+      'photoQuotaMB',
     ];
 
     const isAdmin = authContext.caretakerRole === 'ADMIN' ||
@@ -137,6 +126,32 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
         // A blank securityPin means "keep the existing PIN" — never overwrite the
         // family login PIN with an empty value (responses no longer return it).
         if (field === 'securityPin' && (body[field] === '' || body[field] === null)) {
+          continue;
+        }
+        if (field === 'photoQuotaMB') {
+          // null clears the family override, falling back to the AppConfig default.
+          if (body[field] === null) {
+            (data as any)[field] = null;
+            continue;
+          }
+          const quota = parseInt(body[field], 10);
+          if (isNaN(quota) || quota < 1) {
+            return NextResponse.json<ApiResponse<null>>(
+              { success: false, error: 'Photo quota must be a positive number of MB' },
+              { status: 400 }
+            );
+          }
+          (data as any)[field] = quota;
+          continue;
+        }
+        if (field === 'growthChartStandard') {
+          if (!isValidGrowthStandard(body[field])) {
+            return NextResponse.json<ApiResponse<null>>(
+              { success: false, error: 'growthChartStandard must be CDC or WHO' },
+              { status: 400 }
+            );
+          }
+          (data as any)[field] = body[field];
           continue;
         }
         (data as any)[field] = body[field];
@@ -176,7 +191,7 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     return NextResponse.json<ApiResponse<SettingsResponse>>({
       success: true,
       data: toSettingsResponse(settings),
-    });
+    }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     console.error('Error updating settings:', error);
     return NextResponse.json<ApiResponse<SettingsResponse>>(

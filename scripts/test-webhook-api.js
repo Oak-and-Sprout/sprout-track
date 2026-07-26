@@ -55,8 +55,19 @@ async function request(method, path, body) {
   };
   if (body) opts.body = JSON.stringify(body);
 
-  const res = await fetch(url, opts);
-  const json = await res.json();
+  let res = await fetch(url, opts);
+  let json = await res.json();
+
+  // If rate limited, wait for the window to reset and retry once
+  if (res.status === 429) {
+    const reset = parseInt(res.headers.get('x-ratelimit-reset') || '0', 10);
+    const waitMs = Math.min(Math.max(reset * 1000 - Date.now() + 500, 1000), 65000);
+    log('\x1b[33m…\x1b[0m', `Rate limited — waiting ${Math.ceil(waitMs / 1000)}s for the window to reset`);
+    await new Promise(r => setTimeout(r, waitMs));
+    res = await fetch(url, opts);
+    json = await res.json();
+  }
+
   return { status: res.status, headers: Object.fromEntries(res.headers.entries()), ...json };
 }
 
@@ -295,6 +306,125 @@ async function runWriteTests(babyId) {
     log(' ', `Created feed ${res.data.id}`);
   });
 
+  await test('POST feed (BREAST log with duration — timed entry)', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed',
+      feedType: 'BREAST',
+      side: 'RIGHT',
+      duration: 15,
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
+    });
+    assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
+    assert(res.data.details.feedDuration === 900, `Expected feedDuration 900s, got ${res.data.details.feedDuration}`);
+    log(' ', `Created timed feed ${res.data.id} (15 min → 900s)`);
+  });
+
+  await test('POST feed timer (start → switch → pause → resume → end)', async () => {
+    const startRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed',
+      feedType: 'BREAST',
+      action: 'start',
+      side: 'LEFT',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
+    });
+    assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
+    assert(startRes.data.details.isActive === true, 'Expected active feed');
+    assert(startRes.data.details.activeSide === 'LEFT', `Expected LEFT, got ${startRes.data.details.activeSide}`);
+    log(' ', `Started feed session ${startRes.data.id} on LEFT`);
+
+    // Second start should conflict
+    const dupRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'start', side: 'RIGHT',
+    });
+    assert(!dupRes.success, 'Expected duplicate start to fail');
+    assert(dupRes.status === 409, `Expected 409, got ${dupRes.status}`);
+    assert(dupRes.error.code === 'FEED_ALREADY_ACTIVE', `Expected FEED_ALREADY_ACTIVE, got ${dupRes.error.code}`);
+    log(' ', 'Duplicate start rejected (FEED_ALREADY_ACTIVE)');
+
+    await new Promise(r => setTimeout(r, 1100));
+
+    const switchRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'switch',
+    });
+    assert(switchRes.success, `Switch failed: ${JSON.stringify(switchRes.error)}`);
+    assert(switchRes.data.details.activeSide === 'RIGHT', `Expected RIGHT after switch, got ${switchRes.data.details.activeSide}`);
+    assert(switchRes.data.details.leftDuration >= 1, `Expected left time accrued, got ${switchRes.data.details.leftDuration}s`);
+    log(' ', `Switched to RIGHT (left accrued ${switchRes.data.details.leftDuration}s)`);
+
+    const pauseRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'pause',
+    });
+    assert(pauseRes.success, `Pause failed: ${JSON.stringify(pauseRes.error)}`);
+    assert(pauseRes.data.details.isPaused === true, 'Expected paused');
+
+    const resumeRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'resume', side: 'LEFT',
+    });
+    assert(resumeRes.success, `Resume failed: ${JSON.stringify(resumeRes.error)}`);
+    assert(resumeRes.data.details.isPaused === false, 'Expected not paused');
+    assert(resumeRes.data.details.activeSide === 'LEFT', `Expected LEFT after resume, got ${resumeRes.data.details.activeSide}`);
+    log(' ', 'Paused, then resumed on LEFT');
+
+    await new Promise(r => setTimeout(r, 1100));
+
+    const endRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'end',
+      ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
+    });
+    assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
+    assert(endRes.data.details.isActive === false, 'Expected inactive after end');
+    assert(Array.isArray(endRes.data.details.feedLogs), 'Expected feedLogs array');
+    assert(endRes.data.details.feedLogs.length >= 1, 'Expected at least one FeedLog created');
+    log(' ', `Ended: ${endRes.data.details.feedLogs.length} log(s), L ${endRes.data.details.leftDuration}s / R ${endRes.data.details.rightDuration}s`);
+  });
+
+  await test('GET status shows activeFeed while a session runs', async () => {
+    const startRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'start', side: 'LEFT',
+    });
+    assert(startRes.success, `Start failed: ${JSON.stringify(startRes.error)}`);
+
+    const statusRes = await request('GET', `/babies/${babyId}/status`);
+    assert(statusRes.success, `Status failed: ${JSON.stringify(statusRes.error)}`);
+    assert(statusRes.data.activeFeed, 'Expected activeFeed in status');
+    assert(statusRes.data.activeFeed.activeSide === 'LEFT', `Expected LEFT, got ${statusRes.data.activeFeed.activeSide}`);
+    assert(statusRes.data.activeFeed.isPaused === false, 'Expected not paused');
+
+    const endRes = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'end',
+    });
+    assert(endRes.success, `End failed: ${JSON.stringify(endRes.error)}`);
+
+    const statusRes2 = await request('GET', `/babies/${babyId}/status`);
+    assert(statusRes2.success, `Status failed: ${JSON.stringify(statusRes2.error)}`);
+    assert(statusRes2.data.activeFeed === null, 'Expected activeFeed null after end');
+    log(' ', 'activeFeed present during session, null after end');
+  });
+
+  await test('POST feed end with no active session returns NO_ACTIVE_FEED', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'end',
+    });
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'NO_ACTIVE_FEED', `Expected NO_ACTIVE_FEED, got ${res.error.code}`);
+  });
+
+  await test('POST feed start without side returns SIDE_REQUIRED', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BREAST', action: 'start',
+    });
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'SIDE_REQUIRED', `Expected SIDE_REQUIRED, got ${res.error.code}`);
+  });
+
+  await test('POST feed timer action with BOTTLE returns INVALID_ACTION', async () => {
+    const res = await request('POST', `/babies/${babyId}/activities`, {
+      type: 'feed', feedType: 'BOTTLE', action: 'start', side: 'LEFT',
+    });
+    assert(!res.success, 'Expected failure');
+    assert(res.error.code === 'INVALID_ACTION', `Expected INVALID_ACTION, got ${res.error.code}`);
+  });
+
   await test('POST diaper (wet)', async () => {
     const res = await request('POST', `/babies/${babyId}/activities`, {
       type: 'diaper',
@@ -403,13 +533,15 @@ async function runWriteTests(babyId) {
   await test('POST bath', async () => {
     const res = await request('POST', `/babies/${babyId}/activities`, {
       type: 'bath',
+      bathType: 'Sponge Bath',
       soapUsed: true,
       shampooUsed: false,
       notes: 'API test bath',
       ...(CARETAKER_NAME && { caretakerName: CARETAKER_NAME }),
     });
     assert(res.success, `Expected success, got: ${JSON.stringify(res.error)}`);
-    log(' ', `Created bath ${res.data.id}`);
+    assert(res.data.details.bathType === 'Sponge Bath', `Expected bathType echoed, got ${res.data.details.bathType}`);
+    log(' ', `Created bath ${res.data.id} (${res.data.details.bathType})`);
   });
 
   await test('POST measurement (weight)', async () => {

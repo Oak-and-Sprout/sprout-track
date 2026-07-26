@@ -36,8 +36,8 @@ export default function MobileSortButton({
 
   const getSortIcon = (key: string) => {
     if (sortColumn !== key) return null;
-    if (sortDirection === 'asc') return <ArrowUp className="h-3 w-3 ml-auto text-teal-600" />;
-    if (sortDirection === 'desc') return <ArrowDown className="h-3 w-3 ml-auto text-teal-600" />;
+    if (sortDirection === 'asc') return <ArrowUp className="h-3 w-3 ml-auto text-teal-600" aria-hidden="true" />;
+    if (sortDirection === 'desc') return <ArrowDown className="h-3 w-3 ml-auto text-teal-600" aria-hidden="true" />;
     return null;
   };
 
@@ -49,8 +49,9 @@ export default function MobileSortButton({
           size="sm"
           className="h-9 w-9 rounded-full p-0 flex-shrink-0 mobile-sort-button"
           title={t('Sort')}
+          aria-label={t('Sort')}
         >
-          <ArrowUpDown className="h-4 w-4" />
+          <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

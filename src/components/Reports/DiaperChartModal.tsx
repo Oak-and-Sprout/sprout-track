@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { ActivityType, DateRange } from './reports.types';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
@@ -137,6 +138,17 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
                 />
               </LineChart>
             </ResponsiveContainer>
+            <ChartDataTable
+              caption={title}
+              columns={[
+                { key: 'date', label: t('Date') },
+                { key: 'value', label: t('Diapers') },
+              ]}
+              rows={chartData.map((point) => ({
+                date: point.label,
+                value: point.value,
+              }))}
+            />
           </div>
         )}
       </ModalContent>

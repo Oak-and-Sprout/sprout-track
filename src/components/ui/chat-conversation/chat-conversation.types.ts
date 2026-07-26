@@ -27,6 +27,8 @@ export interface ChatConversationProps {
   hideHeader?: boolean;
   /** Hide the built-in reply bar (use when the parent renders ChatReplyBar separately) */
   hideReplyBar?: boolean;
+  /** Visual skin: 'storybook' renders sb-* classes (landing drawer), 'default' keeps the in-app look */
+  appearance?: 'default' | 'storybook';
   className?: string;
 }
 
@@ -35,5 +37,7 @@ export interface ChatReplyBarProps {
   subject: string;
   familyId: string | null;
   onReply: (parentId: string, message: string, subject?: string, familyId?: string | null, files?: File[]) => Promise<unknown>;
+  /** Visual skin: 'storybook' renders sb-* classes (landing drawer), 'default' keeps the in-app look */
+  appearance?: 'default' | 'storybook';
   className?: string;
 }

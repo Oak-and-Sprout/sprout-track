@@ -32,6 +32,22 @@ enum FeedType {
   SOLIDS
 }
 
+enum FoodEnjoyment {
+  HATED
+  DISLIKED
+  NEUTRAL
+  LIKED
+  LOVED
+}
+
+// Type of a manually recorded allergen (food tracker follow-up)
+enum AllergenType {
+  FOOD
+  MEDICINE
+  ENVIRONMENT
+  OTHER
+}
+
 enum BreastSide {
   LEFT
   RIGHT
@@ -198,6 +214,12 @@ model Family {
   activeActivities  ActiveActivity[]
   vaccineLogs    VaccineLog[]
   apiKeys        ApiKey[]
+  photos         Photo[]
+  photoLogs      PhotoLog[]
+  externalImportRecords ExternalImportRecord[]
+  foods          Food[]
+  foodLogs       FoodLog[]
+  babyAllergens  BabyAllergen[]
 }
 
 // New model for family membership
@@ -223,6 +245,8 @@ model Baby {
   inactive          Boolean   @default(false)
   feedWarningTime   String    @default("03:00") // Default 3 hours
   diaperWarningTime String    @default("02:00") // Default 2 hours
+  feedTimerFrom     String    @default("start") // "start" | "end" - count feed timer from start or end of feeding
+  feedTimerTypes    String? // JSON array of feed categories that reset the feed timer (issue #225); null = all feeds count
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
@@ -250,6 +274,10 @@ model Baby {
   activeActivity   ActiveActivity?
   vaccineLogs  VaccineLog[]
   apiKeys      ApiKey[]
+  photos       Photo[]
+  photoLogs    PhotoLog[]
+  foodLogs     FoodLog[]
+  babyAllergens BabyAllergen[]
 
   @@index([birthDate])
   @@index([deletedAt])
@@ -299,6 +327,10 @@ model Caretaker {
   activeBreastFeeds ActiveBreastFeed[]
   activeActivities  ActiveActivity[]
   vaccineLogs   VaccineLog[]
+  photos        Photo[]
+  photoLogs     PhotoLog[]
+  foodLogs      FoodLog[]
+  babyAllergens BabyAllergen[]
 
   @@index([deletedAt])
   @@index([familyId])
@@ -358,6 +390,7 @@ model FeedLog {
   startTime    DateTime? // Used for breast feeding duration tracking
   endTime      DateTime? // Used for breast feeding duration tracking
   feedDuration Int? // Duration in seconds, useful for tracking actual feeding time
+  pauseDuration Int? // Total session pause in seconds (same value on all rows of a breastfeed session; null on non-breast rows and legacy rows)
   type         FeedType
   amount       Float? // Amount in specified unit
   unit         Unit?       @relation(fields: [unitAbbr], references: [unitAbbr])
@@ -365,8 +398,13 @@ model FeedLog {
   side         BreastSide?
   food         String? // Description of solid foods
   notes        String? // Optional notes for any feed type
-  bottleType   String? // Type of bottle feed: formula, breast milk, formula\breast, milk, other
-  breastMilkAmount Float? // Breast milk amount used (for Formula\Breast mixed feeds)
+  hadReaction  Boolean     @default(false) // True when this feed caused a reaction (e.g. a formula intolerance)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
+  reactionCause String? // What caused the reaction (e.g. a formula name like "Similac")
+  bottleType   String? // Type of bottle feed: formula, breast milk, formula/breast, milk, other
+  breastMilkAmount Float? // Breast milk amount used (for Formula/Breast mixed feeds)
+  sessionId    String? // Groups breast feeds into one nursing session; a unique value opts a feed out of heuristic grouping
+  sourcePumpId String? @unique // Links an automatic breast-milk feed to the pump session that created it
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?
@@ -485,13 +523,16 @@ model Settings {
   defaultTempUnit     String   @default("F") // Default unit for temperature
   activitySettings    String? // JSON string for activity order and visibility settings
   sleepLocationSettings String? // JSON string for hidden sleep locations
+  bathTypeSettings    String? // JSON string for hidden bath types
   nurseryModeSettings String? // JSON string for nursery mode settings per caretaker
   enableDebugTimer    Boolean  @default(false) // Enable debug session timer
   enableDebugTimezone Boolean  @default(false) // Enable debug timezone tool
   enableBreastMilkTracking Boolean @default(true) // Enable breast milk inventory tracking (stored/fed/discarded actions, adjustments, balance)
-  includeSolidsInFeedTimer Boolean @default(true) // Include solid food feedings when calculating time since last feed
+  includeSolidsInFeedTimer Boolean @default(true) // DEPRECATED (orphaned): superseded by per-baby Baby.feedTimerTypes; no longer read or written. Kept to avoid a destructive column drop.
+  photoQuotaMB        Int? // Per-family photo quota override in MB; null = use AppConfig default
   dateFormat          String   @default("MM/DD/YYYY") // "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD"
   timeFormat          String   @default("12h") // "12h" | "24h"
+  growthChartStandard String   @default("CDC") // "CDC" | "WHO" — growth chart standard for percentile calculations
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -526,11 +567,91 @@ model Milestone {
   caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
   caretakerId String?
 
+  photos Photo[]
+
   @@index([date])
   @@index([babyId])
   @@index([caretakerId])
   @@index([deletedAt])
   @@index([familyId])
+}
+
+model Photo {
+  id              String    @id @default(uuid())
+  originalName    String
+  storedName      String // Encrypted display image (<uuid>.enc) under Files/photos/<familyId>/
+  thumbStoredName String // Encrypted ~300px thumbnail
+  mimeType        String // Mime type of the stored display image
+  fileSize        Int // Display image bytes (counts toward quota)
+  thumbSize       Int // Thumbnail bytes (counts toward quota)
+  takenAt         DateTime // EXIF-derived or user-set; drives Month grouping
+  caption         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // Trash; purge-eligible at deletedAt + 30 days
+
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+  milestone   Milestone? @relation(fields: [milestoneId], references: [id])
+  milestoneId String?
+  family      Family?    @relation(fields: [familyId], references: [id])
+  familyId    String? // Nullable initially for migration
+
+  links     PhotoLink[]
+  favorites PhotoFavorite[]
+
+  @@index([familyId])
+  @@index([babyId])
+  @@index([takenAt])
+  @@index([deletedAt])
+  @@index([milestoneId])
+}
+
+model PhotoLog {
+  id        String    @id @default(uuid())
+  time      DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+  family      Family?    @relation(fields: [familyId], references: [id])
+  familyId    String? // Nullable initially for migration
+
+  @@index([familyId])
+  @@index([babyId])
+  @@index([time])
+  @@index([deletedAt])
+}
+
+model PhotoLink {
+  id           String   @id @default(uuid())
+  photo        Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photoId      String
+  activityType String // 'photo' | 'feed' | 'milestone' | 'bath' | 'play' | 'measurement' | 'foodLog'
+  activityId   String // Polymorphic - no FK
+  createdAt    DateTime @default(now())
+
+  @@unique([photoId, activityType, activityId])
+  @@index([activityType, activityId])
+}
+
+model PhotoFavorite {
+  id          String   @id @default(uuid())
+  photo       Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photoId     String
+  caretakerId String? // Set for PIN-auth users
+  accountId   String? // Set for account-auth users
+  createdAt   DateTime @default(now())
+
+  @@index([photoId])
+  @@index([caretakerId])
+  @@index([accountId])
 }
 
 model PumpLog {
@@ -629,6 +750,7 @@ model PlayLog {
 model BathLog {
   id          String    @id @default(uuid())
   time        DateTime // Single time when the bath occurred
+  bathType    String? // e.g. "Full Bath", "Sponge Bath", "Wipe Down", or custom value
   soapUsed    Boolean   @default(true)
   shampooUsed Boolean   @default(true)
   notes       String?
@@ -919,6 +1041,92 @@ model ContactVaccine {
   @@index([vaccineLogId])
 }
 
+// Food tracking - family-scoped catalog of foods (issue #203)
+model Food {
+  id             String    @id @default(uuid())
+  name           String
+  commonAllergen Boolean   @default(false)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+
+  // Relationships
+  foodLogs FoodLog[] // Logs of food tries
+
+  @@index([name])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+// Food log table to track when a baby tries a food (issue #203)
+model FoodLog {
+  id                  String         @id @default(uuid())
+  time                DateTime
+  amount              Float? // Optional amount eaten, in unitAbbr
+  unitAbbr            String? // Unit for amount (e.g. TBSP, G); plain string, no FK
+  enjoyment           FoodEnjoyment?
+  hadReaction         Boolean        @default(false)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
+  notes               String?
+  feedLogId           String? // Optional soft link to the SOLIDS FeedLog this try happened in (no FK)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+
+  // Relationships
+  food        Food       @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  foodId      String
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([time])
+  @@index([foodId])
+  @@index([babyId])
+  @@index([caretakerId])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
+// Manually recorded allergens for a baby (food tracker follow-up).
+// Complements the allergen profile derived from reaction-flagged FoodLogs.
+model BabyAllergen {
+  id                  String       @id @default(uuid())
+  name                String
+  allergenType        AllergenType @default(FOOD)
+  reactionDescription String? // Description of the reaction (redness, swelling, ...)
+  notes               String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deletedAt           DateTime?
+
+  // Add family relation
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId String?
+
+  // Relationships
+  baby        Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  babyId      String
+  caretaker   Caretaker? @relation(fields: [caretakerId], references: [id])
+  caretakerId String?
+
+  @@index([name])
+  @@index([babyId])
+  @@index([caretakerId])
+  @@index([deletedAt])
+  @@index([familyId])
+}
+
 // New model for family setup invitations
 model FamilySetup {
   id        String   @id @default(cuid())
@@ -1032,6 +1240,8 @@ model AppConfig {
   rootDomain  String // Root domain for the application
   enableHttps Boolean  @default(false) // Whether HTTPS is enabled (0/1)
   adminEmail  String? // Admin email for feedback replies
+  enablePhotos        Boolean @default(false) // Enable the Photos feature deployment-wide
+  defaultPhotoQuotaMB Int     @default(5120) // Default per-family photo storage quota in MB
   updatedAt   DateTime @updatedAt
 }
 
@@ -1144,6 +1354,79 @@ model CdcHeadCircumferenceForAge {
   p90       Float // 90th percentile
   p95       Float // 95th percentile
   p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// WHO Growth Standard reference data for percentile calculations
+// Data from: WHO Multicentre Growth Reference Study (MGRS)
+// Uses LMS method for percentile calculations (same as CDC)
+
+// WHO Weight-for-age reference data (infants 0-24 months)
+model WhoWeightForAge {
+  id        String @id @default(uuid())
+  sex       Int // 1 = Male, 2 = Female
+  ageMonths Float // Age in months (0, 1, 2, ..., 24)
+  l         Float // L parameter (power in Box-Cox transformation)
+  m         Float // M parameter (median)
+  s         Float // S parameter (generalized coefficient of variation)
+  p3        Float // 3rd percentile
+  p5        Float // 5th percentile
+  p10       Float // 10th percentile
+  p25       Float // 25th percentile
+  p50       Float // 50th percentile (median)
+  p75       Float // 75th percentile
+  p90       Float // 90th percentile
+  p95       Float // 95th percentile
+  p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// WHO Length-for-age reference data (infants 0-24 months)
+model WhoLengthForAge {
+  id        String @id @default(uuid())
+  sex       Int
+  ageMonths Float
+  l         Float
+  m         Float
+  s         Float
+  p3        Float
+  p5        Float
+  p10       Float
+  p25       Float
+  p50       Float
+  p75       Float
+  p90       Float
+  p95       Float
+  p97       Float
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// WHO Head circumference-for-age reference data (infants 0-24 months)
+model WhoHeadCircumferenceForAge {
+  id        String @id @default(uuid())
+  sex       Int
+  ageMonths Float
+  l         Float
+  m         Float
+  s         Float
+  p3        Float
+  p5        Float
+  p10       Float
+  p25       Float
+  p50       Float
+  p75       Float
+  p90       Float
+  p95       Float
+  p97       Float
 
   @@unique([sex, ageMonths])
   @@index([sex])
@@ -1291,6 +1574,9 @@ model ActiveBreastFeed {
   isPaused             Boolean     @default(false)
   leftDuration         Int         @default(0) // Accumulated seconds for left side
   rightDuration        Int         @default(0) // Accumulated seconds for right side
+  pauseDuration        Int         @default(0) // Accumulated seconds paused within the session
+  pausedAt             DateTime?               // When the session was last paused (null when not paused)
+  firstSide            BreastSide?             // Side used first in the session (for ordering consolidated rows); null on legacy rows
   currentSideStartTime DateTime? // When current side started timing (null when paused)
   sessionStartTime     DateTime // When the overall session began
   createdAt            DateTime    @default(now())
@@ -1353,4 +1639,22 @@ model ApiKey {
   @@index([keyHash])
   @@index([familyId])
   @@index([revoked])
+}
+
+model ExternalImportRecord {
+  id               String   @id @default(uuid())
+  providerId       String
+  sourceEntityType String
+  sourceRecordId   String
+  sourceChildId    String?
+  targetEntityType String
+  targetRecordId   String
+  importedAt       DateTime @default(now())
+
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId String
+
+  @@unique([familyId, providerId, sourceEntityType, sourceRecordId])
+  @@index([familyId, providerId])
+  @@index([targetEntityType, targetRecordId])
 }

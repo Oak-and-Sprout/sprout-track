@@ -1,14 +1,19 @@
 {
+  "id": "/",
   "name": "Sprout Track",
   "short_name": "Sprout Track",
   "description": "Track your baby's sleep, feeding, diapers, milestones, and more.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0d9488",
   "theme_color": "#0d9488",
   "icons": [
-    { "src": "/sprout-128.png", "sizes": "128x128", "type": "image/png" },
-    { "src": "/sprout-256.png", "sizes": "256x256", "type": "image/png" },
-    { "src": "/sprout-1024.png", "sizes": "1024x1024", "type": "image/png" }
+    { "src": "/sprout-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/sprout-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/sprout-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/sprout-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/sprout-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/sprout-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
   ]
 }

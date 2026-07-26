@@ -13,6 +13,7 @@ A custom calendar component with styled appearance that follows the project's de
 - Responsive design with different size variants
 - Styled with the app's emerald and gray color scheme
 - Dark mode support with consistent styling
+- Full keyboard navigation of the day grid (roving tabindex)
 
 ## Usage
 
@@ -111,6 +112,27 @@ The calendar uses a page-based navigation system instead of dropdown overlays fo
 - `MonthSelectorPage.tsx` - Handles month selection with year navigation
 - `YearSelectorPage.tsx` - Handles year selection with decade pagination
 - Main calendar manages page state and transitions
+
+## Keyboard Navigation & Accessibility
+
+The day grid uses a roving tabindex: exactly one day cell is in the Tab order at a time (the last keyboard-focused cell, falling back to the selected date). The previous/next month buttons and the month/year selector buttons are all Tab-reachable and have localized `aria-label`s.
+
+With focus on a day cell:
+
+| Key | Action |
+|-----|--------|
+| `ArrowLeft` / `ArrowRight` | Previous / next day |
+| `ArrowUp` / `ArrowDown` | Same weekday in the previous / next week |
+| `Home` / `End` | First / last day of the focused week |
+| `PageUp` / `PageDown` | Same day in the previous / next month (clamped to month length) |
+| `Enter` / `Space` | Select the focused date (native button activation) |
+
+Implementation notes:
+
+- When a keyboard move targets a date outside the visible month, the calendar navigates to that month and DOM focus follows the target cell after render. Pointer interactions never trigger programmatic focus.
+- If the target cell is disabled, the roving tabindex and visible month still move, but DOM focus is not forced onto the disabled button.
+- `preventDefault` is only called for keys the calendar handles — `Tab` is left untouched so surrounding focus traps (e.g. form pages) behave normally.
+- Day cells expose `aria-label` (full formatted date) and `aria-selected`. `role="grid"` is intentionally not used because the DOM is a flat 7-column grid without row elements.
 
 ## Styling
 

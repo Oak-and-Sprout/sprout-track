@@ -5,6 +5,24 @@
 export const OZ_TO_ML = 29.5735;
 export const ML_TO_OZ = 1 / OZ_TO_ML;
 
+/** Volume units supported for breast milk / bottle amounts. */
+export const SUPPORTED_VOLUME_UNITS = ['OZ', 'ML'] as const;
+export type VolumeUnit = (typeof SUPPORTED_VOLUME_UNITS)[number];
+
+/**
+ * Normalize a volume unit abbreviation to its canonical uppercase form.
+ * Missing/blank input falls back to the 'OZ' default (matching existing callers);
+ * an explicitly unsupported unit returns null so callers can reject it instead of
+ * silently miscalculating balances (convertVolume no-ops on unknown units).
+ */
+export function normalizeVolumeUnit(unit?: string | null): VolumeUnit | null {
+  const normalized = (unit ?? '').trim().toUpperCase();
+  if (normalized === '') return 'OZ';
+  return (SUPPORTED_VOLUME_UNITS as readonly string[]).includes(normalized)
+    ? (normalized as VolumeUnit)
+    : null;
+}
+
 /**
  * Convert a volume amount between units (OZ and ML).
  * Returns the original amount if units match or conversion is not supported.

@@ -68,7 +68,7 @@ async function clearInventoryData(babyId) {
     where: {
       babyId,
       type: 'BOTTLE',
-      bottleType: { in: ['Breast Milk', 'Formula\\Breast'] },
+      bottleType: { in: ['Breast Milk', 'Formula/Breast'] },
     },
   });
   console.log(`  Deleted ${feedResult.count} breast milk bottle feeds`);

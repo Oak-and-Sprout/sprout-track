@@ -231,14 +231,15 @@ const ShareButton = React.forwardRef<HTMLButtonElement, ShareButtonProps>(
           ref={ref}
           onClick={handleShare}
           title={supportsNativeShare ? t('Share family login') : t('Copy link to clipboard')}
+          aria-label={!showText ? (supportsNativeShare ? t('Share family login') : t('Copy link to clipboard')) : undefined}
           {...props}
         >
           {copied ? (
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4" aria-hidden="true" />
           ) : supportsNativeShare ? (
-            <Share className="h-4 w-4" />
+            <Share className="h-4 w-4" aria-hidden="true" />
           ) : (
-            <Copy className="h-4 w-4" />
+            <Copy className="h-4 w-4" aria-hidden="true" />
           )}
           {showText && (
             <span className="ml-1">
@@ -247,9 +248,17 @@ const ShareButton = React.forwardRef<HTMLButtonElement, ShareButtonProps>(
           )}
         </Comp>
 
+        {/* Persistent live region so screen readers announce the copy confirmation.
+            The visible toast below mounts together with its text, so a live region
+            on the toast itself could be missed by assistive technology. */}
+        <span role="status" className="sr-only">
+          {showToast && !showText ? t('Family URL copied to clipboard!') : ''}
+        </span>
+
         {/* Toast notification - only show when text is hidden */}
         {showToast && !showText && (
           <div
+            aria-hidden="true"
             className={cn(
               "fixed top-4 left-1/2 transform -translate-x-1/2 z-50",
               "bg-teal-600 text-white px-4 py-2 rounded-lg shadow-lg",

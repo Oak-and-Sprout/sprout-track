@@ -18,6 +18,7 @@ import { styles } from './setup-wizard.styles';
 import { BabySetupStageProps } from './setup-wizard.types';
 import { Gender } from '@prisma/client';
 import { useLocalization } from '@/src/context/localization';
+import FeedTimerTypesField from '@/src/components/forms/FeedTimerTypesField';
 
 /**
  * BabySetupStage Component
@@ -36,7 +37,11 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
   feedWarningTime,
   setFeedWarningTime,
   diaperWarningTime,
-  setDiaperWarningTime
+  setDiaperWarningTime,
+  feedTimerFrom,
+  setFeedTimerFrom,
+  feedTimerTypes,
+  setFeedTimerTypes
 }) => {
   const { t } = useLocalization();
   const { dateFormat } = useTimezone();
@@ -102,7 +107,7 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
                 !babyBirthDate && "setup-wizard-date-picker-placeholder"
               )}
             >
-              <Calendar className="mr-2 h-4 w-4" />
+              <Calendar className="mr-2 h-4 w-4" aria-hidden="true" />
               {babyBirthDate ? formatDateLong(babyBirthDate, dateFormat) : t("Select date")}
             </Button>
           </PopoverTrigger>
@@ -189,6 +194,37 @@ const BabySetupStage: React.FC<BabySetupStageProps> = ({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className={cn(styles.formGroup, "setup-wizard-form-group")}>
+        <label 
+          className={cn(styles.formLabel, "setup-wizard-form-label")}
+          htmlFor="feedTimerFrom"
+        >
+          {t('Feed timer counts from')}
+        </label>
+        <Select
+          value={feedTimerFrom}
+          onValueChange={setFeedTimerFrom}
+        >
+          <SelectTrigger 
+            id="feedTimerFrom"
+            className={cn(styles.formSelect, "setup-wizard-form-select")}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="start">{t('Start of feeding')}</SelectItem>
+            <SelectItem value="end">{t('End of feeding')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className={cn(styles.formGroup, "setup-wizard-form-group")}>
+        <FeedTimerTypesField
+          value={feedTimerTypes}
+          onChange={setFeedTimerTypes}
+        />
       </div>
     </div>
   );

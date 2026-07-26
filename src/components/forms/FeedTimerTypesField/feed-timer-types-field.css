@@ -1,0 +1,8 @@
+/* Dark mode overrides for FeedTimerTypesField component */
+html.dark .feed-timer-types-description {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .feed-timer-types-option-label {
+  color: #e5e7eb !important; /* gray-200 */
+}

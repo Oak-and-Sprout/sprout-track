@@ -3,6 +3,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useDeployment } from '../../app/context/deployment';
+import {
+  isRootSlugPath,
+  loadFamilyBySlugWithRetry,
+  refreshAuthToken,
+  should401AttemptRefresh,
+} from '@/src/utils/session-timeout';
 
 interface Family {
   id: string;
@@ -18,13 +24,13 @@ interface FamilyContextType {
   setFamily: (family: Family) => void;
   families: Family[];
   loadFamilies: () => Promise<void>;
-  handleLogout?: () => void;
+  handleLogout?: (reason?: string) => void;
   authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const FamilyContext = createContext<FamilyContextType | undefined>(undefined);
 
-export function FamilyProvider({ children, onLogout }: { children: ReactNode; onLogout?: () => void }) {
+export function FamilyProvider({ children, onLogout }: { children: ReactNode; onLogout?: (reason?: string) => void }) {
   const [family, setFamily] = useState<Family | null>(() => {
     // Try to get from localStorage first for persistence
     if (typeof window !== 'undefined') {
@@ -79,39 +85,22 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
 
         // For system administrators, we need to load family by slug since they don't have a fixed familyId
         // For regular users, this also works as expected
-        let response: Response;
-        try {
-          response = await fetch(`/api/family/by-slug/${slug}`, {
-            headers: authToken ? {
-              'Authorization': `Bearer ${authToken}`
-            } : {}
-          });
-        } catch (fetchError) {
-          // Network error or fetch failed - this is expected on login page
-          // Don't set error state, just stop loading
-          setLoading(false);
-          return;
-        }
-        
-        if (!response.ok) {
-          // If response is not OK, don't throw - just stop loading
-          // This is expected when user is not authenticated
-          setLoading(false);
-          return;
-        }
-        
-        const data = await response.json();
-        if (data.success && data.data) {
-          setFamily(data.data);
-          
+        const { outcome, data } = await loadFamilyBySlugWithRetry(slug, { authToken });
+
+        if (outcome === 'valid' && data) {
+          setFamily(data);
+
           // For system administrators, store the family context so APIs can use it
           if (isSysAdmin && typeof window !== 'undefined') {
-            // Store the current family context for the session
-            sessionStorage.setItem('sysadmin-family-context', JSON.stringify(data.data));
+            sessionStorage.setItem('sysadmin-family-context', JSON.stringify(data));
           }
-        } else {
-          setError(data.error || 'Failed to load family data');
+        } else if (outcome === 'not-found') {
+          // Definitive: the slug does not resolve to a family.
+          setError('Failed to load family data');
         }
+        // 'transient': keep the last-known family (initialized from
+        // localStorage) rather than nulling it — a resumed PWA whose family
+        // fetch blips must not be treated as "family gone" (issue #209).
       } catch (err) {
         // Only set error for unexpected errors, not for network/fetch failures
         if (err instanceof Error && err.name !== 'TypeError') {
@@ -253,25 +242,39 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
           };
         }
 
-        const response = await originalFetch(...args);
+        let response = await originalFetch(...args);
 
-        // If we get a 401 Unauthorized, trigger logout
-        // BUT: Don't trigger logout if we're on the root slug page (login page)
-        // The login page expects 401s and handles authentication
-        if (response.status === 401) {
-          // Check if we're on a root slug page (login page)
-          const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-          const pathSegments = currentPath.split('/').filter(Boolean);
-          const isRootSlugPage = pathSegments.length === 1; // e.g., /goober-family
-          
-          // Only trigger logout if NOT on root slug page (login page)
-          if (!isRootSlugPage && onLogout) {
-            // Trigger logout after a short delay to avoid interfering with the current call stack
-            setTimeout(() => {
-              if (onLogout) {
-                onLogout();
+        // On a 401 from an API call (excluding auth endpoints), attempt one
+        // token refresh-and-retry before treating the session as over. A
+        // resumed PWA can fire several requests with a stale token in parallel;
+        // refreshAuthToken shares a single in-flight refresh between them
+        // (issue #209, candidate 2).
+        if (response.status === 401 && should401AttemptRefresh(url)) {
+          const refreshed = await refreshAuthToken(originalFetch);
+
+          if (refreshed) {
+            // Session is still alive — replay the original request once with the new token
+            const newToken = localStorage.getItem('authToken');
+            if (typeof args[0] === 'string') {
+              const retryOptions: RequestInit = { ...(args[1] || {}) };
+              const retryHeaders = new Headers(retryOptions.headers || {});
+              if (newToken) {
+                retryHeaders.set('Authorization', `Bearer ${newToken}`);
               }
-            }, 100);
+              retryOptions.headers = retryHeaders;
+              response = await originalFetch(args[0], retryOptions);
+            }
+          } else {
+            // Refresh failed — the session is genuinely over, trigger logout.
+            // BUT: Don't trigger logout if we're on the root slug page (login
+            // page). The login page expects 401s and handles authentication.
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+            if (!isRootSlugPath(currentPath) && onLogout) {
+              // Trigger logout after a short delay to avoid interfering with the current call stack
+              setTimeout(() => {
+                onLogout('logout-401');
+              }, 100);
+            }
           }
         }
 
@@ -304,26 +307,17 @@ export function FamilyProvider({ children, onLogout }: { children: ReactNode; on
     };
 
     try {
+      // This goes through the intercepted window.fetch above, which handles
+      // 401s (refresh-and-retry, then logout only if the refresh fails).
+      // Handling 401 here as well would double-trigger logout.
       const response = await fetch(url, mergedOptions);
-
-      // If we get a 401 Unauthorized, trigger logout
-      if (response.status === 401) {
-        // Trigger logout after a short delay to avoid interfering with the current call stack
-        if (onLogout) {
-          setTimeout(() => {
-            if (onLogout) {
-              onLogout();
-            }
-          }, 100);
-        }
-      }
 
       return response;
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
     }
-  }, [onLogout]);
+  }, []);
 
   const value = {
     family,

@@ -4,7 +4,7 @@ import { ApiResponse } from '../../types';
 
 /**
  * GET handler for public AppConfig data
- * Returns only non-sensitive configuration data (rootDomain, enableHttps)
+ * Returns only non-sensitive configuration data (rootDomain, enableHttps, enablePhotos)
  * No authentication required - used for generating share URLs
  */
 export async function GET(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       appConfig = await prisma.appConfig.create({
         data: {
           adminPass: 'admin', // Default password (will be encrypted in main endpoint)
-          rootDomain: 'localhost',
+          rootDomain: 'localhost:3000',
           enableHttps: false,
         },
       });
@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const publicConfig = {
       rootDomain: appConfig.rootDomain,
       enableHttps: appConfig.enableHttps,
+      enablePhotos: appConfig?.enablePhotos ?? false,
     };
 
     return NextResponse.json<ApiResponse<typeof publicConfig>>({

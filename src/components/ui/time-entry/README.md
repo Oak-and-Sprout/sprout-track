@@ -13,7 +13,7 @@ A clock wheel interface for time selection with an intuitive UI similar to mobil
 - Smooth animations for value changes
 - Responsive design for mobile and desktop
 - Dark mode support
-- Accessibility features
+- Keyboard-accessible hour/minute spinbuttons in the header (typed digits, Arrow Up/Down with wrapping, Home/End)
 
 ## Usage
 
@@ -69,7 +69,12 @@ The component handles:
 - Proper time calculations with AM/PM conversion
 - Validation against min/max time constraints
 - Smooth animations for clock hand rotation
-- Accessibility for keyboard navigation
+
+## Accessibility
+
+- The hour and minute values in the header are text inputs exposed as `role="spinbutton"` with `aria-valuemin`/`aria-valuemax`/`aria-valuenow` and localized `aria-label`s (`Hours`/`Minutes`). They support typing digits (clamped to the valid range), Arrow Up/Down to step with wrapping at the bounds, and Home/End to jump to the bounds. Focusing an input also switches the dial's mode, matching the old click behavior.
+- The AM/PM toggles are native `<button type="button">` elements with `aria-pressed`.
+- The analog clock face is `aria-hidden` — it remains fully pointer/touch interactive, while the header spinbuttons are the non-visual (screen reader / keyboard) path for setting the time.
 
 ## Cross-Platform Considerations
 

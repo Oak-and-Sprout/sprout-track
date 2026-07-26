@@ -18,6 +18,7 @@ import ChangePinModal from '@/src/components/modals/ChangePinModal';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { cacheDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 import UserSettingsTab from './UserSettingsTab';
 import ConfigTab from './ConfigTab';
 import AdminTab from './AdminTab';
@@ -293,6 +294,7 @@ export default function SettingsForm({
       const data = await response.json();
       if (data.success) {
         setSettings(data.data);
+        cacheDefaultBottleUnit(data.data?.defaultBottleUnit);
       } else {
         showToast({
           variant: 'error',

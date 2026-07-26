@@ -13,6 +13,11 @@
 #
 # Build from source instead of pulling:
 #   docker compose -f docker-compose.postgres.yml up -d --build
+#
+# Database settings are driven by the runtime environment below: they take
+# precedence over any values persisted in the sprout-track-env volume, so no
+# image rebuild is needed to switch providers and the stock (sqlite-built)
+# image from Docker Hub works with PostgreSQL as-is.
 
 services:
   app:

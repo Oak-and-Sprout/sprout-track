@@ -1,4 +1,5 @@
 import { ActivityType } from '../types';
+import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
 
 // Shared heatmap configuration
 export const TIME_SLOTS = 288; // 5-minute slots
@@ -96,7 +97,16 @@ export const buildHeatmapDataForActivities = (activities: ActivityType[]): Heatm
     pumps: new Array(TIME_SLOTS).fill(0),
   };
 
-  activities.forEach((activity) => {
+  // A left+right nursing session is stored as one row per side; keep one
+  // representative row per session so feed intensity isn't doubled (issue #198)
+  const isBreastFeed = (a: ActivityType) =>
+    'amount' in a && 'type' in a && (a as any).type === 'BREAST' && 'time' in a;
+  const sessionReps = groupBreastFeedSessions(
+    activities.filter(isBreastFeed) as any
+  ).map(session => session.rows[0] as unknown as ActivityType);
+  const effectiveActivities = [...activities.filter(a => !isBreastFeed(a)), ...sessionReps];
+
+  effectiveActivities.forEach((activity) => {
     const base = new Date(
       'time' in activity && activity.time
         ? activity.time

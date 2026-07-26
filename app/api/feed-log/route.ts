@@ -52,9 +52,13 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       ...(body.unitAbbr && { unitAbbr: body.unitAbbr }),
       ...(body.side && { side: body.side }),
       ...(body.food && { food: body.food }),
+      ...(body.sessionId && { sessionId: body.sessionId }),
       // Handle notes and bottleType - convert empty strings to null
       notes: body.notes && body.notes.trim() ? body.notes : null,
       bottleType: body.bottleType && body.bottleType.trim() ? body.bottleType : null,
+      hadReaction: body.hadReaction === true,
+      reactionDescription: body.reactionDescription && body.reactionDescription.trim() ? body.reactionDescription : null,
+      reactionCause: body.reactionCause && body.reactionCause.trim() ? body.reactionCause : null,
       familyId,
     };
     
@@ -151,8 +155,15 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       notes: body.notes && body.notes.trim() ? body.notes : null,
       ...(body.bottleType && body.bottleType.trim() ? { bottleType: body.bottleType } : { bottleType: null }),
       ...(body.breastMilkAmount !== undefined ? { breastMilkAmount: body.breastMilkAmount } : {}),
+      ...(body.hadReaction !== undefined ? { hadReaction: body.hadReaction === true } : {}),
+      ...(body.reactionDescription !== undefined
+        ? { reactionDescription: body.reactionDescription && body.reactionDescription.trim() ? body.reactionDescription : null }
+        : {}),
+      ...(body.reactionCause !== undefined
+        ? { reactionCause: body.reactionCause && body.reactionCause.trim() ? body.reactionCause : null }
+        : {}),
       ...Object.entries(body)
-        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'breastMilkAmount', 'familyId'].includes(key))
+        .filter(([key]) => !['time', 'startTime', 'endTime', 'feedDuration', 'notes', 'bottleType', 'breastMilkAmount', 'hadReaction', 'reactionDescription', 'reactionCause', 'familyId', 'sourcePumpId'].includes(key))
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
     };
 

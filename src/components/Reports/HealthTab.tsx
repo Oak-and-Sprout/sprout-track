@@ -349,7 +349,7 @@ const HealthTab: React.FC<HealthTabProps> = ({
   if (isLoading) {
     return (
       <div className={cn(styles.loadingContainer, "reports-loading-container")}>
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-teal-600" />
         <p className={cn(styles.loadingText, "reports-loading-text")}>{t('Loading statistics...')}</p>
       </div>
     );

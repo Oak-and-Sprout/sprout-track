@@ -161,6 +161,37 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     const babyId = searchParams.get('babyId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const bathTypes = searchParams.get('bathTypes');
+
+    // If bathTypes flag is present, return unique custom bath types
+    if (bathTypes === 'true') {
+      const defaultBathTypes = ['Full Bath', 'Sponge Bath', 'Wipe Down'];
+
+      const bathLogs = await prisma.bathLog.findMany({
+        where: {
+          familyId: userFamilyId,
+          bathType: {
+            not: null
+          },
+        },
+        distinct: ['bathType'],
+        select: {
+          bathType: true
+        }
+      });
+
+      const uniqueBathTypes = bathLogs
+        .map(log => log.bathType)
+        .filter((bathType): bathType is string => bathType !== null && bathType.trim() !== '')
+        .filter(bathType => !defaultBathTypes.some(
+          def => def.toLowerCase() === bathType.toLowerCase()
+        ));
+
+      return NextResponse.json<ApiResponse<string[]>>({
+        success: true,
+        data: uniqueBathTypes
+      });
+    }
 
     if (id) {
       const bathLog = await prisma.bathLog.findFirst({

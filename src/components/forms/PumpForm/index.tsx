@@ -20,6 +20,7 @@ import { Switch } from '@/src/components/ui/switch';
 import { useLocalization } from '@/src/context/localization';
 import { BreastMilkAdjustmentResponse } from '@/app/api/types';
 import { useUnit } from '@/src/hooks/useUnit';
+import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
 
 import './pump-form.css';
 
@@ -51,7 +52,7 @@ export default function PumpForm({
   // Adjustment mode state
   const [isAdjustMode, setIsAdjustMode] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState('');
-  const [adjustUnit, setAdjustUnit] = useState('OZ');
+  const [adjustUnit, setAdjustUnit] = useState<string>(() => readCachedDefaultBottleUnit());
   const [adjustIsAdding, setAdjustIsAdding] = useState(true);
   const [adjustReason, setAdjustReason] = useState('Initial Stock');
   const [adjustNotes, setAdjustNotes] = useState('');
@@ -99,7 +100,7 @@ export default function PumpForm({
     leftAmount: '',
     rightAmount: '',
     totalAmount: '',
-    unitAbbr: 'OZ', // Default unit
+    unitAbbr: readCachedDefaultBottleUnit() as string,
     notes: '',
   });
   const [loading, setLoading] = useState(false);
@@ -143,7 +144,7 @@ export default function PumpForm({
     if (isOpen && adjustmentActivity) {
       setIsAdjustMode(true);
       setAdjustAmount(Math.abs(adjustmentActivity.amount).toString());
-      setAdjustUnit(adjustmentActivity.unitAbbr || 'OZ');
+      setAdjustUnit(adjustmentActivity.unitAbbr || readCachedDefaultBottleUnit());
       setAdjustIsAdding(adjustmentActivity.amount >= 0);
       setAdjustReason(adjustmentActivity.reason || 'Other');
       setAdjustNotes(adjustmentActivity.notes || '');
@@ -203,7 +204,7 @@ export default function PumpForm({
           leftAmount: activity.leftAmount?.toString() || '',
           rightAmount: activity.rightAmount?.toString() || '',
           totalAmount: activity.totalAmount?.toString() || '',
-          unitAbbr: activity.unitAbbr || 'OZ',
+          unitAbbr: activity.unitAbbr || readCachedDefaultBottleUnit(),
           notes: activity.notes || '',
         });
       } else {
@@ -212,14 +213,23 @@ export default function PumpForm({
           try {
             const authToken = localStorage.getItem('authToken');
             const response = await fetch('/api/settings', {
+              cache: 'no-store',
               headers: {
                 'Authorization': authToken ? `Bearer ${authToken}` : '',
               },
             });
             if (!response.ok) return;
             const data = await response.json();
-            if (data.success && data.data?.defaultBottleUnit) {
-              setFormData(prev => ({ ...prev, unitAbbr: data.data.defaultBottleUnit }));
+            if (data.success && data.data) {
+              const defaultBottleUnit = cacheDefaultBottleUnit(data.data.defaultBottleUnit);
+              if (defaultBottleUnit) {
+                setFormData(prev => ({ ...prev, unitAbbr: defaultBottleUnit }));
+                // Only seed the adjustment unit for new entries — when editing an
+                // existing adjustment its stored unit must be preserved.
+                if (!adjustmentActivity) {
+                  setAdjustUnit(defaultBottleUnit);
+                }
+              }
             }
             setBreastMilkTrackingEnabled(data.data?.enableBreastMilkTracking ?? true);
           } catch (error) {
@@ -281,12 +291,12 @@ export default function PumpForm({
         leftAmount: '',
         rightAmount: '',
         totalAmount: '',
-        unitAbbr: 'OZ',
+        unitAbbr: readCachedDefaultBottleUnit(),
         notes: '',
       });
       setPumpAction('STORED');
       setAdjustAmount('');
-      setAdjustUnit('OZ');
+      setAdjustUnit(readCachedDefaultBottleUnit());
       setAdjustIsAdding(true);
       setAdjustReason('Initial Stock');
       setAdjustNotes('');
@@ -620,17 +630,17 @@ export default function PumpForm({
 
                 {/* Amount */}
                 <div className="space-y-2">
-                  <Label>{t('Amount')}</Label>
+                  <Label htmlFor="adjustAmount">{t('Amount')}</Label>
                   <div className="flex items-center">
-                    <Button type="button" variant="outline" size="icon" onClick={decrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
-                      <Minus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={decrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg" aria-label={t('Decrease amount')}>
+                      <Minus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                     <div className="flex mx-2">
-                      <Input type="text" inputMode="decimal" placeholder={t("0.0")} value={adjustAmount} onChange={(e) => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setAdjustAmount(e.target.value); }} className="rounded-r-none text-center text-lg w-24" />
+                      <Input id="adjustAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={adjustAmount} onChange={(e) => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setAdjustAmount(e.target.value); }} className="rounded-r-none text-center text-lg w-24" />
                       <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{unitSymbol(adjustUnit)}</div>
                     </div>
-                    <Button type="button" variant="outline" size="icon" onClick={incrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
-                      <Plus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={incrementAdjustAmount} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg" aria-label={t('Increase amount')}>
+                      <Plus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -649,8 +659,8 @@ export default function PumpForm({
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <Label>{t('Notes')}</Label>
-                  <Textarea placeholder={t("Enter any notes")} value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} rows={3} disabled={loading} />
+                  <Label htmlFor="adjustNotes">{t('Notes')}</Label>
+                  <Textarea id="adjustNotes" placeholder={t("Enter any notes")} value={adjustNotes} onChange={(e) => setAdjustNotes(e.target.value)} rows={3} disabled={loading} />
                 </div>
               </div>
             </form>
@@ -683,15 +693,15 @@ export default function PumpForm({
                 <div className="space-y-2">
                   <Label htmlFor="leftAmount">{t('Left Amount')}</Label>
                   <div className="flex items-center">
-                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button">
-                      <Minus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button" aria-label={t('Decrease left amount')}>
+                      <Minus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                     <div className="flex mx-2">
                       <Input id="leftAmount" name="leftAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={formData.leftAmount} onChange={handleInputChange} className="rounded-r-none text-center text-lg w-24" />
                       <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{unitSymbol(formData.unitAbbr)}</div>
                     </div>
-                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button">
-                      <Plus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('leftAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button" aria-label={t('Increase left amount')}>
+                      <Plus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -700,15 +710,15 @@ export default function PumpForm({
                 <div className="space-y-2">
                   <Label htmlFor="rightAmount">{t('Right Amount')}</Label>
                   <div className="flex items-center">
-                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button">
-                      <Minus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => decrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 decrement-button" aria-label={t('Decrease right amount')}>
+                      <Minus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                     <div className="flex mx-2">
                       <Input id="rightAmount" name="rightAmount" type="text" inputMode="decimal" placeholder={t("0.0")} value={formData.rightAmount} onChange={handleInputChange} className="rounded-r-none text-center text-lg w-24" />
                       <div className="inline-flex items-center px-3 bg-gray-200 border border-l-0 border-gray-300 rounded-r-md amount-unit">{unitSymbol(formData.unitAbbr)}</div>
                     </div>
-                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button">
-                      <Plus className="h-4 w-4 text-white" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => incrementAmount('rightAmount')} disabled={loading} className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-10 w-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 increment-button" aria-label={t('Increase right amount')}>
+                      <Plus className="h-4 w-4 text-white" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>

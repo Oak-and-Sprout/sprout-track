@@ -22,7 +22,7 @@ const FullLogSearchBar: React.FC<FullLogSearchBarProps> = ({
   return (
     <div className={cn("border-t border-gray-200 bg-gray-100 p-3 full-log-timeline-search-bar", styles.search.bar)}>
       <div className={cn("w-full flex items-center bg-white p-1 full-log-timeline-search-container", styles.search.container)}>
-        <Search className="h-4 w-4 text-gray-500 mr-2" />
+        <Search className="h-4 w-4 text-gray-500 mr-2" aria-hidden="true" />
         <input 
           type="text"
           placeholder={t("Search activities...")}

@@ -1,0 +1,1424 @@
+/* SaaS Homepage Styles */
+
+/* Base styles */
+.saas-homepage {
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #1f2937;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Header */
+.saas-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e5e7eb;
+  width: 100%;
+  overflow: visible;
+  /* Keep the nav below the iPhone status bar in PWA/standalone (viewport-fit: cover);
+     padding (not margin) so the blurred surface still extends under the translucent bar */
+  padding-top: env(safe-area-inset-top);
+}
+
+.saas-nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 calc(1rem + env(safe-area-inset-right)) 0 calc(1rem + env(safe-area-inset-left));
+}
+
+.saas-nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4rem;
+}
+
+.saas-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.saas-logo-image {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+}
+
+.saas-logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #0d9488, #059669);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.saas-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.saas-account-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.saas-account-btn:hover {
+  background: #f9fafb;
+  border-color: #0d9488;
+  color: #0d9488;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(13, 148, 136, 0.2);
+}
+
+.saas-signup-btn {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+  color: white;
+  border: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.saas-signup-btn:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.4);
+}
+
+.saas-theme-toggle {
+  margin-right: 0.5rem;
+}
+
+.saas-nav-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.saas-nav-link:hover {
+  color: #0d9488;
+}
+
+/* Hero Section */
+.saas-hero {
+  padding: 2rem 1rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.saas-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.saas-hero-badge {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.saas-hero-title {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+.saas-hero-animated-word {
+  background: linear-gradient(to right, #0d9488, #059669);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  min-width: 200px;
+  text-align: left;
+  position: relative;
+  transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+  will-change: transform, opacity;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.saas-hero-animated-word.animating {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+
+.saas-hero-description {
+  font-size: 1.25rem;
+  color: #6b7280;
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.saas-hero-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.saas-hero-note {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+/* Main Demo Video Section */
+.saas-main-demo {
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  z-index: 2;
+}
+
+.saas-main-demo-content {
+  max-width: 1650px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.saas-main-demo-video {
+  max-width: 1200px;
+  margin: 0 auto;
+  border: 5px solid #0d9488;
+  border-radius: 12px;
+}
+
+.saas-video-placeholder {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.saas-video-placeholder:hover {
+  transform: scale(1.02);
+}
+
+.saas-demo-thumbnail {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.saas-play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.3s ease;
+}
+
+.saas-play-button:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Transition Section with Concave Circle */
+.saas-transition-section {
+  height: 300px;
+  background-color: #ffffff;
+  position: relative;
+  z-index: 1;
+  margin-top: -180px;
+  overflow: hidden;
+}
+
+.saas-transition-content {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, #ecfdf5, #f9fafb);
+  clip-path: ellipse(120% 80% at 50% 100%);
+}
+
+
+/* Feature Sections */
+.saas-feature-section {
+  padding: 6rem 1rem;
+  position: relative;
+}
+
+.saas-feature-section:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+/* Mobile First section with smooth wave transition */
+#mobile-first {
+  background-color: #f9fafb;
+  color: #111827;
+  margin-top: 0;
+  padding-top: 8rem;
+  position: relative;
+  overflow: hidden;
+}
+
+#mobile-first::before {
+  content: '';
+  position: absolute;
+  top: -8rem;
+  left: 0;
+  right: 0;
+  height: 12rem;
+  background-color: #f9fafb;
+  clip-path: polygon(0 0, 100% 0, 100% 60%, 0 100%);
+  z-index: -1;
+  transition: all 0.3s ease;
+}
+
+#mobile-first .saas-feature-title {
+  color: #111827;
+}
+
+#mobile-first .saas-feature-description {
+  color: #6b7280;
+}
+
+#mobile-first .saas-stat-number {
+  color: #0d9488;
+}
+
+#mobile-first .saas-stat-label {
+  color: #6b7280;
+}
+
+.saas-feature-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.saas-feature-reverse .saas-feature-content {
+  grid-template-columns: 1fr 1fr;
+}
+
+.saas-feature-reverse .saas-feature-text {
+  order: 2;
+}
+
+.saas-feature-reverse .saas-feature-video {
+  order: 1;
+}
+
+.saas-feature-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.saas-feature-description {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.saas-feature-stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.saas-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.saas-stat-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0d9488;
+  display: block;
+}
+
+.saas-stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.saas-feature-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.saas-highlight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.saas-highlight-icon {
+  font-size: 1.25rem;
+}
+
+.saas-feature-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.saas-benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.saas-benefit-icon {
+  font-size: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.saas-benefit h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+}
+
+.saas-benefit p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.saas-feature-video {
+  display: flex;
+  justify-content: center;
+}
+
+.saas-feature-thumbnail {
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+}
+
+.saas-play-button-small {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.3s ease;
+}
+
+.saas-play-button-small:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Features Section */
+.saas-features {
+  padding: 5rem 1rem;
+  background-color: #f9fafb;
+}
+
+.saas-features-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.saas-features-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.saas-features-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.saas-features-description {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.saas-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.saas-feature-card {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.saas-feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.saas-feature-header {
+  margin-bottom: 1rem;
+}
+
+.saas-feature-icon-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.saas-feature-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.saas-feature-icon {
+  position: absolute;
+  bottom: -10px;
+  right: 10px;
+  background-color: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.saas-feature-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.saas-feature-description {
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Testimonials Section */
+.saas-testimonials {
+  padding: 5rem 1rem;
+  background-color: #ffffff;
+}
+
+.saas-testimonials-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.saas-testimonials-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #111827;
+  margin-bottom: 3rem;
+}
+
+.saas-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.saas-testimonial-card {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.saas-testimonial-content {
+  padding: 0;
+}
+
+.saas-testimonial-text {
+  font-style: italic;
+  color: #374151;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.saas-testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.saas-testimonial-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.saas-testimonial-name {
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.saas-testimonial-role {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* CTA Section */
+.saas-cta {
+  padding: 5rem 1rem;
+  background: linear-gradient(to bottom, #f9fafb, #ffffff);
+  /* Light gray to white gradient */
+  color: #111827;
+}
+
+.saas-cta-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.saas-cta-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.saas-cta-description {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.saas-cta-button {
+  background-color: #ffffff;
+  color: #0d8478;
+  border: none;
+  font-weight: 600;
+}
+
+.saas-cta-button:hover {
+  background-color: #f3f4f6;
+  color: #065f46;
+}
+
+/* Footer */
+.saas-footer {
+  background-color: #ffffff;
+  color: #111827;
+  /* Clear the iPhone home indicator in PWA/standalone */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.saas-footer-content {
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 2rem;
+  padding: 2rem;
+  background-color: #f9fafb;
+}
+
+.saas-footer-brand .saas-logo-text {
+  color: #0d9488;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+}
+
+.saas-footer-description {
+  color: #6b7280;
+  margin-top: 1rem;
+}
+
+.saas-footer-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.saas-footer-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.saas-footer-heading {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.saas-footer-link {
+  display: block;
+  color: #6b7280;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+}
+
+.saas-footer-link:hover {
+  color: #5eead4;
+}
+
+.saas-footer-bottom {
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem;
+  text-align: center;
+  background-color: #f9fafb;
+}
+
+.saas-footer-copyright {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .saas-nav-links {
+    display: none;
+  }
+
+  .saas-hero-title {
+    font-size: 2.5rem;
+  }
+
+  .saas-hero-animated-word {
+    min-width: 150px;
+  }
+
+  .saas-hero-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .saas-main-demo::before {
+    right: 0;
+  }
+
+  .saas-feature-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .saas-feature-reverse .saas-feature-text {
+    order: 1;
+  }
+
+  .saas-feature-reverse .saas-feature-video {
+    order: 2;
+  }
+
+  .saas-feature-title {
+    font-size: 2rem;
+  }
+
+  .saas-feature-stats {
+    justify-content: center;
+  }
+
+  .saas-features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .saas-testimonials-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .saas-footer-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 2rem;
+  }
+
+  .saas-footer-brand {
+    text-align: center;
+  }
+
+  .saas-footer-brand .saas-logo {
+    justify-content: center;
+  }
+
+  .saas-footer-demo {
+    align-items: center;
+    text-align: center;
+  }
+
+  .saas-footer-links {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark Mode Styles */
+html.dark .saas-homepage {
+  background-color: #111827;
+  color: #e5e7eb;
+}
+
+html.dark .saas-header {
+  background-color: rgba(17, 24, 39, 0.95);
+  border-bottom-color: #374151;
+}
+
+html.dark .saas-nav-link {
+  color: #9ca3af;
+}
+
+html.dark .saas-nav-link:hover {
+  color: #5eead4;
+}
+
+html.dark .saas-account-btn {
+  background: rgba(55, 65, 81, 0.3);
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+html.dark .saas-account-btn:hover {
+  background: rgba(55, 65, 81, 0.6);
+  border-color: #3ecab4;
+  color: #5eead4;
+  box-shadow: 0 4px 12px -2px rgba(94, 234, 212, 0.2);
+}
+
+html.dark .saas-hero-badge {
+  background-color: rgba(3, 84, 75, 0.9);
+  color: #8efaf4;
+  border-color: rgba(3, 84, 75, 0.3);
+}
+
+html.dark .saas-hero-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-hero-description {
+  color: #d1d5db;
+}
+
+html.dark .saas-hero-note {
+  color: #9ca3af;
+}
+
+html.dark .saas-features {
+  background-color: #1f2937;
+}
+
+html.dark .saas-features-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-features-description {
+  color: #d1d5db;
+}
+
+html.dark .saas-feature-card {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+html.dark .saas-feature-card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .saas-feature-icon {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+html.dark .saas-feature-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-feature-description {
+  color: #d1d5db;
+}
+
+html.dark .saas-testimonials {
+  background-color: #111827;
+}
+
+html.dark .saas-testimonials-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-testimonial-card {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+html.dark .saas-testimonial-text {
+  color: #d1d5db;
+}
+
+html.dark .saas-testimonial-name {
+  color: #f9fafb;
+}
+
+html.dark .saas-testimonial-role {
+  color: #9ca3af;
+}
+
+html.dark .saas-cta {
+  background: linear-gradient(135deg, #0f766e 0%, #047857 100%);
+}
+
+html.dark .saas-cta-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-cta-description {
+  color: #d1d5db;
+}
+
+html.dark .saas-footer {
+  background-color: #030712;
+}
+
+html.dark .saas-footer-content {
+  background-color: #1f2937;
+  border-top-color: #374151;
+}
+
+html.dark .saas-footer-bottom {
+  background-color: #1f2937;
+  border-top-color: #374151;
+}
+
+html.dark .saas-footer-heading {
+  color: #f9fafb;
+}
+
+html.dark .saas-footer-description {
+  color: #9ca3af;
+}
+
+html.dark .saas-footer-link {
+  color: #9ca3af;
+}
+
+html.dark .saas-footer-link:hover {
+  color: #5eead4;
+}
+
+html.dark .saas-footer-copyright {
+  color: #9ca3af;
+}
+
+html.dark .saas-feature-section:nth-child(even) {
+  background-color: #1f2937;
+}
+
+html.dark .saas-feature-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-feature-description {
+  color: #d1d5db;
+}
+
+html.dark .saas-stat-number {
+  color: #5eead4;
+}
+
+html.dark .saas-stat-label {
+  color: #9ca3af;
+}
+
+html.dark .saas-highlight {
+  color: #d1d5db;
+}
+
+html.dark .saas-benefit h4 {
+  color: #f9fafb;
+}
+
+html.dark .saas-benefit p {
+  color: #9ca3af;
+}
+
+/* Dark Mode Mobile First Section */
+html.dark #mobile-first {
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 100%);
+}
+
+html.dark #mobile-first::before {
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 100%);
+}
+
+html.dark #mobile-first .saas-feature-title {
+  color: #5eead4;
+}
+
+html.dark #mobile-first .saas-feature-description {
+  color: #a7f3d0;
+}
+
+html.dark #mobile-first .saas-stat-number {
+  color: #34d399;
+}
+
+html.dark #mobile-first .saas-stat-label {
+  color: #9ca3af;
+}
+
+/* Dark Mode Transition Section */
+html.dark .saas-transition-section {
+  background-color: #111827;
+}
+
+html.dark .saas-transition-content {
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 100%);
+}
+
+/* Privacy notice styles */
+.saas-privacy-notice {
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: center;
+  margin-top: 0.75rem;
+}
+
+html.dark .saas-privacy-notice {
+  color: #f9fafb;
+}
+
+/* Success badge styles */
+.saas-success-badge {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+html.dark .saas-success-badge {
+  background-color: #14532d;
+  color: #bbf7d0;
+  border-color: #166534;
+}
+
+/* GitHub follow button styles */
+.saas-github-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+html.dark .saas-github-text {
+  color: #9ca3af;
+}
+
+.saas-github-link {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.saas-github-link:hover {
+  color: #0d9488;
+}
+
+html.dark .saas-github-link:hover {
+  color: #5eead4;
+}
+
+/* Demo details section styles */
+.saas-demo-details {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+html.dark .saas-demo-details {
+  background-color: #374151;
+}
+
+.saas-demo-details-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+html.dark .saas-demo-details-title {
+  color: #d1d5db;
+}
+
+.saas-demo-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.saas-demo-label {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+html.dark .saas-demo-label {
+  color: #9ca3af;
+}
+
+.saas-demo-value {
+  margin-left: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  background-color: #ffffff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+}
+
+html.dark .saas-demo-value {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.saas-demo-refresh-note {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+html.dark .saas-demo-refresh-note {
+  color: #9ca3af;
+}
+
+/* Feature sections styles */
+.saas-feature-section {
+  padding: 4rem 0;
+}
+
+.saas-feature-section-white {
+  background-color: #ffffff;
+}
+
+html.dark .saas-feature-section-white {
+  background-color: #111827;
+}
+
+.saas-feature-section-gray {
+  background-color: #f9fafb;
+}
+
+html.dark .saas-feature-section-gray {
+  background-color: #1f2937;
+}
+
+.saas-feature-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1.5rem;
+}
+
+html.dark .saas-feature-title {
+  color: #f9fafb;
+}
+
+.saas-feature-description {
+  font-size: 1.125rem;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+html.dark .saas-feature-description {
+  color: #d1d5db;
+}
+
+.saas-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: #4b5563;
+}
+
+html.dark .saas-feature-list {
+  color: #d1d5db;
+}
+
+.saas-feature-list-item {
+  display: flex;
+  align-items: center;
+}
+
+.saas-phone-mockup {
+  aspect-ratio: 9/16;
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 8px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html.dark .saas-phone-mockup {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.saas-phone-mockup-text {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+html.dark .saas-phone-mockup-text {
+  color: #6b7280;
+}
+
+/* Demo phone video container */
+.saas-demo-phone-video {
+  aspect-ratio: 427/720;
+  max-width: 320px;
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 8px solid #e5e7eb;
+  overflow: hidden;
+}
+
+html.dark .saas-demo-phone-video {
+  border-color: #374151;
+}
+
+/* Pricing Section Styles */
+.saas-pricing-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.saas-pricing-card-highlighted {
+  position: relative;
+  border: 2px solid #0d9488;
+  background-color: #ecfdf5;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.saas-pricing-card-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #0d8478;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-bottom-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.saas-pricing-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.saas-pricing-card-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.saas-pricing-card-price {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.saas-pricing-card-interval {
+  color: #6b7280;
+}
+
+.saas-pricing-card-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.saas-pricing-card-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.saas-pricing-card-check {
+  color: #0d9488;
+  margin-top: 0.125rem;
+}
+
+/* Pricing Section Dark Mode */
+html.dark .saas-pricing-card {
+  border-color: #4b5563;
+  background-color: #374151;
+}
+
+html.dark .saas-pricing-card-highlighted {
+  border-color: #14b8a6;
+  background-color: rgba(13, 148, 136, 0.1);
+}
+
+html.dark .saas-pricing-card-title {
+  color: #f9fafb;
+}
+
+html.dark .saas-pricing-card-description {
+  color: #9ca3af;
+}
+
+html.dark .saas-pricing-card-price {
+  color: #f9fafb;
+}
+
+html.dark .saas-pricing-card-interval {
+  color: #9ca3af;
+}
+
+html.dark .saas-pricing-card-feature {
+  color: #d1d5db;
+}
+
+html.dark .saas-pricing-card-check {
+  color: #5eead4;
+}
+
+/* Pricing Cards on Gradient Background */
+.saas-pricing-card-on-gradient {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.saas-pricing-card-on-gradient.saas-pricing-card-highlighted {
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 2px #0d9488;
+}
+
+.saas-pricing-card-title-on-gradient {
+  color: #111827 !important;
+}
+
+.saas-pricing-card-description-on-gradient {
+  color: #4b5563 !important;
+}
+
+.saas-pricing-card-price-on-gradient {
+  color: #111827 !important;
+}
+
+.saas-pricing-card-interval-on-gradient {
+  color: #6b7280 !important;
+}
+
+.saas-pricing-card-feature-on-gradient {
+  color: #374151 !important;
+}
+
+.saas-pricing-card-check-on-gradient {
+  color: #0d9488 !important;
+}
+
+.saas-pricing-card-badge-on-gradient {
+  background-color: #0d8478;
+  color: #ffffff;
+}
+
+/* Dark Mode - Pricing Cards on Gradient Background */
+html.dark .saas-pricing-card-on-gradient {
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+html.dark .saas-pricing-card-on-gradient.saas-pricing-card-highlighted {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 2px #14b8a6;
+}
+
+html.dark .saas-pricing-card-title-on-gradient {
+  color: #ffffff !important;
+}
+
+html.dark .saas-pricing-card-description-on-gradient {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .saas-pricing-card-price-on-gradient {
+  color: #ffffff !important;
+}
+
+html.dark .saas-pricing-card-interval-on-gradient {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .saas-pricing-card-feature-on-gradient {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html.dark .saas-pricing-card-check-on-gradient {
+  color: #5eead4 !important;
+}
+
+html.dark .saas-pricing-card-badge-on-gradient {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #0d8478;
+}

@@ -106,8 +106,11 @@ async function handler(request: NextRequest, authContext: AuthResult): Promise<N
           if (envFile) {
             const envContent = await envFile.async('string');
 
-            // Save current DB connection params before overwriting
-            const preserveKeys = ['DATABASE_PROVIDER', 'DATABASE_URL', 'LOG_DATABASE_URL'];
+            // Save current DB connection params before overwriting. JWT_SECRET is
+            // preserved too: it only signs ephemeral session tokens (unlike ENC_HASH,
+            // which must come from the backup), and adopting the backup's secret would
+            // invalidate the setup session before the post-restore migrate call.
+            const preserveKeys = ['DATABASE_PROVIDER', 'DATABASE_URL', 'LOG_DATABASE_URL', 'JWT_SECRET'];
             const preserved: Record<string, string> = {};
             if (fs.existsSync(envPath)) {
               const currentEnvContent = fs.readFileSync(envPath, 'utf-8');

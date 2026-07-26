@@ -43,7 +43,7 @@ const PlayStatsSection: React.FC<PlayStatsSectionProps> = ({ stats, activities, 
     <>
       <AccordionItem value="activities">
         <AccordionTrigger className={cn(styles.accordionTrigger, "reports-accordion-trigger")}>
-          <Baby className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-activity")} />
+          <Baby aria-hidden="true" className={cn(styles.accordionTriggerIcon, "reports-accordion-trigger-icon reports-icon-activity")} />
           <span>{t('Activity Statistics')}</span>
         </AccordionTrigger>
         <AccordionContent className={styles.accordionContent}>

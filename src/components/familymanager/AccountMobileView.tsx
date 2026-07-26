@@ -122,7 +122,7 @@ export default function AccountMobileView({
                     >
                       {!account.closed ? t('Active') : t('Closed')}
                     </span>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
                   </div>
                 </div>
               </CardHeader>
@@ -133,7 +133,7 @@ export default function AccountMobileView({
                     {account.family ? (
                       <>
                         {account.family.name}
-                        <CheckCircle className="h-3 w-3 text-green-600" />
+                        <CheckCircle className="h-3 w-3 text-green-600" aria-hidden="true" />
                       </>
                     ) : (
                       t('No family')
@@ -141,9 +141,9 @@ export default function AccountMobileView({
                   </span>
                   <span className={`inline-flex items-center gap-0.5 ${account.verified ? 'text-green-600' : 'text-yellow-600'}`}>
                     {account.verified ? (
-                      <><ShieldCheck className="h-3 w-3" /> {t('Verified')}</>
+                      <><ShieldCheck className="h-3 w-3" aria-hidden="true" /> {t('Verified')}</>
                     ) : (
-                      <><Shield className="h-3 w-3" /> {t('Unverified')}</>
+                      <><Shield className="h-3 w-3" aria-hidden="true" /> {t('Unverified')}</>
                     )}
                   </span>
                 </div>
@@ -213,12 +213,12 @@ export default function AccountMobileView({
                   >
                     {selectedAccount.verified ? (
                       <>
-                        <ShieldCheck className="h-3 w-3 mr-1" />
+                        <ShieldCheck className="h-3 w-3 mr-1" aria-hidden="true" />
                         {t('Verified')}
                       </>
                     ) : (
                       <>
-                        <Shield className="h-3 w-3 mr-1" />
+                        <Shield className="h-3 w-3 mr-1" aria-hidden="true" />
                         {t('Unverified')}
                       </>
                     )}
@@ -261,7 +261,7 @@ export default function AccountMobileView({
                       onClick={() => handleConfirmAction(selectedAccount)}
                       disabled={updatingAccountId === selectedAccount.id}
                     >
-                      {updatingAccountId === selectedAccount.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                      {updatingAccountId === selectedAccount.id ? <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" /> : null}
                       {t('Confirm')}
                     </Button>
                     <Button
@@ -285,11 +285,11 @@ export default function AccountMobileView({
               disabled={updatingAccountId === selectedAccount.id}
             >
               {updatingAccountId === selectedAccount.id ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" />
               ) : selectedAccount.closed ? (
-                <CheckCircle className="h-4 w-4 mr-1" />
+                <CheckCircle className="h-4 w-4 mr-1" aria-hidden="true" />
               ) : (
-                <XCircle className="h-4 w-4 mr-1" />
+                <XCircle className="h-4 w-4 mr-1" aria-hidden="true" />
               )}
               {selectedAccount.closed ? t('Reinstate Account') : t('Close Account')}
             </Button>

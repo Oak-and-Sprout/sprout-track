@@ -87,7 +87,8 @@ html.dark .main-calendar-indicator-default {
     height: calc(100vh - 64px); /* Full height minus header */
   }
   
-  .main-calendar-days > div {
+  .main-calendar-days > div,
+  .main-calendar-days > button {
     min-height: 35px !important; /* Smaller min-height for mobile */
     height: auto !important;
   }
@@ -200,7 +201,8 @@ html.dark .main-calendar-indicator-default {
 }
 
 /* Ensure each main calendar day cell expands properly */
-.main-calendar-days > div {
+.main-calendar-days > div,
+.main-calendar-days > button {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -209,7 +211,8 @@ html.dark .main-calendar-indicator-default {
 
 /* Adjust for larger screens */
 @media (min-height: 700px) {
-  .main-calendar-days > div {
+  .main-calendar-days > div,
+  .main-calendar-days > button {
     min-height: 80px;
   }
 }

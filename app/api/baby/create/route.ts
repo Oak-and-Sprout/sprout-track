@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ApiResponse, getAuthenticatedUser } from '@/app/api/utils/auth';
 import { checkWritePermission } from '@/app/api/utils/writeProtection';
 import { Baby, Gender } from '@prisma/client';
+import { isValidFeedTimerTypes } from '@/src/utils/feedTimerConfig';
 
 const CreateBabySchema = z.object({
   familyId: z.string(),
@@ -13,6 +14,12 @@ const CreateBabySchema = z.object({
   gender: z.nativeEnum(Gender),
   feedWarningTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   diaperWarningTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
+  feedTimerFrom: z.enum(['start', 'end']).optional(),
+  feedTimerTypes: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(isValidFeedTimerTypes, 'Invalid feed timer types'),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<Baby>>> {
