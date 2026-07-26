@@ -300,23 +300,6 @@ function HomeContent(): React.ReactElement {
   const handleFeedSwap = async () => {
     if (!activeFeedData || !selectedBaby?.id) return;
     try {
-      const authToken = localStorage.getItem('authToken');
-      await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=swap`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
-        },
-      });
-      await checkFeedStatus(selectedBaby.id);
-    } catch (error) {
-      console.error('Error correcting feed side:', error);
-    }
-  };
-
-  const handleFeedSwap = async () => {
-    if (!activeFeedData || !selectedBaby?.id) return;
-    try {
       const authToken = localStorage.getItem(STORAGE.AUTH_TOKEN);
       await fetch(`/api/active-breastfeed?id=${activeFeedData.id}&action=swap`, {
         method: 'PUT',

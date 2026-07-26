@@ -59,10 +59,13 @@ export default function FeedTimerTypesField({
         {FEED_TIMER_CATEGORIES.map((category) => {
           const checked = value.includes(category);
           const disabled = checked && value.length === 1;
+          const itemId = `${prefix}-feed-timer-${category}`;
+          const labelText = t(CATEGORY_LABELS[category]);
           return (
-            <label key={category} className={optionRow()}>
+            <label key={category} className={optionRow()} htmlFor={itemId}>
               <Checkbox
-                id={`${prefix}-feed-timer-${category}`}
+                id={itemId}
+                aria-label={labelText}
                 variant="primary"
                 checked={checked}
                 disabled={disabled}
@@ -71,7 +74,7 @@ export default function FeedTimerTypesField({
               <span
                 className={cn(optionLabel(), 'feed-timer-types-option-label')}
               >
-                {t(CATEGORY_LABELS[category])}
+                {labelText}
               </span>
             </label>
           );

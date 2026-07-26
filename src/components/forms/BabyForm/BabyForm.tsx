@@ -83,8 +83,8 @@ export default function BabyForm({
         inactive: baby.inactive || false,
         feedWarningTime: baby.feedWarningTime || '03:00',
         diaperWarningTime: baby.diaperWarningTime || '02:00',
-        feedTimerFrom: (baby as any).feedTimerFrom || 'start',
-        feedTimerTypes: parseFeedTimerTypes((baby as any).feedTimerTypes) ?? [...FEED_TIMER_CATEGORIES],
+        feedTimerFrom: baby.feedTimerFrom || 'start',
+        feedTimerTypes: parseFeedTimerTypes(baby.feedTimerTypes) ?? [...FEED_TIMER_CATEGORIES],
       });
     } else if (!isOpen && !isSubmitting) {
       setFormData(defaultFormData);
@@ -252,8 +252,9 @@ export default function BabyForm({
             </div>
           </div>
           {isEditing && (
-            <label className="sb-fcheck">
-              <input type="checkbox" checked={formData.inactive}
+            <label className="sb-fcheck" htmlFor="sbBabyInactive">
+              <input id="sbBabyInactive" type="checkbox" checked={formData.inactive}
+                aria-label={t("Mark as inactive — their history stays, but they drop out of daily tracking.")}
                 onChange={(e) => setFormData({ ...formData, inactive: e.target.checked })} />
               <span>{t("Mark as inactive — their history stays, but they drop out of daily tracking.")}</span>
             </label>
@@ -402,9 +403,11 @@ export default function BabyForm({
           />
           {isEditing && (
             <div className="flex items-center space-x-2 mt-4">
-              <label className="form-label flex items-center cursor-pointer">
+              <label className="form-label flex items-center cursor-pointer" htmlFor="classicBabyInactive">
                 <input
+                  id="classicBabyInactive"
                   type="checkbox"
+                  aria-label={t('Mark as inactive')}
                   className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                   checked={formData.inactive}
                   onChange={(e) =>

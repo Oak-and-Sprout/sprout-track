@@ -415,8 +415,9 @@ export default function CaretakerForm({
                 }} />
             </div>
           </div>
-          <label className="sb-fcheck">
-            <input type="checkbox" checked={formData.inactive} disabled={isFirstCaretaker}
+          <label className="sb-fcheck" htmlFor="sbCaretakerInactive">
+            <input id="sbCaretakerInactive" type="checkbox" checked={formData.inactive} disabled={isFirstCaretaker}
+              aria-label={t("Mark as inactive — they keep their history but can't sign in.")}
               onChange={(e) => setFormData({ ...formData, inactive: e.target.checked })} />
             <span>{t("Mark as inactive — they keep their history but can't sign in.")}</span>
           </label>

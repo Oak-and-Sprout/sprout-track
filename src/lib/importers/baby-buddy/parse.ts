@@ -12,7 +12,7 @@ export function parseBabyBuddyCsv(
 ): BabyBuddyParsedCsv {
   const records = parse(content, {
     bom: true,
-    columns: header =>
+    columns: (header: string[]) =>
       header.map((value: unknown) =>
         String(value).trim().toLowerCase(),
       ),

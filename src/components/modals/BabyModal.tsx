@@ -64,8 +64,8 @@ export default function BabyModal({
         inactive: baby.inactive || false,
         feedWarningTime: baby.feedWarningTime || '03:00',
         diaperWarningTime: baby.diaperWarningTime || '02:00',
-        feedTimerFrom: (baby as any).feedTimerFrom || 'start',
-        feedTimerTypes: parseFeedTimerTypes((baby as any).feedTimerTypes) ?? [...FEED_TIMER_CATEGORIES],
+        feedTimerFrom: baby.feedTimerFrom || 'start',
+        feedTimerTypes: parseFeedTimerTypes(baby.feedTimerTypes) ?? [...FEED_TIMER_CATEGORIES],
       });
     } else if (!open) {
       setFormData(defaultFormData);
