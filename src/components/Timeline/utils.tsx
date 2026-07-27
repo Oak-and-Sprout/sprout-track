@@ -110,8 +110,19 @@ export const getActivityIcon = (activity: ActivityType) => {
     return pngIcon('/milestone-128.png'); // Milestone activity
   }
   if ('value' in activity && 'unit' in activity) {
-    // All 4 measurement types share the measurement icon for now
-    return pngIcon('/measurement-128.png');
+    // Per-type measurement illustrations, falling back to the generic icon
+    switch (activity.type) {
+      case 'WEIGHT':
+        return pngIcon('/weight-192.png');
+      case 'HEIGHT':
+        return pngIcon('/height-192.png');
+      case 'HEAD_CIRCUMFERENCE':
+        return pngIcon('/hc-measurement-192.png');
+      case 'TEMPERATURE':
+        return pngIcon('/temperature-192.png');
+      default:
+        return pngIcon('/measurement-128.png');
+    }
   }
   return null;
 };
