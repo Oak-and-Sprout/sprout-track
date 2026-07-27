@@ -5,6 +5,15 @@ import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
 import { toCaretakerResponse } from '../utils/caretaker';
 import { resolveFamilyScope } from '../utils/family-scope';
+import { isValidBadgeColorId } from '@/src/constants/caretakerBadge';
+
+// Coerce a client-supplied badge color to a known id or null, in place. Only
+// touches the object when the key is present so PUT can omit it to leave it unchanged.
+function sanitizeBadgeColor(data: { badgeColor?: string | null }) {
+  if ('badgeColor' in data) {
+    data.badgeColor = isValidBadgeColorId(data.badgeColor) ? data.badgeColor : null;
+  }
+}
 
 async function postHandler(req: NextRequest, authContext: AuthResult) {
   // Check write permissions for expired accounts
@@ -32,6 +41,8 @@ async function postHandler(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: scope.error }, { status: scope.status });
     }
     const targetFamilyId = scope.familyId;
+
+    sanitizeBadgeColor(body);
 
     // Prevent creating system caretaker through API
     if (body.loginId === '00' || body.type === 'System Administrator') {
@@ -123,6 +134,8 @@ async function putHandler(req: NextRequest, authContext: AuthResult) {
     if (updateData.securityPin === '' || updateData.securityPin === undefined || updateData.securityPin === null) {
       delete updateData.securityPin;
     }
+
+    sanitizeBadgeColor(updateData);
 
     const { searchParams } = new URL(req.url);
     const queryFamilyId = searchParams.get('familyId');

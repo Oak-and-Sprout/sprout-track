@@ -229,6 +229,7 @@ export interface CaretakerCreate {
   type?: string;
   inactive?: boolean;
   securityPin: string;
+  badgeColor?: string | null;
 }
 
 export interface CaretakerUpdate extends Partial<CaretakerCreate> {

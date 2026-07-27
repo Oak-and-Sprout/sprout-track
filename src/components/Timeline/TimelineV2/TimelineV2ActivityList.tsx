@@ -12,6 +12,7 @@ import { FOOD_ENJOYMENT_LABELS, isValidEnjoyment } from '@/src/utils/foodLogUtil
 import { useAuthedImage, useInView, photoFileUrl } from '@/src/hooks/useAuthedImage';
 import { getVisibleThumbnails } from '@/src/utils/photoUtils';
 import { TimelinePhotoInfo } from '@/app/api/types';
+import { getBadgeColorOption, getBadgeTextColor } from '@/src/constants/caretakerBadge';
 
 import '../timeline-activity-list.css';
 
@@ -208,6 +209,13 @@ const TimelineV2ActivityList = ({
                           const style = getActivityStyle(activity);
                           const description = getActivityDescription(activity, settings, t);
                           const activityTime = new Date(getActivityTime(activity));
+
+                          // Caretaker/account badge (hidden server-side for system-PIN entries).
+                          // A resolved color sets the CSS vars; otherwise the CSS gray fallback applies.
+                          const badgeOption = getBadgeColorOption(activity.caretakerBadgeColor);
+                          const caretakerBadgeStyle = badgeOption
+                            ? ({ '--badge-bg': badgeOption.hex, '--badge-fg': getBadgeTextColor(badgeOption.hex) } as React.CSSProperties)
+                            : undefined;
                           let timeStr: string;
                           
                           if ('duration' in activity && 'startTime' in activity) {
@@ -306,9 +314,19 @@ const TimelineV2ActivityList = ({
                               
                               {/* Event Content */}
                               <div className="flex-1 min-w-0 event-content">
-                                <Label className="text-sm font-semibold text-gray-900 mb-0.5 event-title">
-                                  {description.type}
-                                </Label>
+                                <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                                  <Label className="text-sm font-semibold text-gray-900 event-title truncate">
+                                    {description.type}
+                                  </Label>
+                                  {activity.caretakerName && (
+                                    <span
+                                      className="timeline-caretaker-badge"
+                                      style={caretakerBadgeStyle}
+                                    >
+                                      {activity.caretakerName}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="text-xs text-gray-600 event-details">
                                   {(() => {
 
