@@ -424,11 +424,58 @@ push configuration can never delay or break web push:
 | Feed / diaper timer expiration | `src/lib/notifications/timerCheck.ts` (`sendTimerNotification`) |
 | Medicine timer expiration | `src/lib/notifications/timerCheck.ts` (`checkTimerExpirations`) |
 
-Targeting piggybacks on the existing per-preference loop: the caretaker/account
-on the matched `PushSubscription` becomes the device-token owner, so **native push
-inherits the `NotificationPreference` system unchanged** — no separate preference
-surface, and payloads are already localized per subscriber by
+Targeting still walks the existing per-preference loop, but the owner is resolved
+through `resolvePreferenceOwner` (`src/lib/notifications/preferenceOwner.ts`)
+rather than read straight off the subscription — see
+[Preferences without a subscription](#preferences-without-a-subscription) below
+for why. Payloads are already localized per subscriber by
 `src/lib/notifications/i18n.ts`.
+
+`sendToDeviceTokens` queries `DeviceToken` by `(familyId, owner)`, not by anything
+tied to the preference row, so a user holding **both** a web preference and a
+native one would otherwise receive the same payload twice on the same device.
+Each send site therefore keeps a `Set` of `nativeOwnerKey(owner)` values for the
+notification it is currently sending and calls `sendToDeviceTokens` **once per
+distinct owner**, after the web-push loop.
+
+### Preferences without a subscription
+
+`NotificationPreference.subscriptionId` used to be a required FK to
+`PushSubscription`, and a `PushSubscription` can only be created by
+`POST /api/notifications/subscribe` with a real web-push endpoint — which is
+impossible in a `WKWebView` or the Android System WebView. That is the same
+platform limitation that makes native push necessary in the first place.
+
+The consequence was that a user who **only** used the mobile app registered a
+`DeviceToken`, granted permission, and then received nothing at all, forever:
+no `NotificationPreference` row, and no way to create one.
+
+So the preference is no longer bound to a subscription:
+
+- `subscriptionId` is optional, and `caretakerId` / `accountId` / `familyId` live
+  directly on `NotificationPreference`. `familyId` is **nullable** — deliberately,
+  because Postgres deploys apply schema with `prisma db push`, which cannot add a
+  required column with no default to a table that already has rows.
+- `resolvePreferenceOwner` treats the **subscription as authoritative when
+  present**, falling back to the preference's own columns only when there is none.
+  A subscription's owner legitimately changes over time (`subscribe` re-owns an
+  existing endpoint from the current session — a shared tablet, a PIN switch), so
+  preferring the row's stamped columns would have silently changed web-push
+  language, self-exclusion, and targeting. Web behavior is byte-identical.
+- `GET /api/notifications/preferences` matches two shapes: rows with a stamped
+  `familyId`, and legacy rows where `familyId` is null and ownership is resolved
+  **through the subscription**. Without that second branch, every pre-existing row
+  on a Postgres upgrade would be invisible to its owner while still firing pushes.
+- `buildPreferencesWhere` short-circuits to `id: { in: [] }` when the session has
+  neither a caretaker nor an account id. This is not decoration: Prisma silently
+  **drops a nested empty `OR`**, so `{ OR: [{ familyId, OR: [] }] }` compiles to a
+  bare `familyId = ?` and would return every owner's preferences in the family. A
+  top-level `OR: []` fails closed; a nested one does not. Test it by reading
+  generated SQL, never by inspecting the query object.
+
+`NotificationSettings.tsx` gains a shell-gated path that creates a
+subscription-less preference. As everywhere in this layer, `isNativeApp()` is read
+in a `useEffect` into state and the branch no-ops in a browser.
 
 Note that `NotificationLog` records the **web-push** attempt. Native sends are not
 individually logged; their health is observable through `DeviceToken.failureCount`

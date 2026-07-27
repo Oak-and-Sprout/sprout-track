@@ -225,11 +225,27 @@ honor that, it doesn't belong in this layer.
 - **Logout hands off, it doesn't navigate.** Use `if (navigateToShell({ type:
   'loggedOut', reason })) return;` before the normal `router.push` — it returns `false`
   in a browser, so one code path serves both.
-- Native push (`fcmPush.ts` + `DeviceToken`) sits **beside** VAPID web push, is
-  fire-and-forget at each send site, reuses the existing `NotificationPreference`
-  match, and no-ops entirely without `FCM_SERVICE_ACCOUNT_JSON`. Don't make web push
-  depend on it.
-- Device-token routes follow the golden rule: ownership comes only from `authContext`.
+- Native push sits **beside** VAPID web push and is fire-and-forget at each send
+  site. `nativePush.ts` is the dispatcher; `fcmPush.ts` (Android) and `apnsPush.ts`
+  (iOS, direct APNs — **no Firebase on iOS**) are pure transports. Each no-ops
+  independently when its own credentials are absent, and an unconfigured platform
+  is **skipped**, never recorded as a delivery failure. Don't make web push depend
+  on any of it.
+- **A `NotificationPreference` no longer requires a `PushSubscription`.** A WebView
+  cannot create one (no Push API), so binding them meant an app-only user received
+  nothing, ever. Owner columns live on the preference; `resolvePreferenceOwner`
+  treats the subscription as authoritative **when present** so web behavior is
+  unchanged. `familyId` is nullable on purpose — Postgres deploys via `prisma db
+  push`, which can't add a required column to a populated table.
+- **Prisma drops a *nested* empty `OR`.** `{ familyId, OR: [] }` compiles to
+  `1=0`; `{ OR: [{ familyId, OR: [] }] }` compiles to a bare `familyId = ?` and
+  leaks every owner's rows. `buildPreferencesWhere` short-circuits to
+  `id: { in: [] }` instead. Verify scoping by reading generated SQL, not by
+  inspecting the query object — a test asserting the object literal proves nothing.
+- Device-token routes follow the golden rule: ownership comes only from
+  `authContext`. The one exception is `DELETE /api/notifications/device-tokens`,
+  which is **unauthenticated by design** — the token authenticates itself, and the
+  shell has no JWT when a family is removed.
 
 ## Testing
 
