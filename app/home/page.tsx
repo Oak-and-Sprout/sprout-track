@@ -182,6 +182,7 @@ const home = () => {
           </p>
           <div className="ld-cta-row" style={{ justifyContent: 'center' }}>
             <LandingButton href="/pricing">{t('See pricing')}</LandingButton>
+            <LandingButton href="/pricing#gift" variant="ghost">{t('Give it as a gift')}</LandingButton>
           </div>
         </div>
       </section>
