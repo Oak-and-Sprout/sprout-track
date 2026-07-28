@@ -1,15 +1,12 @@
 import prisma from '../../../app/api/db';
 import { NotificationEventType } from '@prisma/client';
-import {
-  sendNotificationWithLogging,
-  NotificationPayload,
-} from './push';
-import { sendToDeviceTokens } from './nativePush';
+import { NotificationPayload } from './push';
+import { dispatchTimerPush } from './timerDispatch';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
 import { routeForNotification } from './routes';
 import { parseFeedTimerTypes, buildFeedTimerWhere, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
-import { resolvePreferenceOwner, nativeOwnerKey, PreferenceOwner } from './preferenceOwner';
+import { resolvePreferenceOwner, PreferenceOwner } from './preferenceOwner';
 
 /**
  * Parse warning time string (format: "HH:mm") to total minutes
@@ -291,36 +288,16 @@ async function sendTimerNotification(
     },
   };
 
-  // Web push: unchanged, still requires a real subscription (endpoint/keys).
-  if (preference.subscription) {
-    await sendNotificationWithLogging(
-      preference.subscription.id,
-      {
-        endpoint: preference.subscription.endpoint,
-        p256dh: preference.subscription.p256dh,
-        auth: preference.subscription.auth,
-      },
-      payload,
-      eventType,
-      null, // No activity type for timer events
-      baby.id
-    );
-  }
-
-  if (baby.familyId) {
-    const ownerKey = nativeOwnerKey(owner);
-    if (ownerKey && !nativeSent.has(ownerKey)) {
-      nativeSent.add(ownerKey);
-      sendToDeviceTokens(
-        {
-          familyId: baby.familyId,
-          caretakerId: owner.caretakerId,
-          accountId: owner.accountId,
-        },
-        payload
-      ).catch((error) => console.error('[FCM] timer push failed:', error));
-    }
-  }
+  await dispatchTimerPush({
+    subscription: preference.subscription,
+    payload,
+    eventType,
+    activityType: null, // No activity type for timer events
+    babyId: baby.id,
+    familyId: baby.familyId,
+    owner,
+    nativeSent,
+  });
 }
 
 /**
@@ -692,34 +669,16 @@ export async function checkTimerExpirations(): Promise<number> {
                   });
 
                   try {
-                    // Web push: unchanged, still requires a real subscription (endpoint/keys).
-                    if (preference.subscription) {
-                      await sendNotificationWithLogging(
-                        preference.subscription.id,
-                        {
-                          endpoint: preference.subscription.endpoint,
-                          p256dh: preference.subscription.p256dh,
-                          auth: preference.subscription.auth,
-                        },
-                        payload,
-                        NotificationEventType.MEDICINE_TIMER_EXPIRED,
-                        null,
-                        baby.id
-                      );
-                    }
-
-                    const ownerKey = nativeOwnerKey(owner);
-                    if (ownerKey && !nativeSentMedicine.has(ownerKey)) {
-                      nativeSentMedicine.add(ownerKey);
-                      sendToDeviceTokens(
-                        {
-                          familyId: baby.familyId,
-                          caretakerId: owner.caretakerId,
-                          accountId: owner.accountId,
-                        },
-                        payload
-                      ).catch((error) => console.error('[FCM] medicine timer push failed:', error));
-                    }
+                    await dispatchTimerPush({
+                      subscription: preference.subscription,
+                      payload,
+                      eventType: NotificationEventType.MEDICINE_TIMER_EXPIRED,
+                      activityType: null,
+                      babyId: baby.id,
+                      familyId: baby.familyId,
+                      owner,
+                      nativeSent: nativeSentMedicine,
+                    });
 
                     notificationsSent++;
                     console.log(`[TimerCheck] Medicine timer notification sent successfully for "${medicine.name}" (total: ${notificationsSent})`);
