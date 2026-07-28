@@ -143,6 +143,27 @@ export const GET = withAuthContext(handler);
 - Once regular caretakers are configured, the system caretaker is automatically disabled for that family
 - System caretakers and settings are created on-demand during auth if they don’t exist
 
+### Settled: account tokens in URLs are accepted
+
+Reviews keep flagging “a token in the URL reaches access logs.” Accepted across
+all three cases — do not propose moving them to fragments, POST bodies, or
+headers, and do not propose stripping them via `replaceState`.
+
+- `/setup/{token}` — not a credential at all. `FamilySetup.password` gates it,
+  `expiresAt` bounds it, and `app/api/setup/validate-token/route.ts` rejects any
+  token whose `familyId` is set, so the link dies when setup completes.
+- `/passwordreset?token=` — 128-bit (`randomBytes(16)`), 15-minute TTL,
+  single-use (cleared in the same update as the new password hash), and every
+  rejection feeds the shared IP lockout.
+- `/verify?token=` — single-use, cleared in the same update that sets
+  `verified: true`. Verification issues no session and grants no access; it
+  flips a boolean.
+
+The query-string placement is deliberate: Universal/App Links match on **path**
+and a fragment is not part of that match, so the native shell can only claim
+`/verify*` and `/passwordreset*` if the route is a real path. See
+`app/api/utils/account-emails.ts`.
+
 ## Form Handling
 
 - Forms use standard React state management with `useState` and `useEffect` — React Hook Form is not used in this project
