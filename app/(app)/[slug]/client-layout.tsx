@@ -48,6 +48,7 @@ import {
   type NativeRelockDecision,
 } from '@/src/utils/native-relock';
 import { consumeInjectedSession } from '@/src/utils/native-session';
+import { isSessionUnlocked } from '@/src/utils/session-state';
 // Loading fallback is a component so it can use the localization hook
 const PaymentModalLoading = () => {
   const { t } = useLocalization();
@@ -119,8 +120,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
   // the loop guard falls back to the web login if repeated bounces don't stick.
   const [relockDecision] = useState<NativeRelockDecision>(() => {
     if (typeof window === 'undefined') return 'show-login';
-    const unlockTime = localStorage.getItem('unlockTime');
-    const unlocked = !!unlockTime && Date.now() - parseInt(unlockTime) <= 60 * 1000;
+    // Must match the app's own answer (checkUnlockStatus below), not the
+    // 60s-fresh heuristic that seeds isUnlocked: this decision is taken once,
+    // synchronously, and acts irreversibly, so a pessimistic guess here bounces
+    // a valid session out of the app rather than being corrected on the next
+    // render. unlockTime is a last-activity stamp; its age is not a session
+    // lifetime.
+    const unlocked = isSessionUnlocked({
+      authToken: localStorage.getItem('authToken'),
+      unlockTime: localStorage.getItem('unlockTime'),
+    });
     return decideNativeRelock({
       unlocked,
       native: isNativeApp(),
@@ -744,23 +753,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
       const authToken = localStorage.getItem('authToken');
       const unlockTime = localStorage.getItem('unlockTime');
 
-      // Check if user is authenticated via account or is a system admin
-      let isAccountAuth = false;
-      let isSysAdmin = false;
-      if (authToken) {
-        try {
-          const payload = authToken.split('.')[1];
-          const decodedPayload = JSON.parse(atob(payload));
-          isAccountAuth = decodedPayload.isAccountAuth || false;
-          isSysAdmin = decodedPayload.isSysAdmin || false;
-        } catch (error) {
-          console.error('Error parsing JWT token for unlock status:', error);
-        }
-      }
-
-      // Account holders and system admins are automatically unlocked, PIN-based users need unlockTime
-      const newUnlockState = !!(authToken && (isAccountAuth || isSysAdmin || unlockTime));
-      setIsUnlocked(newUnlockState);
+      // Account holders and system admins are automatically unlocked, PIN-based
+      // users need unlockTime. Shared with the native relock gate above so the
+      // two can't drift apart again.
+      setIsUnlocked(isSessionUnlocked({ authToken, unlockTime }));
       
       // Extract user information from JWT token
       if (authToken) {

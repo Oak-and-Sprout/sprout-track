@@ -6,6 +6,7 @@ import {
   clearReauthMarker,
   REAUTH_LOOP_WINDOW_MS,
 } from '@/src/utils/native-relock';
+import { isSessionUnlocked } from '@/src/utils/session-state';
 
 const base = { unlocked: false, native: true, slug: 'smith', marker: null, now: 1000 };
 
@@ -35,6 +36,36 @@ describe('decideNativeRelock', () => {
   it('bounces for a different family even within the window', () => {
     const marker = { slug: 'jones', at: 1000 };
     expect(decideNativeRelock({ ...base, marker, now: 1001 })).toBe('return-to-shell');
+  });
+});
+
+// The gate's inputs, not just its logic. The original defect was entirely in
+// how `unlocked` was computed at the call site (a 60s-fresh window over a
+// last-activity stamp) while `decideNativeRelock` itself was correct, so these
+// exercise the seam the component wires together.
+describe('relock gate fed by the real unlock computation', () => {
+  const native = { native: true, slug: 'smith', marker: null, now: Date.now() };
+  const tokenWith = (p: Record<string, unknown>) =>
+    `header.${Buffer.from(JSON.stringify(p)).toString('base64')}.signature`;
+  const hourAgo = (Date.now() - 60 * 60 * 1000).toString();
+
+  const decide = (authToken: string | null, unlockTime: string | null) =>
+    decideNativeRelock({ ...native, unlocked: isSessionUnlocked({ authToken, unlockTime }) });
+
+  it('stays in the app for a PIN session idle for an hour', () => {
+    expect(decide(tokenWith({ name: 'Jo' }), hourAgo)).toBe('app');
+  });
+
+  it('stays in the app for an account session that never had an unlockTime', () => {
+    expect(decide(tokenWith({ isAccountAuth: true }), null)).toBe('app');
+  });
+
+  it('still returns to the shell when there is no auth token', () => {
+    expect(decide(null, hourAgo)).toBe('return-to-shell');
+  });
+
+  it('still returns to the shell for a PIN token that was never unlocked', () => {
+    expect(decide(tokenWith({ name: 'Jo' }), null)).toBe('return-to-shell');
   });
 });
 
