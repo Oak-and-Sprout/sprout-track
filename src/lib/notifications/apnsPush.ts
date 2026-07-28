@@ -93,52 +93,99 @@ function providerToken(config: ApnsConfig): string {
   return token;
 }
 
+type ApnsResult = { success: boolean; unregistered: boolean };
+type Finish = (result: ApnsResult) => void;
+
+const REQUEST_TIMEOUT_MS = 10_000;
+/** Reap a connection nobody has used for a while rather than hold a dead socket. */
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+
+interface PooledSession {
+  session: http2.ClientHttp2Session;
+  /** Finishers for requests still in flight on this session. */
+  inflight: Set<Finish>;
+}
+
+/**
+ * One HTTP/2 session per APNs host, reused across sends.
+ *
+ * Apple documents that providers should hold connections open and may treat
+ * repeated open/close as a denial-of-service attempt. It also matters locally:
+ * nativePush sends to each device token sequentially, so a family with three
+ * iOS devices used to pay three back-to-back TLS handshakes inside a single
+ * cron pass, where HTTP/2 was designed to multiplex them onto one connection.
+ *
+ * Keyed by host so a sandbox/production switch (APNS_PRODUCTION) never reuses
+ * the wrong connection.
+ */
+const pool = new Map<string, PooledSession>();
+
+/**
+ * Drop the entry from the pool and settle everything still riding on it. Called
+ * for any condition that makes the session unusable - APNs sends GOAWAY
+ * routinely, and a cached session that ignores it hands back a dead connection
+ * for every later send.
+ */
+function discard(host: string, entry: PooledSession, destroy: boolean): void {
+  if (pool.get(host) === entry) pool.delete(host);
+  const pending = Array.from(entry.inflight);
+  entry.inflight.clear();
+  for (const finish of pending) finish({ success: false, unregistered: false });
+  if (destroy) entry.session.destroy();
+}
+
+function getPooledSession(host: string): PooledSession {
+  const existing = pool.get(host);
+  if (existing && !existing.session.closed && !existing.session.destroyed) return existing;
+
+  const entry: PooledSession = { session: http2.connect(host), inflight: new Set() };
+  pool.set(host, entry);
+
+  entry.session.setTimeout(IDLE_TIMEOUT_MS, () => discard(host, entry, true));
+  entry.session.on('error', () => discard(host, entry, true));
+  entry.session.on('goaway', () => discard(host, entry, true));
+  // Already closing - evict and settle, but don't re-enter destroy().
+  entry.session.on('close', () => discard(host, entry, false));
+
+  return entry;
+}
+
 export async function sendOne(
   token: string,
   payload: NotificationPayload
-): Promise<{ success: boolean; unregistered: boolean }> {
+): Promise<ApnsResult> {
   const config = loadApnsConfig();
   if (!config) return { success: false, unregistered: false };
 
   const host = config.production ? 'https://api.push.apple.com' : 'https://api.sandbox.push.apple.com';
   const { path, headers, body } = buildApnsRequest(token, payload, config);
 
-  // One connection per send with no timeout means a stalled APNs endpoint
-  // leaves the promise unsettled and the socket open forever - under a real
-  // outage that leaks a socket per send. Both the session and the request get
-  // their own timeout so either a connect-level stall or a response-level
-  // stall is caught; `settled` guards against double-resolving if both (or a
-  // timeout racing an error/end event) fire.
-  const REQUEST_TIMEOUT_MS = 10_000;
-
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (result: { success: boolean; unregistered: boolean }) => {
+    const entry = getPooledSession(host);
+
+    // `settled` guards against double-resolving when a timeout races an error,
+    // an end event, or a session-level teardown that settles every in-flight
+    // request at once.
+    const finish: Finish = (result) => {
       if (settled) return;
       settled = true;
+      entry.inflight.delete(finish);
       resolve(result);
     };
+    entry.inflight.add(finish);
 
-    const client = http2.connect(host);
-    client.setTimeout(REQUEST_TIMEOUT_MS, () => {
-      client.destroy();
-      finish({ success: false, unregistered: false });
-    });
-    client.on('error', () => {
-      client.close();
-      finish({ success: false, unregistered: false });
-    });
-
-    const req = client.request({
+    const req = entry.session.request({
       ':method': 'POST',
       ':path': path,
       authorization: `bearer ${providerToken(config)}`,
       ...headers,
     });
-    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
-      client.destroy();
-      finish({ success: false, unregistered: false });
-    });
+
+    // A stalled request is a strong signal the whole session is unhealthy, so
+    // tear it down rather than let later sends queue behind it. This also
+    // covers a connect-level stall: the stream never gets a response either way.
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => discard(host, entry, true));
 
     let status = 0;
     let responseBody = '';
@@ -148,12 +195,10 @@ export async function sendOne(
     req.on('data', (chunk) => {
       responseBody += chunk;
     });
-    req.on('error', () => {
-      client.close();
-      finish({ success: false, unregistered: false });
-    });
+    // A single stream failing (RST_STREAM) must not take the shared connection
+    // down with it - only this request is lost.
+    req.on('error', () => finish({ success: false, unregistered: false }));
     req.on('end', () => {
-      client.close();
       const result = classifyApnsResponse(status, responseBody);
       if (!result.success) {
         console.error(`[APNs] send failed (${status}): ${responseBody.slice(0, 300)}`);

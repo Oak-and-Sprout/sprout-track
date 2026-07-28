@@ -186,3 +186,183 @@ describe('sendOne timeout handling', () => {
     expect(fake.destroy).toHaveBeenCalled();
   });
 });
+
+// Connection reuse. Each sendOne used to open its own HTTP/2 session and close
+// it on completion, so every notification paid a full TLS handshake — and
+// nativePush sends to each device token sequentially, so a family with three
+// iOS devices paid three back-to-back handshakes inside one cron pass. Apple
+// documents that providers should hold connections open and may treat
+// repeated open/close as a denial-of-service attempt.
+//
+// vi.resetModules + dynamic import per test rather than a test-only reset
+// export: the session cache is module state, and this is the honest way to get
+// a fresh one.
+describe('sendOne connection reuse', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    Object.assign(process.env, ENV);
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  function fakeSession() {
+    const sessionHandlers: Record<string, (...a: unknown[]) => void> = {};
+    const reqHandlers: Record<string, (...a: unknown[]) => void> = {};
+    let reqTimeoutCb: (() => void) | undefined;
+    const req = {
+      setTimeout: vi.fn((_ms: number, cb: () => void) => {
+        reqTimeoutCb = cb;
+      }),
+      on: vi.fn((evt: string, cb: (...a: unknown[]) => void) => {
+        reqHandlers[evt] = cb;
+        return req;
+      }),
+      end: vi.fn(),
+      close: vi.fn(),
+    };
+    const session = {
+      setTimeout: vi.fn(),
+      on: vi.fn((evt: string, cb: (...a: unknown[]) => void) => {
+        sessionHandlers[evt] = cb;
+        return session;
+      }),
+      request: vi.fn(() => req),
+      destroy: vi.fn(),
+      close: vi.fn(),
+      closed: false,
+      destroyed: false,
+    };
+    return {
+      session,
+      req,
+      respond: (status: number, body = '') => {
+        reqHandlers.response?.({ ':status': status });
+        if (body) reqHandlers.data?.(body);
+        reqHandlers.end?.();
+      },
+      fire: (evt: string, ...a: unknown[]) => sessionHandlers[evt]?.(...a),
+      fireReqTimeout: () => reqTimeoutCb?.(),
+    };
+  }
+
+  async function loadSendOne() {
+    return (await import('@/src/lib/notifications/apnsPush')).sendOne;
+  }
+
+  const PAYLOAD = { title: 'Feed due', body: 'Emma is due for a feed' };
+
+  it('opens one connection for two sequential sends', async () => {
+    const sendOneFresh = await loadSendOne();
+    const fake = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(fake.session as never);
+
+    const first = sendOneFresh('tok1', PAYLOAD);
+    fake.respond(200);
+    await expect(first).resolves.toEqual({ success: true, unregistered: false });
+
+    const second = sendOneFresh('tok2', PAYLOAD);
+    fake.respond(200);
+    await expect(second).resolves.toEqual({ success: true, unregistered: false });
+
+    expect(http2.connect).toHaveBeenCalledOnce();
+  });
+
+  it('does not tear the session down after a successful send', async () => {
+    const sendOneFresh = await loadSendOne();
+    const fake = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(fake.session as never);
+
+    const promise = sendOneFresh('tok1', PAYLOAD);
+    fake.respond(200);
+    await promise;
+
+    expect(fake.session.close).not.toHaveBeenCalled();
+    expect(fake.session.destroy).not.toHaveBeenCalled();
+  });
+
+  // APNs issues GOAWAY routinely. A cached session that ignores it keeps
+  // handing back a dead connection and every later send fails.
+  it('reconnects after the session goes away', async () => {
+    const sendOneFresh = await loadSendOne();
+    const first = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(first.session as never);
+
+    const p1 = sendOneFresh('tok1', PAYLOAD);
+    first.respond(200);
+    await p1;
+
+    first.fire('goaway');
+
+    const second = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(second.session as never);
+    const p2 = sendOneFresh('tok2', PAYLOAD);
+    second.respond(200);
+    await p2;
+
+    expect(http2.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it('reconnects after a session error', async () => {
+    const sendOneFresh = await loadSendOne();
+    const first = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(first.session as never);
+
+    const p1 = sendOneFresh('tok1', PAYLOAD);
+    first.respond(200);
+    await p1;
+
+    first.fire('error', new Error('socket hang up'));
+
+    const second = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(second.session as never);
+    const p2 = sendOneFresh('tok2', PAYLOAD);
+    second.respond(200);
+    await p2;
+
+    expect(http2.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it('reconnects after a request-level stall killed the session', async () => {
+    const sendOneFresh = await loadSendOne();
+    const first = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(first.session as never);
+
+    const p1 = sendOneFresh('tok1', PAYLOAD);
+    first.fireReqTimeout();
+    await expect(p1).resolves.toEqual({ success: false, unregistered: false });
+
+    const second = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(second.session as never);
+    const p2 = sendOneFresh('tok2', PAYLOAD);
+    second.respond(200);
+    await expect(p2).resolves.toEqual({ success: true, unregistered: false });
+
+    expect(http2.connect).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps sandbox and production on separate connections', async () => {
+    const sendOneFresh = await loadSendOne();
+    const prod = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(prod.session as never);
+
+    const p1 = sendOneFresh('tok1', PAYLOAD);
+    prod.respond(200);
+    await p1;
+
+    process.env.APNS_PRODUCTION = 'false';
+    const sandbox = fakeSession();
+    vi.mocked(http2.connect).mockReturnValue(sandbox.session as never);
+    const p2 = sendOneFresh('tok2', PAYLOAD);
+    sandbox.respond(200);
+    await p2;
+
+    expect(http2.connect).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(http2.connect).mock.calls[0][0]).toBe('https://api.push.apple.com');
+    expect(vi.mocked(http2.connect).mock.calls[1][0]).toBe('https://api.sandbox.push.apple.com');
+  });
+});
