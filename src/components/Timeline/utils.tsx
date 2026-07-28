@@ -48,9 +48,11 @@ const isPlayActivity = (activity: any): boolean => {
 
 // EXPLORATION: render the activity's real PNG illustration instead of a mono
 // lucide glyph. `timeline-png-icon` lets the CSS strip the colored box padding
-// so the circular illustration fills the icon slot cleanly.
+// so the circular illustration fills the icon slot cleanly. The 36px size lives
+// on the img itself (not the slot) so it renders identically in every consumer —
+// timeline, V2 timeline and full log — regardless of the slot's own sizing.
 const pngIcon = (src: string) => (
-  <img src={src} alt="" aria-hidden="true" className="timeline-png-icon" />
+  <img src={src} alt="" aria-hidden="true" className="timeline-png-icon block h-9 w-9 object-contain" />
 );
 
 export const getActivityIcon = (activity: ActivityType) => {

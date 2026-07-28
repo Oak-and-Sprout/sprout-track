@@ -14,7 +14,7 @@ export const styles = {
     input: "border-0 bg-transparent focus:ring-0 focus:border-0 h-8 px-0 py-1",
   },
   // Container styles
-  container: "flex flex-col h-[calc(100vh-80px)] border-t-[1px] border-white",
+  container: "flex flex-col h-[calc(100vh-80px)]",
   
   // Header styles - now inline in the component
   // header: "py-2 bg-gradient-to-r from-teal-600 to-teal-700 border-0",

@@ -164,16 +164,22 @@
 
 /* EXPLORATION: when the slot holds a real PNG illustration, drop the colored
    box + padding so the self-contained circular art fills the 36px slot. The
-   circular radius makes the 3px stroke hug the round illustration cleanly. */
+   circular radius makes the 3px stroke hug the round illustration cleanly.
+   The image sizes itself (36px, set in utils.tsx) — the slot just wraps it. */
 .event-icon:has(.timeline-png-icon) {
   background: transparent !important;
   padding: 0;
+  border: 0;
   border-radius: 50%;
 }
-.timeline-png-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+
+/* Legacy timeline cards: same treatment — the illustration carries its own
+   colored background, so the tinted box + padding around it are dropped. */
+.timeline-card-activity-icon:has(.timeline-png-icon) {
+  background: none;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
 }
 
 .event-icon.sleep { 
