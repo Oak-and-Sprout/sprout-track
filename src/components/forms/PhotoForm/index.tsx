@@ -10,7 +10,7 @@ import { PhotoQuotaMeter } from '@/src/components/ui/photo-quota-meter';
 import { fetchPhotos } from '@/src/utils/photoClientApi';
 import AddPhotoTab from './AddPhotoTab';
 import PhotoLibraryTab from './PhotoLibraryTab';
-import { PhotoFormProps } from './photo-form.types';
+import { PhotoAddActions, PhotoFormProps } from './photo-form.types';
 import './photo-form.css';
 
 export default function PhotoForm({ isOpen, onClose, babyId, initialTime, activity, onSuccess, onOpenPhoto }: PhotoFormProps) {
@@ -18,6 +18,7 @@ export default function PhotoForm({ isOpen, onClose, babyId, initialTime, activi
   const [activeTab, setActiveTab] = useState<string>('add');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [quota, setQuota] = useState<{ usedBytes: number; totalBytes: number } | null>(null);
+  const [addActions, setAddActions] = useState<PhotoAddActions | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,7 +41,16 @@ export default function PhotoForm({ isOpen, onClose, babyId, initialTime, activi
       content: (
         <>
           {quota && <PhotoQuotaMeter usedBytes={quota.usedBytes} totalBytes={quota.totalBytes} className="mb-4" />}
-          <AddPhotoTab isOpen={isOpen} babyId={babyId} initialTime={initialTime} activity={activity} onClose={onClose} onSuccess={handleSuccess} refreshTrigger={refreshTrigger} />
+          <AddPhotoTab
+            isOpen={isOpen}
+            babyId={babyId}
+            initialTime={initialTime}
+            activity={activity}
+            onClose={onClose}
+            onSuccess={handleSuccess}
+            refreshTrigger={refreshTrigger}
+            onActionsChange={setAddActions}
+          />
         </>
       ),
     },
@@ -60,9 +70,26 @@ export default function PhotoForm({ isOpen, onClose, babyId, initialTime, activi
   return (
     <FormPage isOpen={isOpen} onClose={onClose} title={t('Photo Tracker')} tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab}>
       <FormPageFooter>
-        <Button variant="outline" onClick={onClose}>
-          {t('Close')}
-        </Button>
+        {activeTab === 'add' && addActions ? (
+          <div className="flex justify-end w-full space-x-2">
+            {addActions.onDelete && (
+              <Button variant="destructive" onClick={addActions.onDelete} disabled={addActions.saving}>
+                {t('Delete')}
+              </Button>
+            )}
+            <span className="flex-1" />
+            <Button variant="outline" onClick={addActions.onCancel} disabled={addActions.saving}>
+              {t('Cancel')}
+            </Button>
+            <Button onClick={addActions.onSave} disabled={addActions.saving || !addActions.canSave}>
+              {addActions.saving ? t('Saving...') : t('Save Photo')}
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={onClose}>
+            {t('Close')}
+          </Button>
+        )}
       </FormPageFooter>
     </FormPage>
   );

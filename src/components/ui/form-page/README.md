@@ -6,8 +6,7 @@ A full-screen form page component that slides in from the right side of the scre
 
 - Smooth slide-in/out animation from the right side of the screen
 - Responsive design that works on both mobile and desktop
-- On mobile, form content is centered
-- On screens above 600px, form content is left-aligned
+- Form fields span the full panel content width (same as tabbed forms)
 - Keyboard accessibility (Escape key closes the form page)
 - Focus management for improved accessibility
 - Fixed footer for action buttons (like save and cancel)

@@ -64,18 +64,16 @@ export function FormPageHeader({
 /**
  * FormPageContent component
  * 
- * The main content area of the form page
+ * Inner form layout within FormPage's scrollable content shell.
+ * FormPage owns scrolling/padding; this applies the full-width form column.
  */
 export function FormPageContent({ 
   children, 
   className 
 }: FormPageContentProps) {
-  const { theme } = useTheme();
   return (
-    <div className={cn(formPageStyles.content, className, "form-page-content")}>
-      <div className={formPageStyles.formContent}>
-        {children}
-      </div>
+    <div className={cn(formPageStyles.formContent, className, "form-page-content")}>
+      {children}
     </div>
   );
 }
@@ -176,8 +174,8 @@ export function FormPageTabs({
  * Can be used with or without tabs. When tabs are provided, it will render
  * a tabbed interface. Otherwise, it renders the children directly.
  * 
- * On mobile, the form content is centered, while on larger screens (>600px),
- * the form content is left-aligned.
+ * Form fields span the full panel content width. Tabbed and non-tabbed
+ * layouts share the same width behavior.
  */
 export function FormPage({
   isOpen,
@@ -371,10 +369,8 @@ export function FormPage({
                 {activeTabContent}
               </div>
             ) : (
-              // Render children directly when no tabs
-              <div className={formPageStyles.formContent}>
-                {children}
-              </div>
+              // FormPageContent owns formContent; footer is a sibling — avoid double-wrapping
+              children
             )}
           </div>
         )}
