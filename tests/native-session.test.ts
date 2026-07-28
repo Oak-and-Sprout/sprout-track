@@ -15,7 +15,10 @@ function makeEnv(overrides: Partial<InjectedSessionEnv> = {}): InjectedSessionEn
     pathname: '/smith-family/log-entry',
     search: '',
     native: true,
-    storage: { setItem: (k, v) => { stored[k] = v } },
+    storage: {
+      setItem: (k, v) => { stored[k] = v },
+      removeItem: (k) => { delete stored[k] },
+    },
     replaceUrl: url => replaced.push(url),
     now: () => 1_752_000_000_000,
     stored,
@@ -42,6 +45,30 @@ describe('consumeInjectedSessionFrom', () => {
     })
     expect(consumeInjectedSessionFrom(env)).toBe(true)
     expect('caretakerId' in env.stored).toBe(false)
+  })
+
+  // Switching families in the shell reuses the same origin, so localStorage
+  // carries over. An account login sends no caretakerId (connect.ts spreads it
+  // only when defined), so leaving the previous family's value in place meant
+  // it was still read by useNurserySettings and ActivityTileGroup afterwards.
+  it('clears a previous family\'s caretakerId when the injected session has none', () => {
+    const env = makeEnv({
+      hash: '#bridge-session=' + encodeURIComponent(encodeMessage({
+        type: 'sessionInjected', slug: 'smith-family', token: 'jwt123',
+      })),
+    })
+    env.stored.caretakerId = 'caretaker-from-previous-family'
+
+    expect(consumeInjectedSessionFrom(env)).toBe(true)
+    expect('caretakerId' in env.stored).toBe(false)
+  })
+
+  it('replaces a previous family\'s caretakerId when the injected session has one', () => {
+    const env = makeEnv()
+    env.stored.caretakerId = 'caretaker-from-previous-family'
+
+    expect(consumeInjectedSessionFrom(env)).toBe(true)
+    expect(env.stored.caretakerId).toBe('42')
   })
 
   it('no-ops entirely without the fragment', () => {

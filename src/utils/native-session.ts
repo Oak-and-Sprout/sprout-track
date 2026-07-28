@@ -8,7 +8,10 @@ export interface InjectedSessionEnv {
   pathname: string;
   search: string;
   native: boolean;
-  storage: { setItem(key: string, value: string): void };
+  storage: {
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+  };
   replaceUrl: (url: string) => void;
   now: () => number;
 }
@@ -36,7 +39,12 @@ export function consumeInjectedSessionFrom(env: InjectedSessionEnv): boolean {
   }
   env.storage.setItem('authToken', decoded.msg.token);
   env.storage.setItem('unlockTime', env.now().toString());
+  // Must be cleared, not just skipped: switching families in the shell reuses
+  // the same origin, so a caretakerId from the previous family would otherwise
+  // survive an account login (which carries none) and keep being read as the
+  // owner of nursery and tile settings.
   if (decoded.msg.caretakerId) env.storage.setItem('caretakerId', decoded.msg.caretakerId);
+  else env.storage.removeItem('caretakerId');
   strip();
   return true;
 }
