@@ -9,6 +9,7 @@ interface AdminCounts {
   invites: number;
   accounts: number;
   feedback: number;
+  giftCodes?: number;
 }
 
 interface AdminCountContextType {
@@ -56,20 +57,27 @@ export function AdminCountProvider({ children }: { children: React.ReactNode }) 
       }
 
       if (isSaasMode) {
-        const [accountsRes, feedbackRes] = await Promise.all([
+        const [accountsRes, feedbackRes, giftCodesRes] = await Promise.all([
           authFetch('/api/accounts/manage'),
           authFetch('/api/feedback'),
+          authFetch('/api/gift-codes'),
         ]);
 
-        const [accountsData, feedbackData] = await Promise.all([
+        const [accountsData, feedbackData, giftCodesData] = await Promise.all([
           accountsRes.json(),
           feedbackRes.json(),
+          giftCodesRes.json(),
         ]);
 
         if (accountsData.success) newCounts.accounts = accountsData.data.length;
         if (feedbackData.success) {
           newCounts.feedback = feedbackData.data.filter(
             (item: { viewed: boolean }) => !item.viewed
+          ).length;
+        }
+        if (giftCodesData.success) {
+          newCounts.giftCodes = giftCodesData.data.filter(
+            (c: { status: string }) => c.status === 'active'
           ).length;
         }
       }
