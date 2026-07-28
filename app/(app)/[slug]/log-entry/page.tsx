@@ -30,6 +30,7 @@ import { NoBabySelected } from '@/src/components/ui/no-baby-selected';
 import ActiveFeedBanner from '@/src/components/ActiveFeedBanner';
 import ActiveActivityBanner from '@/src/components/ActiveActivityBanner';
 import { fetchPhotosEnabled, fetchPhotos } from '@/src/utils/photoClientApi';
+import { formatLocalDateTimeInput } from '@/src/utils/dateTimeInput';
 
 function HomeContent(): React.ReactElement {
   const { selectedBaby, setSelectedBaby, sleepingBabies, setSleepingBabies, feedingBabies, setFeedingBabies, accountStatus, isAccountAuth, isCheckingAccountStatus } = useBaby();
@@ -214,22 +215,31 @@ function HomeContent(): React.ReactElement {
     }
   };
 
+  const refreshLocalTime = useCallback(() => {
+    setLocalTime(formatLocalDateTimeInput(new Date()));
+  }, []);
+
   useEffect(() => {
-    // Set initial time
-    const now = new Date();
-    setLocalTime(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+    refreshLocalTime();
 
-    // Update time every minute
-    const interval = setInterval(() => {
-      const now = new Date();
-      setLocalTime(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
-    }, 60000);
+    const interval = setInterval(refreshLocalTime, 60000);
 
-    // Add listeners for user activity
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshLocalTime();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      refreshLocalTime();
+    };
+
     window.addEventListener('click', updateUnlockTimer);
     window.addEventListener('keydown', updateUnlockTimer);
     window.addEventListener('mousemove', updateUnlockTimer);
     window.addEventListener('touchstart', updateUnlockTimer);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       clearInterval(interval);
@@ -237,8 +247,10 @@ function HomeContent(): React.ReactElement {
       window.removeEventListener('keydown', updateUnlockTimer);
       window.removeEventListener('mousemove', updateUnlockTimer);
       window.removeEventListener('touchstart', updateUnlockTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
     };
-  }, []);
+  }, [refreshLocalTime]);
 
   useEffect(() => {
     const initializeData = async () => {

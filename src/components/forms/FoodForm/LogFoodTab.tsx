@@ -37,6 +37,7 @@ import {
  * toggle with description, notes, and photo attachments.
  */
 const LogFoodTab: React.FC<LogFoodTabProps> = ({
+  isOpen,
   babyId,
   initialTime,
   onSuccess,
@@ -146,31 +147,45 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Initialize form when editing
+  // Initialize when the form opens; reset when it closes (matches FeedForm/DiaperForm)
   useEffect(() => {
-    if (activity && !isInitialized) {
-      setFoodName(activity.food?.name || '');
-      setAmount(activity.amount != null ? activity.amount.toString() : '');
-      if (activity.unitAbbr) {
-        setUnit(activity.unitAbbr);
+    if (isOpen && !isInitialized) {
+      if (activity) {
+        setFoodName(activity.food?.name || '');
+        setAmount(activity.amount != null ? activity.amount.toString() : '');
+        if (activity.unitAbbr) {
+          setUnit(activity.unitAbbr);
+        }
+        setEnjoyment(
+          FOOD_ENJOYMENT_VALUES.includes(activity.enjoyment as FoodEnjoymentValue)
+            ? (activity.enjoyment as FoodEnjoymentValue)
+            : null
+        );
+        setHadReaction(activity.hadReaction === true);
+        setReactionDescription(activity.reactionDescription || '');
+        setNotes(activity.notes || '');
+        const d = new Date(activity.time);
+        if (!isNaN(d.getTime())) {
+          setSelectedDateTime(d);
+        }
+      } else {
+        try {
+          const date = new Date(initialTime);
+          if (!isNaN(date.getTime())) {
+            setSelectedDateTime(date);
+          }
+        } catch (error) {
+          console.error('Error parsing initialTime:', error);
+        }
       }
-      setEnjoyment(
-        FOOD_ENJOYMENT_VALUES.includes(activity.enjoyment as FoodEnjoymentValue)
-          ? (activity.enjoyment as FoodEnjoymentValue)
-          : null
-      );
-      setHadReaction(activity.hadReaction === true);
-      setReactionDescription(activity.reactionDescription || '');
-      setNotes(activity.notes || '');
-      const d = new Date(activity.time);
-      if (!isNaN(d.getTime())) {
-        setSelectedDateTime(d);
-      }
+
       setIsInitialized(true);
-    } else if (!activity && !isInitialized) {
-      setIsInitialized(true);
+    } else if (!isOpen) {
+      setIsInitialized(false);
+      setPendingPhotoFiles([]);
+      setRemovedPhotoIds([]);
     }
-  }, [activity, isInitialized]);
+  }, [isOpen, activity, initialTime]);
 
   // Reset initialized flag when the edited activity changes
   useEffect(() => {

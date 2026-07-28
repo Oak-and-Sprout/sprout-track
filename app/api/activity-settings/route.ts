@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse, ActivitySettings } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import {
+  DEFAULT_ACTIVITY_TILE_ORDER,
+  mergeMissingActivityTiles,
+} from '@/src/utils/activityTileOrder';
 
 /**
  * GET /api/activity-settings
@@ -28,8 +32,8 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
     
     // Default settings to use if none are found
     const defaultSettings: ActivitySettings = {
-      order: ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'],
-      visible: ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'],
+      order: [...DEFAULT_ACTIVITY_TILE_ORDER],
+      visible: [...DEFAULT_ACTIVITY_TILE_ORDER],
       caretakerId: caretakerId || null,
     };
     
@@ -83,15 +87,12 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
           console.log(`Found ${missingActivities.length} missing activities for caretakerId: ${caretakerId}`, missingActivities);
           
           // Add missing activities to order and visible arrays
-          const updatedOrder = [...caretakerSettings.order, ...missingActivities];
-          
-          // Add missing activities to visible array if they're visible in default settings
-          const updatedVisible = [...caretakerSettings.visible];
-          for (const activity of missingActivities) {
-            if (defaultSettings.visible.includes(activity) && !updatedVisible.includes(activity)) {
-              updatedVisible.push(activity);
-            }
-          }
+          const merged = mergeMissingActivityTiles({
+            order: caretakerSettings.order,
+            visible: caretakerSettings.visible,
+          });
+          const updatedOrder = merged.order;
+          const updatedVisible = merged.visible;
           
           // Update settings in the database
           allSettings[caretakerId] = {
@@ -146,24 +147,21 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
         );
         
         // Create caretaker settings based on global settings
-        const caretakerOrder = [...globalSettings.order];
-        const caretakerVisible = [...globalSettings.visible];
+        let caretakerOrder = [...globalSettings.order];
+        let caretakerVisible = [...globalSettings.visible];
         
         // Add any missing activities
         let settingsUpdated = false;
         if (missingActivities.length > 0) {
           console.log(`Found ${missingActivities.length} missing activities in global settings`, missingActivities);
-          
-          // Add missing activities to order and visible arrays
-          for (const activity of missingActivities) {
-            caretakerOrder.push(activity);
-            
-            // Add to visible if it's visible in default settings
-            if (defaultSettings.visible.includes(activity) && !caretakerVisible.includes(activity)) {
-              caretakerVisible.push(activity);
-            }
-          }
-          
+
+          const merged = mergeMissingActivityTiles({
+            order: caretakerOrder,
+            visible: caretakerVisible,
+          });
+          caretakerOrder = merged.order;
+          caretakerVisible = merged.visible;
+
           settingsUpdated = true;
         }
         
@@ -217,16 +215,12 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
       if (missingActivities.length > 0) {
         console.log(`Found ${missingActivities.length} missing activities in global settings`, missingActivities);
         
-        // Add missing activities to order and visible arrays
-        const updatedOrder = [...globalSettings.order, ...missingActivities];
-        
-        // Add missing activities to visible array if they're visible in default settings
-        const updatedVisible = [...globalSettings.visible];
-        for (const activity of missingActivities) {
-          if (defaultSettings.visible.includes(activity) && !updatedVisible.includes(activity)) {
-            updatedVisible.push(activity);
-          }
-        }
+        const merged = mergeMissingActivityTiles({
+          order: globalSettings.order,
+          visible: globalSettings.visible,
+        });
+        const updatedOrder = merged.order;
+        const updatedVisible = merged.visible;
         
         // Update settings in the database
         allSettings.global = {
@@ -274,8 +268,8 @@ async function getActivitySettings(req: NextRequest, authContext: AuthResult): P
     return NextResponse.json({ 
       success: true, 
       data: {
-        order: ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'],
-        visible: ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'],
+        order: [...DEFAULT_ACTIVITY_TILE_ORDER],
+        visible: [...DEFAULT_ACTIVITY_TILE_ORDER],
         caretakerId: errorCaretakerId || null,
       }
     });
@@ -312,33 +306,23 @@ async function saveActivitySettings(req: NextRequest, authContext: AuthResult): 
       );
     }
     
-    // Default activities list - keep in sync with the one in getActivitySettings
-    const defaultActivities = [
-      'sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'
-    ];
+    const defaultActivities = [...DEFAULT_ACTIVITY_TILE_ORDER];
     
     // Check for any missing activities in the provided order
     const missingActivities = defaultActivities.filter(
       activity => !order.includes(activity)
     );
     
-    // If there are missing activities, add them to the order and visible arrays
     let updatedOrder = [...order];
     let updatedVisible = [...visible];
     
     if (missingActivities.length > 0) {
       console.log(`Found ${missingActivities.length} missing activities in submitted settings`, missingActivities);
-      
-      // Add missing activities to order array
-      updatedOrder = [...order, ...missingActivities];
-      
-      // Add missing activities to visible array if they should be visible by default
-      for (const activity of missingActivities) {
-        if (defaultActivities.includes(activity) && !updatedVisible.includes(activity)) {
-          updatedVisible.push(activity);
-        }
-      }
-      
+
+      const merged = mergeMissingActivityTiles({ order, visible });
+      updatedOrder = merged.order;
+      updatedVisible = merged.visible;
+
       console.log('Updated order and visible arrays with missing activities');
     }
 
@@ -365,8 +349,8 @@ async function saveActivitySettings(req: NextRequest, authContext: AuthResult): 
           defaultTempUnit: 'F',
           activitySettings: JSON.stringify({
             global: {
-              order: ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'],
-              visible: ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food']
+              order: [...DEFAULT_ACTIVITY_TILE_ORDER],
+              visible: [...DEFAULT_ACTIVITY_TILE_ORDER],
             }
           }),
         }
