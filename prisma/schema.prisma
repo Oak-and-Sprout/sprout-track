@@ -168,6 +168,7 @@ model Account {
   pushSubscriptions PushSubscription[]
   deviceTokens DeviceToken[]
   notificationPreferences NotificationPreference[]
+  redeemedGiftCodes GiftCode[]
 
   @@index([email])
   @@index([verified])
@@ -1177,6 +1178,26 @@ model BetaSubscriber {
   @@index([source])
   @@index([createdAt])
   @@index([deletedAt])
+}
+
+// Lifetime-license gift codes (SaaS mode). Status is derived:
+// revokedAt set -> revoked, else redeemedAt set -> redeemed, else active.
+model GiftCode {
+  id              String    @id @default(cuid())
+  code            String    @unique // e.g. ABCD-EFGH-JKLM-NPQR
+  source          String // 'purchase' | 'admin'
+  purchaserEmail  String? // buyer email from Stripe, or admin "issued to"
+  stripeSessionId String?   @unique // checkout session id; webhook idempotency
+  stripePaymentId String?
+  redeemedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  redeemedByAccount   Account? @relation(fields: [redeemedByAccountId], references: [id])
+  redeemedByAccountId String?
+
+  @@index([redeemedByAccountId])
 }
 
 // Future-proof campaign system
