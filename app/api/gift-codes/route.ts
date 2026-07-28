@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/app/api/db';
 import { withSysAdminAuth, ApiResponse } from '@/app/api/utils/auth';
-import { giftCodeStatus, GiftCodeStatus } from '@/src/utils/giftCodeUtils';
+import { giftCodeStatus, GiftCodeStatus, parseGenerateGiftCodesRequest } from '@/src/utils/giftCodeUtils';
 import { createUniqueGiftCode } from '@/app/api/utils/gift-codes';
 import { sendGiftCodeEmail } from '@/app/api/utils/account-emails';
 
@@ -76,9 +76,7 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<G
 
   try {
     const body = await req.json();
-    const quantity = Math.min(Math.max(Number(body?.quantity) || 1, 1), 20);
-    const email = typeof body?.email === 'string' && body.email.includes('@') ? body.email : null;
-    const shouldSendEmail = Boolean(body?.sendEmail) && email !== null;
+    const { quantity, email, sendEmail: shouldSendEmail } = parseGenerateGiftCodesRequest(body);
 
     const created: GiftCodeRow[] = [];
     for (let i = 0; i < quantity; i++) {

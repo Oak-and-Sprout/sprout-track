@@ -78,3 +78,14 @@ export function giftUniqueViolationAction(target: unknown): 'already-fulfilled' 
   const fields = Array.isArray(target) ? target.join(',') : String(target ?? '');
   return fields.includes('stripeSessionId') ? 'already-fulfilled' : 'retry-code';
 }
+
+export function parseGenerateGiftCodesRequest(
+  body: unknown,
+): { quantity: number; email: string | null; sendEmail: boolean } {
+  const bodyAny = body as any;
+  const quantity = Math.min(Math.max(Number(bodyAny?.quantity) || 1, 1), 20);
+  const email =
+    typeof bodyAny?.email === 'string' && bodyAny.email.includes('@') ? bodyAny.email : null;
+  const sendEmail = Boolean(bodyAny?.sendEmail) && email !== null;
+  return { quantity, email, sendEmail };
+}

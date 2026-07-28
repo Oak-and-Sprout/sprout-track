@@ -8,6 +8,7 @@ import {
   isGiftCheckoutSession,
   resolveGiftPriceId,
   giftUniqueViolationAction,
+  parseGenerateGiftCodesRequest,
 } from '@/src/utils/giftCodeUtils';
 
 describe('generateGiftCode', () => {
@@ -105,5 +106,55 @@ describe('giftUniqueViolationAction', () => {
     expect(giftUniqueViolationAction(['code'])).toBe('retry-code');
     expect(giftUniqueViolationAction('GiftCode_stripeSessionId_key')).toBe('already-fulfilled');
     expect(giftUniqueViolationAction(undefined)).toBe('retry-code');
+  });
+});
+
+describe('parseGenerateGiftCodesRequest', () => {
+  it('applies defaults for empty body', () => {
+    const result = parseGenerateGiftCodesRequest({});
+    expect(result).toEqual({ quantity: 1, email: null, sendEmail: false });
+  });
+
+  it('clamps quantity to 1..20 range', () => {
+    expect(parseGenerateGiftCodesRequest({ quantity: 0 }).quantity).toBe(1);
+    expect(parseGenerateGiftCodesRequest({ quantity: 1 }).quantity).toBe(1);
+    expect(parseGenerateGiftCodesRequest({ quantity: 5 }).quantity).toBe(5);
+    expect(parseGenerateGiftCodesRequest({ quantity: 20 }).quantity).toBe(20);
+    expect(parseGenerateGiftCodesRequest({ quantity: 25 }).quantity).toBe(20);
+    expect(parseGenerateGiftCodesRequest({ quantity: 100 }).quantity).toBe(20);
+  });
+
+  it('parses numeric quantity strings correctly', () => {
+    expect(parseGenerateGiftCodesRequest({ quantity: '5' }).quantity).toBe(5);
+    expect(parseGenerateGiftCodesRequest({ quantity: '0' }).quantity).toBe(1);
+    expect(parseGenerateGiftCodesRequest({ quantity: '999' }).quantity).toBe(20);
+  });
+
+  it('defaults non-numeric quantity to 1', () => {
+    expect(parseGenerateGiftCodesRequest({ quantity: 'abc' }).quantity).toBe(1);
+    expect(parseGenerateGiftCodesRequest({ quantity: null }).quantity).toBe(1);
+    expect(parseGenerateGiftCodesRequest({ quantity: undefined }).quantity).toBe(1);
+    expect(parseGenerateGiftCodesRequest({ quantity: NaN }).quantity).toBe(1);
+  });
+
+  it('validates email must contain @', () => {
+    expect(parseGenerateGiftCodesRequest({ email: 'test@example.com' }).email).toBe('test@example.com');
+    expect(parseGenerateGiftCodesRequest({ email: 'a@b.c' }).email).toBe('a@b.c');
+    expect(parseGenerateGiftCodesRequest({ email: 'invalid' }).email).toBeNull();
+    expect(parseGenerateGiftCodesRequest({ email: 'x' }).email).toBeNull();
+    expect(parseGenerateGiftCodesRequest({ email: '' }).email).toBeNull();
+  });
+
+  it('rejects non-string email values', () => {
+    expect(parseGenerateGiftCodesRequest({ email: 123 }).email).toBeNull();
+    expect(parseGenerateGiftCodesRequest({ email: null }).email).toBeNull();
+    expect(parseGenerateGiftCodesRequest({ email: undefined }).email).toBeNull();
+  });
+
+  it('gates sendEmail: only true when email is valid', () => {
+    expect(parseGenerateGiftCodesRequest({ sendEmail: true, email: 'test@example.com' }).sendEmail).toBe(true);
+    expect(parseGenerateGiftCodesRequest({ sendEmail: true, email: 'invalid' }).sendEmail).toBe(false);
+    expect(parseGenerateGiftCodesRequest({ sendEmail: false, email: 'test@example.com' }).sendEmail).toBe(false);
+    expect(parseGenerateGiftCodesRequest({ sendEmail: true }).sendEmail).toBe(false);
   });
 });
