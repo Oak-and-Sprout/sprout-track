@@ -352,6 +352,7 @@ model SleepLog {
   type      SleepType
   location  String?
   quality   SleepQuality?
+  notes     String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   deletedAt DateTime?
@@ -444,6 +445,7 @@ model DiaperLog {
   color     String?
   blowout      Boolean    @default(false)
   creamApplied Boolean    @default(false)
+  notes        String?
   createdAt    DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   deletedAt DateTime?

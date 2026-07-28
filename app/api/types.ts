@@ -117,6 +117,7 @@ export interface SleepLogCreate {
   type: SleepType;
   location?: string;
   quality?: SleepQuality;
+  notes?: string;
 }
 
 // Feed log types
@@ -181,6 +182,7 @@ export interface DiaperLogCreate {
   color?: string;
   blowout?: boolean;
   creamApplied?: boolean;
+  notes?: string;
 }
 
 // Mood log types
