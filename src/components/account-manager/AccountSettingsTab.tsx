@@ -985,14 +985,14 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   <button
                     type="button"
                     className="sb-btn sb-ghost sb-sm"
-                    onClick={() => { setShowRedeemInput(false); setRedeemError(null); }}
+                    onClick={() => { setShowRedeemInput(false); setRedeemError(null); setRedeemCode(''); }}
                     disabled={redeemLoading}
                   >
                     {t('Cancel')}
                   </button>
                 </div>
                 {redeemError && (
-                  <p className="sb-status-sub" style={{ marginTop: 6, color: '#dc2626' }}>{redeemError}</p>
+                  <p className="sb-msg-err" style={{ marginTop: 6 }}>{redeemError}</p>
                 )}
               </div>
             )}
@@ -1007,7 +1007,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               {giftLoading ? t('Loading...') : t('Give Sprout Track to someone')}
             </button>
             {giftError && (
-              <p className="sb-status-sub" style={{ marginTop: 6, color: '#dc2626' }}>{t(giftError)}</p>
+              <p className="sb-msg-err" style={{ marginTop: 6 }}>{t(giftError)}</p>
             )}
           </div>
         )}
