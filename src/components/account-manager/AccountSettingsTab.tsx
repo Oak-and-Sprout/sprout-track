@@ -12,6 +12,7 @@ import { getSubscriptionView } from '@/src/utils/accountPresentation';
 import { isNativeApp } from '@/src/utils/native-app';
 import { openExternal, MANAGE_SUBSCRIPTION_URL } from '@/src/utils/external-link';
 import { shellSubscriptionControls } from '@/src/utils/shell-chrome';
+import { startGiftCheckout } from '@/src/utils/gift-checkout';
 
 import {
   User,
@@ -25,7 +26,8 @@ import {
   Key,
   Shield,
   Receipt,
-  ExternalLink
+  ExternalLink,
+  Gift
 } from 'lucide-react';
 
 /**
@@ -107,6 +109,17 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
 
   // Payment history modal state
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+
+  // Gift code redeem states
+  const [showRedeemInput, setShowRedeemInput] = useState(false);
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
+  const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
+
+  // Gift code "give" (checkout) states
+  const [giftLoading, setGiftLoading] = useState(false);
+  const [giftError, setGiftError] = useState<string | null>(null);
 
   // Subscription status state
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
@@ -371,6 +384,50 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
       alert('Error: Failed to renew subscription');
     } finally {
       setRenewingSubscription(false);
+    }
+  };
+
+  // Handle redeeming a gift code
+  const handleRedeemCode = async () => {
+    if (!redeemCode.trim()) return;
+    setRedeemLoading(true);
+    setRedeemError(null);
+    setRedeemSuccess(null);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/gift-codes/redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ code: redeemCode.trim() }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setRedeemSuccess(data.data.message);
+        setRedeemCode('');
+        setShowRedeemInput(false);
+        onDataRefresh();
+      } else {
+        setRedeemError(data.error || 'Failed to redeem gift code');
+      }
+    } catch (error) {
+      console.error('Error redeeming gift code:', error);
+      setRedeemError('Failed to redeem gift code');
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
+
+  // Handle starting a gift checkout (payment UI — never invoked in-shell)
+  const handleGiveGift = async () => {
+    setGiftLoading(true);
+    setGiftError(null);
+    const failure = await startGiftCheckout(accountStatus.email);
+    if (failure) {
+      setGiftError(failure);
+      setGiftLoading(false);
     }
   };
 
@@ -896,6 +953,64 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             </div>
           </>
         ) : null}
+
+        {/* Gift codes: redeem (any state except lifetime; works in shell) */}
+        {!accountStatus.betaparticipant && subscriptionView.kind !== 'lifetime' && (
+          <div style={{ marginTop: 12 }}>
+            {redeemSuccess && (
+              <p className="sb-status-sub" style={{ marginBottom: 6 }}>{redeemSuccess}</p>
+            )}
+            {!showRedeemInput ? (
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
+                onClick={() => { setShowRedeemInput(true); setRedeemError(null); }}
+              >
+                <Gift size={15} strokeWidth={1.8} />
+                {t('Redeem a gift code')}
+              </button>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Input
+                    value={redeemCode}
+                    onChange={(e) => setRedeemCode(e.target.value)}
+                    placeholder={t('XXXX-XXXX-XXXX-XXXX')}
+                    aria-label={t('Gift code')}
+                    disabled={redeemLoading}
+                  />
+                  <button type="button" className="sb-btn sb-sm" onClick={handleRedeemCode} disabled={redeemLoading}>
+                    {redeemLoading ? t('Loading...') : t('Redeem')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-btn sb-ghost sb-sm"
+                    onClick={() => { setShowRedeemInput(false); setRedeemError(null); }}
+                    disabled={redeemLoading}
+                  >
+                    {t('Cancel')}
+                  </button>
+                </div>
+                {redeemError && (
+                  <p className="sb-status-sub" style={{ marginTop: 6, color: '#dc2626' }}>{redeemError}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Gift codes: give (payment UI — never in the native shell) */}
+        {shellControls.showPaymentActions && (
+          <div style={{ marginTop: 12 }}>
+            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleGiveGift} disabled={giftLoading}>
+              <Gift size={15} strokeWidth={1.8} />
+              {giftLoading ? t('Loading...') : t('Give Sprout Track to someone')}
+            </button>
+            {giftError && (
+              <p className="sb-status-sub" style={{ marginTop: 6, color: '#dc2626' }}>{t(giftError)}</p>
+            )}
+          </div>
+        )}
 
         {shellControls.showWebNote && (
           <p className="sb-status-sub" style={{ marginTop: 6 }}>
