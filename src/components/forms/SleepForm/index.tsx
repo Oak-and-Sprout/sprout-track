@@ -5,6 +5,7 @@ import { SleepType, SleepQuality } from '@prisma/client';
 import { SleepLogResponse } from '@/app/api/types';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
+import { Textarea } from '@/src/components/ui/textarea';
 import { Label } from '@/src/components/ui/label';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
 import {
@@ -80,6 +81,7 @@ export default function SleepForm({
     type: '' as SleepType | '',
     location: '',
     quality: '' as SleepQuality | '',
+    notes: '',
   });
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -202,6 +204,7 @@ export default function SleepForm({
             type: activity.type,
             location: activityLocation,
             quality: activity.quality || '',
+            notes: activity.notes || '',
           });
           setIsCustomLocation(false);
           setCustomLocationInput('');
@@ -213,6 +216,7 @@ export default function SleepForm({
             type: activity.type,
             location: 'Custom',
             quality: activity.quality || '',
+            notes: activity.notes || '',
           });
           setIsCustomLocation(true);
           setCustomLocationInput(activityLocation);
@@ -221,6 +225,7 @@ export default function SleepForm({
             type: activity.type,
             location: '',
             quality: activity.quality || '',
+            notes: activity.notes || '',
           });
           setIsCustomLocation(false);
           setCustomLocationInput('');
@@ -271,6 +276,7 @@ export default function SleepForm({
                 type: currentSleep.type,
                 location: isCustom ? 'Custom' : sleepLocation,
                 quality: 'GOOD', // Default to GOOD when ending sleep
+                notes: currentSleep.notes || '',
               }));
               
               if (isCustom) {
@@ -334,6 +340,7 @@ export default function SleepForm({
         type: '' as SleepType | '',
         location: '',
         quality: '' as SleepQuality | '',
+        notes: '',
       });
       setIsCustomLocation(false);
       setCustomLocationInput('');
@@ -408,6 +415,7 @@ export default function SleepForm({
           type: formData.type,
           location: locationValue,
           quality: formData.quality || null,
+          notes: formData.notes || null,
         };
 
         // Get auth token from localStorage
@@ -449,6 +457,7 @@ export default function SleepForm({
             endTime: utcEndTime,
             duration,
             quality: formData.quality || null,
+            notes: formData.notes || null,
           }),
         });
       } else {
@@ -461,6 +470,7 @@ export default function SleepForm({
           type: formData.type,
           location: locationValue,
           quality: null,
+          notes: formData.notes || null,
         };
 
         // Get auth token from localStorage
@@ -529,6 +539,7 @@ export default function SleepForm({
         type: '' as SleepType | '',
         location: '',
         quality: '' as SleepQuality | '',
+        notes: '',
       });
       setIsCustomLocation(false);
       setCustomLocationInput('');
@@ -711,6 +722,19 @@ export default function SleepForm({
                 </Select>
               </div>
             )}
+            {/* Notes */}
+            <div>
+              <label htmlFor={`${formId}-notes`} className="form-label">{t('Notes')}</label>
+              <Textarea
+                id={`${formId}-notes`}
+                name="notes"
+                placeholder={t("Enter any notes about the sleep")}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                disabled={loading}
+              />
+            </div>
           </div>
           </form>
         </FormPageContent>
