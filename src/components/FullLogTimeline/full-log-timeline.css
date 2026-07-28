@@ -116,3 +116,12 @@ html.dark .full-log-timeline-details-label {
 html.dark .full-log-timeline-details-value {
   color: #e5e7eb !important; /* gray-200 */
 }
+
+/* Activity rows that render a PNG illustration instead of a lucide glyph: the
+   art carries its own colored background, so drop the tinted box, padding and
+   border around it. The image sizes itself (36px, set in Timeline/utils.tsx). */
+.full-log-timeline-activity-icon:has(.timeline-png-icon) {
+  background: none;
+  padding: 0;
+  border: 0;
+}

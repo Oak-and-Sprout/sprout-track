@@ -95,17 +95,9 @@
   cursor: pointer;
 }
 
+/* EXPLORATION: dot removed — the activity icon now sits on the line instead */
 .timeline-event::before {
-  content: '';
-  position: absolute;
-  left: -1.75rem; /* -28px - adjusted for larger dot */
-  width: 1rem; /* 16px - twice the size */
-  height: 1rem; /* 16px - twice the size */
-  border-radius: 50%;
-  background: var(--activity-color); /* solid color using activity color */
-  border: none; /* no border for solid dot */
-  transition: all 0.2s ease;
-  z-index: 10;
+  display: none;
 }
 
 .timeline-event:hover {
@@ -159,6 +151,35 @@
   justify-content: center;
   background: #f9fafb; /* gray-50 */
   padding: 0.5rem;
+  /* EXPLORATION: pull the icon out of the flex row and centre it on the 2px
+     vertical line (it replaces the old dot). The 3px stroke matches the page
+     background so the line appears to break where the icon sits. */
+  position: absolute;
+  left: -2.375rem; /* -38px: centres the 36px icon on the container's left border */
+  top: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 3px #ffffff; /* page background */
+  z-index: 10;
+}
+
+/* EXPLORATION: when the slot holds a real PNG illustration, drop the colored
+   box + padding so the self-contained circular art fills the 36px slot. The
+   circular radius makes the 3px stroke hug the round illustration cleanly.
+   The image sizes itself (36px, set in utils.tsx) — the slot just wraps it. */
+.event-icon:has(.timeline-png-icon) {
+  background: transparent !important;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+}
+
+/* Legacy timeline cards: same treatment — the illustration carries its own
+   colored background, so the tinted box + padding around it are dropped. */
+.timeline-card-activity-icon:has(.timeline-png-icon) {
+  background: none;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
 }
 
 .event-icon.sleep { 
@@ -248,6 +269,33 @@
 
 .event-content {
   flex: 1;
+}
+
+/* Caretaker/account name badge shown next to the event title. The bg/fg come
+   from CSS vars set inline per-caretaker color; when unset (no color chosen)
+   it falls back to a neutral gray pill. */
+.timeline-caretaker-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  max-width: 10rem;
+  padding: 0.0625rem 0.4375rem; /* 1px 7px */
+  border-radius: 9999px;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--badge-bg, #e5e7eb); /* gray-200 fallback */
+  color: var(--badge-fg, #374151); /* gray-700 fallback */
+}
+
+/* Dark mode only needs to fix the neutral fallback; colored pills carry their
+   own inline vars and read fine on the dark surface. */
+html.dark .timeline-caretaker-badge {
+  background: var(--badge-bg, #374151); /* gray-700 fallback */
+  color: var(--badge-fg, #e5e7eb); /* gray-200 fallback */
 }
 
 .event-title {
@@ -412,6 +460,11 @@ html.dark .timeline-hour-group .text-gray-500 {
 /* Timeline event hover - matches selected filter color */
 html.dark .timeline-event:hover {
   background-color: rgb(55, 65, 81) !important; /* gray-700 - matches selected filter color */
+}
+
+/* EXPLORATION: stroke around the on-line icon matches the dark page background */
+html.dark .event-icon {
+  box-shadow: 0 0 0 3px #1f2937; /* gray-800 - dark page background */
 }
 
 /* Event title */

@@ -46,28 +46,34 @@ const isPlayActivity = (activity: any): boolean => {
   return 'activities' in activity && 'type' in activity && PLAY_TYPES.includes(activity.type);
 };
 
+// EXPLORATION: render the activity's real PNG illustration instead of a mono
+// lucide glyph. `timeline-png-icon` lets the CSS strip the colored box padding
+// so the circular illustration fills the icon slot cleanly. The 36px size lives
+// on the img itself (not the slot) so it renders identically in every consumer —
+// timeline, V2 timeline and full log — regardless of the slot's own sizing.
+const pngIcon = (src: string) => (
+  <img src={src} alt="" aria-hidden="true" className="timeline-png-icon block h-9 w-9 object-contain" />
+);
+
 export const getActivityIcon = (activity: ActivityType) => {
   // Photo log - check first since it has no overlapping fields with other types
   if ('photoLogId' in activity) {
-    return <Camera className="h-4 w-4 text-[#e11d48]" aria-hidden="true" />;
+    return pngIcon('/photo-192.png');
   }
-  // Food log (issue #203) - foodId is unique to food logs. NOT the Utensils
-  // icon: that marks SOLIDS feed logs; food tries get an Apple instead
+  // Food log (issue #203) - foodId is unique to food logs
   if ('foodId' in activity) {
-    return <Apple className="h-4 w-4 text-white" aria-hidden="true" />;
+    return pngIcon('/food-256.png');
   }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
-    return <Baby className="h-4 w-4 text-black" aria-hidden="true" />;
+    return pngIcon('/activity-128.png');
   }
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine or supplement log
-    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && activity.medicine.isSupplement) {
-      return <Pill className="h-4 w-4 text-white" aria-hidden="true" />;
-    }
-    return <PillBottle className="h-4 w-4 text-white" aria-hidden="true" />;
+    // Medicine or supplement log (no separate supplement art yet)
+    return pngIcon('/med-128.png');
   }
-  // Check for breast milk adjustment BEFORE pump (both have amount)
+  // Check for breast milk adjustment BEFORE pump (both have amount) - no PNG art,
+  // keep the lucide +/- glyph on the purple box
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
     const amt = (activity as any).amount;
     if (amt < 0) {
@@ -77,51 +83,48 @@ export const getActivityIcon = (activity: ActivityType) => {
   }
   // Check for pump activities FIRST (before sleep) since they also have duration and startTime
   if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return <LampWallDown className="h-4 w-4 text-black" aria-hidden="true" />; // Pump activity
+    return pngIcon('/pump-128.png'); // Pump activity
   }
   if ('type' in activity) {
     if ('duration' in activity) {
-      return <Moon className="h-4 w-4 text-white" aria-hidden="true" />; // Sleep activity
+      return pngIcon('/crib-128.png'); // Sleep activity
     }
     if ('amount' in activity) {
       if ((activity as any).type === 'SOLIDS') {
-        return <Utensils className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Solids feed
+        return pngIcon('/solids-128.png'); // Solids feed
       }
-      return <Icon iconNode={bottleBaby} className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Feed activity
+      return pngIcon('/bottle-128.png'); // Feed activity
     }
     if ('condition' in activity) {
-      return <Icon iconNode={diaper} className="h-4 w-4 text-white" aria-hidden="true" />; // Diaper activity
+      return pngIcon('/diaper-128.png'); // Diaper activity
     }
   }
   if ('content' in activity) {
-    return <Edit className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Note activity
+    return pngIcon('/note-128.png'); // Note activity
   }
   if ('soapUsed' in activity) {
-    return <Bath className="h-4 w-4 text-white" aria-hidden="true" />; // Bath activity
+    return pngIcon('/bath-128.png'); // Bath activity
   }
   if ('vaccineName' in activity) {
-    return <Syringe className="h-4 w-4 text-red-500" aria-hidden="true" />;
+    return pngIcon('/vaccine-128.png');
   }
   if ('title' in activity && 'category' in activity) {
-    return <Trophy className="h-4 w-4 text-white" aria-hidden="true" />; // Milestone activity
+    return pngIcon('/milestone-128.png'); // Milestone activity
   }
   if ('value' in activity && 'unit' in activity) {
-    // Different icons based on measurement type
-    if ('type' in activity) {
-      switch (activity.type) {
-        case 'HEIGHT':
-          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />;
-        case 'WEIGHT':
-          return <Scale className="h-4 w-4 text-white" aria-hidden="true" />;
-        case 'HEAD_CIRCUMFERENCE':
-          return <RotateCw className="h-4 w-4 text-white" aria-hidden="true" />;
-        case 'TEMPERATURE':
-          return <Thermometer className="h-4 w-4 text-white" aria-hidden="true" />;
-        default:
-          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default to ruler
-      }
+    // Per-type measurement illustrations, falling back to the generic icon
+    switch (activity.type) {
+      case 'WEIGHT':
+        return pngIcon('/weight-192.png');
+      case 'HEIGHT':
+        return pngIcon('/height-192.png');
+      case 'HEAD_CIRCUMFERENCE':
+        return pngIcon('/hc-measurement-192.png');
+      case 'TEMPERATURE':
+        return pngIcon('/temperature-192.png');
+      default:
+        return pngIcon('/measurement-128.png');
     }
-    return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default measurement icon
   }
   return null;
 };

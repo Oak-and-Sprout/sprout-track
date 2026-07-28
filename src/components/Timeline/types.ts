@@ -12,6 +12,7 @@ export type TimelineActivityType = (
 ) & {
   caretakerId?: string | null;
   caretakerName?: string;
+  caretakerBadgeColor?: string | null;
 };
 
 // Use TimelineActivityType for internal component logic

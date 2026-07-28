@@ -21,6 +21,7 @@ import { caretakerFormStyles } from './caretaker-form.styles';
 import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useLocalization } from '@/src/context/localization';
+import { CARETAKER_BADGE_COLORS, getBadgeColorOption } from '@/src/constants/caretakerBadge';
 
 // Extended type to include the loginId field
 interface Caretaker extends PrismaCaretaker {
@@ -44,6 +45,7 @@ const defaultFormData = {
   role: 'USER' as UserRole,
   inactive: false,
   securityPin: '',
+  badgeColor: '', // '' = None (neutral gray badge)
 };
 
 export default function CaretakerForm({
@@ -75,6 +77,7 @@ export default function CaretakerForm({
         role: caretaker.role || 'USER',
         inactive: caretaker.inactive || false,
         securityPin: '', // never pre-filled — PINs are not returned by the API; blank means "keep current"
+        badgeColor: (caretaker as { badgeColor?: string | null }).badgeColor || '',
       });
       setConfirmPin('');
       setIsFirstCaretaker(false);
@@ -370,6 +373,24 @@ export default function CaretakerForm({
             </select>
             <p className="sb-fh">{t('Admins can edit family settings and people.')}</p>
           </div>
+          <div>
+            <label className="sb-fl" htmlFor="sbCtBadge">{t('Badge Color')}</label>
+            <div className="flex items-center gap-2">
+              <span
+                className="h-5 w-5 flex-shrink-0 rounded-full border border-black/10"
+                style={{ backgroundColor: getBadgeColorOption(formData.badgeColor)?.hex || '#e5e7eb' }}
+                aria-hidden="true"
+              />
+              <select id="sbCtBadge" className="sb-fi" value={formData.badgeColor}
+                onChange={(e) => setFormData({ ...formData, badgeColor: e.target.value })}>
+                <option value="">{t('None')}</option>
+                {CARETAKER_BADGE_COLORS.map((c) => (
+                  <option key={c.id} value={c.id}>{t(c.label)}</option>
+                ))}
+              </select>
+            </div>
+            <p className="sb-fh">{t('Shown as a colored badge next to this name on the timeline.')}</p>
+          </div>
           <div className="sb-fgroup">
             <b>{t('How they sign in')}</b>
             <p className="sb-fh">{t("A 2-digit ID and a PIN — easy enough for grandma's phone.")}</p>
@@ -518,7 +539,40 @@ export default function CaretakerForm({
               </p>
             )}
           </div>
-          
+
+          <div>
+            <label htmlFor={`${formId}-badgeColor`} className="form-label">{t('Badge Color')}</label>
+            <Select
+              value={formData.badgeColor || 'none'}
+              onValueChange={(value) =>
+                setFormData({ ...formData, badgeColor: value === 'none' ? '' : value })
+              }
+            >
+              <SelectTrigger id={`${formId}-badgeColor`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <span className="flex items-center gap-2">
+                    <span className="h-3.5 w-3.5 rounded-full border border-gray-300 bg-gray-200" aria-hidden="true" />
+                    {t('None')}
+                  </span>
+                </SelectItem>
+                {CARETAKER_BADGE_COLORS.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="flex items-center gap-2">
+                      <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: c.hex }} aria-hidden="true" />
+                      {t(c.label)}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              {t('Shown as a colored badge next to this name on the timeline.')}
+            </p>
+          </div>
+
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"

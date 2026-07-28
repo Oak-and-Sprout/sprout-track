@@ -5,6 +5,14 @@ import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { buildLinkTargets, groupPhotoLinks, photoLogHasLivePhotos } from './timeline-photo-links';
 import { isPhotosEnabled } from '../photos/photo-service';
+import { resolveCaretakerBadge } from '@/src/constants/caretakerBadge';
+
+// Builds the caretaker badge fields for a timeline log. The system caretaker
+// (loginId '00') and nameless caretakers are omitted so no badge renders.
+function caretakerBadgeFields(caretaker: { name?: string | null; loginId?: string | null; badgeColor?: string | null } | null | undefined) {
+  const badge = resolveCaretakerBadge(caretaker);
+  return { caretakerName: badge?.name, caretakerBadgeColor: badge?.colorId ?? null };
+}
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
@@ -13,6 +21,7 @@ type ActivityTypeWithCaretaker = (
 ) & {
   caretakerId?: string | null;
   caretakerName?: string;
+  caretakerBadgeColor?: string | null;
   medicine?: MedicineResponse;
   photos?: TimelinePhotoInfo[];
   /** Food logs only: this log is its food's all-time earliest try. */
@@ -453,7 +462,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
 
@@ -470,7 +479,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('feed', log.id),
         };
       });
@@ -488,7 +497,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
 
@@ -505,7 +514,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
       
@@ -522,7 +531,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('bath', log.id),
         };
       });
@@ -544,7 +553,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           unit: unit, // Explicitly include the unit in the response
         };
       });
@@ -561,7 +570,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('play', log.id),
         };
       });
@@ -577,7 +586,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           medicine: medicine ? {
             ...medicine,
             createdAt: formatForResponse(medicine.createdAt) || '',
@@ -601,7 +610,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('milestone', log.id),
         };
       });
@@ -620,7 +629,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('measurement', log.id),
         };
       });
@@ -636,7 +645,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
 
@@ -651,7 +660,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           documents: documents ? documents.map(doc => ({
             ...doc,
             createdAt: formatForResponse(doc.createdAt) || '',
@@ -692,7 +701,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           isFirstTry: firstTryTimeByFoodId.get(log.foodId) === new Date(log.time).getTime(),
           photos: photosFor('foodLog', log.id),
         };
@@ -712,7 +721,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('photo', log.id) || [],
         };
       });

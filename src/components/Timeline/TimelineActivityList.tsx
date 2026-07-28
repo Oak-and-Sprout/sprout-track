@@ -410,7 +410,7 @@ const TimelineActivityList = ({
                                 <CardContent className="p-4">
                                   <div className="flex items-center space-x-3">
                                     {/* Activity Icon */}
-                                    <div className={`flex-shrink-0 ${style.bg} p-2 rounded-xl shadow-sm`}>
+                                    <div className={`flex-shrink-0 ${style.bg} p-2 rounded-xl shadow-sm timeline-card-activity-icon`}>
                                       {getActivityIcon(activity)}
                                     </div>
                                     
