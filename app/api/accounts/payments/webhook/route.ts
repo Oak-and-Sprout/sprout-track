@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/app/api/db';
-import { isGiftCheckoutSession } from '@/src/utils/giftCodeUtils';
+import { isGiftCheckoutSession, shouldApplySubscriptionUpdate } from '@/src/utils/giftCodeUtils';
 import { createUniqueGiftCode } from '@/app/api/utils/gift-codes';
 import { sendGiftCodeEmail } from '@/app/api/utils/account-emails';
 
@@ -416,6 +416,19 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
 
   try {
+    // Lifetime is terminal: a gift code redemption may cancel_at_period_end
+    // the Stripe subscription, which fires this same event. Don't let it
+    // clobber the lifetime grant back to a 'sub' plan.
+    const account = await prisma.account.findUnique({
+      where: { id: accountId },
+      select: { planType: true },
+    });
+
+    if (!account || !shouldApplySubscriptionUpdate(account)) {
+      console.log(`[WEBHOOK] Skipping subscription update for account ${accountId}: planType is '${account?.planType}' (lifetime grant preserved)`);
+      return;
+    }
+
     // Get billing period end date from subscription item (API v2025-10-29+ uses item-level periods)
     const periodEnd = subscription.items.data[0]?.current_period_end;
 

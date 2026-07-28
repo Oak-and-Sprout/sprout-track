@@ -19,7 +19,7 @@ describe('marketing proxy', () => {
     });
 
     it('lets marketing routes through', () => {
-      for (const path of ['/features', '/pricing', '/terms', '/privacy']) {
+      for (const path of ['/features', '/pricing', '/terms', '/privacy', '/gift-success']) {
         const response = proxy(requestFor(path));
         expect(response.status).toBe(200);
         expect(response.headers.get('location')).toBeNull();
@@ -33,7 +33,7 @@ describe('marketing proxy', () => {
     });
 
     it('redirects marketing routes to /', () => {
-      for (const path of ['/features', '/pricing', '/terms', '/privacy']) {
+      for (const path of ['/features', '/pricing', '/terms', '/privacy', '/gift-success']) {
         const response = proxy(requestFor(path));
         expect(response.status).toBeGreaterThanOrEqual(300);
         expect(response.status).toBeLessThan(400);
@@ -48,7 +48,7 @@ describe('marketing proxy', () => {
     expect(new URL(response.headers.get('location')!).pathname).toBe('/');
   });
 
-  it('matcher covers exactly the four marketing routes', () => {
-    expect(config.matcher).toEqual(['/features', '/pricing', '/terms', '/privacy']);
+  it('matcher covers exactly the gated marketing/SaaS routes', () => {
+    expect(config.matcher).toEqual(['/features', '/pricing', '/terms', '/privacy', '/gift-success']);
   });
 });

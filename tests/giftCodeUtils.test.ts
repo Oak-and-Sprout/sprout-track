@@ -9,6 +9,7 @@ import {
   resolveGiftPriceId,
   giftUniqueViolationAction,
   parseGenerateGiftCodesRequest,
+  shouldApplySubscriptionUpdate,
 } from '@/src/utils/giftCodeUtils';
 
 describe('generateGiftCode', () => {
@@ -79,6 +80,20 @@ describe('checkRedemption', () => {
       .toEqual({ ok: true, cancelSubscription: false });
     expect(checkRedemption(active, { planType: 'sub', subscriptionId: 'sub_1' }))
       .toEqual({ ok: true, cancelSubscription: true });
+  });
+});
+
+describe('shouldApplySubscriptionUpdate', () => {
+  it('is terminal: a lifetime plan rejects further subscription updates', () => {
+    expect(shouldApplySubscriptionUpdate({ planType: 'full' })).toBe(false);
+  });
+
+  it('allows subscription updates for a plain subscription plan', () => {
+    expect(shouldApplySubscriptionUpdate({ planType: 'sub' })).toBe(true);
+  });
+
+  it('allows subscription updates when there is no existing plan', () => {
+    expect(shouldApplySubscriptionUpdate({ planType: null })).toBe(true);
   });
 });
 

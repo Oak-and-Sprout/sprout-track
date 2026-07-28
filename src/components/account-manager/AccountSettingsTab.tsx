@@ -954,12 +954,16 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
           </>
         ) : null}
 
+        {/* Gift codes: redemption confirmation. Rendered outside the
+            lifetime gate below so it stays visible after onDataRefresh()
+            flips the account to lifetime. */}
+        {!accountStatus.betaparticipant && redeemSuccess && (
+          <p className="sb-status-sub" style={{ marginTop: 12 }}>{t(redeemSuccess)}</p>
+        )}
+
         {/* Gift codes: redeem (any state except lifetime; works in shell) */}
         {!accountStatus.betaparticipant && subscriptionView.kind !== 'lifetime' && (
           <div style={{ marginTop: 12 }}>
-            {redeemSuccess && (
-              <p className="sb-status-sub" style={{ marginBottom: 6 }}>{redeemSuccess}</p>
-            )}
             {!showRedeemInput ? (
               <button
                 type="button"
@@ -992,7 +996,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                   </button>
                 </div>
                 {redeemError && (
-                  <p className="sb-msg-err" style={{ marginTop: 6 }}>{redeemError}</p>
+                  <p className="sb-msg-err" style={{ marginTop: 6 }}>{t(redeemError)}</p>
                 )}
               </div>
             )}

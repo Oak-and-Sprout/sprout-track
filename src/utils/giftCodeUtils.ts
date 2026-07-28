@@ -58,6 +58,14 @@ export function checkRedemption(
   return { ok: true, cancelSubscription: Boolean(account.subscriptionId) };
 }
 
+// Lifetime is terminal: once a gift code grants planType 'full', a later
+// Stripe subscription.updated event (e.g. from the cancel_at_period_end call
+// redemption issues) must not downgrade the account back to a subscription
+// plan. Anything other than 'full' (including null) still applies normally.
+export function shouldApplySubscriptionUpdate(account: { planType: string | null }): boolean {
+  return account.planType !== 'full';
+}
+
 export function isGiftCheckoutSession(
   metadata: Record<string, string> | null | undefined,
 ): boolean {
