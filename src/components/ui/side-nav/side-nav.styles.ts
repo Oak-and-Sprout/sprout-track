@@ -37,8 +37,8 @@ export const sideNavStyles = {
   // Logo container
   logoContainer: "flex items-center space-x-3",
   
-  // Logo image
-  logo: "w-10 h-10 object-contain",
+  // Logo image — drop-shadow matches the mobile header sprout treatment
+  logo: "w-10 h-10 object-contain drop-shadow-[2px_2px_3px_rgba(0,0,0,0.45)]",
   
   // App name
   appName: "text-lg font-semibold text-teal-700",

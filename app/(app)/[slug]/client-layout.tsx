@@ -869,7 +869,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
                           alt="Sprout Logo"
                           width={64}
                           height={64}
-                          className="object-contain"
+                          className="object-contain drop-shadow-[2px_2px_3px_rgba(0,0,0,0.45)]"
                           priority
                         />
                       </SideNavTrigger>
