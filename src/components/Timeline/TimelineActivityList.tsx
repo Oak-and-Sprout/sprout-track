@@ -437,9 +437,11 @@ const TimelineActivityList = ({
                                                 word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                                               ).join(' ') : '';
                                             const duration = activity.duration ? `${Math.floor(activity.duration / 60)}h ${activity.duration % 60}m` : '';
-                                            const quality = ('quality' in activity && activity.quality) ? 
+                                            const quality = ('quality' in activity && activity.quality) ?
                                               activity.quality.charAt(0).toUpperCase() + activity.quality.slice(1).toLowerCase() : '';
-                                            return [location, duration, quality].filter(Boolean).join(' • ');
+                                            const notes = ('notes' in activity && activity.notes) ?
+                                              (activity.notes.length > 30 ? activity.notes.substring(0, 30) + '...' : activity.notes) : '';
+                                            return [location, duration, quality, notes].filter(Boolean).join(' • ');
                                           }
                                           
                                           if ('amount' in activity && !('foodId' in activity)) {
@@ -479,6 +481,12 @@ const TimelineActivityList = ({
                                             }
                                             if (activity.creamApplied) {
                                               details.push(t('Diaper Cream Applied'));
+                                            }
+                                            if ((activity as any).notes) {
+                                              const notes = (activity as any).notes.length > 30 ?
+                                                (activity as any).notes.substring(0, 30) + '...' :
+                                                (activity as any).notes;
+                                              details.push(notes);
                                             }
                                             return details.join(' • ');
                                           }

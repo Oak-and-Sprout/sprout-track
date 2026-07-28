@@ -85,10 +85,11 @@ export const useActivityDescription = () => {
         
         // Extract just the time part from the end time
         const endTimeOnly = activity.endTime ? formatTime(activity.endTime) : 'ongoing';
-        
+        const notes = (activity as any).notes ? ` - ${(activity as any).notes}` : '';
+
         return {
           type: `${activity.type === 'NAP' ? 'Nap' : 'Night Sleep'}${location ? ` - ${location}` : ''}`,
-          details: `${startTimeFormatted} - ${endTimeOnly}${duration}`
+          details: `${startTimeFormatted} - ${endTimeOnly}${duration}${notes}`
         };
       }
       if ('amount' in activity) {
@@ -177,9 +178,10 @@ export const useActivityDescription = () => {
         }
         
         const time = formatDateTime(activity.time);
+        const notes = (activity as any).notes ? ` - ${(activity as any).notes}` : '';
         return {
           type: formatDiaperType(activity.type),
-          details: `${details}${time}`
+          details: `${details}${time}${notes}`
         };
       }
     }

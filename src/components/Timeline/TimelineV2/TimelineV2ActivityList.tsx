@@ -390,6 +390,11 @@ const TimelineV2ActivityList = ({
                                       if (location) parts.push(t(location));
                                       if (duration) parts.push(duration);
                                       if (!('endTime' in activity)) parts.push(t('Still asleep'));
+                                      if ((activity as any).notes) {
+                                        const notes = translateNotes((activity as any).notes);
+                                        const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+                                        parts.push(truncatedNotes);
+                                      }
                                       return parts.length > 0 ? parts.join(' • ') : t('Sleep');
                                     }
                                     
@@ -458,6 +463,11 @@ const TimelineV2ActivityList = ({
                                       }
                                       if (activity.creamApplied) {
                                         details.push(t('Diaper Cream Applied'));
+                                      }
+                                      if ((activity as any).notes) {
+                                        const notes = translateNotes((activity as any).notes);
+                                        const truncatedNotes = notes.length > 30 ? notes.substring(0, 30) + '...' : notes;
+                                        details.push(truncatedNotes);
                                       }
                                       return details.length > 0 ? details.join(' • ') : t('Diaper');
                                     }

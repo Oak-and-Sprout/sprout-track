@@ -319,6 +319,11 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
         details.push({ label: t('Location'), value: formatLocation((activity as any).location) });
       }
 
+      // Show notes if present
+      if ((activity as any).notes) {
+        details.push({ label: t('Notes'), value: (activity as any).notes });
+      }
+
       return {
         title: t('Sleep Record'),
         details: [...details, ...caretakerDetail],
@@ -472,6 +477,10 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       }
       if (activity.creamApplied) {
         details.push({ label: t('Diaper Cream Applied'), value: t('Yes') });
+      }
+
+      if ((activity as any).notes) {
+        details.push({ label: t('Notes'), value: (activity as any).notes });
       }
 
       return {
@@ -805,10 +814,16 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
         };
         qualityText = qualityMap[(activity as any).quality] || (activity as any).quality.charAt(0) + (activity as any).quality.slice(1).toLowerCase();
       }
-      
+
+      // Add notes if available, truncate if needed
+      let notesText: string = (activity as any).notes ?? '';
+      if (notesText.length > 30) {
+        notesText = notesText.slice(0, 30) + '...';
+      }
+
       return {
         type: activity.type === 'NAP' ? t('Nap') : t('Night Sleep'),
-        details: [time, locationText, qualityText].filter(Boolean).join(' • '),
+        details: [time, locationText, qualityText, notesText].filter(Boolean).join(' • '),
       };
     }
     if ('amount' in activity) {
@@ -926,10 +941,16 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       const blowout = activity.blowout ? t('Blowout/Leakage') : '';
       const cream = activity.creamApplied ? t('Diaper Cream Applied') : '';
 
+      // Add notes if available, truncate if needed
+      let notesText: string = (activity as any).notes ?? '';
+      if (notesText.length > 30) {
+        notesText = notesText.slice(0, 30) + '...';
+      }
+
       const time = formatTime(activity.time, settings, true, t);
       return {
         type: formatDiaperType(activity.type),
-        details: [time, ...conditions, blowout, cream].filter(Boolean).join(' • ')
+        details: [time, ...conditions, blowout, cream, notesText].filter(Boolean).join(' • ')
       };
     }
   }

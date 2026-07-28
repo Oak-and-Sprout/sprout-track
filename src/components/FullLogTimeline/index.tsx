@@ -94,6 +94,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       type?: string; 
       location?: string; 
       quality?: string;
+      notes?: string;
     } => {
       return 'duration' in act;
     };
@@ -115,6 +116,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       condition: string; 
       type?: string; 
       color?: string;
+      notes?: string;
     } => {
       return 'condition' in act;
     };
@@ -175,6 +177,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       if (activity.type && activity.type.toLowerCase().includes(searchLower)) return true;
       if (activity.location && activity.location.toLowerCase().includes(searchLower)) return true;
       if (activity.quality && activity.quality.toLowerCase().includes(searchLower)) return true;
+      if (activity.notes && activity.notes.toLowerCase().includes(searchLower)) return true;
       return false;
     }
     
@@ -193,6 +196,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
       if (activity.type && activity.type.toLowerCase().includes(searchLower)) return true;
       if (activity.condition && activity.condition.toLowerCase().includes(searchLower)) return true;
       if (activity.color && activity.color.toLowerCase().includes(searchLower)) return true;
+      if (activity.notes && activity.notes.toLowerCase().includes(searchLower)) return true;
       return false;
     }
     
