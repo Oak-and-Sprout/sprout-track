@@ -474,16 +474,28 @@ export type FoodLogResponse = Omit<FoodLog, 'time' | 'createdAt' | 'updatedAt' |
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  food?: { id: string; name: string; commonAllergen: boolean };
+  food?: { id: string; name: string; commonAllergen: boolean } | null;
+  /** Parsed foods JSON (preferred for multi-food meals). */
+  foodItems?: { foodId: string; hadReaction?: boolean; reactionDescription?: string | null; name?: string; commonAllergen?: boolean }[];
 };
+
+export interface FoodLogItemInput {
+  foodId: string;
+  hadReaction?: boolean;
+  reactionDescription?: string | null;
+}
 
 export interface FoodLogCreate {
   babyId: string;
-  foodId: string;
+  /** Legacy single-food id; prefer `foods` for multi-food meals. */
+  foodId?: string;
+  /** Multi-food meal items (#247). When present, drives dual-write of foodId/foods. */
+  foods?: FoodLogItemInput[];
   time: string;
   amount?: number | null;
   unitAbbr?: string | null;
   enjoyment?: FoodEnjoyment | null;
+  /** Meal-level reaction (legacy / single-food); for multi-food prefer per-item flags in foods. */
   hadReaction?: boolean;
   reactionDescription?: string;
   notes?: string;

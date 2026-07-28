@@ -3,17 +3,21 @@ import prisma from '../../db';
 import { ApiResponse, FoodMergeResult } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { checkWritePermission } from '../../utils/writeProtection';
-import { validateFoodMerge } from '@/src/utils/foodLogUtils';
+import {
+  buildFoodLogFoodFields,
+  expandFoodItems,
+  foodsJsonReferencesFoodId,
+  rewriteFoodsJsonIds,
+  validateFoodMerge,
+} from '@/src/utils/foodLogUtils';
 
 /**
  * Handle POST request to merge one catalog food into another (Settings >
- * Foods). Re-points every FoodLog row (soft-deleted ones included, so
- * history stays intact) from the source food to the target, ORs the
- * commonAllergen flag onto the target, and soft-deletes the source.
- * The target keeps its own name and notes.
+ * Foods). Re-points FoodLog.foodId FK rows and rewrites foods JSON that
+ * reference the source id, ORs commonAllergen onto the target, and
+ * soft-deletes the source.
  */
 async function handlePost(req: NextRequest, authContext: AuthResult) {
-  // Check write permissions for expired accounts
   const writeCheck = checkWritePermission(authContext);
   if (!writeCheck.allowed) {
     return writeCheck.response!;
@@ -35,7 +39,6 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     }
     const { sourceFoodId, targetFoodId } = validation;
 
-    // Both foods must exist, be non-deleted, and belong to the family
     const foods = await prisma.food.findMany({
       where: {
         id: { in: [sourceFoodId, targetFoodId] },
@@ -57,6 +60,73 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         where: { foodId: source.id },
         data: { foodId: target.id },
       });
+
+      // Rewrite foods JSON that reference the source (including multi-food meals
+      // where foodId FK is null).
+      const candidates = await tx.foodLog.findMany({
+        where: {
+          familyId: userFamilyId,
+          OR: [
+            { foods: { contains: source.id } },
+            { foodId: source.id },
+            { foodId: target.id },
+          ],
+        },
+        select: { id: true, foodId: true, foods: true, hadReaction: true, reactionDescription: true },
+      });
+
+      let jsonMoved = 0;
+      for (const log of candidates) {
+        if (!foodsJsonReferencesFoodId(log.foods, source.id) && log.foodId !== source.id) {
+          // Still may need to refresh foods JSON after FK remount for dual-write N=1
+          if (log.foodId === target.id && !log.foods) {
+            const fields = buildFoodLogFoodFields([
+              {
+                foodId: target.id,
+                hadReaction: log.hadReaction === true,
+                reactionDescription: log.reactionDescription,
+              },
+            ]);
+            await tx.foodLog.update({
+              where: { id: log.id },
+              data: { foods: fields.foods },
+            });
+          }
+          continue;
+        }
+
+        const rewritten = rewriteFoodsJsonIds(log.foods, source.id, target.id);
+        const items = expandFoodItems({
+          foodId: log.foodId === source.id ? target.id : log.foodId,
+          foods: rewritten,
+          time: new Date(),
+          hadReaction: log.hadReaction,
+          reactionDescription: log.reactionDescription,
+        });
+        // If foods was null but foodId pointed at source, synthesize after FK remount
+        const nextItems =
+          items.length > 0
+            ? items
+            : [
+                {
+                  foodId: target.id,
+                  hadReaction: log.hadReaction === true,
+                  reactionDescription: log.reactionDescription,
+                },
+              ];
+        const fields = buildFoodLogFoodFields(nextItems);
+        await tx.foodLog.update({
+          where: { id: log.id },
+          data: {
+            foodId: fields.foodId,
+            foods: fields.foods,
+            hadReaction: fields.hadReaction,
+            reactionDescription: fields.reactionDescription,
+          },
+        });
+        jsonMoved += 1;
+      }
+
       await tx.food.update({
         where: { id: target.id },
         data: { commonAllergen: source.commonAllergen || target.commonAllergen },
@@ -65,7 +135,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         where: { id: source.id },
         data: { deletedAt: new Date() },
       });
-      return moved.count;
+      return moved.count + jsonMoved;
     });
 
     return NextResponse.json<ApiResponse<FoodMergeResult>>({
@@ -84,5 +154,4 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
   }
 }
 
-// Apply authentication middleware
 export const POST = withAuthContext(handlePost as any);

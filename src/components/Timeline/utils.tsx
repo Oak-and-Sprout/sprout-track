@@ -34,7 +34,7 @@ import {
   ActivityStyle
 } from './types';
 import { getSymbol } from '@/src/hooks/useUnit';
-import { FOOD_ENJOYMENT_LABELS, isValidEnjoyment } from '@/src/utils/foodLogUtils';
+import { FOOD_ENJOYMENT_LABELS, formatFoodMealTitle, isFoodLogActivity, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 import { lbToLbOz, formatWeightDisplay } from '@/src/utils/weightUnits';
 import { formatPauseDuration } from '@/src/utils/pauseDisplay';
 
@@ -60,8 +60,8 @@ export const getActivityIcon = (activity: ActivityType) => {
   if ('photoLogId' in activity) {
     return pngIcon('/photo-192.png');
   }
-  // Food log (issue #203) - foodId is unique to food logs
-  if ('foodId' in activity) {
+  // Food log (issue #203 / #247) — foodId or foods JSON
+  if (isFoodLogActivity(activity)) {
     return pngIcon('/food-256.png');
   }
   // Play activity - check before sleep since both have duration and type
@@ -194,12 +194,18 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     { label: t('Caretaker'), value: activity.caretakerName }
   ] : [];
 
-  // Food log (issue #203) - foodId is unique to food logs
-  if ('foodId' in activity) {
+  // Food log (issue #203 / #247)
+  if (isFoodLogActivity(activity)) {
     const foodLog = activity as any;
     const enjoyment: unknown = foodLog.enjoyment;
+    const names: string[] =
+      (Array.isArray(foodLog.foodItems) && foodLog.foodItems.length > 0
+        ? foodLog.foodItems.map((item: { name?: string }) => item.name).filter(Boolean)
+        : null) ||
+      (foodLog.food?.name ? [foodLog.food.name] : []);
+    const mealTitle = formatFoodMealTitle(names) || t('unknown');
     const foodDetails = [
-      { label: t('Food'), value: foodLog.food?.name || t('unknown') },
+      { label: t('Food'), value: mealTitle },
       { label: t('Time'), value: formatTime(foodLog.time, settings, true, t) },
     ];
     if (foodLog.amount) {
@@ -208,7 +214,10 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     if (isValidEnjoyment(enjoyment)) {
       foodDetails.push({ label: t('Enjoyment'), value: t(FOOD_ENJOYMENT_LABELS[enjoyment]) });
     }
-    if (foodLog.food?.commonAllergen) {
+    const anyCommonAllergen =
+      foodLog.food?.commonAllergen ||
+      (Array.isArray(foodLog.foodItems) && foodLog.foodItems.some((item: { commonAllergen?: boolean }) => item.commonAllergen));
+    if (anyCommonAllergen) {
       foodDetails.push({ label: t('Common Allergen'), value: t('Yes') });
     }
     if (foodLog.isFirstTry) {
@@ -702,8 +711,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       details: firstCaption || `${count} ${count === 1 ? t('photo') : t('photos')}`
     };
   }
-  // Food log (issue #203) - foodId is unique to food logs
-  if ('foodId' in activity) {
+  // Food log (issue #203 / #247)
+  if (isFoodLogActivity(activity)) {
     const foodLog = activity as any;
     const enjoyment: unknown = foodLog.enjoyment;
     const time = formatTime(foodLog.time, settings, true, t);
@@ -719,8 +728,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     let notes: string = foodLog.notes ?? '';
     if (notes.length > 30) notes = notes.slice(0, 30) + '...';
     if (notes) parts.push(notes);
+    const names: string[] =
+      (Array.isArray(foodLog.foodItems) && foodLog.foodItems.length > 0
+        ? foodLog.foodItems.map((item: { name?: string }) => item.name).filter(Boolean)
+        : null) ||
+      (foodLog.food?.name ? [foodLog.food.name] : []);
     return {
-      type: foodLog.food?.name || t('Food'),
+      type: formatFoodMealTitle(names) || t('Food'),
       details: parts.join(' • ')
     };
   }
@@ -1090,8 +1104,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 
 export const getActivityEndpoint = (activity: ActivityType): string => {
   if ('photoLogId' in activity) return 'photo-log';
-  // Food log (issue #203) - foodId is unique to food logs
-  if ('foodId' in activity) return 'food-log';
+  // Food log (issue #203 / #247)
+  if (isFoodLogActivity(activity)) return 'food-log';
   // Check play activity before sleep since both have duration and type
   if (isPlayActivity(activity)) return 'play-log';
   // Check for breast milk adjustment before pump
@@ -1119,9 +1133,9 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
   if ('photoLogId' in activity) {
     return { bg: 'bg-white border-2 border-[#e11d48]', textColor: 'text-[#e11d48]' };
   }
-  // Food log (issue #203): lime green, distinct from medicine green (#43B755)
+  // Food log (issue #203 / #247): lime green, distinct from medicine green (#43B755)
   // and the sky-blue feed color
-  if ('foodId' in activity) {
+  if (isFoodLogActivity(activity)) {
     return { bg: 'bg-[#BBD444]', textColor: 'text-white' };
   }
   // Play activity - check before sleep since both have duration and type

@@ -27,6 +27,8 @@ export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | '
     const playTypes = ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'];
     if (playTypes.includes((activity as any).type)) return 'play';
   }
+  // Food before feed: FoodLog also has optional amount (#203 / #247)
+  if ('foodId' in activity || 'foods' in activity || 'foodItems' in activity) return 'food';
   if ('type' in activity) {
     if ('duration' in activity && 'quality' in activity) return 'sleep';
     if ('duration' in activity && 'location' in activity && !('amount' in activity) && !('condition' in activity)) return 'sleep';
@@ -37,7 +39,6 @@ export const getActivityVariant = (activity: ActivityType): 'sleep' | 'feed' | '
   }
   if ('doseAmount' in activity && 'medicineId' in activity) return 'medicine';
   if ('vaccineName' in activity) return 'vaccine';
-  if ('foodId' in activity) return 'food';
   if ('title' in activity && 'category' in activity) return 'milestone';
   if ('leftAmount' in activity || 'rightAmount' in activity) return 'pump';
   if ('content' in activity) return 'note';

@@ -4,7 +4,7 @@ import { ApiResponse, FoodCreate, FoodResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { normalizeFoodName, foodNameKey } from '@/src/utils/foodLogUtils';
+import { foodsJsonReferencesFoodId, normalizeFoodName, foodNameKey } from '@/src/utils/foodLogUtils';
 
 /**
  * Format a Food catalog row into a FoodResponse
@@ -287,11 +287,26 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Foods with logs must be merged, not deleted, so history keeps a live food
-    const inUse = await prisma.foodLog.count({
+    // Foods with logs must be merged, not deleted, so history keeps a live food.
+    // Count FK matches plus multi-food JSON references (foodId null meals).
+    const fkInUse = await prisma.foodLog.count({
       where: { foodId: id, deletedAt: null },
     });
-    if (inUse > 0) {
+    let jsonInUse = 0;
+    if (fkInUse === 0) {
+      const candidates = await prisma.foodLog.findMany({
+        where: {
+          familyId: userFamilyId,
+          deletedAt: null,
+          foods: { contains: id },
+        },
+        select: { foods: true, foodId: true },
+      });
+      jsonInUse = candidates.filter(
+        log => log.foodId !== id && foodsJsonReferencesFoodId(log.foods, id)
+      ).length;
+    }
+    if (fkInUse + jsonInUse > 0) {
       return NextResponse.json<ApiResponse<void>>(
         { success: false, error: 'This food is still in use. Merge it into another food instead.' },
         { status: 400 }

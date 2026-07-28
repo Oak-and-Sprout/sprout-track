@@ -8,7 +8,7 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
 import { useUnit } from '@/src/hooks/useUnit';
-import { FOOD_ENJOYMENT_LABELS, isValidEnjoyment } from '@/src/utils/foodLogUtils';
+import { FOOD_ENJOYMENT_LABELS, isFoodLogActivity, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 import { useAuthedImage, useInView, photoFileUrl } from '@/src/hooks/useAuthedImage';
 import { getVisibleThumbnails } from '@/src/utils/photoUtils';
 import { TimelinePhotoInfo } from '@/app/api/types';
@@ -268,7 +268,7 @@ const TimelineV2ActivityList = ({
                           // Check play and pump FIRST since they also have duration and startTime
                           let activityTypeClass = '';
                           if ('photoLogId' in activity) activityTypeClass = 'photo';
-                          else if ('foodId' in activity) activityTypeClass = 'food';
+                          else if (isFoodLogActivity(activity)) activityTypeClass = 'food';
                           else if ('activities' in activity && 'type' in activity && ['TUMMY_TIME', 'INDOOR_PLAY', 'OUTDOOR_PLAY', 'WALK', 'CUSTOM'].includes((activity as any).type)) activityTypeClass = 'play';
                           else if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) activityTypeClass = 'breast-milk-adjustment';
                           else if ('leftAmount' in activity || 'rightAmount' in activity) activityTypeClass = 'pump';
@@ -330,8 +330,8 @@ const TimelineV2ActivityList = ({
                                 <div className="text-xs text-gray-600 event-details">
                                   {(() => {
 
-                                    // Food log (issue #203) - foodId is unique to food logs
-                                    if ('foodId' in activity) {
+                                    // Food log (issue #203 / #247)
+                                    if (isFoodLogActivity(activity)) {
                                       const foodLog = activity as any;
                                       const enjoyment: unknown = foodLog.enjoyment;
                                       const parts = [];
@@ -393,7 +393,7 @@ const TimelineV2ActivityList = ({
                                       return parts.length > 0 ? parts.join(' • ') : t('Sleep');
                                     }
                                     
-                                    if ('amount' in activity) {
+                                    if ('amount' in activity && 'type' in activity) {
                                       if (activity.type === 'BREAST') {
                                         const side = activity.side ? t(activity.side === 'LEFT' ? 'Left Side' : 'Right Side') : '';
                                         let duration = '';

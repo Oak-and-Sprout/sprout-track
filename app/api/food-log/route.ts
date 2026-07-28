@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
-import { ApiResponse, FoodLogCreate, FoodLogResponse } from '../types';
+import { ApiResponse, FoodLogCreate, FoodLogItemInput, FoodLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { isValidEnjoyment } from '@/src/utils/foodLogUtils';
+import {
+  buildFoodLogFoodFields,
+  expandFoodItems,
+  foodsJsonReferencesFoodId,
+  isValidEnjoyment,
+  type FoodLogItem,
+} from '@/src/utils/foodLogUtils';
 
 // Joined food fields returned with every food log
 const foodInclude = {
@@ -23,24 +29,107 @@ function normalizeUnitAbbr(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function normalizeItemInputs(body: Partial<FoodLogCreate>): FoodLogItem[] | null {
+  if (Array.isArray(body.foods) && body.foods.length > 0) {
+    const items: FoodLogItem[] = [];
+    for (const entry of body.foods as FoodLogItemInput[]) {
+      if (!entry || typeof entry.foodId !== 'string' || entry.foodId === '') continue;
+      items.push({
+        foodId: entry.foodId,
+        hadReaction: entry.hadReaction === true,
+        reactionDescription:
+          entry.reactionDescription && entry.reactionDescription.trim()
+            ? entry.reactionDescription.trim()
+            : null,
+      });
+    }
+    return items.length > 0 ? items : null;
+  }
+  if (typeof body.foodId === 'string' && body.foodId !== '') {
+    return [
+      {
+        foodId: body.foodId,
+        hadReaction: body.hadReaction === true,
+        reactionDescription:
+          body.reactionDescription && body.reactionDescription.trim()
+            ? body.reactionDescription.trim()
+            : null,
+      },
+    ];
+  }
+  return null;
+}
+
 /**
- * Format a food log (with the joined food) into a FoodLogResponse
+ * Format a food log into a FoodLogResponse, attaching parsed foodItems with names.
  */
-function formatFoodLog(log: any): FoodLogResponse {
+function formatFoodLog(
+  log: any,
+  catalogById?: Map<string, { id: string; name: string; commonAllergen: boolean }>
+): FoodLogResponse {
+  const items = expandFoodItems(log);
+  const foodItems = items.map(item => {
+    const meta =
+      catalogById?.get(item.foodId) ||
+      (log.food?.id === item.foodId ? log.food : undefined);
+    return {
+      foodId: item.foodId,
+      hadReaction: item.hadReaction === true,
+      reactionDescription: item.reactionDescription ?? null,
+      ...(meta
+        ? { name: meta.name, commonAllergen: meta.commonAllergen === true }
+        : {}),
+    };
+  });
+
   return {
     ...log,
     time: formatForResponse(log.time) || '',
     createdAt: formatForResponse(log.createdAt) || '',
     updatedAt: formatForResponse(log.updatedAt) || '',
     deletedAt: formatForResponse(log.deletedAt),
+    foodItems,
   };
+}
+
+async function loadCatalogMap(
+  familyId: string,
+  foodIds: string[]
+): Promise<Map<string, { id: string; name: string; commonAllergen: boolean }>> {
+  const unique = Array.from(new Set(foodIds.filter(Boolean)));
+  if (unique.length === 0) return new Map();
+  const foods = await prisma.food.findMany({
+    where: { id: { in: unique }, familyId },
+    select: { id: true, name: true, commonAllergen: true },
+  });
+  return new Map(foods.map(f => [f.id, f]));
+}
+
+async function validateFoodIdsInFamily(
+  foodIds: string[],
+  familyId: string
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const unique = Array.from(new Set(foodIds));
+  const foods = await prisma.food.findMany({
+    where: { id: { in: unique }, familyId, deletedAt: null },
+    select: { id: true },
+  });
+  if (foods.length !== unique.length) {
+    return {
+      ok: false,
+      response: NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'Food not found in this family.' },
+        { status: 404 }
+      ),
+    };
+  }
+  return { ok: true };
 }
 
 /**
  * Handle POST request to create a new food log entry
  */
 async function handlePost(req: NextRequest, authContext: AuthResult) {
-  // Check write permissions for expired accounts
   const writeCheck = checkWritePermission(authContext);
   if (!writeCheck.allowed) {
     return writeCheck.response!;
@@ -54,7 +143,6 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
 
     const body: FoodLogCreate = await req.json();
 
-    // Validate that the baby belongs to the family
     const baby = await prisma.baby.findFirst({
       where: { id: body.babyId, familyId: userFamilyId },
     });
@@ -63,14 +151,19 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Baby not found in this family.' }, { status: 404 });
     }
 
-    // Validate that the food belongs to the family
-    const food = await prisma.food.findFirst({
-      where: { id: body.foodId, familyId: userFamilyId, deletedAt: null },
-    });
-
-    if (!food) {
-      return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Food not found in this family.' }, { status: 404 });
+    const items = normalizeItemInputs(body);
+    if (!items) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: 'At least one food is required' },
+        { status: 400 }
+      );
     }
+
+    const foodCheck = await validateFoodIdsInFamily(
+      items.map(i => i.foodId),
+      userFamilyId
+    );
+    if (!foodCheck.ok) return foodCheck.response;
 
     if (body.enjoyment != null && !isValidEnjoyment(body.enjoyment)) {
       return NextResponse.json<ApiResponse<null>>(
@@ -86,16 +179,19 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       );
     }
 
+    const foodFields = buildFoodLogFoodFields(items);
+
     const foodLog = await prisma.foodLog.create({
       data: {
         babyId: body.babyId,
-        foodId: body.foodId,
+        foodId: foodFields.foodId,
+        foods: foodFields.foods,
         time: toUTC(body.time),
         amount: body.amount ?? null,
         unitAbbr: body.amount != null ? normalizeUnitAbbr(body.unitAbbr) : null,
         enjoyment: body.enjoyment ?? null,
-        hadReaction: body.hadReaction === true,
-        reactionDescription: body.reactionDescription && body.reactionDescription.trim() ? body.reactionDescription : null,
+        hadReaction: foodFields.hadReaction,
+        reactionDescription: foodFields.reactionDescription,
         notes: body.notes && body.notes.trim() ? body.notes : null,
         ...(body.feedLogId && { feedLogId: body.feedLogId }),
         caretakerId,
@@ -104,9 +200,14 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       include: foodInclude,
     });
 
+    const catalog = await loadCatalogMap(
+      userFamilyId,
+      items.map(i => i.foodId)
+    );
+
     return NextResponse.json<ApiResponse<FoodLogResponse>>({
       success: true,
-      data: formatFoodLog(foodLog),
+      data: formatFoodLog(foodLog, catalog),
     });
   } catch (error) {
     console.error('Error creating food log:', error);
@@ -124,7 +225,6 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
  * Handle PUT request to update a food log entry
  */
 async function handlePut(req: NextRequest, authContext: AuthResult) {
-  // Check write permissions for expired accounts
   const writeCheck = checkWritePermission(authContext);
   if (!writeCheck.allowed) {
     return writeCheck.response!;
@@ -150,7 +250,6 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Check if the food log exists and belongs to the family
     const existingFoodLog = await prisma.foodLog.findFirst({
       where: { id, familyId: userFamilyId },
     });
@@ -165,15 +264,15 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // If the food is being changed, validate the new food belongs to the family
-    if (body.foodId && body.foodId !== existingFoodLog.foodId) {
-      const food = await prisma.food.findFirst({
-        where: { id: body.foodId, familyId: userFamilyId, deletedAt: null },
-      });
-
-      if (!food) {
-        return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Food not found in this family.' }, { status: 404 });
-      }
+    const items = normalizeItemInputs(body);
+    let foodFields: ReturnType<typeof buildFoodLogFoodFields> | null = null;
+    if (items) {
+      const foodCheck = await validateFoodIdsInFamily(
+        items.map(i => i.foodId),
+        userFamilyId
+      );
+      if (!foodCheck.ok) return foodCheck.response;
+      foodFields = buildFoodLogFoodFields(items);
     }
 
     if (body.enjoyment != null && !isValidEnjoyment(body.enjoyment)) {
@@ -194,17 +293,22 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       where: { id },
       data: {
         ...(body.time && { time: toUTC(body.time) }),
-        ...(body.foodId && { foodId: body.foodId }),
+        ...(foodFields && {
+          foodId: foodFields.foodId,
+          foods: foodFields.foods,
+          hadReaction: foodFields.hadReaction,
+          reactionDescription: foodFields.reactionDescription,
+        }),
         ...(body.amount !== undefined && { amount: body.amount }),
         ...((body.amount !== undefined || body.unitAbbr !== undefined) && {
-          // Unit is only meaningful alongside an amount; clearing the amount clears the unit
           unitAbbr: (body.amount !== undefined ? body.amount : existingFoodLog.amount) != null
             ? normalizeUnitAbbr(body.unitAbbr)
             : null,
         }),
         ...(body.enjoyment !== undefined && { enjoyment: body.enjoyment }),
-        ...(body.hadReaction !== undefined && { hadReaction: body.hadReaction === true }),
-        ...(body.reactionDescription !== undefined && {
+        // Legacy single-field reaction updates only when foods[] was not sent
+        ...(!foodFields && body.hadReaction !== undefined && { hadReaction: body.hadReaction === true }),
+        ...(!foodFields && body.reactionDescription !== undefined && {
           reactionDescription: body.reactionDescription && body.reactionDescription.trim() ? body.reactionDescription : null,
         }),
         ...(body.notes !== undefined && { notes: body.notes && body.notes.trim() ? body.notes : null }),
@@ -213,9 +317,14 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
       include: foodInclude,
     });
 
+    const catalog = await loadCatalogMap(
+      userFamilyId,
+      expandFoodItems(foodLog).map(i => i.foodId)
+    );
+
     return NextResponse.json<ApiResponse<FoodLogResponse>>({
       success: true,
-      data: formatFoodLog(foodLog),
+      data: formatFoodLog(foodLog, catalog),
     });
   } catch (error) {
     console.error('Error updating food log:', error);
@@ -262,9 +371,14 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         );
       }
 
+      const catalog = await loadCatalogMap(
+        userFamilyId,
+        expandFoodItems(foodLog).map(i => i.foodId)
+      );
+
       return NextResponse.json<ApiResponse<FoodLogResponse>>({
         success: true,
-        data: formatFoodLog(foodLog),
+        data: formatFoodLog(foodLog, catalog),
       });
     }
 
@@ -273,21 +387,37 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         familyId: userFamilyId,
         deletedAt: null,
         ...(babyId && { babyId }),
-        ...(foodId && { foodId }),
         ...(startDate && endDate && {
           time: {
             gte: toUTC(startDate),
             lte: toUTC(endDate),
           },
         }),
+        // Narrow by FK when possible; multi-food JSON refs filtered below
+        ...(foodId && {
+          OR: [
+            { foodId },
+            { foods: { contains: foodId } },
+          ],
+        }),
       },
       include: foodInclude,
       orderBy: { time: 'desc' },
     });
 
+    const filtered = foodId
+      ? foodLogs.filter(
+          log =>
+            log.foodId === foodId || foodsJsonReferencesFoodId(log.foods, foodId)
+        )
+      : foodLogs;
+
+    const allIds = filtered.flatMap(log => expandFoodItems(log).map(i => i.foodId));
+    const catalog = await loadCatalogMap(userFamilyId, allIds);
+
     return NextResponse.json<ApiResponse<FoodLogResponse[]>>({
       success: true,
-      data: foodLogs.map(formatFoodLog),
+      data: filtered.map(log => formatFoodLog(log, catalog)),
     });
   } catch (error) {
     console.error('Error fetching food logs:', error);
@@ -305,7 +435,6 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
  * Handle DELETE request to soft delete a food log
  */
 async function handleDelete(req: NextRequest, authContext: AuthResult) {
-  // Check write permissions for expired accounts
   const writeCheck = checkWritePermission(authContext);
   if (!writeCheck.allowed) {
     return writeCheck.response!;
@@ -330,7 +459,6 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Check if the food log exists and belongs to the family
     const existingFoodLog = await prisma.foodLog.findFirst({
       where: { id, familyId: userFamilyId },
     });
@@ -345,7 +473,6 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Soft delete by setting deletedAt
     await prisma.foodLog.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -366,7 +493,6 @@ async function handleDelete(req: NextRequest, authContext: AuthResult) {
   }
 }
 
-// Apply authentication middleware to all handlers
 export const GET = withAuthContext(handleGet as any);
 export const POST = withAuthContext(handlePost as any);
 export const PUT = withAuthContext(handlePut as any);

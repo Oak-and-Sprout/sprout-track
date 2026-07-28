@@ -75,7 +75,23 @@ const ProgressTab: React.FC<ProgressTabProps> = ({
     fetchProgress();
   }, [fetchProgress, refreshTrigger]);
 
-  const tryList = buildFoodTryList(foodLogs);
+  const tryList = buildFoodTryList(
+    foodLogs.map(log => ({
+      ...log,
+      foodsById: Object.fromEntries(
+        (log.foodItems || [])
+          .filter(item => item.foodId)
+          .map(item => [
+            item.foodId,
+            {
+              id: item.foodId,
+              name: item.name || log.food?.name || '',
+              commonAllergen: item.commonAllergen === true || log.food?.commonAllergen === true,
+            },
+          ])
+      ),
+    }))
+  );
   const uniqueFoodCount = progress?.uniqueFoodCount ?? 0;
   const progressPercent = Math.min(100, Math.round((uniqueFoodCount / UNIQUE_FOOD_GOAL) * 100));
   const allergens = progress?.allergens ?? [];

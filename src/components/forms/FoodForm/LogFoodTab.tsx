@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useId } from 'react';
 import { LogFoodTabProps } from './food-form.types';
-import { FoodResponse, FoodLogCreate } from '@/app/api/types';
+import { FoodResponse, FoodLogCreate, FoodLogItemInput } from '@/app/api/types';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
@@ -12,7 +12,7 @@ import { Checkbox } from '@/src/components/ui/checkbox';
 import { Switch } from '@/src/components/ui/switch';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
-import { ChevronDown, Minus, Plus, TriangleAlert } from 'lucide-react';
+import { ChevronDown, Minus, Plus, TriangleAlert, X } from 'lucide-react';
 import { useUnit } from '@/src/hooks/useUnit';
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
@@ -21,6 +21,7 @@ import { useLocalization } from '@/src/context/localization';
 import {
   normalizeFoodName,
   foodNameKey,
+  expandFoodItems,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_DISPLAY_ORDER,
   FOOD_ENJOYMENT_LABELS,
@@ -28,13 +29,23 @@ import {
   FoodEnjoymentValue,
 } from '@/src/utils/foodLogUtils';
 
+/** One selected food chip in the multi-food meal logger (#247). */
+interface SelectedFoodTag {
+  /** Catalog id when known; undefined for a new name not yet created. */
+  foodId?: string;
+  name: string;
+  commonAllergen: boolean;
+  isNew: boolean;
+  hadReaction: boolean;
+  reactionDescription: string;
+}
+
 /**
  * LogFoodTab Component
  *
  * Tab for logging a new food try or editing an existing food log entry.
- * Includes a food combobox over the family catalog (with inline "add new
- * food" and common-allergen checkbox), enjoyment picker, reaction
- * toggle with description, notes, and photo attachments.
+ * Multi-food meals use a tag selector over the family catalog (#247); amount,
+ * enjoyment, notes, and photos are meal-level; reactions are per food.
  */
 const LogFoodTab: React.FC<LogFoodTabProps> = ({
   isOpen,
@@ -54,21 +65,20 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   const foodNameId = `${uid}-food-name`;
   const amountId = `${uid}-amount`;
   const allergenId = `${uid}-common-allergen`;
-  const reactionDescriptionId = `${uid}-reaction-description`;
   const notesId = `${uid}-notes`;
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
 
-  // Form state
   const [selectedDateTime, setSelectedDateTime] = useState<Date>(() => {
     const d = new Date(activity ? activity.time : initialTime);
     return isNaN(d.getTime()) ? new Date() : d;
   });
-  const [foodName, setFoodName] = useState(activity?.food?.name || '');
-  const [amount, setAmount] = useState('');
-  const [unit, setUnit] = useState('TBSP');
+  const [selectedFoods, setSelectedFoods] = useState<SelectedFoodTag[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [commonAllergen, setCommonAllergen] = useState(false);
   const [allergenTouched, setAllergenTouched] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [unit, setUnit] = useState('TBSP');
   const [enjoyment, setEnjoyment] = useState<FoodEnjoymentValue | null>(null);
   const [hadReaction, setHadReaction] = useState(false);
   const [reactionDescription, setReactionDescription] = useState('');
@@ -76,32 +86,31 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Photos state
   const [photosEnabled, setPhotosEnabled] = useState(false);
   const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
   const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
   const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
 
-  // Food combobox state
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // The catalog food the typed name resolves to (case-insensitive), if any
-  const matchedFood: FoodResponse | undefined = foods.find(
-    food => foodNameKey(food.name) === foodNameKey(foodName)
+  const matchedSearchFood: FoodResponse | undefined = foods.find(
+    food => foodNameKey(food.name) === foodNameKey(searchTerm)
   );
-  const isNewFood = foodNameKey(foodName) !== '' && !matchedFood;
+  const isNewSearchFood = foodNameKey(searchTerm) !== '' && !matchedSearchFood;
 
-  const filteredFoods = foodName.trim() === ''
-    ? foods
-    : foods.filter(food => food.name.toLowerCase().includes(foodName.trim().toLowerCase()));
+  const filteredFoods = searchTerm.trim() === ''
+    ? foods.filter(food => !selectedFoods.some(s => s.foodId === food.id || foodNameKey(s.name) === foodNameKey(food.name)))
+    : foods.filter(
+        food =>
+          food.name.toLowerCase().includes(searchTerm.trim().toLowerCase()) &&
+          !selectedFoods.some(s => s.foodId === food.id || foodNameKey(s.name) === foodNameKey(food.name))
+      );
 
   useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
 
-  // Fetch the family's default solids unit once when the form opens; an edited
-  // log's stored unit (applied in the init effect below) is preserved.
   useEffect(() => {
     const authToken = localStorage.getItem('authToken');
     fetch('/api/settings', {
@@ -119,7 +128,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load photos already attached to the edited log
   useEffect(() => {
     if (!activity?.id || !photosEnabled) return;
     fetchPhotos({ babyId })
@@ -131,7 +139,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       .catch(() => {});
   }, [activity?.id, photosEnabled, babyId]);
 
-  // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -147,11 +154,50 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Initialize when the form opens; reset when it closes (matches FeedForm/DiaperForm)
+  const tagsFromActivity = (): SelectedFoodTag[] => {
+    if (!activity) return [];
+    if (activity.foodItems && activity.foodItems.length > 0) {
+      return activity.foodItems.map(item => ({
+        foodId: item.foodId,
+        name: item.name || foods.find(f => f.id === item.foodId)?.name || item.foodId,
+        commonAllergen: item.commonAllergen === true,
+        isNew: false,
+        hadReaction: item.hadReaction === true,
+        reactionDescription: item.reactionDescription || '',
+      }));
+    }
+    const items = expandFoodItems(activity);
+    if (items.length > 0) {
+      return items.map(item => ({
+        foodId: item.foodId,
+        name:
+          (activity.food?.id === item.foodId ? activity.food.name : undefined) ||
+          foods.find(f => f.id === item.foodId)?.name ||
+          item.foodId,
+        commonAllergen: activity.food?.id === item.foodId ? activity.food.commonAllergen : false,
+        isNew: false,
+        hadReaction: item.hadReaction === true,
+        reactionDescription: item.reactionDescription || '',
+      }));
+    }
+    if (activity.food) {
+      return [{
+        foodId: activity.food.id,
+        name: activity.food.name,
+        commonAllergen: activity.food.commonAllergen,
+        isNew: false,
+        hadReaction: activity.hadReaction === true,
+        reactionDescription: activity.reactionDescription || '',
+      }];
+    }
+    return [];
+  };
+
   useEffect(() => {
     if (isOpen && !isInitialized) {
       if (activity) {
-        setFoodName(activity.food?.name || '');
+        const tags = tagsFromActivity();
+        setSelectedFoods(tags);
         setAmount(activity.amount != null ? activity.amount.toString() : '');
         if (activity.unitAbbr) {
           setUnit(activity.unitAbbr);
@@ -161,8 +207,13 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
             ? (activity.enjoyment as FoodEnjoymentValue)
             : null
         );
-        setHadReaction(activity.hadReaction === true);
-        setReactionDescription(activity.reactionDescription || '');
+        const anyReaction = tags.some(tag => tag.hadReaction) || activity.hadReaction === true;
+        setHadReaction(anyReaction);
+        setReactionDescription(
+          tags.length === 1
+            ? (tags[0].reactionDescription || activity.reactionDescription || '')
+            : ''
+        );
         setNotes(activity.notes || '');
         const d = new Date(activity.time);
         if (!isNaN(d.getTime())) {
@@ -184,30 +235,24 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       setIsInitialized(false);
       setPendingPhotoFiles([]);
       setRemovedPhotoIds([]);
+      setSearchTerm('');
     }
   }, [isOpen, activity, initialTime]);
 
-  // Reset initialized flag when the edited activity changes
   useEffect(() => {
     setIsInitialized(false);
   }, [activity?.id]);
 
-  // Report submit state up so the FormPage footer buttons stay in sync
   useEffect(() => {
-    onFormStateChange({ isSubmitting, canSubmit: !!normalizeFoodName(foodName) });
-  }, [isSubmitting, foodName, onFormStateChange]);
+    onFormStateChange({ isSubmitting, canSubmit: selectedFoods.length > 0 });
+  }, [isSubmitting, selectedFoods.length, onFormStateChange]);
 
-  // Catalog foods carry their stored flag; new foods stay user-controlled
-  // (keyword auto-suggestion was removed — it only worked for English names)
   useEffect(() => {
-    if (matchedFood) {
-      setCommonAllergen(matchedFood.commonAllergen);
-    } else if (!allergenTouched) {
+    if (isNewSearchFood && !allergenTouched) {
       setCommonAllergen(false);
     }
-  }, [matchedFood, allergenTouched]);
+  }, [isNewSearchFood, allergenTouched]);
 
-  // Amount steppers (optional field, modeled on the old solids feed form)
   const amountStep = unit === 'G' ? 5 : 0.5;
 
   const handleAmountChange = (newAmount: string) => {
@@ -228,34 +273,79 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     }
   };
 
-  const handleFoodSelect = (food: FoodResponse) => {
-    setFoodName(food.name);
+  const addFoodTag = (tag: SelectedFoodTag) => {
+    setSelectedFoods(prev => {
+      if (prev.some(s => foodNameKey(s.name) === foodNameKey(tag.name))) return prev;
+      return [...prev, tag];
+    });
+    setSearchTerm('');
     setDropdownOpen(false);
+    setHighlightedIndex(-1);
+    setAllergenTouched(false);
+    setCommonAllergen(false);
+  };
+
+  const handleFoodSelect = (food: FoodResponse) => {
+    addFoodTag({
+      foodId: food.id,
+      name: food.name,
+      commonAllergen: food.commonAllergen,
+      isNew: false,
+      hadReaction: false,
+      reactionDescription: '',
+    });
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
   };
 
-  const handleFoodInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFoodName(e.target.value);
-    setHighlightedIndex(-1);
-    if (e.target.value.trim() !== '') {
-      setDropdownOpen(true);
+  const addNewFoodFromSearch = () => {
+    const name = normalizeFoodName(searchTerm);
+    if (!name) return;
+    if (matchedSearchFood) {
+      handleFoodSelect(matchedSearchFood);
+      return;
     }
+    addFoodTag({
+      name,
+      commonAllergen,
+      isNew: true,
+      hadReaction: false,
+      reactionDescription: '',
+    });
   };
 
-  const handleFoodInputFocus = () => {
-    if (foodName.trim() !== '') {
-      setDropdownOpen(true);
-    }
+  const removeFoodTag = (index: number) => {
+    setSelectedFoods(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleFoodReaction = (index: number, checked: boolean) => {
+    setSelectedFoods(prev =>
+      prev.map((tag, i) => (i === index ? { ...tag, hadReaction: checked } : tag))
+    );
+  };
+
+  const setFoodReactionDescription = (index: number, value: string) => {
+    setSelectedFoods(prev =>
+      prev.map((tag, i) => (i === index ? { ...tag, reactionDescription: value } : tag))
+    );
+  };
+
+  const handleFoodInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setHighlightedIndex(-1);
+    setDropdownOpen(true);
   };
 
   const handleFoodKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!dropdownOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        setDropdownOpen(true);
-        e.preventDefault();
-      }
+    if (e.key === 'Backspace' && searchTerm === '' && selectedFoods.length > 0) {
+      removeFoodTag(selectedFoods.length - 1);
+      return;
+    }
+
+    if (!dropdownOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      setDropdownOpen(true);
+      e.preventDefault();
       return;
     }
 
@@ -272,6 +362,8 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < filteredFoods.length) {
           handleFoodSelect(filteredFoods[highlightedIndex]);
+        } else if (normalizeFoodName(searchTerm)) {
+          addNewFoodFromSearch();
         } else {
           setDropdownOpen(false);
         }
@@ -285,14 +377,17 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     }
   };
 
-  /**
-   * Resolve the typed food name to a catalog foodId, creating the catalog
-   * entry when it's new. Tolerates a duplicate-name race by refetching.
-   */
-  const resolveFoodId = async (authToken: string | null): Promise<string | null> => {
-    const name = normalizeFoodName(foodName);
+  const resolveFoodId = async (
+    tag: SelectedFoodTag,
+    authToken: string | null,
+    catalog: FoodResponse[]
+  ): Promise<{ foodId: string; catalog: FoodResponse[] } | null> => {
+    if (tag.foodId) return { foodId: tag.foodId, catalog };
+    const name = normalizeFoodName(tag.name);
     if (!name) return null;
-    if (matchedFood) return matchedFood.id;
+
+    const existing = catalog.find(food => foodNameKey(food.name) === foodNameKey(name));
+    if (existing) return { foodId: existing.id, catalog };
 
     const headers = {
       'Content-Type': 'application/json',
@@ -302,36 +397,33 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     const createResponse = await fetch('/api/food', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ name, commonAllergen }),
+      body: JSON.stringify({ name, commonAllergen: tag.commonAllergen }),
     });
 
     if (createResponse.ok) {
       const result = await createResponse.json();
       if (result.success && result.data) {
-        onFoodsUpdated([...foods, result.data]);
-        return result.data.id;
+        const nextCatalog = [...catalog, result.data];
+        return { foodId: result.data.id, catalog: nextCatalog };
       }
     }
 
-    // A concurrent create may have won the duplicate-name race — refetch and match
     const listResponse = await fetch('/api/food', { headers });
     if (listResponse.ok) {
       const result = await listResponse.json();
       if (result.success && Array.isArray(result.data)) {
-        onFoodsUpdated(result.data);
-        const existing = (result.data as FoodResponse[]).find(
+        const found = (result.data as FoodResponse[]).find(
           food => foodNameKey(food.name) === foodNameKey(name)
         );
-        if (existing) return existing.id;
+        if (found) return { foodId: found.id, catalog: result.data };
       }
     }
     return null;
   };
 
-  // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!babyId || !normalizeFoodName(foodName)) return;
+    if (!babyId || selectedFoods.length === 0) return;
 
     if (!selectedDateTime || isNaN(selectedDateTime.getTime())) {
       console.error('Required fields missing: valid date time');
@@ -342,30 +434,44 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
 
     try {
       const authToken = localStorage.getItem('authToken');
+      let catalog = foods;
+      const resolvedItems: FoodLogItemInput[] = [];
 
-      const foodId = await resolveFoodId(authToken);
-      if (!foodId) {
-        showToast({
-          variant: 'error',
-          title: t('Error'),
-          message: t('Failed to save food record'),
-          duration: 5000,
+      for (const tag of selectedFoods) {
+        const resolved = await resolveFoodId(tag, authToken, catalog);
+        if (!resolved) {
+          showToast({
+            variant: 'error',
+            title: t('Error'),
+            message: t('Failed to save food record'),
+            duration: 5000,
+          });
+          return;
+        }
+        catalog = resolved.catalog;
+        const singleFood = selectedFoods.length === 1;
+        resolvedItems.push({
+          foodId: resolved.foodId,
+          hadReaction: hadReaction && (singleFood ? true : tag.hadReaction),
+          reactionDescription:
+            hadReaction && (singleFood ? reactionDescription : tag.reactionDescription)?.trim()
+              ? (singleFood ? reactionDescription : tag.reactionDescription).trim()
+              : null,
         });
-        return;
       }
+
+      onFoodsUpdated(catalog);
 
       const parsedAmount = parseFloat(amount);
       const hasAmount = Number.isFinite(parsedAmount) && parsedAmount > 0;
 
       const payload: FoodLogCreate = {
         babyId,
-        foodId,
+        foods: resolvedItems,
         time: toUTCString(selectedDateTime) || selectedDateTime.toISOString(),
         amount: hasAmount ? parsedAmount : null,
         unitAbbr: hasAmount ? unit : null,
         enjoyment: enjoyment as FoodLogCreate['enjoyment'],
-        hadReaction,
-        reactionDescription: hadReaction && reactionDescription.trim() ? reactionDescription.trim() : undefined,
         notes: notes.trim() ? notes.trim() : undefined,
       };
 
@@ -411,7 +517,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       const result = await response.json();
       const savedLogId = activity?.id || result.data?.id;
 
-      // Attach/detach photos (best effort — the log itself is already saved)
       if (photosEnabled && savedLogId) {
         try {
           for (const photoId of removedPhotoIds) {
@@ -443,9 +548,9 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         duration: 3000,
       });
 
-      // Reset form if not editing
       if (!activity) {
-        setFoodName('');
+        setSelectedFoods([]);
+        setSearchTerm('');
         setAmount('');
         setEnjoyment(null);
         setHadReaction(false);
@@ -470,7 +575,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   return (
     <div className="food-form-tab-content">
       <form id={formId} onSubmit={handleSubmit} className="space-y-4">
-        {/* Date/Time Picker */}
         <div>
           <Label className="form-label">{t('Date & Time')}</Label>
           <DateTimePicker
@@ -481,33 +585,50 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
           />
         </div>
 
-        {/* Food Combobox */}
         <div>
-          <Label className="form-label" htmlFor={foodNameId}>{t('Food')}</Label>
+          <Label className="form-label" htmlFor={foodNameId}>{t('Foods')}</Label>
+          {selectedFoods.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {selectedFoods.map((tag, index) => (
+                <span
+                  key={`${tag.foodId || tag.name}-${index}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-teal-100 text-teal-800 px-2.5 py-1 text-sm food-selected-tag"
+                >
+                  {tag.name}
+                  {tag.commonAllergen && (
+                    <span className="text-amber-700 text-xs food-selected-tag-allergen">({t('Allergen')})</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeFoodTag(index)}
+                    className="ml-0.5 rounded-full p-0.5 hover:bg-teal-200 food-selected-tag-remove"
+                    aria-label={`${t('Remove')} ${tag.name}`}
+                    disabled={isSubmitting}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="relative">
             <div className="relative w-full">
               <div className="flex items-center w-full">
                 <Input
                   ref={inputRef}
                   id={foodNameId}
-                  value={foodName}
+                  value={searchTerm}
                   onChange={handleFoodInputChange}
-                  onFocus={handleFoodInputFocus}
+                  onFocus={() => setDropdownOpen(true)}
                   onKeyDown={handleFoodKeyDown}
                   className="w-full pr-10 food-form-dropdown-trigger"
-                  placeholder={t("Enter or select a food")}
+                  placeholder={t('Search or add foods...')}
                   disabled={isSubmitting}
-                  required
                 />
                 <ChevronDown
                   aria-hidden="true"
                   className="absolute right-3 h-4 w-4 text-gray-500 food-form-dropdown-icon"
-                  onClick={() => {
-                    setDropdownOpen(!dropdownOpen);
-                    if (document.activeElement instanceof HTMLElement) {
-                      document.activeElement.blur();
-                    }
-                  }}
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
                 />
               </div>
 
@@ -540,8 +661,11 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
                       ))}
                     </div>
                   ) : (
-                    <div className="px-3 py-2 text-sm text-gray-500 food-dropdown-no-match">
-                      {foodName.trim() !== ''
+                    <div
+                      className="px-3 py-2 text-sm text-gray-500 food-dropdown-no-match cursor-pointer hover:bg-gray-50"
+                      onClick={() => normalizeFoodName(searchTerm) && addNewFoodFromSearch()}
+                    >
+                      {searchTerm.trim() !== ''
                         ? `${t('New food — it will be added to your list when saved')}`
                         : t('No foods found')}
                     </div>
@@ -550,33 +674,40 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
               )}
             </div>
           </div>
-          {isNewFood && (
-            <p className="mt-1 text-xs text-gray-500 food-form-new-food-hint">
-              {t('New food — it will be added to your list when saved')}
-            </p>
+          {isNewSearchFood && (
+            <div className="mt-2">
+              <p className="text-xs text-gray-500 food-form-new-food-hint mb-2">
+                {t('New food — it will be added to your list when saved')}
+              </p>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={allergenId}
+                  checked={commonAllergen}
+                  onCheckedChange={(checked: boolean) => {
+                    setAllergenTouched(true);
+                    setCommonAllergen(checked);
+                  }}
+                  disabled={isSubmitting}
+                />
+                <Label className="form-label !mb-0" htmlFor={allergenId}>{t('Common allergen')}</Label>
+              </div>
+              <p className="text-xs text-gray-500 mt-1 food-form-helper-text">
+                {t('Check this box if the food is a known common allergen (e.g. peanut, egg, milk, tree nuts, soy, wheat, fish, shellfish, sesame).')}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={addNewFoodFromSearch}
+                disabled={isSubmitting}
+              >
+                {t('Add food')}
+              </Button>
+            </div>
           )}
         </div>
 
-        {/* Common Allergen */}
-        <div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id={allergenId}
-              checked={commonAllergen}
-              onCheckedChange={(checked: boolean) => {
-                setAllergenTouched(true);
-                setCommonAllergen(checked);
-              }}
-              disabled={isSubmitting || !!matchedFood}
-            />
-            <Label className="form-label !mb-0" htmlFor={allergenId}>{t('Common allergen')}</Label>
-          </div>
-          <p className="text-xs text-gray-500 mt-1 food-form-helper-text">
-            {t('Check this box if the food is a known common allergen (e.g. peanut, egg, milk, tree nuts, soy, wheat, fish, shellfish, sesame).')}
-          </p>
-        </div>
-
-        {/* Amount (optional) — modeled on the old solids feed form */}
         <div>
           <Label className="form-label" htmlFor={amountId}>{t('Amount (')}{unitSymbol(unit)})</Label>
           <div className="flex items-center justify-center mb-4">
@@ -635,7 +766,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
           </div>
         </div>
 
-        {/* Enjoyment Picker */}
         <div>
           <Label className="form-label">{t('Enjoyment')}</Label>
           <div className="grid grid-cols-5 gap-1" role="group" aria-label={t('Enjoyment')}>
@@ -662,7 +792,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
           </div>
         </div>
 
-        {/* Reaction Toggle */}
         <div>
           <div className="flex items-center justify-between">
             <Label className="form-label !mb-0 flex items-center gap-1.5">
@@ -671,16 +800,28 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
             </Label>
             <Switch
               checked={hadReaction}
-              onCheckedChange={setHadReaction}
+              onCheckedChange={(checked) => {
+                setHadReaction(checked);
+                if (!checked) {
+                  setReactionDescription('');
+                  setSelectedFoods(prev =>
+                    prev.map(tag => ({ ...tag, hadReaction: false, reactionDescription: '' }))
+                  );
+                } else if (selectedFoods.length === 1) {
+                  setSelectedFoods(prev =>
+                    prev.map(tag => ({ ...tag, hadReaction: true }))
+                  );
+                }
+              }}
               disabled={isSubmitting}
               aria-label={t('Reaction occurred')}
             />
           </div>
-          {hadReaction && (
+          {hadReaction && selectedFoods.length <= 1 && (
             <div className="mt-2">
-              <Label className="form-label" htmlFor={reactionDescriptionId}>{t('Describe the reaction')}</Label>
+              <Label className="form-label" htmlFor={`${uid}-reaction-description`}>{t('Describe the reaction')}</Label>
               <Textarea
-                id={reactionDescriptionId}
+                id={`${uid}-reaction-description`}
                 value={reactionDescription}
                 onChange={(e) => setReactionDescription(e.target.value)}
                 className="w-full min-h-[60px]"
@@ -689,9 +830,35 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
               />
             </div>
           )}
+          {hadReaction && selectedFoods.length > 1 && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-500 food-form-helper-text">{t('Select which food(s) caused a reaction')}</p>
+              {selectedFoods.map((tag, index) => (
+                <div key={`${tag.foodId || tag.name}-reaction-${index}`} className="mt-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={`${uid}-react-${index}`}
+                      checked={tag.hadReaction}
+                      onCheckedChange={(checked: boolean) => toggleFoodReaction(index, checked)}
+                      disabled={isSubmitting}
+                    />
+                    <Label className="form-label !mb-0" htmlFor={`${uid}-react-${index}`}>{tag.name}</Label>
+                  </div>
+                  {tag.hadReaction && (
+                    <Textarea
+                      value={tag.reactionDescription}
+                      onChange={(e) => setFoodReactionDescription(index, e.target.value)}
+                      className="w-full min-h-[60px]"
+                      placeholder={t("Redness, swelling, hives...")}
+                      disabled={isSubmitting}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Notes */}
         <div>
           <Label className="form-label" htmlFor={notesId}>{t('Notes')}</Label>
           <Textarea
@@ -704,7 +871,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
           />
         </div>
 
-        {/* Photos */}
         {photosEnabled && (
           <div>
             <Label className="form-label">{t('Photos')}</Label>

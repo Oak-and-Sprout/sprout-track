@@ -23,6 +23,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   const [phase, setPhase] = useState<FeedPhase>('idle');
   const [activeFeed, setActiveFeed] = useState<ActiveBreastFeedResponse | null>(null);
   const [currentElapsed, setCurrentElapsed] = useState(0);
+  const [lastBreastSide, setLastBreastSide] = useState<'LEFT' | 'RIGHT' | ''>('');
 
   const refreshDefaultUnit = useCallback(async () => {
     const authToken = localStorage.getItem('authToken');
@@ -58,6 +59,14 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
           }
         }
       } catch { /* no average available */ }
+
+      try {
+        const lastBreastRes = await fetch(`/api/feed-log/last?babyId=${babyId}&type=BREAST`, { headers });
+        const lastBreastData = await lastBreastRes.json();
+        if (lastBreastData.success && (lastBreastData.data?.side === 'LEFT' || lastBreastData.data?.side === 'RIGHT')) {
+          setLastBreastSide(lastBreastData.data.side);
+        }
+      } catch { /* no last side available */ }
     };
 
     if (babyId) fetchDefaults();
@@ -326,8 +335,18 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   } else {
     buttons = [
       { key: 'bottle', label: avgBottleAmount ? `${t('Bottle')} (${avgBottleAmount})` : t('Bottle'), onClick: submitBottle, disabled: submitting },
-      { key: 'breastL', label: t('Left Breast'), onClick: () => startBreastFeed('LEFT'), disabled: submitting },
-      { key: 'breastR', label: t('Right Breast'), onClick: () => startBreastFeed('RIGHT'), disabled: submitting },
+      {
+        key: 'breastL',
+        label: lastBreastSide === 'LEFT' ? `${t('Left Breast')} · ${t('Last used')}` : t('Left Breast'),
+        onClick: () => startBreastFeed('LEFT'),
+        disabled: submitting,
+      },
+      {
+        key: 'breastR',
+        label: lastBreastSide === 'RIGHT' ? `${t('Right Breast')} · ${t('Last used')}` : t('Right Breast'),
+        onClick: () => startBreastFeed('RIGHT'),
+        disabled: submitting,
+      },
     ];
   }
 

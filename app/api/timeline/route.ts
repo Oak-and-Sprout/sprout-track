@@ -6,6 +6,11 @@ import { toUTC, formatForResponse } from '../utils/timezone';
 import { buildLinkTargets, groupPhotoLinks, photoLogHasLivePhotos } from './timeline-photo-links';
 import { isPhotosEnabled } from '../photos/photo-service';
 import { resolveCaretakerBadge } from '@/src/constants/caretakerBadge';
+import {
+  computeFoodProgress,
+  expandFoodItems,
+  mealIncludesFirstTry,
+} from '@/src/utils/foodLogUtils';
 
 // Builds the caretaker badge fields for a timeline log. The system caretaker
 // (loginId '00') and nameless caretakers are omitted so no badge renders.
@@ -669,23 +674,37 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         };
       });
 
-    // Food logs: mark each log that is its food's all-time earliest try so the
-    // client can show a "First try!" badge (issue #203)
-    const firstTryTimeByFoodId = new Map<string, number>();
+    // Food logs: mark meals that include any food's all-time earliest try
+    // (multi-food meals expand items — replaces Prisma groupBy foodId).
+    let firstTryByFoodId: Record<string, string> = {};
     if (foodLogs.length > 0) {
-      const firstTries = await prisma.foodLog.groupBy({
-        by: ['foodId'],
-        where: {
-          babyId,
-          familyId,
-          deletedAt: null,
-          foodId: { in: Array.from(new Set(foodLogs.map((l: any) => l.foodId))) },
-        },
-        _min: { time: true },
+      const allTimeFoodLogs = await prisma.foodLog.findMany({
+        where: { babyId, familyId, deletedAt: null },
+        select: { foodId: true, foods: true, time: true, hadReaction: true, reactionDescription: true, deletedAt: true },
       });
-      for (const row of firstTries) {
-        if (row._min.time) {
-          firstTryTimeByFoodId.set(row.foodId, new Date(row._min.time).getTime());
+      firstTryByFoodId = computeFoodProgress(allTimeFoodLogs).firstTryByFoodId;
+
+      // Resolve catalog names for multi-food meals in the window
+      const windowFoodIds = Array.from(
+        new Set(foodLogs.flatMap((l: any) => expandFoodItems(l).map(i => i.foodId)))
+      );
+      if (windowFoodIds.length > 0) {
+        const catalogFoods = await prisma.food.findMany({
+          where: { id: { in: windowFoodIds }, familyId },
+          select: { id: true, name: true, commonAllergen: true },
+        });
+        const catalogById = new Map(catalogFoods.map(f => [f.id, f]));
+        for (const log of foodLogs as any[]) {
+          const items = expandFoodItems(log);
+          log.foodItems = items.map(item => {
+            const meta = catalogById.get(item.foodId) || (log.food?.id === item.foodId ? log.food : undefined);
+            return {
+              foodId: item.foodId,
+              hadReaction: item.hadReaction === true,
+              reactionDescription: item.reactionDescription ?? null,
+              ...(meta ? { name: meta.name, commonAllergen: meta.commonAllergen === true } : {}),
+            };
+          });
         }
       }
     }
@@ -702,7 +721,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
           ...caretakerBadgeFields(caretaker),
-          isFirstTry: firstTryTimeByFoodId.get(log.foodId) === new Date(log.time).getTime(),
+          isFirstTry: mealIncludesFirstTry(log, firstTryByFoodId),
           photos: photosFor('foodLog', log.id),
         };
       });
