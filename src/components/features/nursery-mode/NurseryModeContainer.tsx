@@ -13,6 +13,8 @@ import { formatFeedNote, formatPumpNote } from '@/src/utils/nursery/activityDeta
 import { formatFoodLogNote } from '@/src/utils/nursery/foodActivity';
 import { isValidEnjoyment, FOOD_ENJOYMENT_LABELS } from '@/src/utils/foodLogUtils';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
+import { isNativeApp } from '@/src/utils/native-app';
+import { nurseryDisplayControls } from '@/src/utils/shell-chrome';
 import { Baby } from '@prisma/client';
 import { ClockBlock } from './ClockBlock';
 import { SceneBackground } from './scenes/SceneBackground';
@@ -54,6 +56,9 @@ export function NurseryModeContainer() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches
   );
+  const [inShell, setInShell] = useState(false);
+  useEffect(() => setInShell(isNativeApp()), []);
+  const displayControls = nurseryDisplayControls(inShell);
 
   const lastSeenRef = useRef<Record<string, string>>({});
   const fetchActivityRef = useRef<(() => void) | null>(null);
@@ -393,10 +398,12 @@ export function NurseryModeContainer() {
       {!isLandscape && (
         <div className="nursery-footer">
           <div className="m" style={{ textTransform: 'uppercase' }}>{t('Nursery Mode')}</div>
-          <div className="l" style={{ textTransform: 'uppercase' }}>
-            {wakeLock.isActive && <span className="nursery-dotlock" />}
-            {wakeStatus}
-          </div>
+          {displayControls.showWakeLock && (
+            <div className="l" style={{ textTransform: 'uppercase' }}>
+              {wakeLock.isActive && <span className="nursery-dotlock" />}
+              {wakeStatus}
+            </div>
+          )}
         </div>
       )}
 
@@ -414,6 +421,8 @@ export function NurseryModeContainer() {
         fullscreenSupported={fullscreen.isSupported}
         onToggleFullscreen={() => fullscreen.toggle()}
         photosEnabled={photosEnabled}
+        showWakeLock={displayControls.showWakeLock}
+        showFullscreen={displayControls.showFullscreen}
       />
     </div>
   );

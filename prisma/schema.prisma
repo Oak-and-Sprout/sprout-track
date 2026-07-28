@@ -166,6 +166,8 @@ model Account {
   // Relations
   feedback Feedback[]
   pushSubscriptions PushSubscription[]
+  deviceTokens DeviceToken[]
+  notificationPreferences NotificationPreference[]
 
   @@index([email])
   @@index([verified])
@@ -209,6 +211,8 @@ model Family {
   familySetups   FamilySetup[]
   feedback       Feedback[]
   pushSubscriptions PushSubscription[]
+  deviceTokens   DeviceToken[]
+  notificationPreferences NotificationPreference[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
   activeActivities  ActiveActivity[]
@@ -324,6 +328,8 @@ model Caretaker {
   familySetups  FamilySetup[]
   feedback      Feedback[]
   pushSubscriptions PushSubscription[]
+  deviceTokens  DeviceToken[]
+  notificationPreferences NotificationPreference[]
   breastMilkAdjustments BreastMilkAdjustment[]
   activeBreastFeeds ActiveBreastFeed[]
   activeActivities  ActiveActivity[]
@@ -1523,28 +1529,74 @@ model PushSubscription {
   @@index([failureCount])
 }
 
-// Notification preferences per subscription and baby
+// Native push device token model (iOS/Android)
+model DeviceToken {
+  id            String    @id @default(cuid())
+  token         String
+  platform      String // 'ios' | 'android'
+  accountId     String?
+  caretakerId   String?
+  familyId      String
+  failureCount  Int       @default(0)
+  lastFailureAt DateTime?
+  lastSuccessAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  account   Account?   @relation(fields: [accountId], references: [id])
+  caretaker Caretaker? @relation(fields: [caretakerId], references: [id])
+  family    Family     @relation(fields: [familyId], references: [id])
+
+  @@unique([token, familyId])
+  @@index([accountId])
+  @@index([caretakerId])
+  @@index([familyId])
+}
+
+// Notification preferences per baby, owned either by a web-push PushSubscription
+// (subscriptionId set — one row per browser subscription, unchanged from the
+// original design) or directly by a caretaker/account (subscriptionId null —
+// the native-push path, where there is no PushSubscription to hang off of
+// because WKWebView / Android System WebView cannot register one). Every row
+// also carries its owner (caretakerId/accountId) and familyId directly so send
+// sites don't have to go through `subscription` to find a target.
 model NotificationPreference {
   id                    String                @id @default(cuid())
-  subscriptionId        String
+  subscriptionId        String?
   babyId                String
   eventType             NotificationEventType
   activityTypes         String? // JSON string array of activity types (null = all)
   timerIntervalMinutes  Int? // Minutes between repeat notifications (null = once per expiration)
   lastTimerNotifiedAt   DateTime?
   enabled               Boolean                @default(true)
+  caretakerId           String?
+  accountId             String?
+  // Nullable, not required: a required column with no default cannot be
+  // added by `prisma db push` to a Postgres table that already has rows
+  // (confirmed empirically against this repo's Prisma version) — db push is
+  // exactly how docker-startup.sh deploys Postgres, and it has no `set -e`
+  // to catch the failure. Purely-additive nullable columns always push
+  // cleanly on both providers. resolvePreferenceOwner() and the GET query
+  // both tolerate a null familyId (falling back to `subscription`).
+  familyId              String?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime              @updatedAt
 
   // Relations
-  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  baby         Baby             @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  subscription PushSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  baby         Baby              @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  caretaker    Caretaker?        @relation(fields: [caretakerId], references: [id], onDelete: SetNull)
+  account      Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  family       Family?           @relation(fields: [familyId], references: [id])
 
   @@unique([subscriptionId, babyId, eventType])
   @@index([subscriptionId])
   @@index([babyId])
   @@index([eventType])
   @@index([enabled])
+  @@index([caretakerId])
+  @@index([accountId])
+  @@index([familyId])
 }
 
 // Notification log for debugging and failure tracking

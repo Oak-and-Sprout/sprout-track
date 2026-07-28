@@ -3,6 +3,7 @@ import { cn } from '@/src/lib/utils';
 import { Metadata } from 'next';
 import { LocalizationProvider } from '@/src/context/localization';
 import { TimezoneProvider } from '@/app/context/timezone';
+import { APPLE_TOUCH_ICON } from '@/src/utils/pwa-icons';
 import './globals.css';
 
 export const viewport = {
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/sprout-128.png',
     shortcut: '/sprout-128.png',
-    apple: '/sprout-128.png',
+    apple: APPLE_TOUCH_ICON,
   },
   description: 'Track your baby\'s sleep, feeding, diapers, milestones, and more with our intuitive, family-friendly platform. Simple to use, privacy-focused, accessible anywhere. Start your 14 day trial today!',
   keywords: [

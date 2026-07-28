@@ -30,7 +30,7 @@ Sprout Track is a Next.js baby tracking application using the App Router. The co
 │   ├── hooks/                   # Custom React hooks
 │   ├── lib/                     # Libraries (email, notifications, utils)
 │   ├── localization/            # Translation files and config
-│   └── utils/                   # Utility functions
+│   └── utils/                   # Utility functions (incl. native-*.ts mobile-shell layer)
 ├── prisma/                      # Database schema and migrations
 │   ├── schema.prisma            # Main database schema
 │   ├── log-schema.prisma        # Separate logging database schema
@@ -109,7 +109,7 @@ API routes live under `app/api/` and are organized by domain. Each folder contai
 | Route | Purpose |
 |-------|---------|
 | `/api/settings/` | Family settings, units, activity config |
-| `/api/notifications/` | Push subscription, preferences, VAPID |
+| `/api/notifications/` | Push subscription, preferences, VAPID, native device tokens |
 | `/api/calendar-event/` | Calendar events with recurrence |
 | `/api/timeline/` | Aggregated activity timeline |
 | `/api/localization/` | Language preferences |

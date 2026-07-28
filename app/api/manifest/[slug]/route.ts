@@ -1,24 +1,4 @@
-const MANIFEST_ICONS: Array<{
-  src: string;
-  sizes: string;
-  purpose?: 'any' | 'maskable';
-}> = [
-  { src: '/sprout-128.png', sizes: '128x128', purpose: 'any' },
-  { src: '/sprout-192.png', sizes: '192x192', purpose: 'any' },
-  { src: '/sprout-256.png', sizes: '256x256', purpose: 'any' },
-  { src: '/sprout-512.png', sizes: '512x512', purpose: 'any' },
-  { src: '/sprout-512.png', sizes: '512x512', purpose: 'maskable' },
-  { src: '/sprout-1024.png', sizes: '1024x1024', purpose: 'any' },
-];
-
-function buildManifestIcons() {
-  return MANIFEST_ICONS.map(({ src, sizes, purpose }) => ({
-    src,
-    sizes,
-    type: 'image/png',
-    purpose,
-  }));
-}
+import { buildManifestIcons } from '@/src/utils/pwa-icons';
 
 export async function GET(
   _req: Request,
