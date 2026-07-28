@@ -409,13 +409,14 @@ Timer action responses include the live session state: `activeSide`, `isPaused`,
 ```json
 {
   "type": "diaper",
-  "diaperType": "WET"
+  "diaperType": "WET",
+  "notes": "Slight rash"
 }
 ```
 
 **diaperType:** `WET`, `DIRTY`, or `BOTH`
 
-Optional fields: `condition`, `color`, `blowout` (boolean), `creamApplied` (boolean)
+Optional fields: `condition`, `color`, `blowout` (boolean), `creamApplied` (boolean), `notes`
 
 `blowout` and `creamApplied` both default to `false` when omitted. If sent, the value must be a real JSON boolean (`true`/`false`) — a truthy-but-not-boolean value (e.g. the string `"true"`, `1`) returns `400`. `creamApplied` is also included in the `GET /activities` response for diaper entries.
 
@@ -461,13 +462,14 @@ Sleep supports three actions:
   "sleepType": "NAP",
   "action": "log",
   "duration": 45,
-  "location": "Crib"
+  "location": "Crib",
+  "notes": "Slept peacefully"
 }
 ```
 
 **sleepType:** `NAP` or `NIGHT_SLEEP` -- required for `start` and `log`, optional for `end`
 **action:** `start`, `end`, or `log`
-Optional fields: `location`, `quality`, `duration` (minutes, required for `log`)
+Optional fields: `location`, `quality`, `duration` (minutes, required for `log`), `notes`
 
 **`quality` values:** `POOR`, `FAIR`, `GOOD`, `EXCELLENT` (case-insensitive; stored using this exact casing). An unrecognized value returns `400 INVALID_QUALITY`.
 

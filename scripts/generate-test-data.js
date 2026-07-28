@@ -499,6 +499,7 @@ async function generateSleepLogs(baby, caretakers, family, startDate, endDate, c
           type: 'NIGHT_SLEEP',
           location: 'Crib',
           quality: randomChoice(['GOOD', 'EXCELLENT', 'FAIR']),
+          notes: Math.random() < 0.15 ? randomChoice(['Slept peacefully', 'Woke up once', 'Restless night']) : null,
           babyId: baby.id,
           caretakerId: caretaker.id,
           familyId: family.id
@@ -532,6 +533,7 @@ async function generateSleepLogs(baby, caretakers, family, startDate, endDate, c
             type: 'NAP',
             location: 'Crib',
             quality: randomChoice(['GOOD', 'FAIR', 'EXCELLENT']),
+            notes: Math.random() < 0.15 ? randomChoice(['Slept peacefully', 'Woke up once', 'Restless night']) : null,
             babyId: baby.id,
             caretakerId: caretaker.id,
             familyId: family.id
@@ -566,6 +568,7 @@ async function generateSleepLogs(baby, caretakers, family, startDate, endDate, c
             type: 'NAP',
             location: 'Crib',
             quality: randomChoice(['GOOD', 'FAIR', 'EXCELLENT']),
+            notes: Math.random() < 0.15 ? randomChoice(['Slept peacefully', 'Woke up once', 'Restless night']) : null,
             babyId: baby.id,
             caretakerId: caretaker.id,
             familyId: family.id
@@ -655,6 +658,7 @@ async function generateDiaperLogs(baby, caretakers, family, startDate, endDate, 
           type: type,
           condition: type === 'DIRTY' || type === 'BOTH' ? randomChoice(['Normal', 'Soft', 'Hard']) : null,
           color: type === 'DIRTY' || type === 'BOTH' ? randomChoice(['Yellow', 'Brown', 'Green']) : null,
+          notes: Math.random() < 0.1 ? randomChoice(['Slight rash', 'Leaked a little', 'Last diaper in the pack']) : null,
           babyId: baby.id,
           caretakerId: caretaker.id,
           familyId: family.id

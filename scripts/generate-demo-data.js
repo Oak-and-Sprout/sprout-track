@@ -612,13 +612,14 @@ async function createDemoSleepLogs(family, caretaker, babyMappings, sourceSleepL
         type: sourceLog.type,
         location: sourceLog.location,
         quality: sourceLog.quality,
+        notes: sourceLog.notes,
         babyId: babyMapping.demo.id,
         caretakerId: caretaker.id,
         familyId: family.id
       });
     }
   }
-  
+
   if (demoLogs.length > 0) {
     await prisma.sleepLog.createMany({ data: demoLogs });
   }
@@ -774,6 +775,7 @@ async function createDemoDiaperLogs(family, caretaker, babyMappings, sourceDiape
       type: sourceLog.type,
       condition: sourceLog.condition,
       color: sourceLog.color,
+      notes: sourceLog.notes,
       babyId: babyMapping.demo.id,
       caretakerId: caretaker.id,
       familyId: family.id
