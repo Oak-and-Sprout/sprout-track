@@ -72,6 +72,7 @@ export function mapBabyBuddySleep(
     type: required(row, 'nap') === '1'
       ? 'NAP'
       : 'NIGHT_SLEEP',
+    notes: row.notes?.trim() || undefined,
   };
 }
 
@@ -282,5 +283,6 @@ export function mapBabyBuddyDiaperChange(
     time: toUtcInput(required(row, 'time')),
     type,
     color,
+    notes: row.notes?.trim() || undefined,
   };
 }

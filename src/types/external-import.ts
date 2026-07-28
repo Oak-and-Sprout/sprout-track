@@ -75,6 +75,7 @@ export interface ExternalImportSleepRecord {
   readonly startTime: string;
   readonly endTime: string;
   readonly type: 'NAP' | 'NIGHT_SLEEP';
+  readonly notes?: string;
 }
 
 export interface ExternalImportNoteRecord {
@@ -119,6 +120,7 @@ export interface ExternalImportDiaperRecord {
   readonly time: string;
   readonly type: 'WET' | 'DIRTY' | 'BOTH';
   readonly color?: 'YELLOW' | 'BROWN' | 'GREEN' | 'BLACK';
+  readonly notes?: string;
 }
 
 export type ExternalImportFeedingAmountUnit =

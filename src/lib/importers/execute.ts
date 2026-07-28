@@ -126,6 +126,7 @@ async function createActivityRecord(
           endTime,
           duration: durationMinutes(startTime, endTime),
           type: record.type,
+          notes: record.notes,
         },
       });
 
@@ -188,6 +189,7 @@ async function createActivityRecord(
           color: record.color,
           blowout: false,
           creamApplied: false,
+          notes: record.notes,
         },
       });
 

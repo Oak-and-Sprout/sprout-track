@@ -99,17 +99,6 @@ export function collectBabyBuddyWarnings(
         );
         break;
 
-      case 'sleep':
-        addWarning(
-          'sleep-notes-unsupported',
-          'sleep',
-          countMatching(
-            rows,
-            row => Boolean(row.notes?.trim()),
-          ),
-        );
-        break;
-
       case 'diaper-change':
         addWarning(
           'wet-diaper-colour-unsupported',
@@ -120,15 +109,6 @@ export function collectBabyBuddyWarnings(
               row.wet?.trim() === '1' &&
               row.solid?.trim() === '0' &&
               Boolean(row.color?.trim()),
-          ),
-        );
-
-        addWarning(
-          'diaper-notes-unsupported',
-          'diaper-change',
-          countMatching(
-            rows,
-            row => Boolean(row.notes?.trim()),
           ),
         );
 
