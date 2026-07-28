@@ -7,6 +7,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
 import { Checkbox } from '@/src/components/ui/checkbox';
+import { Textarea } from '@/src/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -70,6 +71,7 @@ export default function DiaperForm({
     color: '',
     blowout: false,
     creamApplied: false,
+    notes: '',
   });
   const [loading, setLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -121,6 +123,7 @@ export default function DiaperForm({
           color: activity.color || '',
           blowout: activity.blowout || false,
           creamApplied: activity.creamApplied || false,
+          notes: activity.notes || '',
         });
         
         // Store the initial time used for editing
@@ -193,6 +196,7 @@ export default function DiaperForm({
         color: formData.color || null,
         blowout: formData.blowout,
         creamApplied: formData.creamApplied,
+        notes: formData.notes || null,
       };
 
       // Get auth token from localStorage
@@ -237,6 +241,7 @@ export default function DiaperForm({
         color: '',
         blowout: false,
         creamApplied: false,
+        notes: '',
       });
     } catch (error) {
       console.error('Error saving diaper log:', error);
@@ -361,6 +366,20 @@ export default function DiaperForm({
                 </div>
               </div>
             )}
+
+            {/* Notes */}
+            <div>
+              <label htmlFor={`${formId}-notes`} className="form-label">{t('Notes')}</label>
+              <Textarea
+                id={`${formId}-notes`}
+                name="notes"
+                placeholder={t("Enter any notes about the diaper change")}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                disabled={loading}
+              />
+            </div>
           </div>
           </form>
         </FormPageContent>
