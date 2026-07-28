@@ -234,7 +234,7 @@ The Sprout Track Team`,
 
 export async function sendAccountClosureEmail(email: string, firstName: string) {
   const domainUrl = await getDomainUrl();
-  
+
   const result = await sendEmail({
     to: email,
     from: process.env.ACCOUNTS_EMAIL || 'accounts@sprout-track.com',
@@ -256,20 +256,74 @@ The Sprout Track Team`,
         <h2 style="color: #dc2626;">Account Closed</h2>
         <p>Hi ${firstName},</p>
         <p>Your Sprout Track account has been successfully closed as requested.</p>
-        
+
         <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
           <p style="margin: 0; color: #dc2626; font-weight: 600;">
             Your account and associated family data have been deactivated and are no longer accessible. This action cannot be undone.
           </p>
         </div>
-        
+
         <p>If you closed your account by mistake or would like to reactivate it, please contact our support team as soon as possible.</p>
-        
+
         <p>Thank you for using Sprout Track. We're sorry to see you go!</p>
-        
+
         <p>Best regards,<br>The Sprout Track Team</p>
       </div>
     `
+  });
+
+  return result;
+}
+
+// The account manager is a modal on the landing page, not a dedicated route,
+// so the gift email links to the site root.
+export function giftRedemptionUrl(domainUrl: string): string {
+  return domainUrl;
+}
+
+export async function sendGiftCodeEmail(email: string, code: string) {
+  const domainUrl = await getDomainUrl();
+  const redeemUrl = giftRedemptionUrl(domainUrl);
+
+  const result = await sendEmail({
+    to: email,
+    from: process.env.ACCOUNTS_EMAIL || 'accounts@sprout-track.com',
+    subject: 'Your Sprout Track gift code',
+    text: `Thank you for giving Sprout Track!
+
+Here is your lifetime access gift code:
+
+${code}
+
+To redeem it:
+1. Go to ${redeemUrl} and sign in — or create a free account.
+2. Open Account Settings and find the Subscription section.
+3. Choose "Redeem a gift code" and enter the code above.
+
+The code grants lifetime access to Sprout Track and can be used once.
+
+Best regards,
+The Sprout Track Team`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0d9488;">Thank you for giving Sprout Track!</h2>
+        <p>Here is your lifetime access gift code:</p>
+
+        <div style="background-color: #f0fdfa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <code style="background-color: #fff; padding: 8px 16px; border-radius: 4px; font-size: 20px; font-weight: bold; letter-spacing: 2px;">${code}</code>
+        </div>
+
+        <p>To redeem it:</p>
+        <ol>
+          <li>Go to <a href="${redeemUrl}">${redeemUrl}</a> and sign in — or create a free account.</li>
+          <li>Open Account Settings and find the Subscription section.</li>
+          <li>Choose "Redeem a gift code" and enter the code above.</li>
+        </ol>
+
+        <p>The code grants lifetime access to Sprout Track and can be used once.</p>
+        <p>Best regards,<br>The Sprout Track Team</p>
+      </div>
+    `,
   });
 
   return result;
