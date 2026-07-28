@@ -367,6 +367,7 @@ const FamilyPeopleTab: React.FC<FamilyPeopleTabProps> = ({
           role: selectedCaretaker.role as any,
           language: (selectedCaretaker as any).language || 'en',
           lastSeenVersion: (selectedCaretaker as any).lastSeenVersion || null,
+          badgeColor: (selectedCaretaker as any).badgeColor ?? null,
           createdAt: new Date(),
           updatedAt: new Date(),
           deletedAt: null,
