@@ -149,6 +149,28 @@ describe('hooks activities POST route', () => {
       expect(payload.success).toBe(true);
     });
 
+    it('accepts a DRY diaper change', async () => {
+      mocks.prisma.diaperLog.create.mockResolvedValue({ id: 'diaper-dry-1', time: new Date('2026-07-20T10:00:00Z'), blowout: false, creamApplied: false });
+
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'DRY' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(payload.success).toBe(true);
+      expect(mocks.prisma.diaperLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ type: 'DRY' }),
+      }));
+    });
+
+    it('still rejects an unknown diaper type', async () => {
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'SOGGY' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_DIAPER_TYPE');
+      expect(mocks.prisma.diaperLog.create).not.toHaveBeenCalled();
+    });
+
     it('starts a sleep session', async () => {
       mocks.prisma.sleepLog.create.mockResolvedValue({ id: 'sleep-1', startTime: new Date('2026-07-20T10:00:00Z') });
 

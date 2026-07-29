@@ -1573,6 +1573,7 @@
   "notification.by": " by {actorName}",
   "notification.diaper.both.body": "{babyName} had a wet & dirty diaper change{byActor}",
   "notification.diaper.dirty.body": "{babyName} had a dirty diaper change{byActor}",
+  "notification.diaper.dry.body": "{babyName} had a dry diaper change{byActor}",
   "notification.diaper.generic.body": "{babyName} had a diaper change{byActor}",
   "notification.diaper.wet.body": "{babyName} had a wet diaper change{byActor}",
   "notification.feed.bottle.body": "{babyName} had a {amount}{unit} bottle{byActor}",

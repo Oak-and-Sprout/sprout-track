@@ -117,7 +117,7 @@ function buildNotificationBody(
     }
     case 'diaper': {
       const diaperType = activityData?.type;
-      if (diaperType && ['WET', 'DIRTY', 'BOTH'].includes(diaperType)) {
+      if (diaperType && ['WET', 'DIRTY', 'BOTH', 'DRY'].includes(diaperType)) {
         return t(`notification.diaper.${diaperType.toLowerCase()}.body`, userLanguage, {
           babyName, byActor,
         });

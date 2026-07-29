@@ -247,7 +247,7 @@ async function buildFeedData(body: JsonObject): Promise<{ data?: Prisma.FeedLogU
 
 function buildDiaperData(body: JsonObject): { data?: Prisma.DiaperLogUpdateInput; error?: string } {
   const data: JsonObject = {};
-  const diaperType = requireEnum(body.diaperType, 'diaperType', ['WET', 'DIRTY', 'BOTH'] as const);
+  const diaperType = requireEnum(body.diaperType, 'diaperType', ['WET', 'DIRTY', 'BOTH', 'DRY'] as const);
   if (diaperType.error) return { error: diaperType.error };
   if (diaperType.value) data.type = diaperType.value;
   const timeError = assignDate(data, body, 'time', 'time');

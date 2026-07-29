@@ -534,8 +534,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
 
       case 'diaper': {
         const { diaperType, condition, color, blowout, creamApplied, notes } = body;
-        if (!diaperType || !['WET', 'DIRTY', 'BOTH'].includes(diaperType)) {
-          return hookError('INVALID_DIAPER_TYPE', 'diaperType must be WET, DIRTY, or BOTH', 400, rl.headers);
+        if (!diaperType || !['WET', 'DIRTY', 'BOTH', 'DRY'].includes(diaperType)) {
+          return hookError('INVALID_DIAPER_TYPE', 'diaperType must be WET, DIRTY, BOTH, or DRY', 400, rl.headers);
         }
         const blowoutCheck = requireBooleanIfPresent(blowout, 'blowout');
         if (blowoutCheck.error) return hookError('INVALID_FIELD', blowoutCheck.error, 400, rl.headers);
