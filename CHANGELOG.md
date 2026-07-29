@@ -1,5 +1,28 @@
 # Sprout Track Changelog
 
+## v1.6.4 - Quality of Life Updates and the Native App Layer
+
+### Changes
+
+#### QoL Updates
+- Added ability to log multiple foods in the food logs
+- Added ability to notate a dry diaper change and updated imports to support dry diaper updates
+- Added notes to diaper and sleep logs
+- Added last side used for breast feed on the feed form
+- Added 24h falloff for last activities shown in nursery mode
+- Added activity icons and user badges to the timeline
+- On sprout-track.com you can now buy Sprout Track as a gift!
+- Adjust Android and iOS icons
+
+#### Bugfixes
+- Fixed a photo favorite bug for family system pins
+- Fixed an idle time reset issue seen in Firefox and Waterfox
+- Hardened app around family token setup
+- Fixed all email endpoints to properly use admin email in settings, or default to sprout-track specific emails (when in SaaS mode and using SendGrid)
+
+#### Native App Layer
+- Added non-invasive native app layer in preparation for the iOS and Android app
+
 ## v1.6.3 - Hotfix: WHO data in Docker and Breast Feed Link Time Fix
 
 ### Changes
