@@ -196,7 +196,7 @@ export function NurseryModeContainer() {
             const time = new Date(latest.time)
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
               .toLowerCase();
-            const typeLabels: Record<string, string> = { WET: 'Wet', DIRTY: 'Dirty', BOTH: 'Both' };
+            const typeLabels: Record<string, string> = { WET: 'Wet', DIRTY: 'Dirty', BOTH: 'Both', DRY: 'Dry' };
             newLogs.diaper = { last: time, note: t(typeLabels[latest.type]) || latest.type };
           }
         }

@@ -1,6 +1,7 @@
 import { ActivityType } from './activity-tile.types';
 import { BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse } from '@/app/api/types';
 import { useTimezone } from '@/app/context/timezone';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 
 /**
  * Gets the activity time from different activity types
@@ -139,7 +140,8 @@ export const useActivityDescription = () => {
             case 'WET': return 'Wet';
             case 'DIRTY': return 'Dirty';
             case 'BOTH': return 'Wet and Dirty';
-            default: return type.split('_').map(word => 
+            case 'DRY': return 'Dry';
+            default: return type.split('_').map(word =>
               word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
             ).join(' ');
           }
@@ -168,7 +170,7 @@ export const useActivityDescription = () => {
         };
         
         let details = '';
-        if (activity.type !== 'WET') {
+        if (isDirtyDiaper(activity.type)) {
           const conditions = [];
           if (activity.condition) conditions.push(formatDiaperCondition(activity.condition));
           if (activity.color) conditions.push(formatDiaperColor(activity.color));

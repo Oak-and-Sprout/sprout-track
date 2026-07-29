@@ -18,6 +18,7 @@ import { useState, useEffect } from 'react';
 import { DiaperType } from '@prisma/client';
 import { DiaperLogResponse } from '@/app/api/types';
 import { useLocalization } from '@/src/context/localization';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 
 interface DiaperModalProps {
   open: boolean;
@@ -169,12 +170,13 @@ export default function DiaperModal({
                   <SelectItem value="WET">{t('Wet')}</SelectItem>
                   <SelectItem value="DIRTY">{t('Dirty')}</SelectItem>
                   <SelectItem value="BOTH">{t('Wet and Dirty')}</SelectItem>
+                  <SelectItem value="DRY">{t('Dry')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           
-          {formData.type && formData.type !== 'WET' && (
+          {formData.type && isDirtyDiaper(formData.type) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="form-label">{t('Condition')}</label>

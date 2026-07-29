@@ -25,6 +25,7 @@ import { useToast } from '@/src/components/ui/toast';
 import { handleExpirationError } from '@/src/lib/expiration-error-handler';
 import { useParams } from 'next/navigation';
 import { useLocalization } from '@/src/context/localization';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 
 interface DiaperFormProps {
   isOpen: boolean;
@@ -288,6 +289,7 @@ export default function DiaperForm({
                   <SelectItem value="WET">{t('Wet')}</SelectItem>
                   <SelectItem value="DIRTY">{t('Dirty')}</SelectItem>
                   <SelectItem value="BOTH">{t('Wet and Dirty')}</SelectItem>
+                  <SelectItem value="DRY">{t('Dry')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -320,7 +322,7 @@ export default function DiaperForm({
               </>
             )}
 
-            {formData.type && formData.type !== 'WET' && (
+            {formData.type && isDirtyDiaper(formData.type) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label htmlFor={`${formId}-condition`} className="form-label">{t('Condition')}</label>

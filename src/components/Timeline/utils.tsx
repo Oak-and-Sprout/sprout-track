@@ -37,6 +37,7 @@ import { getSymbol } from '@/src/hooks/useUnit';
 import { FOOD_ENJOYMENT_LABELS, formatFoodMealTitle, isFoodLogActivity, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 import { lbToLbOz, formatWeightDisplay } from '@/src/utils/weightUnits';
 import { formatPauseDuration } from '@/src/utils/pauseDisplay';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 
 export { lbToLbOz, formatWeightDisplay };
 
@@ -435,6 +436,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
           case 'WET': return t('Wet');
           case 'DIRTY': return t('Dirty');
           case 'BOTH': return t('Wet and Dirty');
+          case 'DRY': return t('Dry');
           default: return t(capitalize(type));
         }
       };
@@ -462,7 +464,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       ];
 
       // Only show condition and color for DIRTY or BOTH types
-      if (activity.type !== 'WET') {
+      if (isDirtyDiaper(activity.type)) {
         if (activity.condition) {
           details.push({ label: t('Condition'), value: formatDiaperCondition(activity.condition) });
         }
@@ -909,6 +911,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
           case 'WET': return t('Wet');
           case 'DIRTY': return t('Dirty');
           case 'BOTH': return t('Wet and Dirty');
+          case 'DRY': return t('Dry');
           default: return t(capitalize(type));
         }
       };
@@ -932,7 +935,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       };
       
       const conditions = [];
-      if (activity.type !== 'WET') {
+      if (isDirtyDiaper(activity.type)) {
         if (activity.condition) conditions.push(formatDiaperCondition(activity.condition));
         if (activity.color) conditions.push(formatDiaperColor(activity.color));
       }
