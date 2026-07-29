@@ -99,8 +99,10 @@ export default function DiaperModal({
         babyId,
         time: formData.time,
         type: formData.type,
-        condition: formData.condition || null,
-        color: formData.color || null,
+        // Condition/color only apply when there's contents — clear stale values from a
+        // previous type instead of carrying them into a WET/DRY log (e.g. DIRTY -> DRY).
+        condition: isDirtyDiaper(formData.type) ? (formData.condition || null) : null,
+        color: isDirtyDiaper(formData.type) ? (formData.color || null) : null,
       };
 
       const response = await fetch(`/api/diaper-log${activity ? `?id=${activity.id}` : ''}`, {

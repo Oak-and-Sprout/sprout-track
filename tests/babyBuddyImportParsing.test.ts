@@ -459,6 +459,25 @@ describe('Baby Buddy import warnings', () => {
     });
   });
 
+  it('reports colours on DRY (wet=0, solid=0) rows too', () => {
+    const warnings = collectBabyBuddyWarnings([
+      {
+        name: 'DiaperChange.csv',
+        content: [
+          'id,child_id,time,wet,solid,color,amount,notes,tags',
+          '1,1,2026-01-01 10:00:00,0,0,green,,,',
+          '2,1,2026-01-01 11:00:00,1,1,green,,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(warnings).toContainEqual({
+      code: 'wet-diaper-colour-unsupported',
+      entityType: 'diaper-change',
+      affectedRows: 1,
+    });
+  });
+
   it('does not produce warnings for blank unsupported fields', () => {
     const warnings = collectBabyBuddyWarnings([
       {

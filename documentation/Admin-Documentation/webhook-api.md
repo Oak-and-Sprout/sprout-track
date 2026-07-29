@@ -212,7 +212,7 @@ curl -s \
       "date": "2026-03-12",
       "feeds": 6,
       "diapers": 4,
-      "diapersByType": { "WET": 3, "DIRTY": 0, "BOTH": 1 },
+      "diapersByType": { "WET": 3, "DIRTY": 0, "BOTH": 1, "DRY": 0 },
       "sleepMinutes": 180,
       "naps": 2,
       "baths": 1,

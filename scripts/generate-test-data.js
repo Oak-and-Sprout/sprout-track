@@ -641,15 +641,18 @@ async function generateDiaperLogs(baby, caretakers, family, startDate, endDate, 
       
       // Only create diaper log if time is not in the future
       if (changeTime <= cutoffTime) {
-        // Determine diaper type (more wet than dirty)
+        // Determine diaper type (more wet than dirty; DRY - checked before there's
+        // anything in it - is the rarest)
         let type;
         const rand = Math.random();
-        if (rand < 0.6) {
+        if (rand < 0.55) {
           type = 'WET';
-        } else if (rand < 0.85) {
+        } else if (rand < 0.8) {
           type = 'DIRTY';
-        } else {
+        } else if (rand < 0.9) {
           type = 'BOTH';
+        } else {
+          type = 'DRY';
         }
         
         logs.push({

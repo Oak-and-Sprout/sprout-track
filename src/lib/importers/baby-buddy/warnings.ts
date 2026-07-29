@@ -106,8 +106,7 @@ export function collectBabyBuddyWarnings(
           countMatching(
             rows,
             row =>
-              row.wet?.trim() === '1' &&
-              row.solid?.trim() === '0' &&
+              row.solid?.trim() !== '1' &&
               Boolean(row.color?.trim()),
           ),
         );

@@ -59,6 +59,10 @@ export function useDiaperActions({ babyId, toUTCString, onLog, onUndoable }: Act
     statusText: null,
     active: false,
     question: false,
+    // Four buttons (Wet/Dirty/Both/Dry) no longer fit one nowrap row at narrow widths
+    // in longer-label locales (e.g. Italian, Dutch); wrap instead of silently
+    // overflowing past the card with no scroll affordance.
+    buttonsWrap: true,
     buttons: [
       { key: 'wet', label: t('Wet'), onClick: () => submitDiaper('WET'), disabled: submitting },
       { key: 'dirty', label: t('Dirty'), onClick: () => submitDiaper('DIRTY'), disabled: submitting },
