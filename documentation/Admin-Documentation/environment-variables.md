@@ -134,7 +134,9 @@ build onward.
 | `ALLOW_ACCOUNT_REGISTRATION` | `"false"` | Allow new account registration |
 | `BETA` | -- | Set to `"1"` to enable beta signup features |
 
-SaaS mode additionally uses Stripe variables (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID`, `NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID`) and email from-addresses (`ACCOUNTS_EMAIL`, `VERIFICATION_EMAIL`, `SECURITY_EMAIL`). None of these are required for a self-hosted deployment.
+SaaS mode additionally uses Stripe variables (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_GIFT_PRICE_ID`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID`, `NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID`) and email from-addresses (`ACCOUNTS_EMAIL`, `VERIFICATION_EMAIL`, `SECURITY_EMAIL`, `PAYMENTS_EMAIL`). None of these are required for a self-hosted deployment.
+
+Every from-address must be a **verified sender** with your email provider — SendGrid rejects a send outright when the from address does not match a verified Sender Identity, and the rejection is easy to mistake for a delivered message. `PAYMENTS_EMAIL` covers payment mail (gift codes) and defaults to `payments@sprout-track.com`; the address is sent with a `Sprout Track <…>` display name, so the verified sender's From Name should match.
 
 ## Security-Sensitive Variables
 

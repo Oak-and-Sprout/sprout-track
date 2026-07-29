@@ -281,13 +281,31 @@ export function giftRedemptionUrl(domainUrl: string): string {
   return domainUrl;
 }
 
+/**
+ * Sender for payment-related mail (gift codes today, receipts later).
+ *
+ * Kept separate from ACCOUNTS_EMAIL because the provider verifies senders
+ * per-address: mailing as an address that was never verified is rejected
+ * outright, which is why this defaults to a real verified mailbox rather than
+ * the generic accounts one.
+ */
+export function paymentsFrom(): string {
+  const address = process.env.PAYMENTS_EMAIL || 'payments@sprout-track.com';
+  // Already a full "Name <addr>" mailbox — respect it verbatim.
+  if (address.includes('<')) return address;
+  // Matches the From Name on the verified sender, so inboxes show "Sprout Track"
+  // rather than the bare address. All three transports (SendGrid, SMTP2GO,
+  // nodemailer) accept this mailbox form.
+  return `Sprout Track <${address}>`;
+}
+
 export async function sendGiftCodeEmail(email: string, code: string) {
   const domainUrl = await getDomainUrl();
   const redeemUrl = giftRedemptionUrl(domainUrl);
 
   const result = await sendEmail({
     to: email,
-    from: process.env.ACCOUNTS_EMAIL || 'accounts@sprout-track.com',
+    from: paymentsFrom(),
     subject: 'Your Sprout Track gift code',
     text: `Thank you for giving Sprout Track!
 
