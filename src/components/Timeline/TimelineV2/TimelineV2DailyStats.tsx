@@ -41,6 +41,7 @@ import { formatAmountsByUnit } from '@/src/utils/foodLogUtils';
 import { useUnit } from '@/src/hooks/useUnit';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { countUniquePhotoIds } from '@/src/utils/photoUtils';
+import { isDirtyDiaper, isWetDiaper } from '@/src/utils/diaperStats';
 
 import './TimelineV2DailyStats.css';
 
@@ -177,15 +178,11 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       if ('condition' in activity && 'type' in activity) {
         const time = new Date(activity.time);
         if (time >= startOfDay && time <= endOfDay) {
-          // Count wet and dirty diapers exclusively
-          if (activity.type === 'WET') {
+          // Count wet and dirty diapers. BOTH counts as both; DRY as neither.
+          if (isWetDiaper(activity.type)) {
             wetCount++;
-          } else if (activity.type === 'DIRTY') {
-            dirtyCount++;
-            poopCount++;
-          } else if (activity.type === 'BOTH') {
-            // BOTH counts as both wet and dirty
-            wetCount++;
+          }
+          if (isDirtyDiaper(activity.type)) {
             dirtyCount++;
             poopCount++;
           }

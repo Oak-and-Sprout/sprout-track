@@ -19,6 +19,7 @@ import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort, formatDateDisplay } from '@/src/utils/dateFormat';
+import { isDirtyDiaper, isWetDiaper } from '@/src/utils/diaperStats';
 
 export type DiaperChartMetric = 'wet' | 'poopy';
 
@@ -64,11 +65,11 @@ const DiaperChartModal: React.FC<DiaperChartModalProps> = ({
         const activityType = (activity as any).type;
         const diaperActivity = activity as any;
 
-        // Check if this matches the metric we're looking for
+        // Check if this matches the metric we're looking for. DRY matches neither.
         if (metric === 'wet') {
-          if (activityType !== 'WET' && activityType !== 'BOTH') return;
+          if (!isWetDiaper(activityType)) return;
         } else if (metric === 'poopy') {
-          if (activityType !== 'DIRTY' && activityType !== 'BOTH') return;
+          if (!isDirtyDiaper(activityType)) return;
         }
 
         const diaperTime = new Date(diaperActivity.time);

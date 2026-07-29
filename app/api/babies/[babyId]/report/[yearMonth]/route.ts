@@ -4,6 +4,7 @@ import { ApiResponse, MonthlyReport, GrowthMetric, GrowthChartData, GrowthChartP
 import { withAuthContext, AuthResult } from '../../../../utils/auth';
 import { formatForResponse } from '../../../../utils/timezone';
 import { toCdcWeightKg, fromCdcWeightKg } from '@/src/utils/weightUnits';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
 import { groupBreastFeedSessions, SESSION_TOLERANCE_MS } from '../../../../../../src/utils/feedSessionUtils';
 import {
@@ -541,7 +542,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     .sort((a, b) => (b.nightCount + b.napCount) - (a.nightCount + a.napCount));
 
   // ─── Diapers ───
-  const dirtyDiapers = diaperLogs.filter(d => d.type === 'DIRTY' || d.type === 'BOTH');
+  const dirtyDiapers = diaperLogs.filter(d => isDirtyDiaper(d.type));
   const blowoutCount = diaperLogs.filter(d => d.blowout).length;
   const creamCount = diaperLogs.filter(d => d.creamApplied).length;
   const creamApplicationRate = diaperLogs.length > 0 ? Math.round((creamCount / diaperLogs.length) * 100) : 0;

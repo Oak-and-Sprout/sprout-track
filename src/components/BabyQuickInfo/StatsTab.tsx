@@ -18,6 +18,7 @@ import { Label } from '@/src/components/ui/label';
 import CardVisual from '@/src/components/reporting/CardVisual';
 import { useLocalization } from '@/src/context/localization';
 import { countBreastFeedSessions } from '@/src/utils/feedSessionUtils';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 
 /**
  * StatsTab Component
@@ -342,8 +343,8 @@ const StatsTab: React.FC<StatsTabProps> = ({
         if ('condition' in a) {
           diaperCount++;
           
-          // Count poops (dirty or wet+dirty) - using the type property
-          if (a.type === 'DIRTY' || a.type === 'BOTH') {
+          // Count poops (dirty or wet+dirty). DRY is excluded.
+          if (isDirtyDiaper(a.type)) {
             poopCount++;
           }
         }
