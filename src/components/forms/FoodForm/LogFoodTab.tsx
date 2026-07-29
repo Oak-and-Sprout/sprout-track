@@ -314,7 +314,14 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   };
 
   const removeFoodTag = (index: number) => {
-    setSelectedFoods(prev => prev.filter((_, i) => i !== index));
+    setSelectedFoods(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      // Removing the only food that reacted leaves the meal-level switch on with
+      // nothing behind it — and, at one food, showing a description box that
+      // would be discarded on save. Turn it off so the form states the truth.
+      if (!next.some(tag => tag.hadReaction)) setHadReaction(false);
+      return next;
+    });
   };
 
   const toggleFoodReaction = (index: number, checked: boolean) => {
