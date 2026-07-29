@@ -225,6 +225,9 @@ export default function ApiGuide({ babies }: ApiGuideProps) {
                 type: 'diaper', diaperType: 'WET',
               })}
             />
+            <div className="mt-2">
+              <p className="text-xs text-gray-400 mb-1">diaperType accepted values: WET, DIRTY, BOTH, DRY (a change with no contents)</p>
+            </div>
             <CopyableCodeBlock
               label={t('Sleep Example')}
               code={buildCurl('POST', `/babies/${sampleBabyId}/activities`, {

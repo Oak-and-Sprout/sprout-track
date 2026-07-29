@@ -414,7 +414,7 @@ Timer action responses include the live session state: `activeSide`, `isPaused`,
 }
 ```
 
-**diaperType:** `WET`, `DIRTY`, or `BOTH`
+**diaperType:** `WET`, `DIRTY`, `BOTH`, or `DRY` (`DRY` records a change with no contents)
 
 Optional fields: `condition`, `color`, `blowout` (boolean), `creamApplied` (boolean), `notes`
 
