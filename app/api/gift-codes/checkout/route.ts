@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { ApiResponse } from '@/app/api/utils/auth';
-import { resolveGiftPriceId } from '@/src/utils/giftCodeUtils';
+import { isValidGiftEmail, resolveGiftPriceId } from '@/src/utils/giftCodeUtils';
 
 // Unauthenticated by design: anyone may buy a gift from the marketing pages.
 // The price is resolved server-side and the session carries no account
@@ -50,7 +50,7 @@ export async function POST(
     let email: string | undefined;
     try {
       const body = await req.json();
-      if (typeof body?.email === 'string' && body.email.includes('@')) {
+      if (isValidGiftEmail(body?.email)) {
         email = body.email;
       }
     } catch {

@@ -87,13 +87,20 @@ export function giftUniqueViolationAction(target: unknown): 'already-fulfilled' 
   return fields.includes('stripeSessionId') ? 'already-fulfilled' : 'retry-code';
 }
 
+// Same shape used by the account routes' isValidEmail. A bare `includes('@')`
+// accepted "@" and "a@b", which would then be handed to sendGiftCodeEmail.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidGiftEmail(email: unknown): email is string {
+  return typeof email === 'string' && EMAIL_RE.test(email);
+}
+
 export function parseGenerateGiftCodesRequest(
   body: unknown,
 ): { quantity: number; email: string | null; sendEmail: boolean } {
   const bodyAny = body as any;
   const quantity = Math.min(Math.max(Number(bodyAny?.quantity) || 1, 1), 20);
-  const email =
-    typeof bodyAny?.email === 'string' && bodyAny.email.includes('@') ? bodyAny.email : null;
+  const email = isValidGiftEmail(bodyAny?.email) ? bodyAny.email : null;
   const sendEmail = Boolean(bodyAny?.sendEmail) && email !== null;
   return { quantity, email, sendEmail };
 }

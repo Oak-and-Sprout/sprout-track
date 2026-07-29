@@ -130,6 +130,22 @@ describe('parseGenerateGiftCodesRequest', () => {
     expect(result).toEqual({ quantity: 1, email: null, sendEmail: false });
   });
 
+  it('rejects malformed emails rather than trusting a bare @', () => {
+    // An "@"-contains check accepted "@" and "a@b", which would then be handed
+    // to sendGiftCodeEmail when sendEmail was set.
+    for (const bad of ['@', 'a@b', 'no-at-sign', 'x@y.', '@example.com', 'a b@example.com', '']) {
+      const result = parseGenerateGiftCodesRequest({ email: bad, sendEmail: true });
+      expect(result.email, `should reject ${JSON.stringify(bad)}`).toBeNull();
+      expect(result.sendEmail, `should not send to ${JSON.stringify(bad)}`).toBe(false);
+    }
+  });
+
+  it('accepts a well-formed email and allows sending to it', () => {
+    const result = parseGenerateGiftCodesRequest({ email: 'gift@example.com', sendEmail: true });
+    expect(result.email).toBe('gift@example.com');
+    expect(result.sendEmail).toBe(true);
+  });
+
   it('clamps quantity to 1..20 range', () => {
     expect(parseGenerateGiftCodesRequest({ quantity: 0 }).quantity).toBe(1);
     expect(parseGenerateGiftCodesRequest({ quantity: 1 }).quantity).toBe(1);
