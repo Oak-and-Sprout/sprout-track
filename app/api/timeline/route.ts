@@ -10,7 +10,63 @@ import {
   computeFoodProgress,
   expandFoodItems,
   mealIncludesFirstTry,
+  type FoodLogLike,
 } from '@/src/utils/foodLogUtils';
+
+/**
+ * Distinct foodIds referenced by the food logs in the requested window,
+ * across both storage shapes: the legacy/N=1 `foodId` FK and the `foods`
+ * JSON column used by multi-food meals (which carry a NULL FK).
+ */
+export function collectWindowFoodIds(logs: FoodLogLike[]): string[] {
+  const ids = new Set<string>();
+  for (const log of logs) {
+    for (const item of expandFoodItems(log)) ids.add(item.foodId);
+  }
+  return Array.from(ids);
+}
+
+/** Prisma where-clause shape for the bounded all-time first-try lookup. */
+export interface FirstTryScopeWhere {
+  babyId: string;
+  /** Nullable to match Baby.familyId; the route always passes the verified id. */
+  familyId: string | null;
+  deletedAt: null;
+  OR?: ({ foodId: { in: string[] } } | { foods: { contains: string } })[];
+  id?: { in: string[] };
+}
+
+/**
+ * Where-clause for the all-time first-try lookup, bounded to rows that could
+ * reference one of `foodIds` (the foods visible in the requested window).
+ *
+ * `contains` is a substring LIKE on the JSON text column and works on both
+ * SQLite and PostgreSQL (same pattern as /api/food-log and /api/food/merge).
+ * It may over-match, which is harmless: this is a NARROWING filter only and
+ * `computeFoodProgress` recomputes precisely from the expanded items. It can
+ * never under-match, because a meal that includes food F always contains F's
+ * id verbatim in either the FK or the JSON.
+ *
+ * Always scoped to babyId + familyId + deletedAt: null. With no ids the clause
+ * fails closed explicitly (`id: { in: [] }`) rather than relying on Prisma's
+ * empty-`OR` behaviour.
+ */
+export function buildFirstTryScopeWhere(params: {
+  babyId: string;
+  familyId: string | null;
+  foodIds: string[];
+}): FirstTryScopeWhere {
+  const { babyId, familyId, foodIds } = params;
+  const base = { babyId, familyId, deletedAt: null } as const;
+  if (foodIds.length === 0) return { ...base, id: { in: [] } };
+  return {
+    ...base,
+    OR: [
+      { foodId: { in: foodIds } },
+      ...foodIds.map(id => ({ foods: { contains: id } })),
+    ],
+  };
+}
 
 // Builds the caretaker badge fields for a timeline log. The system caretaker
 // (loginId '00') and nameless caretakers are omitted so no badge renders.
@@ -678,17 +734,18 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     // (multi-food meals expand items — replaces Prisma groupBy foodId).
     let firstTryByFoodId: Record<string, string> = {};
     if (foodLogs.length > 0) {
-      const allTimeFoodLogs = await prisma.foodLog.findMany({
-        where: { babyId, familyId, deletedAt: null },
-        select: { foodId: true, foods: true, time: true, hadReaction: true, reactionDescription: true, deletedAt: true },
-      });
-      firstTryByFoodId = computeFoodProgress(allTimeFoodLogs).firstTryByFoodId;
-
-      // Resolve catalog names for multi-food meals in the window
-      const windowFoodIds = Array.from(
-        new Set(foodLogs.flatMap((l: any) => expandFoodItems(l).map(i => i.foodId)))
-      );
+      // Only foods visible in this window need a first-try answer, so the
+      // all-time read is bounded to rows that could reference one of them
+      // instead of scanning the baby's whole food history on every page load.
+      const windowFoodIds = collectWindowFoodIds(foodLogs as any[]);
       if (windowFoodIds.length > 0) {
+        const allTimeFoodLogs = await prisma.foodLog.findMany({
+          where: buildFirstTryScopeWhere({ babyId, familyId, foodIds: windowFoodIds }),
+          select: { foodId: true, foods: true, time: true, hadReaction: true, reactionDescription: true, deletedAt: true },
+        });
+        firstTryByFoodId = computeFoodProgress(allTimeFoodLogs).firstTryByFoodId;
+
+        // Resolve catalog names for multi-food meals in the window
         const catalogFoods = await prisma.food.findMany({
           where: { id: { in: windowFoodIds }, familyId },
           select: { id: true, name: true, commonAllergen: true },
