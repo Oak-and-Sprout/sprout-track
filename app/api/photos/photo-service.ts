@@ -92,21 +92,51 @@ type PhotoWithRelations = {
   milestone: { title: string } | null;
 };
 
+export type FavoriteOwner = { caretakerId: string } | { accountId: string };
+
 /**
  * The identity a favorite is keyed to. Caretaker identity wins when present
  * so PIN logins and account logins of the same person share favorites;
  * accounts with no linked caretaker fall back to accountId.
  * Used by BOTH favorite reads (toPhotoResponse) and writes (favorite route)
  * so the two can never diverge.
+ *
+ * A sysadmin browsing a family via "Login to family" has neither identity —
+ * auth.ts nulls caretakerId for sysadmin tokens — so its favorites are keyed to
+ * the family's system caretaker ('00') and are therefore shared with anyone
+ * signed in with the family PIN (#216). Pure: the caller supplies the looked-up
+ * id, or resolveFavoriteOwner does it for them.
  */
-export function favoriteOwnerFilter(authContext: AuthResult): { caretakerId: string } | { accountId: string } | null {
+export function favoriteOwnerFilter(
+  authContext: AuthResult,
+  systemCaretakerId?: string | null
+): FavoriteOwner | null {
   if (authContext.caretakerId) return { caretakerId: authContext.caretakerId };
   if (authContext.accountId) return { accountId: authContext.accountId };
+  if (authContext.isSysAdmin && systemCaretakerId) return { caretakerId: systemCaretakerId };
   return null;
 }
 
-export function toPhotoResponse(photo: PhotoWithRelations, authContext: AuthResult): PhotoResponse {
-  const owner = favoriteOwnerFilter(authContext);
+/**
+ * favoriteOwnerFilter plus the system-caretaker lookup a sysadmin needs. Costs one
+ * extra query on the sysadmin path only; every other caller short-circuits.
+ * Returns null when the family has no system caretaker to attribute to — the
+ * favorite route turns that into a 400 rather than inventing a caretaker row.
+ */
+export async function resolveFavoriteOwner(authContext: AuthResult): Promise<FavoriteOwner | null> {
+  const direct = favoriteOwnerFilter(authContext);
+  if (direct || !authContext.isSysAdmin || !authContext.familyId) return direct;
+
+  // Not filtered on `inactive`: the system caretaker is deactivated once a family
+  // configures real caretakers, but it remains a valid thing to attribute to.
+  const systemCaretaker = await prisma.caretaker.findFirst({
+    where: { loginId: '00', familyId: authContext.familyId, deletedAt: null },
+    select: { id: true },
+  });
+  return favoriteOwnerFilter(authContext, systemCaretaker?.id);
+}
+
+export function toPhotoResponse(photo: PhotoWithRelations, owner: FavoriteOwner | null): PhotoResponse {
   const isFavorite = !!owner && photo.favorites.some((fav) =>
     'caretakerId' in owner ? fav.caretakerId === owner.caretakerId : fav.accountId === owner.accountId
   );

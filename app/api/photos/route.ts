@@ -8,6 +8,7 @@ import {
   getQuotaInfo,
   purgeExpiredPhotos,
   toPhotoResponse,
+  resolveFavoriteOwner,
   PHOTO_INCLUDE,
 } from './photo-service';
 
@@ -38,7 +39,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       ...(babyId && { babyId }),
     };
 
-    const [photos, trashCount, quota] = await Promise.all([
+    const [photos, trashCount, quota, owner] = await Promise.all([
       prisma.photo.findMany({
         where,
         include: PHOTO_INCLUDE,
@@ -48,13 +49,14 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       }),
       prisma.photo.count({ where: { familyId, deletedAt: { not: null } } }),
       getQuotaInfo(familyId!),
+      resolveFavoriteOwner(authContext),
     ]);
 
     const hasMore = photos.length > limit;
     const page = hasMore ? photos.slice(0, limit) : photos;
 
     const response: PhotoListResponse = {
-      photos: page.map((photo) => toPhotoResponse(photo, authContext)),
+      photos: page.map((photo) => toPhotoResponse(photo, owner)),
       nextCursor: hasMore ? page[page.length - 1].id : null,
       trashCount,
       quota,

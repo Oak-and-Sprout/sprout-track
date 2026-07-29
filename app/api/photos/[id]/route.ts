@@ -4,7 +4,7 @@ import { ApiResponse, PhotoResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { toUTC } from '../../utils/timezone';
 import { checkWritePermission } from '../../utils/writeProtection';
-import { isPhotosEnabled, photosDisabledResponse, toPhotoResponse, PHOTO_INCLUDE } from '../photo-service';
+import { isPhotosEnabled, photosDisabledResponse, toPhotoResponse, resolveFavoriteOwner, PHOTO_INCLUDE } from '../photo-service';
 
 function extractId(req: NextRequest): string {
   const pathParts = new URL(req.url).pathname.split('/');
@@ -65,8 +65,11 @@ async function handlePatch(req: NextRequest, authContext: AuthResult) {
       }
     });
 
-    const refreshed = await prisma.photo.findFirst({ where: { id }, include: PHOTO_INCLUDE });
-    return NextResponse.json<ApiResponse<PhotoResponse>>({ success: true, data: toPhotoResponse(refreshed!, authContext) });
+    const [refreshed, owner] = await Promise.all([
+      prisma.photo.findFirst({ where: { id }, include: PHOTO_INCLUDE }),
+      resolveFavoriteOwner(authContext),
+    ]);
+    return NextResponse.json<ApiResponse<PhotoResponse>>({ success: true, data: toPhotoResponse(refreshed!, owner) });
   } catch (error) {
     console.error('Error updating photo:', error);
     return NextResponse.json<ApiResponse<null>>({ success: false, error: 'Failed to update photo' }, { status: 500 });

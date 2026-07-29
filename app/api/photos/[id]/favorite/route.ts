@@ -3,11 +3,11 @@ import prisma from '../../../db';
 import { ApiResponse } from '../../../types';
 import { withAuthContext, AuthResult } from '../../../utils/auth';
 import { checkWritePermission } from '../../../utils/writeProtection';
-import { isPhotosEnabled, photosDisabledResponse, favoriteOwnerFilter } from '../../photo-service';
+import { isPhotosEnabled, photosDisabledResponse, resolveFavoriteOwner } from '../../photo-service';
 
 /**
  * POST /api/photos/[id]/favorite — toggle for the current caregiver.
- * Favorite identity comes from favoriteOwnerFilter (shared with
+ * Favorite identity comes from resolveFavoriteOwner (shared with
  * toPhotoResponse so reads and writes can never diverge).
  * Uniqueness is app-enforced: find first, then delete or create.
  */
@@ -21,7 +21,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     const id = pathParts[pathParts.length - 2];
     const { familyId } = authContext;
 
-    const ownerWhere = favoriteOwnerFilter(authContext);
+    const ownerWhere = await resolveFavoriteOwner(authContext);
     if (!ownerWhere) {
       return NextResponse.json<ApiResponse<null>>({ success: false, error: 'No caregiver identity for favorites' }, { status: 400 });
     }
