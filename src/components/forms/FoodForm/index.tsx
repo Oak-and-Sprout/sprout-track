@@ -10,6 +10,7 @@ import { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
 import LogFoodTab from './LogFoodTab';
 import ProgressTab from './ProgressTab';
 import { useLocalization } from '@/src/context/localization';
+import { completeFoodLogSave } from './food-form.utils';
 
 import './food-form.css';
 
@@ -76,11 +77,8 @@ const FoodForm: React.FC<FoodFormProps> = ({
 
   // Handle success from LogFoodTab
   const handleLogSuccess = useCallback(() => {
-    refreshData();
-    if (onSuccess) {
-      onSuccess();
-    }
-  }, [onSuccess, refreshData]);
+    completeFoodLogSave({ refreshData, onSuccess, onClose });
+  }, [onClose, onSuccess, refreshData]);
 
   // Always start on the log tab when the form opens
   useEffect(() => {
