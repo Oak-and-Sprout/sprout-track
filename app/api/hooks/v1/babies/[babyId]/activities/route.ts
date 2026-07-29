@@ -51,6 +51,14 @@ function requireBooleanIfPresent(value: unknown, field: string): { error?: strin
   return {};
 }
 
+// Free-text fields are optional, so absent/null is fine, but a non-string
+// value must be rejected here rather than reaching Prisma as an unhandled 500.
+function requireStringIfPresent(value: unknown, field: string): { error?: string } {
+  if (value === undefined || value === null) return {};
+  if (typeof value !== 'string') return { error: `${field} must be a string` };
+  return {};
+}
+
 // Pump sides + total: totalAmount is a writable input (not just derived),
 // an explicit value for it always wins over the sum of sides, and an
 // explicit 0 on either side is stored as 0 rather than erased to null.
@@ -533,6 +541,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         if (blowoutCheck.error) return hookError('INVALID_FIELD', blowoutCheck.error, 400, rl.headers);
         const creamCheck = requireBooleanIfPresent(creamApplied, 'creamApplied');
         if (creamCheck.error) return hookError('INVALID_FIELD', creamCheck.error, 400, rl.headers);
+        const diaperNotesCheck = requireStringIfPresent(notes, 'notes');
+        if (diaperNotesCheck.error) return hookError('INVALID_NOTES', diaperNotesCheck.error, 400, rl.headers);
         const conditionResult = normalizeRequiredEnumIfPresent(condition, 'condition', DIAPER_CONDITIONS);
         if (conditionResult.error) return hookError('INVALID_CONDITION', conditionResult.error, 400, rl.headers);
         const colorResult = normalizeRequiredEnumIfPresent(color, 'color', DIAPER_COLORS);
@@ -561,6 +571,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         const qualityResult = normalizeRequiredEnumIfPresent(quality, 'quality', SLEEP_QUALITIES);
         if (qualityResult.error) return hookError('INVALID_QUALITY', qualityResult.error, 400, rl.headers);
         quality = qualityResult.value;
+        const sleepNotesCheck = requireStringIfPresent(notes, 'notes');
+        if (sleepNotesCheck.error) return hookError('INVALID_NOTES', sleepNotesCheck.error, 400, rl.headers);
 
         if (action === 'start') {
           result = await prisma.sleepLog.create({
@@ -582,7 +594,7 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           const dur = Math.round((time.getTime() - activeSleep.startTime.getTime()) / 60000);
           result = await prisma.sleepLog.update({
             where: { id: activeSleep.id },
-            data: { endTime: time, duration: dur, quality: quality || activeSleep.quality, notes: notes || activeSleep.notes, ...(sleepType && { type: sleepType }) },
+            data: { endTime: time, duration: dur, quality: quality || activeSleep.quality, notes: notes !== undefined ? (notes || null) : activeSleep.notes, ...(sleepType && { type: sleepType }) },
           });
           notifyActivityCreated(babyId, 'wake', { caretakerId }, { duration: dur }).catch(console.error);
           return hookSuccess({ activityType: 'sleep', id: result.id, time: result.startTime.toISOString(), details: { type: result.type, action: 'end', duration: dur, isActive: false, notes: result.notes } }, { familyId, babyId }, rl.headers);
