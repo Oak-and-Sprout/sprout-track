@@ -28,13 +28,14 @@ export function useDiaperActions({ babyId, toUTCString, onLog, onUndoable }: Act
       });
       const data = await res.json();
       if (data.success) {
-        const labels: Record<string, string> = { WET: t('Wet'), DIRTY: t('Dirty'), BOTH: t('Both') };
+        const labels: Record<string, string> = { WET: t('Wet'), DIRTY: t('Dirty'), BOTH: t('Both'), DRY: t('Dry') };
         onLog('diaper', labels[type] || type);
         if (data.data?.id) {
           const messages: Record<string, string> = {
             WET: t('Wet diaper logged'),
             DIRTY: t('Dirty diaper logged'),
             BOTH: t('Diaper logged'),
+            DRY: t('Dry diaper logged'),
           };
           const logId = data.data.id;
           onUndoable({
@@ -62,6 +63,7 @@ export function useDiaperActions({ babyId, toUTCString, onLog, onUndoable }: Act
       { key: 'wet', label: t('Wet'), onClick: () => submitDiaper('WET'), disabled: submitting },
       { key: 'dirty', label: t('Dirty'), onClick: () => submitDiaper('DIRTY'), disabled: submitting },
       { key: 'both', label: t('Both'), onClick: () => submitDiaper('BOTH'), disabled: submitting },
+      { key: 'dry', label: t('Dry'), onClick: () => submitDiaper('DRY'), disabled: submitting },
     ],
   };
 }
