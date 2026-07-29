@@ -22,6 +22,9 @@ import {
   normalizeFoodName,
   foodNameKey,
   expandFoodItems,
+  buildMealItems,
+  mealHasAnyReaction,
+  type MealTagInput,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_DISPLAY_ORDER,
   FOOD_ENJOYMENT_LABELS,
@@ -81,7 +84,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   const [unit, setUnit] = useState('TBSP');
   const [enjoyment, setEnjoyment] = useState<FoodEnjoymentValue | null>(null);
   const [hadReaction, setHadReaction] = useState(false);
-  const [reactionDescription, setReactionDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -207,13 +209,9 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
             ? (activity.enjoyment as FoodEnjoymentValue)
             : null
         );
-        const anyReaction = tags.some(tag => tag.hadReaction) || activity.hadReaction === true;
-        setHadReaction(anyReaction);
-        setReactionDescription(
-          tags.length === 1
-            ? (tags[0].reactionDescription || activity.reactionDescription || '')
-            : ''
-        );
+        // Each tag already carries its own description (tagsFromActivity resolves
+        // it from foodItems, the foods JSON, or the legacy row-level field).
+        setHadReaction(tags.some(tag => tag.hadReaction) || activity.hadReaction === true);
         setNotes(activity.notes || '');
         const d = new Date(activity.time);
         if (!isNaN(d.getTime())) {
@@ -435,8 +433,8 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     try {
       const authToken = localStorage.getItem('authToken');
       let catalog = foods;
-      const resolvedItems: FoodLogItemInput[] = [];
 
+      const resolvedTags: MealTagInput[] = [];
       for (const tag of selectedFoods) {
         const resolved = await resolveFoodId(tag, authToken, catalog);
         if (!resolved) {
@@ -449,16 +447,22 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
           return;
         }
         catalog = resolved.catalog;
-        const singleFood = selectedFoods.length === 1;
-        resolvedItems.push({
+        resolvedTags.push({
           foodId: resolved.foodId,
-          hadReaction: hadReaction && (singleFood ? true : tag.hadReaction),
-          reactionDescription:
-            hadReaction && (singleFood ? reactionDescription : tag.reactionDescription)?.trim()
-              ? (singleFood ? reactionDescription : tag.reactionDescription).trim()
-              : null,
+          hadReaction: tag.hadReaction,
+          reactionDescription: tag.reactionDescription,
         });
       }
+
+      // Each food carries its own reaction; the meal-level switch can only
+      // suppress, never invent one (see buildMealItems).
+      const resolvedItems: FoodLogItemInput[] = buildMealItems({
+        tags: resolvedTags,
+        mealReaction: hadReaction,
+      });
+      // The switch was left on without flagging a food — clear it so the form
+      // reflects what was actually saved.
+      if (hadReaction && !mealHasAnyReaction(resolvedItems)) setHadReaction(false);
 
       onFoodsUpdated(catalog);
 
@@ -554,7 +558,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         setAmount('');
         setEnjoyment(null);
         setHadReaction(false);
-        setReactionDescription('');
         setNotes('');
         setCommonAllergen(false);
         setAllergenTouched(false);
@@ -803,7 +806,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
               onCheckedChange={(checked) => {
                 setHadReaction(checked);
                 if (!checked) {
-                  setReactionDescription('');
                   setSelectedFoods(prev =>
                     prev.map(tag => ({ ...tag, hadReaction: false, reactionDescription: '' }))
                   );
@@ -817,13 +819,16 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
               aria-label={t('Reaction occurred')}
             />
           </div>
-          {hadReaction && selectedFoods.length <= 1 && (
+          {/* Single food: the meal-level textarea is that food's own input surface,
+              so it writes straight through to the tag — the tag stays the only
+              source of truth for what gets saved. */}
+          {hadReaction && selectedFoods.length === 1 && (
             <div className="mt-2">
               <Label className="form-label" htmlFor={`${uid}-reaction-description`}>{t('Describe the reaction')}</Label>
               <Textarea
                 id={`${uid}-reaction-description`}
-                value={reactionDescription}
-                onChange={(e) => setReactionDescription(e.target.value)}
+                value={selectedFoods[0].reactionDescription}
+                onChange={(e) => setFoodReactionDescription(0, e.target.value)}
                 className="w-full min-h-[60px]"
                 placeholder={t("Redness, swelling, hives...")}
                 disabled={isSubmitting}

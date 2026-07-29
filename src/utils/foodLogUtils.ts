@@ -382,6 +382,52 @@ export function isFoodLogActivity(
   return false;
 }
 
+/** One selected food in the meal composer, before it is persisted. */
+export interface MealTagInput {
+  foodId: string;
+  hadReaction: boolean;
+  reactionDescription: string | null;
+}
+
+/**
+ * Build the `foods` items for a meal from the composer's selection.
+ *
+ * The invariant: a food is recorded as having reacted only when THAT FOOD's own
+ * tag carries the flag. The meal-level switch is a suppressor, never a source —
+ * turning it off clears every reaction, but turning it on cannot invent one.
+ *
+ * This replaces an inline branch that special-cased a single-food meal by
+ * hard-coding `hadReaction: true` from the meal-level switch. Because the switch
+ * is seeded on edit as "did any food in this meal react", editing a multi-food
+ * meal down to one food wrote a reaction onto the survivor that it never had,
+ * and dropped that food's own description (#247).
+ */
+export function buildMealItems(input: {
+  tags: MealTagInput[];
+  mealReaction: boolean;
+}): FoodLogItem[] {
+  return input.tags
+    .filter(tag => typeof tag.foodId === 'string' && tag.foodId !== '')
+    .map(tag => {
+      const reacted = input.mealReaction && tag.hadReaction === true;
+      const description = reacted ? tag.reactionDescription?.trim() : '';
+      return {
+        foodId: tag.foodId,
+        hadReaction: reacted,
+        reactionDescription: description ? description : null,
+      };
+    });
+}
+
+/**
+ * Whether any food in the built meal actually reacted. Lets the form clear a
+ * meal-level switch the user left on without flagging a food, so the saved row
+ * and the UI agree.
+ */
+export function mealHasAnyReaction(items: FoodLogItem[]): boolean {
+  return items.some(item => item.hadReaction === true);
+}
+
 /** Display title for a meal: "Banana", "Banana, Avocado", or "Banana +2". */
 export function formatFoodMealTitle(
   names: string[],
