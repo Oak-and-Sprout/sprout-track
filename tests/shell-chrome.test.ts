@@ -2,11 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { sideNavFooterButtons, trialCtaMode, shellSubscriptionControls, nurseryDisplayControls } from '@/src/utils/shell-chrome'
 
 describe('sideNavFooterButtons', () => {
-  it('web: switch-family, settings, logout', () => {
-    expect(sideNavFooterButtons(false)).toEqual(['switch-family', 'settings', 'logout'])
+  // 'switch-family' is shell-only: SideNav renders that entry only when the host
+  // supplies onSwitchFamily, and client-layout passes it solely when
+  // isNativeApp(). Listing it for web made this function describe a button that
+  // never renders there.
+  it('web: settings, logout', () => {
+    expect(sideNavFooterButtons(false)).toEqual(['settings', 'logout'])
   })
   it('shell: settings + single exit', () => {
     expect(sideNavFooterButtons(true)).toEqual(['settings', 'exit-to-families'])
+  })
+  it('never offers switch-family on web', () => {
+    expect(sideNavFooterButtons(false)).not.toContain('switch-family')
   })
 })
 

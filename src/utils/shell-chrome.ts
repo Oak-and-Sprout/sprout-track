@@ -5,11 +5,21 @@
  * subscription management must be pointed at the web instead.
  */
 
-export type SideNavFooterButton = 'switch-family' | 'settings' | 'logout' | 'exit-to-families';
+export type SideNavFooterButton = 'settings' | 'logout' | 'exit-to-families';
 
+/**
+ * There is no distinct `switch-family` button. The web footer is Settings +
+ * Logout; the shell replaces Logout with a single "Exit to My Families" that
+ * hands control back to the native app (SideNav wires it to `onSwitchFamily`).
+ *
+ * A `switch-family` entry used to be listed for web, but `SideNav` only ever
+ * rendered it when the host passed `onSwitchFamily`, which `client-layout.tsx`
+ * supplies solely in the shell — so it resolved to null and never appeared
+ * anywhere. Listing it made this function describe a button that did not exist.
+ */
 export function sideNavFooterButtons(isNative: boolean): SideNavFooterButton[] {
   if (isNative) return ['settings', 'exit-to-families'];
-  return ['switch-family', 'settings', 'logout'];
+  return ['settings', 'logout'];
 }
 
 export function trialCtaMode(isNative: boolean): 'payment-modal' | 'external' {

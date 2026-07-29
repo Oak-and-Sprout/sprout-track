@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, Suspense } from 'react';
 import ChangelogModal from '@/src/components/modals/changelog';
 import FeedbackPage from '@/src/components/forms/FeedbackForm/FeedbackPage';
 import dynamic from 'next/dynamic';
-import { X, Settings, LogOut, ArrowLeftRight, MessageSquare, CreditCard, Clock, Loader2, ExternalLink } from 'lucide-react';
+import { X, Settings, LogOut, MessageSquare, CreditCard, Clock, Loader2, ExternalLink } from 'lucide-react';
 import NavCountBubble from '@/src/components/ui/nav-count-bubble';
 import { Badge } from '@/src/components/ui/badge';
 import { LanguageSelector } from './language-selector';
@@ -665,10 +665,7 @@ export const SideNav: React.FC<SideNavProps> = ({
         <div className={cn(sideNavStyles.footer, "side-nav-footer")}>
           <ThemeToggle className="mb-2" />
           {sideNavFooterButtons(inShell).map((btn) =>
-            btn === 'switch-family' ? (onSwitchFamily ? (
-              <FooterButton key={btn} icon={<ArrowLeftRight aria-hidden="true" />} label={t('Switch Family')} onClick={onSwitchFamily} />
-            ) : null)
-            : btn === 'settings' ? (
+            btn === 'settings' ? (
               <FooterButton key={btn} icon={<Settings aria-hidden="true" />} label={t('Settings')} onClick={onSettingsClick} />
             ) : btn === 'logout' ? (
               <FooterButton key={btn} icon={<LogOut aria-hidden="true" />} label={t('Logout')} onClick={onLogout} />
