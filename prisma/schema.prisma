@@ -57,6 +57,7 @@ enum DiaperType {
   WET
   DIRTY
   BOTH
+  DRY
 }
 
 enum Mood {
