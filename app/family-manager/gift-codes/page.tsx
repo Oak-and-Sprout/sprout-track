@@ -116,6 +116,16 @@ export default function GiftCodesPage() {
         setGenEmail('');
         setGenSendEmail(false);
         await fetchGiftCodes();
+        // Codes exist either way; say so plainly rather than reporting a clean
+        // success when the provider rejected the send.
+        if (data.data?.emailError) {
+          showToast({
+            variant: 'warning',
+            title: t('Warning'),
+            message: `${t('Gift codes created, but the email could not be sent.')} ${data.data.emailError}`,
+            duration: 8000,
+          });
+        }
       } else {
         showToast({
           variant: 'error',

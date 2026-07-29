@@ -9,6 +9,7 @@ import {
   resolveGiftPriceId,
   giftUniqueViolationAction,
   parseGenerateGiftCodesRequest,
+  describeEmailFailure,
   shouldApplySubscriptionUpdate,
 } from '@/src/utils/giftCodeUtils';
 
@@ -187,5 +188,31 @@ describe('parseGenerateGiftCodesRequest', () => {
     expect(parseGenerateGiftCodesRequest({ sendEmail: true, email: 'invalid' }).sendEmail).toBe(false);
     expect(parseGenerateGiftCodesRequest({ sendEmail: false, email: 'test@example.com' }).sendEmail).toBe(false);
     expect(parseGenerateGiftCodesRequest({ sendEmail: true }).sendEmail).toBe(false);
+  });
+});
+
+describe('describeEmailFailure', () => {
+  it('surfaces a SendGrid unverified-sender rejection in plain terms', () => {
+    const sgError = {
+      code: 403,
+      response: {
+        body: {
+          errors: [{ message: 'The from address does not match a verified Sender Identity.' }],
+        },
+      },
+    };
+    expect(describeEmailFailure(sgError)).toContain('verified Sender Identity');
+  });
+
+  it('falls back to a message string', () => {
+    expect(describeEmailFailure(new Error('connect ECONNREFUSED'))).toContain('ECONNREFUSED');
+  });
+
+  it('handles a plain string and an unknown shape', () => {
+    expect(describeEmailFailure('SendGrid API key is not configured.')).toBe(
+      'SendGrid API key is not configured.'
+    );
+    expect(describeEmailFailure(undefined)).toBeTruthy();
+    expect(describeEmailFailure({})).toBeTruthy();
   });
 });

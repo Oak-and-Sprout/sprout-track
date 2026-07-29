@@ -87,6 +87,23 @@ export function giftUniqueViolationAction(target: unknown): 'already-fulfilled' 
   return fields.includes('stripeSessionId') ? 'already-fulfilled' : 'retry-code';
 }
 
+/**
+ * Turn an email-provider failure into something an admin can act on.
+ *
+ * SendGrid buries the useful part in `response.body.errors[]` — most often
+ * "The from address does not match a verified Sender Identity", which is what
+ * you get when ACCOUNTS_EMAIL is unset and the fallback sender was never
+ * verified. Surfacing that beats logging it server-side and reporting success.
+ */
+export function describeEmailFailure(error: unknown): string {
+  if (typeof error === 'string' && error.trim()) return error;
+  const anyErr = error as any;
+  const providerMessage = anyErr?.response?.body?.errors?.[0]?.message;
+  if (typeof providerMessage === 'string' && providerMessage.trim()) return providerMessage;
+  if (typeof anyErr?.message === 'string' && anyErr.message.trim()) return anyErr.message;
+  return 'The gift codes were created, but the email could not be sent.';
+}
+
 // Same shape used by the account routes' isValidEmail. A bare `includes('@')`
 // accepted "@" and "a@b", which would then be handed to sendGiftCodeEmail.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

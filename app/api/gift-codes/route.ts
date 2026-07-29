@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/app/api/db';
 import { withSysAdminAuth, ApiResponse } from '@/app/api/utils/auth';
-import { giftCodeStatus, GiftCodeStatus, parseGenerateGiftCodesRequest } from '@/src/utils/giftCodeUtils';
+import { giftCodeStatus, GiftCodeStatus, parseGenerateGiftCodesRequest, describeEmailFailure } from '@/src/utils/giftCodeUtils';
 import { createUniqueGiftCode } from '@/app/api/utils/gift-codes';
 import { sendGiftCodeEmail } from '@/app/api/utils/account-emails';
 
@@ -51,6 +51,12 @@ function toRow(code: {
   };
 }
 
+export interface GenerateGiftCodesResult {
+  codes: GiftCodeRow[];
+  /** Non-null when the codes were created but the notification mail failed. */
+  emailError: string | null;
+}
+
 async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<GiftCodeRow[]>>> {
   const gate = saasGate();
   if (gate) return gate;
@@ -70,7 +76,7 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<Gi
   }
 }
 
-async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<GiftCodeRow[]>>> {
+async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<GenerateGiftCodesResult>>> {
   const gate = saasGate();
   if (gate) return gate;
 
@@ -79,6 +85,7 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<G
     const { quantity, email, sendEmail: shouldSendEmail } = parseGenerateGiftCodesRequest(body);
 
     const created: GiftCodeRow[] = [];
+    let emailError: string | null = null;
     for (let i = 0; i < quantity; i++) {
       const giftCode = await createUniqueGiftCode({
         source: 'admin',
@@ -90,12 +97,16 @@ async function postHandler(req: NextRequest): Promise<NextResponse<ApiResponse<G
         const result = await sendGiftCodeEmail(email!, giftCode.code);
         if (!result.success) {
           console.error('Error sending admin gift code email:', result.error);
+          // The codes are real and listed below regardless — but the admin must
+          // be told the mail did not go out, or a silent provider rejection
+          // (unverified sender, bad key) looks like a successful send.
+          emailError = emailError ?? describeEmailFailure(result.error);
         }
       }
       created.push(toRow({ ...giftCode, redeemedByAccount: null }));
     }
 
-    return NextResponse.json({ success: true, data: created });
+    return NextResponse.json({ success: true, data: { codes: created, emailError } });
   } catch (error) {
     console.error('Error generating gift codes:', error);
     return NextResponse.json(
