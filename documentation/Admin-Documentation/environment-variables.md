@@ -147,7 +147,7 @@ Every from-address must be a **verified sender** with your email provider. SendG
 
 `VERIFICATION_EMAIL` and `SECURITY_EMAIL` are **no longer read**. They previously defaulted to `accounts@` and `passwordreset@` respectively; the latter was never a verified sender, so password-reset mail was being rejected silently. Account mail now goes through `ACCOUNTS_EMAIL`.
 
-Account, payment and no-reply mail carries a footer stating the mailbox is unmonitored and directing users to in-app Feedback. Feedback mail does not, since `ADMIN_EMAIL` is a monitored mailbox.
+Every outgoing message states that its mailbox is unmonitored and directs the reader to the in-app Feedback thread. Account, payment, no-reply and admin-facing feedback mail carry a shared footer; the two user-facing feedback templates already carried their own prominent version of the same notice and were left as-is rather than stating it twice.
 
 ## Security-Sensitive Variables
 

@@ -1,5 +1,5 @@
 import { sendEmail } from '@/src/lib/email';
-import { adminFrom } from './account-emails';
+import { adminFrom, UNMONITORED_NOTICE_TEXT, unmonitoredNoticeHtml } from './account-emails';
 import prisma from '../db';
 
 async function getDomainUrl(): Promise<string> {
@@ -168,7 +168,9 @@ ${message}
 View and respond to this feedback in the Family Manager:
 ${feedbackUrl}
 
-Feedback ID: ${feedbackId}`,
+Feedback ID: ${feedbackId}
+
+${UNMONITORED_NOTICE_TEXT}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #dc2626;">New Feedback Received</h2>
@@ -194,7 +196,7 @@ Feedback ID: ${feedbackId}`,
           
           <p style="color: #6b7280; font-size: 12px;">
             You can reply to this feedback directly from the Family Manager.
-          </p>
+          </p>${unmonitoredNoticeHtml()}
         </div>
       `
     });
@@ -245,7 +247,9 @@ ${replyMessage}
 View and respond to this feedback in the Family Manager:
 ${feedbackUrl}
 
-Feedback ID: ${feedbackId}`,
+Feedback ID: ${feedbackId}
+
+${UNMONITORED_NOTICE_TEXT}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #dc2626;">New Reply to Feedback</h2>
@@ -271,7 +275,7 @@ Feedback ID: ${feedbackId}`,
         
         <p style="color: #6b7280; font-size: 12px;">
           You can reply to this feedback directly from the Family Manager.
-        </p>
+        </p>${unmonitoredNoticeHtml()}
       </div>
     `
     });
