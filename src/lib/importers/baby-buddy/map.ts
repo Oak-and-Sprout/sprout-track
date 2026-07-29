@@ -243,17 +243,13 @@ export function mapBabyBuddyDiaperChange(
   const wet = required(row, 'wet') === '1';
   const solid = required(row, 'solid') === '1';
 
-  if (!wet && !solid) {
-    throw new Error(
-      'Baby Buddy diaper change must be wet, solid, or both',
-    );
-  }
-
   const type = wet && solid
     ? 'BOTH'
     : wet
       ? 'WET'
-      : 'DIRTY';
+      : solid
+        ? 'DIRTY'
+        : 'DRY';
 
   const rawColor = row.color?.trim().toUpperCase();
   const supportedColors = [

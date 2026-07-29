@@ -118,7 +118,7 @@ export interface ExternalImportDiaperRecord {
   readonly source: ExternalImportSource;
   readonly sourceChildId: string;
   readonly time: string;
-  readonly type: 'WET' | 'DIRTY' | 'BOTH';
+  readonly type: 'WET' | 'DIRTY' | 'BOTH' | 'DRY';
   readonly color?: 'YELLOW' | 'BROWN' | 'GREEN' | 'BLACK';
   readonly notes?: string;
 }
