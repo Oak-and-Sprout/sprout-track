@@ -20,6 +20,7 @@ export function LandingFooter() {
         <nav>
           <Link href="/features">{t('Features')}</Link>
           <Link href="/pricing">{t('Pricing')}</Link>
+          <Link href="/pricing#gift">{t('Give as a gift')}</Link>
           <a href={DEMO_URL} rel="noopener">{t('Demo')}</a>
           <a href={GITHUB_URL} rel="noopener">GitHub</a>
           <Link href="/terms">{t('Terms')}</Link>

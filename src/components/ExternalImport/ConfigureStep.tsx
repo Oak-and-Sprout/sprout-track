@@ -49,10 +49,6 @@ const warningLabels: Record<string, string> = {
     'Colours on wet-only nappies are not imported',
   'breast-feed-amount-unsupported':
     'Amounts on direct breast feeds are not imported',
-  'sleep-notes-unsupported':
-    'Sleep notes are not imported',
-  'diaper-notes-unsupported':
-    'Nappy notes are not imported',
   'diaper-amount-unsupported':
     'Nappy amounts are not imported',
   'pumping-defaults-to-stored':

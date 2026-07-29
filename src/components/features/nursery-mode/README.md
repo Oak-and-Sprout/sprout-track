@@ -17,7 +17,9 @@ should render. It orchestrates:
   grid built from `activities/`, and the settings drawer (`SettingsDrawer.tsx`).
 - **Cross-cutting device concerns**: wake lock (`useWakeLock`), fullscreen
   (`useFullscreen`), orientation (landscape phone layout), baby switching, and
-  polling the latest feed/pump/diaper/sleep log for each tile's meta line.
+  polling the latest feed/pump/diaper/sleep log for each tile's meta line. That
+  line shows a clock time with no date, so entries older than 24 h are hidden
+  rather than shown as if they were recent (`isWithinTileWindow`).
 - **Undo**: instant logs (bottle feed, diaper change) surface an `UndoToast`
   that deletes the just-created record via the `UndoInfo.endpoint`.
 
@@ -182,6 +184,7 @@ Pure logic extracted to `src/utils/nursery/` is covered in `tests/`:
   generation for tapestry backdrops).
 - `nursery-photo-scene.test.ts` — `PhotoScene`'s `photoIdFromSrc` helper.
 - `nursery-food-activity.test.ts` — `foodActivity.ts` (picker sorting, meta-line note).
+- `nursery-activity-freshness.test.ts` — `activityFreshness.ts` (24 h meta-line cutoff).
 
 Component/hook behavior (drawer interactions, activity state machines, the
 container's polling/undo flow) is exercised manually via the running app —

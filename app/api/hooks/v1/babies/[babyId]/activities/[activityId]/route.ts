@@ -45,9 +45,9 @@ const TYPE_ALIASES: Record<string, ActivityType> = {
 };
 
 const TYPE_FIELDS: Record<ActivityType, readonly string[]> = {
-  sleep: ['type', 'sleepType', 'time', 'startTime', 'endTime', 'duration', 'location', 'quality'],
+  sleep: ['type', 'sleepType', 'time', 'startTime', 'endTime', 'duration', 'location', 'quality', 'notes'],
   feed: ['type', 'feedType', 'time', 'startTime', 'endTime', 'duration', 'feedDuration', 'amount', 'unitAbbr', 'side', 'food', 'notes', 'bottleType', 'breastMilkAmount'],
-  diaper: ['type', 'diaperType', 'time', 'condition', 'color', 'blowout', 'creamApplied'],
+  diaper: ['type', 'diaperType', 'time', 'condition', 'color', 'blowout', 'creamApplied', 'notes'],
   note: ['type', 'time', 'content', 'category'],
   pump: ['type', 'time', 'startTime', 'endTime', 'duration', 'leftAmount', 'rightAmount', 'totalAmount', 'unitAbbr', 'pumpAction', 'notes'],
   play: ['type', 'time', 'startTime', 'duration', 'playType', 'notes', 'activities'],
@@ -247,7 +247,7 @@ async function buildFeedData(body: JsonObject): Promise<{ data?: Prisma.FeedLogU
 
 function buildDiaperData(body: JsonObject): { data?: Prisma.DiaperLogUpdateInput; error?: string } {
   const data: JsonObject = {};
-  const diaperType = requireEnum(body.diaperType, 'diaperType', ['WET', 'DIRTY', 'BOTH'] as const);
+  const diaperType = requireEnum(body.diaperType, 'diaperType', ['WET', 'DIRTY', 'BOTH', 'DRY'] as const);
   if (diaperType.error) return { error: diaperType.error };
   if (diaperType.value) data.type = diaperType.value;
   const timeError = assignDate(data, body, 'time', 'time');
@@ -260,6 +260,8 @@ function buildDiaperData(body: JsonObject): { data?: Prisma.DiaperLogUpdateInput
     const error = assignBoolean(data, body, field);
     if (error) return { error };
   }
+  const notesError = assignString(data, body, 'notes');
+  if (notesError) return { error: notesError };
   const empty = ensureNonEmptyUpdate(data);
   return empty ? { error: empty } : { data: data as Prisma.DiaperLogUpdateInput };
 }
@@ -286,6 +288,8 @@ function buildSleepData(body: JsonObject, existingStartTime: Date): { data?: Pri
   if (locationError) return { error: locationError };
   const qualityError = assignEnum(data, body, 'quality', SLEEP_QUALITIES);
   if (qualityError) return { error: qualityError };
+  const notesError = assignString(data, body, 'notes');
+  if (notesError) return { error: notesError };
   const empty = ensureNonEmptyUpdate(data);
   return empty ? { error: empty } : { data: data as Prisma.SleepLogUpdateInput };
 }
@@ -489,13 +493,13 @@ async function updateActivity(type: ActivityType, activityId: string, babyId: st
       const built = buildDiaperData(body);
       if (built.error) return { error: built.error, status: 400 };
       const row = await prisma.diaperLog.update({ where: { id: activityId }, data: built.data! });
-      return { result: summary(type, row.id, row.babyId, 'updated', row.time, { type: row.type, condition: row.condition, color: row.color, blowout: row.blowout, creamApplied: row.creamApplied }) };
+      return { result: summary(type, row.id, row.babyId, 'updated', row.time, { type: row.type, condition: row.condition, color: row.color, blowout: row.blowout, creamApplied: row.creamApplied, notes: row.notes }) };
     }
     case 'sleep': {
       const built = buildSleepData(body, existing.time!);
       if (built.error) return { error: built.error, status: 400 };
       const row = await prisma.sleepLog.update({ where: { id: activityId }, data: built.data! });
-      return { result: summary(type, row.id, row.babyId, 'updated', row.startTime, { type: row.type, startTime: row.startTime.toISOString(), endTime: toIso(row.endTime), duration: row.duration, location: row.location, quality: row.quality }) };
+      return { result: summary(type, row.id, row.babyId, 'updated', row.startTime, { type: row.type, startTime: row.startTime.toISOString(), endTime: toIso(row.endTime), duration: row.duration, location: row.location, quality: row.quality, notes: row.notes }) };
     }
     case 'note': {
       const built = buildNoteData(body);

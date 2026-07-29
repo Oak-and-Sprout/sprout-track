@@ -23,6 +23,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   const [phase, setPhase] = useState<FeedPhase>('idle');
   const [activeFeed, setActiveFeed] = useState<ActiveBreastFeedResponse | null>(null);
   const [currentElapsed, setCurrentElapsed] = useState(0);
+  const [lastBreastSide, setLastBreastSide] = useState<'LEFT' | 'RIGHT' | ''>('');
 
   const refreshDefaultUnit = useCallback(async () => {
     const authToken = localStorage.getItem('authToken');
@@ -35,6 +36,21 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       if (unit) setDefaultUnit(unit);
     } catch { /* keep the cached/default unit */ }
   }, []);
+
+  // "· Last used" hint — re-read after each completed breast feed so it points
+  // at the side to use next, not the one from before this session's feeds.
+  const refreshLastBreastSide = useCallback(async () => {
+    const authToken = localStorage.getItem('authToken');
+    const headers = { Authorization: authToken ? `Bearer ${authToken}` : '' };
+
+    try {
+      const lastBreastRes = await fetch(`/api/feed-log/last?babyId=${babyId}&type=BREAST`, { headers, cache: 'no-store' });
+      const lastBreastData = await lastBreastRes.json();
+      if (lastBreastData.success && (lastBreastData.data?.side === 'LEFT' || lastBreastData.data?.side === 'RIGHT')) {
+        setLastBreastSide(lastBreastData.data.side);
+      }
+    } catch { /* no last side available */ }
+  }, [babyId]);
 
   // Fetch bottle defaults
   useEffect(() => {
@@ -58,10 +74,12 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
           }
         }
       } catch { /* no average available */ }
+
+      await refreshLastBreastSide();
     };
 
     if (babyId) fetchDefaults();
-  }, [babyId, refreshDefaultUnit]);
+  }, [babyId, refreshDefaultUnit, refreshLastBreastSide]);
 
   // Android can resume a warm PWA without remounting its React tree. Re-read
   // the server preference when the app becomes active again.
@@ -273,6 +291,9 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
           ],
         }, feedNoteLabels);
         onLog('feed', note);
+        // The DELETE already persisted the feed logs, so the "Last used" hint
+        // can be re-read now — non-blocking so Stop isn't held on a round trip.
+        void refreshLastBreastSide();
         // The server created the feed log entries; undo deletes them all.
         const createdIds: string[] = data.data?.feedLogIds || [];
         if (createdIds.length > 0) {
@@ -294,7 +315,7 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
       setPhase('idle');
       setCurrentElapsed(0);
     }
-  }, [activeFeed, currentElapsed, onLog, onUndoable, submitting, t]);
+  }, [activeFeed, currentElapsed, onLog, onUndoable, refreshLastBreastSide, submitting, t]);
 
   // Computed totals (same as ActiveFeedBanner)
   const leftTotal = activeFeed
@@ -326,8 +347,18 @@ export function useFeedActions({ babyId, toUTCString, onLog, onUndoable }: Activ
   } else {
     buttons = [
       { key: 'bottle', label: avgBottleAmount ? `${t('Bottle')} (${avgBottleAmount})` : t('Bottle'), onClick: submitBottle, disabled: submitting },
-      { key: 'breastL', label: t('Left Breast'), onClick: () => startBreastFeed('LEFT'), disabled: submitting },
-      { key: 'breastR', label: t('Right Breast'), onClick: () => startBreastFeed('RIGHT'), disabled: submitting },
+      {
+        key: 'breastL',
+        label: lastBreastSide === 'LEFT' ? `${t('Left Breast')} · ${t('Last used')}` : t('Left Breast'),
+        onClick: () => startBreastFeed('LEFT'),
+        disabled: submitting,
+      },
+      {
+        key: 'breastR',
+        label: lastBreastSide === 'RIGHT' ? `${t('Right Breast')} · ${t('Last used')}` : t('Right Breast'),
+        onClick: () => startBreastFeed('RIGHT'),
+        disabled: submitting,
+      },
     ];
   }
 

@@ -116,6 +116,8 @@ export default function FeedForm({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
   const [manualEntry, setManualEntry] = useState(false);
+  /** Last BREAST feed side for "Last used" indicator (#252). */
+  const [lastBreastSide, setLastBreastSide] = useState<BreastSide | ''>('');
 
   const [photosEnabled, setPhotosEnabled] = useState(false);
   const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
@@ -262,6 +264,28 @@ export default function FeedForm({
       }
     } catch (error) {
       console.error('Error fetching last feed type:', error);
+    }
+  };
+
+  /** Explicit last BREAST feed for the side indicator (independent of last feed type). */
+  const fetchLastBreastSide = async () => {
+    if (!babyId) return;
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch(`/api/feed-log/last?babyId=${babyId}&type=BREAST`, {
+        headers: {
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+        },
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.success && (data.data?.side === 'LEFT' || data.data?.side === 'RIGHT')) {
+        setLastBreastSide(data.data.side);
+      } else {
+        setLastBreastSide('');
+      }
+    } catch (error) {
+      console.error('Error fetching last breast side:', error);
     }
   };
 
@@ -437,6 +461,7 @@ export default function FeedForm({
 
         // Fetch the last feed type to pre-populate the form
         fetchLastFeedType();
+        fetchLastBreastSide();
       }
       
       // Mark as initialized
@@ -1270,18 +1295,24 @@ export default function FeedForm({
                     variant="outline"
                     onClick={() => handleStartBreastfeed('LEFT')}
                     disabled={loading}
-                    className="flex-1 h-16 text-lg font-semibold"
+                    className="flex-1 h-16 text-lg font-semibold flex-col gap-0.5"
                   >
-                    {t('Left Side')}
+                    <span>{t('Left Side')}</span>
+                    {lastBreastSide === 'LEFT' && (
+                      <span className="text-xs font-normal text-teal-700">{t('Last used')}</span>
+                    )}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => handleStartBreastfeed('RIGHT')}
                     disabled={loading}
-                    className="flex-1 h-16 text-lg font-semibold"
+                    className="flex-1 h-16 text-lg font-semibold flex-col gap-0.5"
                   >
-                    {t('Right Side')}
+                    <span>{t('Right Side')}</span>
+                    {lastBreastSide === 'RIGHT' && (
+                      <span className="text-xs font-normal text-teal-700">{t('Last used')}</span>
+                    )}
                   </Button>
                 </div>
                 <div className="flex justify-center">

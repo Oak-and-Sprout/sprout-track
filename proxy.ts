@@ -15,5 +15,5 @@ export function proxy(req: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/features', '/pricing', '/terms', '/privacy'],
+  matcher: ['/features', '/pricing', '/terms', '/privacy', '/gift-success'],
 };

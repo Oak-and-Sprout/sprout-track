@@ -1,12 +1,12 @@
 import prisma from '../../../app/api/db';
 import { NotificationEventType } from '@prisma/client';
-import {
-  sendNotificationWithLogging,
-  NotificationPayload,
-} from './push';
+import { NotificationPayload } from './push';
+import { dispatchTimerPush } from './timerDispatch';
 import { t, formatTimeElapsed, DEFAULT_LANGUAGE } from './i18n';
 import { isNotificationsEnabled } from './config';
+import { routeForNotification } from './routes';
 import { parseFeedTimerTypes, buildFeedTimerWhere, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
+import { resolvePreferenceOwner, PreferenceOwner } from './preferenceOwner';
 
 /**
  * Parse warning time string (format: "HH:mm") to total minutes
@@ -216,12 +216,16 @@ async function getUserLanguage(
 
 /**
  * Send timer expiration notification
- * @param preference - Notification preference
+ * @param preference - Notification preference (subscription is null for native-only preferences)
+ * @param owner - Resolved owner (subscription when present, else the preference's own columns)
  * @param baby - Baby information
  * @param eventType - Event type (FEED_TIMER_EXPIRED or DIAPER_TIMER_EXPIRED)
  * @param lastActivityTime - When the last activity occurred
  * @param thresholdMinutes - Threshold in minutes
- * @param userLanguage - User's language preference
+ * @param nativeSent - Owner keys already sent a native push for this timer
+ *   check (one Set per feed/diaper timer pass across all preferences for
+ *   that baby+eventType) — a web preference and a native preference for the
+ *   same owner must not double-push the same device.
  */
 async function sendTimerNotification(
   preference: {
@@ -233,26 +237,27 @@ async function sendTimerNotification(
       auth: string;
       accountId: string | null;
       caretakerId: string | null;
-    };
+    } | null;
   },
+  owner: PreferenceOwner,
   baby: {
     id: string;
     firstName: string;
     lastName: string;
+    familyId: string | null;
+    family: { slug: string } | null;
   },
   eventType: NotificationEventType,
   lastActivityTime: Date,
-  thresholdMinutes: number
+  thresholdMinutes: number,
+  nativeSent: Set<string>
 ): Promise<void> {
   const babyName = baby.firstName;
   const now = new Date();
   const timeSinceActivity = (now.getTime() - lastActivityTime.getTime()) / (1000 * 60);
 
   // Get user's language preference
-  const userLanguage = await getUserLanguage(
-    preference.subscription.accountId,
-    preference.subscription.caretakerId
-  );
+  const userLanguage = await getUserLanguage(owner.accountId, owner.caretakerId);
 
   // Format time elapsed using localized strings
   const timeElapsed = formatTimeElapsed(timeSinceActivity, userLanguage);
@@ -278,21 +283,21 @@ async function sendTimerNotification(
     data: {
       eventType,
       babyId: baby.id,
+      familySlug: baby.family?.slug,
+      route: routeForNotification(activityType),
     },
   };
 
-  await sendNotificationWithLogging(
-    preference.subscription.id,
-    {
-      endpoint: preference.subscription.endpoint,
-      p256dh: preference.subscription.p256dh,
-      auth: preference.subscription.auth,
-    },
+  await dispatchTimerPush({
+    subscription: preference.subscription,
     payload,
     eventType,
-    null, // No activity type for timer events
-    baby.id
-  );
+    activityType: null, // No activity type for timer events
+    babyId: baby.id,
+    familyId: baby.familyId,
+    owner,
+    nativeSent,
+  });
 }
 
 /**
@@ -342,6 +347,7 @@ export async function checkTimerExpirations(): Promise<number> {
             feedWarningTime: true,
             diaperWarningTime: true,
             familyId: true,
+            family: { select: { slug: true } },
           },
         },
       },
@@ -361,7 +367,9 @@ export async function checkTimerExpirations(): Promise<number> {
     >();
 
     for (const preference of timerPreferences) {
-      if (!preference.baby || !preference.subscription) {
+      // subscription may be null (native-only preferences) — baby is the
+      // only hard requirement to be actionable.
+      if (!preference.baby) {
         continue;
       }
 
@@ -408,9 +416,16 @@ export async function checkTimerExpirations(): Promise<number> {
           const timeSinceLastFeed = (Date.now() - lastFeedTime.getTime()) / (1000 * 60);
           console.log(`[TimerCheck] Last feed: ${timeSinceLastFeed.toFixed(1)} minutes ago (threshold: ${thresholdMinutes} minutes)`);
           
+          const nativeSentFeed = new Set<string>();
           for (const preference of feedPreferences) {
-            if (!preference.subscription) {
-              console.warn(`[TimerCheck] Preference ${preference.id} has no subscription, skipping`);
+            const owner = resolvePreferenceOwner(preference);
+            // Only skip when there's truly nothing to send to. A web
+            // preference whose subscription has no owner ids at all (an
+            // edge case, but one the pre-existing code tolerated) must still
+            // get its web push — only a subscription-less native preference
+            // with no owner at all is genuinely actionless.
+            if (!preference.subscription && !owner.caretakerId && !owner.accountId) {
+              console.warn(`[TimerCheck] Preference ${preference.id} has no subscription and no owner, skipping`);
               continue;
             }
 
@@ -442,10 +457,12 @@ export async function checkTimerExpirations(): Promise<number> {
                       id: preference.id,
                       subscription: preference.subscription,
                     },
+                    owner,
                     baby,
                     NotificationEventType.FEED_TIMER_EXPIRED,
                     lastFeedTime,
-                    thresholdMinutes
+                    thresholdMinutes,
+                    nativeSentFeed
                   );
                   notificationsSent++;
                   console.log(`[TimerCheck] Feed timer notification sent successfully (total: ${notificationsSent})`);
@@ -485,9 +502,11 @@ export async function checkTimerExpirations(): Promise<number> {
           const timeSinceLastDiaper = (Date.now() - lastDiaperTime.getTime()) / (1000 * 60);
           console.log(`[TimerCheck] Last diaper: ${timeSinceLastDiaper.toFixed(1)} minutes ago (threshold: ${thresholdMinutes} minutes)`);
           
+          const nativeSentDiaper = new Set<string>();
           for (const preference of diaperPreferences) {
-            if (!preference.subscription) {
-              console.warn(`[TimerCheck] Preference ${preference.id} has no subscription, skipping`);
+            const owner = resolvePreferenceOwner(preference);
+            if (!preference.subscription && !owner.caretakerId && !owner.accountId) {
+              console.warn(`[TimerCheck] Preference ${preference.id} has no subscription and no owner, skipping`);
               continue;
             }
 
@@ -519,10 +538,12 @@ export async function checkTimerExpirations(): Promise<number> {
                       id: preference.id,
                       subscription: preference.subscription,
                     },
+                    owner,
                     baby,
                     NotificationEventType.DIAPER_TIMER_EXPIRED,
                     lastDiaperTime,
-                    thresholdMinutes
+                    thresholdMinutes,
+                    nativeSentDiaper
                   );
                   notificationsSent++;
                   console.log(`[TimerCheck] Diaper timer notification sent successfully (total: ${notificationsSent})`);
@@ -593,9 +614,14 @@ export async function checkTimerExpirations(): Promise<number> {
 
             console.log(`[TimerCheck] Medicine "${medicine.name}" eligible: ${timeSinceLastDose.toFixed(1)}min since last dose (threshold: ${thresholdMinutes}min)`);
 
+            // Fresh per medicine: this is a distinct notification per dose,
+            // so dedup must not carry over between medicines — only within
+            // the preference rows for this one medicine's eligibility check.
+            const nativeSentMedicine = new Set<string>();
             for (const preference of medicinePreferences) {
-              if (!preference.subscription) {
-                console.warn(`[TimerCheck] Preference ${preference.id} has no subscription, skipping`);
+              const owner = resolvePreferenceOwner(preference);
+              if (!preference.subscription && !owner.caretakerId && !owner.accountId) {
+                console.warn(`[TimerCheck] Preference ${preference.id} has no subscription and no owner, skipping`);
                 continue;
               }
 
@@ -612,10 +638,7 @@ export async function checkTimerExpirations(): Promise<number> {
                 try {
                   console.log(`[TimerCheck] Sending medicine timer notification for preference ${preference.id}, medicine "${medicine.name}"...`);
 
-                  const userLanguage = await getUserLanguage(
-                    preference.subscription.accountId,
-                    preference.subscription.caretakerId
-                  );
+                  const userLanguage = await getUserLanguage(owner.accountId, owner.caretakerId);
 
                   const timeElapsed = formatTimeElapsed(timeSinceLastDose, userLanguage);
 
@@ -632,6 +655,8 @@ export async function checkTimerExpirations(): Promise<number> {
                     data: {
                       eventType: NotificationEventType.MEDICINE_TIMER_EXPIRED,
                       babyId: baby.id,
+                      familySlug: baby.family?.slug,
+                      route: routeForNotification('medicine'),
                     },
                   };
 
@@ -644,18 +669,17 @@ export async function checkTimerExpirations(): Promise<number> {
                   });
 
                   try {
-                    await sendNotificationWithLogging(
-                      preference.subscription.id,
-                      {
-                        endpoint: preference.subscription.endpoint,
-                        p256dh: preference.subscription.p256dh,
-                        auth: preference.subscription.auth,
-                      },
+                    await dispatchTimerPush({
+                      subscription: preference.subscription,
                       payload,
-                      NotificationEventType.MEDICINE_TIMER_EXPIRED,
-                      null,
-                      baby.id
-                    );
+                      eventType: NotificationEventType.MEDICINE_TIMER_EXPIRED,
+                      activityType: null,
+                      babyId: baby.id,
+                      familyId: baby.familyId,
+                      owner,
+                      nativeSent: nativeSentMedicine,
+                    });
+
                     notificationsSent++;
                     console.log(`[TimerCheck] Medicine timer notification sent successfully for "${medicine.name}" (total: ${notificationsSent})`);
                   } catch (sendError) {

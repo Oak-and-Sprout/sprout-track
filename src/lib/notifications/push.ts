@@ -42,6 +42,8 @@ export interface NotificationPayload {
     babyId: string;
     activityType?: string;
     url?: string; // For deep linking
+    familySlug?: string; // For native deep-link routing to the right family
+    route?: string; // Allow-listed target screen, see notifications/routes.ts
   };
 }
 
@@ -69,11 +71,17 @@ export async function sendNotification(
   payload: NotificationPayload,
   options?: webPush.RequestOptions
 ): Promise<SendNotificationResult> {
-  if (!isWebPushInitialized()) {
-    await initializeWebPush();
-  }
-
   try {
+    // Inside the try on purpose. Initialization throws when VAPID keys are
+    // absent, undecryptable or malformed, and that used to escape this function
+    // as a rejected promise rather than the {success:false} envelope every
+    // other failure returns. Callers that awaited it before dispatching native
+    // push were silenced permanently as a result, and the failure never reached
+    // NotificationLog where it would have been diagnosable.
+    if (!isWebPushInitialized()) {
+      await initializeWebPush();
+    }
+
     const pushSubscription: webPush.PushSubscription = {
       endpoint: subscription.endpoint,
       keys: {

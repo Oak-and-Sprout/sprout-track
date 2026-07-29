@@ -13,6 +13,7 @@ import {
   getQuotaInfo,
   purgeExpiredPhotos,
   toPhotoResponse,
+  resolveFavoriteOwner,
   PHOTO_INCLUDE,
 } from '../photo-service';
 import { validatePhotoFile, isOverQuota, resolveTakenAt, MAX_PHOTOS_PER_BATCH } from '@/src/utils/photoUtils';
@@ -67,6 +68,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
 
     const photos: PhotoResponse[] = [];
     const errors: { fileName: string; error: string; index: number }[] = [];
+    // A just-uploaded photo has no favorites yet, but resolve the owner anyway so
+    // every response goes through the same identity as reads (one query, not per file).
+    const favoriteOwner = await resolveFavoriteOwner(authContext);
 
     for (let index = 0; index < files.length; index++) {
       const file = files[index];
@@ -126,7 +130,7 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         });
 
         runningUsed += incomingBytes;
-        photos.push(toPhotoResponse(photo, authContext));
+        photos.push(toPhotoResponse(photo, favoriteOwner));
       } catch (error) {
         console.error(`Error processing photo ${file.name}:`, error);
         if (storedName) {

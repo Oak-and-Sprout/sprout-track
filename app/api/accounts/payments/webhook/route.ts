@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/app/api/db';
+import { isGiftCheckoutSession, shouldApplySubscriptionUpdate } from '@/src/utils/giftCodeUtils';
+import { createUniqueGiftCode } from '@/app/api/utils/gift-codes';
+import { sendGiftCodeEmail } from '@/app/api/utils/account-emails';
 
 // Initialize Stripe
 // Use a safe initialization pattern to prevent build errors in self-hosted mode where Stripe keys are missing
@@ -183,6 +186,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
   let accountId = session.metadata?.accountId;
   const planType = session.metadata?.planType;
+
+  // Gift purchases carry no accountId — fulfill and stop before the
+  // account-based flow below.
+  if (isGiftCheckoutSession(session.metadata)) {
+    await handleGiftPurchase(session);
+    return;
+  }
 
   // Fallback: Check customer metadata if session metadata is missing (important for Link/Amazon Pay)
   if (!accountId && session.customer) {
@@ -406,6 +416,19 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   }
 
   try {
+    // Lifetime is terminal: a gift code redemption may cancel_at_period_end
+    // the Stripe subscription, which fires this same event. Don't let it
+    // clobber the lifetime grant back to a 'sub' plan.
+    const account = await prisma.account.findUnique({
+      where: { id: accountId },
+      select: { planType: true },
+    });
+
+    if (!account || !shouldApplySubscriptionUpdate(account)) {
+      console.log(`[WEBHOOK] Skipping subscription update for account ${accountId}: planType is '${account?.planType}' (lifetime grant preserved)`);
+      return;
+    }
+
     // Get billing period end date from subscription item (API v2025-10-29+ uses item-level periods)
     const periodEnd = subscription.items.data[0]?.current_period_end;
 
@@ -585,5 +608,40 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     // TODO: Implement email notification for failed payments
   } catch (error) {
     console.error('[WEBHOOK ERROR] Error handling invoice payment failed:', error);
+  }
+}
+
+/**
+ * Fulfill a gift purchase: create the gift code and email it to the buyer.
+ * Idempotent via the unique GiftCode.stripeSessionId — a replayed webhook
+ * returns 'already-fulfilled' and sends nothing.
+ */
+async function handleGiftPurchase(session: Stripe.Checkout.Session) {
+  const purchaserEmail = session.customer_details?.email || null;
+  const paymentIntentId =
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+
+  const giftCode = await createUniqueGiftCode({
+    source: 'purchase',
+    purchaserEmail,
+    stripeSessionId: session.id,
+    stripePaymentId: paymentIntentId,
+  });
+
+  if (giftCode === 'already-fulfilled') {
+    console.log('[WEBHOOK] Gift session already fulfilled:', session.id);
+    return;
+  }
+
+  if (purchaserEmail) {
+    const result = await sendGiftCodeEmail(purchaserEmail, giftCode.code);
+    if (!result.success) {
+      // Code exists and is visible in family-manager; don't fail the webhook.
+      console.error('[WEBHOOK ERROR] Failed to send gift code email:', result.error);
+    }
+  } else {
+    console.error('[WEBHOOK ERROR] Gift purchase has no customer email, session:', session.id);
   }
 }

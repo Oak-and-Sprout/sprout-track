@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { babyBuddyPreviewer } from '../src/lib/importers/baby-buddy';
+import { collectBabyBuddyWarnings } from '../src/lib/importers/baby-buddy/warnings';
 
 describe('Baby Buddy import preview', () => {
   it('returns detected files and total row count', () => {
@@ -110,5 +111,28 @@ describe('Baby Buddy import preview', () => {
     expect(preview.ready).toBe(false);
     expect(preview.totalRows).toBe(0);
     expect(preview.files).toEqual([]);
+  });
+});
+
+describe('Baby Buddy import warnings', () => {
+  it('does not warn about sleep or diaper notes (they are imported now)', () => {
+    const warnings = collectBabyBuddyWarnings([
+      {
+        name: 'Sleep.csv',
+        content: [
+          'id,child_id,start,end,nap,notes,tags',
+          '1,7,2026-01-02 10:00:00,2026-01-02 11:00:00,1,Slept well,',
+        ].join('\n'),
+      },
+      {
+        name: 'Diaper Change.csv',
+        content: [
+          'id,child_id,time,wet,solid,color,amount,notes,tags',
+          '1,7,2026-01-02 10:00:00,1,0,,,Leaked a little,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(warnings).toEqual([]);
   });
 });

@@ -101,7 +101,7 @@ All activity tracking models share a common structure. This consistency is criti
 |-------|-------------|------------|
 | `SleepLog` | start/end/duration | `type` (NAP, NIGHT_SLEEP), `quality`, `location` |
 | `FeedLog` | time + optional start/end | `type` (BREAST, BOTTLE, SOLIDS), `amount`, `unitAbbr`, `side`, `food`, `bottleType` (mixed feeds store `"Formula/Breast"`), `breastMilkAmount`, `sessionId` (groups breast feeds into one nursing session), `pauseDuration` (total session pause in seconds, same value on both rows of a session; null on older records) |
-| `DiaperLog` | time | `type` (WET, DIRTY, BOTH), `condition`, `color`, `blowout`, `creamApplied` |
+| `DiaperLog` | time | `type` (WET, DIRTY, BOTH, DRY), `condition`, `color`, `blowout`, `creamApplied` |
 | `BathLog` | time | `bathType` ("Full Bath", "Sponge Bath", "Wipe Down", or custom), `soapUsed`, `shampooUsed` |
 | `PlayLog` | start/end/duration | `type` (TUMMY_TIME, INDOOR_PLAY, OUTDOOR_PLAY, WALK, CUSTOM) |
 | `PumpLog` | start/end/duration | `leftAmount`, `rightAmount`, `totalAmount`, `unitAbbr`, `pumpAction` |
@@ -168,8 +168,9 @@ Measurement unit definitions with `unitAbbr` (unique), `unitName`, and `activity
 ## Notification Models
 
 - `PushSubscription` — Browser push subscription with endpoint, keys, `failureCount`
+- `DeviceToken` — Native (iOS/Android) push token for the mobile app: unique `token`, `platform`, owner (`accountId` or `caretakerId`), `familyId`, plus the same `failureCount` / `lastFailureAt` / `lastSuccessAt` lifecycle fields as `PushSubscription`. See [Native App Integration](./NativeAppIntegration.md).
 - `NotificationPreference` — Per-subscription, per-baby, per-event-type preferences
-- `NotificationLog` — Delivery tracking (success/failure, HTTP status, payload)
+- `NotificationLog` — Delivery tracking (success/failure, HTTP status, payload) — web push only
 
 ## CDC Growth Data
 

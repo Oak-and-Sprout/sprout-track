@@ -5,6 +5,7 @@ import { useLocalization } from '@/src/context/localization';
 import { PageHead } from '@/src/components/landing/PageHead';
 import { PlanCard } from '@/src/components/landing/PlanCard';
 import { SelfHostCallout } from '@/src/components/landing/SelfHostCallout';
+import { GiftCallout } from '@/src/components/landing/GiftCallout';
 import { FaqAccordion } from '@/src/components/landing/FaqAccordion';
 import { CloseCta } from '@/src/components/landing/CloseCta';
 import { useLandingActions } from '@/src/components/landing/landing-context';
@@ -32,6 +33,11 @@ export default function PricingPage() {
             ))}
           </div>
           <SelfHostCallout />
+        </div>
+      </section>
+      <section id="gift" style={{ position: 'relative', overflow: 'hidden' }}>
+        <div className="ld-wrap">
+          <GiftCallout />
         </div>
       </section>
       <section className="ld-alt" style={{ position: 'relative', overflow: 'hidden' }}>

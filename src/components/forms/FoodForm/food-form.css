@@ -38,6 +38,25 @@ html.dark .food-form-new-food-hint {
   color: rgba(255, 255, 255, 0.5) !important;
 }
 
+/* Selected food tags (multi-food meal chips) */
+html.dark .food-selected-tag {
+  background-color: rgba(45, 212, 191, 0.25) !important;
+  color: #5eead4 !important;
+}
+
+html.dark .food-selected-tag-allergen {
+  color: #fbbf24 !important;
+}
+
+html.dark .food-selected-tag-remove {
+  color: #5eead4 !important;
+}
+
+html.dark .food-selected-tag-remove:hover {
+  background-color: rgba(45, 212, 191, 0.35) !important;
+  color: #99f6e4 !important;
+}
+
 /* Allergen and enjoyment badges */
 html.dark .food-allergen-badge {
   background-color: rgba(245, 158, 11, 0.2) !important;

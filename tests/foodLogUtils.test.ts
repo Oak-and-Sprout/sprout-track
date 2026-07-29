@@ -17,6 +17,15 @@ import {
   countFirstTriesInRange,
   toDateParam,
   buildLogEntryLink,
+  expandFoodItems,
+  parseFoodsJson,
+  serializeFoodItems,
+  buildFoodLogFoodFields,
+  rewriteFoodsJsonIds,
+  computeFirstTryByFoodId,
+  mealIncludesFirstTry,
+  formatFoodMealTitle,
+  isFoodLogActivity,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
   FOOD_ENJOYMENT_ICON_SRC,
@@ -733,5 +742,145 @@ describe('countFirstTriesInRange', () => {
   it('treats range boundaries as inclusive', () => {
     expect(countFirstTriesInRange([{ foodId: 'x', time: start }], start, end)).toBe(1);
     expect(countFirstTriesInRange([{ foodId: 'y', time: end }], start, end)).toBe(1);
+  });
+});
+
+describe('expandFoodItems / parseFoodsJson / serializeFoodItems', () => {
+  it('expands legacy foodId-only rows with row-level reaction', () => {
+    expect(
+      expandFoodItems({
+        foodId: 'banana',
+        time: at('2026-07-01T09:00:00Z'),
+        hadReaction: true,
+        reactionDescription: 'rash',
+      })
+    ).toEqual([{ foodId: 'banana', hadReaction: true, reactionDescription: 'rash' }]);
+  });
+
+  it('prefers foods JSON over foodId when both are present', () => {
+    const foods = serializeFoodItems([
+      { foodId: 'banana' },
+      { foodId: 'egg', hadReaction: true, reactionDescription: 'swelling' },
+    ]);
+    expect(
+      expandFoodItems({
+        foodId: 'banana',
+        foods,
+        time: at('2026-07-01T09:00:00Z'),
+        hadReaction: false,
+      })
+    ).toEqual([
+      { foodId: 'banana', hadReaction: false, reactionDescription: null },
+      { foodId: 'egg', hadReaction: true, reactionDescription: 'swelling' },
+    ]);
+  });
+
+  it('returns [] for empty/invalid input', () => {
+    expect(expandFoodItems({ time: at('2026-07-01T09:00:00Z') })).toEqual([]);
+    expect(parseFoodsJson('not-json')).toEqual([]);
+    expect(parseFoodsJson('{"foodId":"x"}')).toEqual([]);
+  });
+
+  it('buildFoodLogFoodFields dual-writes N=1 and clears foodId for N>1', () => {
+    expect(buildFoodLogFoodFields([{ foodId: 'banana', hadReaction: true, reactionDescription: 'rash' }])).toMatchObject({
+      foodId: 'banana',
+      hadReaction: true,
+      reactionDescription: 'rash',
+    });
+    expect(buildFoodLogFoodFields([{ foodId: 'banana' }, { foodId: 'egg' }])).toMatchObject({
+      foodId: null,
+      hadReaction: false,
+      reactionDescription: null,
+    });
+  });
+
+  it('rewriteFoodsJsonIds remaps and dedupes', () => {
+    const foods = serializeFoodItems([{ foodId: 'a' }, { foodId: 'b', hadReaction: true }]);
+    expect(rewriteFoodsJsonIds(foods, 'a', 'b')).toBe(
+      serializeFoodItems([{ foodId: 'b', hadReaction: true }])
+    );
+  });
+});
+
+describe('multi-food meal progress and allergens (#247)', () => {
+  const foods = [
+    { id: 'banana', name: 'Banana', commonAllergen: false },
+    { id: 'egg', name: 'Egg', commonAllergen: true },
+    { id: 'tofu', name: 'Tofu', commonAllergen: false },
+  ];
+
+  it('counts unique foods across multi-food meals; totalTries is meal count', () => {
+    const meal = serializeFoodItems([{ foodId: 'banana' }, { foodId: 'egg' }, { foodId: 'tofu' }]);
+    const progress = computeFoodProgress([
+      { foods: meal, time: at('2026-07-01T12:00:00Z'), enjoyment: 'LIKED' },
+      { foodId: 'banana', time: at('2026-07-02T12:00:00Z'), enjoyment: 'LOVED' },
+    ]);
+    expect(progress.uniqueFoodCount).toBe(3);
+    expect(progress.totalTries).toBe(2);
+    expect(progress.countsByEnjoyment.LIKED).toBe(1);
+    expect(progress.countsByEnjoyment.LOVED).toBe(1);
+    expect(progress.firstTryByFoodId.egg).toBe('2026-07-01T12:00:00.000Z');
+  });
+
+  it('deriveAllergens only flags foods with per-item hadReaction', () => {
+    const foodsJson = serializeFoodItems([
+      { foodId: 'banana' },
+      { foodId: 'egg', hadReaction: true, reactionDescription: 'hives' },
+    ]);
+    const allergens = deriveAllergens(
+      [{ foods: foodsJson, time: at('2026-07-01T12:00:00Z'), hadReaction: true }],
+      foods
+    );
+    expect(allergens).toHaveLength(1);
+    expect(allergens[0].foodId).toBe('egg');
+    expect(allergens[0].reactions[0].description).toBe('hives');
+  });
+
+  it('mealIncludesFirstTry when any item is first-ever', () => {
+    const meal = {
+      foods: serializeFoodItems([{ foodId: 'banana' }, { foodId: 'egg' }]),
+      time: at('2026-07-01T12:00:00Z'),
+    };
+    const first = computeFirstTryByFoodId([
+      meal,
+      { foodId: 'banana', time: at('2026-07-02T12:00:00Z') },
+    ]);
+    expect(mealIncludesFirstTry(meal, first)).toBe(true);
+    expect(
+      mealIncludesFirstTry(
+        { foodId: 'banana', time: at('2026-07-02T12:00:00Z') },
+        first
+      )
+    ).toBe(false);
+  });
+
+  it('buildFoodTryList counts each food once per meal that includes it', () => {
+    const meal = serializeFoodItems([{ foodId: 'banana' }, { foodId: 'egg' }]);
+    const list = buildFoodTryList([
+      {
+        foods: meal,
+        time: at('2026-07-01T12:00:00Z'),
+        enjoyment: 'LIKED',
+        foodsById: {
+          banana: foods[0],
+          egg: foods[1],
+        },
+      },
+    ]);
+    expect(list).toHaveLength(2);
+    expect(list.find(e => e.foodId === 'banana')?.tryCount).toBe(1);
+    expect(list.find(e => e.foodId === 'egg')?.tryCount).toBe(1);
+  });
+
+  it('formatFoodMealTitle truncates with +N', () => {
+    expect(formatFoodMealTitle(['Banana'])).toBe('Banana');
+    expect(formatFoodMealTitle(['Banana', 'Egg'])).toBe('Banana, Egg');
+    expect(formatFoodMealTitle(['Banana', 'Egg', 'Tofu'])).toBe('Banana, Egg +1');
+  });
+
+  it('isFoodLogActivity detects foods or foodId', () => {
+    expect(isFoodLogActivity({ foodId: 'x' })).toBe(true);
+    expect(isFoodLogActivity({ foods: '[]' })).toBe(true);
+    expect(isFoodLogActivity({ type: 'BOTTLE' })).toBe(false);
   });
 });

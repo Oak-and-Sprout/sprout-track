@@ -18,6 +18,7 @@ import { useState, useEffect } from 'react';
 import { DiaperType } from '@prisma/client';
 import { DiaperLogResponse } from '@/app/api/types';
 import { useLocalization } from '@/src/context/localization';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 
 interface DiaperModalProps {
   open: boolean;
@@ -98,8 +99,10 @@ export default function DiaperModal({
         babyId,
         time: formData.time,
         type: formData.type,
-        condition: formData.condition || null,
-        color: formData.color || null,
+        // Condition/color only apply when there's contents — clear stale values from a
+        // previous type instead of carrying them into a WET/DRY log (e.g. DIRTY -> DRY).
+        condition: isDirtyDiaper(formData.type) ? (formData.condition || null) : null,
+        color: isDirtyDiaper(formData.type) ? (formData.color || null) : null,
       };
 
       const response = await fetch(`/api/diaper-log${activity ? `?id=${activity.id}` : ''}`, {
@@ -169,12 +172,13 @@ export default function DiaperModal({
                   <SelectItem value="WET">{t('Wet')}</SelectItem>
                   <SelectItem value="DIRTY">{t('Dirty')}</SelectItem>
                   <SelectItem value="BOTH">{t('Wet and Dirty')}</SelectItem>
+                  <SelectItem value="DRY">{t('Dry')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           
-          {formData.type && formData.type !== 'WET' && (
+          {formData.type && isDirtyDiaper(formData.type) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="form-label">{t('Condition')}</label>

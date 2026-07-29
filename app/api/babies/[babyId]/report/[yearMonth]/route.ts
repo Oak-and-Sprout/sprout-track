@@ -4,6 +4,7 @@ import { ApiResponse, MonthlyReport, GrowthMetric, GrowthChartData, GrowthChartP
 import { withAuthContext, AuthResult } from '../../../../utils/auth';
 import { formatForResponse } from '../../../../utils/timezone';
 import { toCdcWeightKg, fromCdcWeightKg } from '@/src/utils/weightUnits';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
 import { groupBreastFeedSessions, SESSION_TOLERANCE_MS } from '../../../../../../src/utils/feedSessionUtils';
 import {
@@ -171,6 +172,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       where: baseWhere,
       select: {
         foodId: true,
+        foods: true,
         time: true,
         amount: true,
         unitAbbr: true,
@@ -540,7 +542,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     .sort((a, b) => (b.nightCount + b.napCount) - (a.nightCount + a.napCount));
 
   // ─── Diapers ───
-  const dirtyDiapers = diaperLogs.filter(d => d.type === 'DIRTY' || d.type === 'BOTH');
+  const dirtyDiapers = diaperLogs.filter(d => isDirtyDiaper(d.type));
   const blowoutCount = diaperLogs.filter(d => d.blowout).length;
   const creamCount = diaperLogs.filter(d => d.creamApplied).length;
   const creamApplicationRate = diaperLogs.length > 0 ? Math.round((creamCount / diaperLogs.length) * 100) : 0;
@@ -625,13 +627,15 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
     date: formatForResponse(v.time) || v.time.toISOString(),
   }));
 
-  // ─── Foods & Allergens (issue #203 follow-up) ───
-  const newFoods = buildNewFoodsForRange(allFoodLogs, start, end);
-  const foodProgress = computeFoodProgress(allFoodLogs);
+  // ─── Foods & Allergens (issue #203 follow-up / #247 multi-food) ───
+  const foodsById = Object.fromEntries(allFoods.map(f => [f.id, f]));
+  const foodLogsForMath = allFoodLogs.map(log => ({ ...log, foodsById }));
+  const newFoods = buildNewFoodsForRange(foodLogsForMath, start, end);
+  const foodProgress = computeFoodProgress(foodLogsForMath);
   // Static (not month-dependent): every known allergen — derived from
   // reaction-flagged food/feed logs plus manually recorded entries
   const knownAllergens = mergeAllergens(
-    deriveAllergens(allFoodLogs, allFoods),
+    deriveAllergens(foodLogsForMath, allFoods),
     manualAllergens,
     deriveFeedAllergens(reactionFeedLogs)
   );

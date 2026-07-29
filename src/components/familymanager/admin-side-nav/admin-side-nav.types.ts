@@ -13,5 +13,6 @@ export interface AdminSideNavProps {
     invites: number;
     accounts?: number;
     feedback?: number;
+    giftCodes?: number;
   };
 }

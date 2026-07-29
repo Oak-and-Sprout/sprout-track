@@ -61,10 +61,13 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       );
     }
 
-    // Build where clause based on provided parameters
+    // Build where clause based on provided parameters. Soft-deleted logs are
+    // excluded: "last feed" drives the nursery Last-used side hint and the
+    // average bottle amount, and an undone feed must stop influencing both.
     const whereClause: any = {
       babyId,
       familyId,
+      deletedAt: null,
       ...(type && { type }), // Only include type if it's provided
     };
 

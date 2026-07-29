@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/src/components/ui/button';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/src/components/ui/input';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
 import {
@@ -17,6 +16,7 @@ import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, createPhotoLog, fetchPhotoLog, updatePhotoLog, updatePhoto, deletePhotoLog } from '@/src/utils/photoClientApi';
 import { filterTaggableMilestones } from '@/src/utils/photoUtils';
 import { MilestoneResponse, PhotoResponse } from '@/app/api/types';
+import { PhotoAddActions } from './photo-form.types';
 
 interface AddPhotoTabProps {
   isOpen: boolean;
@@ -26,9 +26,10 @@ interface AddPhotoTabProps {
   onClose: () => void;
   onSuccess?: () => void;
   refreshTrigger: number;
+  onActionsChange?: (actions: PhotoAddActions | null) => void;
 }
 
-export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onClose, onSuccess }: AddPhotoTabProps) {
+export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onClose, onSuccess, onActionsChange }: AddPhotoTabProps) {
   const { t } = useLocalization();
   const { toUTCString } = useTimezone();
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -207,6 +208,31 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
     }
   };
 
+  const handleSaveRef = useRef(handleSave);
+  const handleDeleteRef = useRef(handleDelete);
+  handleSaveRef.current = handleSave;
+  handleDeleteRef.current = handleDelete;
+
+  // Report footer actions to PhotoForm (Cancel/Save/Delete live in FormPageFooter)
+  useEffect(() => {
+    if (!onActionsChange) return;
+    onActionsChange({
+      onSave: () => {
+        void handleSaveRef.current();
+      },
+      onDelete: activity
+        ? () => {
+            void handleDeleteRef.current();
+          }
+        : undefined,
+      onCancel: onClose,
+      canSave: pendingFiles.length > 0 || existingPhotos.length > 0,
+      saving,
+    });
+  }, [onActionsChange, activity, pendingFiles.length, existingPhotos.length, saving, onClose]);
+
+  useEffect(() => () => onActionsChange?.(null), [onActionsChange]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -265,21 +291,6 @@ export default function AddPhotoTab({ isOpen, babyId, initialTime, activity, onC
 
       <p className="text-xs text-gray-400 photo-form-hint">{t("Photos save to this day's log and to the Photos gallery.")}</p>
       {error && <p className="text-sm text-red-500">{error}</p>}
-
-      <div className="flex gap-2 pt-2">
-        {activity && (
-          <Button variant="destructive" onClick={handleDelete} disabled={saving}>
-            {t('Delete')}
-          </Button>
-        )}
-        <span className="flex-1" />
-        <Button variant="outline" onClick={onClose} disabled={saving}>
-          {t('Cancel')}
-        </Button>
-        <Button onClick={handleSave} disabled={saving || (pendingFiles.length === 0 && existingPhotos.length === 0)}>
-          {saving ? t('Saving...') : t('Save Photo')}
-        </Button>
-      </div>
     </div>
   );
 }

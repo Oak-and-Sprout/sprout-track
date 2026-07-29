@@ -72,6 +72,32 @@ describe('Baby Buddy record mapping', () => {
     },
   );
 
+  it('maps sleep notes, trimming whitespace', () => {
+    const result = mapBabyBuddySleep({
+      id: '12',
+      child_id: '7',
+      start: '2026-01-02 10:00:00',
+      end: '2026-01-02 11:00:00',
+      nap: '1',
+      notes: '  Slept in the stroller  ',
+    });
+
+    expect(result.notes).toBe('Slept in the stroller');
+  });
+
+  it('maps whitespace-only sleep notes to undefined', () => {
+    const result = mapBabyBuddySleep({
+      id: '12',
+      child_id: '7',
+      start: '2026-01-02 10:00:00',
+      end: '2026-01-02 11:00:00',
+      nap: '1',
+      notes: '   ',
+    });
+
+    expect(result.notes).toBeUndefined();
+  });
+
   it('maps a standalone note', () => {
     expect(
       mapBabyBuddyNote({
@@ -285,6 +311,7 @@ describe('Baby Buddy diaper mapping', () => {
     ['1', '0', 'WET'],
     ['0', '1', 'DIRTY'],
     ['1', '1', 'BOTH'],
+    ['0', '0', 'DRY'],
   ] as const)(
     'maps wet=%s solid=%s to %s',
     (wet, solid, expectedType) => {
@@ -327,19 +354,57 @@ describe('Baby Buddy diaper mapping', () => {
     expect(result.color).toBeUndefined();
   });
 
-  it('rejects a record that is neither wet nor solid', () => {
-    expect(() =>
-      mapBabyBuddyDiaperChange({
-        id: '4',
-        child_id: '7',
-        time: '2026-01-01 10:00:00',
-        wet: '0',
-        solid: '0',
-        color: '',
-      }),
-    ).toThrow(
-      'Baby Buddy diaper change must be wet, solid, or both',
-    );
+  it('maps a record that is neither wet nor solid to DRY (issue #245)', () => {
+    const result = mapBabyBuddyDiaperChange({
+      id: '4',
+      child_id: '7',
+      time: '2026-01-01 10:00:00',
+      wet: '0',
+      solid: '0',
+      color: '',
+    });
+
+    expect(result.type).toBe('DRY');
+  });
+
+  it('omits colour from a DRY record even when the source supplies one', () => {
+    const result = mapBabyBuddyDiaperChange({
+      id: '5',
+      child_id: '7',
+      time: '2026-01-01 10:00:00',
+      wet: '0',
+      solid: '0',
+      color: 'green',
+    });
+
+    expect(result.color).toBeUndefined();
+  });
+
+  it('maps diaper notes, trimming whitespace', () => {
+    const result = mapBabyBuddyDiaperChange({
+      id: '1',
+      child_id: '7',
+      time: '2026-01-01 10:00:00',
+      wet: '1',
+      solid: '0',
+      color: '',
+      notes: '  Leaked overnight  ',
+    });
+
+    expect(result.notes).toBe('Leaked overnight');
+  });
+
+  it('maps missing diaper notes to undefined', () => {
+    const result = mapBabyBuddyDiaperChange({
+      id: '1',
+      child_id: '7',
+      time: '2026-01-01 10:00:00',
+      wet: '1',
+      solid: '0',
+      color: '',
+    });
+
+    expect(result.notes).toBeUndefined();
   });
 });
 

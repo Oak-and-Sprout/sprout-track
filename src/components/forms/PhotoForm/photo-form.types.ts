@@ -8,6 +8,15 @@ export interface PhotoFormProps {
   onOpenPhoto?: (photoId: string) => void; // parent opens PhotoDetail
 }
 
+/** Footer actions reported by AddPhotoTab to PhotoForm */
+export interface PhotoAddActions {
+  onSave: () => void;
+  onDelete?: () => void;
+  onCancel: () => void;
+  canSave: boolean;
+  saving: boolean;
+}
+
 export interface PhotoTabCommonProps {
   babyId: string | undefined;
   onClose: () => void;

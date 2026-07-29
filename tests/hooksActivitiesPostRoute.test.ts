@@ -149,6 +149,28 @@ describe('hooks activities POST route', () => {
       expect(payload.success).toBe(true);
     });
 
+    it('accepts a DRY diaper change', async () => {
+      mocks.prisma.diaperLog.create.mockResolvedValue({ id: 'diaper-dry-1', time: new Date('2026-07-20T10:00:00Z'), blowout: false, creamApplied: false });
+
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'DRY' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(payload.success).toBe(true);
+      expect(mocks.prisma.diaperLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ type: 'DRY' }),
+      }));
+    });
+
+    it('still rejects an unknown diaper type', async () => {
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'SOGGY' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_DIAPER_TYPE');
+      expect(mocks.prisma.diaperLog.create).not.toHaveBeenCalled();
+    });
+
     it('starts a sleep session', async () => {
       mocks.prisma.sleepLog.create.mockResolvedValue({ id: 'sleep-1', startTime: new Date('2026-07-20T10:00:00Z') });
 
@@ -702,6 +724,179 @@ describe('hooks activities POST route', () => {
 
       expect(mocks.prisma.pumpLog.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ pumpAction: 'STORED' }),
+      }));
+    });
+  });
+
+  describe('9. sleep and diaper notes', () => {
+    it('persists notes on a diaper create', async () => {
+      mocks.prisma.diaperLog.create.mockResolvedValue({ id: 'diaper-6', time: new Date('2026-07-20T10:00:00Z'), blowout: false, creamApplied: false, notes: 'small leak' });
+
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'WET', notes: 'small leak' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.diaperLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: 'small leak' }),
+      }));
+    });
+
+    it('persists notes when starting a sleep session', async () => {
+      mocks.prisma.sleepLog.create.mockResolvedValue({ id: 'sleep-3', startTime: new Date('2026-07-20T10:00:00Z'), notes: 'fussy before nap' });
+
+      const response = await POST(postRequest({ type: 'sleep', sleepType: 'NAP', action: 'start', notes: 'fussy before nap' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.sleepLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: 'fussy before nap' }),
+      }));
+    });
+
+    it('persists notes on a logged sleep', async () => {
+      mocks.prisma.sleepLog.create.mockResolvedValue({ id: 'sleep-4', startTime: new Date('2026-07-20T10:00:00Z'), notes: 'car nap' });
+
+      await POST(postRequest({ type: 'sleep', sleepType: 'NAP', action: 'log', duration: 45, notes: 'car nap' }) as any, routeContext);
+
+      expect(mocks.prisma.sleepLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: 'car nap' }),
+      }));
+    });
+
+    it('applies notes when ending a sleep session', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'sleep-6', startTime: new Date('2026-07-20T09:00:00Z'), endTime: null, quality: null, notes: null });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'sleep-6', startTime: new Date('2026-07-20T09:00:00Z'), endTime: new Date('2026-07-20T10:00:00Z'), duration: 60, type: 'NAP', notes: 'woke up crying' });
+
+      const response = await POST(postRequest({ type: 'sleep', action: 'end', notes: 'woke up crying' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: 'woke up crying' }),
+      }));
+    });
+
+    it('includes notes in the GET /activities diaper details', async () => {
+      mocks.prisma.diaperLog.findMany.mockResolvedValue([{
+        id: 'diaper-7', time: new Date('2026-07-20T10:00:00Z'), type: 'WET', condition: null, color: null, blowout: false, creamApplied: false, notes: 'small leak', caretaker: null,
+      }]);
+
+      const response = await GET(getRequest('?type=diaper') as any, routeContext);
+      const payload = await json(response);
+
+      expect(payload.data.activities[0].details.notes).toBe('small leak');
+    });
+
+    it('includes notes in the GET /activities sleep details', async () => {
+      mocks.prisma.sleepLog.findMany.mockResolvedValue([{
+        id: 'sleep-7', startTime: new Date('2026-07-20T09:00:00Z'), endTime: null, duration: null, type: 'NAP', location: null, quality: null, notes: 'fussy before nap', caretaker: null,
+      }]);
+
+      const response = await GET(getRequest('?type=sleep') as any, routeContext);
+      const payload = await json(response);
+
+      expect(payload.data.activities[0].details.notes).toBe('fussy before nap');
+    });
+  });
+
+  describe('10. notes type validation and clearing', () => {
+    it('stores null when notes is omitted from a diaper create', async () => {
+      mocks.prisma.diaperLog.create.mockResolvedValue({ id: 'diaper-8', time: new Date('2026-07-20T10:00:00Z'), blowout: false, creamApplied: false, notes: null });
+
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'WET' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.diaperLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: null }),
+      }));
+    });
+
+    it('accepts an explicitly null notes on a diaper create', async () => {
+      mocks.prisma.diaperLog.create.mockResolvedValue({ id: 'diaper-9', time: new Date('2026-07-20T10:00:00Z'), blowout: false, creamApplied: false, notes: null });
+
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'WET', notes: null }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.diaperLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: null }),
+      }));
+    });
+
+    it('rejects a numeric notes on a diaper create', async () => {
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'WET', notes: 42 }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_NOTES');
+      expect(payload.error.message).toContain('notes must be a string');
+      expect(mocks.prisma.diaperLog.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects an object notes on a diaper create', async () => {
+      const response = await POST(postRequest({ type: 'diaper', diaperType: 'WET', notes: {} }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_NOTES');
+      expect(mocks.prisma.diaperLog.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts an explicitly null notes when starting a sleep session', async () => {
+      mocks.prisma.sleepLog.create.mockResolvedValue({ id: 'sleep-8', startTime: new Date('2026-07-20T10:00:00Z'), notes: null });
+
+      const response = await POST(postRequest({ type: 'sleep', sleepType: 'NAP', action: 'start', notes: null }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.sleepLog.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: null }),
+      }));
+    });
+
+    it('rejects a numeric notes when starting a sleep session', async () => {
+      const response = await POST(postRequest({ type: 'sleep', sleepType: 'NAP', action: 'start', notes: 42 }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_NOTES');
+      expect(mocks.prisma.sleepLog.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects an array notes on a logged sleep', async () => {
+      const response = await POST(postRequest({ type: 'sleep', sleepType: 'NAP', action: 'log', duration: 45, notes: ['a', 'b'] }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_NOTES');
+      expect(mocks.prisma.sleepLog.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a numeric notes when ending a sleep session, before touching the record', async () => {
+      const response = await POST(postRequest({ type: 'sleep', action: 'end', notes: 42 }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe('INVALID_NOTES');
+      expect(mocks.prisma.sleepLog.update).not.toHaveBeenCalled();
+    });
+
+    it('clears notes to null when ending a sleep session with an empty string', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'sleep-9', startTime: new Date('2026-07-20T09:00:00Z'), endTime: null, quality: null, notes: 'fussy before nap' });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'sleep-9', startTime: new Date('2026-07-20T09:00:00Z'), endTime: new Date('2026-07-20T10:00:00Z'), duration: 60, type: 'NAP', notes: null });
+
+      const response = await POST(postRequest({ type: 'sleep', action: 'end', notes: '' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: null }),
+      }));
+    });
+
+    it('preserves the existing notes when ending a sleep session without sending notes', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'sleep-10', startTime: new Date('2026-07-20T09:00:00Z'), endTime: null, quality: null, notes: 'fussy before nap' });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'sleep-10', startTime: new Date('2026-07-20T09:00:00Z'), endTime: new Date('2026-07-20T10:00:00Z'), duration: 60, type: 'NAP', notes: 'fussy before nap' });
+
+      const response = await POST(postRequest({ type: 'sleep', action: 'end' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: 'fussy before nap' }),
       }));
     });
   });

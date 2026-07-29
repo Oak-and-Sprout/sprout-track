@@ -34,9 +34,11 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
   activity,
   contacts: parentContacts,
   onContactsUpdated,
+  onActionsChange,
 }) => {
   const { t } = useLocalization();
   const uid = useId();
+  const formId = `${uid}-vaccine-record-form`;
   const vaccineNameId = `${uid}-vaccine-name`;
   const doseNumberId = `${uid}-dose-number`;
   const notesId = `${uid}-notes`;
@@ -490,9 +492,23 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
     }
   };
 
+  // Report footer actions to VaccineForm (Cancel/Save live in FormPageFooter)
+  useEffect(() => {
+    if (!onActionsChange) return;
+    onActionsChange({
+      onCancel: onClose,
+      canSave: !!vaccineName.trim(),
+      isSubmitting,
+      isEdit: !!activity,
+      formId,
+    });
+  }, [onActionsChange, onClose, vaccineName, isSubmitting, activity, formId]);
+
+  useEffect(() => () => onActionsChange?.(null), [onActionsChange]);
+
   return (
     <div className="vaccine-form-tab-content">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id={formId} onSubmit={handleSubmit} className="space-y-4">
         {/* Date/Time Picker */}
         <div>
           <Label className="form-label">{t('Date & Time')}</Label>
@@ -689,24 +705,6 @@ const RecordVaccineTab: React.FC<RecordVaccineTabProps> = ({
               ))}
             </div>
           )}
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end space-x-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            {t('Cancel')}
-          </Button>
-          <Button type="submit" disabled={isSubmitting || !vaccineName.trim()}>
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
-            ) : null}
-            {activity ? t('Update') : t('Save')}
-          </Button>
         </div>
       </form>
     </div>

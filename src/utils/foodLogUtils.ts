@@ -71,13 +71,24 @@ export function isValidAllergenType(value: unknown): value is AllergenTypeValue 
   return typeof value === 'string' && (ALLERGEN_TYPE_VALUES as readonly string[]).includes(value);
 }
 
+/** One food entry inside a multi-food meal (`FoodLog.foods` JSON). */
+export interface FoodLogItem {
+  foodId: string;
+  hadReaction?: boolean;
+  reactionDescription?: string | null;
+}
+
 /** Minimal shape of a FoodLog row the helpers need. */
 export interface FoodLogLike {
-  foodId: string;
+  /** Legacy / dual-write single-food FK; null when N>1 foods are in `foods`. */
+  foodId?: string | null;
+  /** JSON text: FoodLogItem[] — preferred source for multi-food meals (#247). */
+  foods?: string | null;
   time: Date | string;
   amount?: number | null;
   unitAbbr?: string | null;
   enjoyment?: string | null;
+  /** Meal-level / legacy reaction flag (used when synthesizing from foodId-only rows). */
   hadReaction?: boolean;
   reactionDescription?: string | null;
   deletedAt?: Date | string | null;
@@ -226,9 +237,231 @@ const toIso = (time: Date | string): string => new Date(time).toISOString();
 
 const isDeleted = (log: FoodLogLike): boolean => log.deletedAt != null;
 
+/** Parse `FoodLog.foods` JSON text into items; returns [] on missing/invalid. */
+export function parseFoodsJson(foods: string | null | undefined): FoodLogItem[] {
+  if (foods == null || foods === '') return [];
+  try {
+    const parsed = JSON.parse(foods);
+    if (!Array.isArray(parsed)) return [];
+    const items: FoodLogItem[] = [];
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== 'object') continue;
+      const foodId = (entry as FoodLogItem).foodId;
+      if (typeof foodId !== 'string' || foodId === '') continue;
+      items.push({
+        foodId,
+        hadReaction: (entry as FoodLogItem).hadReaction === true,
+        reactionDescription:
+          typeof (entry as FoodLogItem).reactionDescription === 'string'
+            ? (entry as FoodLogItem).reactionDescription
+            : (entry as FoodLogItem).reactionDescription ?? null,
+      });
+    }
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Canonical read path for meal foods (#247 / #203 compat).
+ * 1) Prefer non-empty `foods` JSON array
+ * 2) Else synthesize one item from legacy `foodId` + row-level reaction fields
+ * 3) Else []
+ */
+export function expandFoodItems(log: FoodLogLike): FoodLogItem[] {
+  const fromJson = parseFoodsJson(log.foods);
+  if (fromJson.length > 0) return fromJson;
+  if (typeof log.foodId === 'string' && log.foodId !== '') {
+    return [
+      {
+        foodId: log.foodId,
+        hadReaction: log.hadReaction === true,
+        reactionDescription: log.reactionDescription ?? null,
+      },
+    ];
+  }
+  return [];
+}
+
+/** Serialize food items for `FoodLog.foods` persistence. */
+export function serializeFoodItems(items: FoodLogItem[]): string {
+  return JSON.stringify(
+    items.map(item => ({
+      foodId: item.foodId,
+      ...(item.hadReaction ? { hadReaction: true } : {}),
+      ...(item.reactionDescription && item.reactionDescription.trim()
+        ? { reactionDescription: item.reactionDescription.trim() }
+        : {}),
+    }))
+  );
+}
+
+/**
+ * Dual-write helpers for create/update: N=1 keeps foodId FK; N>1 clears it.
+ * Also derives meal-level hadReaction from any item reaction.
+ */
+export function buildFoodLogFoodFields(items: FoodLogItem[]): {
+  foodId: string | null;
+  foods: string;
+  hadReaction: boolean;
+  reactionDescription: string | null;
+} {
+  const normalized = items.filter(item => typeof item.foodId === 'string' && item.foodId !== '');
+  const reacting = normalized.filter(item => item.hadReaction === true);
+  const firstDesc =
+    reacting
+      .map(item => item.reactionDescription?.trim())
+      .find(desc => desc && desc.length > 0) ?? null;
+  return {
+    foodId: normalized.length === 1 ? normalized[0].foodId : null,
+    foods: serializeFoodItems(normalized),
+    hadReaction: reacting.length > 0,
+    reactionDescription: firstDesc,
+  };
+}
+
+/** Rewrite source foodId → target foodId inside a foods JSON string (merge). */
+export function rewriteFoodsJsonIds(
+  foodsJson: string | null | undefined,
+  sourceFoodId: string,
+  targetFoodId: string
+): string | null {
+  const items = parseFoodsJson(foodsJson);
+  if (items.length === 0) return foodsJson ?? null;
+  let changed = false;
+  const next = items.map(item => {
+    if (item.foodId === sourceFoodId) {
+      changed = true;
+      return { ...item, foodId: targetFoodId };
+    }
+    return item;
+  });
+  // Dedupe if both source and target were in the same meal
+  const seen = new Set<string>();
+  const deduped: FoodLogItem[] = [];
+  for (const item of next) {
+    if (seen.has(item.foodId)) {
+      changed = true;
+      const existing = deduped.find(d => d.foodId === item.foodId);
+      if (existing && item.hadReaction) {
+        existing.hadReaction = true;
+        if (item.reactionDescription?.trim()) {
+          existing.reactionDescription = item.reactionDescription;
+        }
+      }
+      continue;
+    }
+    seen.add(item.foodId);
+    deduped.push({ ...item });
+  }
+  return changed ? serializeFoodItems(deduped) : (foodsJson ?? null);
+}
+
+/** True when foods JSON references foodId (for catalog delete / count). */
+export function foodsJsonReferencesFoodId(
+  foodsJson: string | null | undefined,
+  foodId: string
+): boolean {
+  return parseFoodsJson(foodsJson).some(item => item.foodId === foodId);
+}
+
+/** True if activity looks like a FoodLog (multi-food or legacy). */
+export function isFoodLogActivity(
+  activity: unknown
+): activity is { foodId?: string | null; foods?: string | null; foodItems?: unknown[]; time?: string } {
+  if (!activity || typeof activity !== 'object') return false;
+  const a = activity as Record<string, unknown>;
+  if ('foodItems' in a && Array.isArray(a.foodItems) && a.foodItems.length > 0) return true;
+  if ('foods' in a && a.foods != null && a.foods !== '') return true;
+  if ('foodId' in a && a.foodId != null && a.foodId !== '') return true;
+  // Legacy / Prisma rows always include foodId key (may be null for multi-food);
+  // treat presence of foods column key with null foodId as food when foods is set above.
+  // Also accept foodId key alone for older clients that only send foodId (including empty during edit init).
+  if ('foodId' in a) return true;
+  return false;
+}
+
+/** One selected food in the meal composer, before it is persisted. */
+export interface MealTagInput {
+  foodId: string;
+  hadReaction: boolean;
+  reactionDescription: string | null;
+}
+
+/**
+ * Build the `foods` items for a meal from the composer's selection.
+ *
+ * The invariant: a food is recorded as having reacted only when THAT FOOD's own
+ * tag carries the flag. The meal-level switch is a suppressor, never a source —
+ * turning it off clears every reaction, but turning it on cannot invent one.
+ *
+ * This replaces an inline branch that special-cased a single-food meal by
+ * hard-coding `hadReaction: true` from the meal-level switch. Because the switch
+ * is seeded on edit as "did any food in this meal react", editing a multi-food
+ * meal down to one food wrote a reaction onto the survivor that it never had,
+ * and dropped that food's own description (#247).
+ */
+export function buildMealItems(input: {
+  tags: MealTagInput[];
+  mealReaction: boolean;
+}): FoodLogItem[] {
+  return input.tags
+    .filter(tag => typeof tag.foodId === 'string' && tag.foodId !== '')
+    .map(tag => {
+      const reacted = input.mealReaction && tag.hadReaction === true;
+      const description = reacted ? tag.reactionDescription?.trim() : '';
+      return {
+        foodId: tag.foodId,
+        hadReaction: reacted,
+        reactionDescription: description ? description : null,
+      };
+    });
+}
+
+/**
+ * Whether any food in the built meal actually reacted. Lets the form clear a
+ * meal-level switch the user left on without flagging a food, so the saved row
+ * and the UI agree.
+ */
+export function mealHasAnyReaction(items: FoodLogItem[]): boolean {
+  return items.some(item => item.hadReaction === true);
+}
+
+/** Display title for a meal: "Banana", "Banana, Avocado", or "Banana +2". */
+export function formatFoodMealTitle(
+  names: string[],
+  options?: { maxNames?: number }
+): string {
+  const cleaned = names.map(n => n.trim()).filter(Boolean);
+  if (cleaned.length === 0) return '';
+  const maxNames = options?.maxNames ?? 2;
+  if (cleaned.length <= maxNames) return cleaned.join(', ');
+  return `${cleaned.slice(0, maxNames).join(', ')} +${cleaned.length - maxNames}`;
+}
+
+/**
+ * First-try times per foodId across expanded meal items (JS; replaces Prisma groupBy).
+ * Returns ISO times of earliest non-deleted try per food.
+ */
+export function computeFirstTryByFoodId(logs: FoodLogLike[]): Record<string, string> {
+  return computeFoodProgress(logs).firstTryByFoodId;
+}
+
+/** Whether this meal includes any food whose first-ever try is this meal's time. */
+export function mealIncludesFirstTry(
+  log: FoodLogLike,
+  firstTryByFoodId: Record<string, string>
+): boolean {
+  if (isDeleted(log)) return false;
+  const time = toIso(log.time);
+  return expandFoodItems(log).some(item => firstTryByFoodId[item.foodId] === time);
+}
+
 /**
  * All-time food-try progress for a baby ("100 foods before 1").
  * Soft-deleted logs are excluded; the same food tried N times counts once.
+ * Multi-food meals expand items for unique/first-try; totalTries = meal count.
  */
 export function computeFoodProgress(logs: FoodLogLike[]): FoodProgress {
   const firstTryByFoodId: Record<string, string> = {};
@@ -239,11 +472,15 @@ export function computeFoodProgress(logs: FoodLogLike[]): FoodProgress {
 
   for (const log of logs) {
     if (isDeleted(log)) continue;
+    const items = expandFoodItems(log);
+    if (items.length === 0) continue;
     totalTries += 1;
     const time = toIso(log.time);
-    const existing = firstTryByFoodId[log.foodId];
-    if (!existing || time < existing) {
-      firstTryByFoodId[log.foodId] = time;
+    for (const item of items) {
+      const existing = firstTryByFoodId[item.foodId];
+      if (!existing || time < existing) {
+        firstTryByFoodId[item.foodId] = time;
+      }
     }
     if (isValidEnjoyment(log.enjoyment)) {
       countsByEnjoyment[log.enjoyment] += 1;
@@ -259,34 +496,38 @@ export function computeFoodProgress(logs: FoodLogLike[]): FoodProgress {
 }
 
 /**
- * Derive the baby's allergen/reaction profile from reaction-flagged logs.
- * Only foods with at least one non-deleted `hadReaction` log appear; each entry
- * aggregates that food's reactions (oldest first). Entries sort by food name.
+ * Derive the baby's allergen/reaction profile from reaction-flagged food items.
+ * Multi-food meals only flag foods whose item hadReaction is true.
+ * Entries sort by food name.
  */
 export function deriveAllergens(logs: FoodLogLike[], foods: FoodLike[]): AllergenEntry[] {
   const foodsById = new Map(foods.map(food => [food.id, food]));
   const entriesByFoodId = new Map<string, AllergenEntry>();
 
   for (const log of logs) {
-    if (isDeleted(log) || !log.hadReaction) continue;
-    const food = foodsById.get(log.foodId);
-    if (!food) continue;
-    let entry = entriesByFoodId.get(food.id);
-    if (!entry) {
-      entry = {
-        foodId: food.id,
-        foodName: food.name,
-        commonAllergen: food.commonAllergen === true,
-        reactions: [],
-        firstReactionAt: '', // set after reactions are sorted
-      };
-      entriesByFoodId.set(food.id, entry);
+    if (isDeleted(log)) continue;
+    const time = toIso(log.time);
+    for (const item of expandFoodItems(log)) {
+      if (item.hadReaction !== true) continue;
+      const food = foodsById.get(item.foodId);
+      if (!food) continue;
+      let entry = entriesByFoodId.get(food.id);
+      if (!entry) {
+        entry = {
+          foodId: food.id,
+          foodName: food.name,
+          commonAllergen: food.commonAllergen === true,
+          reactions: [],
+          firstReactionAt: '',
+        };
+        entriesByFoodId.set(food.id, entry);
+      }
+      const description =
+        item.reactionDescription && item.reactionDescription.trim()
+          ? item.reactionDescription.trim()
+          : null;
+      entry.reactions.push({ time, description });
     }
-    const description =
-      log.reactionDescription && log.reactionDescription.trim()
-        ? log.reactionDescription.trim()
-        : null;
-    entry.reactions.push({ time: toIso(log.time), description });
   }
 
   const entries = Array.from(entriesByFoodId.values());
@@ -300,7 +541,19 @@ export function deriveAllergens(logs: FoodLogLike[], foods: FoodLike[]): Allerge
 /** A FoodLog row with the joined catalog food, as returned by /api/food-log. */
 export type FoodLogWithFood = FoodLogLike & {
   food?: FoodLike | null;
+  /** Optional catalog map for multi-food meals (foodId → Food). */
+  foodsById?: Record<string, FoodLike | undefined> | Map<string, FoodLike>;
 };
+
+/** Resolve catalog metadata for a foodId from a log join or foodsById map. */
+function resolveFoodMeta(log: FoodLogWithFood, foodId: string): FoodLike | null {
+  if (log.food?.id === foodId) return log.food;
+  if (log.foodsById instanceof Map) return log.foodsById.get(foodId) ?? null;
+  if (log.foodsById && typeof log.foodsById === 'object') {
+    return log.foodsById[foodId] ?? null;
+  }
+  return null;
+}
 
 /** One row of the per-food history list on the FoodForm Progress tab. */
 export interface FoodTryListEntry {
@@ -336,42 +589,52 @@ export function formatAmountsByUnit(amounts: Record<string, number>): string {
 /**
  * Group food logs into a per-food history list (name, try count, first/latest
  * try, latest enjoyment, reaction flag) for display. Soft-deleted logs are
- * excluded; entries sort newest-latest-try first.
+ * excluded; multi-food meals count +1 try per included food; entries sort
+ * newest-latest-try first.
  */
 export function buildFoodTryList(logs: FoodLogWithFood[]): FoodTryListEntry[] {
   const entriesByFoodId = new Map<string, FoodTryListEntry & { latestEnjoymentTime: string | null }>();
 
   for (const log of logs) {
     if (isDeleted(log)) continue;
+    const items = expandFoodItems(log);
+    if (items.length === 0) continue;
     const time = toIso(log.time);
-    let entry = entriesByFoodId.get(log.foodId);
-    if (!entry) {
-      entry = {
-        foodId: log.foodId,
-        foodName: log.food?.name || '',
-        commonAllergen: log.food?.commonAllergen === true,
-        tryCount: 0,
-        firstTryTime: time,
-        latestTryTime: time,
-        latestEnjoyment: null,
-        latestEnjoymentTime: null,
-        hadReaction: false,
-        totalAmounts: {},
-      };
-      entriesByFoodId.set(log.foodId, entry);
+    for (const item of items) {
+      const meta = resolveFoodMeta(log, item.foodId);
+      let entry = entriesByFoodId.get(item.foodId);
+      if (!entry) {
+        entry = {
+          foodId: item.foodId,
+          foodName: meta?.name || '',
+          commonAllergen: meta?.commonAllergen === true,
+          tryCount: 0,
+          firstTryTime: time,
+          latestTryTime: time,
+          latestEnjoyment: null,
+          latestEnjoymentTime: null,
+          hadReaction: false,
+          totalAmounts: {},
+        };
+        entriesByFoodId.set(item.foodId, entry);
+      }
+      if (meta?.name) entry.foodName = meta.name;
+      if (meta?.commonAllergen === true) entry.commonAllergen = true;
+      entry.tryCount += 1;
+      // Meal-level amount only attaches when the meal has a single food (N=1),
+      // so multi-food meals don't inflate every food's totals with the shared amount.
+      if (items.length === 1 && typeof log.amount === 'number' && log.amount > 0) {
+        const unit = (log.unitAbbr || 'g').toLowerCase();
+        entry.totalAmounts[unit] = (entry.totalAmounts[unit] || 0) + log.amount;
+      }
+      if (time < entry.firstTryTime) entry.firstTryTime = time;
+      if (time > entry.latestTryTime) entry.latestTryTime = time;
+      if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
+        entry.latestEnjoyment = log.enjoyment;
+        entry.latestEnjoymentTime = time;
+      }
+      if (item.hadReaction === true) entry.hadReaction = true;
     }
-    entry.tryCount += 1;
-    if (typeof log.amount === 'number' && log.amount > 0) {
-      const unit = (log.unitAbbr || 'g').toLowerCase();
-      entry.totalAmounts[unit] = (entry.totalAmounts[unit] || 0) + log.amount;
-    }
-    if (time < entry.firstTryTime) entry.firstTryTime = time;
-    if (time > entry.latestTryTime) entry.latestTryTime = time;
-    if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
-      entry.latestEnjoyment = log.enjoyment;
-      entry.latestEnjoymentTime = time;
-    }
-    if (log.hadReaction === true) entry.hadReaction = true;
   }
 
   return Array.from(entriesByFoodId.values())
@@ -436,17 +699,20 @@ export function buildNewFoodsForRange(
 
   for (const log of logs) {
     if (isDeleted(log)) continue;
-    const entry = entriesByFoodId.get(log.foodId);
-    if (!entry) continue;
-    if (log.food?.name) entry.foodName = log.food.name;
-    if (log.food?.commonAllergen === true) entry.commonAllergen = true;
     const time = toIso(log.time);
-    if (time < startIso || time > endIso) continue;
-    if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
-      entry.enjoyment = log.enjoyment;
-      entry.latestEnjoymentTime = time;
+    for (const item of expandFoodItems(log)) {
+      const entry = entriesByFoodId.get(item.foodId);
+      if (!entry) continue;
+      const meta = resolveFoodMeta(log, item.foodId);
+      if (meta?.name) entry.foodName = meta.name;
+      if (meta?.commonAllergen === true) entry.commonAllergen = true;
+      if (time < startIso || time > endIso) continue;
+      if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
+        entry.enjoyment = log.enjoyment;
+        entry.latestEnjoymentTime = time;
+      }
+      if (item.hadReaction === true) entry.hadReaction = true;
     }
-    if (log.hadReaction === true) entry.hadReaction = true;
   }
 
   return Array.from(entriesByFoodId.values())

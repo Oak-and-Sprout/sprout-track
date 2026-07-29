@@ -11,8 +11,11 @@ import { useNurserySettings } from '@/src/hooks/useNurserySettings';
 import { autoIconColor } from '@/src/utils/nursery/colorMath';
 import { formatFeedNote, formatPumpNote } from '@/src/utils/nursery/activityDetail';
 import { formatFoodLogNote } from '@/src/utils/nursery/foodActivity';
+import { isWithinTileWindow } from '@/src/utils/nursery/activityFreshness';
 import { isValidEnjoyment, FOOD_ENJOYMENT_LABELS } from '@/src/utils/foodLogUtils';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
+import { isNativeApp } from '@/src/utils/native-app';
+import { nurseryDisplayControls } from '@/src/utils/shell-chrome';
 import { Baby } from '@prisma/client';
 import { ClockBlock } from './ClockBlock';
 import { SceneBackground } from './scenes/SceneBackground';
@@ -54,6 +57,9 @@ export function NurseryModeContainer() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches
   );
+  const [inShell, setInShell] = useState(false);
+  useEffect(() => setInShell(isNativeApp()), []);
+  const displayControls = nurseryDisplayControls(inShell);
 
   const lastSeenRef = useRef<Record<string, string>>({});
   const fetchActivityRef = useRef<(() => void) | null>(null);
@@ -155,13 +161,18 @@ export function NurseryModeContainer() {
           foodRes && foodRes.ok ? foodRes.json() : null,
         ]);
 
-        const newLogs: Record<string, TileLog> = {};
+        // A tile's meta line shows a clock time with no date, so an entry from days
+        // ago reads like a recent one — null means "hide this tile's line" (#250).
+        const now = Date.now();
+        const newLogs: Record<string, TileLog | null> = {};
 
         // Latest feed
         if (feedData?.success && feedData.data?.length > 0) {
           const latest = feedData.data[0];
           const id = latest.id;
-          if (id !== lastSeenRef.current.feed) {
+          if (!isWithinTileWindow(latest.time || latest.startTime, now)) {
+            newLogs.feed = null;
+          } else if (id !== lastSeenRef.current.feed) {
             lastSeenRef.current.feed = id;
             const time = new Date(latest.time || latest.startTime)
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -186,12 +197,14 @@ export function NurseryModeContainer() {
         if (diaperData?.success && diaperData.data?.length > 0) {
           const latest = diaperData.data[0];
           const id = latest.id;
-          if (id !== lastSeenRef.current.diaper) {
+          if (!isWithinTileWindow(latest.time, now)) {
+            newLogs.diaper = null;
+          } else if (id !== lastSeenRef.current.diaper) {
             lastSeenRef.current.diaper = id;
             const time = new Date(latest.time)
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
               .toLowerCase();
-            const typeLabels: Record<string, string> = { WET: 'Wet', DIRTY: 'Dirty', BOTH: 'Both' };
+            const typeLabels: Record<string, string> = { WET: 'Wet', DIRTY: 'Dirty', BOTH: 'Both', DRY: 'Dry' };
             newLogs.diaper = { last: time, note: t(typeLabels[latest.type]) || latest.type };
           }
         }
@@ -201,7 +214,9 @@ export function NurseryModeContainer() {
           const latest = sleepData.data.find((s: any) => s.endTime);
           if (latest) {
             const id = latest.id;
-            if (id !== lastSeenRef.current.sleep) {
+            if (!isWithinTileWindow(latest.endTime, now)) {
+              newLogs.sleep = null;
+            } else if (id !== lastSeenRef.current.sleep) {
               lastSeenRef.current.sleep = id;
               const time = new Date(latest.endTime)
                 .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -216,7 +231,9 @@ export function NurseryModeContainer() {
         if (pumpData?.success && pumpData.data?.length > 0) {
           const latest = pumpData.data[0];
           const id = latest.id;
-          if (id !== lastSeenRef.current.pump) {
+          if (!isWithinTileWindow(latest.startTime, now)) {
+            newLogs.pump = null;
+          } else if (id !== lastSeenRef.current.pump) {
             lastSeenRef.current.pump = id;
             const time = new Date(latest.startTime)
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -239,7 +256,9 @@ export function NurseryModeContainer() {
         if (foodData?.success && foodData.data?.length > 0) {
           const latest = foodData.data[0];
           const id = latest.id;
-          if (id !== lastSeenRef.current.food) {
+          if (!isWithinTileWindow(latest.time, now)) {
+            newLogs.food = null;
+          } else if (id !== lastSeenRef.current.food) {
             lastSeenRef.current.food = id;
             const time = new Date(latest.time)
               .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -251,7 +270,23 @@ export function NurseryModeContainer() {
         }
 
         if (Object.keys(newLogs).length > 0) {
-          setLogs(prev => ({ ...prev, ...newLogs }));
+          setLogs(prev => {
+            const next = { ...prev };
+            let changed = false;
+            for (const [tileId, log] of Object.entries(newLogs)) {
+              if (log) {
+                next[tileId] = log;
+                changed = true;
+              } else if (tileId in next) {
+                // Aged out of the window; drop it. Returning `prev` when nothing
+                // moved keeps a permanently stale tile from re-rendering the
+                // container on every 10s poll.
+                delete next[tileId];
+                changed = true;
+              }
+            }
+            return changed ? next : prev;
+          });
         }
       } catch (err) {
         console.error('Failed to poll activities:', err);
@@ -393,10 +428,12 @@ export function NurseryModeContainer() {
       {!isLandscape && (
         <div className="nursery-footer">
           <div className="m" style={{ textTransform: 'uppercase' }}>{t('Nursery Mode')}</div>
-          <div className="l" style={{ textTransform: 'uppercase' }}>
-            {wakeLock.isActive && <span className="nursery-dotlock" />}
-            {wakeStatus}
-          </div>
+          {displayControls.showWakeLock && (
+            <div className="l" style={{ textTransform: 'uppercase' }}>
+              {wakeLock.isActive && <span className="nursery-dotlock" />}
+              {wakeStatus}
+            </div>
+          )}
         </div>
       )}
 
@@ -414,6 +451,8 @@ export function NurseryModeContainer() {
         fullscreenSupported={fullscreen.isSupported}
         onToggleFullscreen={() => fullscreen.toggle()}
         photosEnabled={photosEnabled}
+        showWakeLock={displayControls.showWakeLock}
+        showFullscreen={displayControls.showFullscreen}
       />
     </div>
   );

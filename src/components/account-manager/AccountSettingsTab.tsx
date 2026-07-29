@@ -9,6 +9,10 @@ import PaymentModal from './PaymentModal';
 import PaymentHistory from './PaymentHistory';
 import { useLocalization } from '@/src/context/localization';
 import { getSubscriptionView } from '@/src/utils/accountPresentation';
+import { isNativeApp } from '@/src/utils/native-app';
+import { openExternal, MANAGE_SUBSCRIPTION_URL } from '@/src/utils/external-link';
+import { shellSubscriptionControls } from '@/src/utils/shell-chrome';
+import { startGiftCheckout } from '@/src/utils/gift-checkout';
 
 import {
   User,
@@ -21,7 +25,9 @@ import {
   CheckCircle,
   Key,
   Shield,
-  Receipt
+  Receipt,
+  ExternalLink,
+  Gift
 } from 'lucide-react';
 
 /**
@@ -104,6 +110,17 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   // Payment history modal state
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
 
+  // Gift code redeem states
+  const [showRedeemInput, setShowRedeemInput] = useState(false);
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
+  const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
+
+  // Gift code "give" (checkout) states
+  const [giftLoading, setGiftLoading] = useState(false);
+  const [giftError, setGiftError] = useState<string | null>(null);
+
   // Subscription status state
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     isActive: boolean;
@@ -118,6 +135,15 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
   const [loadingSubscriptionStatus, setLoadingSubscriptionStatus] = useState(false);
   const [renewingSubscription, setRenewingSubscription] = useState(false);
 
+  // Whether we're running inside the native Capacitor shell (IAP compliance:
+  // payment surfaces are hidden and replaced with an external-browser link).
+  // Read after mount only — isNativeApp() depends on navigator.userAgent,
+  // which isn't available during SSR/hydration.
+  const [inShell, setInShell] = useState(false);
+  React.useEffect(() => {
+    setInShell(isNativeApp());
+  }, []);
+
   // Storybook-style view of the subscription state, derived from account + subscription status
   const subscriptionView = getSubscriptionView(
     {
@@ -129,6 +155,8 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
     },
     new Date()
   );
+
+  const shellControls = shellSubscriptionControls(inShell, subscriptionView.kind, accountStatus.hasFamily);
 
   // Check slug uniqueness
   const checkSlugUniqueness = useCallback(async (slug: string) => {
@@ -356,6 +384,50 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
       alert('Error: Failed to renew subscription');
     } finally {
       setRenewingSubscription(false);
+    }
+  };
+
+  // Handle redeeming a gift code
+  const handleRedeemCode = async () => {
+    if (!redeemCode.trim()) return;
+    setRedeemLoading(true);
+    setRedeemError(null);
+    setRedeemSuccess(null);
+    try {
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/gift-codes/redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ code: redeemCode.trim() }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setRedeemSuccess(data.data.message);
+        setRedeemCode('');
+        setShowRedeemInput(false);
+        onDataRefresh();
+      } else {
+        setRedeemError(data.error || 'Failed to redeem gift code');
+      }
+    } catch (error) {
+      console.error('Error redeeming gift code:', error);
+      setRedeemError('Failed to redeem gift code');
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
+
+  // Handle starting a gift checkout (payment UI — never invoked in-shell)
+  const handleGiveGift = async () => {
+    setGiftLoading(true);
+    setGiftError(null);
+    const failure = await startGiftCheckout(accountStatus.email);
+    if (failure) {
+      setGiftError(failure);
+      setGiftLoading(false);
     }
   };
 
@@ -821,9 +893,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
               <button type="button" className="sb-btn sb-sm" onClick={() => window.location.href = '/account/family-setup'}>
                 {t('Create Family')}
               </button>
-              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
-                {t('Upgrade Plan')}
-              </button>
+              {!shellControls.showPaymentActions ? null : (
+                <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                  {t('Upgrade Plan')}
+                </button>
+              )}
             </div>
           </>
         ) : subscriptionView.kind === 'lifetime' ? (
@@ -839,9 +913,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                 ? t('Ends {date} · then $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString())
                 : t('Then $2.99/month')}
             </p>
-            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
-              {t('Start my subscription')}
-            </button>
+            {!shellControls.showPaymentActions ? null : (
+              <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentModal(true)}>
+                {t('Start my subscription')}
+              </button>
+            )}
           </>
         ) : subscriptionView.kind === 'active' ? (
           <>
@@ -853,7 +929,7 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
                     : t('Renews {date} · $2.99/month').replace('{date}', subscriptionView.endDate.toLocaleDateString()))
                 : t('$2.99/month')}
             </p>
-            {subscriptionView.cancelAtPeriodEnd ? (
+            {!shellControls.showPaymentActions ? null : subscriptionView.cancelAtPeriodEnd ? (
               <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleRenewSubscription} disabled={renewingSubscription}>
                 {renewingSubscription ? t('Renewing...') : t('Renew Subscription')}
               </button>
@@ -869,14 +945,90 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <div className="sb-alertbox">
               <b>{t('Logging is paused — your data is safe.')}</b>
               <p>{t('Everything your family tracked is still here. Renew and you pick up right where you left off.')}</p>
-              <button type="button" className="sb-btn sb-sm" onClick={() => setShowPaymentModal(true)}>
-                {t('Renew for $2.99/month')}
-              </button>
+              {!shellControls.showPaymentActions ? null : (
+                <button type="button" className="sb-btn sb-sm" onClick={() => setShowPaymentModal(true)}>
+                  {t('Renew for $2.99/month')}
+                </button>
+              )}
             </div>
           </>
         ) : null}
 
-        {(accountStatus.subscriptionActive || accountStatus.planType) && (
+        {/* Gift codes: redemption confirmation. Rendered outside the
+            lifetime gate below so it stays visible after onDataRefresh()
+            flips the account to lifetime. */}
+        {!accountStatus.betaparticipant && redeemSuccess && (
+          <p className="sb-status-sub" style={{ marginTop: 12 }}>{t(redeemSuccess)}</p>
+        )}
+
+        {/* Gift codes: redeem (any state except lifetime; works in shell) */}
+        {!accountStatus.betaparticipant && subscriptionView.kind !== 'lifetime' && (
+          <div style={{ marginTop: 12 }}>
+            {!showRedeemInput ? (
+              <button
+                type="button"
+                className="sb-btn sb-ghost sb-sm"
+                onClick={() => { setShowRedeemInput(true); setRedeemError(null); }}
+              >
+                <Gift size={15} strokeWidth={1.8} />
+                {t('Redeem a gift code')}
+              </button>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Input
+                    value={redeemCode}
+                    onChange={(e) => setRedeemCode(e.target.value)}
+                    placeholder={t('XXXX-XXXX-XXXX-XXXX')}
+                    aria-label={t('Gift code')}
+                    disabled={redeemLoading}
+                  />
+                  <button type="button" className="sb-btn sb-sm" onClick={handleRedeemCode} disabled={redeemLoading}>
+                    {redeemLoading ? t('Loading...') : t('Redeem')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-btn sb-ghost sb-sm"
+                    onClick={() => { setShowRedeemInput(false); setRedeemError(null); setRedeemCode(''); }}
+                    disabled={redeemLoading}
+                  >
+                    {t('Cancel')}
+                  </button>
+                </div>
+                {redeemError && (
+                  <p className="sb-msg-err" style={{ marginTop: 6 }}>{t(redeemError)}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Gift codes: give (payment UI — never in the native shell) */}
+        {shellControls.showPaymentActions && (
+          <div style={{ marginTop: 12 }}>
+            <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleGiveGift} disabled={giftLoading}>
+              <Gift size={15} strokeWidth={1.8} />
+              {giftLoading ? t('Loading...') : t('Give Sprout Track to someone')}
+            </button>
+            {giftError && (
+              <p className="sb-msg-err" style={{ marginTop: 6 }}>{t(giftError)}</p>
+            )}
+          </div>
+        )}
+
+        {shellControls.showWebNote && (
+          <p className="sb-status-sub" style={{ marginTop: 6 }}>
+            {t('Subscriptions are managed on the web, not in this app.')}
+          </p>
+        )}
+        {shellControls.showExternalManage && (
+          <button type="button" className="sb-btn sb-sm" onClick={() => openExternal(MANAGE_SUBSCRIPTION_URL)}>
+            <ExternalLink size={15} strokeWidth={1.8} />
+            {t('Manage your subscription at sprout-track.com')}
+          </button>
+        )}
+
+        {!inShell && (accountStatus.subscriptionActive || accountStatus.planType) && (
           <div style={{ marginTop: 12 }}>
             <button type="button" className="sb-btn sb-ghost sb-sm" onClick={() => setShowPaymentHistory(true)}>
               <Receipt size={15} strokeWidth={1.8} />
@@ -1040,29 +1192,33 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         )}
       </div>
 
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        accountStatus={{
-          accountStatus: accountStatus.accountStatus,
-          planType: accountStatus.planType || null,
-          subscriptionActive: accountStatus.subscriptionActive,
-          trialEnds: accountStatus.trialEnds || null,
-          planExpires: accountStatus.planExpires || null,
-          subscriptionId: accountStatus.subscriptionId || null,
-        }}
-        onPaymentSuccess={() => {
-          setShowPaymentModal(false);
-          onDataRefresh();
-        }}
-      />
+      {/* Payment Modal - never mounted in-shell (IAP compliance) */}
+      {!inShell && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          accountStatus={{
+            accountStatus: accountStatus.accountStatus,
+            planType: accountStatus.planType || null,
+            subscriptionActive: accountStatus.subscriptionActive,
+            trialEnds: accountStatus.trialEnds || null,
+            planExpires: accountStatus.planExpires || null,
+            subscriptionId: accountStatus.subscriptionId || null,
+          }}
+          onPaymentSuccess={() => {
+            setShowPaymentModal(false);
+            onDataRefresh();
+          }}
+        />
+      )}
 
-      {/* Payment History Modal */}
-      <PaymentHistory
-        isOpen={showPaymentHistory}
-        onClose={() => setShowPaymentHistory(false)}
-      />
+      {/* Payment History Modal - never mounted in-shell (IAP compliance) */}
+      {!inShell && (
+        <PaymentHistory
+          isOpen={showPaymentHistory}
+          onClose={() => setShowPaymentHistory(false)}
+        />
+      )}
     </div>
   );
 };

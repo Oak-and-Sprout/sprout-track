@@ -125,6 +125,20 @@ describe('hooks activity mutation route', () => {
     expect(delegate.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'activity-1' } }));
   });
 
+  it('updates a diaper activity to DRY', async () => {
+    mocks.prisma.diaperLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+    mocks.prisma.diaperLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), type: 'DRY', condition: null, color: null, blowout: false, creamApplied: false });
+
+    const response = await PUT(request('PUT', { type: 'diaper', diaperType: 'DRY' }) as any, routeContext);
+    const payload = await json(response);
+
+    expect(response.status).toBe(200);
+    expect(payload.success).toBe(true);
+    expect(mocks.prisma.diaperLog.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ type: 'DRY' }),
+    }));
+  });
+
   it('rejects fields that do not belong to the requested activity type', async () => {
     const response = await PUT(request('PUT', { type: 'diaper', medicineName: 'Vitamin D' }) as any, routeContext);
     const payload = await json(response);
@@ -328,6 +342,43 @@ describe('hooks activity mutation route', () => {
       expect(payload.error.code).toBe('INVALID_UPDATE');
       expect(payload.error.message).toContain('STORED');
       expect(mocks.prisma.pumpLog.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sleep and diaper notes', () => {
+    it('updates notes on a diaper activity', async () => {
+      mocks.prisma.diaperLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.diaperLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), type: 'WET', condition: null, color: null, blowout: false, creamApplied: false, notes: 'rash improving' });
+
+      const response = await PUT(request('PUT', { type: 'diaper', notes: 'rash improving' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.diaperLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: 'rash improving' }),
+      }));
+    });
+
+    it('updates notes on a sleep activity', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z'), endTime: null, duration: 30, type: 'NAP', location: null, quality: null, notes: 'woke twice' });
+
+      const response = await PUT(request('PUT', { type: 'sleep', notes: 'woke twice' }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: 'woke twice' }),
+      }));
+    });
+
+    it('clears sleep notes when a whitespace-only string is sent', async () => {
+      mocks.prisma.sleepLog.findFirst.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z') });
+      mocks.prisma.sleepLog.update.mockResolvedValue({ id: 'activity-1', babyId: 'baby-1', startTime: new Date('2026-07-18T10:00:00Z'), endTime: null, duration: 30, type: 'NAP', location: null, quality: null, notes: null });
+
+      await PUT(request('PUT', { type: 'sleep', notes: '   ' }) as any, routeContext);
+
+      expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ notes: null }),
+      }));
     });
   });
 

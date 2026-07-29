@@ -499,6 +499,7 @@ async function generateSleepLogs(baby, caretakers, family, startDate, endDate, c
           type: 'NIGHT_SLEEP',
           location: 'Crib',
           quality: randomChoice(['GOOD', 'EXCELLENT', 'FAIR']),
+          notes: Math.random() < 0.15 ? randomChoice(['Slept peacefully', 'Woke up once', 'Restless night']) : null,
           babyId: baby.id,
           caretakerId: caretaker.id,
           familyId: family.id
@@ -532,6 +533,7 @@ async function generateSleepLogs(baby, caretakers, family, startDate, endDate, c
             type: 'NAP',
             location: 'Crib',
             quality: randomChoice(['GOOD', 'FAIR', 'EXCELLENT']),
+            notes: Math.random() < 0.15 ? randomChoice(['Slept peacefully', 'Woke up once', 'Restless night']) : null,
             babyId: baby.id,
             caretakerId: caretaker.id,
             familyId: family.id
@@ -566,6 +568,7 @@ async function generateSleepLogs(baby, caretakers, family, startDate, endDate, c
             type: 'NAP',
             location: 'Crib',
             quality: randomChoice(['GOOD', 'FAIR', 'EXCELLENT']),
+            notes: Math.random() < 0.15 ? randomChoice(['Slept peacefully', 'Woke up once', 'Restless night']) : null,
             babyId: baby.id,
             caretakerId: caretaker.id,
             familyId: family.id
@@ -638,15 +641,18 @@ async function generateDiaperLogs(baby, caretakers, family, startDate, endDate, 
       
       // Only create diaper log if time is not in the future
       if (changeTime <= cutoffTime) {
-        // Determine diaper type (more wet than dirty)
+        // Determine diaper type (more wet than dirty; DRY - checked before there's
+        // anything in it - is the rarest)
         let type;
         const rand = Math.random();
-        if (rand < 0.6) {
+        if (rand < 0.55) {
           type = 'WET';
-        } else if (rand < 0.85) {
+        } else if (rand < 0.8) {
           type = 'DIRTY';
-        } else {
+        } else if (rand < 0.9) {
           type = 'BOTH';
+        } else {
+          type = 'DRY';
         }
         
         logs.push({
@@ -655,6 +661,7 @@ async function generateDiaperLogs(baby, caretakers, family, startDate, endDate, 
           type: type,
           condition: type === 'DIRTY' || type === 'BOTH' ? randomChoice(['Normal', 'Soft', 'Hard']) : null,
           color: type === 'DIRTY' || type === 'BOTH' ? randomChoice(['Yellow', 'Brown', 'Green']) : null,
+          notes: Math.random() < 0.1 ? randomChoice(['Slight rash', 'Leaked a little', 'Last diaper in the pack']) : null,
           babyId: baby.id,
           caretakerId: caretaker.id,
           familyId: family.id

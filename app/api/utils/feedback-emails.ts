@@ -1,4 +1,5 @@
 import { sendEmail } from '@/src/lib/email';
+import { adminFrom, UNMONITORED_NOTICE_TEXT, unmonitoredNoticeHtml } from './account-emails';
 import prisma from '../db';
 
 async function getDomainUrl(): Promise<string> {
@@ -73,7 +74,7 @@ export async function sendFeedbackSubmissionConfirmationEmail(
     
     const result = await sendEmail({
       to: email,
-      from: 'no-reply@sprout-track.com',
+      from: adminFrom(),
       subject: 'Sprout Track - Feedback Received',
       text: `Hi ${submitterName},
 
@@ -154,7 +155,7 @@ export async function sendFeedbackAdminNotificationEmail(
     
     const result = await sendEmail({
       to: adminEmail,
-      from: 'no-reply@sprout-track.com',
+      from: adminFrom(),
       subject: `New Feedback: ${subject}`,
       text: `New feedback has been submitted:
 
@@ -167,7 +168,9 @@ ${message}
 View and respond to this feedback in the Family Manager:
 ${feedbackUrl}
 
-Feedback ID: ${feedbackId}`,
+Feedback ID: ${feedbackId}
+
+${UNMONITORED_NOTICE_TEXT}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #dc2626;">New Feedback Received</h2>
@@ -193,7 +196,7 @@ Feedback ID: ${feedbackId}`,
           
           <p style="color: #6b7280; font-size: 12px;">
             You can reply to this feedback directly from the Family Manager.
-          </p>
+          </p>${unmonitoredNoticeHtml()}
         </div>
       `
     });
@@ -232,7 +235,7 @@ export async function sendFeedbackReplyAdminNotificationEmail(
     
     const result = await sendEmail({
     to: adminEmail,
-    from: 'no-reply@sprout-track.com',
+    from: adminFrom(),
     subject: `Re: ${originalSubject.replace(/^Re:\s*/i, '')}`,
     text: `A new reply has been added to feedback thread "${originalSubject}":
 
@@ -244,7 +247,9 @@ ${replyMessage}
 View and respond to this feedback in the Family Manager:
 ${feedbackUrl}
 
-Feedback ID: ${feedbackId}`,
+Feedback ID: ${feedbackId}
+
+${UNMONITORED_NOTICE_TEXT}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #dc2626;">New Reply to Feedback</h2>
@@ -270,7 +275,7 @@ Feedback ID: ${feedbackId}`,
         
         <p style="color: #6b7280; font-size: 12px;">
           You can reply to this feedback directly from the Family Manager.
-        </p>
+        </p>${unmonitoredNoticeHtml()}
       </div>
     `
     });
@@ -304,7 +309,7 @@ export async function sendFeedbackReplyUserNotificationEmail(
     
     const result = await sendEmail({
     to: userEmail,
-    from: 'no-reply@sprout-track.com',
+    from: adminFrom(),
     subject: `Re: ${originalSubject.replace(/^Re:\s*/i, '')}`,
     text: `Hi ${userName},
 

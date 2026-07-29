@@ -33,8 +33,6 @@ export type BabyBuddyWarningCode =
   | 'both-breasts-without-side'
   | 'wet-diaper-colour-unsupported'
   | 'breast-feed-amount-unsupported'
-  | 'sleep-notes-unsupported'
-  | 'diaper-notes-unsupported'
   | 'diaper-amount-unsupported'
   | 'pumping-defaults-to-stored';
 

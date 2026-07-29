@@ -87,6 +87,7 @@ function getSubType(activity: any, type: string, translations: Record<string, st
       if (activity.type === 'WET') return t('Wet', translations);
       if (activity.type === 'DIRTY') return t('Dirty', translations);
       if (activity.type === 'BOTH') return t('Both', translations);
+      if (activity.type === 'DRY') return t('Dry', translations);
       return activity.type || '';
     case 'pump':
       return activity.pumpAction ? t(activity.pumpAction, translations) : '';

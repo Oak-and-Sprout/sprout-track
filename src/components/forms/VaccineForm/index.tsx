@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { VaccineFormProps, VaccineFormTab } from './vaccine-form.types';
+import { VaccineFormProps, VaccineRecordActions } from './vaccine-form.types';
 import { Contact } from '@/src/components/CalendarEvent/calendar-event.types';
-import { Syringe, ClipboardList } from 'lucide-react';
+import { Syringe, ClipboardList, Loader2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { FormPage, FormPageFooter } from '@/src/components/ui/form-page';
 import { FormPageTab } from '@/src/components/ui/form-page/form-page.types';
@@ -43,6 +43,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({
   const [activeTab, setActiveTab] = useState<string>('record');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [recordActions, setRecordActions] = useState<VaccineRecordActions | null>(null);
 
   // Fetch contacts once when form opens
   useEffect(() => {
@@ -107,6 +108,7 @@ const VaccineForm: React.FC<VaccineFormProps> = ({
           activity={activity}
           contacts={contacts}
           onContactsUpdated={setContacts}
+          onActionsChange={setRecordActions}
         />
       ),
     },
@@ -133,15 +135,38 @@ const VaccineForm: React.FC<VaccineFormProps> = ({
       onTabChange={setActiveTab}
     >
       <FormPageFooter>
-        <div className="flex justify-end space-x-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-          >
-            {t('Close')}
-          </Button>
-        </div>
+        {activeTab === 'record' && recordActions ? (
+          <div className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={recordActions.onCancel}
+              disabled={recordActions.isSubmitting}
+            >
+              {t('Cancel')}
+            </Button>
+            <Button
+              type="submit"
+              form={recordActions.formId}
+              disabled={recordActions.isSubmitting || !recordActions.canSave}
+            >
+              {recordActions.isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
+              ) : null}
+              {recordActions.isEdit ? t('Update') : t('Save')}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              {t('Close')}
+            </Button>
+          </div>
+        )}
       </FormPageFooter>
     </FormPage>
   );

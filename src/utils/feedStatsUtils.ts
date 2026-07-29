@@ -62,8 +62,8 @@ export function aggregateFeedStats(
   for (const raw of activities) {
     if (!raw || typeof raw !== 'object') continue;
 
-    // Solids: food logs (foodId is unique to them); soft-deleted logs excluded
-    if ('foodId' in raw) {
+    // Solids: food logs (foodId / foods / foodItems); soft-deleted logs excluded
+    if ('foodId' in raw || 'foods' in raw || 'foodItems' in raw) {
       const foodLog = raw as FoodLogActivityLike;
       if (foodLog.deletedAt != null) continue;
       const time = new Date(foodLog.time as string | Date);

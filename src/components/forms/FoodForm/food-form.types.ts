@@ -28,6 +28,7 @@ export interface LogFoodFormState {
  * Props for the LogFoodTab component
  */
 export interface LogFoodTabProps {
+  isOpen: boolean;
   babyId: string | undefined;
   initialTime: string;
   onSuccess?: () => void;

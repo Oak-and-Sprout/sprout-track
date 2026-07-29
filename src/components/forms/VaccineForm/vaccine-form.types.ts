@@ -21,6 +21,14 @@ export interface VaccineFormProps {
 /**
  * Props for the RecordVaccineTab component
  */
+export interface VaccineRecordActions {
+  onCancel: () => void;
+  canSave: boolean;
+  isSubmitting: boolean;
+  isEdit: boolean;
+  formId: string;
+}
+
 export interface RecordVaccineTabProps {
   babyId: string | undefined;
   initialTime: string;
@@ -30,6 +38,7 @@ export interface RecordVaccineTabProps {
   activity?: VaccineLogResponse;
   contacts: Contact[];
   onContactsUpdated: (contacts: Contact[]) => void;
+  onActionsChange?: (actions: VaccineRecordActions | null) => void;
 }
 
 /**

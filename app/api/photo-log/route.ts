@@ -4,17 +4,20 @@ import { ApiResponse, PhotoLogCreate, PhotoLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { isPhotosEnabled, photosDisabledResponse, toPhotoResponse, PHOTO_INCLUDE } from '../photos/photo-service';
+import { isPhotosEnabled, photosDisabledResponse, toPhotoResponse, resolveFavoriteOwner, PHOTO_INCLUDE } from '../photos/photo-service';
 import { MAX_PHOTOS_PER_ACTIVITY } from '@/src/utils/photoUtils';
 
 /** Load the photos linked to a photo log, in link-creation order (stable). */
 async function getLinkedPhotos(photoLogId: string, authContext: AuthResult) {
-  const links = await prisma.photoLink.findMany({
-    where: { activityType: 'photo', activityId: photoLogId, photo: { deletedAt: null } },
-    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-    include: { photo: { include: PHOTO_INCLUDE } },
-  });
-  return links.map((link) => toPhotoResponse(link.photo, authContext));
+  const [links, owner] = await Promise.all([
+    prisma.photoLink.findMany({
+      where: { activityType: 'photo', activityId: photoLogId, photo: { deletedAt: null } },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      include: { photo: { include: PHOTO_INCLUDE } },
+    }),
+    resolveFavoriteOwner(authContext),
+  ]);
+  return links.map((link) => toPhotoResponse(link.photo, owner));
 }
 
 async function toPhotoLogResponse(photoLog: { id: string; time: Date; babyId: string; caretakerId: string | null; familyId: string | null; createdAt: Date; updatedAt: Date; deletedAt: Date | null }, authContext: AuthResult): Promise<PhotoLogResponse> {

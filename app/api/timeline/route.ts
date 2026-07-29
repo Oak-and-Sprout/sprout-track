@@ -5,6 +5,75 @@ import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { buildLinkTargets, groupPhotoLinks, photoLogHasLivePhotos } from './timeline-photo-links';
 import { isPhotosEnabled } from '../photos/photo-service';
+import { resolveCaretakerBadge } from '@/src/constants/caretakerBadge';
+import {
+  computeFoodProgress,
+  expandFoodItems,
+  mealIncludesFirstTry,
+  type FoodLogLike,
+} from '@/src/utils/foodLogUtils';
+
+/**
+ * Distinct foodIds referenced by the food logs in the requested window,
+ * across both storage shapes: the legacy/N=1 `foodId` FK and the `foods`
+ * JSON column used by multi-food meals (which carry a NULL FK).
+ */
+export function collectWindowFoodIds(logs: FoodLogLike[]): string[] {
+  const ids = new Set<string>();
+  for (const log of logs) {
+    for (const item of expandFoodItems(log)) ids.add(item.foodId);
+  }
+  return Array.from(ids);
+}
+
+/** Prisma where-clause shape for the bounded all-time first-try lookup. */
+export interface FirstTryScopeWhere {
+  babyId: string;
+  /** Nullable to match Baby.familyId; the route always passes the verified id. */
+  familyId: string | null;
+  deletedAt: null;
+  OR?: ({ foodId: { in: string[] } } | { foods: { contains: string } })[];
+  id?: { in: string[] };
+}
+
+/**
+ * Where-clause for the all-time first-try lookup, bounded to rows that could
+ * reference one of `foodIds` (the foods visible in the requested window).
+ *
+ * `contains` is a substring LIKE on the JSON text column and works on both
+ * SQLite and PostgreSQL (same pattern as /api/food-log and /api/food/merge).
+ * It may over-match, which is harmless: this is a NARROWING filter only and
+ * `computeFoodProgress` recomputes precisely from the expanded items. It can
+ * never under-match, because a meal that includes food F always contains F's
+ * id verbatim in either the FK or the JSON.
+ *
+ * Always scoped to babyId + familyId + deletedAt: null. With no ids the clause
+ * fails closed explicitly (`id: { in: [] }`) rather than relying on Prisma's
+ * empty-`OR` behaviour.
+ */
+export function buildFirstTryScopeWhere(params: {
+  babyId: string;
+  familyId: string | null;
+  foodIds: string[];
+}): FirstTryScopeWhere {
+  const { babyId, familyId, foodIds } = params;
+  const base = { babyId, familyId, deletedAt: null } as const;
+  if (foodIds.length === 0) return { ...base, id: { in: [] } };
+  return {
+    ...base,
+    OR: [
+      { foodId: { in: foodIds } },
+      ...foodIds.map(id => ({ foods: { contains: id } })),
+    ],
+  };
+}
+
+// Builds the caretaker badge fields for a timeline log. The system caretaker
+// (loginId '00') and nameless caretakers are omitted so no badge renders.
+function caretakerBadgeFields(caretaker: { name?: string | null; loginId?: string | null; badgeColor?: string | null } | null | undefined) {
+  const badge = resolveCaretakerBadge(caretaker);
+  return { caretakerName: badge?.name, caretakerBadgeColor: badge?.colorId ?? null };
+}
 
 // Extended activity types with caretaker information
 type ActivityTypeWithCaretaker = (
@@ -13,6 +82,7 @@ type ActivityTypeWithCaretaker = (
 ) & {
   caretakerId?: string | null;
   caretakerName?: string;
+  caretakerBadgeColor?: string | null;
   medicine?: MedicineResponse;
   photos?: TimelinePhotoInfo[];
   /** Food logs only: this log is its food's all-time earliest try. */
@@ -453,7 +523,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
 
@@ -470,7 +540,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('feed', log.id),
         };
       });
@@ -488,7 +558,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
 
@@ -505,7 +575,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
       
@@ -522,7 +592,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('bath', log.id),
         };
       });
@@ -544,7 +614,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           unit: unit, // Explicitly include the unit in the response
         };
       });
@@ -561,7 +631,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('play', log.id),
         };
       });
@@ -577,7 +647,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           medicine: medicine ? {
             ...medicine,
             createdAt: formatForResponse(medicine.createdAt) || '',
@@ -601,7 +671,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('milestone', log.id),
         };
       });
@@ -620,7 +690,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: log.caretaker ? log.caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('measurement', log.id),
         };
       });
@@ -636,7 +706,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
         };
       });
 
@@ -651,7 +721,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           documents: documents ? documents.map(doc => ({
             ...doc,
             createdAt: formatForResponse(doc.createdAt) || '',
@@ -660,23 +730,38 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         };
       });
 
-    // Food logs: mark each log that is its food's all-time earliest try so the
-    // client can show a "First try!" badge (issue #203)
-    const firstTryTimeByFoodId = new Map<string, number>();
+    // Food logs: mark meals that include any food's all-time earliest try
+    // (multi-food meals expand items — replaces Prisma groupBy foodId).
+    let firstTryByFoodId: Record<string, string> = {};
     if (foodLogs.length > 0) {
-      const firstTries = await prisma.foodLog.groupBy({
-        by: ['foodId'],
-        where: {
-          babyId,
-          familyId,
-          deletedAt: null,
-          foodId: { in: Array.from(new Set(foodLogs.map((l: any) => l.foodId))) },
-        },
-        _min: { time: true },
-      });
-      for (const row of firstTries) {
-        if (row._min.time) {
-          firstTryTimeByFoodId.set(row.foodId, new Date(row._min.time).getTime());
+      // Only foods visible in this window need a first-try answer, so the
+      // all-time read is bounded to rows that could reference one of them
+      // instead of scanning the baby's whole food history on every page load.
+      const windowFoodIds = collectWindowFoodIds(foodLogs as any[]);
+      if (windowFoodIds.length > 0) {
+        const allTimeFoodLogs = await prisma.foodLog.findMany({
+          where: buildFirstTryScopeWhere({ babyId, familyId, foodIds: windowFoodIds }),
+          select: { foodId: true, foods: true, time: true, hadReaction: true, reactionDescription: true, deletedAt: true },
+        });
+        firstTryByFoodId = computeFoodProgress(allTimeFoodLogs).firstTryByFoodId;
+
+        // Resolve catalog names for multi-food meals in the window
+        const catalogFoods = await prisma.food.findMany({
+          where: { id: { in: windowFoodIds }, familyId },
+          select: { id: true, name: true, commonAllergen: true },
+        });
+        const catalogById = new Map(catalogFoods.map(f => [f.id, f]));
+        for (const log of foodLogs as any[]) {
+          const items = expandFoodItems(log);
+          log.foodItems = items.map(item => {
+            const meta = catalogById.get(item.foodId) || (log.food?.id === item.foodId ? log.food : undefined);
+            return {
+              foodId: item.foodId,
+              hadReaction: item.hadReaction === true,
+              reactionDescription: item.reactionDescription ?? null,
+              ...(meta ? { name: meta.name, commonAllergen: meta.commonAllergen === true } : {}),
+            };
+          });
         }
       }
     }
@@ -692,8 +777,8 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
-          isFirstTry: firstTryTimeByFoodId.get(log.foodId) === new Date(log.time).getTime(),
+          ...caretakerBadgeFields(caretaker),
+          isFirstTry: mealIncludesFirstTry(log, firstTryByFoodId),
           photos: photosFor('foodLog', log.id),
         };
       });
@@ -712,7 +797,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           updatedAt: formatForResponse(log.updatedAt) || '',
           deletedAt: formatForResponse(log.deletedAt),
           caretakerId: log.caretakerId,
-          caretakerName: caretaker ? caretaker.name : undefined,
+          ...caretakerBadgeFields(caretaker),
           photos: photosFor('photo', log.id) || [],
         };
       });

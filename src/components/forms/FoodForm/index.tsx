@@ -97,6 +97,7 @@ const FoodForm: React.FC<FoodFormProps> = ({
       icon: Apple,
       content: (
         <LogFoodTab
+          isOpen={isOpen}
           babyId={babyId}
           initialTime={initialTime}
           onSuccess={handleLogSuccess}

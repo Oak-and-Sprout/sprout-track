@@ -41,6 +41,9 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         where: { babyId, familyId: userFamilyId, deletedAt: null },
         select: {
           foodId: true,
+          // Required for multi-food meals (#247): expandFoodItems / deriveAllergens
+          // read per-item hadReaction from foods JSON when foodId is null.
+          foods: true,
           time: true,
           enjoyment: true,
           hadReaction: true,

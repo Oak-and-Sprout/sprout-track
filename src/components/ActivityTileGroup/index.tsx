@@ -13,6 +13,10 @@ import {
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
 } from '@/src/components/ui/dropdown-menu';
+import {
+  DEFAULT_ACTIVITY_TILE_ORDER,
+  mergeMissingActivityTiles,
+} from '@/src/utils/activityTileOrder';
 
 interface ActivityTileGroupProps {
   selectedBaby: {
@@ -53,7 +57,7 @@ interface ActivityTileGroupProps {
  * and displaying status bubbles with timing information.
  */
 // Activity type definition
-type ActivityType = 'sleep' | 'feed' | 'diaper' | 'note' | 'photo' | 'bath' | 'pump' | 'play' | 'measurement' | 'milestone' | 'medicine' | 'vaccine' | 'food';
+type ActivityType = (typeof DEFAULT_ACTIVITY_TILE_ORDER)[number];
 
 export function ActivityTileGroup({
   selectedBaby,
@@ -109,7 +113,7 @@ export function ActivityTileGroup({
   if (!selectedBaby?.id) return null;
 
   // Define all activity types
-  const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'];
+  const allActivityTypes: ActivityType[] = [...DEFAULT_ACTIVITY_TILE_ORDER];
   
   // State for visible activities and their order
   const [visibleActivities, setVisibleActivities] = useState<Set<ActivityType>>(
@@ -234,19 +238,12 @@ export function ActivityTileGroup({
           if (data.success && data.data) {
             console.log(`Successfully loaded settings:`, data.data);
             
-            // Get the loaded order and ensure measurement and milestone are included
-            const loadedOrder = [...data.data.order] as ActivityType[];
-            if (!loadedOrder.includes('measurement')) {
-              // Add measurement to the end of the order if it doesn't exist
-              loadedOrder.push('measurement');
-            }
-            if (!loadedOrder.includes('milestone')) {
-              // Add milestone to the end of the order if it doesn't exist
-              loadedOrder.push('milestone');
-            }
-            
-            // Get visible activities from saved settings
-            const loadedVisible = new Set(data.data.visible as ActivityType[]);
+            const merged = mergeMissingActivityTiles({
+              order: data.data.order,
+              visible: data.data.visible,
+            });
+            const loadedOrder = merged.order as ActivityType[];
+            const loadedVisible = new Set(merged.visible as ActivityType[]);
             
             // Store the original loaded settings for comparison
             const originalOrder = [...loadedOrder];
@@ -294,7 +291,7 @@ export function ActivityTileGroup({
   // Function to set default settings
   const setDefaultSettings = () => {
     // Define all activity types
-    const allActivityTypes: ActivityType[] = ['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food'];
+    const allActivityTypes: ActivityType[] = [...DEFAULT_ACTIVITY_TILE_ORDER];
     
     // Set default order and make all activities visible by default
     setActivityOrder([...allActivityTypes]);
@@ -312,8 +309,8 @@ export function ActivityTileGroup({
   };
   
   // Refs to store the original settings for comparison
-  const originalOrderRef = React.useRef<ActivityType[]>(['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food']);
-  const originalVisibleRef = React.useRef<string[]>(['sleep', 'feed', 'diaper', 'note', 'photo', 'bath', 'pump', 'play', 'measurement', 'milestone', 'medicine', 'vaccine', 'food']);
+  const originalOrderRef = React.useRef<ActivityType[]>([...DEFAULT_ACTIVITY_TILE_ORDER]);
+  const originalVisibleRef = React.useRef<string[]>([...DEFAULT_ACTIVITY_TILE_ORDER]);
   
   // Track if settings have been modified since loading
   const [settingsModified, setSettingsModified] = useState(false);

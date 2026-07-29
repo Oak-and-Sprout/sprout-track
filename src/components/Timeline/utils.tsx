@@ -34,9 +34,10 @@ import {
   ActivityStyle
 } from './types';
 import { getSymbol } from '@/src/hooks/useUnit';
-import { FOOD_ENJOYMENT_LABELS, isValidEnjoyment } from '@/src/utils/foodLogUtils';
+import { FOOD_ENJOYMENT_LABELS, formatFoodMealTitle, isFoodLogActivity, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 import { lbToLbOz, formatWeightDisplay } from '@/src/utils/weightUnits';
 import { formatPauseDuration } from '@/src/utils/pauseDisplay';
+import { isDirtyDiaper } from '@/src/utils/diaperStats';
 
 export { lbToLbOz, formatWeightDisplay };
 
@@ -46,28 +47,34 @@ const isPlayActivity = (activity: any): boolean => {
   return 'activities' in activity && 'type' in activity && PLAY_TYPES.includes(activity.type);
 };
 
+// EXPLORATION: render the activity's real PNG illustration instead of a mono
+// lucide glyph. `timeline-png-icon` lets the CSS strip the colored box padding
+// so the circular illustration fills the icon slot cleanly. The 36px size lives
+// on the img itself (not the slot) so it renders identically in every consumer —
+// timeline, V2 timeline and full log — regardless of the slot's own sizing.
+const pngIcon = (src: string) => (
+  <img src={src} alt="" aria-hidden="true" className="timeline-png-icon block h-9 w-9 object-contain" />
+);
+
 export const getActivityIcon = (activity: ActivityType) => {
   // Photo log - check first since it has no overlapping fields with other types
   if ('photoLogId' in activity) {
-    return <Camera className="h-4 w-4 text-[#e11d48]" aria-hidden="true" />;
+    return pngIcon('/photo-192.png');
   }
-  // Food log (issue #203) - foodId is unique to food logs. NOT the Utensils
-  // icon: that marks SOLIDS feed logs; food tries get an Apple instead
-  if ('foodId' in activity) {
-    return <Apple className="h-4 w-4 text-white" aria-hidden="true" />;
+  // Food log (issue #203 / #247) — foodId or foods JSON
+  if (isFoodLogActivity(activity)) {
+    return pngIcon('/food-256.png');
   }
   // Play activity - check before sleep since both have duration and type
   if (isPlayActivity(activity)) {
-    return <Baby className="h-4 w-4 text-black" aria-hidden="true" />;
+    return pngIcon('/activity-128.png');
   }
   if ('doseAmount' in activity && 'medicineId' in activity) {
-    // Medicine or supplement log
-    if ('medicine' in activity && activity.medicine && typeof activity.medicine === 'object' && 'isSupplement' in activity.medicine && activity.medicine.isSupplement) {
-      return <Pill className="h-4 w-4 text-white" aria-hidden="true" />;
-    }
-    return <PillBottle className="h-4 w-4 text-white" aria-hidden="true" />;
+    // Medicine or supplement log (no separate supplement art yet)
+    return pngIcon('/med-128.png');
   }
-  // Check for breast milk adjustment BEFORE pump (both have amount)
+  // Check for breast milk adjustment BEFORE pump (both have amount) - no PNG art,
+  // keep the lucide +/- glyph on the purple box
   if ('reason' in activity && 'amount' in activity && !('type' in activity) && !('leftAmount' in activity)) {
     const amt = (activity as any).amount;
     if (amt < 0) {
@@ -77,51 +84,48 @@ export const getActivityIcon = (activity: ActivityType) => {
   }
   // Check for pump activities FIRST (before sleep) since they also have duration and startTime
   if ('leftAmount' in activity || 'rightAmount' in activity) {
-    return <LampWallDown className="h-4 w-4 text-black" aria-hidden="true" />; // Pump activity
+    return pngIcon('/pump-128.png'); // Pump activity
   }
   if ('type' in activity) {
     if ('duration' in activity) {
-      return <Moon className="h-4 w-4 text-white" aria-hidden="true" />; // Sleep activity
+      return pngIcon('/crib-128.png'); // Sleep activity
     }
     if ('amount' in activity) {
       if ((activity as any).type === 'SOLIDS') {
-        return <Utensils className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Solids feed
+        return pngIcon('/solids-128.png'); // Solids feed
       }
-      return <Icon iconNode={bottleBaby} className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Feed activity
+      return pngIcon('/bottle-128.png'); // Feed activity
     }
     if ('condition' in activity) {
-      return <Icon iconNode={diaper} className="h-4 w-4 text-white" aria-hidden="true" />; // Diaper activity
+      return pngIcon('/diaper-128.png'); // Diaper activity
     }
   }
   if ('content' in activity) {
-    return <Edit className="h-4 w-4 text-gray-700" aria-hidden="true" />; // Note activity
+    return pngIcon('/note-128.png'); // Note activity
   }
   if ('soapUsed' in activity) {
-    return <Bath className="h-4 w-4 text-white" aria-hidden="true" />; // Bath activity
+    return pngIcon('/bath-128.png'); // Bath activity
   }
   if ('vaccineName' in activity) {
-    return <Syringe className="h-4 w-4 text-red-500" aria-hidden="true" />;
+    return pngIcon('/vaccine-128.png');
   }
   if ('title' in activity && 'category' in activity) {
-    return <Trophy className="h-4 w-4 text-white" aria-hidden="true" />; // Milestone activity
+    return pngIcon('/milestone-128.png'); // Milestone activity
   }
   if ('value' in activity && 'unit' in activity) {
-    // Different icons based on measurement type
-    if ('type' in activity) {
-      switch (activity.type) {
-        case 'HEIGHT':
-          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />;
-        case 'WEIGHT':
-          return <Scale className="h-4 w-4 text-white" aria-hidden="true" />;
-        case 'HEAD_CIRCUMFERENCE':
-          return <RotateCw className="h-4 w-4 text-white" aria-hidden="true" />;
-        case 'TEMPERATURE':
-          return <Thermometer className="h-4 w-4 text-white" aria-hidden="true" />;
-        default:
-          return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default to ruler
-      }
+    // Per-type measurement illustrations, falling back to the generic icon
+    switch (activity.type) {
+      case 'WEIGHT':
+        return pngIcon('/weight-192.png');
+      case 'HEIGHT':
+        return pngIcon('/height-192.png');
+      case 'HEAD_CIRCUMFERENCE':
+        return pngIcon('/hc-measurement-192.png');
+      case 'TEMPERATURE':
+        return pngIcon('/temperature-192.png');
+      default:
+        return pngIcon('/measurement-128.png');
     }
-    return <Ruler className="h-4 w-4 text-white" aria-hidden="true" />; // Default measurement icon
   }
   return null;
 };
@@ -191,12 +195,18 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     { label: t('Caretaker'), value: activity.caretakerName }
   ] : [];
 
-  // Food log (issue #203) - foodId is unique to food logs
-  if ('foodId' in activity) {
+  // Food log (issue #203 / #247)
+  if (isFoodLogActivity(activity)) {
     const foodLog = activity as any;
     const enjoyment: unknown = foodLog.enjoyment;
+    const names: string[] =
+      (Array.isArray(foodLog.foodItems) && foodLog.foodItems.length > 0
+        ? foodLog.foodItems.map((item: { name?: string }) => item.name).filter(Boolean)
+        : null) ||
+      (foodLog.food?.name ? [foodLog.food.name] : []);
+    const mealTitle = formatFoodMealTitle(names) || t('unknown');
     const foodDetails = [
-      { label: t('Food'), value: foodLog.food?.name || t('unknown') },
+      { label: t('Food'), value: mealTitle },
       { label: t('Time'), value: formatTime(foodLog.time, settings, true, t) },
     ];
     if (foodLog.amount) {
@@ -205,7 +215,10 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     if (isValidEnjoyment(enjoyment)) {
       foodDetails.push({ label: t('Enjoyment'), value: t(FOOD_ENJOYMENT_LABELS[enjoyment]) });
     }
-    if (foodLog.food?.commonAllergen) {
+    const anyCommonAllergen =
+      foodLog.food?.commonAllergen ||
+      (Array.isArray(foodLog.foodItems) && foodLog.foodItems.some((item: { commonAllergen?: boolean }) => item.commonAllergen));
+    if (anyCommonAllergen) {
       foodDetails.push({ label: t('Common Allergen'), value: t('Yes') });
     }
     if (foodLog.isFirstTry) {
@@ -305,6 +318,11 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       // Always show location if specified (SleepLog only)
       if ((activity as any).location) {
         details.push({ label: t('Location'), value: formatLocation((activity as any).location) });
+      }
+
+      // Show notes if present
+      if ((activity as any).notes) {
+        details.push({ label: t('Notes'), value: (activity as any).notes });
       }
 
       return {
@@ -418,6 +436,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
           case 'WET': return t('Wet');
           case 'DIRTY': return t('Dirty');
           case 'BOTH': return t('Wet and Dirty');
+          case 'DRY': return t('Dry');
           default: return t(capitalize(type));
         }
       };
@@ -445,7 +464,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       ];
 
       // Only show condition and color for DIRTY or BOTH types
-      if (activity.type !== 'WET') {
+      if (isDirtyDiaper(activity.type)) {
         if (activity.condition) {
           details.push({ label: t('Condition'), value: formatDiaperCondition(activity.condition) });
         }
@@ -460,6 +479,10 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       }
       if (activity.creamApplied) {
         details.push({ label: t('Diaper Cream Applied'), value: t('Yes') });
+      }
+
+      if ((activity as any).notes) {
+        details.push({ label: t('Notes'), value: (activity as any).notes });
       }
 
       return {
@@ -699,8 +722,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       details: firstCaption || `${count} ${count === 1 ? t('photo') : t('photos')}`
     };
   }
-  // Food log (issue #203) - foodId is unique to food logs
-  if ('foodId' in activity) {
+  // Food log (issue #203 / #247)
+  if (isFoodLogActivity(activity)) {
     const foodLog = activity as any;
     const enjoyment: unknown = foodLog.enjoyment;
     const time = formatTime(foodLog.time, settings, true, t);
@@ -716,8 +739,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     let notes: string = foodLog.notes ?? '';
     if (notes.length > 30) notes = notes.slice(0, 30) + '...';
     if (notes) parts.push(notes);
+    const names: string[] =
+      (Array.isArray(foodLog.foodItems) && foodLog.foodItems.length > 0
+        ? foodLog.foodItems.map((item: { name?: string }) => item.name).filter(Boolean)
+        : null) ||
+      (foodLog.food?.name ? [foodLog.food.name] : []);
     return {
-      type: foodLog.food?.name || t('Food'),
+      type: formatFoodMealTitle(names) || t('Food'),
       details: parts.join(' • ')
     };
   }
@@ -788,10 +816,16 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
         };
         qualityText = qualityMap[(activity as any).quality] || (activity as any).quality.charAt(0) + (activity as any).quality.slice(1).toLowerCase();
       }
-      
+
+      // Add notes if available, truncate if needed
+      let notesText: string = (activity as any).notes ?? '';
+      if (notesText.length > 30) {
+        notesText = notesText.slice(0, 30) + '...';
+      }
+
       return {
         type: activity.type === 'NAP' ? t('Nap') : t('Night Sleep'),
-        details: [time, locationText, qualityText].filter(Boolean).join(' • '),
+        details: [time, locationText, qualityText, notesText].filter(Boolean).join(' • '),
       };
     }
     if ('amount' in activity) {
@@ -877,6 +911,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
           case 'WET': return t('Wet');
           case 'DIRTY': return t('Dirty');
           case 'BOTH': return t('Wet and Dirty');
+          case 'DRY': return t('Dry');
           default: return t(capitalize(type));
         }
       };
@@ -900,7 +935,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       };
       
       const conditions = [];
-      if (activity.type !== 'WET') {
+      if (isDirtyDiaper(activity.type)) {
         if (activity.condition) conditions.push(formatDiaperCondition(activity.condition));
         if (activity.color) conditions.push(formatDiaperColor(activity.color));
       }
@@ -909,10 +944,16 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       const blowout = activity.blowout ? t('Blowout/Leakage') : '';
       const cream = activity.creamApplied ? t('Diaper Cream Applied') : '';
 
+      // Add notes if available, truncate if needed
+      let notesText: string = (activity as any).notes ?? '';
+      if (notesText.length > 30) {
+        notesText = notesText.slice(0, 30) + '...';
+      }
+
       const time = formatTime(activity.time, settings, true, t);
       return {
         type: formatDiaperType(activity.type),
-        details: [time, ...conditions, blowout, cream].filter(Boolean).join(' • ')
+        details: [time, ...conditions, blowout, cream, notesText].filter(Boolean).join(' • ')
       };
     }
   }
@@ -1087,8 +1128,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
 
 export const getActivityEndpoint = (activity: ActivityType): string => {
   if ('photoLogId' in activity) return 'photo-log';
-  // Food log (issue #203) - foodId is unique to food logs
-  if ('foodId' in activity) return 'food-log';
+  // Food log (issue #203 / #247)
+  if (isFoodLogActivity(activity)) return 'food-log';
   // Check play activity before sleep since both have duration and type
   if (isPlayActivity(activity)) return 'play-log';
   // Check for breast milk adjustment before pump
@@ -1116,9 +1157,9 @@ export const getActivityStyle = (activity: ActivityType): ActivityStyle => {
   if ('photoLogId' in activity) {
     return { bg: 'bg-white border-2 border-[#e11d48]', textColor: 'text-[#e11d48]' };
   }
-  // Food log (issue #203): lime green, distinct from medicine green (#43B755)
+  // Food log (issue #203 / #247): lime green, distinct from medicine green (#43B755)
   // and the sky-blue feed color
-  if ('foodId' in activity) {
+  if (isFoodLogActivity(activity)) {
     return { bg: 'bg-[#BBD444]', textColor: 'text-white' };
   }
   // Play activity - check before sleep since both have duration and type

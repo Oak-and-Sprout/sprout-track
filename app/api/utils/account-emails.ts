@@ -1,6 +1,19 @@
 import { sendEmail } from '@/src/lib/email';
 import prisma from '../db';
 
+/**
+ * Path-based, not fragment-based: Universal and App Links match on path, and a
+ * URL fragment is not part of that match. The legacy /#verify and /#passwordreset
+ * handlers stay in place indefinitely for links already sitting in inboxes.
+ */
+export function verificationLink(domainUrl: string, token: string): string {
+  return `${domainUrl}/verify?token=${token}`;
+}
+
+export function passwordResetLink(domainUrl: string, token: string): string {
+  return `${domainUrl}/passwordreset?token=${token}`;
+}
+
 async function getDomainUrl(): Promise<string> {
   try {
     let appConfig = await prisma.appConfig.findFirst();
@@ -27,11 +40,11 @@ async function getDomainUrl(): Promise<string> {
 
 export async function sendVerificationEmail(email: string, token: string, firstName: string) {
   const domainUrl = await getDomainUrl();
-  const verificationUrl = `${domainUrl}/#verify?token=${token}`;
+  const verificationUrl = verificationLink(domainUrl, token);
   
   const result = await sendEmail({
     to: email,
-    from: process.env.VERIFICATION_EMAIL || 'accounts@sprout-track.com',
+    from: accountsFrom(),
     subject: 'Welcome to Sprout Track - Verify Your Account',
     text: `Hi ${firstName},
 
@@ -42,7 +55,9 @@ ${verificationUrl}
 This link will expire in 24 hours.
 
 Best regards,
-The Sprout Track Team`,
+The Sprout Track Team
+
+${UNMONITORED_NOTICE_TEXT}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #0d9488;">Welcome to Sprout Track!</h2>
@@ -59,7 +74,7 @@ The Sprout Track Team`,
           This link will expire in 24 hours. If you didn't create an account with Sprout Track, 
           please ignore this email.
         </p>
-        <p>Best regards,<br>The Sprout Track Team</p>
+        <p>Best regards,<br>The Sprout Track Team</p>${unmonitoredNoticeHtml()}
       </div>
     `
   });
@@ -69,11 +84,11 @@ The Sprout Track Team`,
 
 export async function sendPasswordResetEmail(email: string, token: string, firstName: string) {
   const domainUrl = await getDomainUrl();
-  const resetUrl = `${domainUrl}/#passwordreset?token=${token}`;
+  const resetUrl = passwordResetLink(domainUrl, token);
   
   const result = await sendEmail({
     to: email,
-    from: process.env.SECURITY_EMAIL || 'passwordreset@sprout-track.com',
+    from: accountsFrom(),
     subject: 'Sprout Track - Password Reset Request',
     text: `Hi ${firstName},
 
@@ -86,7 +101,9 @@ This link will expire in 15 minutes.
 If you didn't request a password reset, please ignore this email.
 
 Best regards,
-The Sprout Track Team`,
+The Sprout Track Team
+
+${UNMONITORED_NOTICE_TEXT}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #0d9488;">Password Reset Request</h2>
@@ -103,7 +120,7 @@ The Sprout Track Team`,
           This link will expire in 15 minutes. If you didn't request a password reset, 
           please ignore this email.
         </p>
-        <p>Best regards,<br>The Sprout Track Team</p>
+        <p>Best regards,<br>The Sprout Track Team</p>${unmonitoredNoticeHtml()}
       </div>
     `
   });
@@ -117,7 +134,7 @@ export async function sendWelcomeEmail(email: string, firstName: string, familyS
   
   const result = await sendEmail({
     to: email,
-    from: process.env.ACCOUNTS_EMAIL || 'accounts@sprout-track.com',
+    from: accountsFrom(),
     subject: 'Welcome to Sprout Track - Your Family is Ready!',
     text: `Hi ${firstName},
 
@@ -137,7 +154,9 @@ As the account owner, you can also log in directly using your email and password
 Get started by adding your first baby and logging your first activities!
 
 Best regards,
-The Sprout Track Team`,
+The Sprout Track Team
+
+${UNMONITORED_NOTICE_TEXT}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #0d9488;">Welcome to Sprout Track!</h2>
@@ -164,7 +183,7 @@ The Sprout Track Team`,
         </div>
         
         <p>Get started by adding your first baby and logging your first activities!</p>
-        <p>Best regards,<br>The Sprout Track Team</p>
+        <p>Best regards,<br>The Sprout Track Team</p>${unmonitoredNoticeHtml()}
       </div>
     `
   });
@@ -177,7 +196,7 @@ export async function sendFeedbackConfirmationEmail(email: string, firstName: st
   
   const result = await sendEmail({
     to: email,
-    from: process.env.ACCOUNTS_EMAIL || 'feedback@sprout-track.com',
+    from: adminFrom(),
     subject: 'Sprout Track - Feedback Received',
     text: `Hi ${firstName},
 
@@ -188,7 +207,9 @@ Our team will review your feedback and may reach out if we need any additional i
 Your input helps us make Sprout Track better for all families.
 
 Best regards,
-The Sprout Track Team`,
+The Sprout Track Team
+
+${UNMONITORED_NOTICE_TEXT}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #059669;">Thank You for Your Feedback!</h2>
@@ -211,7 +232,7 @@ The Sprout Track Team`,
           </a>
         </div>
         
-        <p>Best regards,<br>The Sprout Track Team</p>
+        <p>Best regards,<br>The Sprout Track Team</p>${unmonitoredNoticeHtml()}
       </div>
     `
   });
@@ -221,10 +242,10 @@ The Sprout Track Team`,
 
 export async function sendAccountClosureEmail(email: string, firstName: string) {
   const domainUrl = await getDomainUrl();
-  
+
   const result = await sendEmail({
     to: email,
-    from: process.env.ACCOUNTS_EMAIL || 'accounts@sprout-track.com',
+    from: accountsFrom(),
     subject: 'Sprout Track - Account Closed',
     text: `Hi ${firstName},
 
@@ -237,26 +258,145 @@ If you closed your account by mistake or would like to reactivate it, please con
 Thank you for using Sprout Track. We're sorry to see you go!
 
 Best regards,
-The Sprout Track Team`,
+The Sprout Track Team
+
+${UNMONITORED_NOTICE_TEXT}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #dc2626;">Account Closed</h2>
         <p>Hi ${firstName},</p>
         <p>Your Sprout Track account has been successfully closed as requested.</p>
-        
+
         <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
           <p style="margin: 0; color: #dc2626; font-weight: 600;">
             Your account and associated family data have been deactivated and are no longer accessible. This action cannot be undone.
           </p>
         </div>
-        
+
         <p>If you closed your account by mistake or would like to reactivate it, please contact our support team as soon as possible.</p>
-        
+
         <p>Thank you for using Sprout Track. We're sorry to see you go!</p>
-        
-        <p>Best regards,<br>The Sprout Track Team</p>
+
+        <p>Best regards,<br>The Sprout Track Team</p>${unmonitoredNoticeHtml()}
       </div>
     `
+  });
+
+  return result;
+}
+
+// The account manager is a modal on the landing page, not a dedicated route,
+// so the gift email links to the site root.
+export function giftRedemptionUrl(domainUrl: string): string {
+  return domainUrl;
+}
+
+/**
+ * Outgoing senders.
+ *
+ * The provider verifies senders per-address and rejects anything else outright,
+ * so these must stay in lockstep with the verified Sender Identities. There are
+ * exactly four, all with From Name "Sprout Track":
+ *
+ *   accounts@sprout-track.com   account lifecycle (verify, reset, welcome, closure)
+ *   payments@sprout-track.com   payment mail (gift codes, receipts)
+ *   admin@sprout-track.com      feedback correspondence, both directions
+ *   no-reply@sprout-track.com   notifications nobody should reply to
+ *
+ * A rejected send is easy to mistake for a delivered one — it only surfaces in a
+ * server log — so any override must also be a verified sender.
+ */
+const FROM_NAME = 'Sprout Track';
+
+function mailbox(address: string): string {
+  // Already a full "Name <addr>" mailbox — respect it verbatim.
+  if (address.includes('<')) return address;
+  // Matching the verified sender's From Name means inboxes show "Sprout Track"
+  // rather than the bare address. All three transports (SendGrid, SMTP2GO,
+  // nodemailer) accept this form.
+  return `${FROM_NAME} <${address}>`;
+}
+
+export function accountsFrom(): string {
+  return mailbox(process.env.ACCOUNTS_EMAIL || 'accounts@sprout-track.com');
+}
+
+export function paymentsFrom(): string {
+  return mailbox(process.env.PAYMENTS_EMAIL || 'payments@sprout-track.com');
+}
+
+export function noReplyFrom(): string {
+  return mailbox(process.env.NO_REPLY_EMAIL || 'no-reply@sprout-track.com');
+}
+
+/** Feedback correspondence, in both directions. */
+export function adminFrom(): string {
+  return mailbox(process.env.ADMIN_EMAIL || 'admin@sprout-track.com');
+}
+
+/**
+ * None of the three mailboxes are monitored, and Reply-To points back at the
+ * sending address, so a reply looks like it will reach someone. Say plainly
+ * that it will not, and point at the channel that does work.
+ */
+export const UNMONITORED_NOTICE_TEXT =
+  'This mailbox is not monitored — replies to this message will not reach us. ' +
+  'To get in touch, use the Feedback option inside Sprout Track.';
+
+export function unmonitoredNoticeHtml(): string {
+  return `
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0;">
+          This mailbox is not monitored &mdash; replies to this message will not reach us.
+          To get in touch, use the Feedback option inside Sprout Track.
+        </p>`;
+}
+
+export async function sendGiftCodeEmail(email: string, code: string) {
+  const domainUrl = await getDomainUrl();
+  const redeemUrl = giftRedemptionUrl(domainUrl);
+
+  const result = await sendEmail({
+    to: email,
+    from: paymentsFrom(),
+    subject: 'Your Sprout Track gift code',
+    text: `Thank you for giving Sprout Track!
+
+Here is your lifetime access gift code:
+
+${code}
+
+To redeem it:
+1. Go to ${redeemUrl} and sign in — or create a free account.
+2. Open Account Settings and find the Subscription section.
+3. Choose "Redeem a gift code" and enter the code above.
+
+The code grants lifetime access to Sprout Track and can be used once.
+
+Best regards,
+The Sprout Track Team
+
+${UNMONITORED_NOTICE_TEXT}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0d9488;">Thank you for giving Sprout Track!</h2>
+        <p>Here is your lifetime access gift code:</p>
+
+        <div style="background-color: #f0fdfa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <code style="background-color: #fff; padding: 8px 16px; border-radius: 4px; font-size: 20px; font-weight: bold; letter-spacing: 2px;">${code}</code>
+        </div>
+
+        <p>To redeem it:</p>
+        <ol>
+          <li>Go to <a href="${redeemUrl}">${redeemUrl}</a> and sign in — or create a free account.</li>
+          <li>Open Account Settings and find the Subscription section.</li>
+          <li>Choose "Redeem a gift code" and enter the code above.</li>
+        </ol>
+
+        <p>The code grants lifetime access to Sprout Track and can be used once.</p>
+        <p>Best regards,<br>The Sprout Track Team</p>${unmonitoredNoticeHtml()}
+      </div>
+    `,
   });
 
   return result;
