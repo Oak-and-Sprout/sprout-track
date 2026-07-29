@@ -136,7 +136,18 @@ build onward.
 
 SaaS mode additionally uses Stripe variables (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_GIFT_PRICE_ID`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID`, `NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID`) and email from-addresses (`ACCOUNTS_EMAIL`, `VERIFICATION_EMAIL`, `SECURITY_EMAIL`, `PAYMENTS_EMAIL`). None of these are required for a self-hosted deployment.
 
-Every from-address must be a **verified sender** with your email provider — SendGrid rejects a send outright when the from address does not match a verified Sender Identity, and the rejection is easy to mistake for a delivered message. `PAYMENTS_EMAIL` covers payment mail (gift codes) and defaults to `payments@sprout-track.com`; the address is sent with a `Sprout Track <…>` display name, so the verified sender's From Name should match.
+Every from-address must be a **verified sender** with your email provider. SendGrid rejects a send outright when the from address does not match a verified Sender Identity, and the rejection only appears in a server log — so a wrong address looks exactly like a delivered message. All four are sent with a `Sprout Track <…>` display name, so the verified sender's From Name should match.
+
+| Variable | Default | Used for |
+|---|---|---|
+| `ACCOUNTS_EMAIL` | `accounts@sprout-track.com` | Account lifecycle: verification, password reset, welcome, closure |
+| `PAYMENTS_EMAIL` | `payments@sprout-track.com` | Payment mail: gift codes (receipts later) |
+| `ADMIN_EMAIL` | `admin@sprout-track.com` | Feedback correspondence, both directions |
+| `NO_REPLY_EMAIL` | `no-reply@sprout-track.com` | Notifications nobody should reply to |
+
+`VERIFICATION_EMAIL` and `SECURITY_EMAIL` are **no longer read**. They previously defaulted to `accounts@` and `passwordreset@` respectively; the latter was never a verified sender, so password-reset mail was being rejected silently. Account mail now goes through `ACCOUNTS_EMAIL`.
+
+Account, payment and no-reply mail carries a footer stating the mailbox is unmonitored and directing users to in-app Feedback. Feedback mail does not, since `ADMIN_EMAIL` is a monitored mailbox.
 
 ## Security-Sensitive Variables
 

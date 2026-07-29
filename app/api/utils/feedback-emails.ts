@@ -1,4 +1,5 @@
 import { sendEmail } from '@/src/lib/email';
+import { adminFrom } from './account-emails';
 import prisma from '../db';
 
 async function getDomainUrl(): Promise<string> {
@@ -73,7 +74,7 @@ export async function sendFeedbackSubmissionConfirmationEmail(
     
     const result = await sendEmail({
       to: email,
-      from: 'no-reply@sprout-track.com',
+      from: adminFrom(),
       subject: 'Sprout Track - Feedback Received',
       text: `Hi ${submitterName},
 
@@ -154,7 +155,7 @@ export async function sendFeedbackAdminNotificationEmail(
     
     const result = await sendEmail({
       to: adminEmail,
-      from: 'no-reply@sprout-track.com',
+      from: adminFrom(),
       subject: `New Feedback: ${subject}`,
       text: `New feedback has been submitted:
 
@@ -232,7 +233,7 @@ export async function sendFeedbackReplyAdminNotificationEmail(
     
     const result = await sendEmail({
     to: adminEmail,
-    from: 'no-reply@sprout-track.com',
+    from: adminFrom(),
     subject: `Re: ${originalSubject.replace(/^Re:\s*/i, '')}`,
     text: `A new reply has been added to feedback thread "${originalSubject}":
 
@@ -304,7 +305,7 @@ export async function sendFeedbackReplyUserNotificationEmail(
     
     const result = await sendEmail({
     to: userEmail,
-    from: 'no-reply@sprout-track.com',
+    from: adminFrom(),
     subject: `Re: ${originalSubject.replace(/^Re:\s*/i, '')}`,
     text: `Hi ${userName},
 
