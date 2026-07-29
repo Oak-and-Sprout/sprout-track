@@ -25,6 +25,7 @@ import {
   Plus,
 } from "lucide-react";
 import { MobileSortButton } from '@/src/components/familymanager';
+import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { useIsMobile } from '@/src/hooks/useIsMobile';
 import { useAdminCounts } from '@/src/components/familymanager/admin-count-context';
@@ -51,6 +52,7 @@ const giftCodeSortOptions = [
 
 export default function GiftCodesPage() {
   const { t } = useLocalization();
+  const { showToast } = useToast();
   const { updateCount } = useAdminCounts();
   const isMobile = useIsMobile();
 
@@ -115,11 +117,21 @@ export default function GiftCodesPage() {
         setGenSendEmail(false);
         await fetchGiftCodes();
       } else {
-        alert('Failed to generate codes: ' + data.error);
+        showToast({
+          variant: 'error',
+          title: t('Error'),
+          message: data.error || t('Failed to generate gift codes'),
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error generating gift codes:', error);
-      alert('Error generating gift codes');
+      showToast({
+        variant: 'error',
+        title: t('Error'),
+        message: t('Failed to generate gift codes'),
+        duration: 5000,
+      });
     } finally {
       setGenerating(false);
     }
@@ -138,11 +150,21 @@ export default function GiftCodesPage() {
       if (data.success) {
         await fetchGiftCodes();
       } else {
-        alert('Failed to revoke code: ' + data.error);
+        showToast({
+          variant: 'error',
+          title: t('Error'),
+          message: data.error || t('Failed to revoke gift code'),
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error revoking gift code:', error);
-      alert('Error revoking gift code');
+      showToast({
+        variant: 'error',
+        title: t('Error'),
+        message: t('Failed to revoke gift code'),
+        duration: 5000,
+      });
     } finally {
       setRevokingId(null);
     }
