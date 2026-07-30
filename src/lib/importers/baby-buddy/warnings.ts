@@ -128,6 +128,17 @@ export function collectBabyBuddyWarnings(
           rows.length,
         );
         break;
+
+      case 'medication':
+        addWarning(
+          'medication-dosage-missing',
+          'medication',
+          countMatching(
+            rows,
+            row => !row.dosage?.trim(),
+          ),
+        );
+        break;
     }
   });
 

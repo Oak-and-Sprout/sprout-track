@@ -232,6 +232,27 @@ describe('Baby Buddy server-side record building', () => {
       'None of the uploaded files match a supported Baby Buddy export',
     );
   });
+
+  it('builds medicine records from a medication export', () => {
+    const records = buildBabyBuddyImportRecords(
+      [
+        {
+          name: 'Medication-2026-07-30.csv',
+          content: [
+            'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
+            '1,7,Test,Child,Paracetamol,2.5,ml,2026-01-02 08:00:00,6:00:00,,',
+            '2,7,Test,Child,Vitamin D,,drops,2026-01-03 08:00:00,,,',
+          ].join('\n'),
+        },
+      ],
+      {},
+    );
+
+    expect(records.map(record => record.targetType)).toEqual([
+      'medicine',
+      'medicine',
+    ]);
+  });
 });
 
 }

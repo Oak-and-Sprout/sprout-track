@@ -15,6 +15,7 @@ import {
   mapBabyBuddyPumping,
   mapBabyBuddyTummyTime,
 } from './remaining-map';
+import { mapBabyBuddyMedication } from './medication-map';
 import { parseBabyBuddyCsv } from './parse';
 import {
   BabyBuddyExecutionConfiguration,
@@ -199,6 +200,12 @@ export function buildBabyBuddyImportRecords(
       case 'tummy-time':
         records.push(
           ...rows.map(mapBabyBuddyTummyTime),
+        );
+        break;
+
+      case 'medication':
+        records.push(
+          ...rows.map(mapBabyBuddyMedication),
         );
         break;
 

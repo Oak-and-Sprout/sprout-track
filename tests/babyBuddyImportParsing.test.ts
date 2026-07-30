@@ -494,6 +494,25 @@ describe('Baby Buddy import warnings', () => {
 
     expect(warnings).toEqual([]);
   });
+
+  it('warns when medication rows have no dosage', () => {
+    const warnings = collectBabyBuddyWarnings([
+      {
+        name: 'Medication.csv',
+        content: [
+          'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
+          '1,7,Test,Child,Paracetamol,2.5,ml,2026-01-02 08:00:00,,,',
+          '2,7,Test,Child,Vitamin D,,drops,2026-01-03 08:00:00,,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(warnings).toContainEqual({
+      code: 'medication-dosage-missing',
+      entityType: 'medication',
+      affectedRows: 1,
+    });
+  });
 });
 
 }
