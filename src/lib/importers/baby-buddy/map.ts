@@ -8,6 +8,7 @@ import {
   ExternalImportSleepRecord,
 } from '@/src/types/external-import';
 import { BabyBuddyCsvRow } from './parse';
+import { parseBabyBuddyNumber } from './numbers';
 
 function required(
   row: BabyBuddyCsvRow,
@@ -127,13 +128,7 @@ function optionalNumber(
     return undefined;
   }
 
-  const number = Number(value);
-
-  if (!Number.isFinite(number)) {
-    throw new Error(`Invalid number in field ${field}: ${value}`);
-  }
-
-  return number;
+  return parseBabyBuddyNumber(value, field);
 }
 
 function durationSeconds(

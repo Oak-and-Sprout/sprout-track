@@ -66,3 +66,5 @@ export {
 export type {
   BabyBuddyExecutionConfiguration,
 } from './types';
+
+export { parseBabyBuddyNumber } from './numbers';

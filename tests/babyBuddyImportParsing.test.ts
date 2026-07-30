@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseBabyBuddyCsv } from '../src/lib/importers/baby-buddy';
+import { parseBabyBuddyCsv, parseBabyBuddyNumber } from '../src/lib/importers/baby-buddy';
 import { babyBuddyDetector } from '../src/lib/importers/baby-buddy';
 import {
   analyseBabyBuddyFiles,
@@ -489,6 +489,30 @@ describe('Baby Buddy import warnings', () => {
 
     expect(warnings).toEqual([]);
   });
+});
+
+}
+
+
+{
+describe('Baby Buddy number parsing', () => {
+  it.each([
+    ['10.45', 10.45],
+    ['10,45', 10.45],
+    ['-3,5', -3.5],
+    ['120', 120],
+  ])('parses %s as %d', (source, expected) => {
+    expect(parseBabyBuddyNumber(source, 'amount')).toBe(expected);
+  });
+
+  it.each([['abc'], ['1,2,3'], ['10,45.6'], ['']])(
+    'rejects %s',
+    source => {
+      expect(() =>
+        parseBabyBuddyNumber(source, 'amount'),
+      ).toThrow(`Invalid number in field amount: ${source}`);
+    },
+  );
 });
 
 }

@@ -4,6 +4,7 @@ import {
   ExternalImportPumpRecord,
 } from '@/src/types/external-import';
 import { BabyBuddyCsvRow } from './parse';
+import { parseBabyBuddyNumber } from './numbers';
 
 function required(row: BabyBuddyCsvRow, field: string): string {
   const value = row[field]?.trim();
@@ -12,10 +13,7 @@ function required(row: BabyBuddyCsvRow, field: string): string {
 }
 
 function numberValue(row: BabyBuddyCsvRow, field: string): number {
-  const source = required(row, field);
-  const value = Number(source);
-  if (!Number.isFinite(value)) throw new Error(`Invalid number in field ${field}: ${source}`);
-  return value;
+  return parseBabyBuddyNumber(required(row, field), field);
 }
 
 function toUtcInput(value: string): string {
