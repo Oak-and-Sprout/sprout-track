@@ -37,10 +37,15 @@ export function babyBuddyIntervalToDoseMinTime(
     return undefined;
   }
 
-  const hours =
-    Number(match[1] || 0) * 24 + Number(match[2]);
+  let days = Number(match[1] || 0);
+  let hours = Number(match[2]);
+  const minutes = match[3];
 
-  return `${String(hours).padStart(2, '0')}:${match[3]}`;
+  // Normalize: move excess hours into days
+  days += Math.floor(hours / 24);
+  hours %= 24;
+
+  return `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${minutes}`;
 }
 
 export function mapBabyBuddyMedication(
@@ -50,6 +55,9 @@ export function mapBabyBuddyMedication(
   const dosage = row.dosage?.trim();
   const unitAbbr =
     dosageUnits[row.dosage_unit?.trim().toLowerCase() ?? ''];
+  const doseMinTime = babyBuddyIntervalToDoseMinTime(
+    row.next_dose_interval ?? '',
+  );
 
   return {
     targetType: 'medicine',
@@ -66,13 +74,7 @@ export function mapBabyBuddyMedication(
       ? parseBabyBuddyNumber(dosage, 'dosage')
       : 0,
     ...(unitAbbr && { unitAbbr }),
-    ...(babyBuddyIntervalToDoseMinTime(
-      row.next_dose_interval ?? '',
-    ) && {
-      doseMinTime: babyBuddyIntervalToDoseMinTime(
-        row.next_dose_interval ?? '',
-      ),
-    }),
+    ...(doseMinTime && { doseMinTime }),
     notes: row.notes?.trim() || undefined,
   };
 }

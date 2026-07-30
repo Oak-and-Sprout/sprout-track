@@ -690,7 +690,7 @@ describe('Baby Buddy medication mapping', () => {
       medicineName: 'Paracetamol',
       doseAmount: 2.5,
       unitAbbr: 'ML',
-      doseMinTime: '06:00',
+      doseMinTime: '00:06:00',
       notes: 'After food',
     });
   });
@@ -753,11 +753,11 @@ describe('Baby Buddy medication mapping', () => {
   });
 
   it.each([
-    ['6:00:00', '06:00'],
-    ['0:30:00', '00:30'],
-    ['1 day, 0:00:00', '24:00'],
-    ['2 days, 3:30:00', '51:30'],
-    ['0:05:00.123456', '00:05'],
+    ['6:00:00', '00:06:00'],
+    ['0:30:00', '00:00:30'],
+    ['1 day, 0:00:00', '01:00:00'],
+    ['2 days, 3:30:00', '02:03:30'],
+    ['0:05:00.123456', '00:00:05'],
   ])('converts interval %s to %s', (interval, expected) => {
     expect(babyBuddyIntervalToDoseMinTime(interval)).toBe(expected);
   });

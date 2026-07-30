@@ -50,7 +50,7 @@ const medicineRecord: ExternalImportMedicineRecord = {
   medicineName: 'Paracetamol',
   doseAmount: 2.5,
   unitAbbr: 'ML',
-  doseMinTime: '06:00',
+  doseMinTime: '00:06:00',
   notes: 'After food',
 } as const;
 
@@ -340,7 +340,7 @@ describe('external import execution', () => {
         familyId: 'family-1',
         name: 'Paracetamol',
         unitAbbr: 'ML',
-        doseMinTime: '06:00',
+        doseMinTime: '00:06:00',
         active: true,
       }),
     });
