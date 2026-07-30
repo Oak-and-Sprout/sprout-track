@@ -3,6 +3,7 @@ import {
   ExternalImportBabyRecord,
   ExternalImportExecutionConfiguration,
   ExternalImportExecutionResult,
+  ExternalImportMedicineRecord,
   ExternalImportRecord,
   ExternalImportRecordResult,
 } from '@/src/types/external-import';
@@ -23,6 +24,62 @@ export interface ExternalImportExecutionInput {
   readonly caretakerId?: string | null;
   readonly records: readonly ExternalImportRecord[];
   readonly configuration: ExternalImportExecutionConfiguration;
+}
+
+interface MedicineCache {
+  loaded: boolean;
+  readonly byName: Map<string, string>;
+}
+
+async function resolveMedicineId(
+  tx: Prisma.TransactionClient,
+  familyId: string,
+  cache: MedicineCache,
+  record: ExternalImportMedicineRecord,
+): Promise<string> {
+  if (!cache.loaded) {
+    const medicines = await tx.medicine.findMany({
+      where: {
+        familyId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    for (const medicine of medicines) {
+      const key = medicine.name.trim().toLowerCase();
+
+      if (!cache.byName.has(key)) {
+        cache.byName.set(key, medicine.id);
+      }
+    }
+
+    cache.loaded = true;
+  }
+
+  const key = record.medicineName.trim().toLowerCase();
+  const existing = cache.byName.get(key);
+
+  if (existing) {
+    return existing;
+  }
+
+  const created = await tx.medicine.create({
+    data: {
+      familyId,
+      name: record.medicineName,
+      unitAbbr: record.unitAbbr,
+      doseMinTime: record.doseMinTime,
+      active: true,
+    },
+  });
+
+  cache.byName.set(key, created.id);
+
+  return created.id;
 }
 
 function durationMinutes(
@@ -105,6 +162,7 @@ async function createActivityRecord(
     ExternalImportBabyRecord
   >,
   sourceTimezone: string,
+  medicineCache: MedicineCache,
 ): Promise<string> {
   switch (record.targetType) {
     case 'sleep': {
@@ -289,6 +347,33 @@ async function createActivityRecord(
 
       return created.id;
     }
+
+    case 'medicine': {
+      const medicineId = await resolveMedicineId(
+        tx,
+        familyId,
+        medicineCache,
+        record,
+      );
+
+      const created = await tx.medicineLog.create({
+        data: {
+          familyId,
+          caretakerId,
+          babyId,
+          medicineId,
+          time: externalImportLocalTimeToUtc(
+            record.time,
+            sourceTimezone,
+          ),
+          doseAmount: record.doseAmount,
+          unitAbbr: record.unitAbbr,
+          notes: record.notes,
+        },
+      });
+
+      return created.id;
+    }
   }
 }
 
@@ -456,6 +541,11 @@ async function executeWithinTransaction(
     );
   }
 
+  const medicineCache: MedicineCache = {
+    loaded: false,
+    byName: new Map(),
+  };
+
   for (const record of plan.activityRecords) {
     const babyId = babyMappings[record.sourceChildId];
 
@@ -490,6 +580,7 @@ async function executeWithinTransaction(
       babyId,
       record,
       configuration.sourceTimezone,
+      medicineCache,
     );
 
     await createProvenance(
