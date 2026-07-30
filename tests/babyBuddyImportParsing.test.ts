@@ -144,6 +144,11 @@ describe('Baby Buddy CSV detection', () => {
       'id,child_id,weight,date,notes,tags\n',
       'weight',
     ],
+    [
+      'Medication-2026-01-01.csv',
+      'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
+      'medication',
+    ],
   ])(
     'detects %s',
     (name, content, expectedEntityType) => {

@@ -196,11 +196,8 @@ describe('Baby Buddy server-side record building', () => {
     const records = buildBabyBuddyImportRecords(
       [
         {
-          name: 'Medication-2026-07-30.csv',
-          content: [
-            'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
-            '1,7,Test,Child,Paracetamol,2.5,ml,2026-01-02 08:00:00,6:00:00,,',
-          ].join('\n'),
+          name: 'unknown.csv',
+          content: ['a,b,c', '1,2,3'].join('\n'),
         },
         {
           name: 'Sleep.csv',
