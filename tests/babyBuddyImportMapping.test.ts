@@ -15,6 +15,10 @@ import {
   mapBabyBuddyPumping,
   mapBabyBuddyTummyTime,
 } from '../src/lib/importers/baby-buddy';
+import {
+  mapBabyBuddyMedication,
+  babyBuddyIntervalToDoseMinTime,
+} from '../src/lib/importers/baby-buddy';
 
 {
 // Consolidated from tests/babyBuddyMapping.test.ts
@@ -533,6 +537,120 @@ describe('remaining Baby Buddy mappings', () => {
     );
   });
 
+});
+
+}
+
+{
+describe('Baby Buddy medication mapping', () => {
+  it('maps a full medication row', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        child_first_name: 'Test',
+        child_last_name: 'Child',
+        name: 'Paracetamol',
+        dosage: '2.5',
+        dosage_unit: 'ml',
+        time: '2026-01-02 08:00:00',
+        next_dose_interval: '6:00:00',
+        notes: ' After food ',
+        tags: '',
+      }),
+    ).toEqual({
+      targetType: 'medicine',
+      source: {
+        providerId: 'baby-buddy',
+        entityType: 'medication',
+        recordId: '4',
+        childId: '7',
+      },
+      sourceChildId: '7',
+      time: '2026-01-02T08:00:00',
+      medicineName: 'Paracetamol',
+      doseAmount: 2.5,
+      unitAbbr: 'ML',
+      doseMinTime: '06:00',
+      notes: 'After food',
+    });
+  });
+
+  it.each([
+    ['mg', 'MG'],
+    ['ml', 'ML'],
+    ['tablets', 'TAB'],
+    ['drops', 'DROP'],
+  ] as const)('maps dosage unit %s to %s', (unit, expected) => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '1',
+        dosage_unit: unit,
+        time: '2026-01-02 08:00:00',
+      }).unitAbbr,
+    ).toBe(expected);
+  });
+
+  it('maps an empty dosage unit to undefined', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '1',
+        dosage_unit: '',
+        time: '2026-01-02 08:00:00',
+      }).unitAbbr,
+    ).toBeUndefined();
+  });
+
+  it('imports a missing dosage as zero', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '',
+        dosage_unit: '',
+        time: '2026-01-02 08:00:00',
+      }).doseAmount,
+    ).toBe(0);
+  });
+
+  it('parses a comma-decimal dosage', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '2,5',
+        dosage_unit: 'ml',
+        time: '2026-01-02 08:00:00',
+      }).doseAmount,
+    ).toBe(2.5);
+  });
+
+  it.each([
+    ['6:00:00', '06:00'],
+    ['0:30:00', '00:30'],
+    ['1 day, 0:00:00', '24:00'],
+    ['2 days, 3:30:00', '51:30'],
+    ['0:05:00.123456', '00:05'],
+  ])('converts interval %s to %s', (interval, expected) => {
+    expect(babyBuddyIntervalToDoseMinTime(interval)).toBe(expected);
+  });
+
+  it.each([[''], ['   '], ['soon'], ['1-2 hours']])(
+    'converts unparseable interval %s to undefined',
+    interval => {
+      expect(
+        babyBuddyIntervalToDoseMinTime(interval),
+      ).toBeUndefined();
+    },
+  );
 });
 
 }

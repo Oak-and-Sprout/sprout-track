@@ -60,6 +60,11 @@ export {
 } from './remaining-map';
 
 export {
+  babyBuddyIntervalToDoseMinTime,
+  mapBabyBuddyMedication,
+} from './medication-map';
+
+export {
   buildBabyBuddyImportRecords,
 } from './build-records';
 

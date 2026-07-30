@@ -46,5 +46,7 @@ export function externalImportTargetEntityType(
       return 'PumpLog';
     case 'play':
       return 'PlayLog';
+    case 'medicine':
+      return 'MedicineLog';
   }
 }
