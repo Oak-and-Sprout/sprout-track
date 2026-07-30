@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { Scale, Ruler, CircleDot } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
@@ -11,6 +11,10 @@ import { reportCardStyles as s } from './monthly-report-card.styles';
 import type { GrowthSummarySectionProps } from './monthly-report-card.types';
 import type { GrowthMetric, GrowthChartData } from '@/app/api/types';
 import { formatChartValue } from '@/src/utils/weightUnits';
+import {
+  buildGrowthChartYAxis,
+  formatGrowthChartAxisTick,
+} from '@/src/utils/growthChartAxis';
 
 type ChartType = 'weight' | 'length' | 'headCircumference';
 
@@ -159,16 +163,19 @@ function GrowthChartCard({
     );
   }
 
-  // Compute Y domain with padding
   const allValues = chartData.points.flatMap(p => [
-    p.p3, p.p97, ...(p.measurement !== undefined ? [p.measurement] : []),
+    p.p3,
+    p.p10,
+    p.p25,
+    p.p50,
+    p.p75,
+    p.p90,
+    p.p97,
+    p.measurement,
   ]);
-  const min = Math.min(...allValues);
-  const max = Math.max(...allValues);
-  const range = max - min;
-  const padding = range > 0 ? range * 0.1 : (max || 1) * 0.1;
-  const yMin = Math.max(0, min - padding);
-  const yMax = max + padding;
+  const unit = chartData.unit || '';
+  const yAxis = buildGrowthChartYAxis(allValues, unit);
+  const latestMeasurement = chartData.points.findLast(point => point.measurement !== undefined);
 
   return (
     <div className={cn(s.card, 'report-card-card report-card-chart')}>
@@ -185,10 +192,26 @@ function GrowthChartCard({
             />
             <YAxis
               tick={{ fontSize: 11 }}
-              domain={[yMin, yMax]}
-              tickFormatter={(v: number) => Number(v).toFixed(0)}
+              domain={yAxis.domain}
+              ticks={yAxis.ticks}
+              tickFormatter={(value: number) => formatGrowthChartAxisTick(value, yAxis.step, unit)}
             />
-            <Tooltip content={<GrowthChartTooltip babyName={babyName} unit={chartData.unit} t={t} />} />
+            <Tooltip content={<GrowthChartTooltip babyName={babyName} unit={unit} t={t} />} />
+
+            {latestMeasurement?.measurement !== undefined && (
+              <ReferenceLine
+                y={latestMeasurement.measurement}
+                stroke="#f97316"
+                strokeWidth={1.25}
+                strokeDasharray="6 4"
+                label={{
+                  value: `${t('Last Entry')}: ${formatChartValue(latestMeasurement.measurement, unit)} ${unit}`,
+                  position: 'insideTopRight',
+                  fill: '#c2410c',
+                  fontSize: 10,
+                }}
+              />
+            )}
 
             {/* Percentile curves */}
             {percentileLines.map(line => (
