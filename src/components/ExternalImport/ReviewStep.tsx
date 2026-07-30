@@ -22,6 +22,14 @@ const unitLabels: Record<string, string> = {
   temperature: 'Temperature unit',
 };
 
+function childLabel(
+  child: { firstName: string; lastName: string; sourceId: string },
+  t: (key: string) => string,
+): string {
+  const name = `${child.firstName} ${child.lastName}`.trim();
+  return name || `${t('Child')} ${child.sourceId}`;
+}
+
 export default function ReviewStep({
   preview,
   babies,
@@ -106,7 +114,7 @@ export default function ReviewStep({
                 className="rounded-md bg-slate-800/60 p-3"
               >
                 <div className="font-medium text-slate-100">
-                  {child.firstName} {child.lastName}
+                  {childLabel(child, t)}
                 </div>
 
                 {destination?.mode === 'existing' ? (
