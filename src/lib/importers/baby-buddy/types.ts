@@ -36,7 +36,8 @@ export type BabyBuddyWarningCode =
   | 'breast-feed-amount-unsupported'
   | 'diaper-amount-unsupported'
   | 'pumping-defaults-to-stored'
-  | 'medication-dosage-missing';
+  | 'medication-dosage-missing'
+  | 'feeding-combination-unsupported';
 
 export interface BabyBuddyImportWarning {
   readonly code: BabyBuddyWarningCode;

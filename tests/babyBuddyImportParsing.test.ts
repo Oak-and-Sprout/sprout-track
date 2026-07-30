@@ -270,6 +270,29 @@ describe('Baby Buddy import analysis', () => {
     ]);
   });
 
+  it('counts parent-fed amounts toward the feeding unit requirement too', () => {
+    const analysis = analyseBabyBuddyFiles([
+      {
+        name: 'Feeding.csv',
+        content: [
+          'id,child_id,start,end,type,method,amount,notes,tags',
+          '1,7,2026-01-01 10:00:00,2026-01-01 10:30:00,formula,parent fed,90,,',
+          '2,7,2026-01-01 11:00:00,2026-01-01 11:30:00,breast milk,self fed,60,,',
+          '3,7,2026-01-01 12:00:00,2026-01-01 12:30:00,breast milk,both breasts,,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(analysis.unitRequirements).toEqual([
+      {
+        entityType: 'feeding',
+        populatedRows: 2,
+        allowedUnits: ['ML', 'OZ', 'SKIP'],
+        optional: true,
+      },
+    ]);
+  });
+
   it('does not request a feeding unit for blank amounts', () => {
     const analysis = analyseBabyBuddyFiles([
       {
@@ -571,6 +594,24 @@ describe('Baby Buddy import warnings', () => {
     ]);
 
     expect(warnings).toEqual([]);
+  });
+
+  it('warns about unsupported feeding type/method combinations', () => {
+    const warnings = collectBabyBuddyWarnings([
+      {
+        name: 'Feeding.csv',
+        content: [
+          'id,child_id,start,end,type,method,amount,notes,tags',
+          '1,1,2026-01-01 10:00:00,2026-01-01 10:30:00,water,syringe??,,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(warnings).toContainEqual({
+      code: 'feeding-combination-unsupported',
+      entityType: 'feeding',
+      affectedRows: 1,
+    });
   });
 
   it('warns when medication rows have no dosage', () => {

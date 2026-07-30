@@ -980,6 +980,7 @@
   "Feeding Statistics": "Fütterungsstatistiken",
   "Feeds": "Mahlzeiten",
   "Feeds linked into this session count as one feeding.": "Verknüpfte Mahlzeiten dieser Sitzung zählen als eine Fütterung.",
+  "Feeds with an unrecognized method are skipped": "Mahlzeiten mit einer nicht erkannten Methode werden übersprungen",
   "Female": "Weiblich",
   "Fiesta Bright": "Fiesta Bunt",
   "Files that will be skipped": "Dateien, die übersprungen werden",

@@ -1,5 +1,6 @@
 import { ExternalImportFile } from '@/src/types/external-import';
 import { babyBuddyDetector } from './detect';
+import { isBabyBuddyBottleLikeMethod } from './map';
 import { parseBabyBuddyCsv } from './parse';
 import {
   BabyBuddyPreviewChild,
@@ -90,7 +91,7 @@ export function analyseBabyBuddyFiles(
       entityType === 'feeding'
         ? parsed.rows.filter(
             row =>
-              row.method?.trim() === 'bottle' &&
+              isBabyBuddyBottleLikeMethod(row.method) &&
               Boolean(row.amount?.trim()),
           ).length
         : entityType === 'pumping'

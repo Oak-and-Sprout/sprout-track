@@ -55,6 +55,8 @@ const warningLabels: Record<string, string> = {
     'Pumping records are imported as stored milk',
   'medication-dosage-missing':
     'Medication doses without an amount are imported as 0',
+  'feeding-combination-unsupported':
+    'Feeds with an unrecognized method are skipped',
 };
 
 function childLabel(

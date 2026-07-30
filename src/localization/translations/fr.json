@@ -980,6 +980,7 @@
   "Feeding Statistics": "Statistiques d'Alimentation",
   "Feeds": "Alimentations",
   "Feeds linked into this session count as one feeding.": "Les tétées liées à cette session comptent comme une seule alimentation.",
+  "Feeds with an unrecognized method are skipped": "Les tétées avec une méthode non reconnue sont ignorées",
   "Female": "Féminin",
   "Fiesta Bright": "Fiesta Éclatante",
   "Files that will be skipped": "Fichiers qui seront ignorés",

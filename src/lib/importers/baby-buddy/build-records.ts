@@ -1,9 +1,11 @@
 import {
+  ExternalImportFeedRecord,
   ExternalImportFile,
   ExternalImportRecord,
 } from '@/src/types/external-import';
 import { babyBuddyDetector } from './detect';
 import {
+  isBabyBuddyBottleLikeMethod,
   mapBabyBuddyChild,
   mapBabyBuddyDiaperChange,
   mapBabyBuddyFeeding,
@@ -87,7 +89,7 @@ export function buildBabyBuddyImportRecords(
       case 'feeding': {
         const populatedBottleAmounts = rows.some(
           row =>
-            row.method?.trim() === 'bottle' &&
+            isBabyBuddyBottleLikeMethod(row.method) &&
             Boolean(row.amount?.trim()),
         );
 
@@ -99,9 +101,12 @@ export function buildBabyBuddyImportRecords(
           : configuration.feedingUnit || 'SKIP';
 
         records.push(
-          ...rows.map(row =>
-            mapBabyBuddyFeeding(row, unit),
-          ),
+          ...rows
+            .map(row => mapBabyBuddyFeeding(row, unit))
+            .filter(
+              (record): record is ExternalImportFeedRecord =>
+                record !== null,
+            ),
         );
         break;
       }

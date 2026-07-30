@@ -1,5 +1,6 @@
 import { ExternalImportFile } from '@/src/types/external-import';
 import { babyBuddyDetector } from './detect';
+import { isBabyBuddyBottleLikeMethod } from './map';
 import { parseBabyBuddyCsv } from './parse';
 import {
   BabyBuddyImportWarning,
@@ -96,6 +97,21 @@ export function collectBabyBuddyWarnings(
                 .includes(row.method?.trim()) &&
               Boolean(row.amount?.trim()),
           ),
+        );
+
+        addWarning(
+          'feeding-combination-unsupported',
+          'feeding',
+          countMatching(rows, row => {
+            const method = row.method?.trim();
+            const type = row.type?.trim();
+            return !(
+              ['left breast', 'right breast', 'both breasts']
+                .includes(method ?? '') ||
+              type === 'solid food' ||
+              isBabyBuddyBottleLikeMethod(method)
+            );
+          }),
         );
         break;
 
