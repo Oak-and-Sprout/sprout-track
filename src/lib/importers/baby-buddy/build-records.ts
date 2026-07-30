@@ -40,15 +40,24 @@ export function buildBabyBuddyImportRecords(
   const detections = babyBuddyDetector.detectFiles(files);
   const records: ExternalImportRecord[] = [];
 
+  const usableFiles = detections.filter(
+    detection =>
+      detection.status === 'detected' &&
+      detection.entityType,
+  );
+
+  if (usableFiles.length === 0) {
+    throw new Error(
+      'None of the uploaded files match a supported Baby Buddy export',
+    );
+  }
+
   detections.forEach((detection, index) => {
     if (
       detection.status !== 'detected' ||
       !detection.entityType
     ) {
-      throw new Error(
-        detection.error ||
-          `Unable to identify import file: ${detection.fileName}`,
-      );
+      return;
     }
 
     const rows = parseBabyBuddyCsv(

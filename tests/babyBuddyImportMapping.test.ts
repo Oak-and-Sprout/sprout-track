@@ -191,6 +191,46 @@ describe('Baby Buddy server-side record building', () => {
       'Missing Baby Buddy import configuration: feedingUnit',
     );
   });
+
+  it('skips unsupported files instead of aborting the import', () => {
+    const records = buildBabyBuddyImportRecords(
+      [
+        {
+          name: 'Medication-2026-07-30.csv',
+          content: [
+            'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
+            '1,7,Test,Child,Paracetamol,2.5,ml,2026-01-02 08:00:00,6:00:00,,',
+          ].join('\n'),
+        },
+        {
+          name: 'Sleep.csv',
+          content: [
+            'id,child_id,start,end,nap,notes,tags',
+            '12,7,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+          ].join('\n'),
+        },
+      ],
+      {},
+    );
+
+    expect(records.map(record => record.targetType)).toContain('sleep');
+  });
+
+  it('rejects an upload where no file is usable', () => {
+    expect(() =>
+      buildBabyBuddyImportRecords(
+        [
+          {
+            name: 'unknown.csv',
+            content: ['a,b,c', '1,2,3'].join('\n'),
+          },
+        ],
+        {},
+      ),
+    ).toThrow(
+      'None of the uploaded files match a supported Baby Buddy export',
+    );
+  });
 });
 
 }
