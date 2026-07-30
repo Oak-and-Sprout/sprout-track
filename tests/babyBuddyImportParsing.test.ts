@@ -357,6 +357,84 @@ describe('Baby Buddy import analysis', () => {
     ).toBeUndefined();
   });
 
+  it('derives children from activity files when no child export is present', () => {
+    const details = analyseBabyBuddyFiles([
+      {
+        name: 'Sleep.csv',
+        content: [
+          'id,child_id,child_first_name,child_last_name,start,end,nap,notes,tags',
+          '12,1,Jasmin,Burke,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+          '13,2,Ada,Burke,2026-01-02 12:00:00,2026-01-02 13:00:00,1,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(details.children).toEqual([
+      {
+        sourceId: '1',
+        firstName: 'Jasmin',
+        lastName: 'Burke',
+        activityOnly: true,
+      },
+      {
+        sourceId: '2',
+        firstName: 'Ada',
+        lastName: 'Burke',
+        activityOnly: true,
+      },
+    ]);
+  });
+
+  it('derives unnamed children from activity files without name columns', () => {
+    const details = analyseBabyBuddyFiles([
+      {
+        name: 'Sleep.csv',
+        content: [
+          'id,child_id,start,end,nap,notes,tags',
+          '12,1,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(details.children).toEqual([
+      {
+        sourceId: '1',
+        firstName: '',
+        lastName: '',
+        activityOnly: true,
+      },
+    ]);
+  });
+
+  it('prefers child-export children over activity-derived ones', () => {
+    const details = analyseBabyBuddyFiles([
+      {
+        name: 'Sleep.csv',
+        content: [
+          'id,child_id,child_first_name,child_last_name,start,end,nap,notes,tags',
+          '12,7,Test,Child,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+        ].join('\n'),
+      },
+      {
+        name: 'Child.csv',
+        content: [
+          'id,first_name,last_name,birth_date,birth_time',
+          '7,Test,Child,2026-01-01,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(details.children).toEqual([
+      {
+        sourceId: '7',
+        firstName: 'Test',
+        lastName: 'Child',
+        birthDate: '2026-01-01',
+        birthTime: undefined,
+      },
+    ]);
+  });
+
 });
 
 }

@@ -32,6 +32,10 @@ export function analyseBabyBuddyFiles(
 ): BabyBuddyPreviewDetails {
   const detections = babyBuddyDetector.detectFiles(files);
   const children: BabyBuddyPreviewChild[] = [];
+  const activityChildren = new Map<
+    string,
+    { firstName: string; lastName: string }
+  >();
   const unitRequirements: BabyBuddyUnitRequirement[] = [];
 
   detections.forEach((detection, index) => {
@@ -57,6 +61,23 @@ export function analyseBabyBuddyFiles(
 
       return;
     }
+
+    parsed.rows.forEach(row => {
+      const sourceId = row.child_id?.trim();
+
+      if (!sourceId) {
+        return;
+      }
+
+      const existing = activityChildren.get(sourceId);
+
+      if (!existing || (!existing.firstName && row.child_first_name?.trim())) {
+        activityChildren.set(sourceId, {
+          firstName: row.child_first_name?.trim() || '',
+          lastName: row.child_last_name?.trim() || '',
+        });
+      }
+    });
 
     const entityType =
       detection.entityType as BabyBuddyUnitRequirementType;
@@ -88,8 +109,24 @@ export function analyseBabyBuddyFiles(
     });
   });
 
+  const knownIds = new Set(
+    children.map(child => child.sourceId),
+  );
+
+  const derivedChildren = Array.from(
+    activityChildren.entries(),
+  )
+    .filter(([sourceId]) => !knownIds.has(sourceId))
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([sourceId, names]) => ({
+      sourceId,
+      firstName: names.firstName,
+      lastName: names.lastName,
+      activityOnly: true,
+    }));
+
   return {
-    children,
+    children: [...children, ...derivedChildren],
     unitRequirements,
   };
 }

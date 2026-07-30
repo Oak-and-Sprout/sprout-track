@@ -2,8 +2,9 @@ export interface BabyBuddyPreviewChild {
   readonly sourceId: string;
   readonly firstName: string;
   readonly lastName: string;
-  readonly birthDate: string;
+  readonly birthDate?: string;
   readonly birthTime?: string;
+  readonly activityOnly?: boolean;
 }
 
 export type BabyBuddyUnitRequirementType =
