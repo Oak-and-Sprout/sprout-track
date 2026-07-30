@@ -1,0 +1,13 @@
+id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags
+11,2,John,Black,Ibuprofen,1.2,ml,2026-07-30 15:41:46,12:00:00,,
+5,1,Renee,Riley,Tylenol,8.4,tablets,2026-07-30 12:01:18,,,
+12,2,John,Black,Vitamin D,,drops,2026-07-29 19:16:26,,no dosage specified,
+10,2,John,Black,Vitamin D,5.5,mg,2026-07-29 13:23:39,,,
+4,1,Renee,Riley,Ibuprofen,7.1,drops,2026-07-29 12:28:41,12:00:00,,
+9,2,John,Black,Vitamin D,8.2,tablets,2026-07-28 10:24:06,8:00:00,,
+3,1,Renee,Riley,Amoxicillin,3.6,ml,2026-07-28 07:32:16,6:00:00,,
+8,2,John,Black,Vitamin D,6.7,drops,2026-07-27 17:13:46,,,"8,5,7,3"
+7,2,John,Black,Gripe Water,6.9,tablets,2026-07-27 14:11:56,,Rise husband enough project job book truth.,
+2,1,Renee,Riley,Gripe Water,9.9,ml,2026-07-27 03:07:39,,,
+6,2,John,Black,Ibuprofen,5.2,mg,2026-07-26 19:46:03,8:00:00,,
+1,1,Renee,Riley,Gripe Water,5.7,ml,2026-07-26 19:34:03,,,
