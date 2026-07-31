@@ -32,7 +32,8 @@ import './sleep-form.css';
 import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
 import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 
-// Note: DEFAULT_LOCATIONS are displayed as-is but could be localized if needed
+// Not used for display — labels go through localizeSleepLocation. This is only
+// the default-vs-custom lookup used when initializing the form's location state.
 const DEFAULT_LOCATIONS: string[] = [...DEFAULT_SLEEP_LOCATIONS];
 
 interface SleepFormProps {
