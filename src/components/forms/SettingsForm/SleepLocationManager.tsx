@@ -90,10 +90,14 @@ export default function SleepLocationManager() {
         await fetchLocations();
       } else {
         errorToast(data.error, 'Failed to update sleep locations');
+        // Resync from the server so any optimistic local update (e.g. reorder)
+        // rolls back. A harmless redundant fetch for the non-optimistic callers.
+        await fetchLocations();
       }
     } catch (err) {
       console.error('Error updating sleep locations:', err);
       errorToast(undefined, 'Failed to update sleep locations');
+      await fetchLocations();
     } finally {
       setBusy(false);
     }
@@ -120,7 +124,8 @@ export default function SleepLocationManager() {
     // family that has never reordered; later presses permute it.
     const locationOrder = moveLocation(locations.map((l) => l.name), name, direction);
     // Optimistic: a round trip per press is sluggish when moving a row several
-    // slots. mutate() refetches on success and resyncs on failure.
+    // slots. mutate() refetches on both success and failure, so a failed save
+    // rolls this back to the server's order.
     setLocations(locationOrder.map((n) => locations.find((l) => l.name === n)!));
     mutate(
       () => fetch('/api/sleep-location-settings', {
