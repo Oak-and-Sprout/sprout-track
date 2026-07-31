@@ -6,6 +6,7 @@ import { Palette as PaletteIcon, ChevronDown } from 'lucide-react';
 import { useLocalization } from '@/src/context/localization';
 import { SleepLocationSummary } from '@/app/api/types';
 import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 import {
   NurserySettings,
   NurseryScene,
@@ -689,7 +690,7 @@ export function SettingsDrawer({
                 const on = settings.sleep.locations.includes(name);
                 return (
                   <div key={name} className="nursery-trow">
-                    <span className="tn">{t(name)}</span>
+                    <span className="tn">{localizeSleepLocation(name, t)}</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span className={'nursery-tstate' + (on ? ' on' : '')}>{on ? t('ON') : t('OFF')}</span>
                       <button

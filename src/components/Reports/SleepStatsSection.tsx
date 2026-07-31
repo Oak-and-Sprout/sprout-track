@@ -15,6 +15,7 @@ import SleepChartModal, { SleepChartMetric, SleepChartDataPoint } from './SleepC
 import SleepLocationsChartModal from './SleepLocationsChartModal';
 import SleepLocationChartModal from './SleepLocationChartModal';
 import { useLocalization } from '@/src/context/localization';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 
 interface SleepStatsSectionProps {
   stats: SleepStats;
@@ -157,7 +158,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                       setLocationChartModalOpen(true);
                     }}
                   >
-                    <span className={cn(styles.locationName, "reports-location-name")}>{t(loc.location)}</span>
+                    <span className={cn(styles.locationName, "reports-location-name")}>{localizeSleepLocation(loc.location, t)}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
                       {loc.count}{t('x (')}{formatMinutes(loc.totalMinutes)})
                     </span>
@@ -192,7 +193,7 @@ const SleepStatsSection: React.FC<SleepStatsSectionProps> = ({
                       setLocationChartModalOpen(true);
                     }}
                   >
-                    <span className={cn(styles.locationName, "reports-location-name")}>{t(loc.location)}</span>
+                    <span className={cn(styles.locationName, "reports-location-name")}>{localizeSleepLocation(loc.location, t)}</span>
                     <span className={cn(styles.locationCount, "reports-location-count")}>
                       {loc.count}{t('x (')}{formatMinutes(loc.totalMinutes)})
                     </span>

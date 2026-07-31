@@ -16,6 +16,7 @@ import { isValidEnjoyment, FOOD_ENJOYMENT_LABELS } from '@/src/utils/foodLogUtil
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { isNativeApp } from '@/src/utils/native-app';
 import { nurseryDisplayControls } from '@/src/utils/shell-chrome';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 import { Baby } from '@prisma/client';
 import { ClockBlock } from './ClockBlock';
 import { SceneBackground } from './scenes/SceneBackground';
@@ -229,7 +230,10 @@ export function NurseryModeContainer() {
               lastSeenRef.current.sleep = id;
               const time = formatTileTime(new Date(latest.endTime), timeFormat, dayLabels, new Date(now));
               const dur = latest.duration ? `${latest.duration} min` : '';
-              newLogs.sleep = { last: time, note: [t(latest.location || 'Sleep'), dur].filter(Boolean).join(' — ') };
+              const locationLabel = latest.location
+                ? localizeSleepLocation(latest.location, t)
+                : t('Sleep');
+              newLogs.sleep = { last: time, note: [locationLabel, dur].filter(Boolean).join(' — ') };
             }
           }
         }
