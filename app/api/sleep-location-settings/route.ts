@@ -47,54 +47,81 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
     }
 
     const body = await req.json();
-    const { hiddenLocations } = body as SleepLocationSettings;
+    const { hiddenLocations, locationOrder } = body as SleepLocationSettings;
 
-    if (!Array.isArray(hiddenLocations)) {
+    const isStringArray = (v: unknown): v is string[] =>
+      Array.isArray(v) && v.every((n) => typeof n === 'string');
+
+    if (hiddenLocations === undefined && locationOrder === undefined) {
       return NextResponse.json(
-        { success: false, error: 'Invalid format: hiddenLocations must be an array' },
+        { success: false, error: 'Provide hiddenLocations, locationOrder, or both' },
+        { status: 400 }
+      );
+    }
+    if (hiddenLocations !== undefined && !isStringArray(hiddenLocations)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid format: hiddenLocations must be an array of strings' },
+        { status: 400 }
+      );
+    }
+    if (locationOrder !== undefined && !isStringArray(locationOrder)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid format: locationOrder must be an array of strings' },
         { status: 400 }
       );
     }
 
-    let settings = await prisma.settings.findFirst({
-      where: { familyId: userFamilyId },
-      orderBy: { updatedAt: 'desc' },
-    });
+    // Read-modify-write inside a transaction so a concurrent save from an open
+    // SleepForm gear panel can't be clobbered with stale data — same reasoning
+    // as the $transaction in /api/sleep-locations.
+    const merged = await prisma.$transaction(async (tx) => {
+      const settings = await tx.settings.findFirst({
+        where: { familyId: userFamilyId },
+        orderBy: { updatedAt: 'desc' },
+      });
 
-    // Merge with the stored JSON so other fields (e.g. customLocations) survive
-    let existing: SleepLocationSettings = { hiddenLocations: [] };
-    const existingRaw = (settings as unknown as { sleepLocationSettings?: string } | null)?.sleepLocationSettings;
-    if (existingRaw) {
-      try {
-        existing = JSON.parse(existingRaw) as SleepLocationSettings;
-      } catch {
-        // keep defaults
+      let existing: SleepLocationSettings = { hiddenLocations: [] };
+      const existingRaw = (settings as unknown as { sleepLocationSettings?: string } | null)?.sleepLocationSettings;
+      if (existingRaw) {
+        try {
+          existing = JSON.parse(existingRaw) as SleepLocationSettings;
+        } catch {
+          // keep defaults
+        }
       }
-    }
-    const merged: SleepLocationSettings = { ...existing, hiddenLocations };
 
-    if (!settings) {
-      settings = await prisma.settings.create({
-        data: {
-          familyId: userFamilyId,
-          familyName: 'My Family',
-          securityPin: '111222',
-          defaultBottleUnit: 'OZ',
-          defaultSolidsUnit: 'TBSP',
-          defaultHeightUnit: 'IN',
-          defaultWeightUnit: 'LB',
-          defaultTempUnit: 'F',
-          sleepLocationSettings: JSON.stringify(merged),
-        } as any,
-      });
-    } else {
-      await prisma.settings.update({
-        where: { id: settings.id },
-        data: {
-          ...(({ sleepLocationSettings: JSON.stringify(merged) }) as any),
-        },
-      });
-    }
+      // Only fields actually present in the request overwrite stored values.
+      // hiddenLocations is required on the type, so it always resolves to an
+      // array; locationOrder is optional and is only written when sent.
+      const next: SleepLocationSettings = {
+        ...existing,
+        hiddenLocations: hiddenLocations ?? existing.hiddenLocations ?? [],
+        ...(locationOrder !== undefined ? { locationOrder } : {}),
+      };
+
+      if (!settings) {
+        await tx.settings.create({
+          data: {
+            familyId: userFamilyId,
+            familyName: 'My Family',
+            securityPin: '111222',
+            defaultBottleUnit: 'OZ',
+            defaultSolidsUnit: 'TBSP',
+            defaultHeightUnit: 'IN',
+            defaultWeightUnit: 'LB',
+            defaultTempUnit: 'F',
+            sleepLocationSettings: JSON.stringify(next),
+          } as any,
+        });
+      } else {
+        await tx.settings.update({
+          where: { id: settings.id },
+          data: ({ sleepLocationSettings: JSON.stringify(next) }) as any,
+        });
+      }
+
+      return next;
+    });
 
     return NextResponse.json({
       success: true,

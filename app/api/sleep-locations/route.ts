@@ -9,6 +9,7 @@ import {
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { checkWritePermission } from '../utils/writeProtection';
 import {
+  applyLocationOrder,
   buildSleepLocationSummaries,
   updateSettingsAfterDelete,
   updateSettingsAfterRename,
@@ -21,13 +22,14 @@ import {
 type SettingsRecord = { id: string; sleepLocationSettings?: string | null } | null;
 
 function parseLocationSettings(settings: SettingsRecord): SleepLocationSettingsShape {
-  const empty: SleepLocationSettingsShape = { hiddenLocations: [], customLocations: [] };
+  const empty: SleepLocationSettingsShape = { hiddenLocations: [], customLocations: [], locationOrder: [] };
   if (!settings?.sleepLocationSettings) return empty;
   try {
     const parsed = JSON.parse(settings.sleepLocationSettings) as SleepLocationSettings;
     return {
       hiddenLocations: Array.isArray(parsed.hiddenLocations) ? parsed.hiddenLocations : [],
       customLocations: Array.isArray(parsed.customLocations) ? parsed.customLocations : [],
+      locationOrder: Array.isArray(parsed.locationOrder) ? parsed.locationOrder : [],
     };
   } catch {
     return empty;
@@ -81,12 +83,13 @@ async function getSummaries(familyId: string): Promise<SleepLocationSummary[]> {
     _count: { _all: true },
   });
   const settings = await findSettings(prisma, familyId);
-  const { hiddenLocations, customLocations } = parseLocationSettings(settings);
-  return buildSleepLocationSummaries(
+  const { hiddenLocations, customLocations, locationOrder } = parseLocationSettings(settings);
+  const summaries = buildSleepLocationSummaries(
     grouped.map((g: any) => ({ location: g.location, count: g._count._all })),
     hiddenLocations,
     customLocations,
   );
+  return applyLocationOrder(summaries, locationOrder ?? []);
 }
 
 async function handleGet(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<SleepLocationSummary[]>>> {
