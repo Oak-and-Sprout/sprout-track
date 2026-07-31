@@ -9,5 +9,6 @@
   { "code": "nb", "name": "Norsk Bokmål", "abbreviation": "NB" },
   { "code": "pt-PT", "name": "Português (Portugal)", "abbreviation": "PT-PT" },
   { "code": "pt-BR", "name": "Português (Brasil)", "abbreviation": "PT-BR" },
-  { "code": "ro", "name": "Română", "abbreviation": "RO" }
+  { "code": "ro", "name": "Română", "abbreviation": "RO" },
+  { "code": "hi", "name": "हिन्दी", "abbreviation": "HI" }
 ]
