@@ -1,4 +1,4 @@
-import { SleepLocationSummary } from '@/app/api/types';
+import { SleepLocationSettings, SleepLocationSummary } from '@/app/api/types';
 import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
 
 export interface LocationUsageRow {
@@ -250,6 +250,27 @@ export function updateSettingsAfterRename(
       ? dedupe(order.map((n) => (n === from ? to : n)))
       : order,
   };
+}
+
+/**
+ * Applies a partial settings patch to the stored settings. Callers send only
+ * what they changed — the manager saves hiddenLocations alone when toggling
+ * visibility and locationOrder alone when moving a row — so every key the patch
+ * omits (or explicitly leaves undefined) has to survive untouched.
+ * hiddenLocations always resolves to an array because the stored type requires
+ * one.
+ */
+export function mergeLocationSettings(
+  existing: SleepLocationSettings,
+  patch: Partial<SleepLocationSettings>,
+): SleepLocationSettings {
+  const merged: SleepLocationSettings = { ...existing };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined) {
+      (merged as unknown as Record<string, unknown>)[key] = value;
+    }
+  }
+  return { ...merged, hiddenLocations: merged.hiddenLocations ?? [] };
 }
 
 /** Removes the name from both settings lists (exact match). */

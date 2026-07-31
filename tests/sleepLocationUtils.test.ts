@@ -10,9 +10,10 @@ import {
   applyLocationOrder,
   moveLocation,
   localizeSleepLocation,
+  mergeLocationSettings,
 } from '@/src/utils/sleepLocationUtils';
 import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
-import { SleepLocationSummary } from '@/app/api/types';
+import { SleepLocationSettings, SleepLocationSummary } from '@/app/api/types';
 
 // Issue #174: sleep locations are free-text on SleepLog rows; these helpers
 // power the Settings manager (list / add / rename / merge / cleanup).
@@ -411,5 +412,72 @@ describe('locationOrder bookkeeping', () => {
       'Hammock',
     );
     expect(result.locationOrder).toEqual([]);
+  });
+});
+
+// The POST /api/sleep-location-settings body is a partial patch: the manager
+// saves only hiddenLocations when toggling visibility and only locationOrder
+// when moving a row. Anything the patch omits has to survive untouched.
+describe('mergeLocationSettings', () => {
+  const existing: SleepLocationSettings = {
+    hiddenLocations: ['Couch'],
+    customLocations: ['Hammock'],
+    locationOrder: ['Crib', 'Hammock'],
+  };
+
+  it('applies a locationOrder-only patch without dropping the other keys', () => {
+    const result = mergeLocationSettings(existing, { locationOrder: ['Hammock', 'Crib'] });
+    expect(result).toEqual({
+      hiddenLocations: ['Couch'],
+      customLocations: ['Hammock'],
+      locationOrder: ['Hammock', 'Crib'],
+    });
+  });
+
+  it('applies a hiddenLocations-only patch without dropping the other keys', () => {
+    const result = mergeLocationSettings(existing, { hiddenLocations: [] });
+    expect(result).toEqual({
+      hiddenLocations: [],
+      customLocations: ['Hammock'],
+      locationOrder: ['Crib', 'Hammock'],
+    });
+  });
+
+  it('applies a customLocations-only patch without dropping the other keys', () => {
+    const result = mergeLocationSettings(existing, { customLocations: ['Hammock', 'Sling'] });
+    expect(result).toEqual({
+      hiddenLocations: ['Couch'],
+      customLocations: ['Hammock', 'Sling'],
+      locationOrder: ['Crib', 'Hammock'],
+    });
+  });
+
+  it('treats an empty patch as a no-op', () => {
+    expect(mergeLocationSettings(existing, {})).toEqual(existing);
+  });
+
+  it('ignores keys explicitly set to undefined', () => {
+    const result = mergeLocationSettings(existing, {
+      hiddenLocations: undefined,
+      locationOrder: undefined,
+    });
+    expect(result).toEqual(existing);
+  });
+
+  it('resolves hiddenLocations to an array when absent from both sides', () => {
+    const result = mergeLocationSettings(
+      {} as SleepLocationSettings,
+      { locationOrder: ['Crib'] },
+    );
+    expect(result).toEqual({ hiddenLocations: [], locationOrder: ['Crib'] });
+  });
+
+  it('does not mutate either input', () => {
+    const before = JSON.parse(JSON.stringify(existing));
+    const patch = { locationOrder: ['Hammock', 'Crib'] };
+    const patchBefore = JSON.parse(JSON.stringify(patch));
+    mergeLocationSettings(existing, patch);
+    expect(existing).toEqual(before);
+    expect(patch).toEqual(patchBefore);
   });
 });

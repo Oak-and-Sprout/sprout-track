@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse, SleepLocationSettings } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { mergeLocationSettings } from '@/src/utils/sleepLocationUtils';
 
 async function handleGet(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<SleepLocationSettings>>> {
   try {
@@ -47,7 +48,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
     }
 
     const body = await req.json();
-    const { hiddenLocations, locationOrder } = body as SleepLocationSettings;
+    // The body is a partial patch, not a full settings object — a visibility
+    // toggle sends only hiddenLocations and a reorder sends only locationOrder.
+    const { hiddenLocations, locationOrder } = body as Partial<SleepLocationSettings>;
 
     const isStringArray = (v: unknown): v is string[] =>
       Array.isArray(v) && v.every((n) => typeof n === 'string');
@@ -90,14 +93,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
         }
       }
 
-      // Only fields actually present in the request overwrite stored values.
-      // hiddenLocations is required on the type, so it always resolves to an
-      // array; locationOrder is optional and is only written when sent.
-      const next: SleepLocationSettings = {
-        ...existing,
-        hiddenLocations: hiddenLocations ?? existing.hiddenLocations ?? [],
-        ...(locationOrder !== undefined ? { locationOrder } : {}),
-      };
+      // Only fields actually present in the request overwrite stored values, so
+      // a locationOrder-only save can't drop customLocations and vice versa.
+      const next = mergeLocationSettings(existing, { hiddenLocations, locationOrder });
 
       if (!settings) {
         await tx.settings.create({
