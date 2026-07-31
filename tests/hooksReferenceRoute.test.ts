@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => {
       sleepLog: {
         findMany: vi.fn(),
       },
+      settings: {
+        findFirst: vi.fn(),
+      },
       playLog: {
         findMany: vi.fn(),
       },
@@ -61,6 +64,7 @@ beforeEach(() => {
   mocks.prisma.baby.findFirst.mockResolvedValue({ id: 'baby-1', familyId: 'family-1' });
   mocks.prisma.medicine.findMany.mockResolvedValue([]);
   mocks.prisma.sleepLog.findMany.mockResolvedValue([]);
+  mocks.prisma.settings.findFirst.mockResolvedValue(null);
   mocks.prisma.playLog.findMany.mockResolvedValue([]);
   mocks.prisma.unit.findMany.mockResolvedValue([
     { unitAbbr: 'ML', unitName: 'Milliliters' },
@@ -175,5 +179,62 @@ describe('hooks reference route', () => {
 
     expect(response.status).toBe(400);
     expect(payload.error.code).toBe('INVALID_REF_TYPE');
+  });
+
+  describe('sleep-locations ordering', () => {
+    it('returns defaults in canonical order when no order is saved', async () => {
+      const response = await GET(getRequest('?type=sleep-locations') as any, routeContext);
+      const body = await json(response);
+      expect(body.data.sleepLocations.slice(0, 3)).toEqual(['Bassinet', 'Stroller', 'Crib']);
+    });
+
+    it("applies the family's saved order", async () => {
+      mocks.prisma.settings.findFirst.mockResolvedValue({
+        id: 'settings-1',
+        sleepLocationSettings: JSON.stringify({
+          hiddenLocations: [],
+          customLocations: [],
+          locationOrder: ['Crib', 'Other', 'Bassinet'],
+        }),
+      });
+      const response = await GET(getRequest('?type=sleep-locations') as any, routeContext);
+      const body = await json(response);
+      const locations = body.data.sleepLocations;
+      expect(locations.slice(0, 3)).toEqual(['Crib', 'Other', 'Bassinet']);
+      // Everything else still present, none dropped.
+      expect(locations).toHaveLength(7);
+    });
+
+    it('orders a custom location ahead of the defaults when saved that way', async () => {
+      mocks.prisma.sleepLog.findMany.mockResolvedValue([{ location: 'Grandma' }]);
+      mocks.prisma.settings.findFirst.mockResolvedValue({
+        id: 'settings-1',
+        sleepLocationSettings: JSON.stringify({
+          hiddenLocations: [],
+          customLocations: [],
+          locationOrder: ['Grandma'],
+        }),
+      });
+      const response = await GET(getRequest('?type=sleep-locations') as any, routeContext);
+      const body = await json(response);
+      expect(body.data.sleepLocations[0]).toBe('Grandma');
+    });
+
+    it('does not resurrect a deduplicated legacy token via the saved order', async () => {
+      mocks.prisma.sleepLog.findMany.mockResolvedValue([{ location: 'CAR_SEAT' }]);
+      mocks.prisma.settings.findFirst.mockResolvedValue({
+        id: 'settings-1',
+        sleepLocationSettings: JSON.stringify({
+          hiddenLocations: [],
+          customLocations: [],
+          locationOrder: ['CAR_SEAT', 'Crib'],
+        }),
+      });
+      const response = await GET(getRequest('?type=sleep-locations') as any, routeContext);
+      const body = await json(response);
+      const locations = body.data.sleepLocations;
+      expect(locations).not.toContain('CAR_SEAT');
+      expect(locations).toContain('Car Seat');
+    });
   });
 });
