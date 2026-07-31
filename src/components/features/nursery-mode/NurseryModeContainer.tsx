@@ -9,7 +9,7 @@ import { useWakeLock } from '@/src/hooks/useWakeLock';
 import { useFullscreen } from '@/src/hooks/useFullscreen';
 import { useNurserySettings } from '@/src/hooks/useNurserySettings';
 import { autoIconColor } from '@/src/utils/nursery/colorMath';
-import { formatFeedNote, formatPumpNote } from '@/src/utils/nursery/activityDetail';
+import { formatFeedNote, formatPumpNote, formatTileTime } from '@/src/utils/nursery/activityDetail';
 import { formatFoodLogNote } from '@/src/utils/nursery/foodActivity';
 import { isWithinTileWindow } from '@/src/utils/nursery/activityFreshness';
 import { isValidEnjoyment, FOOD_ENJOYMENT_LABELS } from '@/src/utils/foodLogUtils';
@@ -36,7 +36,7 @@ export function NurseryModeContainer() {
   const params = useParams();
   const slug = params?.slug as string;
   const { selectedBaby, setSelectedBaby } = useBaby();
-  const { toUTCString } = useTimezone();
+  const { toUTCString, timeFormat } = useTimezone();
   const { t } = useLocalization();
   const wakeLock = useWakeLock();
   const fullscreen = useFullscreen();
@@ -62,6 +62,7 @@ export function NurseryModeContainer() {
   const displayControls = nurseryDisplayControls(inShell);
 
   const lastSeenRef = useRef<Record<string, string>>({});
+  const lastSeenDayRef = useRef<string>('');
   const fetchActivityRef = useRef<(() => void) | null>(null);
 
   // Listen for orientation changes
@@ -139,6 +140,10 @@ export function NurseryModeContainer() {
   useEffect(() => {
     if (!selectedBaby) return;
 
+    // timeFormat loads async from family settings; clearing the dedup ref lets
+    // the immediate refetch reformat tiles that were rendered with the default.
+    lastSeenRef.current = {};
+
     const fetchRecentActivity = async () => {
       try {
         const authToken = localStorage.getItem('authToken');
@@ -164,6 +169,14 @@ export function NurseryModeContainer() {
         // A tile's meta line shows a clock time with no date, so an entry from days
         // ago reads like a recent one — null means "hide this tile's line" (#250).
         const now = Date.now();
+        // Nursery mode stays open across midnight (wake lock) — when the day
+        // rolls over, drop the dedup cache so "Today" prefixes become "Yesterday".
+        const day = new Date(now).toDateString();
+        if (lastSeenDayRef.current !== day) {
+          lastSeenDayRef.current = day;
+          lastSeenRef.current = {};
+        }
+        const dayLabels = { today: t('Today'), yesterday: t('Yesterday') };
         const newLogs: Record<string, TileLog | null> = {};
 
         // Latest feed
@@ -174,9 +187,7 @@ export function NurseryModeContainer() {
             newLogs.feed = null;
           } else if (id !== lastSeenRef.current.feed) {
             lastSeenRef.current.feed = id;
-            const time = new Date(latest.time || latest.startTime)
-              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-              .toLowerCase();
+            const time = formatTileTime(new Date(latest.time || latest.startTime), timeFormat, dayLabels, new Date(now));
             const breastSides = latest.type === 'BREAST' && latest.sessionId
               ? feedData.data
                   .filter((f: any) => f.sessionId === latest.sessionId && f.type === 'BREAST')
@@ -201,9 +212,7 @@ export function NurseryModeContainer() {
             newLogs.diaper = null;
           } else if (id !== lastSeenRef.current.diaper) {
             lastSeenRef.current.diaper = id;
-            const time = new Date(latest.time)
-              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-              .toLowerCase();
+            const time = formatTileTime(new Date(latest.time), timeFormat, dayLabels, new Date(now));
             const typeLabels: Record<string, string> = { WET: 'Wet', DIRTY: 'Dirty', BOTH: 'Both', DRY: 'Dry' };
             newLogs.diaper = { last: time, note: t(typeLabels[latest.type]) || latest.type };
           }
@@ -218,9 +227,7 @@ export function NurseryModeContainer() {
               newLogs.sleep = null;
             } else if (id !== lastSeenRef.current.sleep) {
               lastSeenRef.current.sleep = id;
-              const time = new Date(latest.endTime)
-                .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-                .toLowerCase();
+              const time = formatTileTime(new Date(latest.endTime), timeFormat, dayLabels, new Date(now));
               const dur = latest.duration ? `${latest.duration} min` : '';
               newLogs.sleep = { last: time, note: [t(latest.location || 'Sleep'), dur].filter(Boolean).join(' — ') };
             }
@@ -235,9 +242,7 @@ export function NurseryModeContainer() {
             newLogs.pump = null;
           } else if (id !== lastSeenRef.current.pump) {
             lastSeenRef.current.pump = id;
-            const time = new Date(latest.startTime)
-              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-              .toLowerCase();
+            const time = formatTileTime(new Date(latest.startTime), timeFormat, dayLabels, new Date(now));
             const note = formatPumpNote(
               {
                 leftAmount: latest.leftAmount, rightAmount: latest.rightAmount, totalAmount: latest.totalAmount,
@@ -260,9 +265,7 @@ export function NurseryModeContainer() {
             newLogs.food = null;
           } else if (id !== lastSeenRef.current.food) {
             lastSeenRef.current.food = id;
-            const time = new Date(latest.time)
-              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-              .toLowerCase();
+            const time = formatTileTime(new Date(latest.time), timeFormat, dayLabels, new Date(now));
             const enjoyment = latest.enjoyment;
             const enjoymentLabel = isValidEnjoyment(enjoyment) ? t(FOOD_ENJOYMENT_LABELS[enjoyment]) : null;
             newLogs.food = { last: time, note: formatFoodLogNote({ foodName: latest.food?.name || t('Food'), enjoymentLabel }) };
@@ -300,14 +303,12 @@ export function NurseryModeContainer() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [selectedBaby?.id, settings.acts.food]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedBaby?.id, settings.acts.food, timeFormat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLog = useCallback((tileId: string, note: string) => {
-    const now = new Date()
-      .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-      .toLowerCase();
+    const now = formatTileTime(new Date(), timeFormat, { today: t('Today'), yesterday: t('Yesterday') });
     setLogs(prev => ({ ...prev, [tileId]: { last: now, note } }));
-  }, []);
+  }, [timeFormat, t]);
 
   // Stable identity: the container re-renders every second while an activity
   // timer runs, and UndoToast's auto-dismiss effect depends on this callback —
