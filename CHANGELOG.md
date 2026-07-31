@@ -1,6 +1,6 @@
 # Sprout Track Changelog
 
-## v1.6.5 - 
+## v1.6.5 - Small Fixes, Smoother Tracking, Hindi Support
 
 ### Changes
 
