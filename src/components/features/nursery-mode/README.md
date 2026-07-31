@@ -19,7 +19,12 @@ should render. It orchestrates:
   (`useFullscreen`), orientation (landscape phone layout), baby switching, and
   polling the latest feed/pump/diaper/sleep log for each tile's meta line. That
   line shows a clock time with no date, so entries older than 24 h are hidden
-  rather than shown as if they were recent (`isWithinTileWindow`).
+  rather than shown as if they were recent (`isWithinTileWindow`). The poller
+  stores each entry **unlocalized** (`TileEntry` in `src/utils/nursery/tileLog.ts`);
+  `formatTileLogs()` turns it into the displayed `Today/Yesterday, 4:39 pm` line
+  and its note during render. Formatting inside the poller instead froze the
+  strings at whatever `t` held when the entry arrived — non-English bundles
+  lazy-load, so tiles kept rendering English on an otherwise translated screen.
 - **Undo**: instant logs (bottle feed, diaper change) surface an `UndoToast`
   that deletes the just-created record via the `UndoInfo.endpoint`.
 
