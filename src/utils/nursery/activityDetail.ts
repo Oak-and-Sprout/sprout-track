@@ -1,10 +1,41 @@
 import { formatMMSS } from '@/src/components/features/nursery-mode/activities/types';
+import { formatTimeDisplay, TimeFormatSetting } from '@/src/utils/dateFormat';
 
 /**
  * Pure note-formatting for the feed/pump "last activity" line shown on nursery
  * cards/tiles. Kept free of i18n/React so it's testable without mocking
  * localization — callers pass already-localized label strings.
  */
+
+export interface TileTimeLabels {
+  today: string;
+  yesterday: string;
+}
+
+/** Days from `date`'s local calendar day to `now`'s — 0 today, 1 yesterday. */
+function calendarDaysAgo(date: Date, now: Date): number {
+  const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((dayStart(now) - dayStart(date)) / 86400000);
+}
+
+/**
+ * Clock time on a tile's meta line — lowercase am/pm in 12h, plain HH:MM in
+ * 24h — prefixed with a localized "Today"/"Yesterday". The tile freshness
+ * window is a rolling 24h, so those two cover every past entry; anything else
+ * (future-dated) gets no prefix.
+ */
+export function formatTileTime(
+  date: Date,
+  timeFormat: TimeFormatSetting,
+  labels: TileTimeLabels,
+  now: Date = new Date()
+): string {
+  const time = formatTimeDisplay(date, timeFormat).toLowerCase();
+  const daysAgo = calendarDaysAgo(date, now);
+  if (daysAgo === 0) return `${labels.today}, ${time}`;
+  if (daysAgo === 1) return `${labels.yesterday}, ${time}`;
+  return time;
+}
 
 export interface FeedNoteLabels {
   breast: string;

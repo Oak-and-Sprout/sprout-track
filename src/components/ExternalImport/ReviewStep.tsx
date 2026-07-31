@@ -6,6 +6,7 @@ import {
   ExternalImportPreviewResponse,
   ExternalImportUiConfiguration,
 } from './external-import.types';
+import { findSharedChildDestinations } from './destination-utils';
 
 interface ReviewStepProps {
   readonly preview: ExternalImportPreviewResponse;
@@ -22,6 +23,14 @@ const unitLabels: Record<string, string> = {
   temperature: 'Temperature unit',
 };
 
+function childLabel(
+  child: { firstName: string; lastName: string; sourceId: string },
+  t: (key: string) => string,
+): string {
+  const name = `${child.firstName} ${child.lastName}`.trim();
+  return name || `${t('Child')} ${child.sourceId}`;
+}
+
 export default function ReviewStep({
   preview,
   babies,
@@ -33,6 +42,10 @@ export default function ReviewStep({
   const warningRows = preview.warnings.reduce(
     (total, warning) => total + warning.affectedRows,
     0,
+  );
+
+  const sharedDestinations = findSharedChildDestinations(
+    configuration.childDestinations,
   );
 
   const findBabyName = (babyId: string) => {
@@ -106,7 +119,7 @@ export default function ReviewStep({
                 className="rounded-md bg-slate-800/60 p-3"
               >
                 <div className="font-medium text-slate-100">
-                  {child.firstName} {child.lastName}
+                  {childLabel(child, t)}
                 </div>
 
                 {destination?.mode === 'existing' ? (
@@ -127,6 +140,29 @@ export default function ReviewStep({
           })}
         </div>
       </section>
+
+      {sharedDestinations.length > 0 && (
+        <section className="rounded-lg border border-amber-700 bg-amber-950/40 p-4">
+          <h3 className="font-medium text-amber-100">
+            {t('Same destination selected for multiple children')}
+          </h3>
+
+          <p className="mt-1 text-sm text-amber-200">
+            {t(
+              'Their records will all be added to the same baby. Change the destinations if this is not intended.',
+            )}
+          </p>
+
+          <ul className="mt-3 space-y-1 text-sm text-amber-200">
+            {sharedDestinations.map(shared => (
+              <li key={shared.targetBabyId}>
+                {findBabyName(shared.targetBabyId)} —{' '}
+                {shared.count} {t('imported children')}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {preview.details.unitRequirements.length >
         0 && (

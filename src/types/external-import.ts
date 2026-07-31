@@ -94,7 +94,8 @@ export type ExternalImportRecord =
   | ExternalImportDiaperRecord
   | ExternalImportMeasurementRecord
   | ExternalImportPumpRecord
-  | ExternalImportPlayRecord;
+  | ExternalImportPlayRecord
+  | ExternalImportMedicineRecord;
 
 export interface ExternalImportFeedRecord {
   readonly targetType: 'feed';
@@ -160,6 +161,18 @@ export interface ExternalImportPlayRecord {
   readonly startTime: string;
   readonly duration: number;
   readonly type: 'TUMMY_TIME';
+  readonly notes?: string;
+}
+
+export interface ExternalImportMedicineRecord {
+  readonly targetType: 'medicine';
+  readonly source: ExternalImportSource;
+  readonly sourceChildId: string;
+  readonly time: string;
+  readonly medicineName: string;
+  readonly doseAmount: number;
+  readonly unitAbbr?: 'MG' | 'ML' | 'TAB' | 'DROP';
+  readonly doseMinTime?: string;
   readonly notes?: string;
 }
 

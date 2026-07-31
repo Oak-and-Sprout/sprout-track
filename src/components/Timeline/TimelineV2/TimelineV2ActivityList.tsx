@@ -13,6 +13,7 @@ import { useAuthedImage, useInView, photoFileUrl } from '@/src/hooks/useAuthedIm
 import { getVisibleThumbnails } from '@/src/utils/photoUtils';
 import { TimelinePhotoInfo } from '@/app/api/types';
 import { getBadgeColorOption, getBadgeTextColor } from '@/src/constants/caretakerBadge';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 
 import '../timeline-activity-list.css';
 
@@ -387,7 +388,7 @@ const TimelineV2ActivityList = ({
                                         ).join(' ') : '';
                                       const duration = activity.duration ? `${Math.floor(activity.duration / 60)}h ${activity.duration % 60}m` : '';
                                       const parts = [];
-                                      if (location) parts.push(t(location));
+                                      if (location) parts.push(localizeSleepLocation(location, t));
                                       if (duration) parts.push(duration);
                                       if (!('endTime' in activity)) parts.push(t('Still asleep'));
                                       if ((activity as any).notes) {

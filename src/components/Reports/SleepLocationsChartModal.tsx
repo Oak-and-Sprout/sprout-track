@@ -17,6 +17,7 @@ import {
 import { LocationStat } from './reports.types';
 import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 
 interface SleepLocationsChartModalProps {
   open: boolean;
@@ -55,7 +56,7 @@ const SleepLocationsChartModal: React.FC<SleepLocationsChartModalProps> = ({
       : t('Total night sleep time by location for the selected date range.');
 
   const chartData = locations.map((loc) => ({
-    name: t(loc.location),
+    name: localizeSleepLocation(loc.location, t),
     minutes: loc.totalMinutes,
   }));
 

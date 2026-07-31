@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
 import { ApiResponse, SleepLocationSettings } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
+import { mergeLocationSettings } from '@/src/utils/sleepLocationUtils';
 
 async function handleGet(req: NextRequest, authContext: AuthResult): Promise<NextResponse<ApiResponse<SleepLocationSettings>>> {
   try {
@@ -47,54 +48,78 @@ async function handlePost(req: NextRequest, authContext: AuthResult): Promise<Ne
     }
 
     const body = await req.json();
-    const { hiddenLocations } = body as SleepLocationSettings;
+    // The body is a partial patch, not a full settings object — a visibility
+    // toggle sends only hiddenLocations and a reorder sends only locationOrder.
+    const { hiddenLocations, locationOrder } = body as Partial<SleepLocationSettings>;
 
-    if (!Array.isArray(hiddenLocations)) {
+    const isStringArray = (v: unknown): v is string[] =>
+      Array.isArray(v) && v.every((n) => typeof n === 'string');
+
+    if (hiddenLocations === undefined && locationOrder === undefined) {
       return NextResponse.json(
-        { success: false, error: 'Invalid format: hiddenLocations must be an array' },
+        { success: false, error: 'Provide hiddenLocations, locationOrder, or both' },
+        { status: 400 }
+      );
+    }
+    if (hiddenLocations !== undefined && !isStringArray(hiddenLocations)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid format: hiddenLocations must be an array of strings' },
+        { status: 400 }
+      );
+    }
+    if (locationOrder !== undefined && !isStringArray(locationOrder)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid format: locationOrder must be an array of strings' },
         { status: 400 }
       );
     }
 
-    let settings = await prisma.settings.findFirst({
-      where: { familyId: userFamilyId },
-      orderBy: { updatedAt: 'desc' },
-    });
+    // Read-modify-write inside a transaction so a concurrent save from an open
+    // SleepForm gear panel can't be clobbered with stale data — same reasoning
+    // as the $transaction in /api/sleep-locations.
+    const merged = await prisma.$transaction(async (tx) => {
+      const settings = await tx.settings.findFirst({
+        where: { familyId: userFamilyId },
+        orderBy: { updatedAt: 'desc' },
+      });
 
-    // Merge with the stored JSON so other fields (e.g. customLocations) survive
-    let existing: SleepLocationSettings = { hiddenLocations: [] };
-    const existingRaw = (settings as unknown as { sleepLocationSettings?: string } | null)?.sleepLocationSettings;
-    if (existingRaw) {
-      try {
-        existing = JSON.parse(existingRaw) as SleepLocationSettings;
-      } catch {
-        // keep defaults
+      let existing: SleepLocationSettings = { hiddenLocations: [] };
+      const existingRaw = (settings as unknown as { sleepLocationSettings?: string } | null)?.sleepLocationSettings;
+      if (existingRaw) {
+        try {
+          existing = JSON.parse(existingRaw) as SleepLocationSettings;
+        } catch {
+          // keep defaults
+        }
       }
-    }
-    const merged: SleepLocationSettings = { ...existing, hiddenLocations };
 
-    if (!settings) {
-      settings = await prisma.settings.create({
-        data: {
-          familyId: userFamilyId,
-          familyName: 'My Family',
-          securityPin: '111222',
-          defaultBottleUnit: 'OZ',
-          defaultSolidsUnit: 'TBSP',
-          defaultHeightUnit: 'IN',
-          defaultWeightUnit: 'LB',
-          defaultTempUnit: 'F',
-          sleepLocationSettings: JSON.stringify(merged),
-        } as any,
-      });
-    } else {
-      await prisma.settings.update({
-        where: { id: settings.id },
-        data: {
-          ...(({ sleepLocationSettings: JSON.stringify(merged) }) as any),
-        },
-      });
-    }
+      // Only fields actually present in the request overwrite stored values, so
+      // a locationOrder-only save can't drop customLocations and vice versa.
+      const next = mergeLocationSettings(existing, { hiddenLocations, locationOrder });
+
+      if (!settings) {
+        await tx.settings.create({
+          data: {
+            familyId: userFamilyId,
+            familyName: 'My Family',
+            securityPin: '111222',
+            defaultBottleUnit: 'OZ',
+            defaultSolidsUnit: 'TBSP',
+            defaultHeightUnit: 'IN',
+            defaultWeightUnit: 'LB',
+            defaultTempUnit: 'F',
+            sleepLocationSettings: JSON.stringify(next),
+          } as any,
+        });
+      } else {
+        await tx.settings.update({
+          where: { id: settings.id },
+          data: ({ sleepLocationSettings: JSON.stringify(next) }) as any,
+        });
+      }
+
+      return next;
+    });
 
     return NextResponse.json({
       success: true,

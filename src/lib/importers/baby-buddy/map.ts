@@ -8,6 +8,7 @@ import {
   ExternalImportSleepRecord,
 } from '@/src/types/external-import';
 import { BabyBuddyCsvRow } from './parse';
+import { parseBabyBuddyNumber } from './numbers';
 
 function required(
   row: BabyBuddyCsvRow,
@@ -127,13 +128,7 @@ function optionalNumber(
     return undefined;
   }
 
-  const number = Number(value);
-
-  if (!Number.isFinite(number)) {
-    throw new Error(`Invalid number in field ${field}: ${value}`);
-  }
-
-  return number;
+  return parseBabyBuddyNumber(value, field);
 }
 
 function durationSeconds(
@@ -153,10 +148,24 @@ function durationSeconds(
   return duration;
 }
 
+const bottleLikeMethods = [
+  'bottle',
+  'parent fed',
+  'self fed',
+] as const;
+
+export function isBabyBuddyBottleLikeMethod(
+  method: string | undefined,
+): boolean {
+  return bottleLikeMethods.includes(
+    (method?.trim() ?? '') as typeof bottleLikeMethods[number],
+  );
+}
+
 export function mapBabyBuddyFeeding(
   row: BabyBuddyCsvRow,
   amountUnit: ExternalImportFeedingAmountUnit = 'SKIP',
-): ExternalImportFeedRecord {
+): ExternalImportFeedRecord | null {
   const sourceChildId = required(row, 'child_id');
   const startTime = toUtcInput(required(row, 'start'));
   const endTime = toUtcInput(required(row, 'end'));
@@ -212,7 +221,7 @@ export function mapBabyBuddyFeeding(
     };
   }
 
-  if (method === 'bottle') {
+  if (isBabyBuddyBottleLikeMethod(method)) {
     const bottleType =
       sourceType === 'formula'
         ? 'Formula'
@@ -220,10 +229,20 @@ export function mapBabyBuddyFeeding(
           ? 'Breast Milk'
           : 'Other';
 
+    const methodNote =
+      method === 'parent fed'
+        ? 'Parent fed'
+        : method === 'self fed'
+          ? 'Self fed'
+          : undefined;
+
     return {
       ...base,
       type: 'BOTTLE',
       bottleType,
+      notes: [methodNote, base.notes]
+        .filter(Boolean)
+        .join(' — ') || undefined,
       ...(importAmount && {
         amount,
         unitAbbr: amountUnit,
@@ -231,9 +250,7 @@ export function mapBabyBuddyFeeding(
     };
   }
 
-  throw new Error(
-    `Unsupported Baby Buddy feeding combination: ${sourceType} / ${method}`,
-  );
+  return null;
 }
 
 export function mapBabyBuddyDiaperChange(

@@ -135,10 +135,15 @@ export default function ExternalImport({
     const childDestinations = Object.fromEntries(
       response.details.children.map(child => [
         child.sourceId,
-        {
-          mode: 'new' as const,
-          gender: '' as const,
-        },
+        child.activityOnly
+          ? {
+              mode: 'existing' as const,
+              targetBabyId: '',
+            }
+          : {
+              mode: 'new' as const,
+              gender: '' as const,
+            },
       ]),
     );
 
@@ -270,6 +275,21 @@ export default function ExternalImport({
         result.data as ExternalImportPreviewResponse;
 
       setPreview(previewResult);
+
+      const hasUsableFile =
+        previewResult.preview.files.some(
+          file => file.status === 'detected',
+        );
+
+      if (!hasUsableFile) {
+        setError(
+          t(
+            'None of the uploaded files match a supported Baby Buddy export',
+          ),
+        );
+        return;
+      }
+
       initialiseConfiguration(previewResult);
       await loadExistingBabies();
       setStep('configure');

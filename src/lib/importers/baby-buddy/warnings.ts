@@ -1,5 +1,6 @@
 import { ExternalImportFile } from '@/src/types/external-import';
 import { babyBuddyDetector } from './detect';
+import { isBabyBuddyBottleLikeMethod } from './map';
 import { parseBabyBuddyCsv } from './parse';
 import {
   BabyBuddyImportWarning,
@@ -97,6 +98,21 @@ export function collectBabyBuddyWarnings(
               Boolean(row.amount?.trim()),
           ),
         );
+
+        addWarning(
+          'feeding-combination-unsupported',
+          'feeding',
+          countMatching(rows, row => {
+            const method = row.method?.trim();
+            const type = row.type?.trim();
+            return !(
+              ['left breast', 'right breast', 'both breasts']
+                .includes(method ?? '') ||
+              type === 'solid food' ||
+              isBabyBuddyBottleLikeMethod(method)
+            );
+          }),
+        );
         break;
 
       case 'diaper-change':
@@ -126,6 +142,17 @@ export function collectBabyBuddyWarnings(
           'pumping-defaults-to-stored',
           'pumping',
           rows.length,
+        );
+        break;
+
+      case 'medication':
+        addWarning(
+          'medication-dosage-missing',
+          'medication',
+          countMatching(
+            rows,
+            row => !row.dosage?.trim(),
+          ),
         );
         break;
     }

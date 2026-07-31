@@ -44,6 +44,16 @@ const entitySignatures = [
     requiredHeaders: ['id', 'child_id', 'height', 'date'],
   },
   {
+    entityType: 'medication',
+    requiredHeaders: [
+      'id',
+      'child_id',
+      'name',
+      'dosage',
+      'time',
+    ],
+  },
+  {
     entityType: 'note',
     requiredHeaders: ['id', 'child_id', 'note', 'time'],
   },

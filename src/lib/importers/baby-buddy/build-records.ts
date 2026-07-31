@@ -1,9 +1,11 @@
 import {
+  ExternalImportFeedRecord,
   ExternalImportFile,
   ExternalImportRecord,
 } from '@/src/types/external-import';
 import { babyBuddyDetector } from './detect';
 import {
+  isBabyBuddyBottleLikeMethod,
   mapBabyBuddyChild,
   mapBabyBuddyDiaperChange,
   mapBabyBuddyFeeding,
@@ -15,6 +17,7 @@ import {
   mapBabyBuddyPumping,
   mapBabyBuddyTummyTime,
 } from './remaining-map';
+import { mapBabyBuddyMedication } from './medication-map';
 import { parseBabyBuddyCsv } from './parse';
 import {
   BabyBuddyExecutionConfiguration,
@@ -40,15 +43,24 @@ export function buildBabyBuddyImportRecords(
   const detections = babyBuddyDetector.detectFiles(files);
   const records: ExternalImportRecord[] = [];
 
+  const usableFiles = detections.filter(
+    detection =>
+      detection.status === 'detected' &&
+      detection.entityType,
+  );
+
+  if (usableFiles.length === 0) {
+    throw new Error(
+      'None of the uploaded files match a supported Baby Buddy export',
+    );
+  }
+
   detections.forEach((detection, index) => {
     if (
       detection.status !== 'detected' ||
       !detection.entityType
     ) {
-      throw new Error(
-        detection.error ||
-          `Unable to identify import file: ${detection.fileName}`,
-      );
+      return;
     }
 
     const rows = parseBabyBuddyCsv(
@@ -77,7 +89,7 @@ export function buildBabyBuddyImportRecords(
       case 'feeding': {
         const populatedBottleAmounts = rows.some(
           row =>
-            row.method?.trim() === 'bottle' &&
+            isBabyBuddyBottleLikeMethod(row.method) &&
             Boolean(row.amount?.trim()),
         );
 
@@ -89,9 +101,12 @@ export function buildBabyBuddyImportRecords(
           : configuration.feedingUnit || 'SKIP';
 
         records.push(
-          ...rows.map(row =>
-            mapBabyBuddyFeeding(row, unit),
-          ),
+          ...rows
+            .map(row => mapBabyBuddyFeeding(row, unit))
+            .filter(
+              (record): record is ExternalImportFeedRecord =>
+                record !== null,
+            ),
         );
         break;
       }
@@ -190,6 +205,12 @@ export function buildBabyBuddyImportRecords(
       case 'tummy-time':
         records.push(
           ...rows.map(mapBabyBuddyTummyTime),
+        );
+        break;
+
+      case 'medication':
+        records.push(
+          ...rows.map(mapBabyBuddyMedication),
         );
         break;
 

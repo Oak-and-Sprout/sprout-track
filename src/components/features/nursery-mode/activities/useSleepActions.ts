@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalization } from '@/src/context/localization';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 import { ActivityHookArgs, ActivityView, ActionButton, formatHMMSS, undoDeleteLog } from './types';
 
 // Fallback when no nursery setting is configured yet — matches NURSERY_DEFAULTS.sleep.locations.
@@ -192,7 +193,7 @@ export function useSleepActions({ babyId, toUTCString, onLog, onUndoable, sleepL
     buttons = [
       ...LOCATIONS.map(loc => ({
         key: loc,
-        label: t(loc),
+        label: localizeSleepLocation(loc, t),
         onClick: () => startSleep(loc),
         disabled: submitting,
       })),

@@ -2,8 +2,9 @@ export interface BabyBuddyPreviewChild {
   readonly sourceId: string;
   readonly firstName: string;
   readonly lastName: string;
-  readonly birthDate: string;
+  readonly birthDate?: string;
   readonly birthTime?: string;
+  readonly activityOnly?: boolean;
 }
 
 export type BabyBuddyUnitRequirementType =
@@ -34,7 +35,9 @@ export type BabyBuddyWarningCode =
   | 'wet-diaper-colour-unsupported'
   | 'breast-feed-amount-unsupported'
   | 'diaper-amount-unsupported'
-  | 'pumping-defaults-to-stored';
+  | 'pumping-defaults-to-stored'
+  | 'medication-dosage-missing'
+  | 'feeding-combination-unsupported';
 
 export interface BabyBuddyImportWarning {
   readonly code: BabyBuddyWarningCode;

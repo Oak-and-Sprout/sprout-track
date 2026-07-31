@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseBabyBuddyCsv } from '../src/lib/importers/baby-buddy';
+import { parseBabyBuddyCsv, parseBabyBuddyNumber } from '../src/lib/importers/baby-buddy';
 import { babyBuddyDetector } from '../src/lib/importers/baby-buddy';
 import {
   analyseBabyBuddyFiles,
@@ -144,6 +144,11 @@ describe('Baby Buddy CSV detection', () => {
       'id,child_id,weight,date,notes,tags\n',
       'weight',
     ],
+    [
+      'Medication-2026-01-01.csv',
+      'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
+      'medication',
+    ],
   ])(
     'detects %s',
     (name, content, expectedEntityType) => {
@@ -265,6 +270,29 @@ describe('Baby Buddy import analysis', () => {
     ]);
   });
 
+  it('counts parent-fed amounts toward the feeding unit requirement too', () => {
+    const analysis = analyseBabyBuddyFiles([
+      {
+        name: 'Feeding.csv',
+        content: [
+          'id,child_id,start,end,type,method,amount,notes,tags',
+          '1,7,2026-01-01 10:00:00,2026-01-01 10:30:00,formula,parent fed,90,,',
+          '2,7,2026-01-01 11:00:00,2026-01-01 11:30:00,breast milk,self fed,60,,',
+          '3,7,2026-01-01 12:00:00,2026-01-01 12:30:00,breast milk,both breasts,,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(analysis.unitRequirements).toEqual([
+      {
+        entityType: 'feeding',
+        populatedRows: 2,
+        allowedUnits: ['ML', 'OZ', 'SKIP'],
+        optional: true,
+      },
+    ]);
+  });
+
   it('does not request a feeding unit for blank amounts', () => {
     const analysis = analyseBabyBuddyFiles([
       {
@@ -350,6 +378,84 @@ describe('Baby Buddy import analysis', () => {
           requirement.entityType === 'feeding',
       ),
     ).toBeUndefined();
+  });
+
+  it('derives children from activity files when no child export is present', () => {
+    const details = analyseBabyBuddyFiles([
+      {
+        name: 'Sleep.csv',
+        content: [
+          'id,child_id,child_first_name,child_last_name,start,end,nap,notes,tags',
+          '12,1,Jasmin,Burke,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+          '13,2,Ada,Burke,2026-01-02 12:00:00,2026-01-02 13:00:00,1,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(details.children).toEqual([
+      {
+        sourceId: '1',
+        firstName: 'Jasmin',
+        lastName: 'Burke',
+        activityOnly: true,
+      },
+      {
+        sourceId: '2',
+        firstName: 'Ada',
+        lastName: 'Burke',
+        activityOnly: true,
+      },
+    ]);
+  });
+
+  it('derives unnamed children from activity files without name columns', () => {
+    const details = analyseBabyBuddyFiles([
+      {
+        name: 'Sleep.csv',
+        content: [
+          'id,child_id,start,end,nap,notes,tags',
+          '12,1,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(details.children).toEqual([
+      {
+        sourceId: '1',
+        firstName: '',
+        lastName: '',
+        activityOnly: true,
+      },
+    ]);
+  });
+
+  it('prefers child-export children over activity-derived ones', () => {
+    const details = analyseBabyBuddyFiles([
+      {
+        name: 'Sleep.csv',
+        content: [
+          'id,child_id,child_first_name,child_last_name,start,end,nap,notes,tags',
+          '12,7,Test,Child,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+        ].join('\n'),
+      },
+      {
+        name: 'Child.csv',
+        content: [
+          'id,first_name,last_name,birth_date,birth_time',
+          '7,Test,Child,2026-01-01,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(details.children).toEqual([
+      {
+        sourceId: '7',
+        firstName: 'Test',
+        lastName: 'Child',
+        birthDate: '2026-01-01',
+        birthTime: undefined,
+      },
+    ]);
   });
 
 });
@@ -489,6 +595,67 @@ describe('Baby Buddy import warnings', () => {
 
     expect(warnings).toEqual([]);
   });
+
+  it('warns about unsupported feeding type/method combinations', () => {
+    const warnings = collectBabyBuddyWarnings([
+      {
+        name: 'Feeding.csv',
+        content: [
+          'id,child_id,start,end,type,method,amount,notes,tags',
+          '1,1,2026-01-01 10:00:00,2026-01-01 10:30:00,water,syringe??,,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(warnings).toContainEqual({
+      code: 'feeding-combination-unsupported',
+      entityType: 'feeding',
+      affectedRows: 1,
+    });
+  });
+
+  it('warns when medication rows have no dosage', () => {
+    const warnings = collectBabyBuddyWarnings([
+      {
+        name: 'Medication.csv',
+        content: [
+          'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
+          '1,7,Test,Child,Paracetamol,2.5,ml,2026-01-02 08:00:00,,,',
+          '2,7,Test,Child,Vitamin D,,drops,2026-01-03 08:00:00,,,',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(warnings).toContainEqual({
+      code: 'medication-dosage-missing',
+      entityType: 'medication',
+      affectedRows: 1,
+    });
+  });
+});
+
+}
+
+
+{
+describe('Baby Buddy number parsing', () => {
+  it.each([
+    ['10.45', 10.45],
+    ['10,45', 10.45],
+    ['-3,5', -3.5],
+    ['120', 120],
+  ])('parses %s as %d', (source, expected) => {
+    expect(parseBabyBuddyNumber(source, 'amount')).toBe(expected);
+  });
+
+  it.each([['abc'], ['1,2,3'], ['10,45.6'], ['']])(
+    'rejects %s',
+    source => {
+      expect(() =>
+        parseBabyBuddyNumber(source, 'amount'),
+      ).toThrow(`Invalid number in field amount: ${source}`);
+    },
+  );
 });
 
 }

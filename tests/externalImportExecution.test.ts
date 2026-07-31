@@ -5,6 +5,7 @@ import {
 } from '../src/lib/importers/execute';
 import {
   ExternalImportBabyRecord,
+  ExternalImportMedicineRecord,
   ExternalImportSleepRecord,
 } from '../src/types/external-import';
 
@@ -36,6 +37,23 @@ const sleepRecord: ExternalImportSleepRecord = {
   notes: 'Slept in the stroller',
 };
 
+const medicineRecord: ExternalImportMedicineRecord = {
+  targetType: 'medicine',
+  source: {
+    providerId: 'baby-buddy',
+    entityType: 'medication',
+    recordId: '41',
+    childId: '7',
+  },
+  sourceChildId: '7',
+  time: '2026-01-15T08:00:00',
+  medicineName: 'Paracetamol',
+  doseAmount: 2.5,
+  unitAbbr: 'ML',
+  doseMinTime: '00:06:00',
+  notes: 'After food',
+} as const;
+
 function createTransactionMock() {
   return {
     baby: {
@@ -65,6 +83,13 @@ function createTransactionMock() {
       create: vi.fn(),
     },
     playLog: {
+      create: vi.fn(),
+    },
+    medicine: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+    },
+    medicineLog: {
       create: vi.fn(),
     },
   };
@@ -272,5 +297,109 @@ describe('external import execution', () => {
     ).rejects.toThrow(
       'Source child 7 was previously mapped to another baby',
     );
+  });
+
+  it('creates a medicine and log for a medication record', async () => {
+    const tx = createTransactionMock();
+
+    tx.baby.findMany.mockResolvedValue([
+      { id: 'baby-existing' },
+    ]);
+    tx.externalImportRecord.findUnique.mockResolvedValue(null);
+    tx.externalImportRecord.create.mockResolvedValue({
+      id: 'provenance',
+    });
+    tx.medicine.findMany.mockResolvedValue([]);
+    tx.medicine.create.mockResolvedValue({
+      id: 'medicine-new',
+    });
+    tx.medicineLog.create.mockResolvedValue({
+      id: 'medicine-log-new',
+    });
+
+    const result = await executeExternalImport(
+      tx as unknown as Prisma.TransactionClient,
+      {
+        familyId: 'family-1',
+        caretakerId: 'caretaker-1',
+        records: [medicineRecord],
+        configuration: {
+          sourceTimezone: 'UTC',
+          childDestinations: {
+            '7': {
+              mode: 'existing',
+              targetBabyId: 'baby-existing',
+            },
+          },
+        },
+      },
+    );
+
+    expect(tx.medicine.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        familyId: 'family-1',
+        name: 'Paracetamol',
+        unitAbbr: 'ML',
+        doseMinTime: '00:06:00',
+        active: true,
+      }),
+    });
+
+    expect(tx.medicineLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        familyId: 'family-1',
+        caretakerId: 'caretaker-1',
+        babyId: 'baby-existing',
+        medicineId: 'medicine-new',
+        time: new Date('2026-01-15T08:00:00.000Z'),
+        doseAmount: 2.5,
+        unitAbbr: 'ML',
+        notes: 'After food',
+      }),
+    });
+
+    expect(result.created).toBe(1);
+  });
+
+  it('reuses an existing medicine by case-insensitive name', async () => {
+    const tx = createTransactionMock();
+
+    tx.baby.findMany.mockResolvedValue([
+      { id: 'baby-existing' },
+    ]);
+    tx.externalImportRecord.findUnique.mockResolvedValue(null);
+    tx.externalImportRecord.create.mockResolvedValue({
+      id: 'provenance',
+    });
+    tx.medicine.findMany.mockResolvedValue([
+      { id: 'medicine-existing', name: 'PARACETAMOL' },
+    ]);
+    tx.medicineLog.create.mockResolvedValue({
+      id: 'medicine-log-new',
+    });
+
+    await executeExternalImport(
+      tx as unknown as Prisma.TransactionClient,
+      {
+        familyId: 'family-1',
+        records: [medicineRecord],
+        configuration: {
+          sourceTimezone: 'UTC',
+          childDestinations: {
+            '7': {
+              mode: 'existing',
+              targetBabyId: 'baby-existing',
+            },
+          },
+        },
+      },
+    );
+
+    expect(tx.medicine.create).not.toHaveBeenCalled();
+    expect(tx.medicineLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        medicineId: 'medicine-existing',
+      }),
+    });
   });
 });

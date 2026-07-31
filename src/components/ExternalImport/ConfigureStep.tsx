@@ -16,6 +16,7 @@ import {
   ExternalImportPreviewResponse,
   ExternalImportUiConfiguration,
 } from './external-import.types';
+import { findSharedChildDestinations } from './destination-utils';
 
 interface ConfigureStepProps {
   readonly preview: ExternalImportPreviewResponse;
@@ -53,7 +54,19 @@ const warningLabels: Record<string, string> = {
     'Nappy amounts are not imported',
   'pumping-defaults-to-stored':
     'Pumping records are imported as stored milk',
+  'medication-dosage-missing':
+    'Medication doses without an amount are imported as 0',
+  'feeding-combination-unsupported':
+    'Feeds with an unrecognized method are skipped',
 };
+
+function childLabel(
+  child: { firstName: string; lastName: string; sourceId: string },
+  t: (key: string) => string,
+): string {
+  const name = `${child.firstName} ${child.lastName}`.trim();
+  return name || `${t('Child')} ${child.sourceId}`;
+}
 
 export default function ConfigureStep({
   preview,
@@ -63,6 +76,20 @@ export default function ConfigureStep({
   onConfigurationChange,
 }: ConfigureStepProps) {
   const { t } = useLocalization();
+
+  const sharedDestinations = findSharedChildDestinations(
+    configuration.childDestinations,
+  );
+
+  const findBabyName = (babyId: string) => {
+    const baby = babies.find(
+      candidate => candidate.id === babyId,
+    );
+
+    return baby
+      ? `${baby.firstName} ${baby.lastName}`
+      : babyId;
+  };
 
   const updateChildDestination = (
     sourceId: string,
@@ -92,6 +119,27 @@ export default function ConfigureStep({
 
   return (
     <div className="space-y-6">
+      {preview.preview.files.some(
+        file => file.status !== 'detected',
+      ) && (
+        <section className="rounded-lg border border-amber-700 bg-amber-950/40 p-4">
+          <h3 className="font-medium text-amber-100">
+            {t('Files that will be skipped')}
+          </h3>
+
+          <ul className="mt-3 space-y-2 text-sm text-amber-200">
+            {preview.preview.files
+              .filter(file => file.status !== 'detected')
+              .map(file => (
+                <li key={file.fileName}>
+                  {file.fileName} —{' '}
+                  {file.error || t('This file will be skipped')}
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
+
       <section className="rounded-lg border border-slate-600 p-4">
         <h3 className="font-medium text-slate-100">
           {t('Child destination')}
@@ -116,62 +164,81 @@ export default function ConfigureStep({
                 className="rounded-md border border-slate-600 p-3"
               >
                 <div className="font-medium text-slate-100">
-                  {child.firstName} {child.lastName}
+                  {childLabel(child, t)}
                 </div>
 
-                <div className="mt-1 text-sm text-slate-400">
-                  {t('Birth date')}: {child.birthDate}
-                </div>
+                {child.birthDate && (
+                  <div className="mt-1 text-sm text-slate-400">
+                    {t('Birth date')}: {child.birthDate}
+                  </div>
+                )}
 
                 <div className="mt-3 space-y-3">
-                  <div>
-                    <Label>
-                      {t('Destination')}
-                    </Label>
+                  {child.activityOnly ? (
+                    <p className="text-sm text-slate-300">
+                      {t(
+                        'No child export was included for this child, so records can only be added to an existing baby',
+                      )}
+                    </p>
+                  ) : (
+                    <div>
+                      <Label>
+                        {t('Destination')}
+                      </Label>
 
-                    <Select
-                      value={destination?.mode || 'new'}
-                      onValueChange={value => {
-                        if (value === 'existing') {
-                          updateChildDestination(
-                            child.sourceId,
-                            {
-                              mode: 'existing',
-                              targetBabyId:
-                                babies[0]?.id || '',
-                            },
-                          );
-                        } else {
-                          updateChildDestination(
-                            child.sourceId,
-                            {
-                              mode: 'new',
-                              gender: '',
-                            },
-                          );
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">
-                          {t('Add as a new baby')}
-                        </SelectItem>
-                        <SelectItem
-                          value="existing"
-                          disabled={
-                            babies.length === 0
+                      <Select
+                        value={destination?.mode || 'new'}
+                        onValueChange={value => {
+                          if (value === 'existing') {
+                            updateChildDestination(
+                              child.sourceId,
+                              {
+                                mode: 'existing',
+                                targetBabyId:
+                                  babies[0]?.id || '',
+                              },
+                            );
+                          } else {
+                            updateChildDestination(
+                              child.sourceId,
+                              {
+                                mode: 'new',
+                                gender: '',
+                              },
+                            );
                           }
-                        >
-                          {t(
-                            'Add records to an existing baby',
-                          )}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">
+                            {t('Add as a new baby')}
+                          </SelectItem>
+                          <SelectItem
+                            value="existing"
+                            disabled={
+                              babies.length === 0
+                            }
+                          >
+                            {t(
+                              'Add records to an existing baby',
+                            )}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {child.activityOnly &&
+                    babies.length === 0 && (
+                      <p className="text-sm text-amber-300">
+                        {t(
+                          'Create a baby in Sprout Track first, or include the Child export file',
+                        )}
+                      </p>
+                    )}
 
                   {destination?.mode === 'new' && (
                     <div>
@@ -256,6 +323,29 @@ export default function ConfigureStep({
           })}
         </div>
       </section>
+
+      {sharedDestinations.length > 0 && (
+        <section className="rounded-lg border border-amber-700 bg-amber-950/40 p-4">
+          <h3 className="font-medium text-amber-100">
+            {t('Same destination selected for multiple children')}
+          </h3>
+
+          <p className="mt-1 text-sm text-amber-200">
+            {t(
+              'Their records will all be added to the same baby. Change the destinations if this is not intended.',
+            )}
+          </p>
+
+          <ul className="mt-3 space-y-1 text-sm text-amber-200">
+            {sharedDestinations.map(shared => (
+              <li key={shared.targetBabyId}>
+                {findBabyName(shared.targetBabyId)} —{' '}
+                {shared.count} {t('imported children')}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="rounded-lg border border-slate-600 p-4">
         <h3 className="font-medium text-slate-100">

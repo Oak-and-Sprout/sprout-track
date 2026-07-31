@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { cn } from '@/src/lib/utils';
 import { useLocalization } from '@/src/context/localization';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 import { reportCardStyles as s, chartColors } from './monthly-report-card.styles';
 import type { SleepSectionProps } from './monthly-report-card.types';
 
@@ -22,7 +23,7 @@ const SleepSection: React.FC<SleepSectionProps> = ({ sleep, isPdfExport }) => {
 
   // Location bar data
   const locationData = sleep.locationDistribution.map(loc => ({
-    name: t(loc.location),
+    name: localizeSleepLocation(loc.location, t),
     [t('Night')]: loc.nightCount,
     [t('Naps')]: loc.napCount,
   }));

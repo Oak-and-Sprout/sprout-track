@@ -4,6 +4,7 @@ import { ReactElement, CSSProperties, useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Badge } from './Badge';
 import { ActivityView, TileLog } from './types';
+import { scrollTargetForChild } from '@/src/utils/nurseryCardScroll';
 
 export interface ActivityCardProps {
   view: ActivityView;
@@ -28,10 +29,26 @@ export function ActivityCard({ view, log, iconColor, iconShape, dimmed = false }
 
   // Opening a decision screen from a scrolled-down grid would otherwise keep the old
   // scroll offset, starting the expanded card with its header out of view above.
+  //
+  // Scroll the activity scroller directly rather than calling scrollIntoView():
+  // that scrolls every scrollable ancestor, and `.nursery-stage` is one of them
+  // (`overflow: hidden` still scrolls programmatically). It ended up permanently
+  // offset, exposing the page wrapper's background as a black bar that never
+  // recovered — the stage is meant to be a fixed, immovable frame.
   useEffect(() => {
-    if (question) {
-      cardRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
-    }
+    if (!question) return;
+    const card = cardRef.current;
+    const scroller = card?.closest<HTMLElement>('.nursery-actscroll');
+    if (!card || !scroller) return;
+    scroller.scrollTo({
+      top: scrollTargetForChild({
+        scrollTop: scroller.scrollTop,
+        childTop: card.getBoundingClientRect().top,
+        containerTop: scroller.getBoundingClientRect().top,
+        scrollMarginTop: parseFloat(getComputedStyle(card).scrollMarginTop),
+      }),
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
   }, [question, prefersReducedMotion]);
 
   // With a search field, its row hosts the cancel action so backing out never

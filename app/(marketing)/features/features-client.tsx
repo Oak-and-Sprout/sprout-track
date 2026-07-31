@@ -54,7 +54,7 @@ export default function FeaturesPage() {
           <FeatureRow
             flip
             title={t('In grandma’s language too')}
-            paragraph={t('Sprout Track speaks eleven languages, and every caretaker picks their own. Mom logs in English, oma logs in Deutsch. Same timeline, same entries.')}
+            paragraph={t('Sprout Track speaks twelve languages, and every caretaker picks their own. Mom logs in English, oma logs in Deutsch. Same timeline, same entries.')}
             figure={<FeatureChips center chips={supportedLanguages.map((lang) => ({ label: lang.name }))} />}
           />
           <FeatureRow

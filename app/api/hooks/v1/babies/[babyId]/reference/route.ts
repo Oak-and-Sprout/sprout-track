@@ -4,14 +4,14 @@ import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../auth
 import { checkRateLimit } from '../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../response';
 import { BATH_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, SLEEP_QUALITIES } from '../../../field-values';
+import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
+import { applyLocationOrder } from '@/src/utils/sleepLocationUtils';
 
 const VALID_TYPES = [
   'medicines', 'supplements', 'sleep-locations', 'play-categories', 'feed-types',
   'diaper-conditions', 'diaper-colors', 'sleep-qualities', 'bath-types', 'units',
 ] as const;
 type RefType = typeof VALID_TYPES[number];
-
-const DEFAULT_SLEEP_LOCATIONS = ['Bassinet', 'Stroller', 'Crib', 'Car Seat', 'Parents Room', 'Contact', 'Other'];
 
 const FEED_TYPES = [
   { value: 'BREAST', description: 'Breastfeeding' },
@@ -45,7 +45,7 @@ function isDisplayCased(loc: string): boolean {
   return !loc.includes('_') && /[a-z]/.test(loc);
 }
 
-async function getSleepLocations(babyId: string) {
+async function getSleepLocations(babyId: string, familyId: string) {
   const customLocations = await prisma.sleepLog.findMany({
     where: { babyId, deletedAt: null, location: { not: null } },
     select: { location: true },
@@ -61,7 +61,31 @@ async function getSleepLocations(babyId: string) {
       seen.set(key, loc);
     }
   }
-  return Array.from(seen.values());
+
+  // Order after dedup, so a saved order naming a collapsed legacy token
+  // (e.g. "CAR_SEAT") can't resurrect it alongside its display form.
+  const names = Array.from(seen.values());
+  const settings = await prisma.settings.findFirst({
+    where: { familyId },
+    orderBy: { updatedAt: 'desc' },
+  });
+  let locationOrder: string[] = [];
+  const raw = (settings as unknown as { sleepLocationSettings?: string } | null)?.sleepLocationSettings;
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as { locationOrder?: unknown };
+      if (Array.isArray(parsed.locationOrder)) {
+        locationOrder = parsed.locationOrder.filter((n): n is string => typeof n === 'string');
+      }
+    } catch {
+      // ignore malformed settings
+    }
+  }
+
+  return applyLocationOrder(
+    names.map((name) => ({ name, count: 0, isDefault: false, hidden: false })),
+    locationOrder,
+  ).map((s) => s.name);
 }
 
 async function getUnits() {
@@ -109,7 +133,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
     data.supplements = await getMedicines(ctx.familyId, true);
   }
   if (!typeParam || typeParam === 'sleep-locations') {
-    data.sleepLocations = await getSleepLocations(babyId);
+    data.sleepLocations = await getSleepLocations(babyId, ctx.familyId);
   }
   if (!typeParam || typeParam === 'play-categories') {
     data.playCategories = await getPlayCategories(babyId, playType);

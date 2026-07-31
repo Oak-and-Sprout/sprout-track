@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Pencil, GitMerge, Trash2, Eye, EyeOff, Loader2, Plus } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Pencil, GitMerge, Trash2, Eye, EyeOff, Loader2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Badge } from '@/src/components/ui/badge';
@@ -15,7 +15,7 @@ import {
 import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { SleepLocationSummary } from '@/app/api/types';
-import { getDuplicateSuggestions } from '@/src/utils/sleepLocationUtils';
+import { getDuplicateSuggestions, moveLocation, localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 import './settings-managers.css';
 
 type RowAction =
@@ -41,9 +41,12 @@ export default function SleepLocationManager() {
   const [action, setAction] = useState<RowAction | null>(null);
   const [newName, setNewName] = useState<string | null>(null);
 
-  const fetchLocations = useCallback(async () => {
+  // `silent` skips the loading toggle so a post-mutation resync doesn't unmount
+  // the list: the spinner branch would replace the optimistic reorder with a
+  // flash and destroy the arrow button the keyboard user is standing on.
+  const fetchLocations = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const response = await fetch('/api/sleep-locations', { headers: authHeaders() });
       const data = await response.json();
@@ -55,13 +58,41 @@ export default function SleepLocationManager() {
       console.error('Error fetching sleep locations:', err);
       setError(t('Failed to load sleep locations'));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [t]);
 
+  // Only the initial mount fetch shows the spinner; every refetch below is silent.
   useEffect(() => {
     fetchLocations();
   }, [fetchLocations]);
+
+  // Arrow buttons keyed `${name}:up` / `${name}:down`, so focus can be restored
+  // after a reorder re-renders the list rows in their new positions.
+  const moveButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const pendingMoveFocusRef = useRef<string | null>(null);
+
+  // Restore focus to the arrow that was pressed. Deferred until `busy` clears,
+  // because the arrows are disabled while the save is in flight and a disabled
+  // button cannot take focus.
+  useEffect(() => {
+    if (busy) return;
+    const key = pendingMoveFocusRef.current;
+    if (!key) return;
+    pendingMoveFocusRef.current = null;
+    const button = moveButtonRefs.current[key];
+    if (button && !button.disabled) {
+      button.focus();
+      return;
+    }
+    // The row reached a boundary and this arrow became disabled; move focus to
+    // the opposite-direction arrow on the same row. Split from the right so a
+    // location name containing ':' still resolves.
+    const separator = key.lastIndexOf(':');
+    const name = key.slice(0, separator);
+    const direction = key.slice(separator + 1);
+    moveButtonRefs.current[`${name}:${direction === 'up' ? 'down' : 'up'}`]?.focus();
+  }, [locations, busy]);
 
   const duplicateOf = useMemo(
     () => new Map(getDuplicateSuggestions(locations).map((s) => [s.name, s.mergeInto])),
@@ -87,13 +118,17 @@ export default function SleepLocationManager() {
       const data = await response.json();
       if (response.ok && data.success) {
         onSuccess(data.data);
-        await fetchLocations();
+        await fetchLocations(true);
       } else {
         errorToast(data.error, 'Failed to update sleep locations');
+        // Resync from the server so any optimistic local update (e.g. reorder)
+        // rolls back. A harmless redundant fetch for the non-optimistic callers.
+        await fetchLocations(true);
       }
     } catch (err) {
       console.error('Error updating sleep locations:', err);
       errorToast(undefined, 'Failed to update sleep locations');
+      await fetchLocations(true);
     } finally {
       setBusy(false);
     }
@@ -109,6 +144,30 @@ export default function SleepLocationManager() {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ hiddenLocations }),
+      }),
+      () => {},
+    );
+  };
+
+  const reorder = (name: string, direction: -1 | 1) => {
+    // The row this button sits on is about to move; remember which arrow was
+    // pressed so the effect above can put focus back on it afterwards.
+    pendingMoveFocusRef.current = `${name}:${direction === -1 ? 'up' : 'down'}`;
+    // Send the full resolved list — including hidden rows, since ordering is
+    // independent of visibility. The first press materializes an order for a
+    // family that has never reordered; later presses permute it.
+    const locationOrder = moveLocation(locations.map((l) => l.name), name, direction);
+    // Optimistic: a round trip per press is sluggish when moving a row several
+    // slots. mutate() refetches on both success and failure, so a failed save
+    // rolls this back to the server's order.
+    // The non-null assertion is safe: names are unique within `locations`, and
+    // moveLocation returns a permutation of the very names mapped out of it.
+    setLocations(locationOrder.map((n) => locations.find((l) => l.name === n)!));
+    mutate(
+      () => fetch('/api/sleep-location-settings', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ locationOrder }),
       }),
       () => {},
     );
@@ -169,7 +228,7 @@ export default function SleepLocationManager() {
     return (
       <div className="flex items-center gap-3 py-2">
         <p className="text-sm text-red-600">{error}</p>
-        <Button variant="outline" size="sm" onClick={fetchLocations}>{t('Retry')}</Button>
+        <Button variant="outline" size="sm" onClick={() => fetchLocations()}>{t('Retry')}</Button>
       </div>
     );
   }
@@ -177,7 +236,7 @@ export default function SleepLocationManager() {
   return (
     <div>
       <ul className="settings-manager-list rounded-xl border-2 border-slate-200 divide-y divide-gray-200 overflow-hidden">
-        {locations.map((location) => (
+        {locations.map((location, index) => (
           <LocationRow
             key={location.name}
             location={location}
@@ -186,6 +245,10 @@ export default function SleepLocationManager() {
             action={action?.name === location.name ? action : null}
             setAction={setAction}
             busy={busy}
+            isFirst={index === 0}
+            isLast={index === locations.length - 1}
+            moveButtonRefs={moveButtonRefs}
+            onReorder={reorder}
             onToggleHidden={toggleHidden}
             onRename={renameLocation}
             onDelete={deleteLocation}
@@ -239,6 +302,10 @@ interface LocationRowProps {
   action: RowAction | null;
   setAction: (action: RowAction | null) => void;
   busy: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  moveButtonRefs: React.MutableRefObject<Record<string, HTMLButtonElement | null>>;
+  onReorder: (name: string, direction: -1 | 1) => void;
   onToggleHidden: (location: SleepLocationSummary) => void;
   onRename: (from: string, to: string) => void;
   onDelete: (name: string) => void;
@@ -247,11 +314,14 @@ interface LocationRowProps {
 
 function LocationRow({
   location, allLocations, duplicateTarget, action, setAction, busy,
-  onToggleHidden, onRename, onDelete, t,
+  isFirst, isLast, moveButtonRefs, onReorder, onToggleHidden, onRename, onDelete, t,
 }: LocationRowProps) {
   const { name, count, isDefault, hidden } = location;
-  // Quote values with leading/trailing whitespace so "Crib " is visibly distinct from "Crib"
-  const displayName = name !== name.trim() ? `"${name}"` : name;
+  // Default names are translation keys; custom names are user data shown as
+  // typed. Quote values with leading/trailing whitespace so "Crib " is
+  // visibly distinct from "Crib".
+  const label = localizeSleepLocation(name, t);
+  const displayName = name !== name.trim() ? `"${label}"` : label;
   const mergeTargets = allLocations.filter((l) => l.name !== name);
   const iconButton = 'h-7 w-7 p-0';
 
@@ -267,6 +337,33 @@ function LocationRow({
           <Badge variant="error" className="text-xs">{t('Possible duplicate')}</Badge>
         )}
         <span className="flex-1" />
+        {/* aria-label uses the unquoted label: the quotes around a
+            whitespace-padded name are a visual cue, and a screen reader would
+            otherwise announce the literal quote marks. */}
+        <Button
+          ref={(el) => { moveButtonRefs.current[`${name}:up`] = el; }}
+          variant="ghost"
+          size="sm"
+          className={iconButton}
+          disabled={busy || isFirst}
+          onClick={() => onReorder(name, -1)}
+          aria-label={`${t('Move up')}: ${label}`}
+          title={t('Move up')}
+        >
+          <ChevronUp className="h-4 w-4 text-gray-600" aria-hidden="true" />
+        </Button>
+        <Button
+          ref={(el) => { moveButtonRefs.current[`${name}:down`] = el; }}
+          variant="ghost"
+          size="sm"
+          className={iconButton}
+          disabled={busy || isLast}
+          onClick={() => onReorder(name, 1)}
+          aria-label={`${t('Move down')}: ${label}`}
+          title={t('Move down')}
+        >
+          <ChevronDown className="h-4 w-4 text-gray-600" aria-hidden="true" />
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -357,7 +454,9 @@ function LocationRow({
             <SelectContent>
               {mergeTargets.map((l) => (
                 <SelectItem key={l.name} value={l.name}>
-                  {l.name !== l.name.trim() ? `"${l.name}"` : l.name}
+                  {l.name !== l.name.trim()
+                    ? `"${localizeSleepLocation(l.name, t)}"`
+                    : localizeSleepLocation(l.name, t)}
                 </SelectItem>
               ))}
             </SelectContent>

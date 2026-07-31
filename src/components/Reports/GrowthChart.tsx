@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 import { Scale, Ruler, CircleDot, Loader2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
@@ -19,6 +20,10 @@ import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
 import { toCdcWeightKg, fromCdcWeightKg, weightUnitLabel, formatChartValue } from '@/src/utils/weightUnits';
 import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
+import {
+  buildGrowthChartYAxis,
+  formatGrowthChartAxisTick,
+} from '@/src/utils/growthChartAxis';
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
@@ -713,15 +718,11 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     return mergedData.sort((a, b) => a.ageMonths - b.ageMonths);
   }, [cdcData, measurementsWithPercentiles, measurementType, selectedBaby, settings, babyCurrentAgeMonths]);
 
-  // Dynamic Y-axis domain based on visible data (min - 10%, max + 10%)
-  const yAxisDomain = useMemo(() => {
-    if (!chartData.length) return ['auto', 'auto'] as const;
+  const unitLabel = getUnitLabel(measurementType, settings);
 
-    let min = Number.POSITIVE_INFINITY;
-    let max = Number.NEGATIVE_INFINITY;
-
-    chartData.forEach((point) => {
-      const values = [
+  const yAxis = useMemo(
+    () => buildGrowthChartYAxis(
+      chartData.flatMap(point => [
         point.p3,
         point.p5,
         point.p10,
@@ -732,28 +733,13 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
         point.p95,
         point.p97,
         point.measurement,
-      ].filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
+      ]),
+      unitLabel,
+    ),
+    [chartData, unitLabel],
+  );
 
-      values.forEach((v) => {
-        if (v < min) min = v;
-        if (v > max) max = v;
-      });
-    });
-
-    if (!Number.isFinite(min) || !Number.isFinite(max)) {
-      return ['auto', 'auto'] as const;
-    }
-
-    const range = max - min;
-    const padding = range > 0 ? range * 0.1 : (max || 1) * 0.1;
-    let lower = min - padding;
-    const upper = max + padding;
-
-    // Don't go below zero for growth metrics
-    if (lower < 0) lower = 0;
-
-    return [lower, upper] as const;
-  }, [chartData]);
+  const latestMeasurement = measurementsWithPercentiles.at(-1);
 
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
@@ -878,8 +864,6 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     );
   }
 
-  const unitLabel = getUnitLabel(measurementType, settings);
-
   return (
     <div className={cn(growthChartStyles.container, "growth-chart-container", className)}>
       {/* Top controls row: measurement type buttons (left) and zoom controls (right) */}
@@ -972,12 +956,28 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
               />
               <YAxis
                 type="number"
-                domain={yAxisDomain as any}
-                tickFormatter={(value) => Number(value).toFixed(0)}
+                domain={yAxis.domain}
+                ticks={yAxis.ticks}
+                tickFormatter={(value) => formatGrowthChartAxisTick(Number(value), yAxis.step, unitLabel)}
                 label={{ value: unitLabel, angle: -90, position: 'insideLeft', offset: 18 }}
                 className="growth-chart-axis"
               />
               <Tooltip content={<CustomTooltip settings={settings} measurementType={measurementType} t={t} />} />
+
+              {latestMeasurement && (
+                <ReferenceLine
+                  y={latestMeasurement.displayValue}
+                  stroke="#f97316"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 4"
+                  label={{
+                    value: `${t('Last Entry')}: ${formatChartValue(latestMeasurement.displayValue, unitLabel)} ${unitLabel}`,
+                    position: 'insideTopRight',
+                    fill: '#c2410c',
+                    fontSize: 12,
+                  }}
+                />
+              )}
 
               {/* Percentile lines - using gradient from light to dark */}
               <Line

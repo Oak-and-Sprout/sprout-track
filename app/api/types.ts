@@ -49,6 +49,7 @@ export interface ActivitySettings {
 export interface SleepLocationSettings {
   hiddenLocations: string[];
   customLocations?: string[]; // custom names persisted before any sleep entry uses them
+  locationOrder?: string[]; // family-defined display order, by canonical stored name
 }
 
 // Sleep location management types (Settings > Sleep Locations)

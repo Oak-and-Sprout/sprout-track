@@ -38,6 +38,7 @@ import { FOOD_ENJOYMENT_LABELS, formatFoodMealTitle, isFoodLogActivity, isValidE
 import { lbToLbOz, formatWeightDisplay } from '@/src/utils/weightUnits';
 import { formatPauseDuration } from '@/src/utils/pauseDisplay';
 import { isDirtyDiaper } from '@/src/utils/diaperStats';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 
 export { lbToLbOz, formatWeightDisplay };
 
@@ -289,7 +290,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       const formatLocation = (location: string) => {
         if (location === 'OTHER') return t('Other');
         
-        return t(location);
+        return localizeSleepLocation(location, t);
       };
       const details = [
         { label: t('Type'), value: activity.type === 'NAP' ? t('Nap') : t('Night Sleep') },
@@ -802,7 +803,7 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
       if ((activity as any).location) {
         const loc = (activity as any).location;
         const location = loc === 'OTHER' ? t('Other') : capitalize(loc);
-        locationText = t(location);
+        locationText = localizeSleepLocation(location, t);
       }
       
       // Format quality

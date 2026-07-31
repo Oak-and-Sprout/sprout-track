@@ -7,9 +7,13 @@ import {
   validateLocationAdd,
   updateSettingsAfterRename,
   updateSettingsAfterDelete,
+  applyLocationOrder,
+  moveLocation,
+  localizeSleepLocation,
+  mergeLocationSettings,
 } from '@/src/utils/sleepLocationUtils';
 import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
-import { SleepLocationSummary } from '@/app/api/types';
+import { SleepLocationSettings, SleepLocationSummary } from '@/app/api/types';
 
 // Issue #174: sleep locations are free-text on SleepLog rows; these helpers
 // power the Settings manager (list / add / rename / merge / cleanup).
@@ -250,7 +254,7 @@ describe('updateSettingsAfterDelete', () => {
       { hiddenLocations: ['Old Cot', 'Crib'], customLocations: ['Old Cot', 'Hammock'] },
       'Old Cot',
     );
-    expect(result).toEqual({ hiddenLocations: ['Crib'], customLocations: ['Hammock'] });
+    expect(result).toEqual({ hiddenLocations: ['Crib'], customLocations: ['Hammock'], locationOrder: [] });
   });
 
   it('removes by exact match only', () => {
@@ -258,6 +262,222 @@ describe('updateSettingsAfterDelete', () => {
       { hiddenLocations: ['Crib '], customLocations: ['crib'] },
       'Crib',
     );
-    expect(result).toEqual({ hiddenLocations: ['Crib '], customLocations: ['crib'] });
+    expect(result).toEqual({ hiddenLocations: ['Crib '], customLocations: ['crib'], locationOrder: [] });
+  });
+});
+
+describe('applyLocationOrder', () => {
+  const base = [
+    summary('Bassinet', 0, true),
+    summary('Crib', 5, true),
+    summary('Grandma', 2),
+  ];
+
+  it('returns the list unchanged when no order is saved', () => {
+    expect(applyLocationOrder(base, []).map((l) => l.name)).toEqual([
+      'Bassinet', 'Crib', 'Grandma',
+    ]);
+  });
+
+  it('produces exactly the saved permutation', () => {
+    const result = applyLocationOrder(base, ['Grandma', 'Crib', 'Bassinet']);
+    expect(result.map((l) => l.name)).toEqual(['Grandma', 'Crib', 'Bassinet']);
+  });
+
+  it('skips a saved name that no longer exists', () => {
+    const result = applyLocationOrder(base, ['Deleted Cot', 'Grandma']);
+    expect(result.map((l) => l.name)).toEqual(['Grandma', 'Bassinet', 'Crib']);
+  });
+
+  it('appends a name missing from the saved order in its fallback position', () => {
+    const result = applyLocationOrder(base, ['Grandma']);
+    expect(result.map((l) => l.name)).toEqual(['Grandma', 'Bassinet', 'Crib']);
+  });
+
+  it('keeps a hidden location in its slot', () => {
+    const withHidden = [
+      summary('Bassinet', 0, true),
+      summary('Crib', 5, true, true),
+      summary('Grandma', 2),
+    ];
+    const result = applyLocationOrder(withHidden, ['Crib', 'Grandma', 'Bassinet']);
+    expect(result.map((l) => l.name)).toEqual(['Crib', 'Grandma', 'Bassinet']);
+    expect(result[0].hidden).toBe(true);
+  });
+
+  it('ignores a duplicated name in the saved order', () => {
+    const result = applyLocationOrder(base, ['Crib', 'Crib', 'Bassinet']);
+    expect(result.map((l) => l.name)).toEqual(['Crib', 'Bassinet', 'Grandma']);
+  });
+
+  it('does not mutate the input array', () => {
+    const input = [...base];
+    applyLocationOrder(input, ['Grandma']);
+    expect(input.map((l) => l.name)).toEqual(['Bassinet', 'Crib', 'Grandma']);
+  });
+});
+
+describe('moveLocation', () => {
+  const order = ['Bassinet', 'Crib', 'Grandma'];
+
+  it('swaps a location upward', () => {
+    expect(moveLocation(order, 'Crib', -1)).toEqual(['Crib', 'Bassinet', 'Grandma']);
+  });
+
+  it('swaps a location downward', () => {
+    expect(moveLocation(order, 'Crib', 1)).toEqual(['Bassinet', 'Grandma', 'Crib']);
+  });
+
+  it('no-ops at the head', () => {
+    expect(moveLocation(order, 'Bassinet', -1)).toEqual(order);
+  });
+
+  it('no-ops at the tail', () => {
+    expect(moveLocation(order, 'Grandma', 1)).toEqual(order);
+  });
+
+  it('returns the list unchanged when the name is absent', () => {
+    expect(moveLocation(order, 'Nowhere', -1)).toEqual(order);
+  });
+
+  it('does not mutate the input array', () => {
+    const input = [...order];
+    moveLocation(input, 'Crib', -1);
+    expect(input).toEqual(['Bassinet', 'Crib', 'Grandma']);
+  });
+});
+
+describe('localizeSleepLocation', () => {
+  // Stand-in for the real t(): translates a couple of known keys, otherwise
+  // falls back to the key, exactly like src/context/localization.tsx does.
+  const t = (key: string) => ({ Crib: 'Cuna', Other: 'Otro' }[key] ?? key);
+
+  it('translates a default location', () => {
+    expect(localizeSleepLocation('Crib', t)).toBe('Cuna');
+  });
+
+  it('returns a custom name verbatim even when it collides with a real key', () => {
+    // A family that named their own location "Other" keeps their name.
+    expect(localizeSleepLocation('Other ', t)).toBe('Other ');
+  });
+
+  it('returns an ordinary custom name verbatim', () => {
+    expect(localizeSleepLocation('Grandma', t)).toBe('Grandma');
+  });
+
+  it('leaves a whitespace-padded custom name untouched', () => {
+    expect(localizeSleepLocation(' Crib ', t)).toBe(' Crib ');
+  });
+});
+
+describe('locationOrder bookkeeping', () => {
+  it('renames a location in place in the order', () => {
+    const result = updateSettingsAfterRename(
+      { hiddenLocations: [], customLocations: ['Grandma'], locationOrder: ['Crib', 'Grandma', 'Other'] },
+      'Grandma',
+      'Nana',
+    );
+    expect(result.locationOrder).toEqual(['Crib', 'Nana', 'Other']);
+  });
+
+  it('drops the source when merging into a target already in the order', () => {
+    const result = updateSettingsAfterRename(
+      { hiddenLocations: [], customLocations: ['Grandma'], locationOrder: ['Crib', 'Grandma', 'Other'] },
+      'Grandma',
+      'Crib',
+    );
+    expect(result.locationOrder).toEqual(['Crib', 'Other']);
+  });
+
+  it('leaves the order alone when the renamed name is not in it', () => {
+    const result = updateSettingsAfterRename(
+      { hiddenLocations: [], customLocations: ['Grandma'], locationOrder: ['Crib'] },
+      'Grandma',
+      'Nana',
+    );
+    expect(result.locationOrder).toEqual(['Crib']);
+  });
+
+  it('drops a deleted location from the order', () => {
+    const result = updateSettingsAfterDelete(
+      { hiddenLocations: [], customLocations: ['Hammock'], locationOrder: ['Crib', 'Hammock'] },
+      'Hammock',
+    );
+    expect(result.locationOrder).toEqual(['Crib']);
+  });
+
+  it('returns an empty order when none was saved', () => {
+    const result = updateSettingsAfterDelete(
+      { hiddenLocations: [], customLocations: [] },
+      'Hammock',
+    );
+    expect(result.locationOrder).toEqual([]);
+  });
+});
+
+// The POST /api/sleep-location-settings body is a partial patch: the manager
+// saves only hiddenLocations when toggling visibility and only locationOrder
+// when moving a row. Anything the patch omits has to survive untouched.
+describe('mergeLocationSettings', () => {
+  const existing: SleepLocationSettings = {
+    hiddenLocations: ['Couch'],
+    customLocations: ['Hammock'],
+    locationOrder: ['Crib', 'Hammock'],
+  };
+
+  it('applies a locationOrder-only patch without dropping the other keys', () => {
+    const result = mergeLocationSettings(existing, { locationOrder: ['Hammock', 'Crib'] });
+    expect(result).toEqual({
+      hiddenLocations: ['Couch'],
+      customLocations: ['Hammock'],
+      locationOrder: ['Hammock', 'Crib'],
+    });
+  });
+
+  it('applies a hiddenLocations-only patch without dropping the other keys', () => {
+    const result = mergeLocationSettings(existing, { hiddenLocations: [] });
+    expect(result).toEqual({
+      hiddenLocations: [],
+      customLocations: ['Hammock'],
+      locationOrder: ['Crib', 'Hammock'],
+    });
+  });
+
+  it('applies a customLocations-only patch without dropping the other keys', () => {
+    const result = mergeLocationSettings(existing, { customLocations: ['Hammock', 'Sling'] });
+    expect(result).toEqual({
+      hiddenLocations: ['Couch'],
+      customLocations: ['Hammock', 'Sling'],
+      locationOrder: ['Crib', 'Hammock'],
+    });
+  });
+
+  it('treats an empty patch as a no-op', () => {
+    expect(mergeLocationSettings(existing, {})).toEqual(existing);
+  });
+
+  it('ignores keys explicitly set to undefined', () => {
+    const result = mergeLocationSettings(existing, {
+      hiddenLocations: undefined,
+      locationOrder: undefined,
+    });
+    expect(result).toEqual(existing);
+  });
+
+  it('resolves hiddenLocations to an array when absent from both sides', () => {
+    const result = mergeLocationSettings(
+      {} as SleepLocationSettings,
+      { locationOrder: ['Crib'] },
+    );
+    expect(result).toEqual({ hiddenLocations: [], locationOrder: ['Crib'] });
+  });
+
+  it('does not mutate either input', () => {
+    const before = JSON.parse(JSON.stringify(existing));
+    const patch = { locationOrder: ['Hammock', 'Crib'] };
+    const patchBefore = JSON.parse(JSON.stringify(patch));
+    mergeLocationSettings(existing, patch);
+    expect(existing).toEqual(before);
+    expect(patch).toEqual(patchBefore);
   });
 });

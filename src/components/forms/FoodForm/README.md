@@ -8,6 +8,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 - `LogFoodTab.tsx` — log a new food try or edit an existing food log
 - `ProgressTab.tsx` — unique-food counter, enjoyment breakdown, allergen list, per-food history
 - `food-form.types.ts` — prop types
+- `food-form.utils.ts` — `completeFoodLogSave()`, the pure post-save sequence (refresh → notify parent → close)
 - `food-form.css` — dark-mode overrides via `html.dark` selectors (no `dark:` Tailwind classes)
 
 ## Props (`FoodFormProps`)
@@ -33,6 +34,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 - **Photos** use the shared `PhotoAttachments` component with `activityType: 'foodLog'` links (only rendered when the deployment has photos enabled).
 - Saves via `POST /api/food-log` (or `PUT /api/food-log?id=` when editing). Times go through `toUTCString()`.
 - The Save/Cancel buttons live in the `FormPage` footer (`index.tsx`); the tab reports `{ isSubmitting, canSubmit }` up via `onFormStateChange` so the footer can disable them.
+- A successful save closes the tracker (`completeFoodLogSave()`), matching Diaper/Bath/Feed and the rest of the single-purpose forms. It previously stayed open, which stranded the user on the form when saving from the Log Entry page (issue #254).
 
 ### Progress tab
 

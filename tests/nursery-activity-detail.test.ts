@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatFeedNote, formatPumpNote, FeedNoteLabels, PumpNoteLabels } from '@/src/utils/nursery/activityDetail';
+import { formatFeedNote, formatPumpNote, formatTileTime, FeedNoteLabels, PumpNoteLabels } from '@/src/utils/nursery/activityDetail';
 
 const feedLabels: FeedNoteLabels = {
   breast: 'Breast', bottle: 'Bottle', formula: 'Formula', pumpedBottle: 'Pumped Bottle', food: 'Food',
@@ -80,5 +80,44 @@ describe('formatPumpNote', () => {
 
   it('omits action when not provided', () => {
     expect(formatPumpNote({ side: 'right', durationSeconds: 60 }, pumpLabels)).toBe('Right — 1:00');
+  });
+});
+
+describe('formatTileTime', () => {
+  // Intl may use a narrow no-break space before am/pm depending on ICU version.
+  const normalize = (s: string) => s.replace(/\u202f/g, ' ');
+  const labels = { today: 'Today', yesterday: 'Yesterday' };
+  const now = new Date(2026, 6, 31, 21, 0);
+  const evening = new Date(2026, 6, 31, 19, 5);
+  const morning = new Date(2026, 6, 31, 7, 5);
+
+  it('formats lowercase 12h time when timeFormat is 12h', () => {
+    expect(normalize(formatTileTime(evening, '12h', labels, now))).toBe('Today, 7:05 pm');
+    expect(normalize(formatTileTime(morning, '12h', labels, now))).toBe('Today, 7:05 am');
+  });
+
+  it('formats 24h time when timeFormat is 24h', () => {
+    expect(formatTileTime(evening, '24h', labels, now)).toBe('Today, 19:05');
+    expect(formatTileTime(morning, '24h', labels, now)).toBe('Today, 07:05');
+  });
+
+  it('prefixes Yesterday for the previous calendar day', () => {
+    const lateYesterday = new Date(2026, 6, 30, 23, 30);
+    expect(formatTileTime(lateYesterday, '24h', labels, now)).toBe('Yesterday, 23:30');
+    expect(normalize(formatTileTime(lateYesterday, '12h', labels, now))).toBe('Yesterday, 11:30 pm');
+  });
+
+  it('crosses month boundaries when computing Yesterday', () => {
+    const firstOfMonth = new Date(2026, 7, 1, 0, 10);
+    expect(formatTileTime(new Date(2026, 6, 31, 23, 50), '24h', labels, firstOfMonth)).toBe('Yesterday, 23:50');
+  });
+
+  it('uses localized labels', () => {
+    expect(formatTileTime(evening, '24h', { today: 'Hoy', yesterday: 'Ayer' }, now)).toBe('Hoy, 19:05');
+  });
+
+  it('omits the prefix for future-dated entries', () => {
+    const tomorrow = new Date(2026, 7, 1, 9, 0);
+    expect(formatTileTime(tomorrow, '24h', labels, now)).toBe('09:00');
   });
 });

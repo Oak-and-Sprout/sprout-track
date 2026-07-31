@@ -20,6 +20,7 @@ import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateShort } from '@/src/utils/dateFormat';
+import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 
 interface SleepLocationChartModalProps {
   open: boolean;
@@ -200,7 +201,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                   <Bar
                     key={location.location}
                     dataKey={location.location}
-                    name={t(location.location)}
+                    name={localizeSleepLocation(location.location, t)}
                     stackId="locations"
                     fill={colors[index]}
                   />
@@ -213,7 +214,7 @@ const SleepLocationChartModal: React.FC<SleepLocationChartModalProps> = ({
                 { key: 'label', label: t('Date') },
                 ...locations.map((location) => ({
                   key: location.location,
-                  label: t(location.location),
+                  label: localizeSleepLocation(location.location, t),
                 })),
               ]}
               rows={chartData}

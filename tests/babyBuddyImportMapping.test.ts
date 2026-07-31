@@ -15,6 +15,10 @@ import {
   mapBabyBuddyPumping,
   mapBabyBuddyTummyTime,
 } from '../src/lib/importers/baby-buddy';
+import {
+  mapBabyBuddyMedication,
+  babyBuddyIntervalToDoseMinTime,
+} from '../src/lib/importers/baby-buddy';
 
 {
 // Consolidated from tests/babyBuddyMapping.test.ts
@@ -191,6 +195,87 @@ describe('Baby Buddy server-side record building', () => {
       'Missing Baby Buddy import configuration: feedingUnit',
     );
   });
+
+  it('skips unsupported files instead of aborting the import', () => {
+    const records = buildBabyBuddyImportRecords(
+      [
+        {
+          name: 'unknown.csv',
+          content: ['a,b,c', '1,2,3'].join('\n'),
+        },
+        {
+          name: 'Sleep.csv',
+          content: [
+            'id,child_id,start,end,nap,notes,tags',
+            '12,7,2026-01-02 10:00:00,2026-01-02 11:00:00,1,,',
+          ].join('\n'),
+        },
+      ],
+      {},
+    );
+
+    expect(records.map(record => record.targetType)).toContain('sleep');
+  });
+
+  it('rejects an upload where no file is usable', () => {
+    expect(() =>
+      buildBabyBuddyImportRecords(
+        [
+          {
+            name: 'unknown.csv',
+            content: ['a,b,c', '1,2,3'].join('\n'),
+          },
+        ],
+        {},
+      ),
+    ).toThrow(
+      'None of the uploaded files match a supported Baby Buddy export',
+    );
+  });
+
+  it('builds exactly 2 feed records, skipping an unknown combo', () => {
+    const records = buildBabyBuddyImportRecords(
+      [
+        {
+          name: 'Feeding.csv',
+          content: [
+            'id,child_id,start,end,type,method,amount,notes,tags',
+            '1,7,2026-01-02 10:00:00,2026-01-02 10:10:00,breast milk,bottle,100,,',
+            '2,7,2026-01-02 11:00:00,2026-01-02 11:10:00,formula,parent fed,120,,',
+            '3,7,2026-01-02 12:00:00,2026-01-02 12:10:00,water,syringe??,,,',
+          ].join('\n'),
+        },
+      ],
+      { feedingUnit: 'ML' },
+    );
+
+    expect(records).toHaveLength(2);
+    expect(records.map(record => record.targetType)).toEqual([
+      'feed',
+      'feed',
+    ]);
+  });
+
+  it('builds medicine records from a medication export', () => {
+    const records = buildBabyBuddyImportRecords(
+      [
+        {
+          name: 'Medication-2026-07-30.csv',
+          content: [
+            'id,child_id,child_first_name,child_last_name,name,dosage,dosage_unit,time,next_dose_interval,notes,tags',
+            '1,7,Test,Child,Paracetamol,2.5,ml,2026-01-02 08:00:00,6:00:00,,',
+            '2,7,Test,Child,Vitamin D,,drops,2026-01-03 08:00:00,,,',
+          ].join('\n'),
+        },
+      ],
+      {},
+    );
+
+    expect(records.map(record => record.targetType)).toEqual([
+      'medicine',
+      'medicine',
+    ]);
+  });
 });
 
 }
@@ -242,9 +327,9 @@ describe('Baby Buddy feeding mapping', () => {
       amount: '',
     });
 
-    expect(result.type).toBe('BREAST');
-    expect(result.feedDuration).toBe(1200);
-    expect(result.side).toBeUndefined();
+    expect(result?.type).toBe('BREAST');
+    expect(result?.feedDuration).toBe(1200);
+    expect(result?.side).toBeUndefined();
   });
 
   it('maps a breast-milk bottle with its chosen unit', () => {
@@ -285,8 +370,8 @@ describe('Baby Buddy feeding mapping', () => {
       'SKIP',
     );
 
-    expect(result.amount).toBeUndefined();
-    expect(result.unitAbbr).toBeUndefined();
+    expect(result?.amount).toBeUndefined();
+    expect(result?.unitAbbr).toBeUndefined();
   });
 
   it('maps solid food without inventing a description', () => {
@@ -301,8 +386,83 @@ describe('Baby Buddy feeding mapping', () => {
       notes: '',
     });
 
-    expect(result.type).toBe('SOLIDS');
-    expect(result.food).toBeUndefined();
+    expect(result?.type).toBe('SOLIDS');
+    expect(result?.food).toBeUndefined();
+  });
+
+  it('maps parent fed formula to a bottle noting the method', () => {
+    const result = mapBabyBuddyFeeding(
+      {
+        id: '6',
+        child_id: '7',
+        start: '2026-01-01 13:00:00',
+        end: '2026-01-01 13:10:00',
+        type: 'formula',
+        method: 'parent fed',
+        amount: '90',
+      },
+      'ML',
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        type: 'BOTTLE',
+        bottleType: 'Formula',
+        notes: 'Parent fed',
+        amount: 90,
+        unitAbbr: 'ML',
+      }),
+    );
+  });
+
+  it('maps self fed breast milk to a bottle without an amount', () => {
+    const result = mapBabyBuddyFeeding({
+      id: '7',
+      child_id: '7',
+      start: '2026-01-01 14:00:00',
+      end: '2026-01-01 14:10:00',
+      type: 'breast milk',
+      method: 'self fed',
+      amount: '',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        type: 'BOTTLE',
+        bottleType: 'Breast Milk',
+        notes: 'Self fed',
+      }),
+    );
+    expect(result?.amount).toBeUndefined();
+  });
+
+  it('appends the method note ahead of existing notes', () => {
+    const result = mapBabyBuddyFeeding({
+      id: '8',
+      child_id: '7',
+      start: '2026-01-01 15:00:00',
+      end: '2026-01-01 15:10:00',
+      type: 'formula',
+      method: 'parent fed',
+      amount: '',
+      notes: 'x',
+    });
+
+    expect(result?.notes).toBe('Parent fed — x');
+  });
+
+  it('returns null for a truly unknown type/method combination', () => {
+    const result = mapBabyBuddyFeeding({
+      id: '9',
+      child_id: '7',
+      start: '2026-01-01 16:00:00',
+      end: '2026-01-01 16:10:00',
+      type: 'water',
+      method: 'syringe??',
+      amount: '',
+    });
+
+    expect(result).toBeNull();
   });
 });
 
@@ -496,6 +656,120 @@ describe('remaining Baby Buddy mappings', () => {
     );
   });
 
+});
+
+}
+
+{
+describe('Baby Buddy medication mapping', () => {
+  it('maps a full medication row', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        child_first_name: 'Test',
+        child_last_name: 'Child',
+        name: 'Paracetamol',
+        dosage: '2.5',
+        dosage_unit: 'ml',
+        time: '2026-01-02 08:00:00',
+        next_dose_interval: '6:00:00',
+        notes: ' After food ',
+        tags: '',
+      }),
+    ).toEqual({
+      targetType: 'medicine',
+      source: {
+        providerId: 'baby-buddy',
+        entityType: 'medication',
+        recordId: '4',
+        childId: '7',
+      },
+      sourceChildId: '7',
+      time: '2026-01-02T08:00:00',
+      medicineName: 'Paracetamol',
+      doseAmount: 2.5,
+      unitAbbr: 'ML',
+      doseMinTime: '00:06:00',
+      notes: 'After food',
+    });
+  });
+
+  it.each([
+    ['mg', 'MG'],
+    ['ml', 'ML'],
+    ['tablets', 'TAB'],
+    ['drops', 'DROP'],
+  ] as const)('maps dosage unit %s to %s', (unit, expected) => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '1',
+        dosage_unit: unit,
+        time: '2026-01-02 08:00:00',
+      }).unitAbbr,
+    ).toBe(expected);
+  });
+
+  it('maps an empty dosage unit to undefined', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '1',
+        dosage_unit: '',
+        time: '2026-01-02 08:00:00',
+      }).unitAbbr,
+    ).toBeUndefined();
+  });
+
+  it('imports a missing dosage as zero', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '',
+        dosage_unit: '',
+        time: '2026-01-02 08:00:00',
+      }).doseAmount,
+    ).toBe(0);
+  });
+
+  it('parses a comma-decimal dosage', () => {
+    expect(
+      mapBabyBuddyMedication({
+        id: '4',
+        child_id: '7',
+        name: 'Med',
+        dosage: '2,5',
+        dosage_unit: 'ml',
+        time: '2026-01-02 08:00:00',
+      }).doseAmount,
+    ).toBe(2.5);
+  });
+
+  it.each([
+    ['6:00:00', '00:06:00'],
+    ['0:30:00', '00:00:30'],
+    ['1 day, 0:00:00', '01:00:00'],
+    ['2 days, 3:30:00', '02:03:30'],
+    ['0:05:00.123456', '00:00:05'],
+  ])('converts interval %s to %s', (interval, expected) => {
+    expect(babyBuddyIntervalToDoseMinTime(interval)).toBe(expected);
+  });
+
+  it.each([[''], ['   '], ['soon'], ['1-2 hours']])(
+    'converts unparseable interval %s to undefined',
+    interval => {
+      expect(
+        babyBuddyIntervalToDoseMinTime(interval),
+      ).toBeUndefined();
+    },
+  );
 });
 
 }
