@@ -1,5 +1,24 @@
 # Sprout Track Changelog
 
+## v1.6.5 - 
+
+### Changes
+
+#### QoL Updates
+- Add "yesterday\today" to Nursery Mode last entries
+- Added 24h time to Nursery mode
+- Set food form to close on save
+- Added functionality to data import for Baby Buddy's medication model
+- Added selector for which baby you import data for
+- Improved growth chart scaling - Thank you **philzx**!
+- Added sorting and proper language translation to sleep locations
+
+#### Bugfixes
+- Fixed a blank space issue on focus in nursery mode
+
+#### Localization
+- Added Hindi
+
 ## v1.6.4 - Quality of Life Updates and the Native App Layer
 
 ### Changes
