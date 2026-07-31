@@ -15,6 +15,8 @@ export interface DuplicateSuggestion {
 export interface SleepLocationSettingsShape {
   hiddenLocations: string[];
   customLocations: string[];
+  /** Family-defined display order, by canonical stored name. */
+  locationOrder?: string[];
 }
 
 export type LocationRenameValidation =
@@ -77,6 +79,60 @@ export function buildSleepLocationSummaries(
     ...DEFAULT_SLEEP_LOCATIONS.map((name) => map.get(name)!),
     ...customs,
   ];
+}
+
+/**
+ * Reorders summaries by a family's saved order. Saved names come first in
+ * their saved order; saved names that no longer exist are skipped; everything
+ * else keeps its buildSleepLocationSummaries position at the end. That
+ * fallback is what makes a newly-typed location or a newly-shipped default
+ * appear rather than vanish.
+ */
+export function applyLocationOrder(
+  summaries: SleepLocationSummary[],
+  locationOrder: string[],
+): SleepLocationSummary[] {
+  const byName = new Map(summaries.map((s) => [s.name, s]));
+  const taken = new Set<string>();
+  const ordered: SleepLocationSummary[] = [];
+
+  for (const name of locationOrder) {
+    const match = byName.get(name);
+    if (match && !taken.has(name)) {
+      ordered.push(match);
+      taken.add(name);
+    }
+  }
+  for (const s of summaries) {
+    if (!taken.has(s.name)) ordered.push(s);
+  }
+  return ordered;
+}
+
+/** Moves one name one slot up (-1) or down (1). No-op at the ends or when absent. */
+export function moveLocation(
+  order: string[],
+  name: string,
+  direction: -1 | 1,
+): string[] {
+  const index = order.indexOf(name);
+  const target = index + direction;
+  if (index === -1 || target < 0 || target >= order.length) return [...order];
+  const next = [...order];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
+
+/**
+ * The single label rule for sleep locations. Default names are translation
+ * keys; custom names are user data and render verbatim, so a family that named
+ * their own location "Other" keeps their name rather than seeing it translated.
+ */
+export function localizeSleepLocation(
+  name: string,
+  t: (key: string) => string,
+): string {
+  return isDefaultLocation(name) ? t(name) : name;
 }
 
 /**
@@ -184,9 +240,15 @@ export function updateSettingsAfterRename(
     customs.includes(from) && !isDefaultLocation(to)
       ? dedupe(customs.map((c) => (c === from ? to : c)))
       : customs.filter((c) => c !== from);
+  const order = dedupe(settings.locationOrder ?? []);
   return {
     hiddenLocations: dedupe(settings.hiddenLocations).filter((h) => h !== from),
     customLocations,
+    // Renaming in place keeps the slot. When `to` is already present this
+    // collapses to a single entry — the merge case — instead of duplicating.
+    locationOrder: order.includes(from)
+      ? dedupe(order.map((n) => (n === from ? to : n)))
+      : order,
   };
 }
 
@@ -198,5 +260,6 @@ export function updateSettingsAfterDelete(
   return {
     hiddenLocations: dedupe(settings.hiddenLocations).filter((h) => h !== name),
     customLocations: dedupe(settings.customLocations).filter((c) => c !== name),
+    locationOrder: dedupe(settings.locationOrder ?? []).filter((n) => n !== name),
   };
 }
