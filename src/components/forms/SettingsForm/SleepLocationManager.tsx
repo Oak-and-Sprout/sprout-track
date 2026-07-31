@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Pencil, GitMerge, Trash2, Eye, EyeOff, Loader2, Plus } from 'lucide-react';
+import { Pencil, GitMerge, Trash2, Eye, EyeOff, Loader2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Badge } from '@/src/components/ui/badge';
@@ -15,7 +15,7 @@ import {
 import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { SleepLocationSummary } from '@/app/api/types';
-import { getDuplicateSuggestions } from '@/src/utils/sleepLocationUtils';
+import { getDuplicateSuggestions, moveLocation, localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
 import './settings-managers.css';
 
 type RowAction =
@@ -114,6 +114,24 @@ export default function SleepLocationManager() {
     );
   };
 
+  const reorder = (name: string, direction: -1 | 1) => {
+    // Send the full resolved list — including hidden rows, since ordering is
+    // independent of visibility. The first press materializes an order for a
+    // family that has never reordered; later presses permute it.
+    const locationOrder = moveLocation(locations.map((l) => l.name), name, direction);
+    // Optimistic: a round trip per press is sluggish when moving a row several
+    // slots. mutate() refetches on success and resyncs on failure.
+    setLocations(locationOrder.map((n) => locations.find((l) => l.name === n)!));
+    mutate(
+      () => fetch('/api/sleep-location-settings', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ locationOrder }),
+      }),
+      () => {},
+    );
+  };
+
   const addLocation = (name: string) => {
     mutate(
       () => fetch('/api/sleep-locations', {
@@ -177,7 +195,7 @@ export default function SleepLocationManager() {
   return (
     <div>
       <ul className="settings-manager-list rounded-xl border-2 border-slate-200 divide-y divide-gray-200 overflow-hidden">
-        {locations.map((location) => (
+        {locations.map((location, index) => (
           <LocationRow
             key={location.name}
             location={location}
@@ -186,6 +204,9 @@ export default function SleepLocationManager() {
             action={action?.name === location.name ? action : null}
             setAction={setAction}
             busy={busy}
+            isFirst={index === 0}
+            isLast={index === locations.length - 1}
+            onReorder={reorder}
             onToggleHidden={toggleHidden}
             onRename={renameLocation}
             onDelete={deleteLocation}
@@ -239,6 +260,9 @@ interface LocationRowProps {
   action: RowAction | null;
   setAction: (action: RowAction | null) => void;
   busy: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onReorder: (name: string, direction: -1 | 1) => void;
   onToggleHidden: (location: SleepLocationSummary) => void;
   onRename: (from: string, to: string) => void;
   onDelete: (name: string) => void;
@@ -247,11 +271,14 @@ interface LocationRowProps {
 
 function LocationRow({
   location, allLocations, duplicateTarget, action, setAction, busy,
-  onToggleHidden, onRename, onDelete, t,
+  isFirst, isLast, onReorder, onToggleHidden, onRename, onDelete, t,
 }: LocationRowProps) {
   const { name, count, isDefault, hidden } = location;
-  // Quote values with leading/trailing whitespace so "Crib " is visibly distinct from "Crib"
-  const displayName = name !== name.trim() ? `"${name}"` : name;
+  // Default names are translation keys; custom names are user data shown as
+  // typed. Quote values with leading/trailing whitespace so "Crib " is
+  // visibly distinct from "Crib".
+  const label = localizeSleepLocation(name, t);
+  const displayName = name !== name.trim() ? `"${label}"` : label;
   const mergeTargets = allLocations.filter((l) => l.name !== name);
   const iconButton = 'h-7 w-7 p-0';
 
@@ -267,6 +294,28 @@ function LocationRow({
           <Badge variant="error" className="text-xs">{t('Possible duplicate')}</Badge>
         )}
         <span className="flex-1" />
+        <Button
+          variant="ghost"
+          size="sm"
+          className={iconButton}
+          disabled={busy || isFirst}
+          onClick={() => onReorder(name, -1)}
+          aria-label={`${t('Move up')}: ${displayName}`}
+          title={t('Move up')}
+        >
+          <ChevronUp className="h-4 w-4 text-gray-600" aria-hidden="true" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={iconButton}
+          disabled={busy || isLast}
+          onClick={() => onReorder(name, 1)}
+          aria-label={`${t('Move down')}: ${displayName}`}
+          title={t('Move down')}
+        >
+          <ChevronDown className="h-4 w-4 text-gray-600" aria-hidden="true" />
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -357,7 +406,9 @@ function LocationRow({
             <SelectContent>
               {mergeTargets.map((l) => (
                 <SelectItem key={l.name} value={l.name}>
-                  {l.name !== l.name.trim() ? `"${l.name}"` : l.name}
+                  {l.name !== l.name.trim()
+                    ? `"${localizeSleepLocation(l.name, t)}"`
+                    : localizeSleepLocation(l.name, t)}
                 </SelectItem>
               ))}
             </SelectContent>
