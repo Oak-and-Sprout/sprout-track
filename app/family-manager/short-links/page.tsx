@@ -29,6 +29,7 @@ import {
   Link2,
 } from "lucide-react";
 import { MobileSortButton } from '@/src/components/familymanager';
+import { ShortLinkQrDialog } from '@/src/components/familymanager/short-link-qr-dialog';
 import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { useIsMobile } from '@/src/hooks/useIsMobile';
@@ -85,6 +86,8 @@ export default function ShortLinksPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<ShortLinkRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [qrTarget, setQrTarget] = useState<{ shortUrl: string; slug: string } | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -448,11 +451,10 @@ export default function ShortLinksPage() {
                         >
                           <Copy className="h-4 w-4" aria-hidden="true" />
                         </Button>
-                        {/* TODO(task-8): ShortLinkQrDialog mounts here */}
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => { /* TODO(task-8): open ShortLinkQrDialog for this link */ }}
+                          onClick={() => setQrTarget({ shortUrl: shortUrlFor(link.slug), slug: link.slug })}
                           title={t('View QR code')}
                           aria-label={t('View QR code')}
                         >
@@ -603,6 +605,13 @@ export default function ShortLinksPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ShortLinkQrDialog
+        open={!!qrTarget}
+        onClose={() => setQrTarget(null)}
+        shortUrl={qrTarget?.shortUrl ?? ''}
+        slug={qrTarget?.slug ?? ''}
+      />
     </div>
   );
 }
