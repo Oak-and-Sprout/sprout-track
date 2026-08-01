@@ -38,6 +38,7 @@ import {
   Link2,
 } from 'lucide-react';
 import { ShortLinkQrDialog } from '@/src/components/familymanager/short-link-qr-dialog';
+import { ChartDataTable } from '@/src/components/ui/chart-data-table';
 import { useToast } from '@/src/components/ui/toast';
 import { useLocalization } from '@/src/context/localization';
 import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
@@ -107,6 +108,23 @@ const DEVICE_TYPE_LABELS: Record<string, string> = {
   unknown: 'Unknown',
 };
 const DEVICE_TYPES = Object.keys(DEVICE_TYPE_LABELS);
+
+/**
+ * Builds the value list for a filter Select from its breakdown entries,
+ * appending the currently selected value if a filter has narrowed the
+ * breakdown so far that the selection itself no longer appears in it.
+ * Without this, applying two filters in sequence (e.g. pick a country,
+ * then a device type that has no clicks from that country) can leave the
+ * Select bound to a value with no matching SelectItem, which renders blank
+ * while the filter stays silently applied.
+ */
+function optionValuesWithSelected(entries: BreakdownEntry[], selected: string): string[] {
+  const values = entries.map((entry) => entry.value);
+  if (selected !== ALL_VALUE && !values.includes(selected)) {
+    values.push(selected);
+  }
+  return values;
+}
 
 function shortUrlFor(slug: string): string {
   return typeof window !== 'undefined' ? `${window.location.origin}/go/${slug}` : `/go/${slug}`;
@@ -356,6 +374,8 @@ export default function ShortLinkDetailPage() {
   if (!stats) return null;
 
   const { link } = stats;
+  const countryOptions = optionValuesWithSelected(stats.breakdowns.country, country);
+  const referrerOptions = optionValuesWithSelected(stats.breakdowns.referrerDomain, referrer);
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6">
@@ -489,9 +509,9 @@ export default function ShortLinkDetailPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL_VALUE}>{t('All Countries')}</SelectItem>
-              {stats.breakdowns.country.map((entry) => (
-                <SelectItem key={entry.value} value={entry.value}>
-                  {entry.value}
+              {countryOptions.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -507,9 +527,9 @@ export default function ShortLinkDetailPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL_VALUE}>{t('All Referrers')}</SelectItem>
-              {stats.breakdowns.referrerDomain.map((entry) => (
-                <SelectItem key={entry.value} value={entry.value}>
-                  {entry.value}
+              {referrerOptions.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -554,33 +574,48 @@ export default function ShortLinkDetailPage() {
             </p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="label" tickMargin={8} interval={xInterval} />
-              <YAxis allowDecimals={false} tickMargin={8} />
-              <RechartsTooltip />
-              <RechartsLegend />
-              <Line
-                type="monotone"
-                dataKey="clicks"
-                name={t('Clicks')}
-                stroke="var(--short-link-color-clicks)"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 5 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="uniques"
-                name={t('Unique Visitors')}
-                stroke="var(--short-link-color-uniques)"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" tickMargin={8} interval={xInterval} />
+                <YAxis allowDecimals={false} tickMargin={8} />
+                <RechartsTooltip />
+                <RechartsLegend />
+                <Line
+                  type="monotone"
+                  dataKey="clicks"
+                  name={t('Clicks')}
+                  stroke="var(--short-link-color-clicks)"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="uniques"
+                  name={t('Unique Visitors')}
+                  stroke="var(--short-link-color-uniques)"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            <ChartDataTable
+              caption={t('Clicks Over Time')}
+              columns={[
+                { key: 'date', label: t('Date') },
+                { key: 'clicks', label: t('Clicks') },
+                { key: 'uniques', label: t('Unique Visitors') },
+              ]}
+              rows={chartData.map((point) => ({
+                date: point.label,
+                clicks: point.clicks,
+                uniques: point.uniques,
+              }))}
+            />
+          </>
         )}
       </div>
 
