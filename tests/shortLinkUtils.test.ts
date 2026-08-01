@@ -33,6 +33,11 @@ describe('parseUserAgent', () => {
     expect(parseUserAgent('')).toEqual({ deviceType: 'unknown', browser: null, os: null });
     expect(parseUserAgent('lol not a ua').deviceType).toBe('desktop');
   });
+  it('detects browser/os buckets case-insensitively', () => {
+    expect(parseUserAgent('mozilla/5.0 (windows nt 10.0) chrome/126.0')).toEqual(
+      expect.objectContaining({ browser: 'Chrome', os: 'Windows' }),
+    );
+  });
 });
 
 describe('isValidDestinationUrl', () => {
@@ -149,5 +154,14 @@ describe('buildClicksCsv', () => {
   });
   it('handles empty input (header only)', () => {
     expect(buildClicksCsv([])).toBe('timestamp,deviceType,browser,os,country,region,referrerDomain,queryString\r\n');
+  });
+  it('quotes a field containing a bare carriage return', () => {
+    const csv = buildClicksCsv([
+      { timestamp: '2026-07-31T12:00:00.000Z', deviceType: 'mobile', browser: 'Safari', os: 'iOS', country: 'US', region: null, referrerDomain: 'a\rb.com', queryString: null },
+    ]);
+    expect(csv).toBe(
+      'timestamp,deviceType,browser,os,country,region,referrerDomain,queryString\r\n' +
+      '2026-07-31T12:00:00.000Z,mobile,Safari,iOS,US,,"a\rb.com",\r\n'
+    );
   });
 });

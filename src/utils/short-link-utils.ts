@@ -34,17 +34,17 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUserAgent {
   }
 
   let browser: string | null = null;
-  if (/Edg\//.test(ua)) {
+  if (/Edg\//i.test(ua)) {
     browser = 'Edge';
-  } else if (/OPR\//.test(ua)) {
+  } else if (/OPR\//i.test(ua)) {
     browser = 'Opera';
-  } else if (/SamsungBrowser/.test(ua)) {
+  } else if (/SamsungBrowser/i.test(ua)) {
     browser = 'Samsung Internet';
-  } else if (/Chrome\//.test(ua)) {
+  } else if (/Chrome\//i.test(ua)) {
     browser = 'Chrome';
-  } else if (/Firefox\//.test(ua)) {
+  } else if (/Firefox\//i.test(ua)) {
     browser = 'Firefox';
-  } else if (/Safari/.test(ua) && !/Chrome|Edg|OPR/.test(ua)) {
+  } else if (/Safari/i.test(ua) && !/Chrome|Edg|OPR/i.test(ua)) {
     browser = 'Safari';
   }
 
@@ -53,11 +53,11 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUserAgent {
     os = 'iOS';
   } else if (/Android/i.test(ua)) {
     os = 'Android';
-  } else if (/Windows/.test(ua)) {
+  } else if (/Windows/i.test(ua)) {
     os = 'Windows';
-  } else if (/Mac OS X/.test(ua)) {
+  } else if (/Mac OS X/i.test(ua)) {
     os = 'macOS';
-  } else if (/Linux/.test(ua)) {
+  } else if (/Linux/i.test(ua)) {
     os = 'Linux';
   }
 
@@ -275,7 +275,7 @@ function escapeCsvField(value: string | null): string {
   if (value === null) {
     return '';
   }
-  if (/[",\n]/.test(value)) {
+  if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
