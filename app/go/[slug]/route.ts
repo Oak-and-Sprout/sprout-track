@@ -10,6 +10,8 @@ import {
   getCountry,
 } from '@/src/utils/short-link-utils';
 
+const clip = (v: string | null, max: number) => (v ? v.slice(0, max) : null);
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -45,11 +47,11 @@ export async function GET(
             deviceType: parsed.deviceType,
             browser: parsed.browser,
             os: parsed.os,
-            referrerDomain: extractReferrerDomain(req.headers.get('referer')),
-            country,
-            region,
+            referrerDomain: clip(extractReferrerDomain(req.headers.get('referer')), 255),
+            country: clip(country, 8),
+            region: clip(region, 32),
             visitorHash,
-            queryString: req.nextUrl.search ? req.nextUrl.search.slice(1) : null,
+            queryString: clip(req.nextUrl.search ? req.nextUrl.search.slice(1) : null, 1024),
           },
         }),
         prisma.shortLink.update({
