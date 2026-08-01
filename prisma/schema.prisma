@@ -1200,6 +1200,41 @@ model GiftCode {
   @@index([redeemedByAccountId])
 }
 
+model ShortLink {
+  id          String   @id @default(cuid())
+  slug        String   @unique // 8 hex chars, e.g. "a1b2c3d4"
+  url         String // destination URL (absolute http/https only)
+  name        String
+  description String?
+  tag         String? // campaign tag for grouping
+  enabled     Boolean  @default(true)
+  clickCount  Int      @default(0) // denormalized total
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clicks ShortLinkClick[]
+
+  @@index([tag])
+}
+
+model ShortLinkClick {
+  id             String   @id @default(cuid())
+  timestamp      DateTime @default(now())
+  deviceType     String? // mobile | tablet | desktop | bot | unknown
+  browser        String?
+  os             String?
+  referrerDomain String?
+  country        String? // ISO code from CDN header when available
+  region         String?
+  visitorHash    String? // truncated sha256(secret + day + ip + ua)
+  queryString    String? // incoming query string (UTM etc.)
+
+  shortLink   ShortLink @relation(fields: [shortLinkId], references: [id], onDelete: Cascade)
+  shortLinkId String
+
+  @@index([shortLinkId, timestamp])
+}
+
 // Future-proof campaign system
 model BetaCampaign {
   id          String           @id @default(cuid())
