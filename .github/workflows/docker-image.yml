@@ -16,44 +16,107 @@ env:
   IMAGE_NAME: sprouttrack/sprout-track
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  # ---------------------------------------------------
+  # Build each architecture on a runner of that architecture and push it
+  # by digest (no tags). Emulating arm64 with QEMU on an amd64 runner made
+  # `npm ci` take hours; native runners bring it back to minutes.
+  # ---------------------------------------------------
+  build:
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
 
     permissions:
       contents: read
       packages: write
 
     steps:
-      # ---------------------------------------------------
-      # 1. Checkout the repo at the release tag
-      # ---------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ---------------------------------------------------
-      # 2. Set up QEMU for cross-platform emulation (ARM)
-      # ---------------------------------------------------
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      # ---------------------------------------------------
-      # 3. Set up Docker Buildx for multi-platform builds
-      # ---------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ---------------------------------------------------
-      # 4. Log in to Docker Hub
-      # ---------------------------------------------------
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # ---------------------------------------------------
-      # 5. Extract version metadata from the release tag
-      # ---------------------------------------------------
+      # Labels only — the tags are applied to the manifest list in `merge`.
+      - name: Extract metadata (labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: ENABLE_NOTIFICATIONS=true
+          # Each arch caches separately; a shared scope would thrash.
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+        shell: bash
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ---------------------------------------------------
+  # Combine the per-arch digests into one multi-platform manifest list and
+  # apply the release tags to it.
+  # ---------------------------------------------------
+  merge:
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -68,18 +131,13 @@ jobs:
             # Always tag latest
             type=raw,value=latest
 
-      # ---------------------------------------------------
-      # 6. Build and push multi-platform image
-      # ---------------------------------------------------
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: ENABLE_NOTIFICATIONS=true
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
