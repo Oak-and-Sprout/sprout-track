@@ -406,12 +406,23 @@ export default function ShortLinksPage() {
                   <TableRow
                     key={link.id}
                     onClick={() => router.push(`/family-manager/short-links/${link.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        router.push(`/family-manager/short-links/${link.id}`);
+                      } else if (e.key === ' ') {
+                        e.preventDefault();
+                        router.push(`/family-manager/short-links/${link.id}`);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${t('Details')}: ${link.name}`}
                     className="cursor-pointer"
                   >
                     <TableCell className="font-mono text-sm">/go/{link.slug}</TableCell>
                     <TableCell className="text-sm">{link.name}</TableCell>
                     <TableCell className="text-sm max-w-[220px] truncate" title={link.url}>{link.url}</TableCell>
-                    <TableCell className="text-sm">{link.tag || 'N/A'}</TableCell>
+                    <TableCell className="text-sm">{link.tag || t('N/A')}</TableCell>
                     <TableCell>
                       {link.enabled ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
