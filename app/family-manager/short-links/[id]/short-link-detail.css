@@ -1,0 +1,75 @@
+/* Short Link Detail Page - dark mode overrides
+ *
+ * Light mode styling is applied via Tailwind utility classes directly on the
+ * elements (see page.tsx). Dark mode uses html.dark selectors here per the
+ * project's dark-mode convention (no Tailwind `dark:` classes).
+ */
+
+html.dark .short-link-panel {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #374151; /* gray-700 */
+}
+
+html.dark .short-link-panel-text {
+  color: #e5e7eb; /* gray-200 */
+}
+
+html.dark .short-link-panel-muted-text {
+  color: #9ca3af; /* gray-400 */
+}
+
+html.dark .short-link-accent-text {
+  color: #5eead4; /* teal-300 */
+}
+
+html.dark .short-link-tag-badge {
+  background-color: rgba(45, 212, 191, 0.15); /* teal-400 @ 15% */
+  color: #5eead4; /* teal-300 */
+}
+
+html.dark .short-link-track {
+  background-color: #374151; /* gray-700 */
+}
+
+/* Clicks-over-time line colors — dataviz categorical slots 1 (blue) and 2
+ * (orange), each stepped for its surface. Read via CSS custom property so
+ * the SVG stroke switches with the theme toggle without a JS theme read
+ * (which would risk an SSR/hydration mismatch — see CLAUDE.md's native-app
+ * guidance on the same class of bug for isNativeApp()). */
+.short-link-chart-wrapper {
+  --short-link-color-clicks: #2a78d6;
+  --short-link-color-uniques: #eb6834;
+}
+
+html.dark .short-link-chart-wrapper {
+  --short-link-color-clicks: #3987e5;
+  --short-link-color-uniques: #d95926;
+}
+
+/* Recharts elements inside the clicks-over-time chart */
+html.dark .short-link-chart-wrapper .recharts-cartesian-grid-horizontal line,
+html.dark .short-link-chart-wrapper .recharts-cartesian-grid-vertical line {
+  stroke: #374151; /* gray-700 */
+}
+
+html.dark .short-link-chart-wrapper .recharts-cartesian-axis-tick-value {
+  fill: #9ca3af; /* gray-400 */
+}
+
+html.dark .short-link-chart-wrapper .recharts-cartesian-axis-line,
+html.dark .short-link-chart-wrapper .recharts-cartesian-axis-tick-line {
+  stroke: #4b5563; /* gray-600 */
+}
+
+html.dark .short-link-chart-wrapper .recharts-legend-item-text {
+  color: #d1d5db !important; /* gray-300 */
+}
+
+/* The default recharts tooltip sets backgroundColor/border/color as inline
+ * styles; !important in an author stylesheet still wins over a plain
+ * inline style, so this repaints it for dark mode with no JS involved. */
+html.dark .short-link-chart-wrapper .recharts-default-tooltip {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+}
