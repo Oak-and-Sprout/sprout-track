@@ -54,13 +54,23 @@ export function ShortLinkQrDialog({ open, onClose, shortUrl, slug }: ShortLinkQr
           if (cancelled) return;
           const { logoSize, tileSize, offset, tileRadius } = qrLogoLayout(1024);
           ctx.save();
-          ctx.beginPath();
-          ctx.roundRect(offset, offset, tileSize, tileSize, tileRadius);
-          ctx.fillStyle = '#ffffff';
-          ctx.fill();
+          if (typeof ctx.roundRect === 'function') {
+            ctx.beginPath();
+            ctx.roundRect(offset, offset, tileSize, tileSize, tileRadius);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+          } else {
+            // Older engines without CanvasRenderingContext2D.roundRect: fall
+            // back to a square tile rather than losing the logo entirely.
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(offset, offset, tileSize, tileSize);
+          }
           ctx.restore();
           const pad = Math.round((tileSize - logoSize) / 2);
           ctx.drawImage(img, offset + pad, offset + pad, logoSize, logoSize);
+        };
+        img.onerror = () => {
+          console.error('QR logo failed to load');
         };
         img.src = '/sprout-256.png';
       })
