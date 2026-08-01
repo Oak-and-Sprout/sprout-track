@@ -161,8 +161,8 @@ export default function ShortLinksPage() {
       const body = {
         name: form.name,
         url: form.url,
-        description: form.description || undefined,
-        tag: form.tag || undefined,
+        description: editingLink ? form.description : form.description || undefined,
+        tag: editingLink ? form.tag : form.tag || undefined,
       };
       const response = editingLink
         ? await authFetch(`/api/short-links/${editingLink.id}`, {

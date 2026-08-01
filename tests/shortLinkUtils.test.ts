@@ -164,4 +164,13 @@ describe('buildClicksCsv', () => {
       '2026-07-31T12:00:00.000Z,mobile,Safari,iOS,US,,"a\rb.com",\r\n'
     );
   });
+  it('neutralizes a formula-injection queryString with a leading single quote', () => {
+    const csv = buildClicksCsv([
+      { timestamp: '2026-07-31T12:00:00.000Z', deviceType: 'desktop', browser: 'Chrome', os: 'Windows', country: 'US', region: null, referrerDomain: null, queryString: '=HYPERLINK("http://evil")' },
+    ]);
+    expect(csv).toBe(
+      'timestamp,deviceType,browser,os,country,region,referrerDomain,queryString\r\n' +
+      '2026-07-31T12:00:00.000Z,desktop,Chrome,Windows,US,,,"\'=HYPERLINK(""http://evil"")"\r\n'
+    );
+  });
 });

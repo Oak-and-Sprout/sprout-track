@@ -275,6 +275,9 @@ function escapeCsvField(value: string | null): string {
   if (value === null) {
     return '';
   }
+  if (/^[=+\-@\t]/.test(value)) {
+    value = `'${value}`;
+  }
   if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
   }
