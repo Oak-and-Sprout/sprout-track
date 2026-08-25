@@ -1,5 +1,6 @@
 import { PhotoListResponse, PhotoLogCreate, PhotoLogResponse, PhotoResponse, PhotoUploadResult } from '@/app/api/types';
 import { photosZipFileName, uniqueFileNames } from '@/src/utils/photoUtils';
+import { normalizeImageFile } from '@/src/utils/normalizeImageFile';
 
 function authHeaders(): Record<string, string> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -22,8 +23,10 @@ export async function uploadPhotos(
   files: File[],
   options: { babyId: string; takenAt?: string; caption?: string; milestoneId?: string }
 ): Promise<PhotoUploadResult> {
+  // HEIC/AVIF are converted to JPEG in the browser; the server never decodes them
+  const normalized = await Promise.all(files.map(normalizeImageFile));
   const formData = new FormData();
-  files.forEach((file) => formData.append('files', file));
+  normalized.forEach((file) => formData.append('files', file));
   formData.append('babyId', options.babyId);
   if (options.takenAt) formData.append('takenAt', options.takenAt);
   if (options.caption) formData.append('caption', options.caption);

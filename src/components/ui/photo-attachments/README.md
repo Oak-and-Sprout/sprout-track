@@ -179,7 +179,7 @@ This prevents orphaned photos in the storage if the user cancels the activity fo
 ## Error Handling
 
 - Failed thumbnail loads (e.g., deleted photo): Shows ImageOff icon instead of broken image
-- Invalid files (non-images): Native file picker handles — this component trusts `accept="image/*"`
+- Invalid files (non-images): Native file picker handles — this component trusts `accept="image/*"`; `uploadPhotos()` sniffs the bytes at upload time, converts HEIC/AVIF to JPEG in the browser (`src/utils/normalizeImageFile.ts`) and rejects non-images
 - Network errors on existing photos: Falls back to ImageOff icon via `useAuthedImage` hook
 
 ## Performance

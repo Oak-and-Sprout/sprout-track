@@ -1,6 +1,6 @@
 {
   "name": "baby-tracker",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -49,6 +49,7 @@
     "exceljs": "^4.4.0",
     "exif-reader": "^2.0.3",
     "framer-motion": "^13.1.1",
+    "heic-to": "^1.5.2",
     "html2canvas-pro": "^2.4.0",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",

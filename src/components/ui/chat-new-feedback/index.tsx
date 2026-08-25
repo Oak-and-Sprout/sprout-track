@@ -168,14 +168,14 @@ export const ChatNewFeedback = forwardRef<ChatNewFeedbackRef, ChatNewFeedbackPro
             ref={camera.libraryInputRef}
             type="file"
             multiple
-            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/avif,image/webp,image/gif"
             onChange={handleFileSelect}
             className="hidden"
           />
           <input
             ref={camera.captureInputRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,image/avif,image/webp,image/gif"
             capture="environment"
             onChange={handleFileSelect}
             className="hidden"

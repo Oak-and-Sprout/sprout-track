@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { FeedbackResponse, FeedbackAttachmentResponse } from '@/app/api/types';
 import { authFetch, formatDateTime } from '@/src/components/familymanager/utils';
+import { normalizeImageFile } from '@/src/utils/normalizeImageFile';
 
 export interface SubmitterInfo {
   name: string;
@@ -147,7 +148,7 @@ export function useFeedbackChat(isAdmin: boolean): UseFeedbackChatReturn {
     const results: FeedbackAttachmentResponse[] = [];
     for (const file of files) {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', await normalizeImageFile(file));
       formData.append('feedbackId', feedbackId);
       const response = await authFetch('/api/feedback/upload', {
         method: 'POST',
