@@ -11,6 +11,7 @@
 - Fixed a couple of bugs in stripe for dead code, and transaction history being broken
 - Fixed database resolver paths after new prisma update on bare metal
 - Added scripts for datetime conversation for all sqlite database migrating from prisma 6 -> prisma 7
+- Removed a duplicated call on the timeline that could error out in slow network conditions
 
 ## v1.6.5 - Small Fixes, Smoother Tracking, Hindi Support
 
