@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/app/api/db';
 import { withAccountOwner, ApiResponse, AuthResult } from '@/app/api/utils/auth';
+import { toPaymentHistoryItem, findInvoiceForPaymentIntent, PaymentHistoryItem } from '../payment-history-utils';
 
 // Initialize Stripe
 // Use a safe initialization pattern to prevent build errors in self-hosted mode where Stripe keys are missing
@@ -11,17 +12,6 @@ const stripe = stripeKey
       apiVersion: '2026-07-29.dahlia',
     })
   : ({} as unknown as Stripe);
-
-interface PaymentHistoryItem {
-  id: string;
-  date: string;
-  amount: number;
-  currency: string;
-  status: string;
-  description: string;
-  receiptUrl?: string;
-  invoiceUrl?: string;
-}
 
 interface PaymentHistoryData {
   transactions: PaymentHistoryItem[];
@@ -106,36 +96,18 @@ async function handler(
     const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 100);
     const startingAfter = searchParams.get('starting_after') || undefined;
 
-    // Fetch payment intents for this customer with charges expanded
+    // Fetch payment intents for this customer with the latest charge expanded
     const paymentIntents = await stripe.paymentIntents.list({
       customer: account.stripeCustomerId,
       limit,
       starting_after: startingAfter,
-      expand: ['data.charges'],
+      expand: ['data.latest_charge'],
     });
 
-    // Transform payment intents into our format
-    const transactions: PaymentHistoryItem[] = paymentIntents.data.map((pi) => {
-      // Get charge for receipt URL - charges are expanded
-      // Use type assertion since charges are expanded but not typed in the PaymentIntent type
-      const piWithCharges = pi as Stripe.PaymentIntent & {
-        charges?: Stripe.ApiList<Stripe.Charge>;
-      };
-      const charge = piWithCharges.charges?.data?.[0];
-
-      return {
-        id: pi.id,
-        date: new Date(pi.created * 1000).toISOString(),
-        amount: pi.amount / 100, // Convert from cents
-        currency: pi.currency.toUpperCase(),
-        status: pi.status,
-        description: pi.description || 'Sprout Track Payment',
-        receiptUrl: charge?.receipt_url || undefined,
-        invoiceUrl: charge && typeof (charge as any).invoice === 'string'
-          ? `https://invoice.stripe.com/i/${((charge as any).invoice as string).split('_secret_')[0]}`
-          : undefined,
-      };
-    });
+    // Subscription charges link to an invoice only via InvoicePayments (one lookup each)
+    const transactions: PaymentHistoryItem[] = await Promise.all(
+      paymentIntents.data.map(async (pi) => toPaymentHistoryItem(pi, await findInvoiceForPaymentIntent(stripe, pi.id)))
+    );
 
     return NextResponse.json({
       success: true,
