@@ -62,11 +62,29 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Generate the log Prisma client (separate schema; not produced by prisma:generate)
+echo "Generating log Prisma client..."
+npm run prisma:generate:log
+if [ $? -ne 0 ]; then
+    echo "Error: Log Prisma client generation failed!"
+    "$SCRIPT_DIR/service.sh" start
+    exit 1
+fi
+
 # Run Prisma migrations
 echo "Running database migrations..."
 npm run prisma:migrate
 if [ $? -ne 0 ]; then
     echo "Error: Prisma migrations failed!"
+    "$SCRIPT_DIR/service.sh" start
+    exit 1
+fi
+
+# Sync the log database schema (no migrations; pushed directly, same as setup.sh)
+echo "Syncing log database schema..."
+npx prisma db push --config prisma/log.config.ts --accept-data-loss
+if [ $? -ne 0 ]; then
+    echo "Error: Log database schema sync failed!"
     "$SCRIPT_DIR/service.sh" start
     exit 1
 fi
