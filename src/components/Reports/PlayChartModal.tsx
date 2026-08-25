@@ -340,7 +340,7 @@ const PlayChartModal: React.FC<PlayChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name?: string) => {
+                      formatter={(value: any, name?: string | number) => {
                         const displayName = name ? (playTypeDisplayNames[name] || name) : '';
                         return [`${value} ${t('min')}`, displayName];
                       }}

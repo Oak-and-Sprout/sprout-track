@@ -6,9 +6,10 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { createPrismaAdapter } from '../prisma/prisma-adapter.js';
 import { execSync } from 'child_process';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
 // Models and their date fields
 const dateFieldsByModel = {

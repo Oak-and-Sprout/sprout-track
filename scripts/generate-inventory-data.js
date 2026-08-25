@@ -8,10 +8,11 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 const { randomUUID } = require('crypto');
 const readline = require('readline');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
 // Utility functions
 function randomChoice(array) {

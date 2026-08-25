@@ -5,11 +5,12 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 const { randomUUID } = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
 // Source family ID to copy data from
 const SOURCE_FAMILY_ID = 'cmcqdc0gj0000s6xh8gp1sj0x';

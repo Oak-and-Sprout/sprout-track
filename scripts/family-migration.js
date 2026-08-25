@@ -1,8 +1,9 @@
 // Family migration script for multi-family support
 // This script creates a single family record and associates all existing data with it
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
 // Slug word lists copied directly from app/api/utils/slug-words.ts
 const adjectives = [

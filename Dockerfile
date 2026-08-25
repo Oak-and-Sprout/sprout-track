@@ -23,6 +23,7 @@ COPY package.json package-lock.json ./
 
 # Copy prisma files first
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 # Copy the prisma-provider script (needed before prisma generate)
 COPY scripts/prisma-provider.js ./scripts/

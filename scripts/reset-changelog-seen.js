@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 const fs = require('fs');
 const path = require('path');
 
@@ -23,9 +24,7 @@ if (fs.existsSync(envPath)) {
 }
 
 async function main() {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: process.env.DATABASE_URL } },
-  });
+  const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
   try {
     const accountResult = await prisma.account.updateMany({

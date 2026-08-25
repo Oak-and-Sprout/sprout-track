@@ -369,7 +369,7 @@ const BathChartModal: React.FC<BathChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name?: string) => {
+                      formatter={(value: any, name?: string | number) => {
                         if (name === 'soap') return [`${value}`, t('Soap Only')];
                         if (name === 'shampoo') return [`${value}`, t('Shampoo Only')];
                         if (name === 'both') return [`${value}`, t('Both')];

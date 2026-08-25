@@ -1,7 +1,8 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { createPrismaAdapter } from './prisma-adapter';
 
-// This file exists for prisma/seed.ts which runs under prisma/tsconfig.json
-// (commonjs, no path aliases). It shares the same global singleton key as
+// This file exists for prisma/seed.ts which runs under tsx without the
+// Next.js path aliases. It shares the same global singleton key as
 // app/api/db.ts so both files resolve to one PrismaClient instance at runtime.
 
 const GLOBAL_KEY = '__sprout_prisma';
@@ -17,11 +18,7 @@ if (process.env.NODE_ENV === 'production') {
         emit: 'stdout',
         level,
       })),
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
+      adapter: createPrismaAdapter(process.env.DATABASE_URL),
     });
   }
   prisma = (global as any)[GLOBAL_KEY];
@@ -32,11 +29,7 @@ if (process.env.NODE_ENV === 'production') {
         emit: 'stdout',
         level,
       })),
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
+      adapter: createPrismaAdapter(process.env.DATABASE_URL),
     });
   }
   prisma = (global as any)[GLOBAL_KEY];

@@ -17,6 +17,7 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 const fs = require('fs');
 const path = require('path');
 const { convertSolidsFeeds, summarizeConversion } = require('./convert-solids-feeds-runner');
@@ -39,11 +40,7 @@ if (fs.existsSync(envPath) && !process.env.DATABASE_URL) {
 }
 
 async function main() {
-  const prisma = new PrismaClient(
-    process.env.DATABASE_URL
-      ? { datasources: { db: { url: process.env.DATABASE_URL } } }
-      : undefined
-  );
+  const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
   try {
     const result = await convertSolidsFeeds(prisma);

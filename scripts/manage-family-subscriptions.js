@@ -5,9 +5,10 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 const readline = require('readline');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
 // Create readline interface for user input
 const rl = readline.createInterface({

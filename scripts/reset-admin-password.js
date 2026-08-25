@@ -10,6 +10,7 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 const readline = require('readline');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -79,7 +80,7 @@ function encrypt(text) {
 }
 
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
 const rl = readline.createInterface({
   input: process.stdin,

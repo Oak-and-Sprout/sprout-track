@@ -84,7 +84,7 @@ fi
 echo "  - Main Prisma client generated successfully."
 
 echo "  - Generating log Prisma client..."
-npx prisma generate --schema=prisma/log-schema.prisma
+npx prisma generate --config prisma/log.config.ts
 if [ $? -ne 0 ]; then
     echo "Error: Log Prisma client generation failed! Setup aborted."
     exit 1
@@ -102,7 +102,7 @@ echo "Step 5: Running database migrations..."
 
 if [ "$DB_PROVIDER" = "postgresql" ]; then
     echo "  - Pushing main database schema to PostgreSQL..."
-    npx prisma db push --accept-data-loss --skip-generate
+    npx prisma db push --accept-data-loss
     if [ $? -ne 0 ]; then
         echo "Error: PostgreSQL schema push failed! Setup aborted."
         exit 1
@@ -110,7 +110,7 @@ if [ "$DB_PROVIDER" = "postgresql" ]; then
     echo "  - Main database schema pushed successfully."
 
     echo "  - Pushing log database schema to PostgreSQL..."
-    npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+    npx prisma db push --config prisma/log.config.ts --accept-data-loss
     if [ $? -ne 0 ]; then
         echo "Error: Log database schema push failed! Setup aborted."
         exit 1
@@ -126,7 +126,7 @@ else
     echo "  - Main database migrations deployed successfully."
 
     echo "  - Creating log database schema..."
-    npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss
+    npx prisma db push --config prisma/log.config.ts --accept-data-loss
     if [ $? -ne 0 ]; then
         echo "Error: Log database creation failed! Setup aborted."
         exit 1

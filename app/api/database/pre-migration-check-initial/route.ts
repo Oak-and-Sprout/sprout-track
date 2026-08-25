@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaAdapter } from '@/prisma/prisma-adapter';
 import { withAuthContext, ApiResponse, AuthResult } from '../../utils/auth';
 
 // Target migration to check against
@@ -16,13 +17,7 @@ async function checkHandler(req: NextRequest, authContext: AuthResult): Promise<
 
   try {
     // Create a new Prisma client instance for the restored database
-    tempPrisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL || 'file:../db/baby-tracker.db'
-        }
-      }
-    });
+    tempPrisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
     // Query the _prisma_migrations table to get the latest migration
     const latestMigration = await tempPrisma.$queryRaw<Array<{ migration_name: string; finished_at: string }>>`

@@ -10,7 +10,7 @@ import { sendGiftCodeEmail } from '@/app/api/utils/account-emails';
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeKey
   ? new Stripe(stripeKey, {
-      apiVersion: '2025-10-29.clover',
+      apiVersion: '2026-07-29.dahlia',
     })
   : ({} as unknown as Stripe);
 

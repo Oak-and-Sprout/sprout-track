@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { createPrismaAdapter } from '@/prisma/prisma-adapter';
 
 // Canonical Prisma singleton for the app. Uses a shared global key so that
 // prisma/db.ts (used by seed.ts which can't resolve @/ aliases) and this
@@ -16,11 +17,7 @@ if (!(global as any)[GLOBAL_KEY]) {
       emit: 'stdout',
       level,
     })),
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    },
+    adapter: createPrismaAdapter(process.env.DATABASE_URL),
   });
 }
 prisma = (global as any)[GLOBAL_KEY];

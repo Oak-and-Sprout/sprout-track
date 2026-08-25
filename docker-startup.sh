@@ -107,17 +107,17 @@ if [ "$DB_PROVIDER" = "postgresql" ]; then
   fi
 
   echo "Pushing database schema to PostgreSQL..."
-  npx prisma db push --accept-data-loss --skip-generate
+  npx prisma db push --accept-data-loss
 
   echo "Pushing log database schema to PostgreSQL..."
-  npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+  npx prisma db push --config prisma/log.config.ts --accept-data-loss
 else
   # SQLite: use migration deploy (existing behavior)
   echo "Running database migrations..."
   npx prisma migrate deploy
 
   echo "Creating log database schema..."
-  npx prisma db push --schema=prisma/log-schema.prisma --accept-data-loss --skip-generate
+  npx prisma db push --config prisma/log.config.ts --accept-data-loss
 fi
 
 echo "Seeding database..."

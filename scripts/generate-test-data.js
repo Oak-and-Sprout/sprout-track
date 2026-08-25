@@ -5,9 +5,10 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+const { createPrismaAdapter } = require('../prisma/prisma-adapter');
 const { randomUUID } = require('crypto');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: createPrismaAdapter(process.env.DATABASE_URL) });
 
 // Get parameters from environment variables set by bash script
 const familyCount = parseInt(process.env.FAMILY_COUNT) || 1;

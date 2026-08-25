@@ -332,7 +332,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name?: string) => {
+                      formatter={(value: any, name?: string | number) => {
                         if (name === 'count') {
                           return [`${value}`, 'Feeds'];
                         }
@@ -423,7 +423,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name?: string) => {
+                      formatter={(value: any, name?: string | number) => {
                         if (name === 'count' || name === 'Feed Count') {
                           const countValue = typeof value === 'number' ? Math.round(value) : parseInt(value, 10);
                           return [countValue.toString(), t('Feeds')];
@@ -522,7 +522,7 @@ const FeedingChartModal: React.FC<FeedingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name?: string) => {
+                      formatter={(value: any, name?: string | number) => {
                         if (name === 'count') {
                           return [`${value}`, 'Feeds'];
                         }

@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaAdapter } from '@/prisma/prisma-adapter';
 import { buildPreferencesWhere } from '@/app/api/notifications/preferences/route';
 
 /**
@@ -81,7 +82,7 @@ describe('buildPreferencesWhere — legacy row visibility (integration)', () => 
     `);
     db.close();
 
-    prisma = new PrismaClient({ datasources: { db: { url: `file:${dbPath}` } } });
+    prisma = new PrismaClient({ adapter: createPrismaAdapter(`file:${dbPath}`) });
   });
 
   afterAll(async () => {

@@ -493,7 +493,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name?: string) => {
+                      formatter={(value: any, name?: string | number) => {
                         if (name === 'dayTotal') {
                           return [`${value.toFixed(1)}`, 'Total'];
                         }
@@ -620,7 +620,7 @@ const PumpingChartModal: React.FC<PumpingChartModalProps> = ({
                       className="growth-chart-axis"
                     />
                     <RechartsTooltip
-                      formatter={(value: any, name?: string) => {
+                      formatter={(value: any, name?: string | number) => {
                         if (name === 'consumed') {
                           return [`${value.toFixed(1)} ${(currentBalance?.unit || 'OZ').toLowerCase()}`, t('Consumed')];
                         }
