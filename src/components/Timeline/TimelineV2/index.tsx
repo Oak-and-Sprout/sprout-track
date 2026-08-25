@@ -272,13 +272,12 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, feedTimerTypes, onLat
     }
   };
 
+  // Date navigation is handled entirely here; notifying the parent would only
+  // bounce back as a refreshTrigger and duplicate (then abort) this fetch.
   const handleDateSelection = (newDate: Date) => {
     setSelectedDate(newDate);
     if (babyId) {
       fetchActivitiesForDate(newDate, true);
-      if (onActivityDeleted) {
-        onActivityDeleted(newDate);
-      }
     }
   };
 
