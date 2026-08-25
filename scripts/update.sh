@@ -89,6 +89,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Convert legacy Prisma 6 integer DateTimes to Prisma 7 text (idempotent, SQLite only)
+echo "Converting legacy SQLite datetime values..."
+node "$SCRIPT_DIR/convert-sqlite-datetimes.js"
+
 # Run the family update script for multi-family support
 echo "Running family data update for multi-family support..."
 "$SCRIPT_DIR/family-update.sh"

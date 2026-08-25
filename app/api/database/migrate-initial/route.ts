@@ -57,6 +57,21 @@ async function handler(request: NextRequest, authContext: AuthResult): Promise<N
       }
     }
 
+    // Step 2b: Convert legacy Prisma 6 integer DateTimes to Prisma 7 text (SQLite only —
+    // a restored backup may predate the upgrade; without this its rows are invisible
+    // to every date-range query)
+    if (!isPostgreSQL()) {
+      console.log('Step 2b: Converting legacy SQLite datetime values...');
+      try {
+        const datetimeScript = path.join(scriptsDir, 'convert-sqlite-datetimes.js');
+        const { stdout } = await execAsync(`node "${datetimeScript}"`, { cwd: projectRoot });
+        console.log(stdout.trim());
+      } catch (error) {
+        console.error('⚠ SQLite datetime conversion failed:', error);
+        console.warn('Datetime conversion skipped - it will retry on next startup');
+      }
+    }
+
     // Step 3: Run family migration script (SQLite only — uses SQLite-specific raw SQL)
     if (!isPostgreSQL()) {
       console.log('Step 3: Checking for family data migration...');

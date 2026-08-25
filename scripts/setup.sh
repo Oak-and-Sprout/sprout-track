@@ -145,6 +145,10 @@ if [ $? -ne 0 ]; then
 fi
 echo "Database seeded successfully with default family, system caretaker (PIN: 111222), and units."
 
+# Step 6a: Convert legacy Prisma 6 integer DateTimes to Prisma 7 text (idempotent, SQLite only)
+echo "Converting legacy SQLite datetime values..."
+node scripts/convert-sqlite-datetimes.js
+
 # Step 6b: Convert legacy solids feeds to food logs (idempotent, safe to rerun)
 echo "Converting legacy solids feeds to food logs..."
 node "$SCRIPT_DIR/convert-solids-feeds.js"

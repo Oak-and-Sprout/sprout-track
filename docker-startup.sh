@@ -120,6 +120,10 @@ else
   npx prisma db push --config prisma/log.config.ts --accept-data-loss
 fi
 
+echo "Converting legacy SQLite datetime values..."
+# Idempotent: Prisma 6 stored DateTimes as integer ms, Prisma 7's adapter uses text
+node scripts/convert-sqlite-datetimes.js
+
 echo "Seeding database..."
 # Seed script has built-in checks for all entities (families, caretakers, settings, units)
 # It only creates/updates what doesn't exist, so it's safe to run on every startup
