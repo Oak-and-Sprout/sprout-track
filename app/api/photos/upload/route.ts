@@ -16,7 +16,7 @@ import {
   resolveFavoriteOwner,
   PHOTO_INCLUDE,
 } from '../photo-service';
-import { validatePhotoFile, isOverQuota, resolveTakenAt, MAX_PHOTOS_PER_BATCH } from '@/src/utils/photoUtils';
+import { validatePhotoFile, isHeifContainer, isOverQuota, resolveTakenAt, MAX_PHOTOS_PER_BATCH, HEIF_CONTAINER_ERROR } from '@/src/utils/photoUtils';
 
 /**
  * POST /api/photos/upload
@@ -83,6 +83,10 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
       let thumbStoredName: string | undefined;
       try {
         const rawBuffer = Buffer.from(await file.arrayBuffer());
+        if (isHeifContainer(rawBuffer)) {
+          errors.push({ fileName: file.name, error: HEIF_CONTAINER_ERROR, index });
+          continue;
+        }
         const processed = await processPhoto(rawBuffer, file.type.toLowerCase());
         const incomingBytes = processed.display.data.length + processed.thumbnail.data.length;
         if (isOverQuota(runningUsed, incomingBytes, quota.totalBytes)) {

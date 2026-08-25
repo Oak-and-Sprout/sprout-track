@@ -34,7 +34,7 @@ function extractExifTakenAt(metadata: sharp.Metadata): Date | null {
 
 /**
  * Produce the encrypted-at-rest artifacts for one uploaded photo:
- * - display image: auto-rotated, resized to <=1600px, HEIC converted to JPEG
+ * - display image: auto-rotated, resized to <=1600px, JPEG unless png/webp/gif
  * - thumbnail: 300px JPEG
  * Originals are NOT retained (see spec section 4).
  */
@@ -62,7 +62,7 @@ export async function processPhoto(buffer: Buffer, mimeType: string): Promise<Pr
     // Preserve animation; no resize (sharp flattens animated gifs by default)
     display = { data: buffer, mimeType: 'image/gif' };
   } else {
-    // jpeg/jpg/heic/heif and anything else -> JPEG
+    // jpeg/jpg and anything else -> JPEG
     display = { data: await base().jpeg({ quality: 80 }).toBuffer(), mimeType: 'image/jpeg' };
   }
 

@@ -5,33 +5,19 @@ import { ApiResponse, FeedbackAttachmentResponse } from '../../types';
 import { withAuthContext, AuthResult } from '../../utils/auth';
 import { encryptAndStore, generateStoredName } from '@/src/lib/file-encryption';
 import { formatForResponse } from '../../utils/timezone';
+import { ALLOWED_PHOTO_MIME_TYPES, PHOTO_MIME_ERROR, HEIF_CONTAINER_ERROR, isHeifContainer } from '@/src/utils/photoUtils';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/heic',
-  'image/heif',
-  'image/webp',
-  'image/gif',
-];
 
 /**
  * Compress image while maintaining original dimensions.
- * Converts HEIC/HEIF to JPEG for browser compatibility.
+ * HEIC/HEIF/AVIF are rejected upstream (see isHeifContainer) and never reach sharp.
  */
 async function compressImage(buffer: Buffer, mimeType: string): Promise<{ data: Buffer; mimeType: string }> {
   let pipeline = sharp(buffer);
 
   // Auto-rotate based on EXIF orientation
   pipeline = pipeline.rotate();
-
-  if (mimeType === 'image/heic' || mimeType === 'image/heif') {
-    // Convert HEIC to JPEG
-    pipeline = pipeline.jpeg({ quality: 80 });
-    return { data: await pipeline.toBuffer(), mimeType: 'image/jpeg' };
-  }
 
   if (mimeType === 'image/png') {
     pipeline = pipeline.png({ quality: 80, compressionLevel: 8 });
@@ -85,9 +71,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     }
 
     const fileMimeType = file.type.toLowerCase();
-    if (!ALLOWED_MIME_TYPES.includes(fileMimeType)) {
+    if (!ALLOWED_PHOTO_MIME_TYPES.includes(fileMimeType)) {
       return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'Only image files are allowed (JPEG, PNG, HEIC, WebP, GIF)' },
+        { success: false, error: PHOTO_MIME_ERROR },
         { status: 400 }
       );
     }
@@ -127,6 +113,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
 
     // Read and compress the image
     const rawBuffer = Buffer.from(await file.arrayBuffer());
+    if (isHeifContainer(rawBuffer)) {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: HEIF_CONTAINER_ERROR }, { status: 400 });
+    }
     const compressed = await compressImage(rawBuffer, fileMimeType);
 
     // Encrypt and store

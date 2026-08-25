@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   validatePhotoFile,
+  isHeifContainer,
   mbToBytes,
   getEffectiveQuotaMb,
   isOverQuota,
@@ -25,8 +26,12 @@ describe('validatePhotoFile', () => {
   it('accepts a normal jpeg', () => {
     expect(validatePhotoFile({ mimeType: 'image/jpeg', fileSize: 500_000 }).valid).toBe(true);
   });
-  it('accepts uppercase mime and heic', () => {
-    expect(validatePhotoFile({ mimeType: 'IMAGE/HEIC', fileSize: 1 }).valid).toBe(true);
+  it('accepts uppercase mime', () => {
+    expect(validatePhotoFile({ mimeType: 'IMAGE/PNG', fileSize: 1 }).valid).toBe(true);
+  });
+  it('rejects heic/heif (libheif decoder is disabled)', () => {
+    expect(validatePhotoFile({ mimeType: 'image/heic', fileSize: 1 }).valid).toBe(false);
+    expect(validatePhotoFile({ mimeType: 'image/heif', fileSize: 1 }).valid).toBe(false);
   });
   it('rejects non-image mime with error', () => {
     const r = validatePhotoFile({ mimeType: 'application/pdf', fileSize: 1 });
@@ -38,6 +43,33 @@ describe('validatePhotoFile', () => {
   });
   it('accepts a file exactly at the cap', () => {
     expect(validatePhotoFile({ mimeType: 'image/png', fileSize: MAX_PHOTO_FILE_SIZE }).valid).toBe(true);
+  });
+});
+
+describe('isHeifContainer', () => {
+  // ISOBMFF: [size:4][ 'ftyp' ][major brand:4]...
+  const ftyp = (brand: string) => Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftyp'), Buffer.from(brand)]);
+  it('detects heic and avif brands', () => {
+    expect(isHeifContainer(ftyp('heic'))).toBe(true);
+    expect(isHeifContainer(ftyp('avif'))).toBe(true);
+    expect(isHeifContainer(ftyp('mif1'))).toBe(true);
+  });
+  it('detects any ftyp container regardless of declared brand', () => {
+    expect(isHeifContainer(ftyp('zzzz'))).toBe(true);
+  });
+  it('does not flag jpeg, png, webp, gif magic bytes', () => {
+    expect(isHeifContainer(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1]))).toBe(false);
+    expect(isHeifContainer(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d]))).toBe(false);
+    expect(isHeifContainer(Buffer.from('RIFF\0\0\0\0WEBPVP8 '))).toBe(false);
+    expect(isHeifContainer(Buffer.from('GIF89a\0\0\0\0\0\0'))).toBe(false);
+  });
+  it('handles empty and short inputs', () => {
+    expect(isHeifContainer(Buffer.alloc(0))).toBe(false);
+    expect(isHeifContainer(Buffer.from('ftyp'))).toBe(false);
+    expect(isHeifContainer(Buffer.from([0, 0, 0, 0x18, 0x66, 0x74, 0x79]))).toBe(false);
+  });
+  it('accepts a plain Uint8Array', () => {
+    expect(isHeifContainer(new Uint8Array(ftyp('heic')))).toBe(true);
   });
 });
 

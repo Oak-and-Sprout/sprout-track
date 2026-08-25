@@ -8,8 +8,6 @@ export const ALLOWED_PHOTO_MIME_TYPES = [
   'image/jpeg',
   'image/jpg',
   'image/png',
-  'image/heic',
-  'image/heif',
   'image/webp',
   'image/gif',
 ];
@@ -21,14 +19,27 @@ export const TRASH_RETENTION_DAYS = 30;
 export const PHOTO_DISPLAY_MAX_DIMENSION = 1600;
 export const PHOTO_THUMBNAIL_DIMENSION = 300;
 
+export const PHOTO_MIME_ERROR = 'Only image files are allowed (JPEG, PNG, WebP, GIF)';
+export const HEIF_CONTAINER_ERROR = 'HEIC/HEIF/AVIF images are not supported';
+
 export function validatePhotoFile(input: { mimeType: string; fileSize: number }): { valid: boolean; error?: string } {
   if (!ALLOWED_PHOTO_MIME_TYPES.includes(input.mimeType.toLowerCase())) {
-    return { valid: false, error: 'Only image files are allowed (JPEG, PNG, HEIC, WebP, GIF)' };
+    return { valid: false, error: PHOTO_MIME_ERROR };
   }
   if (input.fileSize > MAX_PHOTO_FILE_SIZE) {
     return { valid: false, error: 'File size exceeds 10MB limit' };
   }
   return { valid: true };
+}
+
+/**
+ * True when the bytes are an ISOBMFF container (HEIC/HEIF/AVIF and friends).
+ * sharp sniffs the real format regardless of the declared MIME type, so this
+ * must run on the raw upload before it reaches libheif — every ISOBMFF image
+ * goes through that decoder, and the declared brand can't be trusted.
+ */
+export function isHeifContainer(bytes: Uint8Array): boolean {
+  return bytes.length >= 8 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70; // 'ftyp'
 }
 
 export function mbToBytes(mb: number): number {
