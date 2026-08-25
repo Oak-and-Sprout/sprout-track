@@ -20,7 +20,7 @@ const referenceKeys = Object.keys(reference);
 
 /** Placeholders such as {babyName} must survive translation untouched. */
 const placeholders = (value: string): string[] =>
-  [...value.matchAll(/\{[^}]*\}/g)].map((match) => match[0]).sort();
+  Array.from(value.matchAll(/\{[^}]*\}/g)).map((match) => match[0]).sort();
 
 describe('translation files', () => {
   it('has a translation file for every supported language', () => {

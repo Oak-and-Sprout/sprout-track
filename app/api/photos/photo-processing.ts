@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import sharp, { type Metadata } from 'sharp';
 import exifReader from 'exif-reader';
 import { PHOTO_DISPLAY_MAX_DIMENSION, PHOTO_THUMBNAIL_DIMENSION } from '@/src/utils/photoUtils';
 
@@ -19,7 +19,7 @@ export interface ProcessedPhoto {
  * `new Date(value)` fallback below tolerates either shape in case the
  * installed version changes.
  */
-function extractExifTakenAt(metadata: sharp.Metadata): Date | null {
+function extractExifTakenAt(metadata: Metadata): Date | null {
   try {
     if (!metadata.exif) return null;
     const tags = exifReader(metadata.exif);
