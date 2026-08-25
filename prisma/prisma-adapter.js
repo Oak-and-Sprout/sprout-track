@@ -13,16 +13,19 @@ const path = require('path');
 // Prisma 6 loaded .env itself; Prisma 7 does not. Harmless where Next already did.
 require('dotenv').config({ quiet: true });
 
-const SCHEMA_DIR = __dirname;
 const DEFAULT_DATABASE_URL = 'file:../db/baby-tracker.db';
 
 /**
  * @param {string | undefined} url
  * @param {string} fallback used when url is missing or blank
- * @param {string} [schemaDir] directory relative file: urls resolve against
+ * @param {string} [schemaDir] directory relative file: urls resolve against.
+ *   Anchored on the cwd, not __dirname: Turbopack inlines __dirname as the
+ *   literal "/ROOT/prisma" in the production server bundle. Every entry point
+ *   (next start/dev, the Prisma CLI, scripts/*.sh, node scripts/*.js) runs
+ *   from the project root.
  * @returns {string}
  */
-function resolveDatabaseUrl(url, fallback, schemaDir = SCHEMA_DIR) {
+function resolveDatabaseUrl(url, fallback, schemaDir = path.join(process.cwd(), 'prisma')) {
   const value = url && url.trim() ? url.trim() : fallback;
   if (!value.startsWith('file:')) return value;
   const target = value.slice('file:'.length).replace(/\?.*$/, '');

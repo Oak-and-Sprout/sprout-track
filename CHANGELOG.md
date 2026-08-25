@@ -9,6 +9,7 @@
 - Added HEIC/AVIF conversion in browser to close vulnerability gaps on compromised image uploads
 - Fixed build issues and tests from updated packages
 - Fixed a couple of bugs in stripe for dead code, and transaction history being broken
+- Fixed database resolver paths after new prisma update on bare metal
 
 ## v1.6.5 - Small Fixes, Smoother Tracking, Hindi Support
 

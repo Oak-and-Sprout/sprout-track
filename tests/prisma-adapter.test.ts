@@ -1,4 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { resolveDatabaseUrl, createPrismaAdapter } from '@/prisma/prisma-adapter';
 
 const schemaDir = '/srv/app/prisma';
@@ -39,5 +42,18 @@ describe('createPrismaAdapter', () => {
   it('defaults to the repo sqlite database relative to prisma/', () => {
     const adapter = createPrismaAdapter(undefined, 'file:../db/baby-tracker.db');
     expect(adapter.provider).toBe('sqlite');
+  });
+});
+
+describe('resolveDatabaseUrl default schema dir', () => {
+  // Turbopack inlines __dirname as the literal "/ROOT/prisma" in the production
+  // server bundle, so the default must be anchored on the process cwd instead.
+  const originalCwd = process.cwd();
+  afterEach(() => process.chdir(originalCwd));
+
+  it('resolves relative to <cwd>/prisma, not the module location', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sprout-adapter-'));
+    process.chdir(tmp);
+    expect(resolveDatabaseUrl('file:../db/a.db', 'file:x')).toBe(`file:${path.join(fs.realpathSync(tmp), 'db', 'a.db')}`);
   });
 });
