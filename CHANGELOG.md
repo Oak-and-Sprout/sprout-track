@@ -1,5 +1,15 @@
 # Sprout Track Changelog
 
+## v1.6.6 - Security Patches and Package Updates
+
+### Changes
+
+#### Patches
+- Upgraded all package handles due to CSV vulnerabilities found in Next and Sharp
+- Added HEIC/AVIF conversion in browser to close vulnerability gaps on compromised image uploads
+- Fixed build issues and tests from updated packages
+- Fixed a couple of bugs in stripe for dead code, and transaction history being broken
+
 ## v1.6.5 - Small Fixes, Smoother Tracking, Hindi Support
 
 ### Changes
