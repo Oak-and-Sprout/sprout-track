@@ -1235,6 +1235,23 @@ model ShortLinkClick {
   @@index([shortLinkId, timestamp])
 }
 
+model Pageview {
+  id             String   @id @default(cuid())
+  timestamp      DateTime @default(now())
+  path           String // normalized route, e.g. "/pricing" — no query, no trailing slash
+  deviceType     String? // mobile | tablet | desktop | bot | unknown
+  browser        String?
+  os             String?
+  referrerDomain String?
+  country        String? // ISO code from CDN header when available
+  region         String?
+  visitorHash    String? // truncated sha256(secret + day + ip + ua) — no raw IP
+  queryString    String? // incoming query string (UTM etc.), capped at 1024
+
+  @@index([timestamp])
+  @@index([path, timestamp])
+}
+
 // Future-proof campaign system
 model BetaCampaign {
   id          String           @id @default(cuid())
