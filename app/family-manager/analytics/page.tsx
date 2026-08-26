@@ -46,18 +46,6 @@ interface FunnelStage {
   visitors: number;
 }
 
-interface RecentPageviewRow {
-  timestamp: string;
-  path: string;
-  deviceType: string | null;
-  browser: string | null;
-  os: string | null;
-  country: string | null;
-  region: string | null;
-  referrerDomain: string | null;
-  queryString: string | null;
-}
-
 interface AnalyticsStatsData {
   series: DayPoint[];
   totals: { views: number; uniques: number };
@@ -70,7 +58,6 @@ interface AnalyticsStatsData {
     os: BreakdownEntry[];
   };
   funnel: FunnelStage[];
-  recent: { rows: RecentPageviewRow[]; total: number; page: number; pageSize: number };
   path: string | null;
 }
 

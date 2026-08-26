@@ -7,18 +7,11 @@ import {
   type PageviewDayPoint, type PageviewAggregates, type FunnelStageResult,
 } from '@/src/utils/analytics-utils';
 
-export interface RecentPageviewRow {
-  timestamp: string; path: string; deviceType: string | null; browser: string | null;
-  os: string | null; country: string | null; region: string | null;
-  referrerDomain: string | null; queryString: string | null;
-}
-
 export interface AnalyticsStatsData {
   series: PageviewDayPoint[];
   totals: { views: number; uniques: number };
   breakdowns: PageviewAggregates['breakdowns'];
   funnel: FunnelStageResult[];
-  recent: { rows: RecentPageviewRow[]; total: number; page: number; pageSize: number };
   path: string | null;
 }
 
@@ -33,7 +26,7 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<An
     // Funnel always spans the whole range regardless of an active path drill-down.
     const funnelWhere = buildPageviewWhere({ ...filters, path: null });
 
-    const [rows, total, recentRows, funnelRows] = await Promise.all([
+    const [rows, funnelRows] = await Promise.all([
       prisma.pageview.findMany({
         where,
         select: {
@@ -41,11 +34,6 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<An
           os: true, country: true, referrerDomain: true, path: true,
         },
         orderBy: { timestamp: 'asc' },
-      }),
-      prisma.pageview.count({ where }),
-      prisma.pageview.findMany({
-        where, orderBy: { timestamp: 'desc' },
-        skip: (filters.page - 1) * filters.pageSize, take: filters.pageSize,
       }),
       prisma.pageview.findMany({ where: funnelWhere, select: { path: true, visitorHash: true } }),
     ]);
@@ -60,14 +48,6 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<An
         totals: aggregates.totals,
         breakdowns: aggregates.breakdowns,
         funnel: computeFunnel(funnelRows, ANALYTICS_FUNNEL_STAGES),
-        recent: {
-          rows: recentRows.map((r) => ({
-            timestamp: r.timestamp.toISOString(), path: r.path, deviceType: r.deviceType,
-            browser: r.browser, os: r.os, country: r.country, region: r.region,
-            referrerDomain: r.referrerDomain, queryString: r.queryString,
-          })),
-          total, page: filters.page, pageSize: filters.pageSize,
-        },
         path: filters.path,
       },
     });
