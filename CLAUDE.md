@@ -14,7 +14,7 @@ These rules define the development patterns, conventions, and architecture for S
 
 ## Database and Prisma 7
 
-The project is on **Prisma 7** (upgraded from 6 alongside Next 15→16 in 1.6.6).
+The project is on **Prisma 7** (upgraded from 6 in 1.6.6).
 Prisma 7 dropped several flags and behaviors the codebase relied on — these have
 already bitten us in production, so treat the following as hard rules and see
 `documentation/Architecture-Documentation/DataModel.md` for the full write-up.

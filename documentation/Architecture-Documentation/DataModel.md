@@ -230,7 +230,7 @@ Cookieless first-party pageview record (no `familyId`):
 ## Database Provider & Prisma 7 Notes
 
 The app supports **SQLite** and **PostgreSQL** from one schema, and runs on
-**Prisma 7** (upgraded from Prisma 6 with the Next 15→16 jump in 1.6.6). The
+**Prisma 7** (upgraded from Prisma 6 in 1.6.6). The
 provider is chosen at runtime via `DATABASE_PROVIDER`; `scripts/prisma-provider.js`
 rewrites the datasource block, and the Docker image regenerates the client at
 container startup. Several Prisma 7 breaking changes affect how the database is

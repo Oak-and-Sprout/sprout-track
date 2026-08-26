@@ -122,7 +122,7 @@ build onward.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_VERSION` | `"1.6.6"` | Application version string |
+| `APP_VERSION` | `"1.6.7"` | Application version string |
 | `TZ` | -- | Timezone for the container (Docker only, e.g., `America/New_York`) |
 
 ### SaaS Mode (Not Needed for Self-Hosting)
