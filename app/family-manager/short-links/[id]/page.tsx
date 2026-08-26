@@ -378,7 +378,7 @@ export default function ShortLinkDetailPage() {
   const referrerOptions = optionValuesWithSelected(stats.breakdowns.referrerDomain, referrer);
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6">
+    <div className="relative h-full overflow-y-auto p-4 md:p-6 space-y-6">
       <div>
         <Button variant="outline" size="sm" onClick={() => router.push('/family-manager/short-links')}>
           <ArrowLeft className="h-4 w-4 mr-1" aria-hidden="true" />
