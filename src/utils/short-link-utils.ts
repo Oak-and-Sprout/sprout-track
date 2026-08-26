@@ -271,7 +271,7 @@ export interface CsvClickRow {
 
 const CSV_HEADER = 'timestamp,deviceType,browser,os,country,region,referrerDomain,queryString';
 
-function escapeCsvField(value: string | null): string {
+export function escapeCsvField(value: string | null): string {
   if (value === null) {
     return '';
   }
