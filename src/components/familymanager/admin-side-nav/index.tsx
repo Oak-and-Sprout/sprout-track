@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { X, Users, Mail, UserCircle, MessageSquare, Plus, Settings, LogOut, Gift, Link2 } from 'lucide-react';
+import { X, Users, Mail, UserCircle, MessageSquare, Plus, Settings, LogOut, Gift, Link2, BarChart3 } from 'lucide-react';
 import { LanguageSelector } from '@/src/components/ui/side-nav/language-selector';
 import ThemeToggle from '@/src/components/ui/theme-toggle';
 import NavCountBubble from '@/src/components/ui/nav-count-bubble';
@@ -190,6 +190,17 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
               onClick={onNavigate}
               className="admin-side-nav-item"
               badge={<NavCountBubble count={counts.shortLinks} />}
+            />
+          )}
+          {isSaasMode && counts.pageviews !== undefined && (
+            <SideNavItem
+              path="/family-manager/analytics"
+              label={t('Analytics')}
+              icon={<BarChart3 size={18} aria-hidden="true" />}
+              isActive={currentPath === '/family-manager/analytics' || currentPath.startsWith('/family-manager/analytics/')}
+              onClick={onNavigate}
+              className="admin-side-nav-item"
+              badge={<NavCountBubble count={counts.pageviews} />}
             />
           )}
         </nav>
