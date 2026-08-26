@@ -285,7 +285,7 @@ function AnalyticsDashboardContent() {
 
   return (
     <div className="family-manager-page">
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-6">
+      <div className="relative flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="analytics-panel bg-white rounded-lg border border-gray-200 p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
