@@ -193,6 +193,43 @@ const logs = await prisma.diaperLog.findMany({
 });
 ```
 
+## SaaS-Gated & Public Endpoints
+
+The short-link and analytics features (see [SaaS Analytics and Short Links](./SaasAnalyticsAndShortLinks.md)) deviate from the canonical family-scoped pattern in three documented ways.
+
+### SaaS feature gate (404 in self-hosted)
+
+Both features are wrapped by a gate helper that returns a `404` `NextResponse` when `DEPLOYMENT_MODE !== 'saas'`, so the endpoints simply do not exist in self-hosted deployments (mirroring the gift-code 404-in-selfhosted behavior):
+
+```typescript
+// app/api/utils/analytics.ts / app/api/utils/short-links.ts
+export function analyticsSaasGate(): NextResponse<ApiResponse<never>> | null {
+  if ((process.env.DEPLOYMENT_MODE || 'selfhosted') !== 'saas') {
+    return NextResponse.json({ success: false, error: '...' }, { status: 404 });
+  }
+  return null;
+}
+
+// at the top of the handler:
+const gate = analyticsSaasGate();
+if (gate) return gate;
+```
+
+### Intentionally unauthenticated endpoints
+
+Two routes have **no auth wrapper by design** — they are public and self-authenticating:
+
+| Endpoint | Why unauthenticated |
+|----------|---------------------|
+| `POST /api/analytics/collect` | First-party pageview beacon fired from public/funnel pages; unknown/garbage paths are dropped silently with `204` |
+| `GET /go/[slug]` | Public short-link redirect; the slug is the only credential and any miss/error redirects to `/` |
+
+**Telemetry must never break the response.** In both routes the database write (pageview insert / click insert + count increment) is wrapped in its own try/catch so a logging failure never breaks the `302` redirect or the beacon `204`.
+
+### Global (non-family-scoped) sysadmin resources
+
+The short-link and analytics management endpoints (`/api/short-links/*`, `/api/analytics/stats`, `/api/analytics/export`) are wrapped with `withSysAdminAuth` and operate on **global models with no `familyId`** — the golden-rule family scoping does not apply. They are the only domain that is sysadmin-only and cross-/no-family.
+
 ## Webhook / External API
 
 External integrations use a separate API surface at `app/api/hooks/v1/`:
@@ -255,5 +292,6 @@ Logs request method, path, status code, response time, IP/user agent, and reques
 - `app/api/hooks/v1/field-values.ts` — Canonical enum-like field values + case-insensitive normalization for the webhook API
 - `app/api/utils/family-scope.ts` — `resolveFamilyScope()`: a client-sent familyId may only confirm the auth context's family, never override it (sysadmin excepted)
 - `app/api/utils/setup-token-scope.ts` — `setupTokenMayTarget()`: unbound setup tokens may bind a family only via `/api/setup/start`
+- `app/api/utils/analytics.ts` / `app/api/utils/short-links.ts` — `analyticsSaasGate()` / `shortLinkSaasGate()`: SaaS 404 gate for the analytics and short-link routes
 - `src/lib/notifications/activityHook.ts` — Post-activity notification triggers
 - `src/lib/notifications/timerCheck.ts` — Timer expiration checks

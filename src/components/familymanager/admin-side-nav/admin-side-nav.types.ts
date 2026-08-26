@@ -14,5 +14,7 @@ export interface AdminSideNavProps {
     accounts?: number;
     feedback?: number;
     giftCodes?: number;
+    shortLinks?: number;
+    pageviews?: number;
   };
 }

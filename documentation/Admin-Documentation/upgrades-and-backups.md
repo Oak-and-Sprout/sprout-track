@@ -68,7 +68,7 @@ The backup is a `.zip` file containing:
 - **SQLite deployments:** `baby-tracker.db` (the database file) and `.env` (environment configuration)
 - **PostgreSQL deployments:** `data.json` (all data exported as JSON) and `.env` (environment configuration)
 
-The environment file is stored inside the zip as `YYYY-MM-DD.backup.env`. Both formats include the `ENC_HASH` required to decrypt sensitive data. Backups from either database provider can be restored onto either provider (see [Migrating Between Database Providers](#migrating-between-database-providers)).
+The environment file is stored inside the zip as `YYYY-MM-DD.backup.env`. Both formats include the `ENC_HASH` required to decrypt sensitive data. In SaaS mode the backup also includes the analytics pageview and short-link click telemetry tables automatically (they are ordinary database tables). Backups from either database provider can be restored onto either provider (see [Migrating Between Database Providers](#migrating-between-database-providers)).
 
 ### Docker Volume Backup
 

@@ -32,7 +32,7 @@ You do not need to create the `.env` file manually. The setup process handles it
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `JWT_SECRET` | Auto-generated | Secret used to sign JWT auth tokens. Generated automatically if missing. Auth fails closed if unset -- do not delete it. Changing it invalidates all active sessions. |
+| `JWT_SECRET` | Auto-generated | Secret used to sign JWT auth tokens. Generated automatically if missing. Auth fails closed if unset -- do not delete it. Changing it invalidates all active sessions. In SaaS mode it also salts the daily analytics/short-link visitor hash, so rotating it also rotates all stored visitor hashes. |
 | `AUTH_LIFE` | `"86400"` (24 hours) | Access token validity period in seconds |
 | `REFRESH_TOKEN_LIFE` | `"604800"` (7 days) | Refresh token lifetime in seconds. Uses a sliding window: resets on each refresh. This is the max gap of inactivity before requiring re-login. |
 | `IDLE_TIME` | `"604800"` (7 days) | Legacy idle timeout. Aligned with `REFRESH_TOKEN_LIFE` automatically. |
@@ -122,17 +122,19 @@ build onward.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_VERSION` | `"1.6.6"` | Application version string |
+| `APP_VERSION` | `"1.6.7"` | Application version string |
 | `TZ` | -- | Timezone for the container (Docker only, e.g., `America/New_York`) |
 
 ### SaaS Mode (Not Needed for Self-Hosting)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DEPLOYMENT_MODE` | `"selfhosted"` | `"selfhosted"` or `"saas"`. Leave unset for self-hosted deployments. |
+| `DEPLOYMENT_MODE` | `"selfhosted"` | `"selfhosted"` or `"saas"`. Leave unset for self-hosted deployments. Setting `"saas"` also activates the cookieless pageview analytics beacon and the short-link redirector (`/go/{slug}`); both features hard-`404` in self-hosted mode. |
 | `ENABLE_ACCOUNTS` | `"false"` | Enable account-based (email/password) authentication |
 | `ALLOW_ACCOUNT_REGISTRATION` | `"false"` | Allow new account registration |
 | `BETA` | -- | Set to `"1"` to enable beta signup features |
+
+The pageview analytics and short-link click telemetry that SaaS mode enables have a **fixed 1-year retention** (rows older than 365 days are pruned in-code) — there is no environment variable to configure it. See [SaaS Analytics and Short Links](../Architecture-Documentation/SaasAnalyticsAndShortLinks.md).
 
 SaaS mode additionally uses Stripe variables (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_GIFT_PRICE_ID`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID`, `NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID`) and email from-addresses (`ACCOUNTS_EMAIL`, `VERIFICATION_EMAIL`, `SECURITY_EMAIL`, `PAYMENTS_EMAIL`). None of these are required for a self-hosted deployment.
 
@@ -153,7 +155,7 @@ Every outgoing message states that its mailbox is unmonitored and directs the re
 
 **`ENC_HASH`**: This key encrypts files stored in the application (vaccine documents). If you lose this value, encrypted files and admin access to Sprout Track cannot be decrypted. Do not modify it after data has been encrypted. Always back up your `.env` file before updates. When using the backup tool in the /family-manager settings page the `.env` file is included.
 
-**`JWT_SECRET`**: Signs all JWT auth tokens. Auto-generated; never falls back to a shared default -- authentication fails if it is unset. Changing it logs out all users. Back it up with the rest of your `.env`.
+**`JWT_SECRET`**: Signs all JWT auth tokens. Auto-generated; never falls back to a shared default -- authentication fails if it is unset. Changing it logs out all users. Back it up with the rest of your `.env`. In SaaS mode it has a second role as the salt for the daily, non-reversible visitor hash recorded with analytics pageviews and short-link clicks (`sha256(JWT_SECRET | UTC-day | IP | user agent)`, truncated — no raw IP is stored). Rotating it therefore rotates every visitor hash as well as logging out all users.
 
 **`NOTIFICATION_CRON_SECRET`**: Protects the notification timer endpoint from unauthorized access. Auto-generated (32 random bytes, hex-encoded). Uses timing-safe comparison.
 

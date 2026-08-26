@@ -10,6 +10,8 @@ interface AdminCounts {
   accounts: number;
   feedback: number;
   giftCodes?: number;
+  shortLinks?: number;
+  pageviews?: number;
 }
 
 interface AdminCountContextType {
@@ -57,16 +59,20 @@ export function AdminCountProvider({ children }: { children: React.ReactNode }) 
       }
 
       if (isSaasMode) {
-        const [accountsRes, feedbackRes, giftCodesRes] = await Promise.all([
+        const [accountsRes, feedbackRes, giftCodesRes, shortLinksRes, pageviewsRes] = await Promise.all([
           authFetch('/api/accounts/manage'),
           authFetch('/api/feedback'),
           authFetch('/api/gift-codes'),
+          authFetch('/api/short-links'),
+          authFetch('/api/analytics/stats?days=7'),
         ]);
 
-        const [accountsData, feedbackData, giftCodesData] = await Promise.all([
+        const [accountsData, feedbackData, giftCodesData, shortLinksData, pageviewsData] = await Promise.all([
           accountsRes.json(),
           feedbackRes.json(),
           giftCodesRes.json(),
+          shortLinksRes.json(),
+          pageviewsRes.json(),
         ]);
 
         if (accountsData.success) newCounts.accounts = accountsData.data.length;
@@ -80,6 +86,12 @@ export function AdminCountProvider({ children }: { children: React.ReactNode }) 
             (c: { status: string }) => c.status === 'active'
           ).length;
         }
+        if (shortLinksData.success) {
+          newCounts.shortLinks = shortLinksData.data.filter(
+            (l: { enabled: boolean }) => l.enabled
+          ).length;
+        }
+        newCounts.pageviews = pageviewsData.success ? pageviewsData.data.totals.views : 0;
       }
 
       setCounts(prev => ({ ...prev, ...newCounts }));

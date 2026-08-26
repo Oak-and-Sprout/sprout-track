@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { LocalizationProvider } from '@/src/context/localization';
 import { ThemeProvider } from '@/src/context/theme';
+import { DeploymentProvider } from '@/app/context/deployment';
 import AccountModal from '@/src/components/modals/AccountModal';
 import AccountManager from '@/src/components/account-manager';
 import { ToastProvider } from '@/src/components/ui/toast';
@@ -10,6 +11,7 @@ import { LandingNav, LandingModalMode } from '@/src/components/landing/LandingNa
 import { LandingFooter } from '@/src/components/landing/LandingFooter';
 import { LandingActionsProvider } from '@/src/components/landing/landing-context';
 import { literata, alegreyaSans } from '@/src/components/landing/fonts';
+import PageviewBeacon from '@/src/components/analytics/PageviewBeacon';
 import '@/src/components/landing/landing.css';
 
 /**
@@ -30,6 +32,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
   return (
     <LocalizationProvider>
+      <DeploymentProvider>
+        <PageviewBeacon />
+      </DeploymentProvider>
       <ThemeProvider>
         <ToastProvider>
         <LandingActionsProvider value={{ openAccountModal }}>

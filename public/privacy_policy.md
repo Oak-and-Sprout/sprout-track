@@ -66,6 +66,10 @@ Our App uses minimal third-party tools for essential functions such as:
 
 **Important:** We have disabled all telemetry and tracking features in third-party tools that could expose user interactions or personal data. We only collect aggregated, anonymized performance metrics necessary for maintaining app quality.
 
+## Analytics
+
+We measure page visits on our public pages using first-party, cookieless analytics that we operate ourselves. No cookies or device identifiers are set to track you, and no raw IP address is stored — we retain only a daily, non-reversible hash of the visitor. We may record the domain of the site that referred you and a coarse (country-level) location. We do not use any third-party trackers, and we do not perform cross-site tracking. Analytics data is automatically deleted after one year.
+
 ## Data Storage and Security
 
 We implement appropriate technical and organizational measures to protect your information against unauthorized access, alteration, disclosure, or destruction. This includes:

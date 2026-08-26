@@ -201,6 +201,21 @@ System administrators authenticate with a sitewide admin password and get `isSys
 2. URL path slug → database lookup by slug
 3. `Referer` header → extract slug → database lookup
 
+## Unauthenticated & Sysadmin-Global Endpoints
+
+The SaaS analytics and short-link feature (see [SaaS Analytics and Short Links](./SaasAnalyticsAndShortLinks.md)) introduces two exceptions to the golden rule. All four endpoints are hard-`404` in self-hosted mode.
+
+**Global sysadmin-only surface (no family scope):** The management endpoints (`/api/short-links/*`, `/api/analytics/stats`, `/api/analytics/export`) use `withSysAdminAuth` but operate on **global models that have no `familyId`** — a legitimate no-family exception beyond the "sysadmin may target a requested family" case above.
+
+**Unauthenticated by design:** Two public endpoints carry no auth wrapper, analogous to the `DELETE /api/notifications/device-tokens` exception:
+
+- `POST /api/analytics/collect` — first-party pageview beacon fired from public/funnel pages
+- `GET /go/[slug]` — public short-link redirect (the slug is the only credential)
+
+Both write telemetry inside a try/catch so a failure never breaks the response, and neither issues a session or grants any access.
+
+**`JWT_SECRET` as visitor-hash salt:** In SaaS mode `JWT_SECRET` doubles as the salt for the daily analytics/click visitor hash — `sha256(JWT_SECRET | UTC-day | ip | userAgent)` truncated to 16 hex. No raw IP is stored, and rotating `JWT_SECRET` (which also logs out all users) rotates every visitor hash.
+
 ## Write Protection (SaaS Mode)
 
 Expired accounts get read-only access via `checkWritePermission()` in `app/api/utils/writeProtection.ts`:

@@ -45,6 +45,8 @@ Order matters — inner providers can access outer provider values.
 **Data source:** `GET /api/deployment-config`
 **Caching:** 5-minute cache, re-fetches on window focus.
 
+Its `isSaasMode`/`isLoading` flags also gate the analytics `PageviewBeacon` (`src/components/analytics/PageviewBeacon.tsx`), which is mounted inside `DeploymentProvider` on the public/funnel layouts and no-ops entirely outside SaaS mode.
+
 ### ThemeProvider
 **File:** `src/context/theme.tsx`
 **Purpose:** Manages light/dark theme toggle by adding/removing `dark` class on `<html>`.

@@ -34,27 +34,29 @@ const ChartDataTable: React.FC<ChartDataTableProps> = ({
   className,
 }) => {
   return (
-    <table className={cn(chartDataTableStyles.table, className)}>
-      <caption>{caption}</caption>
-      <thead>
-        <tr>
-          {columns.map((column) => (
-            <th key={column.key} scope="col">
-              {column.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, rowIndex) => (
-          <tr key={rowIndex}>
+    <div className={cn(chartDataTableStyles.wrapper, className)}>
+      <table>
+        <caption>{caption}</caption>
+        <thead>
+          <tr>
             {columns.map((column) => (
-              <td key={column.key}>{String(row[column.key] ?? "")}</td>
+              <th key={column.key} scope="col">
+                {column.label}
+              </th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {columns.map((column) => (
+                <td key={column.key}>{String(row[column.key] ?? "")}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 

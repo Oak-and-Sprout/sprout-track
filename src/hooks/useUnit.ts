@@ -15,21 +15,24 @@ export function useUnit() {
 
 // t() returns the key itself when untranslated, so a composed key like
 // "unit.name.xyz" must never leak to the screen — fall back instead.
-function translateOrFallback(t: (key: string) => string, key: string, fallback: string) {
+// The fallback is lazy: computing it eagerly would call t() on a raw unit
+// name/abbr (e.g. "Milliliters", "cm") that has no top-level key, logging a
+// spurious "Translation key not found" warning even when the composed key hits.
+function translateOrFallback(t: (key: string) => string, key: string, fallback: () => string) {
   const translated = t(key);
-  return translated !== key ? translated : fallback;
+  return translated !== key ? translated : fallback();
 }
 
 export function getName(unitName: string | undefined | null, t: (key: string) => string) {
   unitName ??= "";
-  return translateOrFallback(t, `unit.name.${unitName}`, t(unitName));
+  return translateOrFallback(t, `unit.name.${unitName}`, () => t(unitName));
 }
 
 export function getSymbol(unitAbbr: string | undefined | null, t: (key: string) => string) {
   unitAbbr ??= "";
   const name = abbrToName[unitAbbr.toUpperCase()];
-  const fallback = t(unitAbbr.toLowerCase());
-  return name ? translateOrFallback(t, `unit.symbol.${name}`, fallback) : fallback;
+  const fallback = () => t(unitAbbr.toLowerCase());
+  return name ? translateOrFallback(t, `unit.symbol.${name}`, fallback) : fallback();
 }
 
 const abbrToName: Record<string, string> = {

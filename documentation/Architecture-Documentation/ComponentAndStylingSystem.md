@@ -184,7 +184,8 @@ Feature components live at the root of `src/components/` in named folders. They 
 | `GuardianUpdate/` | Guardian update section |
 | `LoginSecurity/` | Login security settings |
 | `account-manager/` | Account management components |
-| `familymanager/` | System admin family management |
+| `familymanager/` | System admin family management (incl. `short-link-qr-dialog`, which renders a short-link QR code via the `qrcode` dependency) |
+| `analytics/` | SaaS pageview beacon (`PageviewBeacon`) — no-ops outside SaaS mode |
 | `features/nursery-mode/` | Nursery mode for tablets |
 | `reporting/` | Report visuals (e.g., `CardVisual`) |
 

@@ -10,6 +10,7 @@ export const RESERVED_URLS = [
   'coming-soon',
   'family-manager',
   'family-select',
+  'go',
   'setup',
   'sphome',
   'login',

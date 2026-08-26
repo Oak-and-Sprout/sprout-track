@@ -1,5 +1,19 @@
 # Sprout Track Changelog
 
+## v1.6.7 - Postgres recovery and first party SaaS analytics
+
+### Changes
+
+#### Postgres
+
+- Fixed PostgreSQL crashing on startup (one image now serves both SQLite and PostgreSQL).
+- Fixed backup restore failing on PostgreSQL during the migration step.
+
+#### SaaS Analytics
+
+- Added first party non-invasive analytics to the Sprout Track home page
+- Added short-links with link usage analytics
+
 ## v1.6.6 - Security Patches and Package Updates
 
 ### Changes

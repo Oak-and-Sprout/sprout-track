@@ -3,8 +3,10 @@
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ThemeProvider } from '@/src/context/theme';
+import { DeploymentProvider } from '@/app/context/deployment';
 import { useLocalization } from '@/src/context/localization';
 import AccountModal from '@/src/components/modals/AccountModal';
+import PageviewBeacon from '@/src/components/analytics/PageviewBeacon';
 
 /**
  * Path-based landing for password reset links (see app/api/utils/account-emails.ts).
@@ -20,6 +22,9 @@ function PasswordResetContent() {
 
   return (
     <ThemeProvider>
+      <DeploymentProvider>
+        <PageviewBeacon />
+      </DeploymentProvider>
       <AccountModal
         open
         onClose={() => router.push('/')}

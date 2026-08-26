@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThemeProvider } from '@/src/context/theme';
+import { DeploymentProvider } from '@/app/context/deployment';
 import { useLocalization } from '@/src/context/localization';
 import SetupWizard from '@/src/components/SetupWizard';
+import PageviewBeacon from '@/src/components/analytics/PageviewBeacon';
 
 // TODO: Setup wizard implementation needed for future
 // This page will handle initial family setup and onboarding
@@ -165,12 +167,17 @@ export default function SetupPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>{t('Checking setup status...')}</p>
+      <>
+        <DeploymentProvider>
+          <PageviewBeacon />
+        </DeploymentProvider>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p>{t('Checking setup status...')}</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -186,10 +193,13 @@ export default function SetupPage() {
 
   return (
     <ThemeProvider>
-      <SetupWizard 
-        onComplete={handleSetupComplete} 
+      <DeploymentProvider>
+        <PageviewBeacon />
+      </DeploymentProvider>
+      <SetupWizard
+        onComplete={handleSetupComplete}
         initialSetup={true}
       />
     </ThemeProvider>
   );
-} 
+}

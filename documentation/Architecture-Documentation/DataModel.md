@@ -2,7 +2,7 @@
 
 ## Overview
 
-Sprout Track uses Prisma ORM with SQLite by default; PostgreSQL is also supported — `scripts/prisma-provider.js` rewrites the datasource provider in place based on the `DATABASE_PROVIDER` env var, so all schema and queries must remain compatible with both. The schema defines 40+ models centered around the Family entity. Every piece of user data — babies, caretakers, activity logs, settings — is scoped to a family. The default SQLite database file lives at `db/baby-tracker.db`. A second schema, `prisma/log-schema.prisma`, defines a separate API logging database with a single `ApiLog` model (URL from `LOG_DATABASE_URL`).
+Sprout Track uses Prisma ORM with SQLite by default; PostgreSQL is also supported — `scripts/prisma-provider.js` rewrites the datasource provider in place based on the `DATABASE_PROVIDER` env var, so all schema and queries must remain compatible with both. The schema defines 40+ models centered around the Family entity. Every piece of user data — babies, caretakers, activity logs, settings — is scoped to a family. The one exception is the SaaS analytics and short-link tables (`ShortLink`, `ShortLinkClick`, `Pageview`), which are global (no `familyId`) and sysadmin-managed — see [SaaS Analytics & Short Links](#saas-analytics--short-links-global-not-family-scoped) below. The default SQLite database file lives at `db/baby-tracker.db`. A second schema, `prisma/log-schema.prisma`, defines a separate API logging database with a single `ApiLog` model (URL from `LOG_DATABASE_URL`).
 
 ## Entity Relationship Overview
 
@@ -199,6 +199,76 @@ Token-based family creation invitations:
 - `Feedback` / `FeedbackAttachment` — User feedback and support threads (replies via self-relation `parentId`), with image attachments stored encrypted
 - `DemoTracker` — Tracks the auto-regenerated demo family
 - `BetaSubscriber`, `BetaCampaign`, `BetaCampaignEmail` — Beta signup and email campaign tracking
+
+## SaaS Analytics & Short Links (global, not family-scoped)
+
+These three models are **not** scoped to a family — they have no `familyId`. They exist only in SaaS mode (`DEPLOYMENT_MODE=saas`) and are managed by the system administrator, not by families. See [SaaS Analytics and Short Links](./SaasAnalyticsAndShortLinks.md) for the full feature architecture.
+
+### ShortLink
+System-admin URL shortener destinations:
+- `slug` — 8 hex-char unique identifier (e.g. `a1b2c3d4`), used in the public `/go/{slug}` redirect path
+- `url` — absolute http/https destination
+- `name`, `description`, `tag` (campaign grouping, indexed)
+- `enabled` — soft-disable flag (disabled links redirect to `/`)
+- `clickCount` — denormalized running total, incremented per redirect
+- Has many `ShortLinkClick`
+
+### ShortLinkClick
+Per-click telemetry, cascade-deleted with its parent `ShortLink`:
+- `deviceType` (mobile/tablet/desktop/bot/unknown), `browser`, `os`, `referrerDomain`, `country`, `region`
+- `visitorHash` — daily-rotating truncated sha256 (no raw IP; see below)
+- `queryString` — incoming query string (UTM etc.), capped at 1024 chars
+
+### Pageview
+Cookieless first-party pageview record (no `familyId`):
+- `path` — normalized, allowlisted route (no query, no trailing slash)
+- Same telemetry fields as `ShortLinkClick` (`deviceType`/`browser`/`os`/`referrerDomain`/`country`/`region`/`visitorHash`/`queryString`)
+- Indexed on `timestamp` and `[path, timestamp]`
+
+**Privacy & retention:** `visitorHash` is `sha256(JWT_SECRET | UTC-day | ip | userAgent)` truncated to 16 hex characters — no raw IP is stored, and the hash rotates every UTC day (so cross-day unique-visitor dedup is not possible; unique counts are per-day estimates). Rows older than 365 days are pruned in-code (there is no retention env var). Rotating `JWT_SECRET` rotates all visitor hashes.
+
+## Database Provider & Prisma 7 Notes
+
+The app supports **SQLite** and **PostgreSQL** from one schema, and runs on
+**Prisma 7** (upgraded from Prisma 6 in 1.6.6). The
+provider is chosen at runtime via `DATABASE_PROVIDER`; `scripts/prisma-provider.js`
+rewrites the datasource block, and the Docker image regenerates the client at
+container startup. Several Prisma 7 breaking changes affect how the database is
+built, migrated, and connected — the ones that have bitten this codebase:
+
+- **Driver adapters are mandatory.** Prisma 7 removes the built-in engine
+  connection; every client is constructed with a driver adapter —
+  `@prisma/adapter-pg` for PostgreSQL, `@prisma/adapter-better-sqlite3` for
+  SQLite (`app/api/db.ts`, `prisma/db.ts`, `prisma/log-db.ts`). A bare
+  `new PrismaClient()` throws. One-off scripts must pass an adapter too.
+- **`activeProvider` is frozen into the generated client** at `prisma generate`
+  time and cannot come from an env var. Because a single Docker image is built for
+  sqlite and switched at runtime, `next.config.ts` marks the Prisma clients and
+  driver adapters as `serverExternalPackages` so Turbopack does not inline the
+  build-time client — otherwise a PostgreSQL container loads the stale sqlite
+  client and throws `PrismaClientInitializationError` (issue #266). See
+  `documentation/Admin-Documentation/docker-deployment.md`.
+- **Schema sync differs by provider.** SQLite uses versioned migration files
+  (`prisma migrate deploy`); PostgreSQL has no migration files and syncs with
+  `prisma db push`. The DB routes branch on `isPostgreSQL()`
+  (`app/api/database/migrate/route.ts`, `migrate-initial/route.ts`).
+- **`prisma db push` dropped the `--skip-generate` flag.** In Prisma 7 the flag
+  is unknown and aborts the command (`! unknown or unexpected option:
+  --skip-generate`). This surfaced during **backup restore on PostgreSQL**: the
+  data restore succeeds, then the schema push fails and the UI reports “Database
+  may be incompatible,” masking a CLI-flag problem as a data problem. The correct
+  call is a bare `npx prisma db push --accept-data-loss` (the routes generate the
+  client in a prior step; Prisma 7 `db push` no longer auto-generates).
+  `tests/db-migrate-prisma7-flags.test.ts` is the regression guard.
+- **Two generated clients, config-file driven.** The main client and a
+  separately-generated **log client** (`.prisma/log-client`, custom `output`, used
+  by `prisma/log-db.ts`) are configured through `prisma.config.ts` and
+  `prisma/log.config.ts`; `db push` reads the datasource URL from the config file
+  (override with `--url`).
+
+**Lesson:** when a Prisma CLI command fails with “unknown or unexpected option,”
+check the flag against the installed Prisma major version before suspecting the
+schema or the data — Prisma 7 removed flags that Prisma 6 accepted.
 
 ## Key Files
 

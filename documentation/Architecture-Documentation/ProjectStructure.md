@@ -46,6 +46,7 @@ Sprout Track is a Next.js baby tracking application using the App Router. The co
 ├── docker-compose.yml           # Container orchestration (SQLite)
 ├── docker-compose.postgres.yml  # Container orchestration (PostgreSQL)
 ├── CLAUDE.md                    # Development rules and conventions
+├── next.config.ts               # Marks Prisma client/adapters external so one image serves SQLite+PostgreSQL (issue #266)
 └── tailwind.config.js           # Tailwind configuration
 ```
 
@@ -74,9 +75,10 @@ The primary user experience after login:
 
 ### Other Page Routes
 - `account/` — Account management (family setup, payment success/cancelled)
-- `family-manager/` — System admin interface for managing all families
+- `family-manager/` — System admin interface for managing all families, including `short-links/` and `analytics/` (SaaS-only sysadmin pages)
 - `family-select/` — Family selection (for users with access to multiple families)
 - `setup/` — Token-based family setup (invited users)
+- `go/[slug]/` — Public short-link redirect endpoint (`route.ts`, not a page; unauthenticated, SaaS-only). See [SaaS Analytics and Short Links](./SaasAnalyticsAndShortLinks.md).
 
 ## API Route Organization
 
@@ -115,6 +117,8 @@ API routes live under `app/api/` and are organized by domain. Each folder contai
 | `/api/localization/` | Language preferences |
 | `/api/hooks/v1/` | External webhook API (Home Assistant) |
 | `/api/database/` | Migration and backup management |
+| `/api/short-links/` | Sysadmin URL shortener CRUD + stats/CSV export (global, no family scope; SaaS-only) |
+| `/api/analytics/` | Public `collect` pageview beacon + sysadmin stats/CSV export (global, no family scope; SaaS-only) |
 
 ### Shared API Infrastructure
 - `app/api/db.ts` — Prisma client singleton
@@ -148,7 +152,8 @@ src/components/
 ├── BabySelector/
 ├── SetupWizard/
 ├── account-manager/       # Account management UI
-├── familymanager/         # System admin family management
+├── familymanager/         # System admin family management (incl. short-link QR dialog)
+├── analytics/             # SaaS pageview beacon (PageviewBeacon)
 ├── reporting/             # Report visual components
 └── features/              # Feature-specific utilities (nursery-mode)
 ```
