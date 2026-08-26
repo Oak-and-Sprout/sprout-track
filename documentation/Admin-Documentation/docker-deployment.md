@@ -171,6 +171,8 @@ For PostgreSQL, the startup script waits for the database server to be ready bef
 
 This means upgrades are handled automatically -- just pull the new image and restart.
 
+> **ⓘ How one image serves both providers (issue #266):** Prisma bakes the datasource `provider` into the generated client at `prisma generate` time, so the image is built with the default SQLite client. `next.config.ts` marks the Prisma client and driver adapters (`@prisma/client`, `.prisma/client`, `.prisma/log-client`, `@prisma/adapter-pg`, `@prisma/adapter-better-sqlite3`, `better-sqlite3`) as `serverExternalPackages` so the build does **not** inline that SQLite client into the server bundle. That lets step 2 above — `docker-startup.sh` re-running `prisma generate` against the runtime `DATABASE_PROVIDER` — produce the client that actually loads at runtime, so a single image runs correctly on both SQLite and PostgreSQL. Without it, a PostgreSQL deployment loaded the stale bundled SQLite client and failed with a driver-adapter mismatch error.
+
 ## Upgrading
 
 Your data is stored in Docker volumes, so upgrading is just replacing the container with a newer image. Nothing is lost.

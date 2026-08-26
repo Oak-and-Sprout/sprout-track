@@ -12,6 +12,44 @@ These rules define the development patterns, conventions, and architecture for S
 - PWA architecture with offline support, push notifications (VAPID), and Wake Lock API.
 - A companion Capacitor iOS/Android shell (separate repo) loads this app in its WebView; a native-aware layer in `src/utils/native-*.ts` adapts behavior when it detects the shell. See “Native Mobile Shell” below.
 
+## Database and Prisma 7
+
+The project is on **Prisma 7** (upgraded from 6 alongside Next 15→16 in 1.6.6).
+Prisma 7 dropped several flags and behaviors the codebase relied on — these have
+already bitten us in production, so treat the following as hard rules and see
+`documentation/Architecture-Documentation/DataModel.md` for the full write-up.
+
+- **`prisma db push` no longer accepts `--skip-generate`.** Passing it aborts the
+  command with `! unknown or unexpected option: --skip-generate`. The PostgreSQL
+  branch of the DB migration routes (`app/api/database/migrate/route.ts`,
+  `migrate-initial/route.ts`) hit this during backup restore — the restore
+  succeeds, then the schema push fails with “Database may be incompatible.” Use a
+  bare `npx prisma db push --accept-data-loss`; those routes already generate the
+  client in an earlier step, and Prisma 7 `db push` no longer auto-generates.
+  `tests/db-migrate-prisma7-flags.test.ts` guards against the flag returning.
+  **When any Prisma CLI call fails with “unknown or unexpected option”, check the
+  flag against the installed major version before assuming the DB is at fault.**
+- **A bare `new PrismaClient()` no longer works — Prisma 7 requires a driver
+  adapter.** Clients are constructed with `@prisma/adapter-pg` (Postgres) or
+  `@prisma/adapter-better-sqlite3` (SQLite); see `app/api/db.ts` and
+  `prisma/log-db.ts`. Any throwaway script that news up a client must pass an
+  adapter too.
+- **The generated client freezes its `activeProvider` at `prisma generate`
+  time** (it can’t come from an env var). The single Docker image is generated
+  for sqlite at build, then `docker-startup.sh` rewrites the schema to the runtime
+  `DATABASE_PROVIDER` and regenerates. `next.config.ts` marks the Prisma clients +
+  driver adapters as `serverExternalPackages` so Turbopack doesn’t inline the
+  build-time client — the runtime-regenerated one must be the one that loads
+  (issue #266). Never remove those entries; `tests/next-config-prisma-external.test.ts`
+  guards them.
+- **Schema sync differs by provider:** SQLite uses versioned migrations
+  (`prisma migrate deploy`), PostgreSQL uses `prisma db push` (no migration files).
+  Code that syncs the schema must branch on `isPostgreSQL()`.
+- **Prisma config lives in `prisma.config.ts` (main) and `prisma/log.config.ts`
+  (log DB).** `db push` reads the datasource URL from the config file; override
+  with `--url` when needed. There are two generated clients — the main one and the
+  separately-generated log client (`.prisma/log-client`, custom `output`).
+
 ## Project Structure
 
 - Follow the `/src` directory structure with dedicated folders for components, hooks, services, utils, constants, context, types, and styles
