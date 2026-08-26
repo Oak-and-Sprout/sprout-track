@@ -39,3 +39,31 @@ describe('getName', () => {
     expect(getName('made-up-unit', t)).not.toContain('unit.name');
   });
 });
+
+// Regression: when the composed "unit.name.*"/"unit.symbol.*" key resolves,
+// the raw fallback t() must NOT run. It used to be evaluated eagerly to build
+// the fallback argument, calling t('Milliliters')/t('cm') on keys that don't
+// exist and spamming dev "Translation key not found" warnings.
+describe('lazy fallback', () => {
+  it('does not query the raw unit name when the composed key resolves', () => {
+    const seen: string[] = [];
+    const spyT = (key: string) => {
+      seen.push(key);
+      return en[key] || key;
+    };
+    getName('Milliliters', spyT);
+    expect(seen).toEqual(['unit.name.Milliliters']);
+    expect(seen).not.toContain('Milliliters');
+  });
+
+  it('does not query the raw abbreviation when the composed symbol resolves', () => {
+    const seen: string[] = [];
+    const spyT = (key: string) => {
+      seen.push(key);
+      return en[key] || key;
+    };
+    getSymbol('CM', spyT);
+    expect(seen).toEqual(['unit.symbol.Centimeters']);
+    expect(seen).not.toContain('cm');
+  });
+});
