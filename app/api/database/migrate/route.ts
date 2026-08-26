@@ -32,7 +32,7 @@ async function handler(request: NextRequest): Promise<NextResponse<ApiResponse<a
     if (isPostgreSQL()) {
       // PostgreSQL: use db push to sync schema (no SQLite migration files)
       try {
-        await execAsync('npx prisma db push --accept-data-loss --skip-generate', { cwd: projectRoot });
+        await execAsync('npx prisma db push --accept-data-loss', { cwd: projectRoot });
         console.log('✓ PostgreSQL schema push completed successfully');
       } catch (error) {
         console.error('✗ PostgreSQL schema push failed:', error);
