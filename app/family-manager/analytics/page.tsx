@@ -284,7 +284,8 @@ function AnalyticsDashboardContent() {
   const hasData = stats.totals.views > 0;
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6">
+    <div className="family-manager-page">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="analytics-panel bg-white rounded-lg border border-gray-200 p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -476,6 +477,7 @@ function AnalyticsDashboardContent() {
         <BreakdownCard title={t('Devices')} entries={stats.breakdowns.deviceType} emptyLabel={t('No data yet')} />
         <BreakdownCard title={t('Browsers')} entries={stats.breakdowns.browser} emptyLabel={t('No data yet')} />
         <BreakdownCard title={t('Operating Systems')} entries={stats.breakdowns.os} emptyLabel={t('No data yet')} />
+      </div>
       </div>
     </div>
   );
