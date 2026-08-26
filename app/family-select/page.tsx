@@ -7,7 +7,9 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Search, ChevronDown, Users, ArrowRight } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
+import { DeploymentProvider } from '@/app/context/deployment';
 import { FamilyResponse } from '@/app/api/types';import { useLocalization } from '@/src/context/localization';
+import PageviewBeacon from '@/src/components/analytics/PageviewBeacon';
 
 import './family-select.css';
 
@@ -206,26 +208,34 @@ export default function FamilySelectPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white family-select-container">
-        <div className="text-center">
-          <div className="w-24 h-24 p-1 flex items-center justify-center mb-4">
-            <Image
-              src="/sprout-128.png"
-              alt="Sprout Logo"
-              width={128}
-              height={128}
-              className="object-contain"
-              priority
-            />
+      <>
+        <DeploymentProvider>
+          <PageviewBeacon />
+        </DeploymentProvider>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white family-select-container">
+          <div className="text-center">
+            <div className="w-24 h-24 p-1 flex items-center justify-center mb-4">
+              <Image
+                src="/sprout-128.png"
+                alt="Sprout Logo"
+                width={128}
+                height={128}
+                className="object-contain"
+                priority
+              />
+            </div>
+            <p className="text-gray-500 family-select-loading-text">{t('Loading families...')}</p>
           </div>
-          <p className="text-gray-500 family-select-loading-text">{t('Loading families...')}</p>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white family-select-container">
+      <DeploymentProvider>
+        <PageviewBeacon />
+      </DeploymentProvider>
       <div className="w-full max-w-md mx-auto p-6">
         <div className="text-center mt-2 mb-4">
           <h2 className="text-xl font-semibold family-select-title">{t('Welcome to Sprout Track')}</h2>
