@@ -450,7 +450,7 @@ export function ActivityTileGroup({
     case 'sleep': {
       const isLeftmost = activity === firstVisibleActivity;
       return (
-        <div key="sleep" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+        <div key="sleep" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
           <ActivityTile
             activity={{
               type: 'NAP', // Using a valid SleepType enum value
@@ -508,7 +508,7 @@ export function ActivityTileGroup({
         const isBabyFeeding = selectedBaby?.id && feedingBabies?.has(selectedBaby.id);
         const isLeftmost = activity === firstVisibleActivity;
         return (
-          <div key="feed" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="feed" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 type: 'BOTTLE',
@@ -566,7 +566,7 @@ export function ActivityTileGroup({
       case 'diaper': {
         const isLeftmost = activity === firstVisibleActivity;
         return (
-          <div key="diaper" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="diaper" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 type: 'WET',
@@ -604,7 +604,7 @@ export function ActivityTileGroup({
       }
       case 'note':
         return (
-          <div key="note" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="note" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'note-button',
@@ -629,7 +629,7 @@ export function ActivityTileGroup({
         );
       case 'photo':
         return (
-          <div key="photo" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="photo" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'photo-button',
@@ -661,7 +661,7 @@ export function ActivityTileGroup({
         );
       case 'bath':
         return (
-          <div key="bath" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="bath" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'bath-button',
@@ -689,7 +689,7 @@ export function ActivityTileGroup({
         );
       case 'pump':
         return (
-          <div key="pump" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="pump" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'pump-button',
@@ -719,7 +719,7 @@ export function ActivityTileGroup({
         );
       case 'measurement':
         return (
-          <div key="measurement" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="measurement" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'measurement-button',
@@ -746,7 +746,7 @@ export function ActivityTileGroup({
         );
       case 'milestone':
         return (
-          <div key="milestone" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="milestone" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'milestone-button',
@@ -772,7 +772,7 @@ export function ActivityTileGroup({
         );
       case 'play':
         return (
-          <div key="play" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="play" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'play-button',
@@ -801,7 +801,7 @@ export function ActivityTileGroup({
         );
       case 'medicine':
         return (
-          <div key="medicine" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="medicine" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'medicine-button',
@@ -836,7 +836,7 @@ export function ActivityTileGroup({
         );
       case 'vaccine':
         return (
-          <div key="vaccine" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="vaccine" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'vaccine-button',
@@ -863,7 +863,7 @@ export function ActivityTileGroup({
         );
       case 'food':
         return (
-          <div key="food" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+          <div key="food" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
               activity={{
                 id: 'food-button',
@@ -896,14 +896,14 @@ export function ActivityTileGroup({
 
   return (
     <div className="activity-tile-group">
-      <div ref={scrollContainerRef} className="flex overflow-x-auto border-0 no-scrollbar snap-x snap-mandatory relative p-2 gap-1">
+      <div ref={scrollContainerRef} className="flex overflow-x-auto overscroll-x-contain border-0 no-scrollbar relative p-2 gap-1">
         {/* Render activity tiles based on order and visibility */}
         {activityOrder
           .filter(activity => activity !== 'photo' || photosEnabled)
           .map(activity => renderActivityTile(activity))}
 
         {/* Configure Button for customizing activity tiles */}
-        <div className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
+        <div className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-full h-full bg-transparent border-0 cursor-pointer p-0 m-0">
