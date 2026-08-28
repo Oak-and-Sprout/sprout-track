@@ -12,7 +12,7 @@ import prisma from '../db';
 
 // Tables in dependency order (parents before children)
 // Junction/child tables come after their parent tables
-const TABLE_IMPORT_ORDER = [
+export const TABLE_IMPORT_ORDER = [
   // Standalone tables (no foreign keys to other app tables)
   'Unit',
   'AppConfig',
@@ -152,7 +152,7 @@ const DATE_COLUMNS: Record<string, string[]> = {
  * Convert SQLite row data for a given table to proper types.
  * SQLite stores booleans as 0/1 and dates as strings.
  */
-function convertRow(tableName: string, row: Record<string, any>): Record<string, any> {
+export function convertRow(tableName: string, row: Record<string, any>): Record<string, any> {
   const converted = { ...row };
 
   // Convert boolean columns
