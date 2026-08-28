@@ -1,0 +1,22 @@
+/* Dark-mode overrides for ImportFamilyModal (html.dark, not Tailwind `dark:`). */
+
+html.dark .import-family-modal-filename {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .import-family-modal-error {
+  background-color: #7f1d1d !important; /* red-900/20 */
+  border-color: #dc2626 !important; /* red-600 */
+  color: #fca5a5 !important; /* red-300 */
+}
+
+html.dark .import-family-modal-fields {
+  border-color: #374151 !important; /* gray-700 */
+  background-color: #1f2937 !important; /* gray-800 */
+}
+
+html.dark .import-family-modal-select {
+  background-color: #111827 !important; /* gray-900 */
+  border-color: #374151 !important; /* gray-700 */
+  color: #e5e7eb !important; /* gray-200 */
+}

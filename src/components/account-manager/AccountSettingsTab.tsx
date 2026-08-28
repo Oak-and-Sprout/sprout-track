@@ -293,7 +293,12 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = `${familyData?.slug || 'account'}-data-export.zip`;
+        // Migration archive filename: prefer the server-provided Content-Disposition
+        // (<slug>-migration-<YYYY-MM-DD>.zip), falling back to a local equivalent.
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const suggested = disposition.match(/filename="?([^"]+)"?/)?.[1];
+        const today = new Date().toISOString().slice(0, 10);
+        a.download = suggested || `${familyData?.slug || 'account'}-migration-${today}.zip`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -1135,10 +1140,11 @@ const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({
             <Download size={20} strokeWidth={1.8} />
             <h3>{t('Your data')}</h3>
           </div>
-          <p>{t('Everything your family has logged — feeds, naps, contacts, settings — in one file, whenever you like.')}</p>
+          <p>{t('Download a complete migration file — everything needed to move your family to a self-hosted Sprout Track instance.')}</p>
+          <p>{t('This file includes your full history along with caretaker PINs and photos, so keep it somewhere safe.')}</p>
           <button type="button" className="sb-btn sb-ghost sb-sm" onClick={handleDataDownload} disabled={downloadingData}>
             <Download size={15} strokeWidth={1.8} />
-            {downloadingData ? t('Preparing…') : t('Download my data')}
+            {downloadingData ? t('Preparing…') : t('Download migration file')}
           </button>
         </div>
       )}

@@ -18,6 +18,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import FamilyForm from '@/src/components/forms/FamilyForm';
 import AppConfigForm from '@/src/components/forms/AppConfigForm';
+import ImportFamilyModal from '@/src/components/modals/ImportFamilyModal';
 import { FamilyView, FamilyMobileView, MobileSortButton } from '@/src/components/familymanager';
 import { useLocalization } from '@/src/context/localization';
 import { useIsMobile } from '@/src/hooks/useIsMobile';
@@ -73,6 +74,7 @@ export default function FamiliesPage() {
   const [selectedFamily, setSelectedFamily] = useState<FamilyData | null>(null);
   const [isEditingFamily, setIsEditingFamily] = useState(false);
   const [showAppConfigForm, setShowAppConfigForm] = useState(false);
+  const [showImportFamily, setShowImportFamily] = useState(false);
   const [appConfig, setAppConfig] = useState<{ rootDomain: string; enableHttps: boolean } | null>(null);
   const [caretakersDialogOpen, setCaretakersDialogOpen] = useState(false);
   const [selectedFamilyCaretakers, setSelectedFamilyCaretakers] = useState<CaretakerData[]>([]);
@@ -258,12 +260,15 @@ export default function FamiliesPage() {
       setShowFamilyForm(true);
     };
     const handleSettings = () => setShowAppConfigForm(true);
+    const handleImport = () => setShowImportFamily(true);
 
     window.addEventListener('admin-add-family', handleAddFamily);
     window.addEventListener('admin-settings', handleSettings);
+    window.addEventListener('admin-import-family', handleImport);
     return () => {
       window.removeEventListener('admin-add-family', handleAddFamily);
       window.removeEventListener('admin-settings', handleSettings);
+      window.removeEventListener('admin-import-family', handleImport);
     };
   }, []);
 
@@ -456,6 +461,12 @@ export default function FamiliesPage() {
       <AppConfigForm
         isOpen={showAppConfigForm}
         onClose={() => setShowAppConfigForm(false)}
+      />
+
+      <ImportFamilyModal
+        isOpen={showImportFamily}
+        onClose={() => setShowImportFamily(false)}
+        onImported={fetchFamilies}
       />
     </div>
   );

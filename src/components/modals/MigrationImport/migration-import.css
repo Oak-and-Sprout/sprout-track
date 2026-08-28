@@ -1,0 +1,51 @@
+/* Dark-mode overrides for the MigrationImport component.
+   Light mode is defined via Tailwind utilities in migration-import.styles.ts;
+   these html.dark rules override only the colors (no Tailwind `dark:` — see CLAUDE.md). */
+
+html.dark .migration-import-card,
+html.dark .migration-import-toggle-row,
+html.dark .migration-import-mode-option {
+  background-color: #1f2937 !important; /* gray-800 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .migration-import-mode-option-active {
+  background-color: #134e4a !important; /* teal-900 */
+  border-color: #14b8a6 !important; /* teal-500 */
+}
+
+html.dark .migration-import-card-title,
+html.dark .migration-import-section-label,
+html.dark .migration-import-mode-title,
+html.dark .migration-import-toggle-title,
+html.dark .migration-import-count-value,
+html.dark .migration-import-report-header,
+html.dark .migration-import-report-value {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .migration-import-meta,
+html.dark .migration-import-mode-desc,
+html.dark .migration-import-toggle-desc,
+html.dark .migration-import-count-label,
+html.dark .migration-import-report-label,
+html.dark .migration-import-report-subtle {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+html.dark .migration-import-count-row,
+html.dark .migration-import-report-row,
+html.dark .migration-import-total-row {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+html.dark .migration-import-warning,
+html.dark .migration-import-warnings {
+  background-color: #451a03 !important; /* amber-950 */
+  border-color: #b45309 !important; /* amber-700 */
+  color: #fcd34d !important; /* amber-300 */
+}
+
+html.dark .migration-import-warning-item {
+  color: #fcd34d !important; /* amber-300 */
+}

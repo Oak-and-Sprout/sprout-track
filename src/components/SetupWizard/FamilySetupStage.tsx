@@ -8,6 +8,7 @@ import { styles } from './setup-wizard.styles';
 import { FamilySetupStageProps } from './setup-wizard.types';
 import { BackupRestore } from '@/src/components/BackupRestore';
 import { AdminPasswordResetModal } from '@/src/components/BackupRestore/AdminPasswordResetModal';
+import SetupImportPanel from './SetupImportPanel';
 import { useLocalization } from '@/src/context/localization';
 
 /**
@@ -272,6 +273,9 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
             onAdminPasswordReset={handleAdminPasswordReset}
             onAdminResetAcknowledged={handleAdminResetAcknowledged}
           />
+
+          {/* Import a single family from a hosted export (always new-family). */}
+          <SetupImportPanel />
         </div>
       )}
 

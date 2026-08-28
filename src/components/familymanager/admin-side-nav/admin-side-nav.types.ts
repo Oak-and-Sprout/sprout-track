@@ -5,6 +5,7 @@ export interface AdminSideNavProps {
   onNavigate: (path: string) => void;
   onLogout: () => void;
   onAddFamily: () => void;
+  onImportFamily?: () => void;
   onSettingsClick: () => void;
   nonModal?: boolean;
   className?: string;
