@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -98,6 +99,11 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [photosEnabled, setPhotosEnabled] = useState(false);
+  const [overlayMounted, setOverlayMounted] = useState(false);
+
+  useEffect(() => {
+    setOverlayMounted(true);
+  }, []);
 
   useEffect(() => {
     fetchPhotosEnabled().then(setPhotosEnabled);
@@ -803,44 +809,44 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         )}
       </div>
 
-      {/* Mobile heatmap slide-out panel (right side, similar to FormPage) */}
-      <div className="fixed inset-0 z-40 md:hidden pointer-events-none">
-        {/* Overlay */}
-        <div
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
-            isHeatmapVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
-          onClick={onHeatmapToggle}
-        />
-
-        {/* Slide-out panel */}
-        <div
-          className={`
-            absolute inset-y-0 right-0 w-24 bg-white shadow-xl
-            transform transition-transform duration-300
-            timeline-v2-heatmap-panel
-            ${isHeatmapVisible ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'}
-          `}
-        >
-          <div className="flex justify-end px-3 pt-2 mb-2">
-            <button
-              type="button"
-              className="text-xs inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
-              onClick={onHeatmapToggle}
-            >
-              <EyeOff className="h-3 w-3" aria-hidden="true" />
-              <span>{t('Hide')}</span>
-            </button>
+      {/* Mobile heatmap slide-out panel — portaled so header/tiles cannot cover it */}
+      {overlayMounted && createPortal(
+        <div className="fixed inset-0 z-[90] md:hidden pointer-events-none">
+          <div
+            className={`absolute inset-0 bg-black/40 touch-none transition-opacity duration-300 ${
+              isHeatmapVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+            onClick={onHeatmapToggle}
+          />
+          <div
+            className={`
+              fixed inset-y-0 w-24 bg-white shadow-xl flex flex-col
+              transition-[right] duration-300
+              timeline-v2-heatmap-panel
+              ${isHeatmapVisible ? 'right-0 pointer-events-auto' : '-right-24 pointer-events-none'}
+            `}
+          >
+            <div className="flex justify-end px-3 pt-[calc(0.5rem+env(safe-area-inset-top))] mb-2 shrink-0">
+              <button
+                type="button"
+                className="text-xs inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 underline underline-offset-2"
+                onClick={onHeatmapToggle}
+              >
+                <EyeOff className="h-3 w-3" aria-hidden="true" />
+                <span>{t('Hide')}</span>
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 px-1 py-2 pb-[env(safe-area-inset-bottom)]">
+              <TimelineV2Heatmap
+                activities={heatmapActivities}
+                selectedDate={date}
+                isVisible={isHeatmapVisible}
+              />
+            </div>
           </div>
-          <div className="h-full px-1 py-2">
-            <TimelineV2Heatmap
-              activities={heatmapActivities}
-              selectedDate={date}
-              isVisible={isHeatmapVisible}
-            />
-          </div>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
     </section>
   );
 };

@@ -1,5 +1,6 @@
 import { ActivityType } from '../types';
 import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
+import type { TimeFormatSetting } from '@/src/utils/dateFormat';
 
 // Shared heatmap configuration
 export const TIME_SLOTS = 288; // 5-minute slots
@@ -75,6 +76,39 @@ export const getSlotOpacity = (intensity: number): number => {
 export const timeToSlot = (hours: number): number => {
   const slot = Math.floor((hours * 60) / SLOT_MINUTES);
   return Math.max(0, Math.min(TIME_SLOTS - 1, slot));
+};
+
+const MINUTES_IN_DAY = 24 * 60;
+
+/** Compact hour tick for the heatmap axis (12a / 00). */
+export const formatHeatmapHourLabel = (
+  hour: number,
+  timeFormat: TimeFormatSetting,
+): string => {
+  if (timeFormat === '24h') {
+    const h = hour === 24 ? 0 : hour;
+    return String(h).padStart(2, '0');
+  }
+  if (hour === 0 || hour === 24) return '12a';
+  if (hour === 12) return '12p';
+  if (hour < 12) return `${hour}a`;
+  return `${hour - 12}p`;
+};
+
+/** Scroll offset that centers the current time in a 24h heatmap (midnight at the bottom). */
+export const getHeatmapScrollTop = ({
+  containerHeight,
+  contentHeight,
+  minutesSinceMidnight,
+}: {
+  containerHeight: number;
+  contentHeight: number;
+  minutesSinceMidnight: number;
+}): number => {
+  if (containerHeight <= 0 || contentHeight <= 0) return 0;
+  const currentY = contentHeight - (minutesSinceMidnight / MINUTES_IN_DAY) * contentHeight;
+  const maxScroll = Math.max(0, contentHeight - containerHeight);
+  return Math.max(0, Math.min(maxScroll, currentY - containerHeight / 2));
 };
 
 const getHours = (d: Date) => d.getHours() + d.getMinutes() / 60;
