@@ -472,15 +472,12 @@ export function ActivityTileGroup({
     food: t('Food')
   };
 
-  const firstVisibleActivity = activityOrder.find(a => visibleActivities.has(a));
-
   // Function to render activity tile based on type
   const renderActivityTile = (activity: ActivityType) => {
     if (!visibleActivities.has(activity)) return null;
 
     switch (activity) {
     case 'sleep': {
-      const isLeftmost = activity === firstVisibleActivity;
       return (
         <div key="sleep" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
           <ActivityTile
@@ -511,8 +508,6 @@ export function ActivityTileGroup({
               !exceeds24Hours(sleepStartTime[selectedBaby.id]) && (
                 <StatusBubble
                   status="sleeping"
-                  className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
-                  screenEdgeAware={isLeftmost}
                   durationInMinutes={0}
                   startTime={sleepStartTime[selectedBaby.id]?.toISOString()}
                 />
@@ -521,8 +516,6 @@ export function ActivityTileGroup({
               !sleepStartTime[selectedBaby.id] && lastSleepEndTime[selectedBaby.id] && !exceeds24Hours(lastSleepEndTime[selectedBaby.id]) && (
                 <StatusBubble
                   status="awake"
-                  className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
-                  screenEdgeAware={isLeftmost}
                   durationInMinutes={calculateDurationMinutes(
                     lastSleepEndTime[selectedBaby.id].toISOString(),
                     new Date().toISOString()
@@ -538,7 +531,6 @@ export function ActivityTileGroup({
       }
       case 'feed': {
         const isBabyFeeding = selectedBaby?.id && feedingBabies?.has(selectedBaby.id);
-        const isLeftmost = activity === firstVisibleActivity;
         return (
           <div key="feed" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
@@ -567,8 +559,6 @@ export function ActivityTileGroup({
             {isBabyFeeding ? (
               <StatusBubble
                 status="feedActive"
-                className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
-                screenEdgeAware={isLeftmost}
                 durationInMinutes={0}
               />
             ) : (
@@ -582,8 +572,6 @@ export function ActivityTileGroup({
                 return selectedBaby?.id && effectiveFeedTime && !exceeds24Hours(effectiveFeedTime) && (
                   <StatusBubble
                     status="feed"
-                    className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
-                    screenEdgeAware={isLeftmost}
                     durationInMinutes={0}
                     startTime={effectiveFeedTime.toISOString()}
                     warningTime={selectedBaby.feedWarningTime as string}
@@ -596,7 +584,6 @@ export function ActivityTileGroup({
         );
       }
       case 'diaper': {
-        const isLeftmost = activity === firstVisibleActivity;
         return (
           <div key="diaper" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
@@ -623,8 +610,6 @@ export function ActivityTileGroup({
             {selectedBaby?.id && lastDiaperTime[selectedBaby.id] && !exceeds24Hours(lastDiaperTime[selectedBaby.id]) && (
               <StatusBubble
                 status="diaper"
-                className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
-                screenEdgeAware={isLeftmost}
                 durationInMinutes={0}
                 startTime={lastDiaperTime[selectedBaby.id].toISOString()}
                 warningTime={selectedBaby.diaperWarningTime as string}
