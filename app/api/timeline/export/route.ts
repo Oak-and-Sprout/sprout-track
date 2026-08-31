@@ -325,6 +325,20 @@ function getActivityTime(activity: any): number {
   return 0;
 }
 
+function attachmentDisposition(filename: string): string {
+  const asciiFallback = filename
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, '_')
+    .replace(/[<>:"/\\|?*]/g, '_');
+  const encodedFilename = encodeURIComponent(filename).replace(
+    /['()*]/g,
+    character => `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
+}
+
 async function handleGet(req: NextRequest, authContext: AuthResult) {
   try {
     const { familyId: userFamilyId } = authContext;
@@ -565,7 +579,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
       return new NextResponse(buffer, {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Disposition': attachmentDisposition(filename),
           'Content-Length': buffer.byteLength.toString(),
         },
       });
@@ -578,7 +592,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
     return new NextResponse(csvContent, {
       headers: {
         'Content-Type': 'text/csv;charset=utf-8;',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': attachmentDisposition(filename),
       },
     });
   } catch (error) {
