@@ -99,10 +99,10 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [photosEnabled, setPhotosEnabled] = useState(false);
-  const [overlayMounted, setOverlayMounted] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
 
   useEffect(() => {
-    setOverlayMounted(true);
+    setPortalReady(true);
   }, []);
 
   useEffect(() => {
@@ -810,7 +810,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       </div>
 
       {/* Mobile heatmap slide-out panel — portaled so header/tiles cannot cover it */}
-      {overlayMounted && createPortal(
+      {portalReady && createPortal(
         <div className="fixed inset-0 z-[90] md:hidden pointer-events-none">
           <div
             className={`absolute inset-0 bg-black/40 touch-none transition-opacity duration-300 ${

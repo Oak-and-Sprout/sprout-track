@@ -896,7 +896,7 @@ export function ActivityTileGroup({
 
   return (
     <div className="activity-tile-group">
-      <div ref={scrollContainerRef} className="flex overflow-x-auto overscroll-x-contain border-0 no-scrollbar relative p-2 gap-1">
+      <div ref={scrollContainerRef} className="flex overflow-x-auto overscroll-x-contain border-0 no-scrollbar snap-x snap-mandatory relative p-2 gap-1">
         {/* Render activity tiles based on order and visibility */}
         {activityOrder
           .filter(activity => activity !== 'photo' || photosEnabled)

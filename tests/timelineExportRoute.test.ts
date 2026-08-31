@@ -93,10 +93,16 @@ describe('timeline export route', () => {
     ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
   ] as const)('downloads %s when the baby name contains Polish characters', async (format, contentType) => {
     const response = await GET(exportRequest(format) as any);
+    const disposition = response.headers.get('content-disposition');
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain(contentType);
-    expect(response.headers.get('content-disposition')).toMatch(/^attachment;/);
+    expect(disposition).toMatch(
+      new RegExp(
+        `^attachment; filename="activity-log-_ucja-Zo_c-\\d{4}-\\d{2}-\\d{2}\\.${format}"; ` +
+          `filename\\*=UTF-8''activity-log-%C5%81ucja-%C5%BB%C3%B3%C5%82%C4%87-\\d{4}-\\d{2}-\\d{2}\\.${format}$`
+      )
+    );
     expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(0);
   });
 });
