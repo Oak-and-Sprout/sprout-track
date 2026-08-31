@@ -1,0 +1,61 @@
+# Throwaway PostgreSQL test environment for the account export/import feature.
+# Self-contained: bundles its own Postgres + a fresh app build on port 3100, with
+# isolated container names and volumes so it never touches the default
+# `sprout-track` stack or the local SQLite dev app on :3000.
+#
+#   docker compose -f docker-compose.pg-test.yml up -d --build
+#   docker compose -f docker-compose.pg-test.yml exec -e EXTRACT_ONLY=true \
+#       -e OUT_DIR=/app/Files/migration-exports app \
+#       node scripts/test-account-export-import.js
+#   docker compose -f docker-compose.pg-test.yml down -v   # tear down + wipe
+#
+# The exported zip lands in ./Files/migration-exports on the host (bind mount).
+
+name: sprout-pg-test
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sprout-pg-test-db
+    environment:
+      POSTGRES_USER: sprout
+      POSTGRES_PASSWORD: sprout
+      POSTGRES_DB: sprout_track
+      POSTGRES_LOG_DB: sprout_track_logs
+    ports:
+      - "5433:5432" # host 5433 → container 5432 (5432 is taken by local Postgres)
+    volumes:
+      - ./scripts/init-pg-databases.sh:/docker-entrypoint-initdb.d/init-pg-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sprout -d sprout_track"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    image: sprout-pg-test-app:latest
+    build:
+      # Built with the default (sqlite) provider; docker-startup.sh rewrites the
+      # schema to the runtime DATABASE_PROVIDER (postgresql) and regenerates the
+      # client on boot — the stock sqlite image runs on Postgres as-is.
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENABLE_NOTIFICATIONS: "false"
+    container_name: sprout-pg-test-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3100:3000"
+    volumes:
+      # Host-visible output for the exported migration archive.
+      - ./Files:/app/Files
+      # Live-mount the test script so edits don't require an image rebuild.
+      - ./scripts/test-account-export-import.js:/app/scripts/test-account-export-import.js:ro
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_URL=postgresql://sprout:sprout@postgres:5432/sprout_track
+      - LOG_DATABASE_URL=postgresql://sprout:sprout@postgres:5432/sprout_track_logs
+      - ENABLE_NOTIFICATIONS=false
