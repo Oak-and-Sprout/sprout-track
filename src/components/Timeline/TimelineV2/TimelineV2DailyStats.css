@@ -119,6 +119,10 @@ html.dark .timeline-v2-daily-stats .text-amber-700 {
 
 
 /* Dark mode styles for TimelineV2Heatmap */
+.timeline-v2-heatmap-container {
+  -webkit-overflow-scrolling: touch;
+}
+
 html.dark .timeline-v2-heatmap-container {
   background-color: transparent !important;
 }
