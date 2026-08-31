@@ -38,6 +38,13 @@ export interface BackupRestoreProps {
 
   /** Whether this is being used during initial setup (uses different migration API) */
   initialSetup?: boolean;
+
+  /**
+   * When provided, the restore button becomes a unified "Import" button: the picked
+   * file is inspected first, and a single-family migration export is handed off here
+   * (to be run by the migration flow) instead of restored as a database backup.
+   */
+  onMigrationFile?: (file: File) => void;
 }
 
 /**
@@ -46,6 +53,9 @@ export interface BackupRestoreProps {
 export interface BackupRestoreState {
   /** Whether a restore operation is in progress */
   isRestoring: boolean;
+
+  /** Whether the picked file is being inspected to choose the import path */
+  detecting: boolean;
 
   /** Whether a migration is in progress after restore */
   isMigrating: boolean;

@@ -31,6 +31,8 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [generatingSlug, setGeneratingSlug] = useState(false);
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  // A single-family export the unified import button detected; drives SetupImportPanel.
+  const [migrationFile, setMigrationFile] = useState<File | null>(null);
   const adminResetResolverRef = React.useRef<(() => void) | null>(null);
 
   // Handle admin password reset notification
@@ -262,6 +264,8 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
       {/* Import Section - only show during initial setup */}
       {initialSetup && (
         <div className={cn(styles.formGroup, "setup-wizard-form-group", "mt-6", "pt-6", "border-t", "border-gray-200", "dark:border-gray-700")}>
+          {/* One import button: a full DB backup restores here; a single-family
+              export is handed off to the SetupImportPanel flow below. */}
           <BackupRestore
             importOnly={true}
             initialSetup={true}
@@ -272,10 +276,12 @@ const FamilySetupStage: React.FC<FamilySetupStageProps> = ({
             }}
             onAdminPasswordReset={handleAdminPasswordReset}
             onAdminResetAcknowledged={handleAdminResetAcknowledged}
+            onMigrationFile={setMigrationFile}
           />
 
-          {/* Import a single family from a hosted export (always new-family). */}
-          <SetupImportPanel />
+          {migrationFile && (
+            <SetupImportPanel file={migrationFile} onCancel={() => setMigrationFile(null)} />
+          )}
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { Label } from '@/src/components/ui/label';
 import { Settings, Download, Upload, X, Save } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
 import { cn } from '@/src/lib/utils';
+import { detectImportFileKind } from '@/src/utils/import-file-detect';
 
 // Import component-specific files
 import './backup-restore.css';
@@ -24,7 +25,8 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
   onAdminResetAcknowledged,
   className,
   importOnly = false,
-  initialSetup = false
+  initialSetup = false,
+  onMigrationFile
 }) => {
   const { theme } = useTheme();
   const { t } = useLocalization();
@@ -33,6 +35,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
 
   const [state, setState] = useState<BackupRestoreState>({
     isRestoring: false,
+    detecting: false,
     isMigrating: false,
     error: null,
     success: null,
@@ -240,14 +243,41 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
     }
   };
 
-  // Handle restore
-  const handleRestore = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle a picked file. When `onMigrationFile` is wired, this is a unified import
+  // button: inspect the file first and hand a single-family migration export off to
+  // the migration flow; only a real database backup falls through to restore.
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    // Reset the input so re-picking the same file fires onChange again.
+    if (fileInputRef.current) fileInputRef.current.value = '';
     if (!file) return;
 
+    if (onMigrationFile) {
+      setState(prev => ({ ...prev, detecting: true, error: null, success: null }));
+      const kind = await detectImportFileKind(file);
+      setState(prev => ({ ...prev, detecting: false }));
+      if (kind === 'migration') {
+        onMigrationFile(file);
+        return;
+      }
+      if (kind === 'unknown') {
+        setState(prev => ({
+          ...prev,
+          error: t('Unrecognized import file. Choose a Sprout Track database backup or a family export.'),
+        }));
+        return;
+      }
+      // kind === 'backup' → continue into the restore flow below.
+    }
+
+    await restoreFile(file);
+  };
+
+  // Restore a database backup file.
+  const restoreFile = async (file: File) => {
     try {
       setState(prev => ({ ...prev, isRestoring: true, error: null, success: null }));
-      
+
       const formData = new FormData();
       formData.append('file', file);
 
@@ -281,9 +311,6 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
       onRestoreError?.(errorMessage);
     } finally {
       setState(prev => ({ ...prev, isRestoring: false }));
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -294,7 +321,7 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
         type="file"
         ref={fileInputRef}
         accept=".db,.zip"
-        onChange={handleRestore}
+        onChange={handleFileSelected}
         style={{ display: 'none' }}
       />
       
@@ -328,18 +355,32 @@ export const BackupRestore: React.FC<BackupRestoreProps> = ({
             backupRestoreStyles.button.restore,
             importOnly && "w-full"
           )}
-          disabled={isLoading || isSaving || state.isRestoring || state.isMigrating}
+          disabled={isLoading || isSaving || state.detecting || state.isRestoring || state.isMigrating}
         >
           <Upload className={backupRestoreStyles.icon} aria-hidden="true" />
-          {state.isRestoring ? 'Importing...' : state.isMigrating ? 'Migrating...' : importOnly ? 'Import Database' : 'Restore Database'}
+          {state.detecting
+            ? t('Reading file...')
+            : state.isRestoring
+              ? t('Importing...')
+              : state.isMigrating
+                ? t('Migrating...')
+                : onMigrationFile
+                  ? t('Import')
+                  : importOnly
+                    ? t('Import Database')
+                    : t('Restore Database')}
         </Button>
       </div>
       
       {/* Help Text */}
       <p className={backupRestoreStyles.helpText}>
-        {importOnly 
-          ? 'Import data from a previous Sprout Track database backup to start with existing family data, or skip this step to create a new family from scratch.'
-          : 'Create backups of your database or restore from a previous backup. Restoring will replace all current data and run necessary migrations.'
+        {onMigrationFile
+          ? importOnly
+            ? t('Import a full Sprout Track database backup or a single-family export — the right path is chosen automatically. Or skip this step to create a new family from scratch.')
+            : t('Import a full Sprout Track database backup or a single-family export — the right path is chosen automatically. Restoring a backup replaces all current data and runs necessary migrations.')
+          : importOnly
+            ? t('Import data from a previous Sprout Track database backup to start with existing family data, or skip this step to create a new family from scratch.')
+            : t('Create backups of your database or restore from a previous backup. Restoring will replace all current data and run necessary migrations.')
         }
       </p>
 

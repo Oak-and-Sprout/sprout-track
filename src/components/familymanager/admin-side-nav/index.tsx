@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { X, Users, Mail, UserCircle, MessageSquare, Plus, Settings, LogOut, Gift, Link2, BarChart3, Upload } from 'lucide-react';
+import { X, Users, Mail, UserCircle, MessageSquare, Plus, Settings, LogOut, Gift, Link2, BarChart3 } from 'lucide-react';
 import { LanguageSelector } from '@/src/components/ui/side-nav/language-selector';
 import ThemeToggle from '@/src/components/ui/theme-toggle';
 import NavCountBubble from '@/src/components/ui/nav-count-bubble';
@@ -37,7 +37,6 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
   onNavigate,
   onLogout,
   onAddFamily,
-  onImportFamily,
   onSettingsClick,
   nonModal = false,
   className,
@@ -220,13 +219,6 @@ export const AdminSideNav: React.FC<AdminSideNavProps> = ({
             label={t('Add New Family')}
             onClick={onAddFamily}
           />
-          {onImportFamily && (
-            <FooterButton
-              icon={<Upload aria-hidden="true" />}
-              label={t('Import Family')}
-              onClick={onImportFamily}
-            />
-          )}
           <ThemeToggle className="mb-2" />
           <FooterButton
             icon={<Settings aria-hidden="true" />}

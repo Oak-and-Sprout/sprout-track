@@ -21,7 +21,7 @@ import './import-family-modal.css';
  * append to an existing one (with the dedup toggle), then runs the import and
  * renders the report. Calls `POST /api/database/import-family` (withSysAdminAuth).
  */
-const ImportFamilyModal: React.FC<ImportFamilyModalProps> = ({ isOpen, onClose, onImported }) => {
+const ImportFamilyModal: React.FC<ImportFamilyModalProps> = ({ isOpen, onClose, onImported, file: initialFile }) => {
   const { t } = useLocalization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,6 +55,11 @@ const ImportFamilyModal: React.FC<ImportFamilyModalProps> = ({ isOpen, onClose, 
   useEffect(() => {
     if (!isOpen) return;
     reset();
+    // A file handed off by the unified import button is pre-loaded and previewed.
+    if (initialFile) {
+      setFile(initialFile);
+      void runPreview(initialFile);
+    }
     // Family list for the append picker.
     authFetch('/api/family/manage')
       .then((r) => r.json())
@@ -62,7 +67,7 @@ const ImportFamilyModal: React.FC<ImportFamilyModalProps> = ({ isOpen, onClose, 
         if (d.success) setFamilies(d.data.map((f: { id: string; name: string; slug: string }) => ({ id: f.id, name: f.name, slug: f.slug })));
       })
       .catch(() => {});
-  }, [isOpen, reset]);
+  }, [isOpen, reset, initialFile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const runPreview = async (selected: File) => {
     setPreviewing(true);

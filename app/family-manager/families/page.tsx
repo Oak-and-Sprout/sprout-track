@@ -75,6 +75,8 @@ export default function FamiliesPage() {
   const [isEditingFamily, setIsEditingFamily] = useState(false);
   const [showAppConfigForm, setShowAppConfigForm] = useState(false);
   const [showImportFamily, setShowImportFamily] = useState(false);
+  // A migration export detected by the Settings modal's unified import button.
+  const [importFile, setImportFile] = useState<File | null>(null);
   const [appConfig, setAppConfig] = useState<{ rootDomain: string; enableHttps: boolean } | null>(null);
   const [caretakersDialogOpen, setCaretakersDialogOpen] = useState(false);
   const [selectedFamilyCaretakers, setSelectedFamilyCaretakers] = useState<CaretakerData[]>([]);
@@ -260,15 +262,12 @@ export default function FamiliesPage() {
       setShowFamilyForm(true);
     };
     const handleSettings = () => setShowAppConfigForm(true);
-    const handleImport = () => setShowImportFamily(true);
 
     window.addEventListener('admin-add-family', handleAddFamily);
     window.addEventListener('admin-settings', handleSettings);
-    window.addEventListener('admin-import-family', handleImport);
     return () => {
       window.removeEventListener('admin-add-family', handleAddFamily);
       window.removeEventListener('admin-settings', handleSettings);
-      window.removeEventListener('admin-import-family', handleImport);
     };
   }, []);
 
@@ -461,11 +460,13 @@ export default function FamiliesPage() {
       <AppConfigForm
         isOpen={showAppConfigForm}
         onClose={() => setShowAppConfigForm(false)}
+        onImportMigration={(file) => { setImportFile(file); setShowImportFamily(true); }}
       />
 
       <ImportFamilyModal
         isOpen={showImportFamily}
-        onClose={() => setShowImportFamily(false)}
+        file={importFile}
+        onClose={() => { setShowImportFamily(false); setImportFile(null); }}
         onImported={fetchFamilies}
       />
     </div>

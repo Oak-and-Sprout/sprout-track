@@ -30,6 +30,11 @@ import { formatDateTimeDisplay } from '@/src/utils/dateFormat';
 interface AppConfigFormProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Called when the unified import button detects a single-family migration export
+   * (rather than a database backup) so the caller can open the family-import flow.
+   */
+  onImportMigration?: (file: File) => void;
 }
 
 interface AppConfigData {
@@ -87,8 +92,9 @@ interface NotificationStatusData {
 }
 
 export default function AppConfigForm({
-  isOpen, 
-  onClose 
+  isOpen,
+  onClose,
+  onImportMigration
 }: AppConfigFormProps) {
   const { t } = useLocalization();
   const { dateFormat, timeFormat } = useTimezone();
@@ -1227,6 +1233,7 @@ export default function AppConfigForm({
                 onRestoreError={(error) => setError(error)}
                 onAdminPasswordReset={handleAdminPasswordReset}
                 onAdminResetAcknowledged={handleAdminResetAcknowledged}
+                onMigrationFile={onImportMigration}
               />
 
               {/* Status Messages */}

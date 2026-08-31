@@ -125,14 +125,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
     if (!isWideScreen) setSideNavOpen(false);
   }, [pathname, router, isWideScreen]);
 
-  const handleImportFamily = useCallback(() => {
-    if (pathname !== '/family-manager/families') {
-      router.push('/family-manager/families');
-    }
-    window.dispatchEvent(new Event('admin-import-family'));
-    if (!isWideScreen) setSideNavOpen(false);
-  }, [pathname, router, isWideScreen]);
-
   const handleSettingsClick = useCallback(() => {
     if (pathname !== '/family-manager/families') {
       router.push('/family-manager/families');
@@ -159,7 +151,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
       handleNavigate={handleNavigate}
       handleLogout={handleLogout}
       handleAddFamily={handleAddFamily}
-      handleImportFamily={handleImportFamily}
       handleSettingsClick={handleSettingsClick}
       t={t}
     >
@@ -177,7 +168,6 @@ function AppContentWithCounts({
   handleNavigate,
   handleLogout,
   handleAddFamily,
-  handleImportFamily,
   handleSettingsClick,
   t,
 }: {
@@ -189,7 +179,6 @@ function AppContentWithCounts({
   handleNavigate: (path: string) => void;
   handleLogout: () => void;
   handleAddFamily: () => void;
-  handleImportFamily: () => void;
   handleSettingsClick: () => void;
   t: (key: string) => string;
 }) {
@@ -213,7 +202,6 @@ function AppContentWithCounts({
                 onNavigate={handleNavigate}
                 onLogout={handleLogout}
                 onAddFamily={handleAddFamily}
-                onImportFamily={handleImportFamily}
                 onSettingsClick={handleSettingsClick}
                 nonModal={true}
                 counts={counts}
@@ -260,7 +248,6 @@ function AppContentWithCounts({
               onNavigate={handleNavigate}
               onLogout={handleLogout}
               onAddFamily={handleAddFamily}
-              onImportFamily={handleImportFamily}
               onSettingsClick={handleSettingsClick}
               nonModal={false}
               counts={counts}

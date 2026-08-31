@@ -103,6 +103,7 @@ Main component for database backup and restore operations.
 | `className` | `string` | Custom CSS classes for the container | `undefined` |
 | `importOnly` | `boolean` | Whether to show only import/restore functionality (hides backup button) | `false` |
 | `initialSetup` | `boolean` | Whether this is being used during initial setup (uses different migration API) | `false` |
+| `onMigrationFile` | `(file: File) => void` | When set, the restore button becomes a unified **Import** button: the picked file is inspected first (via `detectImportFileKind`) and a single-family migration export is handed off here (for the migration flow) instead of being restored as a database backup. A `.db`/backup zip still restores; an unrecognized file shows an inline error. | `undefined` |
 
 ## Visual Behavior
 
