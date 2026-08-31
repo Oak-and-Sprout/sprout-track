@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { ActivityTile } from '@/src/components/ui/activity-tile';
 import { StatusBubble } from "@/src/components/ui/status-bubble";
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse, FoodLogResponse, ActivitySettings } from '@/app/api/types';
@@ -127,20 +127,50 @@ export function ActivityTileGroup({
   const [draggedActivity, setDraggedActivity] = useState<ActivityType | null>(null);
   const touchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null); // Ref for touch start timeout
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
 
-  // Convert vertical mouse wheel events to horizontal scroll
+  // Convert vertical wheel to horizontal scroll. Do not listen to
+  // `scroll`: CSS snap fires it on load, and that is the jump we undo.
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
+    let touchStartX = 0;
     const handleWheel = (e: WheelEvent) => {
+      if (e.deltaX !== 0 || e.deltaY !== 0) scrolledRef.current = true;
       if (e.deltaY !== 0) {
         e.preventDefault();
         container.scrollLeft += e.deltaY;
       }
     };
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0].clientX;
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (Math.abs(e.touches[0].clientX - touchStartX) > 8) {
+        scrolledRef.current = true;
+      }
+    };
     container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: true });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
   }, []);
+
+  // Settings load reorders tiles; snap then jumps the row. Pin to 0
+  // until the user moves it. The extra frame catches snap after layout.
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || scrolledRef.current) return;
+    container.scrollLeft = 0;
+    const frame = requestAnimationFrame(() => {
+      if (!scrolledRef.current) container.scrollLeft = 0;
+    });
+    return () => cancelAnimationFrame(frame);
+  });
 
   // Refs for the move up/down menu items, keyed by `${activity}:up` / `${activity}:down`,
   // so focus can be restored after a reorder re-renders (moves) the dropdown rows
@@ -182,6 +212,7 @@ export function ActivityTileGroup({
         console.log(`Caretaker ID changed in localStorage: ${caretakerId} -> ${e.newValue}`);
         setCaretakerId(e.newValue);
         setSettingsLoaded(false);
+        scrolledRef.current = false;
         setSettingsModified(false); // Reset modified flag when caretaker changes
       }
     };
@@ -193,6 +224,7 @@ export function ActivityTileGroup({
         console.log(`Caretaker ID changed via event: ${caretakerId} -> ${newCaretakerId}`);
         setCaretakerId(newCaretakerId);
         setSettingsLoaded(false);
+        scrolledRef.current = false;
         setSettingsModified(false); // Reset modified flag when caretaker changes
       }
     };
@@ -896,7 +928,7 @@ export function ActivityTileGroup({
 
   return (
     <div className="activity-tile-group">
-      <div ref={scrollContainerRef} className="flex overflow-x-auto overscroll-x-contain border-0 no-scrollbar snap-x snap-mandatory relative p-2 gap-1">
+      <div ref={scrollContainerRef} className="flex overflow-x-auto overscroll-x-contain border-0 no-scrollbar snap-x snap-proximity relative p-2 gap-1">
         {/* Render activity tiles based on order and visibility */}
         {activityOrder
           .filter(activity => activity !== 'photo' || photosEnabled)
