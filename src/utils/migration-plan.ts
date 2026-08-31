@@ -186,9 +186,13 @@ export function planMigration(
 
   for (const table of MIGRATION_TABLE_ORDER) {
     if (table === 'Unit') {
+      // Units are GLOBAL reference data keyed by a unique `unitAbbr`, always
+      // pre-seeded on any target instance. Dedup against the existing global set
+      // in BOTH modes — a new-family import into a populated instance would
+      // otherwise collide on the unique unitAbbr and roll the whole import back.
       const already = existing.unitAbbrs ?? new Set<string>();
       for (const row of rowsOf(parsed, 'units')) {
-        if (!isAppend || !already.has(row.unitAbbr)) emit('Unit', { ...row });
+        if (!already.has(row.unitAbbr)) emit('Unit', { ...row });
       }
       continue;
     }

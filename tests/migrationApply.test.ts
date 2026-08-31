@@ -146,6 +146,20 @@ describe('applyMigration — new-family', () => {
     expect(report.logs.feedLogs.inserted).toBe(1);
   });
 
+  it('drops units already present in the global set (both modes) so new-family does not collide', () => {
+    // Units are global reference data — pre-seeded on every target. A new-family
+    // import must still dedup them against the existing global unitAbbrs, or the
+    // insert collides on the unique unitAbbr and rolls the whole import back.
+    const parsed = makeParsed({
+      caretakers: [{ id: 'c1', loginId: '01', name: 'Cara' }] as any,
+      babies: [{ id: 'b1', firstName: 'Ada', lastName: 'L', birthDate: new Date('2023-01-01') }] as any,
+      units: [{ unitAbbr: 'OZ', unitName: 'Ounces' }, { unitAbbr: 'ML', unitName: 'Milliliters' }] as any,
+    });
+    const plan = planMigration(parsed, NEW_FAMILY_OPTS, { unitAbbrs: new Set(['OZ']) });
+    const unitBatch = plan.batches.find((b) => b.table === 'Unit');
+    expect((unitBatch?.rows ?? []).map((r: any) => r.unitAbbr)).toEqual(['ML']);
+  });
+
   it('batches createMany at BATCH_SIZE=100', async () => {
     const client = makeFakeClient();
     const deps = makeDeps(client);

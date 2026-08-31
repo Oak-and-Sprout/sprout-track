@@ -332,6 +332,12 @@ export async function importMigration(
     const family = await deps.client.family.findUnique({ where: { id: opts.targetFamilyId }, select: { id: true } });
     if (!family) throw new Error('importMigration: target family not found');
     existing = await preloadExisting(deps.client, opts.targetFamilyId, opts.dedup);
+  } else {
+    // new-family: the target has no family-scoped rows yet, but Units are GLOBAL
+    // and pre-seeded on this instance. Always dedup the archive's units against
+    // them so the import doesn't collide on the unique unitAbbr.
+    const units = await deps.client.unit.findMany({ select: { unitAbbr: true } });
+    existing = { unitAbbrs: new Set((units as Array<{ unitAbbr: string }>).map((u) => u.unitAbbr)) };
   }
 
   const plan = planMigration(parsed, opts, existing);
