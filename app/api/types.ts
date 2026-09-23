@@ -83,6 +83,7 @@ export type BabyResponse = Omit<Baby, 'birthDate' | 'createdAt' | 'updatedAt' | 
   deletedAt: string | null;
   feedWarningTime: string;
   diaperWarningTime: string;
+  pumpWarningTime: string;
 };
 
 export interface BabyCreate {
@@ -93,6 +94,7 @@ export interface BabyCreate {
   inactive?: boolean;
   feedWarningTime?: string;
   diaperWarningTime?: string;
+  pumpWarningTime?: string;
   feedTimerFrom?: string;
   feedTimerTypes?: string | null;
 }

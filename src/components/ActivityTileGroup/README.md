@@ -63,12 +63,13 @@ Main component for displaying a group of activity tiles.
 
 | Prop | Type | Description | Default |
 |------|------|-------------|---------|
-| `selectedBaby` | `{ id: string; feedWarningTime?: string \| number; diaperWarningTime?: string \| number; } \| null` | The currently selected baby | Required |
+| `selectedBaby` | `{ id: string; feedWarningTime?: string \| number; diaperWarningTime?: string \| number; pumpWarningTime?: string \| number; } \| null` | The currently selected baby | Required |
 | `sleepingBabies` | `Set<string>` | Set of baby IDs that are currently sleeping | Required |
 | `sleepStartTime` | `Record<string, Date>` | Record of sleep start times by baby ID | Required |
 | `lastSleepEndTime` | `Record<string, Date>` | Record of last sleep end times by baby ID | Required |
 | `lastFeedTime` | `Record<string, Date>` | Record of last feed times by baby ID | Required |
 | `lastDiaperTime` | `Record<string, Date>` | Record of last diaper change times by baby ID | Required |
+| `lastPumpTime` | `Record<string, Date>` | Record of last completed pump times by baby ID | Required |
 | `updateUnlockTimer` | `() => void` | Function to update the unlock timer | Required |
 | `onSleepClick` | `() => void` | Callback when the sleep button is clicked | Required |
 | `onFeedClick` | `() => void` | Callback when the feed button is clicked | Required |

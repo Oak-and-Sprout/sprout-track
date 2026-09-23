@@ -15,6 +15,7 @@ import FoodForm from '@/src/components/forms/FoodForm';
 import PhotoForm from '@/src/components/forms/PhotoForm';
 import PhotoDetail from '@/src/components/PhotoDetail';
 import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
+import { findLatestPumpTime } from '@/src/utils/pumpTimer';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
@@ -116,6 +117,8 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, feedTimerTypes, onLat
     if (lastDiaper) {
       status.lastDiaperTime = new Date((lastDiaper as any).time);
     }
+
+    status.lastPumpTime = findLatestPumpTime(activities);
 
     // Find sleep status
     const sleepLogs = activities

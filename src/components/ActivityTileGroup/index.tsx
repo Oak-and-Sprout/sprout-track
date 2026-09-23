@@ -23,6 +23,7 @@ interface ActivityTileGroupProps {
     id: string;
     feedWarningTime?: string | number;
     diaperWarningTime?: string | number;
+    pumpWarningTime?: string | number;
     feedTimerFrom?: string;
   } | null;
   sleepingBabies: Set<string>;
@@ -32,6 +33,7 @@ interface ActivityTileGroupProps {
   lastFeedTime: Record<string, Date>;
   lastFeedEndTime?: Record<string, Date>;
   lastDiaperTime: Record<string, Date>;
+  lastPumpTime: Record<string, Date>;
   feedStartTime?: Record<string, Date>;
   updateUnlockTimer: () => void;
   onSleepClick: () => void;
@@ -68,6 +70,7 @@ export function ActivityTileGroup({
   lastFeedTime,
   lastFeedEndTime,
   lastDiaperTime,
+  lastPumpTime,
   feedStartTime,
   updateUnlockTimer,
   onSleepClick,
@@ -688,6 +691,7 @@ export function ActivityTileGroup({
           </div>
         );
       case 'pump':
+        const isLeftmost = activity === firstVisibleActivity;
         return (
           <div key="pump" className="relative w-[82px] min-h-24 flex-shrink-0 snap-center">
             <ActivityTile
@@ -715,6 +719,17 @@ export function ActivityTileGroup({
                 onPumpClick();
               }}
             />
+            {lastPumpTime[selectedBaby.id] && !exceeds24Hours(lastPumpTime[selectedBaby.id]) && (
+              <StatusBubble
+                status="pump"
+                className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
+                screenEdgeAware={isLeftmost}
+                durationInMinutes={0}
+                startTime={lastPumpTime[selectedBaby.id].toISOString()}
+                warningTime={selectedBaby.pumpWarningTime as string}
+                activityType="pump"
+              />
+            )}
           </div>
         );
       case 'measurement':
