@@ -35,6 +35,7 @@ const defaultFormData = {
   inactive: false,
   feedWarningTime: '03:00',
   diaperWarningTime: '02:00',
+  pumpWarningTime: '03:00',
   feedTimerFrom: 'start',
   feedTimerTypes: [...FEED_TIMER_CATEGORIES] as FeedTimerCategory[],
 };
@@ -64,6 +65,7 @@ export default function BabyModal({
         inactive: baby.inactive || false,
         feedWarningTime: baby.feedWarningTime || '03:00',
         diaperWarningTime: baby.diaperWarningTime || '02:00',
+        pumpWarningTime: baby.pumpWarningTime || '03:00',
         feedTimerFrom: (baby as any).feedTimerFrom || 'start',
         feedTimerTypes: parseFeedTimerTypes((baby as any).feedTimerTypes) ?? [...FEED_TIMER_CATEGORIES],
       });
@@ -208,6 +210,20 @@ export default function BabyModal({
                 }
                 className="w-full"
                 placeholder="02:00"
+                required
+              />
+            </div>
+            <div>
+              <label className="form-label">{t('Pump Warning Time (hh:mm)')}</label>
+              <Input
+                type="text"
+                pattern="[0-9]{2}:[0-9]{2}"
+                value={formData.pumpWarningTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, pumpWarningTime: e.target.value })
+                }
+                className="w-full"
+                placeholder="03:00"
                 required
               />
             </div>

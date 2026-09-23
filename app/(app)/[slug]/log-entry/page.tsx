@@ -105,6 +105,7 @@ function HomeContent(): React.ReactElement {
   const [lastFeedTime, setLastFeedTime] = useState<Record<string, Date>>({});
   const [lastFeedEndTime, setLastFeedEndTime] = useState<Record<string, Date>>({});
   const [lastDiaperTime, setLastDiaperTime] = useState<Record<string, Date>>({});
+  const [lastPumpTime, setLastPumpTime] = useState<Record<string, Date>>({});
 
   // Check whether the Photos feature is enabled for this deployment
   useEffect(() => {
@@ -493,6 +494,15 @@ function HomeContent(): React.ReactElement {
     if (data.lastDiaperTime) {
       setLastDiaperTime(prev => ({ ...prev, [selectedBaby.id]: data.lastDiaperTime! }));
     }
+    setLastPumpTime(prev => {
+      const next = { ...prev };
+      if (data.lastPumpTime) {
+        next[selectedBaby.id] = data.lastPumpTime;
+      } else {
+        delete next[selectedBaby.id];
+      }
+      return next;
+    });
     if (data.lastSleepEndTime) {
       setLastSleepEndTime(prev => ({ ...prev, [selectedBaby.id]: data.lastSleepEndTime! }));
     }
@@ -535,6 +545,7 @@ function HomeContent(): React.ReactElement {
           lastFeedTime={lastFeedTime}
           lastFeedEndTime={lastFeedEndTime}
           lastDiaperTime={lastDiaperTime}
+          lastPumpTime={lastPumpTime}
           feedStartTime={feedStartTime}
           updateUnlockTimer={updateUnlockTimer}
           onSleepClick={() => setShowSleepModal(true)}

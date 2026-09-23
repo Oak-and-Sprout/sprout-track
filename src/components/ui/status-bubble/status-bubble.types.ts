@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { Icon as LucideIcon } from 'lucide-react';
 
-export type StatusType = 'sleeping' | 'awake' | 'feed' | 'feedActive' | 'diaper';
+export type StatusType = 'sleeping' | 'awake' | 'feed' | 'feedActive' | 'diaper' | 'pump';
 
 export interface StatusBubbleProps {
   /** Current status of the baby */
