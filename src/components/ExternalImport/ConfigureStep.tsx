@@ -58,6 +58,12 @@ const warningLabels: Record<string, string> = {
     'Medication doses without an amount are imported as 0',
   'feeding-combination-unsupported':
     'Feeds with an unrecognized method are skipped',
+  'unsupported-activity-type':
+    'Unsupported Huckleberry activity types will be skipped',
+  'pumping-duration-unavailable':
+    'Huckleberry pumping records do not include a duration and will use zero minutes',
+  'bottle-amount-missing':
+    'Bottle feeds without an amount will be imported without an amount',
 };
 
 function childLabel(
@@ -354,7 +360,7 @@ export default function ConfigureStep({
 
         <p className="mt-1 text-sm text-slate-300">
           {t(
-            'Baby Buddy timestamps will be interpreted in this timezone',
+            'Imported timestamps will be interpreted in this timezone',
           )}
         </p>
 

@@ -12,6 +12,14 @@ import {
   BabyBuddyImportWarning,
   BabyBuddyPreviewDetails,
 } from './baby-buddy';
+import {
+  analyseHuckleberryFiles,
+  buildHuckleberryImportRecords,
+  collectHuckleberryWarnings,
+  huckleberryPreviewer,
+  HuckleberryImportWarning,
+  HuckleberryPreviewDetails,
+} from './huckleberry';
 
 export interface ExternalImportProviderPreview {
   readonly preview: ExternalImportPreview;
@@ -114,8 +122,29 @@ const babyBuddyRuntimeProvider: ExternalImportRuntimeProvider = {
   },
 };
 
+const huckleberryRuntimeProvider: ExternalImportRuntimeProvider = {
+  id: 'huckleberry',
+
+  previewFiles(files) {
+    return {
+      preview: huckleberryPreviewer.previewFiles(files),
+      details: analyseHuckleberryFiles(files),
+      warnings: collectHuckleberryWarnings(files),
+    } satisfies {
+      preview: ExternalImportPreview;
+      details: HuckleberryPreviewDetails;
+      warnings: readonly HuckleberryImportWarning[];
+    };
+  },
+
+  buildRecords(files) {
+    return buildHuckleberryImportRecords(files);
+  },
+};
+
 const runtimeProviders: readonly ExternalImportRuntimeProvider[] = [
   babyBuddyRuntimeProvider,
+  huckleberryRuntimeProvider,
 ];
 
 export function getExternalImportRuntimeProvider(

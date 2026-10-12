@@ -25,6 +25,28 @@ import {
   ExternalImportCompletedResult,
 } from './external-import.types';
 
+type ProviderId = 'baby-buddy' | 'huckleberry';
+
+const providerOptions: readonly {
+  id: ProviderId;
+  name: string;
+  description: string;
+  multiple: boolean;
+}[] = [
+  {
+    id: 'baby-buddy',
+    name: 'Baby Buddy',
+    description: 'Select the CSV files exported from Baby Buddy Database Admin',
+    multiple: true,
+  },
+  {
+    id: 'huckleberry',
+    name: 'Huckleberry',
+    description: 'Select a Huckleberry care log CSV export',
+    multiple: false,
+  },
+];
+
 export default function ExternalImport({
   isOpen,
   onClose,
@@ -33,6 +55,7 @@ export default function ExternalImport({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [files, setFiles] = useState<File[]>([]);
+  const [providerId, setProviderId] = useState<ProviderId>('baby-buddy');
   const [preview, setPreview] =
     useState<ExternalImportPreviewResponse | null>(null);
   const [isPreviewing, setIsPreviewing] =
@@ -72,6 +95,7 @@ export default function ExternalImport({
     }
 
     setFiles([]);
+    setProviderId('baby-buddy');
     setPreview(null);
     setError('');
     setIsPreviewing(false);
@@ -192,7 +216,7 @@ export default function ExternalImport({
       setError('');
 
       const formData = new FormData();
-      formData.set('providerId', 'baby-buddy');
+      formData.set('providerId', providerId);
 
       files.forEach(file => {
         formData.append('files', file);
@@ -247,7 +271,7 @@ export default function ExternalImport({
       setError('');
 
       const formData = new FormData();
-      formData.set('providerId', 'baby-buddy');
+      formData.set('providerId', providerId);
 
       files.forEach(file => {
         formData.append('files', file);
@@ -281,11 +305,13 @@ export default function ExternalImport({
           file => file.status === 'detected',
         );
 
-      if (!hasUsableFile) {
+      const cannotContinue = providerId === 'huckleberry'
+        ? !previewResult.preview.ready
+        : !hasUsableFile;
+
+      if (cannotContinue) {
         setError(
-          t(
-            'None of the uploaded files match a supported Baby Buddy export',
-          ),
+          t('None of the uploaded files match the selected import provider'),
         );
         return;
       }
@@ -342,20 +368,47 @@ export default function ExternalImport({
 
           <section className="rounded-lg border border-slate-600 p-4">
             <h3 className="font-medium text-slate-100">
-              {t('Baby Buddy')}
+              {t('Import source')}
             </h3>
 
-            <p className="mt-1 text-sm text-slate-300">
-              {t(
-                'Select the CSV files exported from Baby Buddy Database Admin',
-              )}
-            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {providerOptions.map(provider => (
+                <button
+                  key={provider.id}
+                  type="button"
+                  aria-pressed={providerId === provider.id}
+                  onClick={() => {
+                    setProviderId(provider.id);
+                    setFiles([]);
+                    setPreview(null);
+                    setError('');
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                  className={`rounded-md border p-3 text-left transition-colors ${
+                    providerId === provider.id
+                      ? 'border-teal-500 bg-teal-950/40'
+                      : 'border-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  <span className="font-medium text-slate-100">
+                    {t(provider.name)}
+                  </span>
+                  <span className="mt-1 block text-sm text-slate-300">
+                    {t(provider.description)}
+                  </span>
+                </button>
+              ))}
+            </div>
 
             <input
               ref={fileInputRef}
               type="file"
               accept=".csv,text/csv"
-              multiple
+              multiple={
+                providerOptions.find(
+                  provider => provider.id === providerId,
+                )!.multiple
+              }
               onChange={handleFilesSelected}
               className="sr-only"
             />

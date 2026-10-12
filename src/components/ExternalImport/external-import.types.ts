@@ -2,11 +2,32 @@ import {
   ExternalImportPreview,
   ExternalImportExecutionResult,
 } from '@/src/types/external-import';
-import type {
-  BabyBuddyImportWarning,
-  BabyBuddyPreviewDetails,
-  BabyBuddyUnitRequirementType,
-} from '@/src/lib/importers/baby-buddy';
+export interface ExternalImportPreviewChild {
+  readonly sourceId: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly birthDate?: string;
+  readonly birthTime?: string;
+  readonly activityOnly?: boolean;
+}
+
+export interface ExternalImportUnitRequirement {
+  readonly entityType: string;
+  readonly populatedRows: number;
+  readonly allowedUnits: readonly string[];
+  readonly optional: boolean;
+}
+
+export interface ExternalImportPreviewDetails {
+  readonly children: readonly ExternalImportPreviewChild[];
+  readonly unitRequirements: readonly ExternalImportUnitRequirement[];
+}
+
+export interface ExternalImportWarning {
+  readonly code: string;
+  readonly entityType: string;
+  readonly affectedRows: number;
+}
 
 export interface ExternalImportProps {
   readonly isOpen: boolean;
@@ -21,8 +42,8 @@ export type ExternalImportStep =
 
 export interface ExternalImportPreviewResponse {
   readonly preview: ExternalImportPreview;
-  readonly details: BabyBuddyPreviewDetails;
-  readonly warnings: readonly BabyBuddyImportWarning[];
+  readonly details: ExternalImportPreviewDetails;
+  readonly warnings: readonly ExternalImportWarning[];
 }
 
 export interface ExistingBaby {
@@ -44,7 +65,7 @@ export type ChildDestinationState =
     };
 
 export type UnitSelectionState = Partial<
-  Record<BabyBuddyUnitRequirementType, string>
+  Record<string, string>
 >;
 
 export interface ExternalImportUiConfiguration {
