@@ -172,3 +172,18 @@ html.dark .food-selected-tag-active {
 html.dark .food-form-meal-total {
   color: rgba(255, 255, 255, 0.5) !important;
 }
+
+/* Entry box: one food composed at a time (#271) */
+html.dark .food-entry-box {
+  background-color: rgba(30, 41, 59, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .food-entry-box-editing {
+  background-color: rgba(45, 212, 191, 0.08) !important;
+  border-color: #2dd4bf !important; /* teal-400 */
+}
+
+html.dark .food-entry-editing-hint {
+  color: #5eead4 !important; /* teal-300 */
+}

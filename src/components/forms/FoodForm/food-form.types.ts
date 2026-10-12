@@ -1,5 +1,5 @@
 import { FoodResponse, FoodLogResponse } from '@/app/api/types';
-import { FoodEnjoymentValue } from '@/src/utils/foodLogUtils';
+import { FoodEntry } from '@/src/utils/foodMealComposer';
 
 /**
  * Tab types for the FoodForm component
@@ -54,10 +54,19 @@ export interface ProgressTabProps {
   onNavigate?: () => void;
 }
 
-/** One food's own details inside a multi-food entry (#271), as held by its tag in the form. */
-export interface FoodItemDetailsValue {
-  /** Raw amount input ('' = not recorded). */
-  amount: string;
-  unitAbbr: string;
-  enjoyment: FoodEnjoymentValue | null;
+/** Props for the entry box where one food is composed or a tag edited (#271). */
+export interface FoodEntryBoxProps {
+  /** Id for the name input, so the "Foods" label can target it */
+  inputId: string;
+  entry: FoodEntry;
+  onChange: (entry: FoodEntry) => void;
+  /** Family food catalog */
+  foods: FoodResponse[];
+  /** The meal's other foods, left out of the dropdown */
+  excludeNames: string[];
+  /** Name of the tag being edited; undefined while adding */
+  editingName?: string;
+  onSave: () => void;
+  onCancelEdit: () => void;
+  disabled: boolean;
 }

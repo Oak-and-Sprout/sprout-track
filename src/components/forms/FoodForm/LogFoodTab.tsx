@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useId } from 'react';
-import { LogFoodTabProps, FoodItemDetailsValue } from './food-form.types';
+import React, { useState, useEffect, useId } from 'react';
+import { LogFoodTabProps } from './food-form.types';
 import { foodTagVariants, foodTagEditButton, foodMealTotal } from './food-form.styles';
+import FoodEntryBox from './FoodEntryBox';
 import { FoodResponse, FoodLogCreate, FoodLogItemInput } from '@/app/api/types';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
-import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Button } from '@/src/components/ui/button';
 import { Label } from '@/src/components/ui/label';
@@ -13,7 +13,7 @@ import { Checkbox } from '@/src/components/ui/checkbox';
 import { Switch } from '@/src/components/ui/switch';
 import { PhotoAttachments } from '@/src/components/ui/photo-attachments';
 import { uploadPhotos, linkPhoto, unlinkPhoto, fetchPhotos, fetchPhotosEnabled } from '@/src/utils/photoClientApi';
-import { ChevronDown, Minus, Plus, TriangleAlert, X } from 'lucide-react';
+import { TriangleAlert, X } from 'lucide-react';
 import { useUnit } from '@/src/hooks/useUnit';
 import { useTimezone } from '@/app/context/timezone';
 import { useToast } from '@/src/components/ui/toast';
@@ -25,7 +25,6 @@ import {
   expandFoodItems,
   buildMealItems,
   mealHasAnyReaction,
-  isEnterKeyEvent,
   isValidEnjoyment,
   type MealTagInput,
   FOOD_ENJOYMENT_VALUES,
@@ -36,33 +35,28 @@ import {
 } from '@/src/utils/foodLogUtils';
 import {
   formatFoodTagAmount,
-  isAmountDraftDirty,
-  applyAmountDraft,
-  addFoodTagToMeal,
-  selectionAfterRemove,
   formatMealTotal,
+  canSaveEntry,
+  clearEntry,
+  loadEntry,
+  commitEntry,
+  removeFood,
+  editingAfterRemove,
+  seedMealAmounts,
+  mealRowAmount,
+  withSingleFoodReaction,
   type FoodAmountDraft,
+  type FoodEntry,
+  type MealFood,
 } from '@/src/utils/foodMealComposer';
-
-/** One selected food chip in the multi-food meal logger (#247), with its own details (#271). */
-interface SelectedFoodTag extends FoodItemDetailsValue {
-  /** Catalog id when known; undefined for a new name not yet created. */
-  foodId?: string;
-  name: string;
-  commonAllergen: boolean;
-  isNew: boolean;
-  hadReaction: boolean;
-  reactionDescription: string;
-}
 
 /**
  * LogFoodTab Component
  *
  * Tab for logging a new food try or editing an existing food log entry.
- * Multi-food meals use a tag selector over the family catalog (#247);
- * enjoyment, notes and photos are meal-level; reactions are per food. With
- * two or more foods, tapping a food's tag selects it and the Amount stepper
- * edits that food's own amount (#271), committed with the Update button.
+ * Foods are composed one at a time in the entry box (#271) and saved as tags
+ * above it; tapping a tag loads it back into the box for editing. Enjoyment,
+ * notes and photos are meal-level; reactions are per food.
  */
 const LogFoodTab: React.FC<LogFoodTabProps> = ({
   isOpen,
@@ -80,8 +74,6 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   const { unitSymbol } = useUnit();
   const uid = useId();
   const foodNameId = `${uid}-food-name`;
-  const amountId = `${uid}-amount`;
-  const allergenId = `${uid}-common-allergen`;
   const notesId = `${uid}-notes`;
   const { toUTCString } = useTimezone();
   const { showToast } = useToast();
@@ -90,43 +82,22 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     const d = new Date(activity ? activity.time : initialTime);
     return isNaN(d.getTime()) ? new Date() : d;
   });
-  const [selectedFoods, setSelectedFoods] = useState<SelectedFoodTag[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [commonAllergen, setCommonAllergen] = useState(false);
-  const [allergenTouched, setAllergenTouched] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [unit, setUnit] = useState('TBSP');
+  const [selectedFoods, setSelectedFoods] = useState<MealFood[]>([]);
+  /** The entry box, and the tag it is editing (null while adding a food). */
+  const [entry, setEntry] = useState<FoodEntry>({ name: '', amount: '', unitAbbr: 'TBSP', commonAllergen: false });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  /** A pre-#271 multi-food entry's single meal amount (no food has its own). */
+  const [sharedAmount, setSharedAmount] = useState<FoodAmountDraft | null>(null);
   const [enjoyment, setEnjoyment] = useState<FoodEnjoymentValue | null>(null);
   const [hadReaction, setHadReaction] = useState(false);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  /** Tag whose amount the stepper edits (multi-food only), and its pending amount. */
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [draft, setDraft] = useState<FoodAmountDraft>({ amount: '', unitAbbr: 'TBSP' });
 
   const [photosEnabled, setPhotosEnabled] = useState(false);
   const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
   const [attachedPhotos, setAttachedPhotos] = useState<{ id: string; caption: string | null }[]>([]);
   const [removedPhotoIds, setRemovedPhotoIds] = useState<string[]>([]);
-
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const matchedSearchFood: FoodResponse | undefined = foods.find(
-    food => foodNameKey(food.name) === foodNameKey(searchTerm)
-  );
-  const isNewSearchFood = foodNameKey(searchTerm) !== '' && !matchedSearchFood;
-
-  const filteredFoods = searchTerm.trim() === ''
-    ? foods.filter(food => !selectedFoods.some(s => s.foodId === food.id || foodNameKey(s.name) === foodNameKey(food.name)))
-    : foods.filter(
-        food =>
-          food.name.toLowerCase().includes(searchTerm.trim().toLowerCase()) &&
-          !selectedFoods.some(s => s.foodId === food.id || foodNameKey(s.name) === foodNameKey(food.name))
-      );
 
   useEffect(() => { fetchPhotosEnabled().then(setPhotosEnabled); }, []);
 
@@ -140,7 +111,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       .then(data => {
         const defaultSolidsUnit = data?.success && data.data?.defaultSolidsUnit ? data.data.defaultSolidsUnit : 'TBSP';
         if (!activity?.unitAbbr) {
-          setUnit(defaultSolidsUnit);
+          setEntry(prev => ({ ...prev, unitAbbr: defaultSolidsUnit }));
         }
       })
       .catch(() => {});
@@ -158,31 +129,14 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       .catch(() => {});
   }, [activity?.id, photosEnabled, babyId]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  /** Form-state details for a stored item; a food without its own unit starts on the meal's. */
-  const itemDetailsFrom = (item: { amount?: number | null; unitAbbr?: string | null; enjoyment?: string | null }): FoodItemDetailsValue => ({
+  /** Form-state details for a stored item; a food without its own unit starts on the box's. */
+  const itemDetailsFrom = (item: { amount?: number | null; unitAbbr?: string | null; enjoyment?: string | null }) => ({
     amount: item.amount != null ? String(item.amount) : '',
-    unitAbbr: item.unitAbbr || unit,
+    unitAbbr: item.unitAbbr || entry.unitAbbr,
     enjoyment: isValidEnjoyment(item.enjoyment) ? item.enjoyment : null,
   });
 
-  const draftOf = (tag: FoodAmountDraft): FoodAmountDraft => ({ amount: tag.amount, unitAbbr: tag.unitAbbr });
-
-  const tagsFromActivity = (): SelectedFoodTag[] => {
+  const tagsFromActivity = (): MealFood[] => {
     if (!activity) return [];
     if (activity.foodItems && activity.foodItems.length > 0) {
       return activity.foodItems.map(item => ({
@@ -224,18 +178,24 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     return [];
   };
 
+  /** Box back to empty, nothing being edited. */
+  const resetEntry = () => {
+    setEntry(clearEntry);
+    setEditingIndex(null);
+  };
+
   useEffect(() => {
     if (isOpen && !isInitialized) {
       if (activity) {
-        const tags = tagsFromActivity();
-        setSelectedFoods(tags);
-        if (tags.length > 1) {
-          setSelectedIndex(0);
-          setDraft(draftOf(tags[0]));
-        }
-        setAmount(activity.amount != null ? activity.amount.toString() : '');
+        // The box starts empty; a single food's row amount moves onto its tag
+        const { meal, shared } = seedMealAmounts(tagsFromActivity(), {
+          amount: activity.amount != null ? activity.amount.toString() : '',
+          unitAbbr: activity.unitAbbr || entry.unitAbbr,
+        });
+        setSelectedFoods(meal);
+        setSharedAmount(shared);
         if (activity.unitAbbr) {
-          setUnit(activity.unitAbbr);
+          setEntry(prev => ({ ...prev, unitAbbr: activity.unitAbbr as string }));
         }
         setEnjoyment(
           FOOD_ENJOYMENT_VALUES.includes(activity.enjoyment as FoodEnjoymentValue)
@@ -244,7 +204,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         );
         // Each tag already carries its own description (tagsFromActivity resolves
         // it from foodItems, the foods JSON, or the legacy row-level field).
-        setHadReaction(tags.some(tag => tag.hadReaction) || activity.hadReaction === true);
+        setHadReaction(meal.some(tag => tag.hadReaction) || activity.hadReaction === true);
         setNotes(activity.notes || '');
         const d = new Date(activity.time);
         if (!isNaN(d.getTime())) {
@@ -264,10 +224,9 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       setIsInitialized(true);
     } else if (!isOpen) {
       setIsInitialized(false);
-      setSelectedIndex(null);
+      resetEntry();
       setPendingPhotoFiles([]);
       setRemovedPhotoIds([]);
-      setSearchTerm('');
     }
   }, [isOpen, activity, initialTime]);
 
@@ -276,129 +235,40 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   }, [activity?.id]);
 
   useEffect(() => {
-    onFormStateChange({ isSubmitting, canSubmit: selectedFoods.length > 0 });
-  }, [isSubmitting, selectedFoods.length, onFormStateChange]);
+    onFormStateChange({ isSubmitting, canSubmit: selectedFoods.length > 0 || canSaveEntry(entry) });
+  }, [isSubmitting, selectedFoods.length, entry, onFormStateChange]);
 
-  useEffect(() => {
-    if (isNewSearchFood && !allergenTouched) {
-      setCommonAllergen(false);
-    }
-  }, [isNewSearchFood, allergenTouched]);
-
-  // With 2+ foods the stepper edits the selected food's pending amount; with one, the meal amount
-  const selectedTag = selectedFoods.length > 1 && selectedIndex !== null ? selectedFoods[selectedIndex] : undefined;
-  const stepAmount = selectedTag ? draft.amount : amount;
-  const stepUnit = selectedTag ? draft.unitAbbr : unit;
-  const setStepAmount = (value: string) => (selectedTag ? setDraft(prev => ({ ...prev, amount: value })) : setAmount(value));
-  const setStepUnit = (value: string) => (selectedTag ? setDraft(prev => ({ ...prev, unitAbbr: value })) : setUnit(value));
-  const draftDirty = !!selectedTag && isAmountDraftDirty(draft, selectedTag);
-  /** Selected foods with the pending amount committed (switching tags, removing, saving). */
-  const committedFoods = () => applyAmountDraft(selectedFoods, selectedTag ? selectedIndex : null, draft);
   // Shown next to the Foods label; a pre-#271 meal's shared amount when no food has its own
   const mealTotal = formatMealTotal(selectedFoods) ||
-    (selectedFoods.length > 1 && parseFloat(amount) > 0 ? `${amount} ${unitSymbol(unit)}` : '');
+    (selectedFoods.length > 1 && sharedAmount ? formatFoodTagAmount(sharedAmount, unitSymbol) : '');
 
-  const amountStep = stepUnit === 'G' ? 5 : 0.5;
+  /** The meal with the box saved into it (unchanged when the box is empty). */
+  const mealWithEntry = () => withSingleFoodReaction(commitEntry(selectedFoods, entry, editingIndex, foods), hadReaction);
 
-  const handleAmountChange = (newAmount: string) => {
-    if (newAmount === '' || /^\d*\.?\d*$/.test(newAmount)) {
-      setStepAmount(newAmount);
-    }
+  const saveEntry = () => {
+    setSelectedFoods(mealWithEntry());
+    resetEntry();
   };
 
-  const incrementAmount = () => {
-    const current = parseFloat(stepAmount || '0');
-    setStepAmount((current + amountStep).toFixed(stepUnit === 'G' ? 0 : 1));
-  };
-
-  const decrementAmount = () => {
-    const current = parseFloat(stepAmount || '0');
-    if (current >= amountStep) {
-      setStepAmount((current - amountStep).toFixed(stepUnit === 'G' ? 0 : 1));
-    }
-  };
-
-  const selectFoodTag = (index: number) => {
-    if (index === selectedIndex) return;
-    setSelectedFoods(committedFoods());
-    setSelectedIndex(index);
-    setDraft(draftOf(selectedFoods[index]));
-  };
-
-  const addFoodTag = (tag: SelectedFoodTag) => {
-    if (!selectedFoods.some(s => foodNameKey(s.name) === foodNameKey(tag.name))) {
-      const next = addFoodTagToMeal(committedFoods(), tag, { amount, unitAbbr: unit });
-      setSelectedFoods(next);
-      if (next.length > 1) {
-        setSelectedIndex(next.length - 1);
-        setDraft(draftOf(tag));
-      }
-      // The single food's amount moved onto its tag; the meal amount no longer applies
-      if (next.length === 2) setAmount('');
-    }
-    setSearchTerm('');
-    setDropdownOpen(false);
-    setHighlightedIndex(-1);
-    setAllergenTouched(false);
-    setCommonAllergen(false);
-  };
-
-  const handleFoodSelect = (food: FoodResponse) => {
-    addFoodTag({
-      foodId: food.id,
-      name: food.name,
-      commonAllergen: food.commonAllergen,
-      isNew: false,
-      hadReaction: false,
-      reactionDescription: '',
-      ...itemDetailsFrom({}),
-    });
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-  };
-
-  const addNewFoodFromSearch = () => {
-    const name = normalizeFoodName(searchTerm);
-    if (!name) return;
-    if (matchedSearchFood) {
-      handleFoodSelect(matchedSearchFood);
-      return;
-    }
-    addFoodTag({
-      name,
-      commonAllergen,
-      isNew: true,
-      hadReaction: false,
-      reactionDescription: '',
-      ...itemDetailsFrom({}),
-    });
+  /** Load a tag into the box; tapping the tag being edited again cancels. */
+  const editFoodTag = (index: number) => {
+    if (index === editingIndex) return resetEntry();
+    setEntry(loadEntry(selectedFoods, index));
+    setEditingIndex(index);
   };
 
   const removeFoodTag = (index: number) => {
-    // A pending amount on another food is kept; one on the removed food goes with it
-    const prev = index === selectedIndex ? selectedFoods : committedFoods();
-    const next = prev.filter((_, i) => i !== index);
+    const { meal: next, shared } = removeFood(selectedFoods, index, sharedAmount);
     // Removing the only food that reacted leaves the meal-level switch on with
     // nothing behind it — and, at one food, showing a description box that
     // would be discarded on save. Turn it off so the form states the truth.
     if (!next.some(tag => tag.hadReaction)) setHadReaction(false);
-    // Back to one food: the meal fields are that food's again, so fold its
-    // own details into them (a per-food total no longer applies).
-    if (next.length === 1) {
-      const [only] = next;
-      if (only.amount) {
-        setAmount(only.amount);
-        setUnit(only.unitAbbr);
-      } else if (prev.some(tag => tag.amount)) {
-        setAmount('');
-      }
-      if (only.enjoyment) setEnjoyment(only.enjoyment);
-    }
+    // Back to one food: a single-food entry stores enjoyment on the meal
+    if (next.length === 1 && next[0].enjoyment) setEnjoyment(next[0].enjoyment);
     setSelectedFoods(next);
-    const nextSelected = selectionAfterRemove(selectedIndex, index, next.length);
-    setSelectedIndex(nextSelected);
-    if (nextSelected !== null) setDraft(draftOf(next[nextSelected]));
+    setSharedAmount(shared);
+    if (index === editingIndex) resetEntry();
+    else setEditingIndex(editingAfterRemove(editingIndex, index));
   };
 
   const toggleFoodReaction = (index: number, checked: boolean) => {
@@ -413,54 +283,8 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     );
   };
 
-  const handleFoodInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setHighlightedIndex(-1);
-    setDropdownOpen(true);
-  };
-
-  const handleFoodKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && searchTerm === '' && selectedFoods.length > 0) {
-      removeFoodTag(selectedFoods.length - 1);
-      return;
-    }
-
-    if (!dropdownOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-      setDropdownOpen(true);
-      e.preventDefault();
-      return;
-    }
-
-    switch (isEnterKeyEvent(e) ? 'Enter' : e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedIndex(prev => (prev < filteredFoods.length - 1 ? prev + 1 : 0));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : filteredFoods.length - 1));
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (highlightedIndex >= 0 && highlightedIndex < filteredFoods.length) {
-          handleFoodSelect(filteredFoods[highlightedIndex]);
-        } else if (normalizeFoodName(searchTerm)) {
-          addNewFoodFromSearch();
-        } else {
-          setDropdownOpen(false);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setDropdownOpen(false);
-        break;
-      default:
-        break;
-    }
-  };
-
   const resolveFoodId = async (
-    tag: SelectedFoodTag,
+    tag: MealFood,
     authToken: string | null,
     catalog: FoodResponse[]
   ): Promise<{ foodId: string; catalog: FoodResponse[] } | null> => {
@@ -505,7 +329,9 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!babyId || selectedFoods.length === 0) return;
+    // A food still in the box is saved too, so nothing typed is silently lost
+    const tagsToSave = mealWithEntry();
+    if (!babyId || tagsToSave.length === 0) return;
 
     if (!selectedDateTime || isNaN(selectedDateTime.getTime())) {
       console.error('Required fields missing: valid date time');
@@ -518,9 +344,8 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       const authToken = localStorage.getItem('authToken');
       let catalog = foods;
 
-      // A pending amount is saved too, so nothing typed is silently lost
-      const tagsToSave = committedFoods();
       setSelectedFoods(tagsToSave);
+      resetEntry();
       const resolvedTags: MealTagInput[] = [];
       for (const tag of tagsToSave) {
         const resolved = await resolveFoodId(tag, authToken, catalog);
@@ -556,16 +381,15 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
 
       onFoodsUpdated(catalog);
 
-      const parsedAmount = parseFloat(amount);
-      // Per-food amounts define the total server-side; the meal amount is then unused
-      const hasAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 && !resolvedItems.some(item => item.amount != null);
+      // One food: its own amount; several: derived server-side from the per-food amounts
+      const rowAmount = mealRowAmount(tagsToSave, sharedAmount);
 
       const payload: FoodLogCreate = {
         babyId,
         foods: resolvedItems,
         time: toUTCString(selectedDateTime) || selectedDateTime.toISOString(),
-        amount: hasAmount ? parsedAmount : null,
-        unitAbbr: hasAmount ? unit : null,
+        amount: rowAmount?.amount ?? null,
+        unitAbbr: rowAmount?.unitAbbr ?? null,
         enjoyment: enjoyment as FoodLogCreate['enjoyment'],
         notes: notes.trim() ? notes.trim() : undefined,
       };
@@ -645,14 +469,10 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
 
       if (!activity) {
         setSelectedFoods([]);
-        setSelectedIndex(null);
-        setSearchTerm('');
-        setAmount('');
+        setSharedAmount(null);
         setEnjoyment(null);
         setHadReaction(false);
         setNotes('');
-        setCommonAllergen(false);
-        setAllergenTouched(false);
         setSelectedDateTime(new Date());
       }
       setPendingPhotoFiles([]);
@@ -686,220 +506,56 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
             {mealTotal && <span className={foodMealTotal}> · {t('{total} total').replace('{total}', mealTotal)}</span>}
           </Label>
           {selectedFoods.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {selectedFoods.map((tag, index) => {
-                const isSelected = selectedTag === tag;
-                // One food: its amount is the meal amount
-                const tagAmount = formatFoodTagAmount(selectedFoods.length > 1 ? tag : { amount, unitAbbr: unit }, unitSymbol);
-                return (
-                  <span key={`${tag.foodId || tag.name}-${index}`} className={foodTagVariants({ selected: isSelected })}>
-                    {selectedFoods.length > 1 ? (
+            <>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedFoods.map((tag, index) => {
+                  const isEditing = index === editingIndex;
+                  const tagAmount = formatFoodTagAmount(tag, unitSymbol);
+                  return (
+                    <span key={`${tag.foodId || tag.name}-${index}`} className={foodTagVariants({ selected: isEditing })}>
                       <button
                         type="button"
-                        onClick={() => selectFoodTag(index)}
+                        onClick={() => editFoodTag(index)}
                         className={foodTagEditButton}
-                        aria-pressed={isSelected}
+                        aria-pressed={isEditing}
                         aria-label={`${t('Edit')} ${tag.name}${tagAmount ? `, ${tagAmount}` : ''}`}
                         disabled={isSubmitting}
                       >
                         {tag.name}
                         {tagAmount && <span className="font-medium">{tagAmount}</span>}
                       </button>
-                    ) : (
-                      <>
-                        {tag.name}
-                        {tagAmount && <span className="font-medium">{tagAmount}</span>}
-                      </>
-                    )}
-                    {tag.commonAllergen && (
-                      <span className="text-amber-700 text-xs food-selected-tag-allergen">({t('Allergen')})</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeFoodTag(index)}
-                      className="ml-0.5 rounded-full p-0.5 hover:bg-teal-200 food-selected-tag-remove"
-                      aria-label={`${t('Remove')} ${tag.name}`}
-                      disabled={isSubmitting}
-                    >
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          {selectedFoods.length > 1 && (
-            <p className="text-xs text-gray-500 mb-2 food-form-helper-text">{t('Tap a food to edit its amount')}</p>
-          )}
-          <div className="relative">
-            <div className="relative w-full">
-              <div className="flex items-center w-full">
-                <Input
-                  ref={inputRef}
-                  id={foodNameId}
-                  value={searchTerm}
-                  onChange={handleFoodInputChange}
-                  onFocus={() => setDropdownOpen(true)}
-                  onKeyDown={handleFoodKeyDown}
-                  enterKeyHint="done"
-                  className="w-full pr-10 food-form-dropdown-trigger"
-                  placeholder={t('Search or add foods...')}
-                  disabled={isSubmitting}
-                />
-                <ChevronDown
-                  aria-hidden="true"
-                  className="absolute right-3 h-4 w-4 text-gray-500 food-form-dropdown-icon"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                />
+                      {tag.commonAllergen && (
+                        <span className="text-amber-700 text-xs food-selected-tag-allergen">({t('Allergen')})</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFoodTag(index)}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-teal-200 food-selected-tag-remove"
+                        aria-label={`${t('Remove')} ${tag.name}`}
+                        disabled={isSubmitting}
+                      >
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
-
-              {dropdownOpen && (
-                <div
-                  ref={dropdownRef}
-                  className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto food-dropdown-container"
-                  style={{ width: inputRef.current?.offsetWidth }}
-                >
-                  {filteredFoods.length > 0 ? (
-                    <div className="py-1">
-                      {filteredFoods.map((food, index) => (
-                        <div
-                          key={food.id}
-                          className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer food-dropdown-item ${
-                            highlightedIndex === index
-                              ? 'bg-gray-100 food-dropdown-item-highlighted'
-                              : 'hover:bg-gray-100'
-                          }`}
-                          onClick={() => handleFoodSelect(food)}
-                          onMouseEnter={() => setHighlightedIndex(index)}
-                        >
-                          <span>{food.name}</span>
-                          {food.commonAllergen && (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 food-allergen-badge">
-                              {t('Common allergen')}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      className="px-3 py-2 text-sm text-gray-500 food-dropdown-no-match cursor-pointer hover:bg-gray-50"
-                      onClick={() => normalizeFoodName(searchTerm) && addNewFoodFromSearch()}
-                    >
-                      {searchTerm.trim() !== ''
-                        ? `${t('New food — it will be added to your list when saved')}`
-                        : t('No foods found')}
-                    </div>
-                  )}
-                </div>
+              {editingIndex === null && (
+                <p className="text-xs text-gray-500 mb-2 food-form-helper-text">{t('Tap a food to edit it')}</p>
               )}
-            </div>
-          </div>
-          {isNewSearchFood && (
-            <div className="mt-2">
-              <p className="text-xs text-gray-500 food-form-new-food-hint mb-2">
-                {t('New food — it will be added to your list when saved')}
-              </p>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id={allergenId}
-                  checked={commonAllergen}
-                  onCheckedChange={(checked: boolean) => {
-                    setAllergenTouched(true);
-                    setCommonAllergen(checked);
-                  }}
-                  disabled={isSubmitting}
-                />
-                <Label className="form-label !mb-0" htmlFor={allergenId}>{t('Common allergen')}</Label>
-              </div>
-              <p className="text-xs text-gray-500 mt-1 food-form-helper-text">
-                {t('Check this box if the food is a known common allergen (e.g. peanut, egg, milk, tree nuts, soy, wheat, fish, shellfish, sesame).')}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={addNewFoodFromSearch}
-                disabled={isSubmitting}
-              >
-                {t('Add food')}
-              </Button>
-            </div>
+            </>
           )}
-        </div>
-
-        <div>
-          <Label className="form-label" htmlFor={amountId}>
-            {t('Amount (')}{unitSymbol(stepUnit)}){selectedTag && ` — ${selectedTag.name}`}
-          </Label>
-          <div className="flex items-center justify-center mb-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={decrementAmount}
-              disabled={isSubmitting}
-              className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              aria-label={t('Decrease amount')}
-            >
-              <Minus className="h-5 w-5 text-white" aria-hidden="true" />
-            </Button>
-            <Input
-              id={amountId}
-              type="text"
-              value={stepAmount}
-              onChange={(e) => handleAmountChange(e.target.value)}
-              className="w-24 mx-3 text-center"
-              placeholder={t("Amount")}
-              inputMode="decimal"
-              disabled={isSubmitting}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={incrementAmount}
-              disabled={isSubmitting}
-              className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              aria-label={t('Increase amount')}
-            >
-              <Plus className="h-5 w-5 text-white" aria-hidden="true" />
-            </Button>
-          </div>
-          <div className="mt-2 flex space-x-2">
-            <Button
-              type="button"
-              variant={stepUnit === 'TBSP' ? 'default' : 'outline'}
-              className="w-full"
-              onClick={() => setStepUnit('TBSP')}
-              disabled={isSubmitting}
-            >
-              {t('tbsp')}
-            </Button>
-            <Button
-              type="button"
-              variant={stepUnit === 'G' ? 'default' : 'outline'}
-              className="w-full"
-              onClick={() => setStepUnit('G')}
-              disabled={isSubmitting}
-            >
-              {t('g')}
-            </Button>
-            {selectedTag && (
-              <Button
-                type="button"
-                size="sm"
-                variant={draftDirty ? 'default' : 'outline'}
-                className="h-10 shrink-0"
-                onClick={() => setSelectedFoods(committedFoods())}
-                disabled={!draftDirty || isSubmitting}
-                aria-label={`${t('Update')} ${selectedTag.name}`}
-              >
-                {t('Update')}
-              </Button>
-            )}
-          </div>
+          <FoodEntryBox
+            inputId={foodNameId}
+            entry={entry}
+            onChange={setEntry}
+            foods={foods}
+            excludeNames={selectedFoods.filter((_, i) => i !== editingIndex).map(tag => tag.name)}
+            editingName={editingIndex !== null ? selectedFoods[editingIndex]?.name : undefined}
+            onSave={saveEntry}
+            onCancelEdit={resetEntry}
+            disabled={isSubmitting}
+          />
         </div>
 
         <div>

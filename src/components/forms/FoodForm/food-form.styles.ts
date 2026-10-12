@@ -18,9 +18,24 @@ export const foodTagVariants = cva(
   }
 );
 
-/** The tag's name + amount button that selects the food for editing. */
+/** The tag's name + amount button that loads the food into the entry box for editing. */
 export const foodTagEditButton =
   'inline-flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500';
 
 /** The meal total shown next to the Foods label. */
 export const foodMealTotal = 'font-normal text-gray-500 food-form-meal-total';
+
+/** The bordered box where one food is composed or a tag is edited; outlined in teal while editing. */
+export const foodEntryBox = cva('space-y-3 rounded-lg border p-3 food-entry-box', {
+  variants: {
+    editing: {
+      true: 'border-teal-400 bg-teal-50/40 food-entry-box-editing',
+      false: 'border-gray-200 bg-gray-50/60',
+    },
+  },
+  defaultVariants: { editing: false },
+});
+
+/** Round +/- buttons of the amount stepper. */
+export const foodStepperButton =
+  'bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5';
