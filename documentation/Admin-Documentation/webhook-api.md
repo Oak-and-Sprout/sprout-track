@@ -250,7 +250,7 @@ Recent activity logs with optional filtering.
 
 | Param | Default | Description |
 |-------|---------|-------------|
-| `type` | all | Filter by type: `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine`, `supplement` |
+| `type` | all | Filter by type: `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine`, `supplement`, `food` |
 | `limit` | 10 | Max records per type (1–50) |
 | `since` | 24h ago | ISO 8601 datetime cutoff |
 
@@ -288,6 +288,29 @@ curl -s \
     "count": 1,
     "hasMore": false
   }
+}
+```
+
+A `food` activity (from the Food tracker) looks like this. `details.foods` lists every food in the meal with its catalog name and per-food reaction; the top-level `hadReaction`/`reactionDescription` summarize the meal (true if any food reacted, with the first reacting food's description):
+
+```json
+{
+  "activityType": "food",
+  "id": "...",
+  "time": "2026-03-12T12:00:00.000Z",
+  "details": {
+    "foods": [
+      { "foodId": "...", "name": "Banana", "commonAllergen": false, "hadReaction": false, "reactionDescription": null },
+      { "foodId": "...", "name": "Peanut Butter", "commonAllergen": true, "hadReaction": true, "reactionDescription": "Hives on cheeks" }
+    ],
+    "amount": 2,
+    "unitAbbr": "TBSP",
+    "enjoyment": "LIKED",
+    "hadReaction": true,
+    "reactionDescription": "Hives on cheeks",
+    "notes": null
+  },
+  "caretakerName": "Mom"
 }
 ```
 
@@ -335,7 +358,7 @@ Create a new activity record.
 |-------|--------|
 | `BREAST` | Breastfeeding |
 | `BOTTLE` | Bottle (set `bottleType` separately) |
-| `SOLIDS` | Solid food |
+| `SOLIDS` | Solid food (legacy -- use the [`food`](#food) activity type instead; see below) |
 | `formula` | Auto-sets BOTTLE + bottleType "Formula" |
 | `breast milk` | Auto-sets BOTTLE + bottleType "Breast Milk" |
 | `milk` | Auto-sets BOTTLE + bottleType "Milk" |
@@ -576,6 +599,60 @@ Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned b
 
 Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned by `GET /activities` (previously accepted but silently dropped). If omitted, `unitAbbr` falls back to the medicine's configured unit. `unitAbbr`, when sent, is matched case-insensitively against your family's configured units and stored using that table's exact casing; an unrecognized value returns `400 INVALID_UNIT` listing the units actually configured.
 
+#### Food
+
+Logs a meal in the Food tracker, exactly as the app's "Log Food" form does. Use this instead of `feed` with `feedType: "SOLIDS"`: on startup the server converts legacy SOLIDS feeds into food logs and **deletes the original feed**, so a client that remembers the feed ID (or re-syncs it) ends up with missing IDs or duplicate food logs.
+
+**One food** -- by name or by catalog ID:
+
+```json
+{
+  "type": "food",
+  "foodName": "Banana",
+  "amount": 2,
+  "unitAbbr": "TBSP",
+  "enjoyment": "LIKED"
+}
+```
+
+**A meal with several foods** -- each entry is a name string or an object with `foodId` or `name`, plus optional per-food `hadReaction`/`reactionDescription`:
+
+```json
+{
+  "type": "food",
+  "foods": [
+    "Banana",
+    { "name": "Peanut Butter", "hadReaction": true, "reactionDescription": "Hives on cheeks" },
+    { "foodId": "FOOD_ID" }
+  ],
+  "enjoyment": "LOVED",
+  "notes": "First time trying peanut"
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `foodName` / `foodId` | One of these, or `foods` | A single food. `foodName` is matched case-insensitively against the family's food catalog; an unknown name is added to the catalog (the same way the app's form adds a new food). `foodId` must be a catalog food from `GET /reference?type=foods`. |
+| `hadReaction`, `reactionDescription` | No | Reaction to the single food. Use these only with `foodName`/`foodId`; with `foods[]`, set them on each entry instead. |
+| `foods` | One of these, or `foodName`/`foodId` | Non-empty array for a multi-food meal. If the same food appears twice, the entries are merged. |
+| `amount` | No | Amount eaten, positive number |
+| `unitAbbr` | No | Unit for `amount` (validated against `GET /reference?type=units`, case-insensitive). Only valid with an `amount`. If you send an `amount` without a unit, the family's default solids unit (Settings, default `TBSP`) is used, as the app does. |
+| `enjoyment` | No | `HATED`, `DISLIKED`, `NEUTRAL`, `LIKED`, or `LOVED` (case-insensitive; also listed by `GET /reference?type=food-enjoyments`) |
+| `notes` | No | Free text |
+
+The meal-level `hadReaction`/`reactionDescription` stored on the log are derived from the foods, as in the app: `true` if any food reacted, with the first reacting food's description. A `reactionDescription` without `hadReaction: true` is rejected. There is no separate reaction "cause" field. Each food is its own reaction source.
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `FOOD_REQUIRED` | 400 | None of `foodName`, `foodId`, or `foods` was sent |
+| `INVALID_FOOD` | 400 | Food fields are malformed (both `foods` and `foodName`/`foodId`, an empty name, an entry with both or neither of `foodId`/`name`, a non-boolean `hadReaction`, a description without a reaction, ...) |
+| `FOOD_NOT_FOUND` | 404 | A `foodId` isn't a (non-deleted) food in this family's catalog. Nothing is written. |
+| `INVALID_AMOUNT` | 400 | `amount` isn't a positive number |
+| `INVALID_UNIT` | 400 | `unitAbbr` isn't a configured unit, or was sent without an `amount` |
+| `INVALID_ENJOYMENT` | 400 | `enjoyment` isn't one of the five values |
+
+New catalog foods are created only after every other field has been validated, so a rejected request never leaves partial catalog entries behind. The response `details` use the same shape as `GET /activities` (see above).
+
 #### Play
 
 ```json
@@ -606,13 +683,15 @@ For `medicine`/`supplement`, an explicit `null` for `amount` or `doseAmount` ret
 
 For `feed`, `duration` (or `feedDuration`) is in minutes, matching POST -- it is stored as `feedDuration` in seconds.
 
+For `food`, the fields are the same as POST (`foodName`/`foodId` or `foods`, `amount`, `unitAbbr`, `enjoyment`, `notes`, `time`). Sending any food field replaces the meal's foods (unknown names are added to the catalog). To change a reaction, send the food(s) again with the new `hadReaction`/`reactionDescription`. `amount: null` also clears the unit; `unitAbbr` on a log without an amount is rejected; adding an `amount` to a log without a unit applies the family's default solids unit. An unknown `foodId` returns `404 ACTIVITY_NOT_FOUND` with a message naming the food.
+
 **PUT error codes:**
 
 | Code | Status | Description |
 |------|--------|-------------|
 | `INVALID_ROUTE` | 400 | Missing `babyId`/`activityId` in the path |
 | `INVALID_JSON` | 400 | Body is not a JSON object |
-| `INVALID_ACTIVITY_TYPE` | 400 | `type` missing or not one of the ten supported types |
+| `INVALID_ACTIVITY_TYPE` | 400 | `type` missing or not one of the eleven supported types |
 | `INVALID_FIELD` | 400 | Body includes a field the declared `type` doesn't accept |
 | `ACTIVITY_NOT_FOUND` | 404 | No matching, non-deleted activity of that type for this baby and family |
 | `INVALID_UPDATE` | 400 | A field failed validation (the message names the field), or no mutable field was sent |
@@ -625,7 +704,7 @@ curl -s -X PUT \
   http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities/ACTIVITY_ID
 ```
 
-**Supported types:** `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine`, and `supplement`.
+**Supported types:** `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine`, `supplement`, and `food`.
 
 The response includes `activityType`, `id`, `babyId`, `time` when applicable, `status: "updated"`, and type-specific confirmation details.
 
@@ -639,7 +718,7 @@ curl -s -X DELETE \
   http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities/ACTIVITY_ID
 ```
 
-The hooks delete endpoint matches the current classic UI log behavior for these activity types: after confirming the row belongs to the API key's family and route baby, it hard-deletes the activity row. Add `?type=feed` if you already know the activity type and want to avoid type probing -- `?type=` accepts the same ten activity type values as PUT. DELETE shares the write rate limit (30 requests/minute by default).
+The hooks delete endpoint matches the current classic UI log behavior for these activity types: after confirming the row belongs to the API key's family and route baby, it hard-deletes the activity row. The exception is `food`, which is soft-deleted (marked deleted and hidden everywhere) because that is how the app deletes food logs. Add `?type=feed` if you already know the activity type and want to avoid type probing -- `?type=` accepts the same eleven activity type values as PUT. DELETE shares the write rate limit (30 requests/minute by default).
 
 The response includes `activityType`, `id`, `babyId`, `time` when applicable, and `status: "deleted"`.
 
@@ -674,13 +753,13 @@ curl -s \
 
 ### GET /babies/:babyId/reference
 
-Returns valid values for use with POST endpoints. Use this to discover medicines, sleep locations, play categories, feed types, the enum-like field values validated by POST/PUT, and the family's configured units before creating activities.
+Returns valid values for use with POST endpoints. Use this to discover medicines, sleep locations, play categories, feed types, the family's food catalog, the enum-like field values validated by POST/PUT, and the family's configured units before creating activities.
 
 **Query Parameters:**
 
 | Param | Default | Description |
 |-------|---------|-------------|
-| `type` | all | `medicines`, `supplements`, `sleep-locations`, `play-categories`, `feed-types`, `diaper-conditions`, `diaper-colors`, `sleep-qualities`, `bath-types`, or `units` |
+| `type` | all | `medicines`, `supplements`, `sleep-locations`, `play-categories`, `feed-types`, `diaper-conditions`, `diaper-colors`, `sleep-qualities`, `bath-types`, `units`, `foods`, or `food-enjoyments` |
 | `playType` | -- | Filter play categories by play type |
 
 ```bash
@@ -705,7 +784,7 @@ curl -s \
     "feedTypes": [
       { "value": "BREAST", "description": "Breastfeeding" },
       { "value": "BOTTLE", "description": "Bottle (specify bottleType separately)" },
-      { "value": "SOLIDS", "description": "Solid food" },
+      { "value": "SOLIDS", "description": "Solid food (legacy; prefer activity type \"food\")" },
       { "value": "formula", "description": "Formula bottle (auto-sets BOTTLE + formula)" },
       { "value": "breast milk", "description": "Pumped breast milk bottle" },
       { "value": "milk", "description": "Milk bottle" },
@@ -718,10 +797,17 @@ curl -s \
     "units": [
       { "unitAbbr": "ML", "unitName": "Milliliters" },
       { "unitAbbr": "OZ", "unitName": "Ounces" }
-    ]
+    ],
+    "foods": [
+      { "id": "...", "name": "Banana", "commonAllergen": false, "notes": null },
+      { "id": "...", "name": "Peanut Butter", "commonAllergen": true, "notes": null }
+    ],
+    "foodEnjoyments": ["HATED", "DISLIKED", "NEUTRAL", "LIKED", "LOVED"]
   }
 }
 ```
+
+`foods` is the family's food catalog (deleted foods excluded, sorted by name), which is what `POST` type `food` matches `foodName` against and what `foodId` must come from.
 
 `sleepLocations` is deduplicated ignoring case and underscore/space differences, preferring the display-cased variant (e.g. a legacy `CAR_SEAT` value logged before validation existed collapses onto `Car Seat` rather than appearing as a separate duplicate entry). `units` lists every unit configured in the `Unit` table and is the same set `unitAbbr` is validated against on POST/PUT.
 

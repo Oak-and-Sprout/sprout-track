@@ -25,6 +25,9 @@ const mocks = vi.hoisted(() => {
       unit: {
         findMany: vi.fn(),
       },
+      food: {
+        findMany: vi.fn(),
+      },
     },
   };
 });
@@ -70,6 +73,7 @@ beforeEach(() => {
     { unitAbbr: 'ML', unitName: 'Milliliters' },
     { unitAbbr: 'OZ', unitName: 'Ounces' },
   ]);
+  mocks.prisma.food.findMany.mockResolvedValue([]);
 });
 
 describe('hooks reference route', () => {
@@ -127,6 +131,31 @@ describe('hooks reference route', () => {
       expect(payload.data).toHaveProperty('sleepQualities');
       expect(payload.data).toHaveProperty('bathTypes');
       expect(payload.data).toHaveProperty('units');
+      expect(payload.data).toHaveProperty('foods');
+      expect(payload.data).toHaveProperty('foodEnjoyments');
+    });
+  });
+
+  describe('food reference types (#284)', () => {
+    it("lists the family's non-deleted food catalog, scoped by the API key's family", async () => {
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-1', name: 'Banana', commonAllergen: false, notes: null }]);
+
+      const response = await GET(getRequest('?type=foods') as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(payload.data).toEqual({ foods: [{ id: 'food-1', name: 'Banana', commonAllergen: false, notes: null }] });
+      expect(mocks.prisma.food.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { familyId: 'family-1', deletedAt: null },
+        orderBy: { name: 'asc' },
+      }));
+    });
+
+    it('returns the enjoyment values accepted by POST type food', async () => {
+      const response = await GET(getRequest('?type=food-enjoyments') as any, routeContext);
+      const payload = await json(response);
+
+      expect(payload.data).toEqual({ foodEnjoyments: ['HATED', 'DISLIKED', 'NEUTRAL', 'LIKED', 'LOVED'] });
     });
   });
 

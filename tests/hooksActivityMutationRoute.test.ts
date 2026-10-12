@@ -23,6 +23,14 @@ const mocks = vi.hoisted(() => {
       unit: {
         findMany: vi.fn(),
       },
+      food: {
+        findMany: vi.fn(),
+        create: vi.fn(),
+      },
+      settings: {
+        findFirst: vi.fn(),
+      },
+      foodLog: delegate(),
       sleepLog: delegate(),
       feedLog: delegate(),
       diaperLog: delegate(),
@@ -70,6 +78,7 @@ function resetDelegates() {
     mocks.prisma.bathLog,
     mocks.prisma.measurement,
     mocks.prisma.medicineLog,
+    mocks.prisma.foodLog,
   ]) {
     delegate.findFirst.mockReset();
     delegate.update.mockReset();
@@ -94,6 +103,10 @@ beforeEach(() => {
   mocks.prisma.unit.findMany.mockResolvedValue([
     { unitAbbr: 'OZ' }, { unitAbbr: 'ML' }, { unitAbbr: 'LB' }, { unitAbbr: 'KG' }, { unitAbbr: 'G' }, { unitAbbr: 'TBSP' },
   ]);
+  mocks.prisma.food.findMany.mockReset();
+  mocks.prisma.food.create.mockReset();
+  mocks.prisma.food.findMany.mockResolvedValue([]);
+  mocks.prisma.settings.findFirst.mockResolvedValue({ defaultSolidsUnit: 'G' });
 });
 
 describe('hooks activity mutation route', () => {
@@ -447,6 +460,126 @@ describe('hooks activity mutation route', () => {
 
       expect(response.status).toBe(400);
       expect(mocks.prisma.medicineLog.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('food activities', () => {
+    const existingFood = { id: 'activity-1', babyId: 'baby-1', time: new Date('2026-07-18T10:00:00Z'), amount: 2, unitAbbr: 'TBSP' };
+    const updatedRow = { ...existingFood, foodId: 'food-1', foods: JSON.stringify([{ foodId: 'food-1' }]), enjoyment: 'LIKED', hadReaction: false, reactionDescription: null, notes: null };
+
+    it('looks the food log up scoped to the family and baby, excluding deleted rows', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+      mocks.prisma.foodLog.update.mockResolvedValue(updatedRow);
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-1', name: 'Banana', commonAllergen: false }]);
+
+      const response = await PUT(request('PUT', { type: 'food', enjoyment: 'liked' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.foodLog.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'activity-1', babyId: 'baby-1', familyId: 'family-1', deletedAt: null },
+      }));
+      expect(mocks.prisma.foodLog.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'activity-1' }, data: { enjoyment: 'LIKED' } }));
+      expect(payload.data).toMatchObject({
+        activityType: 'food',
+        status: 'updated',
+        details: { foods: [{ foodId: 'food-1', name: 'Banana' }], enjoyment: 'LIKED', amount: 2, unitAbbr: 'TBSP' },
+      });
+    });
+
+    it('replaces the foods, creating unknown names in the family catalog, via the app dual-write fields', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+      mocks.prisma.foodLog.update.mockResolvedValue(updatedRow);
+      mocks.prisma.food.findMany.mockResolvedValueOnce([{ id: 'food-1', name: 'Banana' }]);
+      mocks.prisma.food.create.mockResolvedValue({ id: 'food-new', name: 'Kiwi' });
+
+      const response = await PUT(request('PUT', { type: 'food', foods: ['banana', { name: 'Kiwi', hadReaction: true, reactionDescription: 'rash' }] }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.food.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({ where: { familyId: 'family-1', deletedAt: null } }));
+      expect(mocks.prisma.food.create).toHaveBeenCalledWith({ data: { name: 'Kiwi', commonAllergen: false, notes: null, familyId: 'family-1' } });
+      expect(mocks.prisma.foodLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: {
+          foodId: null,
+          foods: JSON.stringify([{ foodId: 'food-1' }, { foodId: 'food-new', hadReaction: true, reactionDescription: 'rash' }]),
+          hadReaction: true,
+          reactionDescription: 'rash',
+        },
+      }));
+    });
+
+    it('rejects a catalog foodId from another family without creating anything', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+
+      const response = await PUT(request('PUT', { type: 'food', foodId: 'other-family-food' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(404);
+      expect(payload.error.code).toBe('ACTIVITY_NOT_FOUND');
+      expect(mocks.prisma.foodLog.update).not.toHaveBeenCalled();
+    });
+
+    it('clears the unit together with the amount', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+      mocks.prisma.foodLog.update.mockResolvedValue({ ...updatedRow, amount: null, unitAbbr: null });
+
+      await PUT(request('PUT', { type: 'food', amount: null }) as any, routeContext);
+
+      expect(mocks.prisma.foodLog.update).toHaveBeenCalledWith(expect.objectContaining({ data: { amount: null, unitAbbr: null } }));
+    });
+
+    it('applies the family default unit when an amount is added to a log without one', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue({ ...existingFood, amount: null, unitAbbr: null });
+      mocks.prisma.foodLog.update.mockResolvedValue(updatedRow);
+
+      await PUT(request('PUT', { type: 'food', amount: 3 }) as any, routeContext);
+
+      expect(mocks.prisma.settings.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { familyId: 'family-1' } }));
+      expect(mocks.prisma.foodLog.update).toHaveBeenCalledWith(expect.objectContaining({ data: { amount: 3, unitAbbr: 'G' } }));
+    });
+
+    it('rejects a unit on a log without an amount', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue({ ...existingFood, amount: null, unitAbbr: null });
+
+      const response = await PUT(request('PUT', { type: 'food', unitAbbr: 'tbsp' }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toBe('unitAbbr requires an amount');
+      expect(mocks.prisma.foodLog.update).not.toHaveBeenCalled();
+    });
+
+    it('returns not found for a food log outside the family/baby scope', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(null);
+
+      const response = await PUT(request('PUT', { type: 'food', notes: 'x' }) as any, routeContext);
+
+      expect(response.status).toBe(404);
+      expect(mocks.prisma.foodLog.update).not.toHaveBeenCalled();
+    });
+
+    it('soft-deletes a food log, like the app', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+      mocks.prisma.foodLog.update.mockResolvedValue({});
+
+      const response = await DELETE(request('DELETE', undefined, '?type=food') as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(payload.data).toMatchObject({ activityType: 'food', id: 'activity-1', status: 'deleted' });
+      expect(mocks.prisma.foodLog.update).toHaveBeenCalledWith({ where: { id: 'activity-1' }, data: { deletedAt: expect.any(Date) } });
+      expect(mocks.prisma.foodLog.delete).not.toHaveBeenCalled();
+    });
+
+    it('finds a food log when DELETE omits the type', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+      mocks.prisma.foodLog.update.mockResolvedValue({});
+
+      const response = await DELETE(request('DELETE') as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(payload.data.activityType).toBe('food');
     });
   });
 });

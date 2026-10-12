@@ -6,17 +6,19 @@ import { hookSuccess, hookError } from '../../../response';
 import { BATH_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, SLEEP_QUALITIES } from '../../../field-values';
 import { DEFAULT_SLEEP_LOCATIONS } from '@/src/constants/sleepLocations';
 import { applyLocationOrder } from '@/src/utils/sleepLocationUtils';
+import { FOOD_ENJOYMENT_VALUES } from '@/src/utils/foodLogUtils';
 
 const VALID_TYPES = [
   'medicines', 'supplements', 'sleep-locations', 'play-categories', 'feed-types',
   'diaper-conditions', 'diaper-colors', 'sleep-qualities', 'bath-types', 'units',
+  'foods', 'food-enjoyments',
 ] as const;
 type RefType = typeof VALID_TYPES[number];
 
 const FEED_TYPES = [
   { value: 'BREAST', description: 'Breastfeeding' },
   { value: 'BOTTLE', description: 'Bottle (specify bottleType separately)' },
-  { value: 'SOLIDS', description: 'Solid food' },
+  { value: 'SOLIDS', description: 'Solid food (legacy; prefer activity type "food")' },
   { value: 'formula', description: 'Formula bottle (auto-sets BOTTLE + formula)' },
   { value: 'breast milk', description: 'Pumped breast milk bottle' },
   { value: 'milk', description: 'Milk bottle' },
@@ -88,6 +90,15 @@ async function getSleepLocations(babyId: string, familyId: string) {
   ).map((s) => s.name);
 }
 
+// The family's food catalog (what POST type "food" matches foodName against)
+async function getFoods(familyId: string) {
+  return prisma.food.findMany({
+    where: { familyId, deletedAt: null },
+    select: { id: true, name: true, commonAllergen: true, notes: true },
+    orderBy: { name: 'asc' },
+  });
+}
+
 async function getUnits() {
   return prisma.unit.findMany({
     select: { unitAbbr: true, unitName: true },
@@ -155,6 +166,12 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   }
   if (!typeParam || typeParam === 'units') {
     data.units = await getUnits();
+  }
+  if (!typeParam || typeParam === 'foods') {
+    data.foods = await getFoods(ctx.familyId);
+  }
+  if (!typeParam || typeParam === 'food-enjoyments') {
+    data.foodEnjoyments = FOOD_ENJOYMENT_VALUES;
   }
 
   return hookSuccess(data, { familyId: ctx.familyId, babyId }, rl.headers);

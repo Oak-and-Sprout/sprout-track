@@ -32,6 +32,14 @@ const mocks = vi.hoisted(() => {
       activeBreastFeed: {
         findUnique: vi.fn(),
       },
+      food: {
+        findMany: vi.fn(),
+        create: vi.fn(),
+      },
+      settings: {
+        findFirst: vi.fn(),
+      },
+      foodLog: delegate(),
       sleepLog: delegate(),
       feedLog: delegate(),
       diaperLog: delegate(),
@@ -93,6 +101,7 @@ function resetDelegates() {
     mocks.prisma.bathLog,
     mocks.prisma.measurement,
     mocks.prisma.medicineLog,
+    mocks.prisma.foodLog,
   ]) {
     delegate.findFirst.mockReset();
     delegate.findMany.mockReset();
@@ -122,6 +131,10 @@ beforeEach(() => {
   mocks.prisma.unit.findMany.mockResolvedValue([
     { unitAbbr: 'OZ' }, { unitAbbr: 'ML' }, { unitAbbr: 'LB' }, { unitAbbr: 'KG' }, { unitAbbr: 'G' }, { unitAbbr: 'TBSP' },
   ]);
+  mocks.prisma.food.findMany.mockReset();
+  mocks.prisma.food.create.mockReset();
+  mocks.prisma.food.findMany.mockResolvedValue([]);
+  mocks.prisma.settings.findFirst.mockResolvedValue({ defaultSolidsUnit: 'G' });
 });
 
 describe('hooks activities POST route', () => {
@@ -898,6 +911,171 @@ describe('hooks activities POST route', () => {
       expect(mocks.prisma.sleepLog.update).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ notes: 'fussy before nap' }),
       }));
+    });
+  });
+
+  describe('11. food activity type (#284)', () => {
+    const foodTime = new Date('2026-07-20T12:00:00Z');
+
+    function mockCreatedFoodLog() {
+      mocks.prisma.foodLog.create.mockImplementation(async ({ data }: any) => ({ id: 'food-log-1', ...data }));
+    }
+
+    it('creates a food log for an existing catalog food matched by name, mirroring the app write', async () => {
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-banana', name: 'Banana', commonAllergen: false }]);
+      mockCreatedFoodLog();
+
+      const response = await POST(postRequest({
+        type: 'food', foodName: 'banana', amount: 2, unitAbbr: 'tbsp', enjoyment: 'loved', notes: ' first try ', time: foodTime.toISOString(),
+      }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.food.findMany).toHaveBeenNthCalledWith(1, expect.objectContaining({ where: { familyId: 'family-1', deletedAt: null } }));
+      expect(mocks.prisma.food.create).not.toHaveBeenCalled();
+      expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({
+        data: {
+          time: foodTime,
+          foodId: 'food-banana',
+          foods: JSON.stringify([{ foodId: 'food-banana' }]),
+          hadReaction: false,
+          reactionDescription: null,
+          amount: 2,
+          unitAbbr: 'TBSP',
+          enjoyment: 'LOVED',
+          notes: 'first try',
+          babyId: 'baby-1',
+          caretakerId: null,
+          familyId: 'family-1',
+        },
+      });
+      expect(payload.data).toEqual({
+        activityType: 'food',
+        id: 'food-log-1',
+        time: foodTime.toISOString(),
+        details: {
+          foods: [{ foodId: 'food-banana', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null }],
+          amount: 2,
+          unitAbbr: 'TBSP',
+          enjoyment: 'LOVED',
+          hadReaction: false,
+          reactionDescription: null,
+          notes: 'first try',
+        },
+      });
+    });
+
+    it('creates unknown foods in the family catalog for a multi-food meal', async () => {
+      mocks.prisma.food.findMany.mockResolvedValueOnce([{ id: 'food-egg', name: 'Egg' }]);
+      mocks.prisma.food.create.mockResolvedValue({ id: 'food-new', name: 'Peanut Butter' });
+      mockCreatedFoodLog();
+
+      const response = await POST(postRequest({
+        type: 'food', foods: ['EGG', { name: 'peanut  butter', hadReaction: true, reactionDescription: 'hives' }],
+      }) as any, routeContext);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.food.create).toHaveBeenCalledWith({ data: { name: 'peanut butter', commonAllergen: false, notes: null, familyId: 'family-1' } });
+      expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          foodId: null,
+          foods: JSON.stringify([{ foodId: 'food-egg' }, { foodId: 'food-new', hadReaction: true, reactionDescription: 'hives' }]),
+          hadReaction: true,
+          reactionDescription: 'hives',
+          amount: null,
+          unitAbbr: null,
+          familyId: 'family-1',
+        }),
+      });
+    });
+
+    it('uses the family default solids unit when an amount has no unit', async () => {
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-egg', name: 'Egg' }]);
+      mockCreatedFoodLog();
+
+      await POST(postRequest({ type: 'food', foodId: 'food-egg', amount: 10 }) as any, routeContext);
+
+      expect(mocks.prisma.settings.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { familyId: 'family-1' } }));
+      expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 10, unitAbbr: 'G' }) });
+    });
+
+    it('rejects a catalog foodId outside the family without writing anything', async () => {
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-egg', name: 'Egg' }]);
+
+      const response = await POST(postRequest({ type: 'food', foods: ['Kiwi', { foodId: 'food-other-family' }] }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(404);
+      expect(payload.error.code).toBe('FOOD_NOT_FOUND');
+      expect(mocks.prisma.food.create).not.toHaveBeenCalled();
+      expect(mocks.prisma.foodLog.create).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [{ type: 'food' }, 'FOOD_REQUIRED'],
+      [{ type: 'food', foodName: 'Egg', reactionCause: 'egg' }, 'INVALID_FIELD'],
+      [{ type: 'food', foodName: 'Egg', reactionDescription: 'rash' }, 'INVALID_FOOD'],
+      [{ type: 'food', foodName: 'Egg', amount: 0 }, 'INVALID_AMOUNT'],
+      [{ type: 'food', foodName: 'Egg', enjoyment: 'meh' }, 'INVALID_ENJOYMENT'],
+      [{ type: 'food', foodName: 'Egg', unitAbbr: 'TBSP' }, 'INVALID_UNIT'],
+      [{ type: 'food', foodName: 'Egg', amount: 1, unitAbbr: 'cups' }, 'INVALID_UNIT'],
+      [{ type: 'food', foodName: 'Egg', notes: 5 }, 'INVALID_NOTES'],
+    ])('rejects %j with %s before creating catalog foods', async (body, code) => {
+      const response = await POST(postRequest(body) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe(code);
+      expect(mocks.prisma.food.create).not.toHaveBeenCalled();
+      expect(mocks.prisma.foodLog.create).not.toHaveBeenCalled();
+    });
+
+    it('lists food logs on GET ?type=food scoped to the family and baby, excluding deleted rows', async () => {
+      mocks.prisma.foodLog.findMany.mockResolvedValue([{
+        id: 'food-log-2', time: foodTime, foodId: null, foods: JSON.stringify([{ foodId: 'food-1' }, { foodId: 'food-2' }]),
+        amount: 1, unitAbbr: 'TBSP', enjoyment: 'LIKED', hadReaction: false, reactionDescription: null, notes: null, caretaker: { name: 'Mom' },
+      }]);
+      mocks.prisma.food.findMany.mockResolvedValue([
+        { id: 'food-1', name: 'Banana', commonAllergen: false },
+        { id: 'food-2', name: 'Peanut', commonAllergen: true },
+      ]);
+
+      const response = await GET(getRequest('?type=food') as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.foodLog.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ babyId: 'baby-1', familyId: 'family-1', deletedAt: null }),
+      }));
+      expect(mocks.prisma.food.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: { in: ['food-1', 'food-2'] }, familyId: 'family-1' },
+      }));
+      expect(payload.data.activities).toEqual([{
+        activityType: 'food',
+        id: 'food-log-2',
+        time: foodTime.toISOString(),
+        details: {
+          foods: [
+            { foodId: 'food-1', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null },
+            { foodId: 'food-2', name: 'Peanut', commonAllergen: true, hadReaction: false, reactionDescription: null },
+          ],
+          amount: 1,
+          unitAbbr: 'TBSP',
+          enjoyment: 'LIKED',
+          hadReaction: false,
+          reactionDescription: null,
+          notes: null,
+        },
+        caretakerName: 'Mom',
+      }]);
+    });
+
+    it('rejects an unknown GET type filter, listing food among the valid types', async () => {
+      const response = await GET(getRequest('?type=foods') as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('supplement, food');
     });
   });
 });

@@ -238,7 +238,7 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 |----------|---------|
 | `GET /api/hooks/v1/babies/` | List babies |
 | `GET /api/hooks/v1/babies/[babyId]/activities/` | Recent activities |
-| `POST /api/hooks/v1/babies/[babyId]/activities/` | Log a new activity (all ten types, plus feed/sleep/pump timer actions) |
+| `POST /api/hooks/v1/babies/[babyId]/activities/` | Log a new activity (all eleven types, including `food`, plus feed/sleep/pump timer actions) |
 | `PUT /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Edit an existing activity |
 | `DELETE /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Delete an existing activity |
 | `GET /api/hooks/v1/babies/[babyId]/measurements/latest/` | Latest measurements |
@@ -290,6 +290,7 @@ Logs request method, path, status code, response time, IP/user agent, and reques
 - `app/api/utils/with-logging.ts` — Request logging wrapper
 - `app/api/hooks/v1/` — External webhook API routes
 - `app/api/hooks/v1/field-values.ts` — Canonical enum-like field values + case-insensitive normalization for the webhook API
+- `app/api/hooks/v1/food.ts` — `food` activity type: parses foods, find-or-creates catalog foods by name, and writes FoodLogs through the same `foodLogUtils` helpers as `/api/food-log`
 - `app/api/utils/family-scope.ts` — `resolveFamilyScope()`: a client-sent familyId may only confirm the auth context's family, never override it (sysadmin excepted)
 - `app/api/utils/setup-token-scope.ts` — `setupTokenMayTarget()`: unbound setup tokens may bind a family only via `/api/setup/start`
 - `app/api/utils/analytics.ts` / `app/api/utils/short-links.ts` — `analyticsSaasGate()` / `shortLinkSaasGate()`: SaaS 404 gate for the analytics and short-link routes

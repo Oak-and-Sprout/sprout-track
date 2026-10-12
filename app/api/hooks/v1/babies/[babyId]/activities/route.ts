@@ -6,8 +6,10 @@ import { hookSuccess, hookError } from '../../../response';
 import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession } from '../../../../../utils/activeBreastFeed';
 import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, PUMP_ACTIONS, SLEEP_QUALITIES, normalizeEnumValue } from '../../../field-values';
+import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, parseEnjoyment, parseFoodAmount, parseFoodItemInputs, planFoodUnit, resolveFoodItems } from '../../../food';
+import { buildFoodLogFoodFields } from '@/src/utils/foodLogUtils';
 
-const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
+const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement', 'food'] as const;
 type ActivityType = typeof VALID_TYPES[number];
 
 // Fields each POST handler actually consumes, plus the shared fields
@@ -25,6 +27,7 @@ const TYPE_FIELDS: Record<ActivityType, readonly string[]> = {
   measurement: ['type', 'time', 'caretakerName', 'measurementType', 'value', 'unit'],
   medicine: ['type', 'time', 'caretakerName', 'medicineName', 'amount', 'unitAbbr', 'notes'],
   supplement: ['type', 'time', 'caretakerName', 'supplementName', 'medicineName', 'amount', 'unitAbbr', 'notes'],
+  food: ['type', 'time', 'caretakerName', ...FOOD_FIELDS],
 };
 
 function rejectUnknownFields(type: ActivityType, body: Record<string, unknown>): string | null {
@@ -338,6 +341,26 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
           id: r.id,
           time: r.startTime.toISOString(),
           details: { type: r.type, startTime: r.startTime.toISOString(), endTime: r.endTime?.toISOString() || null, duration: r.duration, notes: r.notes },
+          caretakerName: r.caretaker?.name || null,
+        }));
+      })
+    );
+  }
+
+  if (types.includes('food')) {
+    queries.push(
+      prisma.foodLog.findMany({
+        where: { babyId, familyId: ctx.familyId, deletedAt: null, time: { gte: since } },
+        orderBy: { time: 'desc' },
+        take: limit,
+        include: { caretaker: { select: { name: true } } },
+      }).then(async (rows) => {
+        const catalog = await loadFoodCatalog(ctx.familyId, rows);
+        rows.forEach((r) => activities.push({
+          activityType: 'food',
+          id: r.id,
+          time: r.time.toISOString(),
+          details: formatFoodDetails(r, catalog),
           caretakerName: r.caretaker?.name || null,
         }));
       })
@@ -813,6 +836,44 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         });
         notifyActivityCreated(babyId, 'play', { caretakerId }, { type: playType, activities }).catch(console.error);
         return hookSuccess({ activityType: 'play', id: result.id, time: result.startTime.toISOString(), details: { type: playType, duration: playDuration } }, { familyId, babyId }, rl.headers);
+      }
+
+      case 'food': {
+        // Mirrors the app's meal form + /api/food-log so webhook food logs are
+        // indistinguishable from app-created ones (see ../../../food.ts).
+        const { notes } = body;
+        const parsedFoods = parseFoodItemInputs(body);
+        if (parsedFoods.error) return hookError('INVALID_FOOD', parsedFoods.error, 400, rl.headers);
+        if (!parsedFoods.items) return hookError('FOOD_REQUIRED', 'foodName, foodId, or foods[] is required for food type', 400, rl.headers);
+        const foodAmount = parseFoodAmount(body.amount);
+        if (foodAmount.error) return hookError('INVALID_AMOUNT', foodAmount.error, 400, rl.headers);
+        const enjoyment = parseEnjoyment(body.enjoyment);
+        if (enjoyment.error) return hookError('INVALID_ENJOYMENT', enjoyment.error, 400, rl.headers);
+        const foodNotesCheck = requireStringIfPresent(notes, 'notes');
+        if (foodNotesCheck.error) return hookError('INVALID_NOTES', foodNotesCheck.error, 400, rl.headers);
+        const foodUnitResult = await resolveUnitAbbr(body.unitAbbr);
+        if (foodUnitResult.error) return hookError('INVALID_UNIT', foodUnitResult.error, 400, rl.headers);
+        const unitPlan = planFoodUnit(foodAmount.value, foodUnitResult.value);
+        if (unitPlan.error) return hookError('INVALID_UNIT', unitPlan.error, 400, rl.headers);
+        // Catalog foods are created only after every other field validated
+        const resolvedFoods = await resolveFoodItems(parsedFoods.items, familyId);
+        if (resolvedFoods.error) return hookError('FOOD_NOT_FOUND', resolvedFoods.error, 404, rl.headers);
+
+        result = await prisma.foodLog.create({
+          data: {
+            time,
+            ...buildFoodLogFoodFields(resolvedFoods.items!),
+            amount: foodAmount.value ?? null,
+            unitAbbr: unitPlan.useDefault ? await getDefaultSolidsUnit(familyId) : unitPlan.unitAbbr ?? null,
+            enjoyment: enjoyment.value ?? null,
+            notes: notes && notes.trim() ? notes.trim() : null,
+            babyId,
+            caretakerId,
+            familyId,
+          },
+        });
+        const foodCatalog = await loadFoodCatalog(familyId, [result]);
+        return hookSuccess({ activityType: 'food', id: result.id, time: result.time.toISOString(), details: formatFoodDetails(result, foodCatalog) }, { familyId, babyId }, rl.headers);
       }
 
       default:
