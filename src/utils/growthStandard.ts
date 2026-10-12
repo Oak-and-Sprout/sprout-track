@@ -20,17 +20,22 @@ export function calculateGrowthAgeMonths(
   const target = targetDateInput instanceof Date ? targetDateInput : new Date(targetDateInput);
   if (Number.isNaN(birth.getTime()) || Number.isNaN(target.getTime())) return 0;
 
-  const years = target.getUTCFullYear() - birth.getUTCFullYear();
-  const months = target.getUTCMonth() - birth.getUTCMonth();
-  const days = target.getUTCDate() - birth.getUTCDate();
+  // Month-anniversary n of the birth date, clamped to the month's last day
+  // (a 31st birthday's February anniversary is the 28th/29th).
+  const anniversary = (n: number) => {
+    const month = birth.getUTCMonth() + n;
+    const lastDay = new Date(Date.UTC(birth.getUTCFullYear(), month + 1, 0)).getUTCDate();
+    return Date.UTC(birth.getUTCFullYear(), month, Math.min(birth.getUTCDate(), lastDay));
+  };
+  const targetDay = Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate());
 
-  let totalMonths = years * 12 + months;
-  if (days < 0) totalMonths -= 1;
+  let totalMonths =
+    (target.getUTCFullYear() - birth.getUTCFullYear()) * 12 +
+    target.getUTCMonth() - birth.getUTCMonth();
+  if (targetDay < anniversary(totalMonths)) totalMonths -= 1;
 
-  const daysInTargetMonth = new Date(
-    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
-  ).getUTCDate();
-  const dayFraction = (days >= 0 ? days : daysInTargetMonth + days) / daysInTargetMonth;
+  const start = anniversary(totalMonths);
+  const dayFraction = (targetDay - start) / (anniversary(totalMonths + 1) - start);
 
   return Math.max(0, totalMonths + dayFraction);
 }

@@ -18,6 +18,25 @@ describe('calculateGrowthAgeMonths', () => {
     expect(calculateGrowthAgeMonths(birth, new Date('2026-01-15T00:00:00.000Z'))).toBe(24);
     expect(calculateGrowthAgeMonths(birth, new Date('2026-01-16T00:00:00.000Z'))).toBeGreaterThan(24);
   });
+
+  it('does not drop back below a month boundary early in a short month', () => {
+    const birth = new Date('2024-01-31T00:00:00.000Z');
+    expect(calculateGrowthAgeMonths(birth, new Date('2026-01-31T00:00:00.000Z'))).toBe(24);
+    expect(calculateGrowthAgeMonths(birth, new Date('2026-02-01T00:00:00.000Z'))).toBeGreaterThan(24);
+  });
+
+  it('never decreases day over day for end-of-month birthdays', () => {
+    for (const birthIso of ['2024-01-31', '2024-03-31', '2024-01-30', '2024-02-29']) {
+      const birth = new Date(`${birthIso}T00:00:00.000Z`);
+      let prev = -1;
+      for (let d = 0; d < 800; d++) {
+        const target = new Date(birth.getTime() + d * 86_400_000);
+        const age = calculateGrowthAgeMonths(birth, target);
+        expect(age, `${birthIso} -> ${target.toISOString().slice(0, 10)}`).toBeGreaterThan(prev);
+        prev = age;
+      }
+    }
+  });
 });
 
 describe('isValidGrowthStandard', () => {

@@ -24,7 +24,6 @@ import {
 import {
   calculateZScore,
   zScoreToPercentile,
-  ageInMonths,
   ageInMonthsAndDays,
   getTrend,
   getMonthRange,
