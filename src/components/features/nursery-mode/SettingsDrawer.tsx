@@ -68,6 +68,7 @@ const ACT_ROWS: { id: keyof NurserySettings['acts']; icon: IconName; label: stri
 const TIMER_ROWS: { id: keyof NurserySettings['timers']; icon: IconName; label: string }[] = [
   { id: 'wake', icon: 'sun', label: 'Awake Time' },
   { id: 'feed', icon: 'bottle', label: 'Time since last feed' },
+  { id: 'diaper', icon: 'diaper', label: 'Time since last diaper' },
 ];
 
 /** Flat gray thumb-drag track used by most contextual sliders (nursery.jsx:566 etc). */

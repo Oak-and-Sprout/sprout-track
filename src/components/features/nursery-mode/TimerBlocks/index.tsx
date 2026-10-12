@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useLocalization } from '@/src/context/localization';
 import { formatDurationLabel } from '@/src/utils/latestStatus';
-import { feedTimer, splitDuration, wakeTimer } from '@/src/utils/nursery/timerBlocks';
+import { diaperTimer, feedTimer, SinceTimer, splitDuration, wakeTimer } from '@/src/utils/nursery/timerBlocks';
+import type { IconName } from '../icons';
 import { Badge } from '../activities/Badge';
 import { timerBlockVariants, timerBlocksStyles as styles } from './timer-blocks.styles';
 import { TimerBlockProps, TimerBlocksProps } from './timer-blocks.types';
@@ -38,7 +39,7 @@ export function TimerBlock({ icon, label, tone, minutes, text, note, badge, aria
   return (
     <div role="timer" aria-label={ariaLabel} className={timerBlockVariants({ tone })}>
       <div className={styles.head} aria-hidden="true">
-        <Badge icon={icon} shape={iconShape} ifg={iconColor} size={30} pad={17} />
+        <Badge icon={icon} shape={iconShape} ifg={iconColor} size={24} pad={14} />
         <span className="truncate">{label}</span>
       </div>
       <div className={styles.value} aria-hidden="true">
@@ -55,40 +56,46 @@ export function TimerBlock({ icon, label, tone, minutes, text, note, badge, aria
   );
 }
 
-/** Awake/asleep and time-since-last-feed blocks for Nursery Mode (issue #219). */
-export function TimerBlocks({ status, baby, feeding, showWake, showFeed, iconColor, iconShape }: TimerBlocksProps) {
+/** Awake/asleep, time-since-last-feed and time-since-last-diaper blocks for Nursery Mode (issue #219). */
+export function TimerBlocks({ status, baby, feeding, showWake, showFeed, showDiaper, iconColor, iconShape }: TimerBlocksProps) {
   const { t } = useLocalization();
   const now = useNow();
-  if (!status || (!showWake && !showFeed)) return null;
+  if (!status || (!showWake && !showFeed && !showDiaper)) return null;
 
   const wake = wakeTimer(status, now);
   const feed = feedTimer(status, baby, now, feeding);
   const shared = { iconColor, iconShape };
 
-  const wakeLabel = wake.kind === 'sleeping' ? t('Sleeping') : wake.kind === 'awake' ? t('Awake') : t('Awake Time');
-  const feedLabel = t('Since last feed');
+  // Short visible labels keep three blocks on one phone row; the aria-label carries the full text.
+  const wakeLabel = wake.kind === 'sleeping' ? t('Sleeping') : t('Awake');
+  const wakeAria = wake.kind === 'none' ? t('Awake Time') : wakeLabel;
+
+  /** A "time since" block (feed or diaper): duration with the Overdue warning, or the empty state. */
+  const since = (timer: SinceTimer, icon: IconName, label: string, fullLabel: string, emptyNote: string) =>
+    timer.kind === 'since' ? (
+      <TimerBlock {...shared} icon={icon} label={label} tone={timer.warning ? 'warning' : 'normal'}
+        minutes={timer.minutes} badge={timer.warning ? t('Overdue') : undefined}
+        ariaLabel={[fullLabel, formatDurationLabel(timer.minutes, t), timer.warning ? t('Overdue') : ''].filter(Boolean).join(', ')} />
+    ) : (
+      <TimerBlock {...shared} icon={icon} label={label} tone="empty" minutes={null}
+        note={emptyNote} ariaLabel={`${fullLabel}, ${emptyNote}`} />
+    );
 
   return (
     <div className={styles.row}>
       {showWake && (wake.kind === 'none' ? (
         <TimerBlock {...shared} icon="sun" label={wakeLabel} tone="empty" minutes={null}
-          note={t('No recent sleep')} ariaLabel={`${wakeLabel}, ${t('No recent sleep')}`} />
+          note={t('No recent sleep')} ariaLabel={`${wakeAria}, ${t('No recent sleep')}`} />
       ) : (
         <TimerBlock {...shared} icon={wake.kind === 'sleeping' ? 'moon' : 'sun'} label={wakeLabel}
           tone={wake.kind === 'sleeping' ? 'sleeping' : 'normal'} minutes={wake.minutes}
-          ariaLabel={`${wakeLabel}, ${formatDurationLabel(wake.minutes, t)}`} />
+          ariaLabel={`${wakeAria}, ${formatDurationLabel(wake.minutes, t)}`} />
       ))}
-      {showFeed && (feed.kind === 'since' ? (
-        <TimerBlock {...shared} icon="bottle" label={feedLabel} tone={feed.warning ? 'warning' : 'normal'}
-          minutes={feed.minutes} badge={feed.warning ? t('Overdue') : undefined}
-          ariaLabel={[feedLabel, formatDurationLabel(feed.minutes, t), feed.warning ? t('Overdue') : ''].filter(Boolean).join(', ')} />
-      ) : feed.kind === 'feeding' ? (
-        <TimerBlock {...shared} icon="bottle" label={feedLabel} tone="normal" minutes={null}
+      {showFeed && (feed.kind === 'feeding' ? (
+        <TimerBlock {...shared} icon="bottle" label={t('Feed')} tone="normal" minutes={null}
           text={t('Feeding')} ariaLabel={t('Feeding')} />
-      ) : (
-        <TimerBlock {...shared} icon="bottle" label={feedLabel} tone="empty" minutes={null}
-          note={t('No recent feed')} ariaLabel={`${feedLabel}, ${t('No recent feed')}`} />
-      ))}
+      ) : since(feed, 'bottle', t('Feed'), t('Since last feed'), t('No recent feed')))}
+      {showDiaper && since(diaperTimer(status, baby, now), 'diaper', t('Diaper'), t('Since last diaper'), t('No recent diaper'))}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { LatestStatusData } from '@/src/components/Timeline/types';
-import type { FeedTimerBaby } from '@/src/utils/nursery/timerBlocks';
+import type { DiaperTimerBaby, FeedTimerBaby } from '@/src/utils/nursery/timerBlocks';
 import type { IconName } from '../icons';
 
 export type TimerTone = 'normal' | 'sleeping' | 'warning' | 'empty';
@@ -7,12 +7,13 @@ export type TimerTone = 'normal' | 'sleeping' | 'warning' | 'empty';
 export interface TimerBlocksProps {
   /** Latest feed/sleep status from computeLatestStatus; null while the first poll is in flight. */
   readonly status: LatestStatusData | null;
-  /** The selected baby's feed timer settings (feedTimerFrom, feedWarningTime). */
-  readonly baby: FeedTimerBaby;
+  /** The selected baby's timer settings (feedTimerFrom, feedWarningTime, diaperWarningTime). */
+  readonly baby: FeedTimerBaby & DiaperTimerBaby;
   /** A breastfeed session is running (shows "Feeding" instead of a duration). */
   readonly feeding: boolean;
   readonly showWake: boolean;
   readonly showFeed: boolean;
+  readonly showDiaper: boolean;
   readonly iconColor: string;
   readonly iconShape: 'circle' | 'square';
 }

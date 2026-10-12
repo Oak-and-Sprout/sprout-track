@@ -10,7 +10,7 @@ export interface NurserySettings {
   iconShape: 'circle' | 'square'; iconColor: string | null;
   acts: { feed: boolean; pump: boolean; diaper: boolean; sleep: boolean; food: boolean };
   /** Glanceable timer blocks above the activity area (issue #219). */
-  timers: { wake: boolean; feed: boolean };
+  timers: { wake: boolean; feed: boolean; diaper: boolean };
   ambient: {
     pattern: string; auroraRange: number; waveMotion: number; rock: number;
     bubbles: { count: number; min: number; max: number };
@@ -115,7 +115,7 @@ export const NURSERY_DEFAULTS: NurserySettings = {
   iconShape: 'square',
   iconColor: null,
   acts: { feed: true, pump: true, diaper: true, sleep: true, food: false },
-  timers: { wake: true, feed: true },
+  timers: { wake: true, feed: true, diaper: true },
   ambient: {
     pattern: 'aurora',
     auroraRange: 50,
@@ -308,6 +308,7 @@ export function normalizeNurserySettings(raw: unknown): NurserySettings {
     timers: {
       wake: boolOrDefault(rawTimers.wake, NURSERY_DEFAULTS.timers.wake),
       feed: boolOrDefault(rawTimers.feed, NURSERY_DEFAULTS.timers.feed),
+      diaper: boolOrDefault(rawTimers.diaper, NURSERY_DEFAULTS.timers.diaper),
     },
     ambient: {
       pattern: normalizeAmbientPattern(rawAmbient.pattern),

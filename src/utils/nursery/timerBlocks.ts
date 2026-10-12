@@ -1,6 +1,6 @@
 /**
  * Nursery Mode timer blocks (issue #219): view models for the "awake for" /
- * "sleeping for" and "since last feed" blocks. Inputs come from
+ * "sleeping for", "since last feed" and "since last diaper" blocks. Inputs come from
  * computeLatestStatus, and the rules (24 h cutoff, feedTimerFrom, warning
  * threshold) match the log-entry page's status bubbles.
  */
@@ -11,14 +11,19 @@ export type WakeTimer =
   | { kind: 'awake' | 'sleeping'; minutes: number }
   | { kind: 'none' };
 
-export type FeedTimer =
+export type SinceTimer =
   | { kind: 'since'; minutes: number; warning: boolean }
-  | { kind: 'feeding' }
   | { kind: 'none' };
+
+export type FeedTimer = SinceTimer | { kind: 'feeding' };
 
 export interface FeedTimerBaby {
   feedTimerFrom?: string | null;
   feedWarningTime?: string | null;
+}
+
+export interface DiaperTimerBaby {
+  diaperWarningTime?: string | null;
 }
 
 /** Minutes since `from`, or null when 24 h or older. Future times clamp to 0. */
@@ -44,9 +49,17 @@ export function feedTimer(
   feeding = false
 ): FeedTimer {
   if (feeding) return { kind: 'feeding' };
-  const minutes = recentMinutes(effectiveFeedTime(status.lastFeedTime, status.lastFeedEndTime, baby.feedTimerFrom), now);
-  if (minutes === null) return { kind: 'none' };
-  return { kind: 'since', minutes, warning: isPastWarning(minutes, baby.feedWarningTime) };
+  return sinceTimer(effectiveFeedTime(status.lastFeedTime, status.lastFeedEndTime, baby.feedTimerFrom), baby.feedWarningTime, now);
+}
+
+/** Time since the last diaper change, warning at diaperWarningTime like the log-entry diaper bubble. */
+export function diaperTimer(status: Pick<LatestStatusData, 'lastDiaperTime'>, baby: DiaperTimerBaby, now: Date): SinceTimer {
+  return sinceTimer(status.lastDiaperTime, baby.diaperWarningTime, now);
+}
+
+function sinceTimer(from: Date | undefined, warningTime: string | null | undefined, now: Date): SinceTimer {
+  const minutes = recentMinutes(from, now);
+  return minutes === null ? { kind: 'none' } : { kind: 'since', minutes, warning: isPastWarning(minutes, warningTime) };
 }
 
 export function splitDuration(minutes: number): { hours: number; minutes: number } {

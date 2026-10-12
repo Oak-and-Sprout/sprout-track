@@ -45,7 +45,7 @@ export function NurseryModeContainer() {
   const { settings, isLoading, updateSettings } = useNurserySettings();
 
   const [entries, setEntries] = useState<Record<string, TileEntry>>({});
-  // Feed/sleep status for the timer blocks — null until the first poll lands.
+  // Feed/sleep/diaper status for the timer blocks — null until the first poll lands.
   const [timerStatus, setTimerStatus] = useState<LatestStatusData | null>(null);
   const [babies, setBabies] = useState<Baby[]>([]);
   const [undo, setUndo] = useState<UndoInfo | null>(null);
@@ -177,9 +177,10 @@ export function NurseryModeContainer() {
         ]);
 
         // Timer blocks: only on a complete read, so a failed request can't blank a timer.
-        if (feedData?.success && sleepData?.success && (!needFood || foodData?.success)) {
+        // Diaper logs are always polled, so the diaper timer works with the diaper tile hidden.
+        if (feedData?.success && sleepData?.success && diaperData?.success && (!needFood || foodData?.success)) {
           setTimerStatus(computeLatestStatus(
-            [...feedData.data, ...(foodData?.data ?? []), ...sleepData.data],
+            [...feedData.data, ...(foodData?.data ?? []), ...sleepData.data, ...diaperData.data],
             feedTimerCategories
           ));
         }
@@ -447,6 +448,7 @@ export function NurseryModeContainer() {
               feeding={feedView.active}
               showWake={settings.timers.wake}
               showFeed={settings.timers.feed}
+              showDiaper={settings.timers.diaper}
               iconColor={iconColor}
               iconShape={shape}
             />
