@@ -131,7 +131,7 @@ Optional. Not written to `.env` by `ensure-env-defaults.js`. Leave them unset to
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_VERSION` | `"1.6.7"` | Application version string |
+| `APP_VERSION` | `"1.6.8"` | Application version string |
 | `TZ` | -- | Timezone for the container (Docker only, e.g., `America/New_York`) |
 
 ### SaaS Mode (Not Needed for Self-Hosting)

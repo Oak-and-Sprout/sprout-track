@@ -1,10 +1,65 @@
 # Sprout Track Changelog
 
-## Unreleased
+## v1.6.8 - Multi-food amounts, Nursery Mode timers, Huckleberry import
+
+### Changes
+
+#### Food Tracker
+
+- Each food in a multi-food meal now has its own amount and unit - Thanks for the suggestion **AllenBurgett**!
+- New food entry box: pick or type a food, set the amount, and Save to add it as a badge; tap a badge to edit its name or amount
+- The meal total shows next to Foods (e.g. "Foods · 25 g total"), and the timeline shows one summary line per meal (e.g. "Carrot 15 g, Cheese 10 g · 25 g")
+- Reactions and enjoyment are credited to the right food in reports
+- Fixed the Food Manager showing 0 tries, and a Delete button, for foods only logged in multi-food meals - Thanks for the heads up **ngoc-minh-do**!
+- Fixed adding a new food from the Android keyboard - Thanks for the heads up **mwolfaardt**!
+
+#### Nursery Mode
+
+- Added Awake, Feed, and Diaper timer tiles under the clock that turn to "Overdue" at the baby's warning times; each can be turned off in settings
+- Timer tiles fit in a single row on phones
+- Fixed activity cards running off the right edge of the screen with long translations (e.g. German)
+
+#### Feeding & Pumping
+
+- Added a configurable "time since last pump" reminder per baby - Thank you **gen-skeptic**!
+- Fixed timer badges drifting onto the wrong activity tile after reordering or scrolling - Thank you **rlesniak**, and thanks for the heads up **GovernmentHack**!
+- The activity tile row now starts at the first tile on load - Thank you **rlesniak**!
+
+#### Growth Charts & Reports (Thank you **gcerretani**!)
+
+- Growth charts now cover ages 2–20 years using the CDC 2–20 weight-for-age and stature-for-age references
+- WHO charts switch to CDC references after 24 months
+- Fixed a child's age briefly going backwards at some month ends, which could switch the chart back to infant references for a day
+
+#### Timeline & Stats
+
+- Notes now keep their line breaks in the activity detail panel - Thank you **yy520-xx**, and thanks for the heads up **tannermeade**!
+- Timeline heatmap stays above the bottom bar on mobile, scrolls, and follows your 12h/24h setting - Thank you **rlesniak**!
+- Timeline CSV/XLSX export filenames now work with non-English baby names - Thank you **rlesniak**!
+- Fixed sleep entries in the Full Log losing their end date when a sleep crossed midnight - Thanks for the heads up **minusInfinite**!
+- Fixed totals like 0.3 + 0.3 + 0.3 showing as 0.8999… in daily and medicine summaries - Thanks for the heads up **GovernmentHack**!
+
+#### Huckleberry Import (Thank you **gen-skeptic**!)
+
+- Added Huckleberry care log CSV import for feeds, diapers, and pumping
+- Importing the same Huckleberry file into two babies (e.g. twins) no longer skips identical entries as duplicates
+- Huckleberry rows that can't be read are skipped and counted as a warning in the preview, instead of failing the whole import
+
+#### Webhook API (Thanks for the suggestions **ngoc-minh-do**!)
+
+- Added a `food` activity type, with each food's own amount, unit and enjoyment, plus a family food list at `reference?type=foods`
+- Legacy `feed` entries with `feedType: SOLIDS` are now stored as food entries, and sending the same one again returns the existing entry instead of creating a duplicate
+- Rate limits are now configurable with `HOOKS_RATE_LIMIT_READS_PER_MINUTE` and `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE` (defaults stay 60 and 30), and 429 responses include an accurate `Retry-After`
+
+#### Docker & Data
+
+- The startup conversion of legacy solid-food entries now skips entries that match an existing food entry (same baby, time and food), so it no longer creates duplicates
+- Fixed the `TZ` set in compose being ignored in favor of the saved `/app/env/.env` - Thanks for the heads up **ngoc-minh-do**!
 
 ### Upgrade notes
 
-- **Docker `TZ`:** the container's `TZ` environment variable now always overrides the value saved in `/app/env/.env`. The image defaults `TZ` to `UTC`, so if you previously set a timezone by editing `/app/env/.env`, set `TZ` in your compose file instead or the server will run in UTC after upgrading. (#283)
+- **Docker `TZ`:** the container's `TZ` now always overrides `/app/env/.env`. The image defaults to `UTC`, so if you set a timezone by editing `/app/env/.env`, set `TZ` in your compose file instead.
+- **Webhook SOLIDS feeds** are now stored as food entries, so they no longer send feed notifications. They only reset the feed timer if the baby's feed timer settings include food.
 
 ## v1.6.7 - Postgres recovery and first party SaaS analytics
 
