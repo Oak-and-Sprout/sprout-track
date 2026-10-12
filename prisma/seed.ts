@@ -344,6 +344,36 @@ async function seedCdcGrowthChartData(): Promise<void> {
     console.log(`Head-circumference-for-age data already exists (${hcCount} records). Skipping.`);
   }
 
+  // Seed CDC 2-20 years weight-for-age data
+  const childWeightCount = await prisma.cdcChildWeightForAge.count();
+  if (childWeightCount === 0) {
+    const childWeightFilePath = path.join(documentationDir, 'wtage.csv');
+    if (fs.existsSync(childWeightFilePath)) {
+      const childWeightData = parseCdcCsvFile(childWeightFilePath);
+      console.log(`Inserting ${childWeightData.length} records for CDC 2-20 weight-for-age...`);
+      await prisma.cdcChildWeightForAge.createMany({ data: childWeightData });
+    } else {
+      console.warn('Warning: wtage.csv not found');
+    }
+  } else {
+    console.log(`CDC 2-20 weight-for-age data already exists (${childWeightCount} records). Skipping.`);
+  }
+
+  // Seed CDC 2-20 years stature-for-age data
+  const statureCount = await prisma.cdcStatureForAge.count();
+  if (statureCount === 0) {
+    const statureFilePath = path.join(documentationDir, 'statage.csv');
+    if (fs.existsSync(statureFilePath)) {
+      const statureData = parseCdcCsvFile(statureFilePath);
+      console.log(`Inserting ${statureData.length} records for CDC 2-20 stature-for-age...`);
+      await prisma.cdcStatureForAge.createMany({ data: statureData });
+    } else {
+      console.warn('Warning: statage.csv not found');
+    }
+  } else {
+    console.log(`CDC 2-20 stature-for-age data already exists (${statureCount} records). Skipping.`);
+  }
+
   console.log('CDC growth chart data seeding complete.');
 }
 

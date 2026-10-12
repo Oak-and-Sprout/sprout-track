@@ -8,7 +8,7 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatTimeDisplay, formatDateShort } from '@/src/utils/dateFormat';
 import { useUnit } from '@/src/hooks/useUnit';
-import { FOOD_ENJOYMENT_LABELS, isFoodLogActivity, isValidEnjoyment } from '@/src/utils/foodLogUtils';
+import { FOOD_ENJOYMENT_LABELS, formatFoodLogAmountSummary, isFoodLogActivity, isValidEnjoyment } from '@/src/utils/foodLogUtils';
 import { useAuthedImage, useInView, photoFileUrl } from '@/src/hooks/useAuthedImage';
 import { getVisibleThumbnails } from '@/src/utils/photoUtils';
 import { TimelinePhotoInfo } from '@/app/api/types';
@@ -336,9 +336,8 @@ const TimelineV2ActivityList = ({
                                       const foodLog = activity as any;
                                       const enjoyment: unknown = foodLog.enjoyment;
                                       const parts = [];
-                                      if (foodLog.amount) {
-                                        parts.push(`${foodLog.amount} ${unitSymbol(foodLog.unitAbbr)}`.trim());
-                                      }
+                                      const amountSummary = formatFoodLogAmountSummary(foodLog, unitSymbol);
+                                      if (amountSummary) parts.push(amountSummary);
                                       if (isValidEnjoyment(enjoyment)) {
                                         parts.push(t(FOOD_ENJOYMENT_LABELS[enjoyment]));
                                       }

@@ -41,6 +41,7 @@ html.dark .food-form-new-food-hint {
 /* Selected food tags (multi-food meal chips) */
 html.dark .food-selected-tag {
   background-color: rgba(45, 212, 191, 0.25) !important;
+  border-color: rgba(45, 212, 191, 0.4) !important;
   color: #5eead4 !important;
 }
 
@@ -158,5 +159,31 @@ html.dark .food-form-helper-text {
 
 html.dark .food-history-item-link,
 html.dark .food-allergen-link {
+  color: #5eead4 !important; /* teal-300 */
+}
+
+/* Food being edited in a multi-food entry (#271) */
+html.dark .food-selected-tag-active {
+  background-color: rgba(45, 212, 191, 0.4) !important;
+  border-color: #2dd4bf !important; /* teal-400 */
+  box-shadow: 0 0 0 1px #2dd4bf !important;
+}
+
+html.dark .food-form-meal-total {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Entry box: one food composed at a time (#271) */
+html.dark .food-entry-box {
+  background-color: rgba(30, 41, 59, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .food-entry-box-editing {
+  background-color: rgba(45, 212, 191, 0.08) !important;
+  border-color: #2dd4bf !important; /* teal-400 */
+}
+
+html.dark .food-entry-editing-hint {
   color: #5eead4 !important; /* teal-300 */
 }

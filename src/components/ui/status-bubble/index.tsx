@@ -1,19 +1,12 @@
-import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
-import { Moon, Sun, Icon } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Droplets, Moon, Sun, Icon } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { cn } from "@/src/lib/utils";
 import { statusBubbleStyles as styles } from './status-bubble.styles';
 import { StatusBubbleProps, StatusStyle } from './status-bubble.types';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
-
-/**
- * Converts warning time (hh:mm) to minutes
- */
-const getWarningMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
+import { formatDurationLabel, isPastWarning } from '@/src/utils/latestStatus';
 
 /**
  * A component that displays the current status and duration in a stylized bubble
@@ -23,33 +16,12 @@ export function StatusBubble({
   durationInMinutes,
   warningTime,
   className,
-  screenEdgeAware,
   startTime,
   activityType
 }: StatusBubbleProps & { startTime?: string }) {
   const { userTimezone, calculateDurationMinutes, formatDuration } = useTimezone();
   const { t } = useLocalization();
   const [calculatedDuration, setCalculatedDuration] = useState(durationInMinutes);
-  const bubbleRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!screenEdgeAware || !bubbleRef.current) return;
-
-    const checkPosition = () => {
-      const el = bubbleRef.current;
-      if (!el) return;
-      el.style.transform = '';
-      const rect = el.getBoundingClientRect();
-      if (rect.left < 2) {
-        el.style.transform = `translateX(${Math.ceil(Math.abs(rect.left) + 2)}px)`;
-      }
-    };
-
-    checkPosition();
-
-    window.addEventListener('resize', checkPosition);
-    return () => window.removeEventListener('resize', checkPosition);
-  }, [screenEdgeAware, status]);
   
   const updateDuration = useCallback(() => {
     if (startTime) {
@@ -65,7 +37,8 @@ export function StatusBubble({
             (status === 'sleeping' && activityType === 'sleep') || 
             (status === 'awake' && activityType === 'sleep') ||
             (status === 'feed' && activityType === 'feed') ||
-            (status === 'diaper' && activityType === 'diaper')) {
+            (status === 'diaper' && activityType === 'diaper') ||
+            (status === 'pump' && activityType === 'pump')) {
           const diffMinutes = calculateDurationMinutes(startTime, now.toISOString());
           setCalculatedDuration(diffMinutes);
         }
@@ -105,7 +78,7 @@ export function StatusBubble({
   const displayDuration = startTime ? calculatedDuration : durationInMinutes;
   
   // Check if duration exceeds warning time
-  const isWarning = warningTime && displayDuration >= getWarningMinutes(warningTime);
+  const isWarning = isPastWarning(displayDuration, warningTime);
 
   // Get status-specific styles and icon
   const getStatusStyles = (): StatusStyle => {
@@ -135,6 +108,11 @@ export function StatusBubble({
           bgColor: isWarning ? styles.statusStyles.diaper.warning : styles.statusStyles.diaper.normal,
           icon: <Icon iconNode={diaper} className={styles.icon} aria-hidden="true" />
         };
+      case 'pump':
+        return {
+          bgColor: isWarning ? styles.statusStyles.pump.warning : styles.statusStyles.pump.normal,
+          icon: <Droplets className={styles.icon} aria-hidden="true" />
+        };
       default:
         return {
           bgColor: styles.statusStyles.default.bgColor,
@@ -157,24 +135,20 @@ export function StatusBubble({
         return t('Time since last feed');
       case 'diaper':
         return t('Time since last diaper');
+      case 'pump':
+        return t('Time since last pump');
       default:
         return '';
     }
   };
 
-  const labelHours = Math.floor(displayDuration / 60);
-  const labelMinutes = displayDuration % 60;
-  const durationLabel = [
-    labelHours > 0 ? `${labelHours} ${labelHours === 1 ? t('hour') : t('hours')}` : null,
-    `${labelMinutes} ${labelMinutes === 1 ? t('minute') : t('minutes')}`
-  ].filter(Boolean).join(' ');
+  const durationLabel = formatDurationLabel(displayDuration, t);
   const ariaLabel = status === 'feedActive'
     ? t('Feeding')
     : `${getStatusLabel()}, ${durationLabel}`;
 
   return (
     <div
-      ref={screenEdgeAware ? bubbleRef : undefined}
       role="img"
       aria-label={ariaLabel}
       className={cn(
@@ -184,7 +158,7 @@ export function StatusBubble({
       )}
     >
       {icon}
-      <span>{status === 'feedActive' ? t('Feeding') : formatDuration(displayDuration)}</span>
+      <span className="min-w-0 truncate">{status === 'feedActive' ? t('Feeding') : formatDuration(displayDuration)}</span>
     </div>
   );
 }

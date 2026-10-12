@@ -94,19 +94,25 @@ const FullLogActivityDetails: React.FC<FullLogActivityDetailsProps> = ({
       <FormPageContent>
         <div className="space-y-4 p-4">
           {medicineDetails ? (
-            medicineDetails.map((detail, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-500 full-log-timeline-details-label">{detail.label}:</span>
-                <span className="text-sm text-gray-900 full-log-timeline-details-value">{detail.value}</span>
-              </div>
-            ))
+            medicineDetails.map((detail, index) => {
+              const isMultiline = detail.value.includes('\n');
+              return (
+                <div key={index} className={`flex ${isMultiline ? 'flex-col gap-1' : 'justify-between items-center'}`}>
+                  <span className="text-sm font-medium text-gray-500 full-log-timeline-details-label">{detail.label}:</span>
+                  <span className={`text-sm text-gray-900 full-log-timeline-details-value ${isMultiline ? 'whitespace-pre-line break-words' : ''}`}>{detail.value}</span>
+                </div>
+              );
+            })
           ) : (
-            activityDetails.details.map((detail, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-500 full-log-timeline-details-label">{detail.label}:</span>
-                <span className="text-sm text-gray-900 full-log-timeline-details-value">{detail.value}</span>
-              </div>
-            ))
+            activityDetails.details.map((detail, index) => {
+              const isMultiline = detail.value.includes('\n');
+              return (
+                <div key={index} className={`flex ${isMultiline ? 'flex-col gap-1' : 'justify-between items-center'}`}>
+                  <span className="text-sm font-medium text-gray-500 full-log-timeline-details-label">{detail.label}:</span>
+                  <span className={`text-sm text-gray-900 full-log-timeline-details-value ${isMultiline ? 'whitespace-pre-line break-words' : ''}`}>{detail.value}</span>
+                </div>
+              );
+            })
           )}
           {'amount' in activity && 'type' in activity && activity.type === 'BREAST' && 'babyId' in activity && (
             <LinkedFeedsSection

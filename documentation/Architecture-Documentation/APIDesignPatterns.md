@@ -83,6 +83,8 @@ if (!babyId || !time) {
 }
 ```
 
+Array payloads are validated item by item with a shared pure helper, and a malformed item rejects the whole request rather than being silently dropped. For example, `/api/food-log` passes `foods[]` through `validateFoodItemInputs()` (`src/utils/foodLogUtils.ts`): distinct non-empty `foodId`s, a positive finite `amount`, a `unitAbbr` of at most 16 characters, a valid `enjoyment`, a boolean `hadReaction` and a string `reactionDescription` — anything else returns `400` with the reason. The row-level `amount`/`unitAbbr` are then derived from the items with `deriveMealAmountFromItems()` (see [Data Model](./DataModel.md#food-tracker)).
+
 ### 5. Verify Parent Resource Belongs to Family
 ```typescript
 const baby = await prisma.baby.findFirst({
@@ -238,18 +240,31 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 |----------|---------|
 | `GET /api/hooks/v1/babies/` | List babies |
 | `GET /api/hooks/v1/babies/[babyId]/activities/` | Recent activities |
-| `POST /api/hooks/v1/babies/[babyId]/activities/` | Log a new activity (all ten types, plus feed/sleep/pump timer actions) |
+| `POST /api/hooks/v1/babies/[babyId]/activities/` | Log a new activity (all eleven types, including `food`, plus feed/sleep/pump timer actions) |
 | `PUT /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Edit an existing activity |
 | `DELETE /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Delete an existing activity |
 | `GET /api/hooks/v1/babies/[babyId]/measurements/latest/` | Latest measurements |
 | `GET /api/hooks/v1/babies/[babyId]/status/` | Baby status summary |
-| `GET /api/hooks/v1/babies/[babyId]/reference/` | Reference data (valid enum values for activity fields) |
+| `GET /api/hooks/v1/babies/[babyId]/reference/` | Reference data (valid enum values for activity fields, plus the family food catalog at `?type=foods` and enjoyment values at `?type=food-enjoyments`) |
 
 **Authentication:** Uses API keys (not JWT). Keys are validated via SHA-256 hash lookup against the `ApiKey` model. Scoped by `familyId` and optionally `babyId`, with read/write permissions.
 
 **Validation:** Request bodies are strict — fields not accepted by the declared activity type are rejected with `400 INVALID_FIELD` rather than silently dropped. Enum-like fields (`condition`, `color`, `quality`, `bottleType`, `side`, `pumpAction`, and the known `bathType` values) are matched case-insensitively against canonical sets in `app/api/hooks/v1/field-values.ts` and stored with canonical casing; `unitAbbr` is validated against the `Unit` table. `GET /reference` advertises every one of these sets.
 
-**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts` — GET 60/min per key; POST/PUT/DELETE 30/min per key.
+**Food activities:** The `food` type (`app/api/hooks/v1/food.ts`) accepts `foodName`/`foodId` or a `foods[]` array with per-food `amount`/`unitAbbr`/`enjoyment`, find-or-creates catalog foods by name, and writes through the same `buildFoodLogFoodFields()` / `deriveMealAmountFromItems()` helpers as `/api/food-log`, so webhook and app food logs are indistinguishable. A legacy `feed` with `feedType: "SOLIDS"` is stored as a `FoodLog` through the same path (`createFoodActivity(..., dedupe = true)`): an existing non-deleted food log of the same baby, exact time and food-name set (`findExistingFoodLog()`, shared with the startup conversion) is returned with `duplicate: true` instead of creating a second one. `type: "food"` posts are not deduplicated. Neither path calls `notifyActivityCreated()`.
+
+**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts` — sliding 60 s window per key and method; GET 60/min and POST/PUT/DELETE 30/min by default, overridable with `HOOKS_RATE_LIMIT_READS_PER_MINUTE` / `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE` (positive integers; anything else falls back to the default). Every response carries `X-RateLimit-Limit` / `-Remaining` / `-Reset`; a 429 adds `Retry-After`, computed by the pure `evaluateSlidingWindow()` as the wait until the oldest counted request leaves the window.
+
+## External Imports
+
+Baby Buddy and Huckleberry imports go through `POST /api/import/external/preview` and `POST /api/import/external/execute` (`withAuthContext`; execute also runs `checkWritePermission`). Each provider implements `ExternalImportRuntimeProvider` (`src/lib/importers/runtime-registry.ts`):
+
+```typescript
+previewFiles(files): ExternalImportProviderPreview;
+buildRecords(files, configuration, execution): readonly ExternalImportRecord[];
+```
+
+`configuration` is the provider-specific options (e.g. Baby Buddy units); `execution` is the shared `ExternalImportExecutionConfiguration`, which carries the child → baby destinations. Huckleberry uses it to scope its record ids to the target baby (see [Data Model](./DataModel.md#externalimportrecord)). The execute route runs the records through `executeExternalImport()` in a single transaction, using `ExternalImportRecord` provenance to skip already-imported rows.
 
 ## Notification Hooks
 
@@ -290,6 +305,9 @@ Logs request method, path, status code, response time, IP/user agent, and reques
 - `app/api/utils/with-logging.ts` — Request logging wrapper
 - `app/api/hooks/v1/` — External webhook API routes
 - `app/api/hooks/v1/field-values.ts` — Canonical enum-like field values + case-insensitive normalization for the webhook API
+- `app/api/hooks/v1/food.ts` — `food` activity type: parses foods, find-or-creates catalog foods by name, and writes FoodLogs through the same `foodLogUtils` helpers as `/api/food-log`. Legacy `feed` posts with `feedType: "SOLIDS"` are written through the same path, deduplicated by baby, time and food with the startup conversion's `findExistingFoodLog` (`scripts/convert-solids-feeds-runner.js`)
+- `app/api/hooks/v1/rate-limiter.ts` — Webhook sliding-window rate limiter (`getRateLimit()`, `evaluateSlidingWindow()`)
+- `src/lib/importers/runtime-registry.ts` — External import providers (`previewFiles` / `buildRecords`)
 - `app/api/utils/family-scope.ts` — `resolveFamilyScope()`: a client-sent familyId may only confirm the auth context's family, never override it (sysadmin excepted)
 - `app/api/utils/setup-token-scope.ts` — `setupTokenMayTarget()`: unbound setup tokens may bind a family only via `/api/setup/start`
 - `app/api/utils/analytics.ts` / `app/api/utils/short-links.ts` — `analyticsSaasGate()` / `shortLinkSaasGate()`: SaaS 404 gate for the analytics and short-link routes

@@ -71,11 +71,18 @@ export function isValidAllergenType(value: unknown): value is AllergenTypeValue 
   return typeof value === 'string' && (ALLERGEN_TYPE_VALUES as readonly string[]).includes(value);
 }
 
-/** One food entry inside a multi-food meal (`FoodLog.foods` JSON). */
+/**
+ * One food entry inside a multi-food meal (`FoodLog.foods` JSON).
+ * amount/unitAbbr/enjoyment are per-food details (#271); items written before
+ * #271 omit them, and readers fall back to the row-level fields.
+ */
 export interface FoodLogItem {
   foodId: string;
   hadReaction?: boolean;
   reactionDescription?: string | null;
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: FoodEnjoymentValue | null;
 }
 
 /** Minimal shape of a FoodLog row the helpers need. */
@@ -237,6 +244,29 @@ const toIso = (time: Date | string): string => new Date(time).toISOString();
 
 const isDeleted = (log: FoodLogLike): boolean => log.deletedAt != null;
 
+const isPositiveAmount = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+/** Longest unit abbreviation accepted on a per-food amount. */
+export const MAX_FOOD_UNIT_LENGTH = 16;
+
+/**
+ * The valid per-food details (#271) of a raw item, as only the keys present —
+ * so pre-#271 items read back exactly as before. A unit only travels with an
+ * amount; malformed values are dropped rather than failing the whole item.
+ */
+function itemDetails(entry: Partial<Record<keyof FoodLogItem, unknown>>): Pick<FoodLogItem, 'amount' | 'unitAbbr' | 'enjoyment'> {
+  const amount = isPositiveAmount(entry.amount) ? entry.amount : null;
+  const unitAbbr = amount !== null && typeof entry.unitAbbr === 'string' && entry.unitAbbr.trim()
+    ? entry.unitAbbr.trim()
+    : null;
+  return {
+    ...(amount !== null ? { amount } : {}),
+    ...(unitAbbr ? { unitAbbr } : {}),
+    ...(isValidEnjoyment(entry.enjoyment) ? { enjoyment: entry.enjoyment } : {}),
+  };
+}
+
 /** Parse `FoodLog.foods` JSON text into items; returns [] on missing/invalid. */
 export function parseFoodsJson(foods: string | null | undefined): FoodLogItem[] {
   if (foods == null || foods === '') return [];
@@ -255,6 +285,7 @@ export function parseFoodsJson(foods: string | null | undefined): FoodLogItem[] 
           typeof (entry as FoodLogItem).reactionDescription === 'string'
             ? (entry as FoodLogItem).reactionDescription
             : (entry as FoodLogItem).reactionDescription ?? null,
+        ...itemDetails(entry),
       });
     }
     return items;
@@ -293,8 +324,112 @@ export function serializeFoodItems(items: FoodLogItem[]): string {
       ...(item.reactionDescription && item.reactionDescription.trim()
         ? { reactionDescription: item.reactionDescription.trim() }
         : {}),
+      ...itemDetails(item),
     }))
   );
+}
+
+/**
+ * Each food of a log with its effective details: its own amount/unit, else the
+ * row's amount when it is the only food (a shared meal amount is never split
+ * across foods); its own enjoyment, else the row's (pre-#271 behavior).
+ */
+export function resolveFoodItemDetails(log: FoodLogLike): FoodLogItem[] {
+  const items = expandFoodItems(log);
+  const single = items.length === 1;
+  return items.map(item => {
+    const ownAmount = isPositiveAmount(item.amount);
+    const amount = ownAmount ? item.amount : single && isPositiveAmount(log.amount) ? log.amount : null;
+    const enjoyment = isValidEnjoyment(item.enjoyment) ? item.enjoyment : isValidEnjoyment(log.enjoyment) ? log.enjoyment : null;
+    return {
+      ...item,
+      amount: amount ?? null,
+      unitAbbr: ownAmount ? item.unitAbbr ?? null : amount != null ? log.unitAbbr ?? null : null,
+      enjoyment,
+    };
+  });
+}
+
+/** Sum the positive amounts of items keyed by lowercase unit (missing unit → g). */
+export function sumAmountsByUnit(items: Pick<FoodLogItem, 'amount' | 'unitAbbr'>[]): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (const item of items) {
+    if (!isPositiveAmount(item.amount)) continue;
+    const unit = (item.unitAbbr || 'g').toLowerCase();
+    totals[unit] = (totals[unit] || 0) + item.amount;
+  }
+  return totals;
+}
+
+/**
+ * A log's amount totals keyed by lowercase unit: the per-food amounts when any
+ * food carries one (so mixed units survive), else the row-level amount.
+ */
+export function foodLogAmountsByUnit(log: FoodLogLike): Record<string, number> {
+  const items = expandFoodItems(log);
+  return sumAmountsByUnit(items.some(item => isPositiveAmount(item.amount)) ? items : [log]);
+}
+
+/**
+ * Row-level amount derived from per-food amounts so totals keep working:
+ * null when no food carries an amount (the caller keeps the meal amount), the
+ * sum when they share one unit, and a null amount when units are mixed (readers
+ * total per unit via foodLogAmountsByUnit).
+ */
+export function deriveMealAmountFromItems(
+  items: FoodLogItem[]
+): { amount: number | null; unitAbbr: string | null } | null {
+  const withAmount = items.filter(item => isPositiveAmount(item.amount));
+  if (withAmount.length === 0) return null;
+  const totals = sumAmountsByUnit(withAmount);
+  if (Object.keys(totals).length > 1) return { amount: null, unitAbbr: null };
+  const total = Object.values(totals)[0];
+  return { amount: Math.round(total * 100) / 100, unitAbbr: withAmount[0].unitAbbr ?? null };
+}
+
+export type FoodItemValidation =
+  | { ok: true; items: FoodLogItem[] }
+  | { ok: false; error: string };
+
+/**
+ * Server-side validation of a client-sent `foods` array: a non-empty list of
+ * distinct foodIds whose optional details are well-typed (positive finite
+ * amount, short unit string, valid enjoyment, boolean reaction flag, string
+ * description). Returns normalized items; family scoping of the ids is the
+ * route's job.
+ */
+export function validateFoodItemInputs(raw: unknown): FoodItemValidation {
+  if (!Array.isArray(raw) || raw.length === 0) return { ok: false, error: 'At least one food is required' };
+  const items: FoodLogItem[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') return { ok: false, error: 'Invalid food entry' };
+    const e = entry as Record<string, unknown>;
+    if (typeof e.foodId !== 'string' || e.foodId === '') return { ok: false, error: 'Each food needs a foodId' };
+    if (seen.has(e.foodId)) return { ok: false, error: 'A food can only be listed once per entry' };
+    seen.add(e.foodId);
+    if (e.amount != null && !isPositiveAmount(e.amount)) return { ok: false, error: 'Amount must be a positive number' };
+    if (e.unitAbbr != null && (typeof e.unitAbbr !== 'string' || e.unitAbbr.trim().length > MAX_FOOD_UNIT_LENGTH)) {
+      return { ok: false, error: 'Invalid unit' };
+    }
+    if (e.enjoyment != null && !isValidEnjoyment(e.enjoyment)) return { ok: false, error: 'Invalid enjoyment value' };
+    if (e.hadReaction != null && typeof e.hadReaction !== 'boolean') return { ok: false, error: 'Invalid reaction flag' };
+    if (e.reactionDescription != null && typeof e.reactionDescription !== 'string') {
+      return { ok: false, error: 'Invalid reaction description' };
+    }
+    const details = itemDetails(e);
+    items.push({
+      foodId: e.foodId,
+      amount: details.amount ?? null,
+      unitAbbr: details.unitAbbr ?? null,
+      enjoyment: details.enjoyment ?? null,
+      hadReaction: e.hadReaction === true,
+      reactionDescription: typeof e.reactionDescription === 'string' && e.reactionDescription.trim()
+        ? e.reactionDescription.trim()
+        : null,
+    });
+  }
+  return { ok: true, items };
 }
 
 /**
@@ -350,6 +485,15 @@ export function rewriteFoodsJsonIds(
           existing.reactionDescription = item.reactionDescription;
         }
       }
+      if (existing && isPositiveAmount(item.amount)) {
+        if (!isPositiveAmount(existing.amount)) {
+          existing.amount = item.amount;
+          existing.unitAbbr = item.unitAbbr ?? null;
+        } else if ((existing.unitAbbr || '').toLowerCase() === (item.unitAbbr || '').toLowerCase()) {
+          existing.amount += item.amount;
+        }
+      }
+      if (existing && !existing.enjoyment && item.enjoyment) existing.enjoyment = item.enjoyment;
       continue;
     }
     seen.add(item.foodId);
@@ -364,6 +508,28 @@ export function foodsJsonReferencesFoodId(
   foodId: string
 ): boolean {
   return parseFoodsJson(foodsJson).some(item => item.foodId === foodId);
+}
+
+/**
+ * Per-food count of non-deleted food logs, covering both the legacy `foodId`
+ * column and multi-food `foods` JSON references. A log counts once per food.
+ */
+export function countFoodLogsByFoodId(
+  logs: { foodId: string | null; foods: string | null; deletedAt?: Date | null }[]
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const log of logs) {
+    if (log.deletedAt) continue;
+    const ids = new Set(parseFoodsJson(log.foods).map(item => item.foodId));
+    if (log.foodId) ids.add(log.foodId);
+    ids.forEach(id => { counts[id] = (counts[id] ?? 0) + 1; });
+  }
+  return counts;
+}
+
+/** Enter key check that also accepts Android IMEs reporting keyCode 13 with a different `key`. */
+export function isEnterKeyEvent(e: { key: string; keyCode?: number }): boolean {
+  return e.key === 'Enter' || e.keyCode === 13;
 }
 
 /** True if activity looks like a FoodLog (multi-food or legacy). */
@@ -387,6 +553,10 @@ export interface MealTagInput {
   foodId: string;
   hadReaction: boolean;
   reactionDescription: string | null;
+  /** Per-food details (#271); ignored for a single-food meal. */
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: FoodEnjoymentValue | null;
 }
 
 /**
@@ -401,22 +571,25 @@ export interface MealTagInput {
  * is seeded on edit as "did any food in this meal react", editing a multi-food
  * meal down to one food wrote a reaction onto the survivor that it never had,
  * and dropped that food's own description (#247).
+ *
+ * Per-food amount/unit/enjoyment (#271) are kept only when the meal has more
+ * than one food — for a single food the meal-level fields are that food's.
  */
 export function buildMealItems(input: {
   tags: MealTagInput[];
   mealReaction: boolean;
 }): FoodLogItem[] {
-  return input.tags
-    .filter(tag => typeof tag.foodId === 'string' && tag.foodId !== '')
-    .map(tag => {
-      const reacted = input.mealReaction && tag.hadReaction === true;
-      const description = reacted ? tag.reactionDescription?.trim() : '';
-      return {
-        foodId: tag.foodId,
-        hadReaction: reacted,
-        reactionDescription: description ? description : null,
-      };
-    });
+  const tags = input.tags.filter(tag => typeof tag.foodId === 'string' && tag.foodId !== '');
+  return tags.map(tag => {
+    const reacted = input.mealReaction && tag.hadReaction === true;
+    const description = reacted ? tag.reactionDescription?.trim() : '';
+    return {
+      foodId: tag.foodId,
+      hadReaction: reacted,
+      reactionDescription: description ? description : null,
+      ...(tags.length > 1 ? itemDetails(tag) : {}),
+    };
+  });
 }
 
 /**
@@ -426,6 +599,65 @@ export function buildMealItems(input: {
  */
 export function mealHasAnyReaction(items: FoodLogItem[]): boolean {
   return items.some(item => item.hadReaction === true);
+}
+
+/** A food item as the display helpers need it (API `foodItems` rows fit). */
+export interface FoodItemDisplay {
+  name?: string;
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: string | null;
+  hadReaction?: boolean;
+  reactionDescription?: string | null;
+}
+
+/** Per-food amounts as "Carrot 2 tbsp, Pea 1 tbsp"; foods without one are skipped. */
+export function formatFoodItemAmounts(
+  items: FoodItemDisplay[],
+  unitLabel: (unitAbbr: string | null | undefined) => string
+): string {
+  return items
+    .filter(item => isPositiveAmount(item.amount))
+    .map(item => `${item.name ? `${item.name} ` : ''}${item.amount} ${unitLabel(item.unitAbbr)}`.trim())
+    .join(', ');
+}
+
+/**
+ * Amount summary for a food log line: per-food amounts for a multi-food meal
+ * that recorded them (#271) plus their total when two or more share one unit
+ * ("Carrot 15 g, Cheese 10 g · 25 g"), else the row amount ("3 tbsp"), else ''.
+ */
+export function formatFoodLogAmountSummary(
+  log: { amount?: number | null; unitAbbr?: string | null; foodItems?: FoodItemDisplay[] },
+  unitLabel: (unitAbbr: string | null | undefined) => string
+): string {
+  const items = log.foodItems ?? [];
+  const withAmount = items.filter(item => isPositiveAmount(item.amount));
+  if (items.length > 1 && withAmount.length > 0) {
+    const list = formatFoodItemAmounts(withAmount, unitLabel);
+    const totals = Object.values(sumAmountsByUnit(withAmount));
+    if (withAmount.length < 2 || totals.length > 1) return list;
+    return `${list} · ${Math.round(totals[0] * 100) / 100} ${unitLabel(withAmount[0].unitAbbr)}`.trim();
+  }
+  return isPositiveAmount(log.amount) ? `${log.amount} ${unitLabel(log.unitAbbr)}`.trim() : '';
+}
+
+/** One food's own details as "2 tbsp · Liked · Reaction: hives" ('' when none). */
+export function formatFoodItemDetail(
+  item: FoodItemDisplay,
+  labels: {
+    unit: (unitAbbr: string | null | undefined) => string;
+    enjoyment: (value: FoodEnjoymentValue) => string;
+    reaction: string;
+  }
+): string {
+  const parts: string[] = [];
+  if (isPositiveAmount(item.amount)) parts.push(`${item.amount} ${labels.unit(item.unitAbbr)}`.trim());
+  if (isValidEnjoyment(item.enjoyment)) parts.push(labels.enjoyment(item.enjoyment));
+  if (item.hadReaction) {
+    parts.push(item.reactionDescription ? `${labels.reaction}: ${item.reactionDescription}` : labels.reaction);
+  }
+  return parts.join(' · ');
 }
 
 /** Display title for a meal: "Banana", "Banana, Avocado", or "Banana +2". */
@@ -482,8 +714,10 @@ export function computeFoodProgress(logs: FoodLogLike[]): FoodProgress {
         firstTryByFoodId[item.foodId] = time;
       }
     }
-    if (isValidEnjoyment(log.enjoyment)) {
-      countsByEnjoyment[log.enjoyment] += 1;
+    // Each food's own enjoyment when recorded (#271), else the meal's once
+    const own = items.map(item => item.enjoyment).filter(isValidEnjoyment);
+    for (const value of own.length > 0 ? own : [log.enjoyment].filter(isValidEnjoyment)) {
+      countsByEnjoyment[value] += 1;
     }
   }
 
@@ -597,7 +831,7 @@ export function buildFoodTryList(logs: FoodLogWithFood[]): FoodTryListEntry[] {
 
   for (const log of logs) {
     if (isDeleted(log)) continue;
-    const items = expandFoodItems(log);
+    const items = resolveFoodItemDetails(log);
     if (items.length === 0) continue;
     const time = toIso(log.time);
     for (const item of items) {
@@ -621,16 +855,15 @@ export function buildFoodTryList(logs: FoodLogWithFood[]): FoodTryListEntry[] {
       if (meta?.name) entry.foodName = meta.name;
       if (meta?.commonAllergen === true) entry.commonAllergen = true;
       entry.tryCount += 1;
-      // Meal-level amount only attaches when the meal has a single food (N=1),
-      // so multi-food meals don't inflate every food's totals with the shared amount.
-      if (items.length === 1 && typeof log.amount === 'number' && log.amount > 0) {
-        const unit = (log.unitAbbr || 'g').toLowerCase();
-        entry.totalAmounts[unit] = (entry.totalAmounts[unit] || 0) + log.amount;
+      // Each food's own amount; a shared meal amount only attaches when the
+      // meal has a single food, so it never inflates every food's totals.
+      for (const [unit, total] of Object.entries(sumAmountsByUnit([item]))) {
+        entry.totalAmounts[unit] = (entry.totalAmounts[unit] || 0) + total;
       }
       if (time < entry.firstTryTime) entry.firstTryTime = time;
       if (time > entry.latestTryTime) entry.latestTryTime = time;
-      if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
-        entry.latestEnjoyment = log.enjoyment;
+      if (isValidEnjoyment(item.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
+        entry.latestEnjoyment = item.enjoyment;
         entry.latestEnjoymentTime = time;
       }
       if (item.hadReaction === true) entry.hadReaction = true;
@@ -700,15 +933,15 @@ export function buildNewFoodsForRange(
   for (const log of logs) {
     if (isDeleted(log)) continue;
     const time = toIso(log.time);
-    for (const item of expandFoodItems(log)) {
+    for (const item of resolveFoodItemDetails(log)) {
       const entry = entriesByFoodId.get(item.foodId);
       if (!entry) continue;
       const meta = resolveFoodMeta(log, item.foodId);
       if (meta?.name) entry.foodName = meta.name;
       if (meta?.commonAllergen === true) entry.commonAllergen = true;
       if (time < startIso || time > endIso) continue;
-      if (isValidEnjoyment(log.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
-        entry.enjoyment = log.enjoyment;
+      if (isValidEnjoyment(item.enjoyment) && (entry.latestEnjoymentTime === null || time >= entry.latestEnjoymentTime)) {
+        entry.enjoyment = item.enjoyment;
         entry.latestEnjoymentTime = time;
       }
       if (item.hadReaction === true) entry.hadReaction = true;

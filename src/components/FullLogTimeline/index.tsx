@@ -248,6 +248,7 @@ const FullLogTimeline: React.FC<FullLogTimelineProps> = ({
     if ('foodId' in activity) {
       const act = activity as any;
       if (act.food?.name && act.food.name.toLowerCase().includes(searchLower)) return true;
+      if (act.foodItems?.some((item: { name?: string }) => item.name?.toLowerCase().includes(searchLower))) return true;
       if (act.notes && act.notes.toLowerCase().includes(searchLower)) return true;
       if (act.reactionDescription && act.reactionDescription.toLowerCase().includes(searchLower)) return true;
       return false;

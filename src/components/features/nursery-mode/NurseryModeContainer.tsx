@@ -11,11 +11,15 @@ import { useNurserySettings } from '@/src/hooks/useNurserySettings';
 import { autoIconColor } from '@/src/utils/nursery/colorMath';
 import { TileEntry, formatTileLogs } from '@/src/utils/nursery/tileLog';
 import { isWithinTileWindow } from '@/src/utils/nursery/activityFreshness';
+import { computeLatestStatus } from '@/src/utils/latestStatus';
+import { parseFeedTimerTypes, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
+import type { LatestStatusData } from '@/src/components/Timeline/types';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { isNativeApp } from '@/src/utils/native-app';
 import { nurseryDisplayControls } from '@/src/utils/shell-chrome';
 import { Baby } from '@prisma/client';
 import { ClockBlock } from './ClockBlock';
+import { TimerBlocks } from './TimerBlocks';
 import { SceneBackground } from './scenes/SceneBackground';
 import { SettingsDrawer } from './SettingsDrawer';
 import { useFeedActions } from './activities/useFeedActions';
@@ -41,6 +45,8 @@ export function NurseryModeContainer() {
   const { settings, isLoading, updateSettings } = useNurserySettings();
 
   const [entries, setEntries] = useState<Record<string, TileEntry>>({});
+  // Feed/sleep/diaper status for the timer blocks — null until the first poll lands.
+  const [timerStatus, setTimerStatus] = useState<LatestStatusData | null>(null);
   const [babies, setBabies] = useState<Baby[]>([]);
   const [undo, setUndo] = useState<UndoInfo | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -58,6 +64,12 @@ export function NurseryModeContainer() {
   const [inShell, setInShell] = useState(false);
   useEffect(() => setInShell(isNativeApp()), []);
   const displayControls = nurseryDisplayControls(inShell);
+
+  // Same feed-timer rules as the log-entry page: which feed types count, and
+  // whether food logs need fetching for the feed timer even with the food tile off.
+  const feedTimerTypes = selectedBaby?.feedTimerTypes ?? null;
+  const feedTimerCategories = useMemo(() => parseFeedTimerTypes(feedTimerTypes), [feedTimerTypes]);
+  const needFood = settings.acts.food || (settings.timers.feed && foodCountsForTimer(feedTimerCategories));
 
   const lastSeenRef = useRef<Record<string, string>>({});
   const lastSeenDayRef = useRef<string>('');
@@ -153,7 +165,7 @@ export function NurseryModeContainer() {
           fetch(`/api/diaper-log?babyId=${babyId}`, { headers }),
           fetch(`/api/sleep-log?babyId=${babyId}`, { headers }),
           fetch(`/api/pump-log?babyId=${babyId}`, { headers }),
-          settings.acts.food ? fetch(`/api/food-log?babyId=${babyId}`, { headers }) : Promise.resolve(null),
+          needFood ? fetch(`/api/food-log?babyId=${babyId}`, { headers }) : Promise.resolve(null),
         ]);
 
         const [feedData, diaperData, sleepData, pumpData, foodData] = await Promise.all([
@@ -163,6 +175,15 @@ export function NurseryModeContainer() {
           pumpRes.ok ? pumpRes.json() : null,
           foodRes && foodRes.ok ? foodRes.json() : null,
         ]);
+
+        // Timer blocks: only on a complete read, so a failed request can't blank a timer.
+        // Diaper logs are always polled, so the diaper timer works with the diaper tile hidden.
+        if (feedData?.success && sleepData?.success && diaperData?.success && (!needFood || foodData?.success)) {
+          setTimerStatus(computeLatestStatus(
+            [...feedData.data, ...(foodData?.data ?? []), ...sleepData.data, ...diaperData.data],
+            feedTimerCategories
+          ));
+        }
 
         // A tile's meta line shows a clock time with no date, so an entry from days
         // ago reads like a recent one — null means "hide this tile's line" (#250).
@@ -295,7 +316,7 @@ export function NurseryModeContainer() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [selectedBaby?.id, settings.acts.food]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedBaby?.id, needFood, feedTimerCategories]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Localized here rather than in the poller: non-English bundles lazy-load, so
   // strings frozen at poll time stayed English for the life of the entry.
@@ -303,6 +324,8 @@ export function NurseryModeContainer() {
 
   const handleLog = useCallback((tileId: string, note: string) => {
     setEntries(prev => ({ ...prev, [tileId]: { kind: 'note', at: new Date().toISOString(), note } }));
+    // The write has landed — refresh now so the timer blocks don't wait for the next poll.
+    fetchActivityRef.current?.();
   }, []);
 
   // Stable identity: the container re-renders every second while an activity
@@ -336,6 +359,7 @@ export function NurseryModeContainer() {
     if (!baby) return;
     setSelectedBaby(baby);
     setEntries({});
+    setTimerStatus(null);
     lastSeenRef.current = {};
   }, [babies, setSelectedBaby]);
 
@@ -416,6 +440,18 @@ export function NurseryModeContainer() {
         <div className="nursery-center">
           {!isLandscape && (
             <ClockBlock babyName={babyName} babies={clockBabies} selectedBabyId={selectedBaby?.id} onSelectBaby={handleSelectBaby} />
+          )}
+          {selectedBaby && (
+            <TimerBlocks
+              status={timerStatus}
+              baby={selectedBaby}
+              feeding={feedView.active}
+              showWake={settings.timers.wake}
+              showFeed={settings.timers.feed}
+              showDiaper={settings.timers.diaper}
+              iconColor={iconColor}
+              iconShape={shape}
+            />
           )}
           {selectedBaby && <div className="nursery-actscroll">{activityArea}</div>}
         </div>

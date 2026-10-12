@@ -83,6 +83,7 @@ export type BabyResponse = Omit<Baby, 'birthDate' | 'createdAt' | 'updatedAt' | 
   deletedAt: string | null;
   feedWarningTime: string;
   diaperWarningTime: string;
+  pumpWarningTime: string;
 };
 
 export interface BabyCreate {
@@ -93,6 +94,7 @@ export interface BabyCreate {
   inactive?: boolean;
   feedWarningTime?: string;
   diaperWarningTime?: string;
+  pumpWarningTime?: string;
   feedTimerFrom?: string;
   feedTimerTypes?: string | null;
 }
@@ -479,13 +481,17 @@ export type FoodLogResponse = Omit<FoodLog, 'time' | 'createdAt' | 'updatedAt' |
   deletedAt: string | null;
   food?: { id: string; name: string; commonAllergen: boolean } | null;
   /** Parsed foods JSON (preferred for multi-food meals). */
-  foodItems?: { foodId: string; hadReaction?: boolean; reactionDescription?: string | null; name?: string; commonAllergen?: boolean }[];
+  foodItems?: (FoodLogItemInput & { name?: string; commonAllergen?: boolean })[];
 };
 
 export interface FoodLogItemInput {
   foodId: string;
   hadReaction?: boolean;
   reactionDescription?: string | null;
+  /** Per-food details (#271); omitted on items written before them. */
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: FoodEnjoyment | null;
 }
 
 export interface FoodLogCreate {
@@ -790,13 +796,13 @@ export interface GrowthChartData {
 
 export interface GrowthChartPoint {
   ageMonths: number;
-  p3: number;
-  p10: number;
-  p25: number;
-  p50: number;
-  p75: number;
-  p90: number;
-  p97: number;
+  p3?: number;
+  p10?: number;
+  p25?: number;
+  p50?: number;
+  p75?: number;
+  p90?: number;
+  p97?: number;
   measurement?: number;
   measurementDate?: string;
   percentile?: number;
@@ -805,6 +811,6 @@ export interface GrowthChartPoint {
 export interface GrowthMetric {
   value: number;
   unit: string;
-  percentile: number;
+  percentile: number | null;
   trend: 'up' | 'down' | 'stable';
 }

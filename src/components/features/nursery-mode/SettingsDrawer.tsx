@@ -65,6 +65,12 @@ const ACT_ROWS: { id: keyof NurserySettings['acts']; icon: IconName; label: stri
   { id: 'food', icon: 'food', label: 'Food' },
 ];
 
+const TIMER_ROWS: { id: keyof NurserySettings['timers']; icon: IconName; label: string }[] = [
+  { id: 'wake', icon: 'sun', label: 'Awake Time' },
+  { id: 'feed', icon: 'bottle', label: 'Time since last feed' },
+  { id: 'diaper', icon: 'diaper', label: 'Time since last diaper' },
+];
+
 /** Flat gray thumb-drag track used by most contextual sliders (nursery.jsx:566 etc). */
 const NEUTRAL_TRACK: CSSProperties = { background: 'linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.45))' };
 
@@ -676,6 +682,24 @@ export function SettingsDrawer({
                   <button
                     type="button" className={'nursery-sw-toggle' + (settings.acts[a.id] ? ' on' : '')}
                     onClick={() => updateSettings({ acts: { ...settings.acts, [a.id]: !settings.acts[a.id] } })}
+                  />
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Timer blocks */}
+          <div className="nursery-sect">
+            <div className="nursery-slabel">{t('Timers')}</div>
+            {TIMER_ROWS.map(r => (
+              <div key={r.id} className="nursery-trow">
+                <span className="tn"><Icon n={r.icon} s={20} />{t(r.label)}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span className={'nursery-tstate' + (settings.timers[r.id] ? ' on' : '')} aria-hidden="true">{settings.timers[r.id] ? t('ON') : t('OFF')}</span>
+                  <button
+                    type="button" role="switch" aria-checked={settings.timers[r.id]} aria-label={t(r.label)}
+                    className={'nursery-sw-toggle' + (settings.timers[r.id] ? ' on' : '')}
+                    onClick={() => updateSettings({ timers: { ...settings.timers, [r.id]: !settings.timers[r.id] } })}
                   />
                 </span>
               </div>

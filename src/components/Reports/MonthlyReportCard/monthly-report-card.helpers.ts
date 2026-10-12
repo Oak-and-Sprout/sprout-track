@@ -1,3 +1,5 @@
+import { calculateGrowthAgeMonths } from '@/src/utils/growthStandard';
+
 /**
  * Helper functions for Monthly Report aggregation
  */
@@ -44,15 +46,7 @@ export function zScoreToPercentile(z: number): number {
  * Calculate age in months from birthDate to a target date
  */
 export function ageInMonths(birthDate: Date, targetDate: Date): number {
-  const years = targetDate.getFullYear() - birthDate.getFullYear();
-  const months = targetDate.getMonth() - birthDate.getMonth();
-  const days = targetDate.getDate() - birthDate.getDate();
-  let totalMonths = years * 12 + months;
-  if (days < 0) totalMonths -= 1;
-  // Add fractional month
-  const daysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
-  const dayFraction = (days < 0 ? days + daysInMonth : days) / daysInMonth;
-  return Math.max(0, totalMonths + dayFraction);
+  return calculateGrowthAgeMonths(birthDate, targetDate);
 }
 
 /**

@@ -49,6 +49,7 @@ const defaultFormData = {
   inactive: false,
   feedWarningTime: '03:00',
   diaperWarningTime: '02:00',
+  pumpWarningTime: '03:00',
   feedTimerFrom: 'start',
   feedTimerTypes: [...FEED_TIMER_CATEGORIES] as FeedTimerCategory[],
 };
@@ -83,6 +84,7 @@ export default function BabyForm({
         inactive: baby.inactive || false,
         feedWarningTime: baby.feedWarningTime || '03:00',
         diaperWarningTime: baby.diaperWarningTime || '02:00',
+        pumpWarningTime: baby.pumpWarningTime || '03:00',
         feedTimerFrom: (baby as any).feedTimerFrom || 'start',
         feedTimerTypes: parseFeedTimerTypes((baby as any).feedTimerTypes) ?? [...FEED_TIMER_CATEGORIES],
       });
@@ -241,6 +243,14 @@ export default function BabyForm({
                   value={formData.diaperWarningTime}
                   onChange={(e) => setFormData({ ...formData, diaperWarningTime: e.target.value })} />
               </div>
+              <div>
+                <label className="sb-fl" htmlFor="sbBabyPump">
+                  {t('Since last pump')} <span className="sb-fl-opt">(hh:mm)</span>
+                </label>
+                <input id="sbBabyPump" className="sb-fi" pattern="[0-9]{2}:[0-9]{2}" required
+                  value={formData.pumpWarningTime}
+                  onChange={(e) => setFormData({ ...formData, pumpWarningTime: e.target.value })} />
+              </div>
             </div>
             <div style={{ marginTop: 14 }}>
               <label className="sb-fl" htmlFor="sbBabyTimer">{t('Feed timer counts from')}</label>
@@ -375,6 +385,21 @@ export default function BabyForm({
                 }
                 className="w-full"
                 placeholder="02:00"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor={`${formId}-pump-warning-time`} className="form-label">{t('Pump Warning Time (hh:mm)')}</label>
+              <Input
+                id={`${formId}-pump-warning-time`}
+                type="text"
+                pattern="[0-9]{2}:[0-9]{2}"
+                value={formData.pumpWarningTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, pumpWarningTime: e.target.value })
+                }
+                className="w-full"
+                placeholder="03:00"
                 required
               />
             </div>

@@ -9,6 +9,8 @@ export interface NurserySettings {
   hue: number; dim: number; sat: number; trans: number;
   iconShape: 'circle' | 'square'; iconColor: string | null;
   acts: { feed: boolean; pump: boolean; diaper: boolean; sleep: boolean; food: boolean };
+  /** Glanceable timer blocks above the activity area (issue #219). */
+  timers: { wake: boolean; feed: boolean; diaper: boolean };
   ambient: {
     pattern: string; auroraRange: number; waveMotion: number; rock: number;
     bubbles: { count: number; min: number; max: number };
@@ -113,6 +115,7 @@ export const NURSERY_DEFAULTS: NurserySettings = {
   iconShape: 'square',
   iconColor: null,
   acts: { feed: true, pump: true, diaper: true, sleep: true, food: false },
+  timers: { wake: true, feed: true, diaper: true },
   ambient: {
     pattern: 'aurora',
     auroraRange: 50,
@@ -271,6 +274,7 @@ export function normalizeNurserySettings(raw: unknown): NurserySettings {
   const iconShape = oneOf<'circle' | 'square'>(raw.iconShape, ['circle', 'square'], NURSERY_DEFAULTS.iconShape);
 
   const rawActs = isPlainObject(raw.acts) ? raw.acts : {};
+  const rawTimers = isPlainObject(raw.timers) ? raw.timers : {};
   const rawAmbient = isPlainObject(raw.ambient) ? raw.ambient : {};
   const rawBubbles = isPlainObject(rawAmbient.bubbles) ? rawAmbient.bubbles : {};
   const rawStarlit = isPlainObject(raw.starlit) ? raw.starlit : {};
@@ -300,6 +304,11 @@ export function normalizeNurserySettings(raw: unknown): NurserySettings {
       diaper: boolOrDefault(rawActs.diaper, NURSERY_DEFAULTS.acts.diaper),
       sleep: boolOrDefault(rawActs.sleep, NURSERY_DEFAULTS.acts.sleep),
       food: boolOrDefault(rawActs.food, NURSERY_DEFAULTS.acts.food),
+    },
+    timers: {
+      wake: boolOrDefault(rawTimers.wake, NURSERY_DEFAULTS.timers.wake),
+      feed: boolOrDefault(rawTimers.feed, NURSERY_DEFAULTS.timers.feed),
+      diaper: boolOrDefault(rawTimers.diaper, NURSERY_DEFAULTS.timers.diaper),
     },
     ambient: {
       pattern: normalizeAmbientPattern(rawAmbient.pattern),

@@ -1,0 +1,57 @@
+/**
+ * Nursery Mode timer blocks (issue #219).
+ * The nursery stage is a dark, low-light surface in both app themes, so these
+ * rules apply as-is; html.dark needs no separate override. Sizes are capped by
+ * viewport height so a short screen shrinks the blocks instead of pushing the
+ * activity cards off screen.
+ * Up to three equal-width blocks share one row at every width; each is capped
+ * at a third of the row so one or two enabled blocks keep the same size, centered.
+ */
+.nursery-timers { --tgap: clamp(10px, 1.4vw, 22px); gap: var(--tgap); width: min(1080px, 92vw); }
+
+.nursery-timer {
+  max-width: calc((100% - 2 * var(--tgap)) / 3);
+  gap: clamp(4px, .7vh, 8px);
+  border-radius: 20px;
+  padding: clamp(10px, min(1.3vw, 1.6vh), 20px) clamp(10px, 1.3vw, 22px);
+  border: 1px solid rgba(255,255,255,var(--cardline, .14));
+  background: rgba(255,255,255,var(--cardbg, .08));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 40px rgba(0,0,0,.18);
+  transition: background .4s, border-color .4s;
+}
+.nursery-timer-head { gap: 8px; font-size: clamp(11px, 1vw, 14px); font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+.nursery-timer-value { gap: .12em; font-weight: 400; font-size: clamp(30px, min(4.6vw, 6.5vh), 72px); line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; text-shadow: 0 2px 24px rgba(0,0,0,.25); white-space: nowrap; }
+.nursery-timer-unit { font-size: .38em; font-style: italic; color: rgba(255,255,255,.7); margin-right: .3em; }
+.nursery-timer-unit:last-child { margin-right: 0; }
+/* word in place of a duration ("Feeding") — smaller so it fits a third-width block */
+.nursery-timer-text { font-size: .62em; font-style: italic; }
+.nursery-timer-note { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(12px, 1.1vw, 16px); line-height: 1.2; color: rgba(255,255,255,.6); }
+
+/* asleep: dimmer, cooler — reads as "quiet" at a glance */
+.nursery-timer-sleeping { background: rgba(120,140,255,calc(var(--cardbg, .08) * .9)); border-color: rgba(160,175,255,.28); }
+.nursery-timer-sleeping .nursery-timer-value { color: rgba(225,230,255,.92); }
+
+/* past the baby's feed warning time — a soft rose, not an alarm red, for a dark room */
+.nursery-timer-warning { background: rgba(244,114,142,.16); border-color: rgba(251,146,170,.5); }
+.nursery-timer-warning .nursery-timer-value { color: #fecdd6; }
+.nursery-timer-badge { font-size: clamp(10px, .9vw, 12px); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; background: rgba(251,146,170,.22); color: #fecdd6; }
+
+.nursery-timer-empty .nursery-timer-value { color: rgba(255,255,255,.4); }
+
+/* phones in portrait: three ~100px columns on a 360px screen */
+@media (max-width: 680px) {
+  .nursery-timers { --tgap: 8px; width: 100%; max-width: 520px; }
+  .nursery-timer { border-radius: 16px; padding: 10px 6px; gap: 4px; }
+  .nursery-timer-head { gap: 6px; font-size: 10px; letter-spacing: .08em; }
+  .nursery-timer-value { font-size: clamp(20px, 6.4vw, 32px); }
+  .nursery-timer-note { font-size: 11px; }
+  .nursery-timer-badge { font-size: 9px; letter-spacing: .08em; padding: 2px 7px; }
+}
+
+/* landscape phones: one-line blocks so the activity cards keep the height; the Overdue pill wraps */
+@media (orientation: landscape) and (max-height: 500px) {
+  .nursery-timer { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 10px; padding: 6px 10px; border-radius: 14px; }
+  .nursery-timer-value { font-size: clamp(20px, 6vh, 30px); }
+}

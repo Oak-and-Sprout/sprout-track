@@ -756,7 +756,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
           log.foodItems = items.map(item => {
             const meta = catalogById.get(item.foodId) || (log.food?.id === item.foodId ? log.food : undefined);
             return {
-              foodId: item.foodId,
+              ...item,
               hadReaction: item.hadReaction === true,
               reactionDescription: item.reactionDescription ?? null,
               ...(meta ? { name: meta.name, commonAllergen: meta.commonAllergen === true } : {}),

@@ -73,6 +73,7 @@ const ENV_DEFAULTS = [
   {
     key: 'TZ',
     default: 'UTC',
+    runtimeEnvWins: true,
     comment: 'Timezone'
   },
   {
@@ -93,7 +94,7 @@ const ENV_DEFAULTS = [
   },
   {
     key: 'APP_VERSION',
-    default: '1.6.7',
+    default: '1.6.8',
     comment: 'Application version'
   },
   {

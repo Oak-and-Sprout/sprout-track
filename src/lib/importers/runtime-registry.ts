@@ -1,4 +1,5 @@
 import {
+  ExternalImportExecutionConfiguration,
   ExternalImportFile,
   ExternalImportPreview,
   ExternalImportRecord,
@@ -12,6 +13,15 @@ import {
   BabyBuddyImportWarning,
   BabyBuddyPreviewDetails,
 } from './baby-buddy';
+import {
+  analyseHuckleberryFiles,
+  buildHuckleberryImportRecords,
+  collectHuckleberryWarnings,
+  huckleberryPreviewer,
+  HUCKLEBERRY_SOURCE_CHILD_ID,
+  HuckleberryImportWarning,
+  HuckleberryPreviewDetails,
+} from './huckleberry';
 
 export interface ExternalImportProviderPreview {
   readonly preview: ExternalImportPreview;
@@ -29,6 +39,7 @@ export interface ExternalImportRuntimeProvider {
   buildRecords(
     files: readonly ExternalImportFile[],
     configuration: unknown,
+    execution: ExternalImportExecutionConfiguration,
   ): readonly ExternalImportRecord[];
 }
 
@@ -114,8 +125,33 @@ const babyBuddyRuntimeProvider: ExternalImportRuntimeProvider = {
   },
 };
 
+const huckleberryRuntimeProvider: ExternalImportRuntimeProvider = {
+  id: 'huckleberry',
+
+  previewFiles(files) {
+    return {
+      preview: huckleberryPreviewer.previewFiles(files),
+      details: analyseHuckleberryFiles(files),
+      warnings: collectHuckleberryWarnings(files),
+    } satisfies {
+      preview: ExternalImportPreview;
+      details: HuckleberryPreviewDetails;
+      warnings: readonly HuckleberryImportWarning[];
+    };
+  },
+
+  buildRecords(files, _configuration, execution) {
+    const destination = execution.childDestinations[HUCKLEBERRY_SOURCE_CHILD_ID];
+    return buildHuckleberryImportRecords(
+      files,
+      destination?.mode === 'existing' ? destination.targetBabyId : '',
+    );
+  },
+};
+
 const runtimeProviders: readonly ExternalImportRuntimeProvider[] = [
   babyBuddyRuntimeProvider,
+  huckleberryRuntimeProvider,
 ];
 
 export function getExternalImportRuntimeProvider(

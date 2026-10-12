@@ -250,6 +250,7 @@ model Baby {
   inactive          Boolean   @default(false)
   feedWarningTime   String    @default("03:00") // Default 3 hours
   diaperWarningTime String    @default("02:00") // Default 2 hours
+  pumpWarningTime   String    @default("03:00") // Default 3 hours
   feedTimerFrom     String    @default("start") // "start" | "end" - count feed timer from start or end of feeding
   feedTimerTypes    String? // JSON array of feed categories that reset the feed timer (issue #225); null = all feeds count
   createdAt         DateTime  @default(now())
@@ -1084,8 +1085,10 @@ model FoodLog {
   reactionDescription String? // Description of the reaction (redness, swelling, ...) — legacy / meal summary
   notes               String?
   feedLogId           String? // Optional soft link to the SOLIDS FeedLog this try happened in (no FK)
-  // JSON text: [{ foodId, hadReaction?, reactionDescription? }] for multi-food meals (#247).
-  // Dual-write with foodId when N=1; foodId null when N>1. Expand via expandFoodItems().
+  // JSON text: [{ foodId, hadReaction?, reactionDescription?, amount?, unitAbbr?, enjoyment? }] (#247, #271).
+  // The app form writes per-food amount/unitAbbr/enjoyment only when N>1 (row fields otherwise); row amount
+  // derived from items (sum for one unit, null when mixed). Dual-write with foodId when N=1;
+  // foodId null when N>1. Expand via expandFoodItems().
   foods               String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -1427,6 +1430,52 @@ model CdcHeadCircumferenceForAge {
   id        String @id @default(uuid())
   sex       Int // 1 = Male, 2 = Female
   ageMonths Float // Age in months (0, 0.5, 1.5, 2.5, etc.)
+  l         Float // L parameter (power in Box-Cox transformation)
+  m         Float // M parameter (median)
+  s         Float // S parameter (generalized coefficient of variation)
+  p3        Float // 3rd percentile
+  p5        Float // 5th percentile
+  p10       Float // 10th percentile
+  p25       Float // 25th percentile
+  p50       Float // 50th percentile (median)
+  p75       Float // 75th percentile
+  p90       Float // 90th percentile
+  p95       Float // 95th percentile
+  p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// Weight-for-age reference data (children 2-20 years)
+model CdcChildWeightForAge {
+  id        String @id @default(uuid())
+  sex       Int // 1 = Male, 2 = Female
+  ageMonths Float // Age in months (24 through 240)
+  l         Float // L parameter (power in Box-Cox transformation)
+  m         Float // M parameter (median)
+  s         Float // S parameter (generalized coefficient of variation)
+  p3        Float // 3rd percentile
+  p5        Float // 5th percentile
+  p10       Float // 10th percentile
+  p25       Float // 25th percentile
+  p50       Float // 50th percentile (median)
+  p75       Float // 75th percentile
+  p90       Float // 90th percentile
+  p95       Float // 95th percentile
+  p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// Stature-for-age reference data (children 2-20 years)
+model CdcStatureForAge {
+  id        String @id @default(uuid())
+  sex       Int // 1 = Male, 2 = Female
+  ageMonths Float // Age in months (24 through 240)
   l         Float // L parameter (power in Box-Cox transformation)
   m         Float // M parameter (median)
   s         Float // S parameter (generalized coefficient of variation)

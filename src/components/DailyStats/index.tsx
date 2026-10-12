@@ -30,6 +30,7 @@ import './daily-stats.css';
 import { dailyStatsStyles } from './daily-stats.styles';
 import { DailyStatsProps, StatItemProps, StatsTickerProps } from './daily-stats.types';
 import { useLocalization } from '@/src/context/localization';
+import { formatAmount } from '@/src/utils/formatAmount';
 
 const StatsTicker: React.FC<StatsTickerProps> = ({ stats }) => {
   const { theme } = useTheme();
@@ -399,7 +400,7 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
     
     // Format consumed amounts with feed count
     const formattedAmounts = Object.entries(consumedAmounts)
-      .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
+      .map(([unit, amount]) => `${formatAmount(amount)} ${unit.toLowerCase()}`)
       .join(', ');
     const formattedConsumed = feedCount > 0 
       ? `${feedCount} feed${feedCount !== 1 ? 's' : ''}, ${formattedAmounts}`
@@ -407,7 +408,7 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
       
     // Format solids consumed amounts
     const formattedSolidsConsumed = Object.entries(solidsAmounts)
-      .map(([unit, amount]) => `${amount} ${unit.toLowerCase()}`)
+      .map(([unit, amount]) => `${formatAmount(amount)} ${unit.toLowerCase()}`)
       .join(', ');
     
     // Format pump totals - ensure we're grouping by unit type correctly
@@ -422,7 +423,7 @@ export const DailyStats: React.FC<DailyStatsProps> = ({ activities, date, isLoad
         count: data.count,
         total: data.total,
         unit: data.unit,
-        display: `${data.count}x (${data.total}${data.unit})`
+        display: `${data.count}x (${formatAmount(data.total)}${data.unit})`
       }));
     
     return {

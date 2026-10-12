@@ -5,8 +5,10 @@ import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../../a
 import { checkRateLimit } from '../../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../../response';
 import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, PUMP_ACTIONS, SLEEP_QUALITIES, normalizeEnumValue } from '../../../../field-values';
+import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, parseEnjoyment, parseFoodAmount, parseFoodItemInputs, planFoodUnit, resolveFoodItems, resolveItemUnits } from '../../../../food';
+import { buildFoodLogFoodFields, deriveMealAmountFromItems } from '@/src/utils/foodLogUtils';
 
-const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement'] as const;
+const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement', 'food'] as const;
 type ActivityType = typeof VALID_TYPES[number];
 
 type RouteContext = {
@@ -29,6 +31,9 @@ type FoundActivity = {
   id: string;
   babyId: string;
   time?: Date;
+  // food only: the stored amount/unit, needed to keep a unit paired with an amount
+  amount?: number | null;
+  unitAbbr?: string | null;
 };
 
 const TYPE_ALIASES: Record<string, ActivityType> = {
@@ -42,6 +47,7 @@ const TYPE_ALIASES: Record<string, ActivityType> = {
   measurement: 'measurement',
   medicine: 'medicine',
   supplement: 'supplement',
+  food: 'food',
 };
 
 const TYPE_FIELDS: Record<ActivityType, readonly string[]> = {
@@ -55,6 +61,7 @@ const TYPE_FIELDS: Record<ActivityType, readonly string[]> = {
   measurement: ['type', 'measurementType', 'time', 'date', 'value', 'unit', 'notes'],
   medicine: ['type', 'medicineName', 'time', 'amount', 'doseAmount', 'unitAbbr', 'notes'],
   supplement: ['type', 'supplementName', 'medicineName', 'time', 'amount', 'doseAmount', 'unitAbbr', 'notes'],
+  food: ['type', 'time', ...FOOD_FIELDS],
 };
 
 function isJsonObject(value: unknown): value is JsonObject {
@@ -425,6 +432,43 @@ async function buildMedicineData(
   return empty ? { error: empty } : { data: data as Prisma.MedicineLogUpdateInput };
 }
 
+// Same rules as POST: foods are find-or-created by name in the family catalog
+// (only after every other field validated), and a unit only accompanies an amount.
+async function buildFoodData(body: JsonObject, familyId: string, existing: FoundActivity): Promise<{ data?: Prisma.FoodLogUncheckedUpdateInput; error?: string; status?: number }> {
+  const data: JsonObject = {};
+  const timeError = assignDate(data, body, 'time', 'time');
+  if (timeError) return { error: timeError };
+  const foods = parseFoodItemInputs(body);
+  if (foods.error) return { error: foods.error };
+  const amount = parseFoodAmount(body.amount);
+  if (amount.error) return { error: amount.error };
+  if (amount.value !== undefined) data.amount = amount.value;
+  if (body.amount !== undefined || body.unitAbbr !== undefined) {
+    const unitAbbrError = await assignUnitAbbr(data, body);
+    if (unitAbbrError) return { error: unitAbbrError };
+    const plan = planFoodUnit(amount.value, (data.unitAbbr as string | null | undefined) ?? null, { amount: existing.amount ?? null, unitAbbr: existing.unitAbbr ?? null });
+    if (plan.error) return { error: plan.error };
+    if (plan.useDefault) data.unitAbbr = await getDefaultSolidsUnit(familyId);
+    else if (plan.unitAbbr !== undefined) data.unitAbbr = plan.unitAbbr;
+    else delete data.unitAbbr;
+  }
+  const enjoyment = parseEnjoyment(body.enjoyment);
+  if (enjoyment.error) return { error: enjoyment.error };
+  if (enjoyment.value !== undefined) data.enjoyment = enjoyment.value;
+  const notesError = assignString(data, body, 'notes');
+  if (notesError) return { error: notesError };
+  if (foods.items) {
+    const itemUnits = await resolveItemUnits(foods.items, familyId);
+    if (itemUnits.error) return { error: itemUnits.error };
+    const resolved = await resolveFoodItems(itemUnits.items!, familyId);
+    if (resolved.error) return { error: resolved.error, status: 404 };
+    // Per-food amounts (#271) define the row amount/unit, as in /api/food-log
+    Object.assign(data, buildFoodLogFoodFields(resolved.items!), deriveMealAmountFromItems(resolved.items!));
+  }
+  const empty = ensureNonEmptyUpdate(data);
+  return empty ? { error: empty } : { data: data as Prisma.FoodLogUncheckedUpdateInput };
+}
+
 async function findExistingActivity(type: ActivityType, activityId: string, babyId: string, familyId: string): Promise<FoundActivity | null> {
   switch (type) {
     case 'feed': {
@@ -466,6 +510,10 @@ async function findExistingActivity(type: ActivityType, activityId: string, baby
         select: { id: true, babyId: true, time: true },
       });
       return row ? { type, id: row.id, babyId: row.babyId, time: row.time } : null;
+    }
+    case 'food': {
+      const row = await prisma.foodLog.findFirst({ where: { id: activityId, babyId, familyId, deletedAt: null }, select: { id: true, babyId: true, time: true, amount: true, unitAbbr: true } });
+      return row ? { type, id: row.id, babyId: row.babyId, time: row.time, amount: row.amount, unitAbbr: row.unitAbbr } : null;
     }
   }
 }
@@ -542,6 +590,12 @@ async function updateActivity(type: ActivityType, activityId: string, babyId: st
       });
       return { result: summary(type, row.id, row.babyId, 'updated', row.time, { medicineName: row.medicine.name, doseAmount: row.doseAmount, unitAbbr: row.unitAbbr, notes: row.notes }) };
     }
+    case 'food': {
+      const built = await buildFoodData(body, familyId, existing);
+      if (built.error) return { error: built.error, status: built.status ?? 400 };
+      const row = await prisma.foodLog.update({ where: { id: activityId }, data: built.data! });
+      return { result: summary(type, row.id, row.babyId, 'updated', row.time, formatFoodDetails(row, await loadFoodCatalog(familyId, [row]))) };
+    }
   }
 }
 
@@ -574,6 +628,10 @@ async function deleteActivity(existing: FoundActivity): Promise<void> {
     case 'medicine':
     case 'supplement':
       await prisma.medicineLog.delete({ where: { id: existing.id } });
+      return;
+    case 'food':
+      // Soft delete, like the app's /api/food-log DELETE
+      await prisma.foodLog.update({ where: { id: existing.id }, data: { deletedAt: new Date() } });
       return;
   }
 }

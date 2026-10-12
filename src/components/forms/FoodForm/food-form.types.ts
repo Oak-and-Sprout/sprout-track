@@ -1,4 +1,5 @@
 import { FoodResponse, FoodLogResponse } from '@/app/api/types';
+import { FoodEntry } from '@/src/utils/foodMealComposer';
 
 /**
  * Tab types for the FoodForm component
@@ -51,4 +52,21 @@ export interface ProgressTabProps {
   refreshTrigger: number;
   /** Called when a "View in log" link is followed, so the form can close. */
   onNavigate?: () => void;
+}
+
+/** Props for the entry box where one food is composed or a tag edited (#271). */
+export interface FoodEntryBoxProps {
+  /** Id for the name input, so the "Foods" label can target it */
+  inputId: string;
+  entry: FoodEntry;
+  onChange: (entry: FoodEntry) => void;
+  /** Family food catalog */
+  foods: FoodResponse[];
+  /** The meal's other foods, left out of the dropdown */
+  excludeNames: string[];
+  /** Name of the tag being edited; undefined while adding */
+  editingName?: string;
+  onSave: () => void;
+  onCancelEdit: () => void;
+  disabled: boolean;
 }

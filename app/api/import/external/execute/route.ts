@@ -101,6 +101,7 @@ async function handlePost(
     const records = provider.buildRecords(
       upload.files,
       configuration.provider,
+      configuration.execution,
     );
 
     const result = await prisma.$transaction(
