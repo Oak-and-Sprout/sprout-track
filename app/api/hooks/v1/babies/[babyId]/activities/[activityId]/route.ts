@@ -5,8 +5,8 @@ import { withApiKeyAuth, ApiKeyContext, validateBabyAccess } from '../../../../a
 import { checkRateLimit } from '../../../../rate-limiter';
 import { hookSuccess, hookError } from '../../../../response';
 import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, PUMP_ACTIONS, SLEEP_QUALITIES, normalizeEnumValue } from '../../../../field-values';
-import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, parseEnjoyment, parseFoodAmount, parseFoodItemInputs, planFoodUnit, resolveFoodItems } from '../../../../food';
-import { buildFoodLogFoodFields } from '@/src/utils/foodLogUtils';
+import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, parseEnjoyment, parseFoodAmount, parseFoodItemInputs, planFoodUnit, resolveFoodItems, resolveItemUnits } from '../../../../food';
+import { buildFoodLogFoodFields, deriveMealAmountFromItems } from '@/src/utils/foodLogUtils';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement', 'food'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -458,9 +458,12 @@ async function buildFoodData(body: JsonObject, familyId: string, existing: Found
   const notesError = assignString(data, body, 'notes');
   if (notesError) return { error: notesError };
   if (foods.items) {
-    const resolved = await resolveFoodItems(foods.items, familyId);
+    const itemUnits = await resolveItemUnits(foods.items, familyId);
+    if (itemUnits.error) return { error: itemUnits.error };
+    const resolved = await resolveFoodItems(itemUnits.items!, familyId);
     if (resolved.error) return { error: resolved.error, status: 404 };
-    Object.assign(data, buildFoodLogFoodFields(resolved.items!));
+    // Per-food amounts (#271) define the row amount/unit, as in /api/food-log
+    Object.assign(data, buildFoodLogFoodFields(resolved.items!), deriveMealAmountFromItems(resolved.items!));
   }
   const empty = ensureNonEmptyUpdate(data);
   return empty ? { error: empty } : { data: data as Prisma.FoodLogUncheckedUpdateInput };

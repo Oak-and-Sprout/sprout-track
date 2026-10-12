@@ -6,6 +6,7 @@ import {
   parseFoodItemInputs,
   planFoodItems,
   planFoodUnit,
+  planItemUnits,
 } from '../app/api/hooks/v1/food';
 
 describe('parseFoodItemInputs', () => {
@@ -34,6 +35,22 @@ describe('parseFoodItemInputs', () => {
     });
   });
 
+  it('parses per-food amount, unit and enjoyment on foods[] objects', () => {
+    expect(parseFoodItemInputs({ foods: [{ name: 'Carrot', amount: '2', unitAbbr: ' tbsp ', enjoyment: 'loved' }, { foodId: 'food-2', enjoyment: null }, 'Pea'] })).toEqual({
+      items: [
+        { name: 'Carrot', hadReaction: false, reactionDescription: null, amount: 2, unitAbbr: 'tbsp', enjoyment: 'LOVED' },
+        { foodId: 'food-2', hadReaction: false, reactionDescription: null, enjoyment: null },
+        { name: 'Pea', hadReaction: false, reactionDescription: null },
+      ],
+    });
+  });
+
+  it('keeps per-food details off the single-food shorthand (those are the meal fields)', () => {
+    expect(parseFoodItemInputs({ foodName: 'Carrot', amount: 2, enjoyment: 'LOVED' })).toEqual({
+      items: [{ name: 'Carrot', hadReaction: false, reactionDescription: null }],
+    });
+  });
+
   it.each([
     [{ foodName: 'Banana', foodId: 'food-1' }, 'exactly one of foodId or foodName'],
     [{ foodName: '  ..  ' }, 'foodName must be a non-empty string'],
@@ -48,7 +65,12 @@ describe('parseFoodItemInputs', () => {
     [{ foods: ['Banana'], foodName: 'Egg' }, 'not both'],
     [{ foods: ['Banana'], hadReaction: true }, 'not both'],
     [{ foods: [42] }, 'foods[0] must be a food name or an object'],
-    [{ foods: [{ name: 'Egg', amount: 2 }] }, 'Unsupported field(s) in foods[0]: amount'],
+    [{ foods: [{ name: 'Egg', grams: 2 }] }, 'Unsupported field(s) in foods[0]: grams'],
+    [{ foods: [{ name: 'Egg', amount: 0 }] }, 'foods[0]: amount must be a positive number'],
+    [{ foods: [{ name: 'Egg', unitAbbr: 'G' }] }, 'foods[0]: unitAbbr requires an amount'],
+    [{ foods: [{ name: 'Egg', amount: 1, unitAbbr: 5 }] }, 'foods[0]: unitAbbr must be a string'],
+    [{ foods: [{ name: 'Egg', amount: 1, unitAbbr: 'a-very-long-unit-name' }] }, 'Invalid unit'],
+    [{ foods: ['Egg', { name: 'Milk', enjoyment: 'meh' }] }, 'foods[1]: enjoyment must be one of'],
     [{ foods: ['Egg', { name: 'Milk', foodId: 'food-1' }] }, 'foods[1]: send exactly one of foodId or name'],
   ])('rejects %j', (body, message) => {
     const result = parseFoodItemInputs(body as Record<string, unknown>);
@@ -86,6 +108,14 @@ describe('planFoodItems', () => {
       { name: 'egg', hadReaction: true, reactionDescription: null },
     ], catalog);
     expect(plan.items).toEqual([{ foodId: 'food-egg', hadReaction: true, reactionDescription: null }]);
+  });
+
+  it('keeps the first per-food details sent for a food listed twice, filling gaps from later entries', () => {
+    const plan = planFoodItems([
+      { name: 'egg', hadReaction: false, reactionDescription: null, amount: 1, unitAbbr: 'G' },
+      { foodId: 'food-egg', hadReaction: false, reactionDescription: null, amount: 5, unitAbbr: 'TBSP', enjoyment: 'LIKED' },
+    ], catalog);
+    expect(plan.items).toEqual([{ foodId: 'food-egg', hadReaction: false, reactionDescription: null, amount: 1, unitAbbr: 'G', enjoyment: 'LIKED' }]);
   });
 
   it('rejects a foodId outside the family catalog', () => {
@@ -152,6 +182,31 @@ describe('planFoodUnit', () => {
   });
 });
 
+describe('planItemUnits', () => {
+  const units = ['TBSP', 'G', 'OZ'];
+
+  it('resolves per-food units to their canonical casing and gives amounts without one the default', () => {
+    expect(planItemUnits([
+      { name: 'Carrot', hadReaction: false, reactionDescription: null, amount: 2, unitAbbr: 'tbsp' },
+      { name: 'Pea', hadReaction: false, reactionDescription: null, amount: 1 },
+      { name: 'Egg', hadReaction: false, reactionDescription: null },
+    ], units, 'G')).toEqual({
+      items: [
+        { name: 'Carrot', hadReaction: false, reactionDescription: null, amount: 2, unitAbbr: 'TBSP' },
+        { name: 'Pea', hadReaction: false, reactionDescription: null, amount: 1, unitAbbr: 'G' },
+        { name: 'Egg', hadReaction: false, reactionDescription: null },
+      ],
+    });
+  });
+
+  it('rejects an unknown per-food unit, naming the entry and the valid units', () => {
+    expect(planItemUnits([
+      { name: 'Egg', hadReaction: false, reactionDescription: null },
+      { name: 'Carrot', hadReaction: false, reactionDescription: null, amount: 2, unitAbbr: 'cups' },
+    ], units, 'G').error).toBe('foods[1]: unitAbbr must be one of: TBSP, G, OZ');
+  });
+});
+
 describe('formatFoodDetails', () => {
   const catalog = new Map([
     ['food-1', { id: 'food-1', name: 'Banana', commonAllergen: false }],
@@ -162,7 +217,7 @@ describe('formatFoodDetails', () => {
     const details = formatFoodDetails({
       time: new Date('2026-10-12T10:00:00Z'),
       foodId: null,
-      foods: JSON.stringify([{ foodId: 'food-1' }, { foodId: 'food-2', hadReaction: true, reactionDescription: 'hives' }]),
+      foods: JSON.stringify([{ foodId: 'food-1', amount: 2, unitAbbr: 'TBSP' }, { foodId: 'food-2', hadReaction: true, reactionDescription: 'hives', enjoyment: 'LOVED' }]),
       amount: 2,
       unitAbbr: 'TBSP',
       enjoyment: 'LIKED',
@@ -172,8 +227,8 @@ describe('formatFoodDetails', () => {
     }, catalog);
     expect(details).toEqual({
       foods: [
-        { foodId: 'food-1', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null },
-        { foodId: 'food-2', name: 'Peanut', commonAllergen: true, hadReaction: true, reactionDescription: 'hives' },
+        { foodId: 'food-1', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null, amount: 2, unitAbbr: 'TBSP', enjoyment: null },
+        { foodId: 'food-2', name: 'Peanut', commonAllergen: true, hadReaction: true, reactionDescription: 'hives', amount: null, unitAbbr: null, enjoyment: 'LOVED' },
       ],
       amount: 2,
       unitAbbr: 'TBSP',
@@ -192,7 +247,7 @@ describe('formatFoodDetails', () => {
       hadReaction: false,
     }, catalog);
     expect(details.foods).toEqual([
-      { foodId: 'food-1', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null },
+      { foodId: 'food-1', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null, amount: null, unitAbbr: null, enjoyment: null },
     ]);
   });
 });

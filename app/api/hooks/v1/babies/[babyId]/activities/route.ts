@@ -6,8 +6,8 @@ import { hookSuccess, hookError } from '../../../response';
 import { notifyActivityCreated, resetTimerNotificationState } from '@/src/lib/notifications/activityHook';
 import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession } from '../../../../../utils/activeBreastFeed';
 import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, PUMP_ACTIONS, SLEEP_QUALITIES, normalizeEnumValue } from '../../../field-values';
-import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, parseEnjoyment, parseFoodAmount, parseFoodItemInputs, planFoodUnit, resolveFoodItems } from '../../../food';
-import { buildFoodLogFoodFields } from '@/src/utils/foodLogUtils';
+import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, parseEnjoyment, parseFoodAmount, parseFoodItemInputs, planFoodUnit, resolveFoodItems, resolveItemUnits } from '../../../food';
+import { buildFoodLogFoodFields, deriveMealAmountFromItems } from '@/src/utils/foodLogUtils';
 import { findExistingFoodLog } from '@/scripts/convert-solids-feeds-runner';
 import { resolveCatalogFoodName } from '@/scripts/convert-solids-feeds-core';
 
@@ -160,20 +160,24 @@ async function createFoodActivity(
   if (foodUnitResult.error) return hookError('INVALID_UNIT', foodUnitResult.error, 400, headers);
   const unitPlan = planFoodUnit(foodAmount.value, foodUnitResult.value);
   if (unitPlan.error) return hookError('INVALID_UNIT', unitPlan.error, 400, headers);
+  const itemUnits = await resolveItemUnits(parsedFoods.items, familyId);
+  if (itemUnits.error) return hookError('INVALID_UNIT', itemUnits.error, 400, headers);
 
   const existing = dedupe
     ? await findExistingFoodLog(prisma, { familyId, babyId, time, names: parsedFoods.items.map((item) => item.name ?? '') })
     : null;
   // Catalog foods are created only after every other field validated
-  const resolvedFoods = existing ? null : await resolveFoodItems(parsedFoods.items, familyId);
+  const resolvedFoods = existing ? null : await resolveFoodItems(itemUnits.items!, familyId);
   if (resolvedFoods?.error) return hookError('FOOD_NOT_FOUND', resolvedFoods.error, 404, headers);
+  // Per-food amounts (#271) define the row total, as in /api/food-log
+  const itemAmount = resolvedFoods ? deriveMealAmountFromItems(resolvedFoods.items!) : null;
 
   const result = existing ?? await prisma.foodLog.create({
     data: {
       time,
       ...buildFoodLogFoodFields(resolvedFoods!.items!),
-      amount: foodAmount.value ?? null,
-      unitAbbr: unitPlan.useDefault ? await getDefaultSolidsUnit(familyId) : unitPlan.unitAbbr ?? null,
+      amount: itemAmount ? itemAmount.amount : foodAmount.value ?? null,
+      unitAbbr: itemAmount ? itemAmount.unitAbbr : unitPlan.useDefault ? await getDefaultSolidsUnit(familyId) : unitPlan.unitAbbr ?? null,
       enjoyment: enjoyment.value ?? null,
       notes: notes && notes.trim() ? notes.trim() : null,
       babyId,

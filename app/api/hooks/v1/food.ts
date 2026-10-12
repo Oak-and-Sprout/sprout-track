@@ -9,29 +9,56 @@ import {
   expandFoodItems,
   foodNameKey,
   normalizeFoodName,
+  validateFoodItemInputs,
   type FoodEnjoymentValue,
   type FoodLogItem,
   type FoodLogLike,
 } from '@/src/utils/foodLogUtils';
 import { normalizeEnumValue } from './field-values';
 
-/** One requested food: an existing catalog id, or a name to find-or-create. */
+/**
+ * One requested food: an existing catalog id, or a name to find-or-create,
+ * with the optional per-food details of #271 (foods[] objects only).
+ */
 export interface FoodItemInput {
   foodId?: string;
   name?: string;
   hadReaction: boolean;
   reactionDescription: string | null;
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: FoodEnjoymentValue | null;
 }
+
+type FoodItemDetails = Pick<FoodItemInput, 'amount' | 'unitAbbr' | 'enjoyment'>;
 
 type CatalogFood = { id: string; name: string; commonAllergen: boolean };
 
 /** Body fields the food type accepts besides the shared type/time/caretakerName. */
 export const FOOD_FIELDS = ['foods', 'foodName', 'foodId', 'amount', 'unitAbbr', 'enjoyment', 'hadReaction', 'reactionDescription', 'notes'] as const;
 
-const FOOD_ITEM_FIELDS = ['foodId', 'name', 'hadReaction', 'reactionDescription'];
+const FOOD_ITEM_FIELDS = ['foodId', 'name', 'hadReaction', 'reactionDescription', 'amount', 'unitAbbr', 'enjoyment'];
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Per-food amount/unitAbbr/enjoyment of a foods[] object, as only the keys sent (the unit is resolved later). */
+function parseItemDetails(entry: Record<string, unknown>, where: string): { details?: FoodItemDetails; error?: string } {
+  const amount = parseFoodAmount(entry.amount);
+  if (amount.error) return { error: `${where}: ${amount.error}` };
+  if (entry.unitAbbr != null && typeof entry.unitAbbr !== 'string') return { error: `${where}: unitAbbr must be a string` };
+  const unitAbbr = typeof entry.unitAbbr === 'string' && entry.unitAbbr.trim() ? entry.unitAbbr.trim() : null;
+  if (unitAbbr && amount.value == null) return { error: `${where}: unitAbbr requires an amount` };
+  const enjoyment = parseEnjoyment(entry.enjoyment);
+  if (enjoyment.error) return { error: `${where}: ${enjoyment.error}` };
+  return {
+    details: {
+      ...(amount.value !== undefined ? { amount: amount.value } : {}),
+      ...(unitAbbr ? { unitAbbr } : {}),
+      ...(enjoyment.value !== undefined ? { enjoyment: enjoyment.value } : {}),
+    },
+  };
 }
 
 function parseItem(foodId: unknown, name: unknown, hadReaction: unknown, reactionDescription: unknown, where: string, nameField: string): { item?: FoodItemInput; error?: string } {
@@ -51,7 +78,8 @@ function parseItem(foodId: unknown, name: unknown, hadReaction: unknown, reactio
 
 /**
  * Parse the food(s) of a request: either `foods[]` (each a name string or
- * `{ foodId | name, hadReaction?, reactionDescription? }`) or the single-food
+ * `{ foodId | name, hadReaction?, reactionDescription?, amount?, unitAbbr?,
+ * enjoyment? }`, checked with the app's validateFoodItemInputs) or the single-food
  * shorthand `foodName | foodId` with top-level hadReaction/reactionDescription.
  * Returns `{}` when no food field was sent.
  */
@@ -70,9 +98,13 @@ export function parseFoodItemInputs(body: Record<string, unknown>): { items?: Fo
       if (unknown.length) return { error: `Unsupported field(s) in ${where}: ${unknown.join(', ')}` };
       const parsed = parseItem(entry.foodId, entry.name, entry.hadReaction, entry.reactionDescription, where, 'name');
       if (parsed.error) return { error: parsed.error };
-      items.push(parsed.item!);
+      const details = parseItemDetails(entry, where);
+      if (details.error) return { error: details.error };
+      items.push({ ...parsed.item!, ...details.details });
     }
-    return { items };
+    // Same rules as the app's /api/food-log (ids are placeholders: names resolve later)
+    const check = validateFoodItemInputs(items.map((item, index) => ({ ...item, foodId: String(index) })));
+    return check.ok ? { items } : { error: check.error };
   }
   if (!single) return reaction ? { error: 'hadReaction/reactionDescription require foodName or foodId (or set them per foods[] entry)' } : {};
   const parsed = parseItem(body.foodId, body.foodName, body.hadReaction, body.reactionDescription, 'food', 'foodName');
@@ -98,13 +130,17 @@ export function planFoodItems(
     const foodId = input.foodId ?? byKey.get(foodNameKey(input.name!));
     const key = foodId ?? `new:${foodNameKey(input.name!)}`;
     const existing = merged.get(key);
+    const { foodId: _id, name: _name, ...fields } = input;
     if (existing) {
       existing.hadReaction = existing.hadReaction || input.hadReaction;
       existing.reactionDescription = existing.reactionDescription ?? input.reactionDescription;
+      // The first per-food details sent win; a unit only travels with its amount
+      if (existing.amount == null && input.amount != null) Object.assign(existing, { amount: input.amount, unitAbbr: input.unitAbbr });
+      if (existing.enjoyment == null && input.enjoyment != null) existing.enjoyment = input.enjoyment;
       continue;
     }
     if (!foodId) newNames.push(input.name!);
-    merged.set(key, { ...(foodId ? { foodId } : { name: input.name }), hadReaction: input.hadReaction, reactionDescription: input.reactionDescription });
+    merged.set(key, { ...(foodId ? { foodId } : { name: input.name }), ...fields });
   }
   return { items: Array.from(merged.values()), newNames };
 }
@@ -121,12 +157,34 @@ export async function resolveFoodItems(inputs: FoodItemInput[], familyId: string
     created.set(foodNameKey(name), food.id);
   }
   return {
-    items: plan.items!.map((item) => ({
-      foodId: item.foodId ?? created.get(foodNameKey(item.name!))!,
-      hadReaction: item.hadReaction,
-      reactionDescription: item.reactionDescription,
-    })),
+    items: plan.items!.map(({ foodId, name, ...fields }) => ({ foodId: foodId ?? created.get(foodNameKey(name!))!, ...fields })),
   };
+}
+
+/**
+ * Per-food units (#271), resolved like the meal unit: matched case-insensitively
+ * against `units` (the Unit table) to their canonical casing, and `defaultUnit`
+ * (the family's default solids unit) for an amount sent without one.
+ */
+export function planItemUnits(items: FoodItemInput[], units: string[], defaultUnit: string): { items?: FoodItemInput[]; error?: string } {
+  const resolved: FoodItemInput[] = [];
+  for (const [index, item] of items.entries()) {
+    if (item.amount == null) {
+      resolved.push(item);
+      continue;
+    }
+    const unitAbbr = item.unitAbbr ? normalizeEnumValue(item.unitAbbr, units) : defaultUnit;
+    if (!unitAbbr) return { error: `foods[${index}]: unitAbbr must be one of: ${units.join(', ')}` };
+    resolved.push({ ...item, unitAbbr });
+  }
+  return { items: resolved };
+}
+
+/** planItemUnits with the Unit table and the family's default solids unit, loaded only when a food has an amount. */
+export async function resolveItemUnits(items: FoodItemInput[], familyId: string): Promise<{ items?: FoodItemInput[]; error?: string }> {
+  if (!items.some((item) => item.amount != null)) return { items };
+  const units = await prisma.unit.findMany({ select: { unitAbbr: true } });
+  return planItemUnits(items, units.map((unit) => unit.unitAbbr), await getDefaultSolidsUnit(familyId));
 }
 
 /** FoodLog.amount: a positive number, or null to clear; omitted stays `{}`. */
@@ -186,6 +244,10 @@ export function formatFoodDetails(log: FoodLogLike & { notes?: string | null }, 
       commonAllergen: catalog.get(item.foodId)?.commonAllergen === true,
       hadReaction: item.hadReaction === true,
       reactionDescription: item.reactionDescription ?? null,
+      // As stored: null when the food has no own value (then the meal-level field applies)
+      amount: item.amount ?? null,
+      unitAbbr: item.unitAbbr ?? null,
+      enjoyment: item.enjoyment ?? null,
     })),
     amount: log.amount ?? null,
     unitAbbr: log.unitAbbr ?? null,

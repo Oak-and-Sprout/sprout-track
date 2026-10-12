@@ -291,7 +291,7 @@ curl -s \
 }
 ```
 
-A `food` activity (from the Food tracker) looks like this. `details.foods` lists every food in the meal with its catalog name and per-food reaction; the top-level `hadReaction`/`reactionDescription` summarize the meal (true if any food reacted, with the first reacting food's description):
+A `food` activity (from the Food tracker) looks like this. `details.foods` lists every food in the meal with its catalog name, per-food reaction, and per-food `amount`/`unitAbbr`/`enjoyment`; the top-level `hadReaction`/`reactionDescription` summarize the meal (true if any food reacted, with the first reacting food's description):
 
 ```json
 {
@@ -300,8 +300,8 @@ A `food` activity (from the Food tracker) looks like this. `details.foods` lists
   "time": "2026-03-12T12:00:00.000Z",
   "details": {
     "foods": [
-      { "foodId": "...", "name": "Banana", "commonAllergen": false, "hadReaction": false, "reactionDescription": null },
-      { "foodId": "...", "name": "Peanut Butter", "commonAllergen": true, "hadReaction": true, "reactionDescription": "Hives on cheeks" }
+      { "foodId": "...", "name": "Banana", "commonAllergen": false, "hadReaction": false, "reactionDescription": null, "amount": 1.5, "unitAbbr": "TBSP", "enjoyment": "LOVED" },
+      { "foodId": "...", "name": "Peanut Butter", "commonAllergen": true, "hadReaction": true, "reactionDescription": "Hives on cheeks", "amount": 0.5, "unitAbbr": "TBSP", "enjoyment": null }
     ],
     "amount": 2,
     "unitAbbr": "TBSP",
@@ -313,6 +313,8 @@ A `food` activity (from the Food tracker) looks like this. `details.foods` lists
   "caretakerName": "Mom"
 }
 ```
+
+The per-food `amount`/`unitAbbr`/`enjoyment` are what was stored for that food, and `null` when the food has none of its own. Then the meal-level field applies: the meal `enjoyment` covers every food without its own, and the meal `amount` belongs to a food only when it is the meal's only food (a shared amount is never split). Entries logged before per-food details existed, or with a single food, usually carry only the meal-level fields. When the foods have amounts in different units, the meal `amount` and `unitAbbr` are `null`; add up the per-food amounts per unit instead.
 
 ---
 
@@ -632,15 +634,15 @@ Logs a meal in the Food tracker, exactly as the app's "Log Food" form does. Use 
 }
 ```
 
-**A meal with several foods** -- each entry is a name string or an object with `foodId` or `name`, plus optional per-food `hadReaction`/`reactionDescription`:
+**A meal with several foods** -- each entry is a name string or an object with `foodId` or `name`, plus optional per-food `hadReaction`/`reactionDescription` and `amount`/`unitAbbr`/`enjoyment`:
 
 ```json
 {
   "type": "food",
   "foods": [
     "Banana",
-    { "name": "Peanut Butter", "hadReaction": true, "reactionDescription": "Hives on cheeks" },
-    { "foodId": "FOOD_ID" }
+    { "name": "Peanut Butter", "hadReaction": true, "reactionDescription": "Hives on cheeks", "amount": 0.5, "unitAbbr": "TBSP" },
+    { "foodId": "FOOD_ID", "amount": 1, "unitAbbr": "TBSP", "enjoyment": "DISLIKED" }
   ],
   "enjoyment": "LOVED",
   "notes": "First time trying peanut"
@@ -651,7 +653,8 @@ Logs a meal in the Food tracker, exactly as the app's "Log Food" form does. Use 
 |-------|----------|-------------|
 | `foodName` / `foodId` | One of these, or `foods` | A single food. `foodName` is matched case-insensitively against the family's food catalog; an unknown name is added to the catalog (the same way the app's form adds a new food). `foodId` must be a catalog food from `GET /reference?type=foods`. |
 | `hadReaction`, `reactionDescription` | No | Reaction to the single food. Use these only with `foodName`/`foodId`; with `foods[]`, set them on each entry instead. |
-| `foods` | One of these, or `foodName`/`foodId` | Non-empty array for a multi-food meal. If the same food appears twice, the entries are merged. |
+| `foods` | One of these, or `foodName`/`foodId` | Non-empty array for a multi-food meal. If the same food appears twice, the entries are merged (it reacted if either entry did; the first `amount`/`unitAbbr` and `enjoyment` sent win). |
+| `foods[].amount`, `foods[].unitAbbr`, `foods[].enjoyment` | No | How much of this food was eaten and how much the baby liked it, validated like the meal-level fields below (`amount` positive; `unitAbbr` a configured unit, only with an `amount`, else the family's default solids unit; `enjoyment` one of the five values, case-insensitive) and by the same rules as the app's food-log API. When any food has an `amount`, the meal `amount`/`unitAbbr` are derived from them, as in the app, and the top-level `amount`/`unitAbbr` are ignored (though still validated): the sum when all foods use one unit, `null` when the units differ. The top-level `enjoyment` stays the meal's overall enjoyment. |
 | `amount` | No | Amount eaten, positive number |
 | `unitAbbr` | No | Unit for `amount` (validated against `GET /reference?type=units`, case-insensitive). Only valid with an `amount`. If you send an `amount` without a unit, the family's default solids unit (Settings, default `TBSP`) is used, as the app does. |
 | `enjoyment` | No | `HATED`, `DISLIKED`, `NEUTRAL`, `LIKED`, or `LOVED` (case-insensitive; also listed by `GET /reference?type=food-enjoyments`) |
@@ -662,10 +665,10 @@ The meal-level `hadReaction`/`reactionDescription` stored on the log are derived
 | Code | Status | Description |
 |------|--------|-------------|
 | `FOOD_REQUIRED` | 400 | None of `foodName`, `foodId`, or `foods` was sent |
-| `INVALID_FOOD` | 400 | Food fields are malformed (both `foods` and `foodName`/`foodId`, an empty name, an entry with both or neither of `foodId`/`name`, a non-boolean `hadReaction`, a description without a reaction, ...) |
+| `INVALID_FOOD` | 400 | Food fields are malformed (both `foods` and `foodName`/`foodId`, an empty name, an entry with both or neither of `foodId`/`name`, a non-boolean `hadReaction`, a description without a reaction, an invalid per-food `amount`/`enjoyment`, a per-food `unitAbbr` without an `amount`, ...) |
 | `FOOD_NOT_FOUND` | 404 | A `foodId` isn't a (non-deleted) food in this family's catalog. Nothing is written. |
 | `INVALID_AMOUNT` | 400 | `amount` isn't a positive number |
-| `INVALID_UNIT` | 400 | `unitAbbr` isn't a configured unit, or was sent without an `amount` |
+| `INVALID_UNIT` | 400 | `unitAbbr` (meal-level or in a `foods[]` entry) isn't a configured unit, or the meal-level `unitAbbr` was sent without an `amount` |
 | `INVALID_ENJOYMENT` | 400 | `enjoyment` isn't one of the five values |
 
 New catalog foods are created only after every other field has been validated, so a rejected request never leaves partial catalog entries behind. The response `details` use the same shape as `GET /activities` (see above).
@@ -700,7 +703,7 @@ For `medicine`/`supplement`, an explicit `null` for `amount` or `doseAmount` ret
 
 For `feed`, `duration` (or `feedDuration`) is in minutes, matching POST -- it is stored as `feedDuration` in seconds.
 
-For `food`, the fields are the same as POST (`foodName`/`foodId` or `foods`, `amount`, `unitAbbr`, `enjoyment`, `notes`, `time`). Sending any food field replaces the meal's foods (unknown names are added to the catalog). To change a reaction, send the food(s) again with the new `hadReaction`/`reactionDescription`. `amount: null` also clears the unit; `unitAbbr` on a log without an amount is rejected; adding an `amount` to a log without a unit applies the family's default solids unit. An unknown `foodId` returns `404 ACTIVITY_NOT_FOUND` with a message naming the food.
+For `food`, the fields are the same as POST (`foodName`/`foodId` or `foods`, `amount`, `unitAbbr`, `enjoyment`, `notes`, `time`). Sending any food field replaces the meal's foods (unknown names are added to the catalog). To change a reaction or a per-food amount/enjoyment, send the food(s) again with the new values; per-food amounts sent this way replace the meal `amount`/`unitAbbr` as on POST. `amount: null` also clears the unit; `unitAbbr` on a log without an amount is rejected; adding an `amount` to a log without a unit applies the family's default solids unit. An unknown `foodId` returns `404 ACTIVITY_NOT_FOUND` with a message naming the food.
 
 **PUT error codes:**
 

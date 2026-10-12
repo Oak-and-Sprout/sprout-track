@@ -954,7 +954,7 @@ describe('hooks activities POST route', () => {
         id: 'food-log-1',
         time: foodTime.toISOString(),
         details: {
-          foods: [{ foodId: 'food-banana', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null }],
+          foods: [{ foodId: 'food-banana', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null, amount: null, unitAbbr: null, enjoyment: null }],
           amount: 2,
           unitAbbr: 'TBSP',
           enjoyment: 'LOVED',
@@ -987,6 +987,68 @@ describe('hooks activities POST route', () => {
           familyId: 'family-1',
         }),
       });
+    });
+
+    it('stores per-food amount, unit and enjoyment and derives the row amount from them, like /api/food-log', async () => {
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-carrot', name: 'Carrot', commonAllergen: false }, { id: 'food-pea', name: 'Pea', commonAllergen: false }]);
+      mockCreatedFoodLog();
+
+      const response = await POST(postRequest({
+        type: 'food',
+        foods: [{ name: 'carrot', amount: 2, unitAbbr: 'tbsp', enjoyment: 'loved' }, { name: 'Pea', amount: 1.5, unitAbbr: 'TBSP', enjoyment: 'Disliked' }],
+        amount: 9,
+        enjoyment: 'LIKED',
+      }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          foodId: null,
+          foods: JSON.stringify([
+            { foodId: 'food-carrot', amount: 2, unitAbbr: 'TBSP', enjoyment: 'LOVED' },
+            { foodId: 'food-pea', amount: 1.5, unitAbbr: 'TBSP', enjoyment: 'DISLIKED' },
+          ]),
+          amount: 3.5,
+          unitAbbr: 'TBSP',
+          enjoyment: 'LIKED',
+        }),
+      });
+      expect(payload.data.details.foods).toEqual([
+        expect.objectContaining({ foodId: 'food-carrot', name: 'Carrot', amount: 2, unitAbbr: 'TBSP', enjoyment: 'LOVED' }),
+        expect.objectContaining({ foodId: 'food-pea', name: 'Pea', amount: 1.5, unitAbbr: 'TBSP', enjoyment: 'DISLIKED' }),
+      ]);
+      expect(payload.data.details).toMatchObject({ amount: 3.5, unitAbbr: 'TBSP', enjoyment: 'LIKED' });
+    });
+
+    it('gives a per-food amount without a unit the family default and leaves a mixed-unit row amount empty', async () => {
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-carrot', name: 'Carrot' }, { id: 'food-pea', name: 'Pea' }]);
+      mockCreatedFoodLog();
+
+      await POST(postRequest({ type: 'food', foods: [{ name: 'Carrot', amount: 2, unitAbbr: 'TBSP' }, { name: 'Pea', amount: 10 }] }) as any, routeContext);
+
+      expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          foods: JSON.stringify([{ foodId: 'food-carrot', amount: 2, unitAbbr: 'TBSP' }, { foodId: 'food-pea', amount: 10, unitAbbr: 'G' }]),
+          amount: null,
+          unitAbbr: null,
+        }),
+      });
+    });
+
+    it.each([
+      [{ name: 'Kiwi', amount: 1, unitAbbr: 'cups' }, 'INVALID_UNIT'],
+      [{ name: 'Kiwi', unitAbbr: 'G' }, 'INVALID_FOOD'],
+      [{ name: 'Kiwi', amount: -1 }, 'INVALID_FOOD'],
+      [{ name: 'Kiwi', enjoyment: 'meh' }, 'INVALID_FOOD'],
+    ])('rejects per-food details %j with %s before creating catalog foods', async (entry, code) => {
+      const response = await POST(postRequest({ type: 'food', foods: [entry] }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.code).toBe(code);
+      expect(mocks.prisma.food.create).not.toHaveBeenCalled();
+      expect(mocks.prisma.foodLog.create).not.toHaveBeenCalled();
     });
 
     it('uses the family default solids unit when an amount has no unit', async () => {
@@ -1032,7 +1094,7 @@ describe('hooks activities POST route', () => {
 
     it('lists food logs on GET ?type=food scoped to the family and baby, excluding deleted rows', async () => {
       mocks.prisma.foodLog.findMany.mockResolvedValue([{
-        id: 'food-log-2', time: foodTime, foodId: null, foods: JSON.stringify([{ foodId: 'food-1' }, { foodId: 'food-2' }]),
+        id: 'food-log-2', time: foodTime, foodId: null, foods: JSON.stringify([{ foodId: 'food-1', amount: 1, unitAbbr: 'TBSP', enjoyment: 'LOVED' }, { foodId: 'food-2' }]),
         amount: 1, unitAbbr: 'TBSP', enjoyment: 'LIKED', hadReaction: false, reactionDescription: null, notes: null, caretaker: { name: 'Mom' },
       }]);
       mocks.prisma.food.findMany.mockResolvedValue([
@@ -1056,8 +1118,8 @@ describe('hooks activities POST route', () => {
         time: foodTime.toISOString(),
         details: {
           foods: [
-            { foodId: 'food-1', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null },
-            { foodId: 'food-2', name: 'Peanut', commonAllergen: true, hadReaction: false, reactionDescription: null },
+            { foodId: 'food-1', name: 'Banana', commonAllergen: false, hadReaction: false, reactionDescription: null, amount: 1, unitAbbr: 'TBSP', enjoyment: 'LOVED' },
+            { foodId: 'food-2', name: 'Peanut', commonAllergen: true, hadReaction: false, reactionDescription: null, amount: null, unitAbbr: null, enjoyment: null },
           ],
           amount: 1,
           unitAbbr: 'TBSP',

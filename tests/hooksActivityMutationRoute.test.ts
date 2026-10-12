@@ -508,6 +508,39 @@ describe('hooks activity mutation route', () => {
       }));
     });
 
+    it('stores per-food details and derives the row amount from them', async () => {
+      const stored = JSON.stringify([{ foodId: 'food-1', amount: 2, unitAbbr: 'TBSP', enjoyment: 'LOVED' }, { foodId: 'food-2', amount: 1, unitAbbr: 'TBSP' }]);
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+      mocks.prisma.foodLog.update.mockResolvedValue({ ...updatedRow, foodId: null, foods: stored, amount: 3 });
+      mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-1', name: 'Banana', commonAllergen: false }, { id: 'food-2', name: 'Pear', commonAllergen: false }]);
+
+      const response = await PUT(request('PUT', {
+        type: 'food', foods: [{ foodId: 'food-1', amount: 2, unitAbbr: 'tbsp', enjoyment: 'loved' }, { name: 'pear', amount: 1, unitAbbr: 'TBSP' }],
+      }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(mocks.prisma.foodLog.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: { foodId: null, foods: stored, hadReaction: false, reactionDescription: null, amount: 3, unitAbbr: 'TBSP' },
+      }));
+      expect(payload.data.details.foods).toEqual([
+        expect.objectContaining({ foodId: 'food-1', amount: 2, unitAbbr: 'TBSP', enjoyment: 'LOVED' }),
+        expect.objectContaining({ foodId: 'food-2', amount: 1, unitAbbr: 'TBSP', enjoyment: null }),
+      ]);
+    });
+
+    it('rejects an unknown per-food unit without creating anything', async () => {
+      mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
+
+      const response = await PUT(request('PUT', { type: 'food', foods: [{ name: 'Kiwi', amount: 1, unitAbbr: 'cups' }] }) as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(400);
+      expect(payload.error.message).toContain('foods[0]: unitAbbr must be one of');
+      expect(mocks.prisma.food.create).not.toHaveBeenCalled();
+      expect(mocks.prisma.foodLog.update).not.toHaveBeenCalled();
+    });
+
     it('rejects a catalog foodId from another family without creating anything', async () => {
       mocks.prisma.foodLog.findFirst.mockResolvedValue(existingFood);
 
