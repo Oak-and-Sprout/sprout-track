@@ -21,14 +21,14 @@ fi
 # Function to start the service
 start_service() {
     echo "Starting $SERVICE_NAME service..."
-    sudo systemctl start "$SERVICE_NAME"
+    sudo systemctl start "$SERVICE_NAME" || { echo "Error: failed to start $SERVICE_NAME!"; return 1; }
     echo "Service started successfully!"
 }
 
 # Function to stop the service
 stop_service() {
     echo "Stopping $SERVICE_NAME service..."
-    sudo systemctl stop "$SERVICE_NAME"
+    sudo systemctl stop "$SERVICE_NAME" || { echo "Error: failed to stop $SERVICE_NAME!"; return 1; }
     echo "Service stopped successfully!"
 }
 
@@ -47,8 +47,7 @@ case "$1" in
         stop_service
         ;;
     restart)
-        stop_service
-        start_service
+        stop_service && start_service
         ;;
     status)
         status_service
@@ -59,4 +58,5 @@ case "$1" in
         ;;
 esac
 
-exit 0
+# Propagate the systemctl result so callers (deployment.sh, update.sh, st-guardian) see failures
+exit $?

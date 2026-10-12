@@ -20,8 +20,13 @@ fi
 # Stash any local changes before pulling
 echo "Stashing any local changes..."
 cd "$PROJECT_DIR" || exit 1
+# `git stash` exits 0 even with nothing to save, so compare stash counts to know whether
+# this run created a stash; otherwise `stash pop` would apply an unrelated older stash.
+STASH_COUNT_BEFORE=$(git stash list | wc -l)
 git stash
-STASH_RESULT=$?
+STASHED=false
+[ "$(git stash list | wc -l)" -gt "$STASH_COUNT_BEFORE" ] && STASHED=true
+HEAD_BEFORE=$(git rev-parse HEAD)
 
 # Pull latest changes from git
 echo "Pulling latest changes from git..."
@@ -29,7 +34,7 @@ git pull
 if [ $? -ne 0 ]; then
     echo "Error: Git pull failed!"
     # Apply stashed changes if there were any
-    if [ $STASH_RESULT -eq 0 ]; then
+    if [ "$STASHED" = true ]; then
         echo "Applying stashed changes..."
         git stash pop
     fi
@@ -38,7 +43,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Apply stashed changes if there were any
-if [ $STASH_RESULT -eq 0 ]; then
+if [ "$STASHED" = true ]; then
     echo "Applying stashed changes..."
     git stash pop
     # Note: We continue even if there are conflicts
@@ -71,9 +76,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run Prisma migrations
+# Run Prisma migrations. `migrate deploy` only applies committed migrations; never use
+# `migrate dev` here (it offers to reset the DB on drift and fails without a TTY, e.g. st-guardian).
 echo "Running database migrations..."
-npm run prisma:migrate
+npx prisma migrate deploy
 if [ $? -ne 0 ]; then
     echo "Error: Prisma migrations failed!"
     "$SCRIPT_DIR/service.sh" start
@@ -129,6 +135,25 @@ fi
 echo "Building the application..."
 npm run build
 BUILD_STATUS=$?
+if [ $BUILD_STATUS -ne 0 ]; then
+    # .next was removed before the update, so starting the service now would only crash-loop.
+    # Leave it stopped (st-guardian keeps serving its maintenance page) and restore from the backup.
+    echo "Error: Build failed! Service left stopped; restore from the backup created by deployment.sh."
+    exit 1
+fi
+
+# Refresh st-guardian if this update changed it. Its restart is delayed so a guardian-driven
+# update can finish its post-update health check and report the result first.
+if [ -f "$PROJECT_DIR/st-guardian/package.json" ] && \
+   ! git diff --quiet "$HEAD_BEFORE" HEAD -- st-guardian 2>/dev/null; then
+    echo "Updating st-guardian dependencies..."
+    (cd "$PROJECT_DIR/st-guardian" && npm install --omit=dev) || echo "Warning: st-guardian npm install failed."
+    if systemctl list-unit-files st-guardian.service >/dev/null 2>&1; then
+        echo "Scheduling st-guardian restart in 2 minutes..."
+        sudo systemd-run --on-active=120 --unit=st-guardian-restart-$(date +%s) \
+            systemctl restart st-guardian >/dev/null || echo "Warning: could not schedule st-guardian restart."
+    fi
+fi
 
 # Re-verify notification setup (if enabled)
 echo "Checking notification configuration..."
@@ -160,11 +185,6 @@ fi
 
 # Start the service after update
 echo "Starting service after update..."
-"$SCRIPT_DIR/service.sh" start
+"$SCRIPT_DIR/service.sh" start || exit 1
 
-if [ $BUILD_STATUS -eq 0 ]; then
-    echo "Update completed successfully!"
-else
-    echo "Error: Build failed!"
-    exit 1
-fi
+echo "Update completed successfully!"
