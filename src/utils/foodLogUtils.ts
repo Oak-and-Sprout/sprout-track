@@ -383,6 +383,11 @@ export function countFoodLogsByFoodId(
   return counts;
 }
 
+/** Enter key check that also accepts Android IMEs reporting keyCode 13 with a different `key`. */
+export function isEnterKeyEvent(e: { key: string; keyCode?: number }): boolean {
+  return e.key === 'Enter' || e.keyCode === 13;
+}
+
 /** True if activity looks like a FoodLog (multi-food or legacy). */
 export function isFoodLogActivity(
   activity: unknown

@@ -24,6 +24,7 @@ import {
   expandFoodItems,
   buildMealItems,
   mealHasAnyReaction,
+  isEnterKeyEvent,
   type MealTagInput,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_DISPLAY_ORDER,
@@ -354,7 +355,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       return;
     }
 
-    switch (e.key) {
+    switch (isEnterKeyEvent(e) ? 'Enter' : e.key) {
       case 'ArrowDown':
         e.preventDefault();
         setHighlightedIndex(prev => (prev < filteredFoods.length - 1 ? prev + 1 : 0));
@@ -631,6 +632,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
                   onChange={handleFoodInputChange}
                   onFocus={() => setDropdownOpen(true)}
                   onKeyDown={handleFoodKeyDown}
+                  enterKeyHint="done"
                   className="w-full pr-10 food-form-dropdown-trigger"
                   placeholder={t('Search or add foods...')}
                   disabled={isSubmitting}

@@ -27,6 +27,7 @@ import {
   formatFoodMealTitle,
   isFoodLogActivity,
   countFoodLogsByFoodId,
+  isEnterKeyEvent,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
   FOOD_ENJOYMENT_ICON_SRC,
@@ -924,5 +925,20 @@ describe('countFoodLogsByFoodId', () => {
     expect(countFoodLogsByFoodId([])).toEqual({});
     expect(countFoodLogsByFoodId([{ foodId: null, foods: '{not json' }, { foodId: null, foods: '"x"' }])).toEqual({});
     expect(countFoodLogsByFoodId([{ foodId: 'a', foods: '{not json' }])).toEqual({ a: 1 });
+  });
+});
+
+// Issue #274: Android soft keyboards can report Enter as keyCode 13 with a
+// different `key` value.
+describe('isEnterKeyEvent', () => {
+  it('detects Enter by key or by keyCode 13', () => {
+    expect(isEnterKeyEvent({ key: 'Enter', keyCode: 13 })).toBe(true);
+    expect(isEnterKeyEvent({ key: 'Enter' })).toBe(true);
+    expect(isEnterKeyEvent({ key: 'Unidentified', keyCode: 13 })).toBe(true);
+  });
+
+  it('rejects other keys, including IME composition (229)', () => {
+    expect(isEnterKeyEvent({ key: 'a', keyCode: 65 })).toBe(false);
+    expect(isEnterKeyEvent({ key: 'Unidentified', keyCode: 229 })).toBe(false);
   });
 });
