@@ -26,6 +26,7 @@ import {
   mealIncludesFirstTry,
   formatFoodMealTitle,
   isFoodLogActivity,
+  countFoodLogsByFoodId,
   FOOD_ENJOYMENT_VALUES,
   FOOD_ENJOYMENT_LABELS,
   FOOD_ENJOYMENT_ICON_SRC,
@@ -882,5 +883,46 @@ describe('multi-food meal progress and allergens (#247)', () => {
     expect(isFoodLogActivity({ foodId: 'x' })).toBe(true);
     expect(isFoodLogActivity({ foods: '[]' })).toBe(true);
     expect(isFoodLogActivity({ type: 'BOTTLE' })).toBe(false);
+  });
+});
+
+// Issue #286: Food Manager "N tries" must include multi-food meals, which store
+// items in the foods JSON with foodId = null.
+describe('countFoodLogsByFoodId', () => {
+  const json = (...ids: string[]) => JSON.stringify(ids.map(foodId => ({ foodId, hadReaction: false })));
+
+  it('counts legacy foodId-only logs', () => {
+    expect(countFoodLogsByFoodId([{ foodId: 'a', foods: null }, { foodId: 'a', foods: null }])).toEqual({ a: 2 });
+  });
+
+  it('counts foods-JSON-only (multi-food) logs', () => {
+    expect(countFoodLogsByFoodId([{ foodId: null, foods: json('a', 'b') }, { foodId: null, foods: json('b') }])).toEqual({
+      a: 1,
+      b: 2,
+    });
+  });
+
+  it('does not double count a log that has the id in both foodId and foods', () => {
+    expect(countFoodLogsByFoodId([{ foodId: 'a', foods: json('a', 'b') }])).toEqual({ a: 1, b: 1 });
+  });
+
+  it('does not double count a food repeated inside one meal', () => {
+    expect(countFoodLogsByFoodId([{ foodId: null, foods: json('a', 'a') }])).toEqual({ a: 1 });
+  });
+
+  it('excludes soft-deleted logs', () => {
+    expect(
+      countFoodLogsByFoodId([
+        { foodId: 'a', foods: null, deletedAt: new Date() },
+        { foodId: null, foods: json('a'), deletedAt: new Date() },
+        { foodId: 'a', foods: null, deletedAt: null },
+      ])
+    ).toEqual({ a: 1 });
+  });
+
+  it('ignores malformed JSON and empty input', () => {
+    expect(countFoodLogsByFoodId([])).toEqual({});
+    expect(countFoodLogsByFoodId([{ foodId: null, foods: '{not json' }, { foodId: null, foods: '"x"' }])).toEqual({});
+    expect(countFoodLogsByFoodId([{ foodId: 'a', foods: '{not json' }])).toEqual({ a: 1 });
   });
 });

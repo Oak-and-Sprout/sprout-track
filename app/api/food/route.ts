@@ -4,16 +4,15 @@ import { ApiResponse, FoodCreate, FoodResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
-import { foodsJsonReferencesFoodId, normalizeFoodName, foodNameKey } from '@/src/utils/foodLogUtils';
+import { countFoodLogsByFoodId, foodsJsonReferencesFoodId, normalizeFoodName, foodNameKey } from '@/src/utils/foodLogUtils';
 
 /**
  * Format a Food catalog row into a FoodResponse
  */
-function formatFood(food: any): FoodResponse {
-  const { _count, ...rest } = food;
+function formatFood(food: any, foodLogCount?: number): FoodResponse {
   return {
-    ...rest,
-    ...(_count !== undefined && { foodLogCount: _count.foodLogs }),
+    ...food,
+    ...(foodLogCount !== undefined && { foodLogCount }),
     createdAt: formatForResponse(food.createdAt) || '',
     updatedAt: formatForResponse(food.updatedAt) || '',
     deletedAt: formatForResponse(food.deletedAt),
@@ -221,15 +220,19 @@ async function handleGet(req: NextRequest, authContext: AuthResult) {
         familyId: userFamilyId,
         deletedAt: null,
       },
-      include: {
-        _count: { select: { foodLogs: { where: { deletedAt: null } } } },
-      },
       orderBy: { name: 'asc' },
     });
 
+    // Count legacy foodId links and multi-food JSON references in one family-scoped query
+    const logs = await prisma.foodLog.findMany({
+      where: { familyId: userFamilyId, deletedAt: null },
+      select: { foodId: true, foods: true },
+    });
+    const counts = countFoodLogsByFoodId(logs);
+
     return NextResponse.json<ApiResponse<FoodResponse[]>>({
       success: true,
-      data: foods.map(formatFood),
+      data: foods.map(food => formatFood(food, counts[food.id] ?? 0)),
     });
   } catch (error) {
     console.error('Error fetching foods:', error);

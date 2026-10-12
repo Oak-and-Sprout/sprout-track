@@ -366,6 +366,23 @@ export function foodsJsonReferencesFoodId(
   return parseFoodsJson(foodsJson).some(item => item.foodId === foodId);
 }
 
+/**
+ * Per-food count of non-deleted food logs, covering both the legacy `foodId`
+ * column and multi-food `foods` JSON references. A log counts once per food.
+ */
+export function countFoodLogsByFoodId(
+  logs: { foodId: string | null; foods: string | null; deletedAt?: Date | null }[]
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const log of logs) {
+    if (log.deletedAt) continue;
+    const ids = new Set(parseFoodsJson(log.foods).map(item => item.foodId));
+    if (log.foodId) ids.add(log.foodId);
+    ids.forEach(id => { counts[id] = (counts[id] ?? 0) + 1; });
+  }
+  return counts;
+}
+
 /** True if activity looks like a FoodLog (multi-food or legacy). */
 export function isFoodLogActivity(
   activity: unknown
