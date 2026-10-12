@@ -57,4 +57,12 @@ describe('normalizeNurserySettings', () => {
     expect(normalizeNurserySettings({ ...NURSERY_DEFAULTS, sleep: { locations: 'Crib' } }).sleep.locations).toEqual(['Crib', 'Contact']);
     expect(normalizeNurserySettings({ ...NURSERY_DEFAULTS, sleep: {} }).sleep.locations).toEqual(['Crib', 'Contact']);
   });
+  it('defaults both timer blocks on when missing from stored settings', () => {
+    expect(normalizeNurserySettings({ v: 1 }).timers).toEqual({ wake: true, feed: true });
+    expect(normalizeNurserySettings({ hue: 230, brightness: 15, visibleTiles: ['feed'] }).timers).toEqual({ wake: true, feed: true });
+  });
+  it('preserves timer block toggles', () => {
+    expect(normalizeNurserySettings({ v: 1, timers: { wake: false, feed: true } }).timers).toEqual({ wake: false, feed: true });
+    expect(normalizeNurserySettings({ v: 1, timers: 'off' }).timers).toEqual({ wake: true, feed: true });
+  });
 });

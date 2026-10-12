@@ -25,6 +25,12 @@ should render. It orchestrates:
   and its note during render. Formatting inside the poller instead froze the
   strings at whatever `t` held when the entry arrived — non-English bundles
   lazy-load, so tiles kept rendering English on an otherwise translated screen.
+- **Timer blocks** (`TimerBlocks/`, issue #219): "awake/sleeping for" and
+  "since last feed" timers between the clock and the activity area. The
+  poller feeds them `computeLatestStatus` (`src/utils/latestStatus.ts`) — the
+  same derivation the log-entry page's status bubbles use — so feed-type
+  filtering, `feedTimerFrom`, the warning threshold and the 24 h cutoff match.
+  Toggled per block via `settings.timers`. See `TimerBlocks/README.md`.
 - **Undo**: instant logs (bottle feed, diaper change) surface an `UndoToast`
   that deletes the just-created record via the `UndoInfo.endpoint`.
 
@@ -190,6 +196,8 @@ Pure logic extracted to `src/utils/nursery/` is covered in `tests/`:
 - `nursery-photo-scene.test.ts` — `PhotoScene`'s `photoIdFromSrc` helper.
 - `nursery-food-activity.test.ts` — `foodActivity.ts` (picker sorting, meta-line note).
 - `nursery-activity-freshness.test.ts` — `activityFreshness.ts` (24 h meta-line cutoff).
+- `nursery-timer-blocks.test.ts` — `timerBlocks.ts` (wake/feed timer view models).
+- `latest-status.test.ts` — `src/utils/latestStatus.ts` (shared last-feed/sleep derivation, warning threshold).
 
 Component/hook behavior (drawer interactions, activity state machines, the
 container's polling/undo flow) is exercised manually via the running app —

@@ -1,0 +1,51 @@
+/**
+ * Nursery Mode timer blocks (issue #219).
+ * The nursery stage is a dark, low-light surface in both app themes, so these
+ * rules apply as-is; html.dark needs no separate override. Sizes are capped by
+ * viewport height so a short screen shrinks the blocks instead of pushing the
+ * activity cards off screen.
+ */
+.nursery-timers { gap: clamp(12px, 1.6vw, 26px); width: min(1080px, 92vw); }
+
+.nursery-timer {
+  gap: clamp(4px, .8vh, 10px);
+  border-radius: 22px;
+  padding: clamp(12px, min(1.6vw, 2vh), 24px) clamp(14px, 1.6vw, 26px);
+  border: 1px solid rgba(255,255,255,var(--cardline, .14));
+  background: rgba(255,255,255,var(--cardbg, .08));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 40px rgba(0,0,0,.18);
+  transition: background .4s, border-color .4s;
+}
+.nursery-timer-head { gap: 10px; font-size: clamp(12px, 1.1vw, 15px); font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+.nursery-timer-value { gap: .12em; font-weight: 400; font-size: clamp(34px, min(5.6vw, 7vh), 84px); line-height: 1; letter-spacing: -.01em; font-variant-numeric: tabular-nums; text-shadow: 0 2px 24px rgba(0,0,0,.25); white-space: nowrap; }
+.nursery-timer-unit { font-size: .38em; font-style: italic; color: rgba(255,255,255,.7); margin-right: .3em; }
+.nursery-timer-unit:last-child { margin-right: 0; }
+/* word in place of a duration ("Feeding") — smaller so it fits a half-width block */
+.nursery-timer-text { font-size: .62em; font-style: italic; }
+.nursery-timer-note { font-family: var(--font-newsreader), Georgia, serif; font-style: italic; font-size: clamp(13px, 1.2vw, 17px); color: rgba(255,255,255,.6); }
+
+/* asleep: dimmer, cooler — reads as "quiet" at a glance */
+.nursery-timer-sleeping { background: rgba(120,140,255,calc(var(--cardbg, .08) * .9)); border-color: rgba(160,175,255,.28); }
+.nursery-timer-sleeping .nursery-timer-value { color: rgba(225,230,255,.92); }
+
+/* past the baby's feed warning time — a soft rose, not an alarm red, for a dark room */
+.nursery-timer-warning { background: rgba(244,114,142,.16); border-color: rgba(251,146,170,.5); }
+.nursery-timer-warning .nursery-timer-value { color: #fecdd6; }
+.nursery-timer-badge { font-size: clamp(10px, .9vw, 12px); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; background: rgba(251,146,170,.22); color: #fecdd6; }
+
+.nursery-timer-empty .nursery-timer-value { color: rgba(255,255,255,.4); }
+
+@media (max-width: 680px) {
+  .nursery-timers { width: 100%; max-width: 520px; gap: 12px; }
+  .nursery-timer { border-radius: 18px; padding: 12px 10px; }
+  .nursery-timer-head { gap: 8px; font-size: 11px; letter-spacing: .12em; }
+  .nursery-timer-value { font-size: clamp(28px, min(9vw, 6vh), 44px); }
+}
+
+/* landscape phones: one-line blocks so the activity cards keep the height */
+@media (orientation: landscape) and (max-height: 500px) {
+  .nursery-timer { flex-direction: row; justify-content: center; gap: 12px; padding: 8px 14px; border-radius: 16px; }
+  .nursery-timer-value { font-size: clamp(22px, 6.5vh, 32px); }
+}

@@ -7,11 +7,11 @@
  */
 
 import type { ReactElement } from 'react';
-import { Moon, LampWallDown, Image, Star, Pause, Play, Square, ArrowLeftRight, ArrowLeft, ArrowRight, Apple, Icon as LucideLabIcon } from 'lucide-react';
+import { Moon, Sun, LampWallDown, Image, Star, Pause, Play, Square, ArrowLeftRight, ArrowLeft, ArrowRight, Apple, Icon as LucideLabIcon } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 
 export type IconName =
-  | 'bottle' | 'pump' | 'diaper' | 'moon' | 'image' | 'star' | 'food'
+  | 'bottle' | 'pump' | 'diaper' | 'moon' | 'sun' | 'image' | 'star' | 'food'
   | 'switch' | 'pause' | 'resume' | 'stop' | 'resumeLeft' | 'resumeRight';
 
 export function Icon({ n, s = 24 }: { n: IconName; s?: number }): ReactElement {
@@ -25,6 +25,8 @@ export function Icon({ n, s = 24 }: { n: IconName; s?: number }): ReactElement {
       return <LucideLabIcon iconNode={diaper} {...shared} />;
     case 'moon':
       return <Moon {...shared} />;
+    case 'sun':
+      return <Sun {...shared} />;
     case 'image':
       return <Image {...shared} />;
     case 'star':
