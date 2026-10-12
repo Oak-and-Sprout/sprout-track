@@ -438,7 +438,7 @@ Timer action responses include the live session state: `activeSide`, `isPaused`,
 
 ##### Legacy SOLIDS feeds
 
-A `feed` with `feedType: "SOLIDS"` is **stored as a food entry** (a Food tracker log), not as a feed, and the response is a `food` activity (`"activityType": "food"`, same `details` as [`food`](#food)). Older integrations keep working unchanged, but the returned `id` is a food log ID: read it with `GET /activities?type=food` and edit or delete it with `type: "food"`. Like other food entries, it doesn't send feed notifications or reset the feed timer.
+A `feed` with `feedType: "SOLIDS"` is **stored as a food entry** (a Food tracker log), not as a feed, and the response is a `food` activity (`"activityType": "food"`, same `details` as [`food`](#food)). Older integrations keep working unchanged, but the returned `id` is a food log ID: read it with `GET /activities?type=food` and edit or delete it with `type: "food"`. Like other food entries, it doesn't send feed notifications, and it only resets the "time since last feed" timer when the baby's feed timer settings include food.
 
 The feed fields are mapped the way the server's startup conversion of old SOLIDS feeds maps them:
 
