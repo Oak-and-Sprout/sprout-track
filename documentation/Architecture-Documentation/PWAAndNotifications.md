@@ -106,6 +106,8 @@ After an activity log is created (feed, diaper, sleep, etc.), the system:
 3. Sends via Web Push API to each matching subscription
 4. Logs results to `NotificationLog`
 
+Food logs (`/api/food-log`, the webhook `food` type, and webhook `feed` posts with `feedType: "SOLIDS"`, which are now stored as food logs) do not trigger activity notifications — so a webhook SOLIDS post no longer sends a feed notification.
+
 #### Timer-Based (Cron)
 **File:** `src/lib/notifications/timerCheck.ts`
 **Endpoint:** `POST /api/notifications/cron` (protected by `NOTIFICATION_CRON_SECRET`)
@@ -114,7 +116,7 @@ Runs on a schedule (via Docker dcron) to check for overdue timers:
 
 | Timer Type | Source | Threshold |
 |------------|--------|-----------|
-| Feed timer | Last `FeedLog.time` (breast feeds use `startTime`) | `Baby.feedWarningTime` (default "03:00") |
+| Feed timer | Last `FeedLog.time` (breast feeds use `startTime`) in the baby's `feedTimerTypes` categories; the last `FoodLog.time` too when those include food | `Baby.feedWarningTime` (default "03:00") |
 | Diaper timer | Last `DiaperLog.time` | `Baby.diaperWarningTime` (default "02:00") |
 | Medicine timer | Last `MedicineLog.time` | `Medicine.doseMinTime` |
 
@@ -207,18 +209,21 @@ A dedicated, simplified interface designed for wall-mounted tablets in daycare/n
 - Large activity tiles for quick one-tap logging
 - Configurable color palette (hue, brightness, saturation) via `useNurseryColors`
 - Configurable visible tiles via `useNurserySettings`
+- Awake / Feed / Diaper timer blocks under the clock (`features/nursery-mode/TimerBlocks/`) that switch to "Overdue" at the baby's `feedWarningTime` / `diaperWarningTime`; each can be turned off in settings. Status comes from the shared `computeLatestStatus()` (see [State and Context Providers](./StateAndContextProviders.md#shared-latest-status)) and refreshes right after a log
 - Uses Wake Lock to keep screen on
 - Optional fullscreen mode
 
 ### Settings
-Stored as JSON in `Settings.nurseryModeSettings`, managed via `useNurserySettings` hook:
+Stored as JSON in `Settings.nurseryModeSettings` (keyed by caretaker id, with a `global` fallback), managed via `useNurserySettings` hook. The shape is `NurserySettings` in `src/utils/nursery/settings.ts`, normalized on read; abridged defaults:
 
 ```typescript
 {
-  hue: 230,           // Color hue (0-360)
-  brightness: 15,     // Brightness (0-100, <50 = dark)
-  saturation: 25,     // Color saturation (0-100)
-  visibleTiles: ['feed', 'pump', 'diaper', 'sleep']
+  v: 1,
+  scene: 'ambient', layout: 'cards',
+  hue: 248, dim: 46, sat: 38, trans: 58,
+  acts: { feed: true, pump: true, diaper: true, sleep: true, food: false },  // visible activity cards
+  timers: { wake: true, feed: true, diaper: true },                          // timer blocks; missing keys read as on
+  // ...per-scene options (ambient, starlit, tapestry, photo), sleep locations
 }
 ```
 

@@ -176,12 +176,12 @@ Handles webkit, moz, ms vendor prefixes.
 
 | Return | Type | Purpose |
 |--------|------|---------|
-| `settings` | object | Current nursery settings |
+| `settings` | `NurserySettings` | Current nursery settings (mirrored to `localStorage`) |
 | `isLoading` | boolean | Settings loading |
-| `saveSettings(s)` | function | Save settings (debounced 500ms) |
+| `updateSettings(patch)` | function | Merge, normalize and save settings (POST debounced 500ms) |
 
-**Default settings:** hue=230, brightness=15, saturation=25, visibleTiles=['feed', 'pump', 'diaper', 'sleep']
-**API:** `GET/PUT /api/nursery-mode-settings`
+**Defaults:** `NURSERY_DEFAULTS` in `src/utils/nursery/settings.ts` — e.g. `acts` (visible activity cards: feed, pump, diaper, sleep on; food off) and `timers` (`{ wake, feed, diaper }`, all on; keys missing from older saved settings read as on via `normalizeNurserySettings()`)
+**API:** `GET/POST /api/nursery-mode-settings`
 
 ### useNurseryColors
 **File:** `src/hooks/useNurseryColors.ts`
@@ -248,6 +248,13 @@ useEffect(() => {
 
 The `FamilyProvider`'s fetch interceptor automatically adds the auth token, so components don't need to manage authentication headers.
 
+### Shared Latest Status
+
+"Time since last feed / sleep / diaper / pump" is derived in one place so every surface agrees. `computeLatestStatus(activities, feedTimerCategories)` (`src/utils/latestStatus.ts`) takes a mixed list of feed, food, diaper, pump and sleep rows plus the baby's parsed `feedTimerTypes`, and returns the latest status; the same module holds the 24 h status window and warning-time helpers (`isWithinStatusWindow`, `isPastWarning`).
+
+- **Log-entry page:** `TimelineV2` computes it from the activities it already loaded and hands it up via `onLatestStatusReady` to the log-entry page, which feeds the `ActivityTileGroup` status bubbles.
+- **Nursery Mode:** `NurseryModeContainer` computes it from its 10 s activity poll (food logs are fetched only when the food card is shown or food counts toward the feed timer) and passes it to `TimerBlocks`, whose view models come from `src/utils/nursery/timerBlocks.ts`. The status is only replaced on a complete read, so a failed request can't blank a timer, and the container re-polls immediately after any log made in Nursery Mode instead of waiting for the next tick.
+
 ## Key Files
 
 - `app/layout.tsx` — Root layout (LocalizationProvider, TimezoneProvider)
@@ -263,6 +270,7 @@ The `FamilyProvider`'s fetch interceptor automatically adds the auth token, so c
 - `src/hooks/useWakeLock.ts` — Wake Lock API hook
 - `src/hooks/useFullscreen.ts` — Fullscreen API hook
 - `src/hooks/useNurserySettings.ts` — Nursery settings hook
+- `src/utils/latestStatus.ts` — Shared latest-status computation (TimelineV2 and Nursery Mode)
 - `src/hooks/useNurseryColors.ts` — Nursery color palette hook
 - `src/hooks/useEmailValidation.ts` — Email validation hook
 - `src/hooks/useIsMobile.ts` — Mobile viewport detection hook

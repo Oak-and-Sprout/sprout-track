@@ -1085,8 +1085,10 @@ model FoodLog {
   reactionDescription String? // Description of the reaction (redness, swelling, ...) — legacy / meal summary
   notes               String?
   feedLogId           String? // Optional soft link to the SOLIDS FeedLog this try happened in (no FK)
-  // JSON text: [{ foodId, hadReaction?, reactionDescription? }] for multi-food meals (#247).
-  // Dual-write with foodId when N=1; foodId null when N>1. Expand via expandFoodItems().
+  // JSON text: [{ foodId, hadReaction?, reactionDescription?, amount?, unitAbbr?, enjoyment? }] (#247, #271).
+  // The app form writes per-food amount/unitAbbr/enjoyment only when N>1 (row fields otherwise); row amount
+  // derived from items (sum for one unit, null when mixed). Dual-write with foodId when N=1;
+  // foodId null when N>1. Expand via expandFoodItems().
   foods               String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt

@@ -105,6 +105,8 @@ Tailwind's `dark:` utility classes respond to the **operating system's** color s
 
 If `dark:` classes were used, the theme toggle would not work — the OS preference would override the user's in-app choice. The `html.dark .class-name` CSS approach ensures the toggle works correctly regardless of system settings.
 
+**Exception — Nursery Mode.** The nursery stage is a dark, low-light surface in both app themes, so its components style for dark only and need no `html.dark` overrides. `features/nursery-mode/TimerBlocks/` follows the CVA + `.css` split (`timer-blocks.styles.ts` with a `tone` variant: `normal | sleeping | warning | empty`; `timer-blocks.css` for the glass card and low-light colors) but its `.css` has no `html.dark` rules — documented in `timer-blocks.css` and the component README.
+
 **Tailwind config confirms this:**
 ```javascript
 // tailwind.config.js
@@ -201,7 +203,9 @@ Forms live in `src/components/forms/`, one folder per activity type. They use st
 - Loading and error states displayed via UI primitives
 
 **Available forms:**
-ActivityForm, AppConfigForm, BabyForm, BabyQuickStats, BathForm, CalendarEventForm, CaretakerForm, ContactForm, DiaperForm, FamilyForm, FeedForm, FeedbackForm, GiveMedicineForm, MeasurementForm, MedicineForm, MilestoneForm, NoteForm, PumpForm, SettingsForm, SleepForm, VaccineForm
+ActivityForm, AppConfigForm, BabyForm, BabyQuickStats, BathForm, CalendarEventForm, CaretakerForm, ContactForm, DiaperForm, FamilyForm, FeedForm, FeedbackForm, FoodForm, GiveMedicineForm, MeasurementForm, MedicineForm, MilestoneForm, NoteForm, PhotoForm, PumpForm, SettingsForm, SleepForm, VaccineForm
+
+**FoodForm** composes a meal one food at a time: `FoodEntryBox.tsx` holds the food being added or edited (catalog combobox or new name, amount stepper, unit), and Save turns it into a tag; tapping a tag loads it back into the box. Its state transitions are pure helpers in `src/utils/foodMealComposer.ts`, and the styles follow the standard split — `foodEntryBox` / `foodTagVariants` CVA variants in `food-form.styles.ts`, with `html.dark .food-entry-box` / `.food-selected-tag` overrides in `food-form.css`.
 
 ## Container/Presentational Pattern
 

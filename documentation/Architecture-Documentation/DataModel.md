@@ -74,7 +74,9 @@ The subject of all activity tracking.
 | `inactive` | Soft-disable (graduated/grown) |
 | `feedWarningTime` | Timer threshold for feed alerts (default "03:00") |
 | `diaperWarningTime` | Timer threshold for diaper alerts (default "02:00") |
+| `pumpWarningTime` | Threshold for the "time since last pump" status bubble (default "03:00"; migration `20260922000000_add_pump_warning_time`). UI-only — no cron notification |
 | `feedTimerFrom` | Count feed timer from "start" or "end" of feeding (default "start") |
+| `feedTimerTypes` | JSON array of feed categories that reset the feed timer (null = all feeds count) |
 | `familyId` | Family scope |
 
 ## The Activity Log Pattern
@@ -100,7 +102,7 @@ All activity tracking models share a common structure. This consistency is criti
 | Model | Time Pattern | Key Fields |
 |-------|-------------|------------|
 | `SleepLog` | start/end/duration | `type` (NAP, NIGHT_SLEEP), `quality`, `location` |
-| `FeedLog` | time + optional start/end | `type` (BREAST, BOTTLE, SOLIDS), `amount`, `unitAbbr`, `side`, `food`, `bottleType` (mixed feeds store `"Formula/Breast"`), `breastMilkAmount`, `sessionId` (groups breast feeds into one nursing session), `pauseDuration` (total session pause in seconds, same value on both rows of a session; null on older records) |
+| `FeedLog` | time + optional start/end | `type` (BREAST, BOTTLE, SOLIDS — legacy SOLIDS rows are converted to `FoodLog`, see below), `amount`, `unitAbbr`, `side`, `food`, `bottleType` (mixed feeds store `"Formula/Breast"`), `breastMilkAmount`, `sessionId` (groups breast feeds into one nursing session), `pauseDuration` (total session pause in seconds, same value on both rows of a session; null on older records) |
 | `DiaperLog` | time | `type` (WET, DIRTY, BOTH, DRY), `condition`, `color`, `blowout`, `creamApplied` |
 | `BathLog` | time | `bathType` ("Full Bath", "Sponge Bath", "Wipe Down", or custom), `soapUsed`, `shampooUsed` |
 | `PlayLog` | start/end/duration | `type` (TUMMY_TIME, INDOOR_PLAY, OUTDOOR_PLAY, WALK, CUSTOM) |
@@ -109,8 +111,22 @@ All activity tracking models share a common structure. This consistency is criti
 | `Note` | time | `content`, `category` |
 | `Milestone` | date | `title`, `description`, `category` (MOTOR, COGNITIVE, SOCIAL, LANGUAGE, CUSTOM) |
 | `Measurement` | date | `type` (HEIGHT, WEIGHT, HEAD_CIRCUMFERENCE, TEMPERATURE), `value`, `unit` |
+| `FoodLog` | time | `foods` (JSON items, see below), `foodId` (legacy/single-food FK), `amount`, `unitAbbr`, `enjoyment`, `hadReaction`, `reactionDescription`, `feedLogId` (soft link, no FK) |
 | `MedicineLog` | time | `medicineId`, `doseAmount`, `unitAbbr` |
 | `VaccineLog` | time | `vaccineName`, `doseNumber`, has `VaccineDocument[]` |
+
+### Food Tracker
+- `Food` — family food catalog (`name`, `commonAllergen`); names are matched case-insensitively after `normalizeFoodName()`
+- `FoodLog` — one meal/try, possibly several foods
+- `BabyAllergen` — manually recorded allergens (`allergenType`: FOOD, MEDICINE, ENVIRONMENT, OTHER)
+
+**`FoodLog.foods` JSON** is the source of truth for a meal's foods: an array of `{ foodId, hadReaction?, reactionDescription?, amount?, unitAbbr?, enjoyment? }` (`FoodLogItem` in `src/utils/foodLogUtils.ts`). `buildFoodLogFoodFields()` dual-writes `foodId` when the meal has one food and clears it for more, and derives the row-level `hadReaction`/`reactionDescription` from the items. Read/compat rules:
+- `expandFoodItems()` is the canonical read path — non-empty `foods` JSON first, else one item synthesized from the legacy `foodId` + row-level reaction fields. `parseFoodsJson()` drops malformed per-food values (a unit only travels with a positive amount) rather than the whole item.
+- The app's meal form writes per-food `amount`/`unitAbbr`/`enjoyment` only for multi-food meals (`buildMealItems()`); a single-food entry keeps them on the row. Items written before per-food details omit them, so readers must fall back to the row.
+- The row `amount` is derived from the items (`deriveMealAmountFromItems()`): the sum when all items share one unit, `null` (with `unitAbbr` null) when units are mixed, and the meal amount as sent when no item has one. Readers total per unit with `foodLogAmountsByUnit()`.
+- `resolveFoodItemDetails()` falls back to the row `amount`/`unitAbbr` only when the meal has a single food (a shared amount is never split), and to the row `enjoyment` for any item without its own.
+
+**Legacy SOLIDS conversion.** `convertSolidsFeeds()` (`scripts/convert-solids-feeds-runner.js`, pure rules in `convert-solids-feeds-core.js`; run by `docker-startup.sh` via `scripts/convert-solids-feeds.js` and by the `app/api/database/migrate*/` routes) turns `FeedLog` rows of type SOLIDS into `Food` + `FoodLog` records and hard-deletes the feed. Feeds already linked via `FoodLog.feedLogId` are skipped, and a feed matching an existing non-deleted food log of the same family, baby, exact time and normalized food-name set (`findExistingFoodLog()`) is folded into that log instead of creating a duplicate. The webhook API reuses `findExistingFoodLog()` for SOLIDS posts.
 
 ### Breast Milk Inventory
 Three models work together for breast milk tracking:
@@ -147,6 +163,7 @@ Measurement unit definitions with `unitAbbr` (unique), `unitName`, and `activity
 - `familyName`, `securityPin` (for system caretaker auth)
 - Default units: `defaultBottleUnit`, `defaultSolidsUnit`, `defaultHeightUnit`, `defaultWeightUnit`, `defaultTempUnit`
 - JSON config strings: `activitySettings`, `sleepLocationSettings`, `bathTypeSettings`, `nurseryModeSettings`
+  - `nurseryModeSettings` maps caretaker ids (plus a global entry) to `NurserySettings` (`src/utils/nursery/settings.ts`), normalized on read; includes `timers` (`{ wake, feed, diaper }`, missing keys read as on) for the Nursery Mode timer blocks
 - Feature toggles: `enableBreastMilkTracking`, `includeSolidsInFeedTimer`
 - Display formats: `dateFormat` (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD), `timeFormat` (12h/24h)
 - Debug flags: `enableDebugTimer`, `enableDebugTimezone`
@@ -181,7 +198,7 @@ Reference data tables for growth chart percentile calculations:
 - `CdcChildWeightForAge` — CDC 2–20 year weight-for-age reference data (24 through 240 months)
 - `CdcStatureForAge` — CDC 2–20 year standing stature-for-age reference data (24 through 240 months)
 
-All use the LMS method (L, M, S parameters) with pre-calculated percentile columns (P3-P97). Growth-reference selection is age-bounded: CDC weight and length/stature transition explicitly at 24 months, while head-circumference percentiles stop when the infant reference data ends rather than extrapolating the final LMS row.
+All use the LMS method (L, M, S parameters) with pre-calculated percentile columns (P3-P97). Growth-reference selection is age-bounded: CDC weight and length/stature transition explicitly at 24 months, while head-circumference percentiles stop when the infant reference data ends rather than extrapolating the final LMS row. The policy lives in `src/utils/growthReferences.ts` (shared by `/api/cdc-growth-data` and the monthly report); families on WHO switch to CDC after 24 months (`src/utils/growthStandard.ts`). The 2–20 tables are seeded by `prisma/seed.ts` and included in database backups (`app/api/utils/db-backup.ts`).
 
 ## External Integration
 
@@ -190,6 +207,12 @@ For webhook/Home Assistant integration:
 - `keyPrefix` (display), `keyHash` (SHA-256 for lookup)
 - `scopes` — JSON array of permissions (read, write)
 - Optional: `babyId` restriction, `expiresAt`
+
+### ExternalImportRecord
+Provenance for external data imports (Baby Buddy, Huckleberry), used to skip rows already imported:
+- Unique on `[familyId, providerId, sourceEntityType, sourceRecordId]`; `targetEntityType`/`targetRecordId` point at the created row
+- A source record that already has provenance is reported as a duplicate instead of re-created (`src/lib/importers/execute.ts`)
+- Huckleberry exports carry no child id, so record ids are content fingerprints prefixed with the destination baby id (`mapHuckleberryRows()` in `src/lib/importers/huckleberry/map.ts`) — the same file imported into two babies (twins) does not collide
 
 ### FamilySetup
 Token-based family creation invitations:

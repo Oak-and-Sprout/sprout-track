@@ -28,7 +28,7 @@ Sprout Track is a Next.js baby tracking application using the App Router. The co
 │   ├── constants/               # Application constants (vaccines)
 │   ├── context/                 # Shared context providers
 │   ├── hooks/                   # Custom React hooks
-│   ├── lib/                     # Libraries (email, notifications, utils)
+│   ├── lib/                     # Libraries (email, notifications, importers, utils)
 │   ├── localization/            # Translation files and config
 │   └── utils/                   # Utility functions (incl. native-*.ts mobile-shell layer)
 ├── prisma/                      # Database schema and migrations
@@ -97,7 +97,8 @@ API routes live under `app/api/` and are organized by domain. Each folder contai
 | Route | Activity |
 |-------|----------|
 | `/api/sleep-log/` | Sleep and nap tracking |
-| `/api/feed-log/` | Feeding (breast, bottle, solids) |
+| `/api/feed-log/` | Feeding (breast, bottle; legacy solids) |
+| `/api/food-log/` | Food tracker meals (one or more foods, per-food amount/enjoyment/reaction) |
 | `/api/diaper-log/` | Diaper changes |
 | `/api/bath-log/` | Bath logging |
 | `/api/play-log/` | Play and tummy time |
@@ -116,6 +117,7 @@ API routes live under `app/api/` and are organized by domain. Each folder contai
 | `/api/timeline/` | Aggregated activity timeline |
 | `/api/localization/` | Language preferences |
 | `/api/hooks/v1/` | External webhook API (Home Assistant) |
+| `/api/import/external/` | Baby Buddy / Huckleberry file import (preview + execute) |
 | `/api/database/` | Migration and backup management |
 | `/api/short-links/` | Sysadmin URL shortener CRUD + stats/CSV export (global, no family scope; SaaS-only) |
 | `/api/analytics/` | Public `collect` pageview beacon + sysadmin stats/CSV export (global, no family scope; SaaS-only) |
