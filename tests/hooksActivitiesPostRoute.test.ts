@@ -1070,6 +1070,103 @@ describe('hooks activities POST route', () => {
       }]);
     });
 
+    describe('legacy feedType SOLIDS is stored as a food log', () => {
+      const existingLog = {
+        id: 'food-log-old', time: foodTime, familyId: 'family-1', babyId: 'baby-1', foodId: 'food-carrot', foods: JSON.stringify([{ foodId: 'food-carrot' }]),
+        amount: 2, unitAbbr: 'TBSP', enjoyment: null, hadReaction: false, reactionDescription: null, notes: null, deletedAt: null,
+      };
+
+      it('creates a food log through the food path instead of a SOLIDS feed', async () => {
+        mocks.prisma.foodLog.findMany.mockResolvedValue([]);
+        mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-carrot', name: 'Carrot', commonAllergen: false }]);
+        mocks.prisma.caretaker.findFirst.mockResolvedValue({ id: 'caretaker-1' });
+        mockCreatedFoodLog();
+
+        const response = await POST(postRequest({
+          type: 'feed', feedType: 'solids', food: ' carrot ', amount: 2, unitAbbr: 'tbsp', notes: 'mashed', caretakerName: 'Mom', time: foodTime.toISOString(),
+        }) as any, routeContext);
+        const payload = await json(response);
+
+        expect(response.status).toBe(200);
+        expect(mocks.prisma.feedLog.create).not.toHaveBeenCalled();
+        expect(mocks.prisma.foodLog.findMany).toHaveBeenCalledWith({
+          where: { familyId: 'family-1', babyId: 'baby-1', time: foodTime, deletedAt: null },
+        });
+        expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({
+          data: {
+            time: foodTime,
+            foodId: 'food-carrot',
+            foods: JSON.stringify([{ foodId: 'food-carrot' }]),
+            hadReaction: false,
+            reactionDescription: null,
+            amount: 2,
+            unitAbbr: 'TBSP',
+            enjoyment: null,
+            notes: 'mashed',
+            babyId: 'baby-1',
+            caretakerId: 'caretaker-1',
+            familyId: 'family-1',
+          },
+        });
+        expect(payload.data).toMatchObject({ activityType: 'food', id: 'food-log-1', time: foodTime.toISOString() });
+        expect(payload.data.details.foods).toEqual([expect.objectContaining({ foodId: 'food-carrot', name: 'Carrot' })]);
+        expect(payload.data.duplicate).toBeUndefined();
+      });
+
+      it('returns the existing food log when the same SOLIDS feed is sent again', async () => {
+        mocks.prisma.foodLog.findMany.mockResolvedValue([existingLog]);
+        mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-carrot', name: 'Carrot', commonAllergen: false }]);
+
+        const response = await POST(postRequest({
+          type: 'feed', feedType: 'SOLIDS', food: 'CARROT', amount: 2, time: foodTime.toISOString(),
+        }) as any, routeContext);
+        const payload = await json(response);
+
+        expect(response.status).toBe(200);
+        expect(mocks.prisma.foodLog.create).not.toHaveBeenCalled();
+        expect(mocks.prisma.food.create).not.toHaveBeenCalled();
+        expect(mocks.prisma.food.findMany).toHaveBeenCalledWith(expect.objectContaining({
+          where: { id: { in: ['food-carrot'] }, familyId: 'family-1' },
+        }));
+        expect(payload.data).toMatchObject({ activityType: 'food', id: 'food-log-old', duplicate: true });
+      });
+
+      it('creates a new food log when an existing one at that time has different foods', async () => {
+        mocks.prisma.foodLog.findMany.mockResolvedValue([existingLog]);
+        mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-carrot', name: 'Carrot', commonAllergen: false }]);
+        mocks.prisma.food.create.mockResolvedValue({ id: 'food-pea', name: 'Peas' });
+        mockCreatedFoodLog();
+
+        const response = await POST(postRequest({ type: 'feed', feedType: 'SOLIDS', food: 'Peas', time: foodTime.toISOString() }) as any, routeContext);
+        const payload = await json(response);
+
+        expect(mocks.prisma.food.create).toHaveBeenCalledWith({ data: { name: 'Peas', commonAllergen: false, notes: null, familyId: 'family-1' } });
+        expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ foodId: 'food-pea' }) });
+        expect(payload.data.duplicate).toBeUndefined();
+      });
+
+      it('maps blank food text to Solids and drops a zero amount with its unit, as the conversion does', async () => {
+        mocks.prisma.foodLog.findMany.mockResolvedValue([]);
+        mocks.prisma.food.findMany.mockResolvedValue([{ id: 'food-solids', name: 'Solids' }]);
+        mockCreatedFoodLog();
+
+        const response = await POST(postRequest({ type: 'feed', feedType: 'SOLIDS', food: '  ', amount: 0, unitAbbr: 'G' }) as any, routeContext);
+
+        expect(response.status).toBe(200);
+        expect(mocks.prisma.foodLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ foodId: 'food-solids', amount: null, unitAbbr: null }) });
+      });
+
+      it('rejects a non-numeric amount without writing anything', async () => {
+        const response = await POST(postRequest({ type: 'feed', feedType: 'SOLIDS', food: 'Carrot', amount: 'lots' }) as any, routeContext);
+        const payload = await json(response);
+
+        expect(response.status).toBe(400);
+        expect(payload.error.code).toBe('INVALID_AMOUNT');
+        expect(mocks.prisma.foodLog.create).not.toHaveBeenCalled();
+        expect(mocks.prisma.feedLog.create).not.toHaveBeenCalled();
+      });
+    });
+
     it('rejects an unknown GET type filter, listing food among the valid types', async () => {
       const response = await GET(getRequest('?type=foods') as any, routeContext);
       const payload = await json(response);

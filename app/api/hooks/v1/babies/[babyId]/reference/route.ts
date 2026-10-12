@@ -18,7 +18,7 @@ type RefType = typeof VALID_TYPES[number];
 const FEED_TYPES = [
   { value: 'BREAST', description: 'Breastfeeding' },
   { value: 'BOTTLE', description: 'Bottle (specify bottleType separately)' },
-  { value: 'SOLIDS', description: 'Solid food (legacy; prefer activity type "food")' },
+  { value: 'SOLIDS', description: 'Solid food (legacy; stored as a food entry, prefer activity type "food")' },
   { value: 'formula', description: 'Formula bottle (auto-sets BOTTLE + formula)' },
   { value: 'breast milk', description: 'Pumped breast milk bottle' },
   { value: 'milk', description: 'Milk bottle' },

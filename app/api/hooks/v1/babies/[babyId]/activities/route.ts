@@ -8,6 +8,8 @@ import { startBreastfeedSession, updateBreastfeedSession, endBreastfeedSession }
 import { BATH_TYPES, BOTTLE_TYPES, DIAPER_COLORS, DIAPER_CONDITIONS, FEED_SIDES, PUMP_ACTIONS, SLEEP_QUALITIES, normalizeEnumValue } from '../../../field-values';
 import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, parseEnjoyment, parseFoodAmount, parseFoodItemInputs, planFoodUnit, resolveFoodItems } from '../../../food';
 import { buildFoodLogFoodFields } from '@/src/utils/foodLogUtils';
+import { findExistingFoodLog } from '@/scripts/convert-solids-feeds-runner';
+import { resolveCatalogFoodName } from '@/scripts/convert-solids-feeds-core';
 
 const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement', 'food'] as const;
 type ActivityType = typeof VALID_TYPES[number];
@@ -130,6 +132,57 @@ async function resolveCaretaker(name: string | undefined, familyId: string): Pro
     select: { id: true },
   });
   return ct ? { id: ct.id, notFound: false } : { id: null, notFound: true };
+}
+
+// ── Helper: create a food log (type "food", and legacy feedType SOLIDS) ──
+// Mirrors the app's meal form + /api/food-log so webhook food logs are
+// indistinguishable from app-created ones (see ../../../food.ts). With
+// `dedupe`, an existing log of this baby at the same time with the same foods
+// is returned instead (duplicate: true), as the startup conversion does.
+async function createFoodActivity(
+  body: Record<string, any>,
+  time: Date,
+  { familyId, babyId, caretakerId }: { familyId: string; babyId: string; caretakerId: string | null },
+  headers: Record<string, string>,
+  dedupe = false
+) {
+  const { notes } = body;
+  const parsedFoods = parseFoodItemInputs(body);
+  if (parsedFoods.error) return hookError('INVALID_FOOD', parsedFoods.error, 400, headers);
+  if (!parsedFoods.items) return hookError('FOOD_REQUIRED', 'foodName, foodId, or foods[] is required for food type', 400, headers);
+  const foodAmount = parseFoodAmount(body.amount);
+  if (foodAmount.error) return hookError('INVALID_AMOUNT', foodAmount.error, 400, headers);
+  const enjoyment = parseEnjoyment(body.enjoyment);
+  if (enjoyment.error) return hookError('INVALID_ENJOYMENT', enjoyment.error, 400, headers);
+  const foodNotesCheck = requireStringIfPresent(notes, 'notes');
+  if (foodNotesCheck.error) return hookError('INVALID_NOTES', foodNotesCheck.error, 400, headers);
+  const foodUnitResult = await resolveUnitAbbr(body.unitAbbr);
+  if (foodUnitResult.error) return hookError('INVALID_UNIT', foodUnitResult.error, 400, headers);
+  const unitPlan = planFoodUnit(foodAmount.value, foodUnitResult.value);
+  if (unitPlan.error) return hookError('INVALID_UNIT', unitPlan.error, 400, headers);
+
+  const existing = dedupe
+    ? await findExistingFoodLog(prisma, { familyId, babyId, time, names: parsedFoods.items.map((item) => item.name ?? '') })
+    : null;
+  // Catalog foods are created only after every other field validated
+  const resolvedFoods = existing ? null : await resolveFoodItems(parsedFoods.items, familyId);
+  if (resolvedFoods?.error) return hookError('FOOD_NOT_FOUND', resolvedFoods.error, 404, headers);
+
+  const result = existing ?? await prisma.foodLog.create({
+    data: {
+      time,
+      ...buildFoodLogFoodFields(resolvedFoods!.items!),
+      amount: foodAmount.value ?? null,
+      unitAbbr: unitPlan.useDefault ? await getDefaultSolidsUnit(familyId) : unitPlan.unitAbbr ?? null,
+      enjoyment: enjoyment.value ?? null,
+      notes: notes && notes.trim() ? notes.trim() : null,
+      babyId,
+      caretakerId,
+      familyId,
+    },
+  });
+  const foodCatalog = await loadFoodCatalog(familyId, [result]);
+  return hookSuccess({ activityType: 'food', id: result.id, time: result.time.toISOString(), details: formatFoodDetails(result, foodCatalog), ...(existing ? { duplicate: true } : {}) }, { familyId, babyId }, headers);
 }
 
 // ── GET handler ──
@@ -515,6 +568,21 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
           }, { familyId, babyId }, rl.headers);
         }
 
+        // Legacy SOLIDS feeds are stored as food logs (the startup conversion
+        // would otherwise turn the feed into one and delete it). Same mapping as
+        // the conversion: the food text is one food ('Solids' when blank), and a
+        // non-positive amount is dropped with its unit. side/bottleType/duration
+        // don't apply to solids and are ignored, as the conversion drops them.
+        if (feedType === 'SOLIDS') {
+          const solidsAmount = parseAmount(amount, 'amount');
+          if (solidsAmount.error) return hookError('INVALID_AMOUNT', solidsAmount.error, 400, rl.headers);
+          const eaten = solidsAmount.value != null && solidsAmount.value > 0;
+          return createFoodActivity(
+            { foodName: resolveCatalogFoodName({ food }).name, notes, ...(eaten ? { amount: solidsAmount.value, unitAbbr } : {}) },
+            time, { familyId, babyId, caretakerId }, rl.headers, true
+          );
+        }
+
         // action === 'log' or omitted: create a completed feed entry.
         // For BREAST an optional duration (minutes, like sleep/pump) produces
         // a timed entry: startTime = time, endTime = time + duration.
@@ -838,43 +906,8 @@ async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: an
         return hookSuccess({ activityType: 'play', id: result.id, time: result.startTime.toISOString(), details: { type: playType, duration: playDuration } }, { familyId, babyId }, rl.headers);
       }
 
-      case 'food': {
-        // Mirrors the app's meal form + /api/food-log so webhook food logs are
-        // indistinguishable from app-created ones (see ../../../food.ts).
-        const { notes } = body;
-        const parsedFoods = parseFoodItemInputs(body);
-        if (parsedFoods.error) return hookError('INVALID_FOOD', parsedFoods.error, 400, rl.headers);
-        if (!parsedFoods.items) return hookError('FOOD_REQUIRED', 'foodName, foodId, or foods[] is required for food type', 400, rl.headers);
-        const foodAmount = parseFoodAmount(body.amount);
-        if (foodAmount.error) return hookError('INVALID_AMOUNT', foodAmount.error, 400, rl.headers);
-        const enjoyment = parseEnjoyment(body.enjoyment);
-        if (enjoyment.error) return hookError('INVALID_ENJOYMENT', enjoyment.error, 400, rl.headers);
-        const foodNotesCheck = requireStringIfPresent(notes, 'notes');
-        if (foodNotesCheck.error) return hookError('INVALID_NOTES', foodNotesCheck.error, 400, rl.headers);
-        const foodUnitResult = await resolveUnitAbbr(body.unitAbbr);
-        if (foodUnitResult.error) return hookError('INVALID_UNIT', foodUnitResult.error, 400, rl.headers);
-        const unitPlan = planFoodUnit(foodAmount.value, foodUnitResult.value);
-        if (unitPlan.error) return hookError('INVALID_UNIT', unitPlan.error, 400, rl.headers);
-        // Catalog foods are created only after every other field validated
-        const resolvedFoods = await resolveFoodItems(parsedFoods.items, familyId);
-        if (resolvedFoods.error) return hookError('FOOD_NOT_FOUND', resolvedFoods.error, 404, rl.headers);
-
-        result = await prisma.foodLog.create({
-          data: {
-            time,
-            ...buildFoodLogFoodFields(resolvedFoods.items!),
-            amount: foodAmount.value ?? null,
-            unitAbbr: unitPlan.useDefault ? await getDefaultSolidsUnit(familyId) : unitPlan.unitAbbr ?? null,
-            enjoyment: enjoyment.value ?? null,
-            notes: notes && notes.trim() ? notes.trim() : null,
-            babyId,
-            caretakerId,
-            familyId,
-          },
-        });
-        const foodCatalog = await loadFoodCatalog(familyId, [result]);
-        return hookSuccess({ activityType: 'food', id: result.id, time: result.time.toISOString(), details: formatFoodDetails(result, foodCatalog) }, { familyId, babyId }, rl.headers);
-      }
+      case 'food':
+        return createFoodActivity(body, time, { familyId, babyId, caretakerId }, rl.headers);
 
       default:
         return hookError('INVALID_ACTIVITY_TYPE', `Unhandled activity type: ${type}`, 400, rl.headers);

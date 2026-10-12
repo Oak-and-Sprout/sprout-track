@@ -290,7 +290,7 @@ Logs request method, path, status code, response time, IP/user agent, and reques
 - `app/api/utils/with-logging.ts` — Request logging wrapper
 - `app/api/hooks/v1/` — External webhook API routes
 - `app/api/hooks/v1/field-values.ts` — Canonical enum-like field values + case-insensitive normalization for the webhook API
-- `app/api/hooks/v1/food.ts` — `food` activity type: parses foods, find-or-creates catalog foods by name, and writes FoodLogs through the same `foodLogUtils` helpers as `/api/food-log`
+- `app/api/hooks/v1/food.ts` — `food` activity type: parses foods, find-or-creates catalog foods by name, and writes FoodLogs through the same `foodLogUtils` helpers as `/api/food-log`. Legacy `feed` posts with `feedType: "SOLIDS"` are written through the same path, deduplicated by baby, time and food with the startup conversion's `findExistingFoodLog` (`scripts/convert-solids-feeds-runner.js`)
 - `app/api/utils/family-scope.ts` — `resolveFamilyScope()`: a client-sent familyId may only confirm the auth context's family, never override it (sysadmin excepted)
 - `app/api/utils/setup-token-scope.ts` — `setupTokenMayTarget()`: unbound setup tokens may bind a family only via `/api/setup/start`
 - `app/api/utils/analytics.ts` / `app/api/utils/short-links.ts` — `analyticsSaasGate()` / `shortLinkSaasGate()`: SaaS 404 gate for the analytics and short-link routes

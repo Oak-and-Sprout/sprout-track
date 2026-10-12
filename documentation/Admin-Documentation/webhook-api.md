@@ -358,7 +358,7 @@ Create a new activity record.
 |-------|--------|
 | `BREAST` | Breastfeeding |
 | `BOTTLE` | Bottle (set `bottleType` separately) |
-| `SOLIDS` | Solid food (legacy -- use the [`food`](#food) activity type instead; see below) |
+| `SOLIDS` | Solid food (legacy -- stored as a food entry; use the [`food`](#food) activity type instead; see [Legacy SOLIDS feeds](#legacy-solids-feeds)) |
 | `formula` | Auto-sets BOTTLE + bottleType "Formula" |
 | `breast milk` | Auto-sets BOTTLE + bottleType "Breast Milk" |
 | `milk` | Auto-sets BOTTLE + bottleType "Milk" |
@@ -433,6 +433,23 @@ Timer action responses include the live session state: `activeSide`, `isPaused`,
 | `FEED_ALREADY_ACTIVE` | 409 | `start` while a session is already active for this baby |
 | `NO_ACTIVE_FEED` | 400 | `switch`/`pause`/`resume`/`end` with no active session |
 | `INVALID_DURATION` | 400 | `duration` is not a positive number of minutes |
+
+##### Legacy SOLIDS feeds
+
+A `feed` with `feedType: "SOLIDS"` is **stored as a food entry** (a Food tracker log), not as a feed, and the response is a `food` activity (`"activityType": "food"`, same `details` as [`food`](#food)). Older integrations keep working unchanged, but the returned `id` is a food log ID: read it with `GET /activities?type=food` and edit or delete it with `type: "food"`. Like other food entries, it doesn't send feed notifications or reset the feed timer.
+
+The feed fields are mapped the way the server's startup conversion of old SOLIDS feeds maps them:
+
+| Feed field | Food entry |
+|------------|------------|
+| `food` | One food, matched case-insensitively against the family's food catalog (added when unknown). The text is not split, so `"carrot, peas"` is one food. Blank or omitted becomes the generic `Solids` food. |
+| `amount`, `unitAbbr` | The food amount and unit. A non-numeric `amount` returns `400 INVALID_AMOUNT`; `0` or a negative amount is not stored, and neither is its unit. An amount without a unit gets the family's default solids unit. |
+| `notes`, `time`, `caretakerName` | Stored as-is (`notes` must be a string). |
+| `side`, `bottleType`, `duration` | Ignored (they don't apply to solids). |
+
+**Re-sending is safe.** If the baby already has a (non-deleted) food entry at exactly the same `time` with the same food (case, extra spaces and leading/trailing punctuation ignored), no new entry is created: the response is `200` with the existing entry and `"duplicate": true`. This keeps a client that re-syncs the same SOLIDS feed from logging it twice. The startup conversion applies the same check to SOLIDS feeds still in the database. `type: "food"` requests are never deduplicated.
+
+`PUT` with `type: "feed"` still edits a legacy SOLIDS feed that hasn't been converted yet (or changes a feed to `feedType: "SOLIDS"`). Such feeds are converted into food entries, and the feed deleted, the next time the server starts.
 
 #### Diaper
 
@@ -601,7 +618,7 @@ Optional fields: `unitAbbr`, `notes` — `notes` is now persisted and returned b
 
 #### Food
 
-Logs a meal in the Food tracker, exactly as the app's "Log Food" form does. Use this instead of `feed` with `feedType: "SOLIDS"`: on startup the server converts legacy SOLIDS feeds into food logs and **deletes the original feed**, so a client that remembers the feed ID (or re-syncs it) ends up with missing IDs or duplicate food logs.
+Logs a meal in the Food tracker, exactly as the app's "Log Food" form does. Use this instead of `feed` with `feedType: "SOLIDS"`, which is also stored as a food entry but supports only one food and no reactions or enjoyment (see [Legacy SOLIDS feeds](#legacy-solids-feeds)).
 
 **One food** -- by name or by catalog ID:
 
