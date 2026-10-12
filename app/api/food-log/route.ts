@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../db';
-import { ApiResponse, FoodLogCreate, FoodLogItemInput, FoodLogResponse } from '../types';
+import { ApiResponse, FoodLogCreate, FoodLogResponse } from '../types';
 import { withAuthContext, AuthResult } from '../utils/auth';
 import { toUTC, formatForResponse } from '../utils/timezone';
 import { checkWritePermission } from '../utils/writeProtection';
 import {
   buildFoodLogFoodFields,
+  deriveMealAmountFromItems,
   expandFoodItems,
   foodsJsonReferencesFoodId,
   isValidEnjoyment,
+  validateFoodItemInputs,
   type FoodLogItem,
 } from '@/src/utils/foodLogUtils';
 
@@ -29,21 +31,15 @@ function normalizeUnitAbbr(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-function normalizeItemInputs(body: Partial<FoodLogCreate>): FoodLogItem[] | null {
+/**
+ * Items to write, from the `foods` array (validated, #271 per-food details) or
+ * the legacy single `foodId`. null = neither was sent; an error string = the
+ * `foods` array was sent but is malformed.
+ */
+function normalizeItemInputs(body: Partial<FoodLogCreate>): FoodLogItem[] | null | string {
   if (Array.isArray(body.foods) && body.foods.length > 0) {
-    const items: FoodLogItem[] = [];
-    for (const entry of body.foods as FoodLogItemInput[]) {
-      if (!entry || typeof entry.foodId !== 'string' || entry.foodId === '') continue;
-      items.push({
-        foodId: entry.foodId,
-        hadReaction: entry.hadReaction === true,
-        reactionDescription:
-          entry.reactionDescription && entry.reactionDescription.trim()
-            ? entry.reactionDescription.trim()
-            : null,
-      });
-    }
-    return items.length > 0 ? items : null;
+    const result = validateFoodItemInputs(body.foods);
+    return result.ok ? result.items : result.error;
   }
   if (typeof body.foodId === 'string' && body.foodId !== '') {
     return [
@@ -73,7 +69,7 @@ function formatFoodLog(
       catalogById?.get(item.foodId) ||
       (log.food?.id === item.foodId ? log.food : undefined);
     return {
-      foodId: item.foodId,
+      ...item,
       hadReaction: item.hadReaction === true,
       reactionDescription: item.reactionDescription ?? null,
       ...(meta
@@ -152,9 +148,9 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     }
 
     const items = normalizeItemInputs(body);
-    if (!items) {
+    if (!Array.isArray(items)) {
       return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'At least one food is required' },
+        { success: false, error: items || 'At least one food is required' },
         { status: 400 }
       );
     }
@@ -180,6 +176,8 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
     }
 
     const foodFields = buildFoodLogFoodFields(items);
+    // Per-food amounts (#271) define the row total; else the meal amount as sent
+    const itemAmount = deriveMealAmountFromItems(items);
 
     const foodLog = await prisma.foodLog.create({
       data: {
@@ -187,8 +185,8 @@ async function handlePost(req: NextRequest, authContext: AuthResult) {
         foodId: foodFields.foodId,
         foods: foodFields.foods,
         time: toUTC(body.time),
-        amount: body.amount ?? null,
-        unitAbbr: body.amount != null ? normalizeUnitAbbr(body.unitAbbr) : null,
+        amount: itemAmount ? itemAmount.amount : body.amount ?? null,
+        unitAbbr: itemAmount ? itemAmount.unitAbbr : body.amount != null ? normalizeUnitAbbr(body.unitAbbr) : null,
         enjoyment: body.enjoyment ?? null,
         hadReaction: foodFields.hadReaction,
         reactionDescription: foodFields.reactionDescription,
@@ -265,7 +263,11 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     }
 
     const items = normalizeItemInputs(body);
+    if (typeof items === 'string') {
+      return NextResponse.json<ApiResponse<null>>({ success: false, error: items }, { status: 400 });
+    }
     let foodFields: ReturnType<typeof buildFoodLogFoodFields> | null = null;
+    const itemAmount = items ? deriveMealAmountFromItems(items) : null;
     if (items) {
       const foodCheck = await validateFoodIdsInFamily(
         items.map(i => i.foodId),
@@ -299,12 +301,16 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
           hadReaction: foodFields.hadReaction,
           reactionDescription: foodFields.reactionDescription,
         }),
-        ...(body.amount !== undefined && { amount: body.amount }),
-        ...((body.amount !== undefined || body.unitAbbr !== undefined) && {
-          unitAbbr: (body.amount !== undefined ? body.amount : existingFoodLog.amount) != null
-            ? normalizeUnitAbbr(body.unitAbbr)
-            : null,
-        }),
+        ...(itemAmount
+          ? itemAmount
+          : {
+              ...(body.amount !== undefined && { amount: body.amount }),
+              ...((body.amount !== undefined || body.unitAbbr !== undefined) && {
+                unitAbbr: (body.amount !== undefined ? body.amount : existingFoodLog.amount) != null
+                  ? normalizeUnitAbbr(body.unitAbbr)
+                  : null,
+              }),
+            }),
         ...(body.enjoyment !== undefined && { enjoyment: body.enjoyment }),
         // Legacy single-field reaction updates only when foods[] was not sent
         ...(!foodFields && body.hadReaction !== undefined && { hadReaction: body.hadReaction === true }),

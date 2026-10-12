@@ -481,13 +481,17 @@ export type FoodLogResponse = Omit<FoodLog, 'time' | 'createdAt' | 'updatedAt' |
   deletedAt: string | null;
   food?: { id: string; name: string; commonAllergen: boolean } | null;
   /** Parsed foods JSON (preferred for multi-food meals). */
-  foodItems?: { foodId: string; hadReaction?: boolean; reactionDescription?: string | null; name?: string; commonAllergen?: boolean }[];
+  foodItems?: (FoodLogItemInput & { name?: string; commonAllergen?: boolean })[];
 };
 
 export interface FoodLogItemInput {
   foodId: string;
   hadReaction?: boolean;
   reactionDescription?: string | null;
+  /** Per-food details (#271); omitted on items written before them. */
+  amount?: number | null;
+  unitAbbr?: string | null;
+  enjoyment?: FoodEnjoyment | null;
 }
 
 export interface FoodLogCreate {

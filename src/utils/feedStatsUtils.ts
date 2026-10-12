@@ -8,6 +8,7 @@
 
 import { convertVolume } from './unit-conversion';
 import { groupBreastFeedSessions, BreastFeedLike } from './feedSessionUtils';
+import { foodLogAmountsByUnit } from './foodLogUtils';
 
 /** Minimal shape of a feed activity needed for daily-stats aggregation. */
 export interface FeedActivityLike {
@@ -19,8 +20,10 @@ export interface FeedActivityLike {
 
 /** Minimal shape of a food-log activity needed for daily-stats aggregation. */
 export interface FoodLogActivityLike {
-  foodId?: string;
-  time?: string | Date;
+  foodId?: string | null;
+  /** Multi-food items JSON; may carry per-food amounts (#271). */
+  foods?: string | null;
+  time: string | Date;
   amount?: number | null;
   unitAbbr?: string | null;
   deletedAt?: string | Date | null;
@@ -69,9 +72,9 @@ export function aggregateFeedStats(
       const time = new Date(foodLog.time as string | Date);
       if (time >= startOfDay && time <= endOfDay) {
         solidsCount++;
-        if (typeof foodLog.amount === 'number' && foodLog.amount > 0) {
-          const unit = (foodLog.unitAbbr || 'g').toLowerCase();
-          solidsAmounts[unit] = (solidsAmounts[unit] || 0) + foodLog.amount;
+        // Per-food amounts (#271) when recorded, else the row-level amount
+        for (const [unit, total] of Object.entries(foodLogAmountsByUnit(foodLog))) {
+          solidsAmounts[unit] = (solidsAmounts[unit] || 0) + total;
         }
       }
       continue;
