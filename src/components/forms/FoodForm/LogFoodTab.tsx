@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useId } from 'react';
 import { LogFoodTabProps, FoodItemDetailsValue } from './food-form.types';
-import FoodItemDetails from './FoodItemDetails';
+import { foodTagVariants, foodTagEditButton, foodMealTotal } from './food-form.styles';
 import { FoodResponse, FoodLogCreate, FoodLogItemInput } from '@/app/api/types';
 import { DateTimePicker } from '@/src/components/ui/date-time-picker';
 import { Input } from '@/src/components/ui/input';
@@ -26,8 +26,6 @@ import {
   buildMealItems,
   mealHasAnyReaction,
   isEnterKeyEvent,
-  sumAmountsByUnit,
-  formatAmountsByUnit,
   isValidEnjoyment,
   type MealTagInput,
   FOOD_ENJOYMENT_VALUES,
@@ -36,6 +34,15 @@ import {
   FOOD_ENJOYMENT_ICON_SRC,
   FoodEnjoymentValue,
 } from '@/src/utils/foodLogUtils';
+import {
+  formatFoodTagAmount,
+  isAmountDraftDirty,
+  applyAmountDraft,
+  addFoodTagToMeal,
+  selectionAfterRemove,
+  formatMealTotal,
+  type FoodAmountDraft,
+} from '@/src/utils/foodMealComposer';
 
 /** One selected food chip in the multi-food meal logger (#247), with its own details (#271). */
 interface SelectedFoodTag extends FoodItemDetailsValue {
@@ -52,10 +59,10 @@ interface SelectedFoodTag extends FoodItemDetailsValue {
  * LogFoodTab Component
  *
  * Tab for logging a new food try or editing an existing food log entry.
- * Multi-food meals use a tag selector over the family catalog (#247); notes
- * and photos are meal-level; reactions are per food. Expanding a food's chip
- * gives it its own amount and enjoyment (#271); once any food has an amount,
- * the meal amount becomes their (read-only) total.
+ * Multi-food meals use a tag selector over the family catalog (#247);
+ * enjoyment, notes and photos are meal-level; reactions are per food. With
+ * two or more foods, tapping a food's tag selects it and the Amount stepper
+ * edits that food's own amount (#271), committed with the Update button.
  */
 const LogFoodTab: React.FC<LogFoodTabProps> = ({
   isOpen,
@@ -94,8 +101,9 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  /** Index of the chip whose per-food details panel is open (multi-food only). */
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  /** Tag whose amount the stepper edits (multi-food only), and its pending amount. */
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [draft, setDraft] = useState<FoodAmountDraft>({ amount: '', unitAbbr: 'TBSP' });
 
   const [photosEnabled, setPhotosEnabled] = useState(false);
   const [pendingPhotoFiles, setPendingPhotoFiles] = useState<File[]>([]);
@@ -172,6 +180,8 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     enjoyment: isValidEnjoyment(item.enjoyment) ? item.enjoyment : null,
   });
 
+  const draftOf = (tag: FoodAmountDraft): FoodAmountDraft => ({ amount: tag.amount, unitAbbr: tag.unitAbbr });
+
   const tagsFromActivity = (): SelectedFoodTag[] => {
     if (!activity) return [];
     if (activity.foodItems && activity.foodItems.length > 0) {
@@ -219,6 +229,10 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       if (activity) {
         const tags = tagsFromActivity();
         setSelectedFoods(tags);
+        if (tags.length > 1) {
+          setSelectedIndex(0);
+          setDraft(draftOf(tags[0]));
+        }
         setAmount(activity.amount != null ? activity.amount.toString() : '');
         if (activity.unitAbbr) {
           setUnit(activity.unitAbbr);
@@ -250,7 +264,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       setIsInitialized(true);
     } else if (!isOpen) {
       setIsInitialized(false);
-      setExpandedIndex(null);
+      setSelectedIndex(null);
       setPendingPhotoFiles([]);
       setRemovedPhotoIds([]);
       setSearchTerm('');
@@ -271,35 +285,57 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
     }
   }, [isNewSearchFood, allergenTouched]);
 
-  const amountStep = unit === 'G' ? 5 : 0.5;
-  // Once any food of a multi-food entry has its own amount, the meal amount is their total
-  const perFoodTotal = selectedFoods.length > 1
-    ? formatAmountsByUnit(sumAmountsByUnit(selectedFoods.map(tag => ({ amount: parseFloat(tag.amount), unitAbbr: tag.unitAbbr }))))
-    : '';
+  // With 2+ foods the stepper edits the selected food's pending amount; with one, the meal amount
+  const selectedTag = selectedFoods.length > 1 && selectedIndex !== null ? selectedFoods[selectedIndex] : undefined;
+  const stepAmount = selectedTag ? draft.amount : amount;
+  const stepUnit = selectedTag ? draft.unitAbbr : unit;
+  const setStepAmount = (value: string) => (selectedTag ? setDraft(prev => ({ ...prev, amount: value })) : setAmount(value));
+  const setStepUnit = (value: string) => (selectedTag ? setDraft(prev => ({ ...prev, unitAbbr: value })) : setUnit(value));
+  const draftDirty = !!selectedTag && isAmountDraftDirty(draft, selectedTag);
+  /** Selected foods with the pending amount committed (switching tags, removing, saving). */
+  const committedFoods = () => applyAmountDraft(selectedFoods, selectedTag ? selectedIndex : null, draft);
+  // Shown next to the Foods label; a pre-#271 meal's shared amount when no food has its own
+  const mealTotal = formatMealTotal(selectedFoods) ||
+    (selectedFoods.length > 1 && parseFloat(amount) > 0 ? `${amount} ${unitSymbol(unit)}` : '');
+
+  const amountStep = stepUnit === 'G' ? 5 : 0.5;
 
   const handleAmountChange = (newAmount: string) => {
     if (newAmount === '' || /^\d*\.?\d*$/.test(newAmount)) {
-      setAmount(newAmount);
+      setStepAmount(newAmount);
     }
   };
 
   const incrementAmount = () => {
-    const current = parseFloat(amount || '0');
-    setAmount((current + amountStep).toFixed(unit === 'G' ? 0 : 1));
+    const current = parseFloat(stepAmount || '0');
+    setStepAmount((current + amountStep).toFixed(stepUnit === 'G' ? 0 : 1));
   };
 
   const decrementAmount = () => {
-    const current = parseFloat(amount || '0');
+    const current = parseFloat(stepAmount || '0');
     if (current >= amountStep) {
-      setAmount((current - amountStep).toFixed(unit === 'G' ? 0 : 1));
+      setStepAmount((current - amountStep).toFixed(stepUnit === 'G' ? 0 : 1));
     }
   };
 
+  const selectFoodTag = (index: number) => {
+    if (index === selectedIndex) return;
+    setSelectedFoods(committedFoods());
+    setSelectedIndex(index);
+    setDraft(draftOf(selectedFoods[index]));
+  };
+
   const addFoodTag = (tag: SelectedFoodTag) => {
-    setSelectedFoods(prev => {
-      if (prev.some(s => foodNameKey(s.name) === foodNameKey(tag.name))) return prev;
-      return [...prev, tag];
-    });
+    if (!selectedFoods.some(s => foodNameKey(s.name) === foodNameKey(tag.name))) {
+      const next = addFoodTagToMeal(committedFoods(), tag, { amount, unitAbbr: unit });
+      setSelectedFoods(next);
+      if (next.length > 1) {
+        setSelectedIndex(next.length - 1);
+        setDraft(draftOf(tag));
+      }
+      // The single food's amount moved onto its tag; the meal amount no longer applies
+      if (next.length === 2) setAmount('');
+    }
     setSearchTerm('');
     setDropdownOpen(false);
     setHighlightedIndex(-1);
@@ -340,31 +376,29 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
   };
 
   const removeFoodTag = (index: number) => {
-    setSelectedFoods(prev => {
-      const next = prev.filter((_, i) => i !== index);
-      // Removing the only food that reacted leaves the meal-level switch on with
-      // nothing behind it — and, at one food, showing a description box that
-      // would be discarded on save. Turn it off so the form states the truth.
-      if (!next.some(tag => tag.hadReaction)) setHadReaction(false);
-      // Back to one food: the meal fields are that food's again, so fold its
-      // own details into them (a per-food total no longer applies).
-      if (next.length === 1) {
-        const [only] = next;
-        if (only.amount) {
-          setAmount(only.amount);
-          setUnit(only.unitAbbr);
-        } else if (prev.some(tag => tag.amount)) {
-          setAmount('');
-        }
-        if (only.enjoyment) setEnjoyment(only.enjoyment);
+    // A pending amount on another food is kept; one on the removed food goes with it
+    const prev = index === selectedIndex ? selectedFoods : committedFoods();
+    const next = prev.filter((_, i) => i !== index);
+    // Removing the only food that reacted leaves the meal-level switch on with
+    // nothing behind it — and, at one food, showing a description box that
+    // would be discarded on save. Turn it off so the form states the truth.
+    if (!next.some(tag => tag.hadReaction)) setHadReaction(false);
+    // Back to one food: the meal fields are that food's again, so fold its
+    // own details into them (a per-food total no longer applies).
+    if (next.length === 1) {
+      const [only] = next;
+      if (only.amount) {
+        setAmount(only.amount);
+        setUnit(only.unitAbbr);
+      } else if (prev.some(tag => tag.amount)) {
+        setAmount('');
       }
-      return next;
-    });
-    setExpandedIndex(null);
-  };
-
-  const setFoodDetails = (index: number, patch: Partial<FoodItemDetailsValue>) => {
-    setSelectedFoods(prev => prev.map((tag, i) => (i === index ? { ...tag, ...patch } : tag)));
+      if (only.enjoyment) setEnjoyment(only.enjoyment);
+    }
+    setSelectedFoods(next);
+    const nextSelected = selectionAfterRemove(selectedIndex, index, next.length);
+    setSelectedIndex(nextSelected);
+    if (nextSelected !== null) setDraft(draftOf(next[nextSelected]));
   };
 
   const toggleFoodReaction = (index: number, checked: boolean) => {
@@ -484,8 +518,11 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
       const authToken = localStorage.getItem('authToken');
       let catalog = foods;
 
+      // A pending amount is saved too, so nothing typed is silently lost
+      const tagsToSave = committedFoods();
+      setSelectedFoods(tagsToSave);
       const resolvedTags: MealTagInput[] = [];
-      for (const tag of selectedFoods) {
+      for (const tag of tagsToSave) {
         const resolved = await resolveFoodId(tag, authToken, catalog);
         if (!resolved) {
           showToast({
@@ -608,7 +645,7 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
 
       if (!activity) {
         setSelectedFoods([]);
-        setExpandedIndex(null);
+        setSelectedIndex(null);
         setSearchTerm('');
         setAmount('');
         setEnjoyment(null);
@@ -644,61 +681,55 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
         </div>
 
         <div>
-          <Label className="form-label" htmlFor={foodNameId}>{t('Foods')}</Label>
+          <Label className="form-label" htmlFor={foodNameId}>
+            {t('Foods')}
+            {mealTotal && <span className={foodMealTotal}> · {t('{total} total').replace('{total}', mealTotal)}</span>}
+          </Label>
           {selectedFoods.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
-              {selectedFoods.map((tag, index) => (
-                <span
-                  key={`${tag.foodId || tag.name}-${index}`}
-                  className={`inline-flex items-center gap-1 rounded-full bg-teal-100 text-teal-800 px-2.5 py-1 text-sm food-selected-tag ${
-                    expandedIndex === index ? 'ring-2 ring-teal-500 food-selected-tag-expanded' : ''
-                  }`}
-                >
-                  {selectedFoods.length > 1 ? (
+              {selectedFoods.map((tag, index) => {
+                const isSelected = selectedTag === tag;
+                // One food: its amount is the meal amount
+                const tagAmount = formatFoodTagAmount(selectedFoods.length > 1 ? tag : { amount, unitAbbr: unit }, unitSymbol);
+                return (
+                  <span key={`${tag.foodId || tag.name}-${index}`} className={foodTagVariants({ selected: isSelected })}>
+                    {selectedFoods.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => selectFoodTag(index)}
+                        className={foodTagEditButton}
+                        aria-pressed={isSelected}
+                        aria-label={`${t('Edit')} ${tag.name}${tagAmount ? `, ${tagAmount}` : ''}`}
+                        disabled={isSubmitting}
+                      >
+                        {tag.name}
+                        {tagAmount && <span className="font-medium">{tagAmount}</span>}
+                      </button>
+                    ) : (
+                      <>
+                        {tag.name}
+                        {tagAmount && <span className="font-medium">{tagAmount}</span>}
+                      </>
+                    )}
+                    {tag.commonAllergen && (
+                      <span className="text-amber-700 text-xs food-selected-tag-allergen">({t('Allergen')})</span>
+                    )}
                     <button
                       type="button"
-                      onClick={() => setExpandedIndex(prev => (prev === index ? null : index))}
-                      className="inline-flex items-center gap-1"
-                      aria-expanded={expandedIndex === index}
-                      aria-controls={`${uid}-food-details-${index}`}
+                      onClick={() => removeFoodTag(index)}
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-teal-200 food-selected-tag-remove"
+                      aria-label={`${t('Remove')} ${tag.name}`}
                       disabled={isSubmitting}
                     >
-                      {tag.name}
-                      {parseFloat(tag.amount) > 0 && <span className="text-xs">· {tag.amount} {unitSymbol(tag.unitAbbr)}</span>}
-                      {tag.enjoyment && (
-                        <img src={FOOD_ENJOYMENT_ICON_SRC[tag.enjoyment]} alt={t(FOOD_ENJOYMENT_LABELS[tag.enjoyment])} className="h-4 w-4" />
-                      )}
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
-                  ) : tag.name}
-                  {tag.commonAllergen && (
-                    <span className="text-amber-700 text-xs food-selected-tag-allergen">({t('Allergen')})</span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeFoodTag(index)}
-                    className="ml-0.5 rounded-full p-0.5 hover:bg-teal-200 food-selected-tag-remove"
-                    aria-label={`${t('Remove')} ${tag.name}`}
-                    disabled={isSubmitting}
-                  >
-                    <X className="h-3.5 w-3.5" aria-hidden="true" />
-                  </button>
-                </span>
-              ))}
+                  </span>
+                );
+              })}
             </div>
           )}
           {selectedFoods.length > 1 && (
-            <p className="text-xs text-gray-500 mb-2 food-form-helper-text">{t('Tap a food to add its own amount and enjoyment')}</p>
-          )}
-          {selectedFoods.length > 1 && expandedIndex !== null && selectedFoods[expandedIndex] && (
-            <div className="mb-2">
-              <FoodItemDetails
-                id={`${uid}-food-details-${expandedIndex}`}
-                foodName={selectedFoods[expandedIndex].name}
-                value={selectedFoods[expandedIndex]}
-                onChange={(patch) => setFoodDetails(expandedIndex, patch)}
-                disabled={isSubmitting}
-              />
-            </div>
+            <p className="text-xs text-gray-500 mb-2 food-form-helper-text">{t('Tap a food to edit its amount')}</p>
           )}
           <div className="relative">
             <div className="relative w-full">
@@ -798,75 +829,82 @@ const LogFoodTab: React.FC<LogFoodTabProps> = ({
           )}
         </div>
 
-        {perFoodTotal ? (
-          <div>
-            <Label className="form-label">{t('Total Amount')}</Label>
-            <p className="text-sm text-gray-800 food-form-total-amount">{perFoodTotal}</p>
-            <p className="text-xs text-gray-500 food-form-helper-text">{t("Calculated from each food's amount")}</p>
+        <div>
+          <Label className="form-label" htmlFor={amountId}>
+            {t('Amount (')}{unitSymbol(stepUnit)}){selectedTag && ` — ${selectedTag.name}`}
+          </Label>
+          <div className="flex items-center justify-center mb-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={decrementAmount}
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              aria-label={t('Decrease amount')}
+            >
+              <Minus className="h-5 w-5 text-white" aria-hidden="true" />
+            </Button>
+            <Input
+              id={amountId}
+              type="text"
+              value={stepAmount}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              className="w-24 mx-3 text-center"
+              placeholder={t("Amount")}
+              inputMode="decimal"
+              disabled={isSubmitting}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={incrementAmount}
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              aria-label={t('Increase amount')}
+            >
+              <Plus className="h-5 w-5 text-white" aria-hidden="true" />
+            </Button>
           </div>
-        ) : (
-          <div>
-            <Label className="form-label" htmlFor={amountId}>{t('Amount (')}{unitSymbol(unit)})</Label>
-            <div className="flex items-center justify-center mb-4">
+          <div className="mt-2 flex space-x-2">
+            <Button
+              type="button"
+              variant={stepUnit === 'TBSP' ? 'default' : 'outline'}
+              className="w-full"
+              onClick={() => setStepUnit('TBSP')}
+              disabled={isSubmitting}
+            >
+              {t('tbsp')}
+            </Button>
+            <Button
+              type="button"
+              variant={stepUnit === 'G' ? 'default' : 'outline'}
+              className="w-full"
+              onClick={() => setStepUnit('G')}
+              disabled={isSubmitting}
+            >
+              {t('g')}
+            </Button>
+            {selectedTag && (
               <Button
                 type="button"
-                variant="outline"
-                size="icon"
-                onClick={decrementAmount}
-                disabled={isSubmitting}
-                className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                aria-label={t('Decrease amount')}
+                size="sm"
+                variant={draftDirty ? 'default' : 'outline'}
+                className="h-10 shrink-0"
+                onClick={() => setSelectedFoods(committedFoods())}
+                disabled={!draftDirty || isSubmitting}
+                aria-label={`${t('Update')} ${selectedTag.name}`}
               >
-                <Minus className="h-5 w-5 text-white" aria-hidden="true" />
+                {t('Update')}
               </Button>
-              <Input
-                id={amountId}
-                type="text"
-                value={amount}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                className="w-24 mx-3 text-center"
-                placeholder={t("Amount")}
-                inputMode="decimal"
-                disabled={isSubmitting}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={incrementAmount}
-                disabled={isSubmitting}
-                className="bg-gradient-to-r from-teal-600 to-emerald-600 border-0 rounded-full h-14 w-14 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                aria-label={t('Increase amount')}
-              >
-                <Plus className="h-5 w-5 text-white" aria-hidden="true" />
-              </Button>
-            </div>
-            <div className="mt-2 flex space-x-2">
-              <Button
-                type="button"
-                variant={unit === 'TBSP' ? 'default' : 'outline'}
-                className="w-full"
-                onClick={() => setUnit('TBSP')}
-                disabled={isSubmitting}
-              >
-                {t('tbsp')}
-              </Button>
-              <Button
-                type="button"
-                variant={unit === 'G' ? 'default' : 'outline'}
-                className="w-full"
-                onClick={() => setUnit('G')}
-                disabled={isSubmitting}
-              >
-                {t('g')}
-              </Button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         <div>
-          <Label className="form-label">{selectedFoods.length > 1 ? t('Overall enjoyment') : t('Enjoyment')}</Label>
-          <div className="grid grid-cols-5 gap-1" role="group" aria-label={selectedFoods.length > 1 ? t('Overall enjoyment') : t('Enjoyment')}>
+          <Label className="form-label">{t('Enjoyment')}</Label>
+          <div className="grid grid-cols-5 gap-1" role="group" aria-label={t('Enjoyment')}>
             {FOOD_ENJOYMENT_DISPLAY_ORDER.map((value) => (
               <Button
                 key={value}

@@ -212,11 +212,25 @@ describe('per-food display formatting', () => {
     ], unit)).toBe('Carrot 2 tbsp, Pea 1 tbsp');
   });
 
-  it('summarizes a log: per-food amounts for multi-food meals, else the row amount', () => {
+  it('summarizes a log: per-food amounts plus the meal total for multi-food meals, else the row amount', () => {
     expect(formatFoodLogAmountSummary({
       amount: 3, unitAbbr: 'TBSP',
       foodItems: [{ name: 'Carrot', amount: 2, unitAbbr: 'TBSP' }, { name: 'Pea', amount: 1, unitAbbr: 'TBSP' }],
-    }, unit)).toBe('Carrot 2 tbsp, Pea 1 tbsp');
+    }, unit)).toBe('Carrot 2 tbsp, Pea 1 tbsp · 3 tbsp');
+    expect(formatFoodLogAmountSummary({
+      amount: 25, unitAbbr: 'G',
+      foodItems: [{ name: 'Carrot', amount: 15, unitAbbr: 'G' }, { name: 'Cheese', amount: 10.5, unitAbbr: 'G' }, { name: 'Pea' }],
+    }, unit)).toBe('Carrot 15 g, Cheese 10.5 g · 25.5 g');
+    // Mixed units: no single total, just the per-food list
+    expect(formatFoodLogAmountSummary({
+      amount: null,
+      foodItems: [{ name: 'Carrot', amount: 15, unitAbbr: 'G' }, { name: 'Pea', amount: 2, unitAbbr: 'TBSP' }],
+    }, unit)).toBe('Carrot 15 g, Pea 2 tbsp');
+    // Only one food has an amount: its amount is the total, so no repeat
+    expect(formatFoodLogAmountSummary({
+      amount: 15, unitAbbr: 'G',
+      foodItems: [{ name: 'Carrot', amount: 15, unitAbbr: 'G' }, { name: 'Pea' }],
+    }, unit)).toBe('Carrot 15 g');
     expect(formatFoodLogAmountSummary({
       amount: 3, unitAbbr: 'TBSP', foodItems: [{ name: 'Carrot' }, { name: 'Pea' }],
     }, unit)).toBe('3 tbsp');

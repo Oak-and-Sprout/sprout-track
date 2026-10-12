@@ -54,22 +54,10 @@ export interface ProgressTabProps {
   onNavigate?: () => void;
 }
 
-/** One food's own details inside a multi-food entry (#271), as edited in the form. */
+/** One food's own details inside a multi-food entry (#271), as held by its tag in the form. */
 export interface FoodItemDetailsValue {
   /** Raw amount input ('' = not recorded). */
   amount: string;
   unitAbbr: string;
   enjoyment: FoodEnjoymentValue | null;
-}
-
-/**
- * Props for the FoodItemDetails panel
- */
-export interface FoodItemDetailsProps {
-  /** DOM id of the panel (the food chip's aria-controls target). */
-  id: string;
-  foodName: string;
-  value: FoodItemDetailsValue;
-  onChange: (patch: Partial<FoodItemDetailsValue>) => void;
-  disabled?: boolean;
 }

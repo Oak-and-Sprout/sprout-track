@@ -624,15 +624,20 @@ export function formatFoodItemAmounts(
 
 /**
  * Amount summary for a food log line: per-food amounts for a multi-food meal
- * that recorded them (#271), else the row amount ("3 tbsp"), else ''.
+ * that recorded them (#271) plus their total when two or more share one unit
+ * ("Carrot 15 g, Cheese 10 g · 25 g"), else the row amount ("3 tbsp"), else ''.
  */
 export function formatFoodLogAmountSummary(
   log: { amount?: number | null; unitAbbr?: string | null; foodItems?: FoodItemDisplay[] },
   unitLabel: (unitAbbr: string | null | undefined) => string
 ): string {
   const items = log.foodItems ?? [];
-  if (items.length > 1 && items.some(item => isPositiveAmount(item.amount))) {
-    return formatFoodItemAmounts(items, unitLabel);
+  const withAmount = items.filter(item => isPositiveAmount(item.amount));
+  if (items.length > 1 && withAmount.length > 0) {
+    const list = formatFoodItemAmounts(withAmount, unitLabel);
+    const totals = Object.values(sumAmountsByUnit(withAmount));
+    if (withAmount.length < 2 || totals.length > 1) return list;
+    return `${list} · ${Math.round(totals[0] * 100) / 100} ${unitLabel(withAmount[0].unitAbbr)}`.trim();
   }
   return isPositiveAmount(log.amount) ? `${log.amount} ${unitLabel(log.unitAbbr)}`.trim() : '';
 }
