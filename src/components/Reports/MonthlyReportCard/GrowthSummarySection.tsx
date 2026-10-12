@@ -20,7 +20,7 @@ type ChartType = 'weight' | 'length' | 'headCircumference';
 
 const chartTypeConfig: { type: ChartType; label: string; icon: React.ReactNode }[] = [
   { type: 'weight', label: 'Weight', icon: <Scale aria-hidden="true" className="h-4 w-4" /> },
-  { type: 'length', label: 'Length', icon: <Ruler aria-hidden="true" className="h-4 w-4" /> },
+  { type: 'length', label: 'Length / Height', icon: <Ruler aria-hidden="true" className="h-4 w-4" /> },
   { type: 'headCircumference', label: 'Head', icon: <CircleDot aria-hidden="true" className="h-4 w-4" /> },
 ];
 
@@ -62,13 +62,16 @@ function MetricCard({ label, metric }: { label: string; metric: GrowthMetric | n
       </div>
     );
   }
-  const ordinal = metric.percentile === 1 ? 'st' : metric.percentile === 2 ? 'nd' : metric.percentile === 3 ? 'rd' : 'th';
-  const pctText = `${metric.percentile}${t(ordinal)} ${t('percentile')} ${formatTrend(metric.trend)}`;
+  const pctText = metric.percentile !== null
+    ? `${metric.percentile}${t(metric.percentile === 1 ? 'st' : metric.percentile === 2 ? 'nd' : metric.percentile === 3 ? 'rd' : 'th')} ${t('percentile')} ${formatTrend(metric.trend)}`
+    : null;
   return (
     <div className={cn(s.metricCard, 'report-card-metric')}>
       <p className={cn(s.metricLabel, 'report-card-metric-label')}>{label}</p>
       <p className={cn(s.metricValue, 'report-card-metric-value')}>{metric.value} {metric.unit}</p>
-      <p className={cn(s.metricSub, s.metricSubPositive, 'report-card-metric-sub-positive')}>{pctText}</p>
+      {pctText && (
+        <p className={cn(s.metricSub, s.metricSubPositive, 'report-card-metric-sub-positive')}>{pctText}</p>
+      )}
     </div>
   );
 }
@@ -79,7 +82,7 @@ function GrowthChartTooltip({ active, payload, label, babyName, unit, t }: any) 
   if (!active || !payload?.length) return null;
 
   const measurementPoint = payload.find((p: any) => p.dataKey === 'measurement');
-  const dataPoint = payload[0]?.payload as any;
+  const dataPoint = (measurementPoint?.payload ?? payload[0]?.payload) as any;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 report-card-chart-tooltip" style={{ fontSize: 12 }}>
@@ -91,8 +94,6 @@ function GrowthChartTooltip({ active, payload, label, babyName, unit, t }: any) 
         const pctEntries = payload
           .filter((p: any) => p.dataKey !== 'measurement' && p.dataKey !== 'percentile' && p.value != null)
           .sort((a: any, b: any) => (a.value ?? 0) - (b.value ?? 0));
-
-        if (!pctEntries.length) return null;
 
         const measValue = measurementPoint.value as number;
         const measPercentile = dataPoint?.percentile;
@@ -119,13 +120,13 @@ function GrowthChartTooltip({ active, payload, label, babyName, unit, t }: any) 
           );
         }
 
-        if (measPercentile !== undefined) {
-          lines.push(
-            <p key="meas" className="font-semibold text-orange-600">
-              {Number(measPercentile).toFixed(1)}%: {formatChartValue(Number(measValue), unit || '')}
-            </p>
-          );
-        }
+        // Measurement stays visible even when the reference has no percentile at this age.
+        lines.push(
+          <p key="meas" className="font-semibold text-orange-600">
+            {measPercentile !== undefined ? `${Number(measPercentile).toFixed(1)}%: ` : ''}
+            {formatChartValue(Number(measValue), unit || '')}
+          </p>
+        );
 
         if (lower) {
           lines.push(
@@ -186,6 +187,8 @@ function GrowthChartCard({
             <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
             <XAxis
               dataKey="ageMonths"
+              type="number"
+              domain={[0, 'dataMax']}
               tick={{ fontSize: 11 }}
               tickFormatter={(v: number) => v === 0 ? '0' : `${v}`}
               label={{ value: t('Age (months)'), position: 'insideBottom', offset: -5, fontSize: 11 }}
@@ -213,7 +216,7 @@ function GrowthChartCard({
               />
             )}
 
-            {/* Percentile curves */}
+            {/* Percentile curves — keep explicit reference transitions disconnected */}
             {percentileLines.map(line => (
               <Line
                 key={line.dataKey}
@@ -224,6 +227,7 @@ function GrowthChartCard({
                 strokeWidth={line.width}
                 strokeDasharray={line.dash || undefined}
                 dot={false}
+                connectNulls={false}
                 isAnimationActive={!disableAnimation}
               />
             ))}
@@ -256,7 +260,7 @@ const GrowthSummarySection: React.FC<GrowthSummarySectionProps & { isPdfExport?:
   const chartTitle = (type: ChartType, standard: 'CDC' | 'WHO'): string => {
     const keys: Record<ChartType, { CDC: string; WHO: string }> = {
       weight: { CDC: 'Weight-for-age (CDC)', WHO: 'Weight-for-age (WHO)' },
-      length: { CDC: 'Length-for-age (CDC)', WHO: 'Length-for-age (WHO)' },
+      length: { CDC: 'Length/Height-for-age (CDC)', WHO: 'Length-for-age (WHO)' },
       headCircumference: { CDC: 'Head circ.-for-age (CDC)', WHO: 'Head circ.-for-age (WHO)' },
     };
     return keys[type][standard];
@@ -278,7 +282,7 @@ const GrowthSummarySection: React.FC<GrowthSummarySectionProps & { isPdfExport?:
       {/* Metric grid */}
       <div className={cn(s.metricGrid4)}>
         <MetricCard label={t('Weight')} metric={growth.weight} />
-        <MetricCard label={t('Length')} metric={growth.length} />
+        <MetricCard label={t(growthStandard === 'CDC' ? 'Length / Height' : 'Length')} metric={growth.length} />
         <MetricCard label={t('Head circ.')} metric={growth.headCircumference} />
         <div className={cn(s.metricCard, 'report-card-metric')}>
           <p className={cn(s.metricLabel, 'report-card-metric-label')}>{t('Growth velocity')}</p>

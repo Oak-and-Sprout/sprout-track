@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   WHO_MAX_AGE_MONTHS,
+  calculateGrowthAgeMonths,
   isValidGrowthStandard,
   effectiveGrowthStandard,
 } from '@/src/utils/growthStandard';
@@ -8,6 +9,14 @@ import {
 describe('WHO_MAX_AGE_MONTHS', () => {
   it('is 24', () => {
     expect(WHO_MAX_AGE_MONTHS).toBe(24);
+  });
+});
+
+describe('calculateGrowthAgeMonths', () => {
+  it('preserves the fractional age immediately after the 24-month boundary', () => {
+    const birth = new Date('2024-01-15T00:00:00.000Z');
+    expect(calculateGrowthAgeMonths(birth, new Date('2026-01-15T00:00:00.000Z'))).toBe(24);
+    expect(calculateGrowthAgeMonths(birth, new Date('2026-01-16T00:00:00.000Z'))).toBeGreaterThan(24);
   });
 });
 
@@ -32,12 +41,21 @@ describe('effectiveGrowthStandard', () => {
   it('returns WHO when WHO is selected and age is within range', () => {
     expect(effectiveGrowthStandard('WHO', 0)).toBe('WHO');
     expect(effectiveGrowthStandard('WHO', 12)).toBe('WHO');
-    expect(effectiveGrowthStandard('WHO', 24)).toBe('WHO'); // inclusive boundary
+    expect(effectiveGrowthStandard('WHO', 24)).toBe('WHO');
   });
 
-  it('falls back to CDC when WHO is selected but age exceeds 24 months', () => {
+  it('falls back to CDC for the first fractional age above 24 months', () => {
+    expect(effectiveGrowthStandard('WHO', 24.000001)).toBe('CDC');
     expect(effectiveGrowthStandard('WHO', 24.01)).toBe('CDC');
     expect(effectiveGrowthStandard('WHO', 30)).toBe('CDC');
+  });
+
+  it('works with the shared calendar-age calculation at the real boundary', () => {
+    const birth = new Date('2024-01-15T00:00:00.000Z');
+    const at24 = calculateGrowthAgeMonths(birth, new Date('2026-01-15T00:00:00.000Z'));
+    const after24 = calculateGrowthAgeMonths(birth, new Date('2026-01-16T00:00:00.000Z'));
+    expect(effectiveGrowthStandard('WHO', at24)).toBe('WHO');
+    expect(effectiveGrowthStandard('WHO', after24)).toBe('CDC');
   });
 
   it('returns CDC whenever CDC is selected, at any age', () => {

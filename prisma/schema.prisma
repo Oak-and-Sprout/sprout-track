@@ -1446,6 +1446,52 @@ model CdcHeadCircumferenceForAge {
   @@index([ageMonths])
 }
 
+// Weight-for-age reference data (children 2-20 years)
+model CdcChildWeightForAge {
+  id        String @id @default(uuid())
+  sex       Int // 1 = Male, 2 = Female
+  ageMonths Float // Age in months (24 through 240)
+  l         Float // L parameter (power in Box-Cox transformation)
+  m         Float // M parameter (median)
+  s         Float // S parameter (generalized coefficient of variation)
+  p3        Float // 3rd percentile
+  p5        Float // 5th percentile
+  p10       Float // 10th percentile
+  p25       Float // 25th percentile
+  p50       Float // 50th percentile (median)
+  p75       Float // 75th percentile
+  p90       Float // 90th percentile
+  p95       Float // 95th percentile
+  p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
+// Stature-for-age reference data (children 2-20 years)
+model CdcStatureForAge {
+  id        String @id @default(uuid())
+  sex       Int // 1 = Male, 2 = Female
+  ageMonths Float // Age in months (24 through 240)
+  l         Float // L parameter (power in Box-Cox transformation)
+  m         Float // M parameter (median)
+  s         Float // S parameter (generalized coefficient of variation)
+  p3        Float // 3rd percentile
+  p5        Float // 5th percentile
+  p10       Float // 10th percentile
+  p25       Float // 25th percentile
+  p50       Float // 50th percentile (median)
+  p75       Float // 75th percentile
+  p90       Float // 90th percentile
+  p95       Float // 95th percentile
+  p97       Float // 97th percentile
+
+  @@unique([sex, ageMonths])
+  @@index([sex])
+  @@index([ageMonths])
+}
+
 // WHO Growth Standard reference data for percentile calculations
 // Data from: WHO Multicentre Growth Reference Study (MGRS)
 // Uses LMS method for percentile calculations (same as CDC)

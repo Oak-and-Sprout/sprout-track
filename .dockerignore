@@ -61,6 +61,8 @@ documentation/
 !documentation/wtageinf.csv
 !documentation/hcageinf.csv
 !documentation/lenageinf.csv
+!documentation/wtage.csv
+!documentation/statage.csv
 !documentation/who-wtageinf.csv
 !documentation/who-hcageinf.csv
 !documentation/who-lenageinf.csv

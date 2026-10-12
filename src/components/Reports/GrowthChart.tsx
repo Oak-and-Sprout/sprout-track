@@ -19,7 +19,13 @@ import { useLocalization } from '@/src/context/localization';
 import { useTimezone } from '@/app/context/timezone';
 import { formatDateLong } from '@/src/utils/dateFormat';
 import { toCdcWeightKg, fromCdcWeightKg, weightUnitLabel, formatChartValue } from '@/src/utils/weightUnits';
-import { effectiveGrowthStandard } from '@/src/utils/growthStandard';
+import { calculateGrowthAgeMonths, effectiveGrowthStandard } from '@/src/utils/growthStandard';
+import {
+  buildGrowthReferenceChartPoints,
+  resolveGrowthReference,
+  type GrowthReferenceChartPoint,
+  type GrowthReferenceSegment,
+} from '@/src/utils/growthReferences';
 import {
   buildGrowthChartYAxis,
   formatGrowthChartAxisTick,
@@ -27,23 +33,6 @@ import {
 
 // Types
 export type GrowthMeasurementType = 'weight' | 'length' | 'head_circumference';
-
-interface CdcGrowthDataRecord {
-  sex: number;
-  ageMonths: number;
-  l: number;
-  m: number;
-  s: number;
-  p3: number;
-  p5: number;
-  p10: number;
-  p25: number;
-  p50: number;
-  p75: number;
-  p90: number;
-  p95: number;
-  p97: number;
-}
 
 interface MeasurementData {
   id: string;
@@ -61,28 +50,14 @@ interface Settings {
   growthChartStandard: 'CDC' | 'WHO';
 }
 
-interface ChartDataPoint {
-  ageMonths: number;
-  p3: number;
-  p5: number;
-  p10: number;
-  p25: number;
-  p50: number;
-  p75: number;
-  p90: number;
-  p95: number;
-  p97: number;
-  measurement?: number;
-  measurementDate?: string;
-  percentile?: number;
-}
+type ChartDataPoint = GrowthReferenceChartPoint;
 
 interface MeasurementWithPercentile {
   ageMonths: number;
   value: number;
   displayValue: number;
   date: string;
-  percentile: number;
+  percentile?: number;
   unit: string;
 }
 
@@ -97,26 +72,9 @@ const genderToCdcSex = (gender: string | null | undefined): number => {
   return 1; // Default to male if unknown
 };
 
-// Helper to calculate age in months from birth date
-const calculateAgeInMonths = (birthDate: string, measurementDate: string): number => {
-  const birth = new Date(birthDate);
-  const measurement = new Date(measurementDate);
-
-  const years = measurement.getFullYear() - birth.getFullYear();
-  const months = measurement.getMonth() - birth.getMonth();
-  const days = measurement.getDate() - birth.getDate();
-
-  let totalMonths = years * 12 + months;
-  if (days < 0) {
-    totalMonths -= 1;
-  }
-
-  // Add fractional month based on day of month
-  const daysInMonth = new Date(measurement.getFullYear(), measurement.getMonth() + 1, 0).getDate();
-  const dayFraction = (days >= 0 ? days : daysInMonth + days) / daysInMonth;
-
-  return Math.max(0, totalMonths + dayFraction);
-};
+// Shared growth-age calculation keeps chart/report transition boundaries identical.
+const calculateAgeInMonths = (birthDate: string, measurementDate: string): number =>
+  calculateGrowthAgeMonths(birthDate, measurementDate);
 
 // Helper to convert measurement values to CDC standard units (kg for weight, cm for length)
 const convertToCdcUnit = (value: number, unit: string, type: GrowthMeasurementType): number => {
@@ -199,49 +157,6 @@ const erf = (x: number): number => {
   return sign * y;
 };
 
-// Find CDC data point for a given age (interpolating if needed)
-const findCdcDataForAge = (cdcData: CdcGrowthDataRecord[], ageMonths: number): CdcGrowthDataRecord | null => {
-  if (!cdcData.length) return null;
-
-  // Find surrounding points
-  let lower: CdcGrowthDataRecord | null = null;
-  let upper: CdcGrowthDataRecord | null = null;
-
-  for (let i = 0; i < cdcData.length; i++) {
-    if (cdcData[i].ageMonths <= ageMonths) {
-      lower = cdcData[i];
-    }
-    if (cdcData[i].ageMonths >= ageMonths && !upper) {
-      upper = cdcData[i];
-      break;
-    }
-  }
-
-  if (!lower && !upper) return null;
-  if (!lower) return upper;
-  if (!upper) return lower;
-  if (lower.ageMonths === upper.ageMonths) return lower;
-
-  // Interpolate
-  const ratio = (ageMonths - lower.ageMonths) / (upper.ageMonths - lower.ageMonths);
-  return {
-    sex: lower.sex,
-    ageMonths: ageMonths,
-    l: lower.l + ratio * (upper.l - lower.l),
-    m: lower.m + ratio * (upper.m - lower.m),
-    s: lower.s + ratio * (upper.s - lower.s),
-    p3: lower.p3 + ratio * (upper.p3 - lower.p3),
-    p5: lower.p5 + ratio * (upper.p5 - lower.p5),
-    p10: lower.p10 + ratio * (upper.p10 - lower.p10),
-    p25: lower.p25 + ratio * (upper.p25 - lower.p25),
-    p50: lower.p50 + ratio * (upper.p50 - lower.p50),
-    p75: lower.p75 + ratio * (upper.p75 - lower.p75),
-    p90: lower.p90 + ratio * (upper.p90 - lower.p90),
-    p95: lower.p95 + ratio * (upper.p95 - lower.p95),
-    p97: lower.p97 + ratio * (upper.p97 - lower.p97),
-  };
-};
-
 // Map measurement API type to chart type
 const mapMeasurementType = (apiType: string): GrowthMeasurementType | null => {
   switch (apiType) {
@@ -305,7 +220,7 @@ const getDisplayUnit = (type: GrowthMeasurementType, settings: Settings | null):
 const CustomTooltip = ({ active, payload, label, settings, measurementType, t }: any) => {
   if (active && payload && payload.length) {
     const measurementPoint = payload.find((p: any) => p.dataKey === 'measurement');
-    const dataPoint = payload[0]?.payload as ChartDataPoint;
+    const dataPoint = (measurementPoint?.payload ?? payload[0]?.payload) as ChartDataPoint;
     const unitLabel = getUnitLabel(measurementType, settings);
 
     return (
@@ -326,8 +241,6 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
                     p.value !== undefined
                 )
                 .sort((a: any, b: any) => (a.value ?? 0) - (b.value ?? 0));
-
-              if (!percentileEntries.length) return null;
 
               const measurementValue = measurementPoint.value as number;
               const measurementPercentile = dataPoint?.percentile;
@@ -359,17 +272,16 @@ const CustomTooltip = ({ active, payload, label, settings, measurementType, t }:
                 );
               }
 
-              // Measurement line (percentile + value), bold and orange but same size as others
-              if (measurementPercentile !== undefined) {
-                lines.push(
-                  <p
-                    key="measurement"
-                    className={cn(growthChartStyles.tooltipMeasurement, "growth-chart-tooltip-measurement")}
-                  >
-                    {measurementPercentile.toFixed(1)}%: {formatChartValue(measurementValue, unitLabel)} {unitLabel}
-                  </p>
-                );
-              }
+              // Measurement remains visible even when no reference percentile is available.
+              lines.push(
+                <p
+                  key="measurement"
+                  className={cn(growthChartStyles.tooltipMeasurement, "growth-chart-tooltip-measurement")}
+                >
+                  {measurementPercentile !== undefined ? `${measurementPercentile.toFixed(1)}%: ` : ''}
+                  {formatChartValue(measurementValue, unitLabel)} {unitLabel}
+                </p>
+              );
 
               // Percentile below measurement
               if (lower) {
@@ -398,21 +310,16 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
 
   // State
   const [measurementType, setMeasurementType] = useState<GrowthMeasurementType>('weight');
-  const [cdcData, setCdcData] = useState<CdcGrowthDataRecord[]>([]);
+  const [growthReferenceSegments, setGrowthReferenceSegments] = useState<GrowthReferenceSegment[]>([]);
   const [measurements, setMeasurements] = useState<MeasurementData[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // True age in whole months (no buffer/clamp) for choosing the growth standard.
+  // Use fractional growth age for the WHO -> CDC boundary; 24.01 months is CDC.
   const babyAgeMonthsForStandard = useMemo((): number => {
     if (!selectedBaby?.birthDate) return 0;
-    const now = new Date();
-    const birth = new Date(selectedBaby.birthDate);
-    let totalMonths =
-      (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-    if (now.getDate() - birth.getDate() < 0) totalMonths -= 1;
-    return totalMonths;
+    return calculateGrowthAgeMonths(selectedBaby.birthDate.toString(), new Date());
   }, [selectedBaby]);
 
   const effectiveStandard = effectiveGrowthStandard(
@@ -461,9 +368,9 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     fetchSettings();
   }, []);
 
-  // Fetch CDC data when measurement type or baby gender changes
+  // Fetch age-bounded growth reference segments when the metric or effective standard changes.
   useEffect(() => {
-    const fetchCdcData = async () => {
+    const fetchGrowthReferences = async () => {
       if (!selectedBaby) return;
 
       setIsLoading(true);
@@ -483,28 +390,28 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
               'Cache-Control': 'no-cache, no-store, must-revalidate',
               'Expires': '0',
             },
-          }
+          },
         );
 
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
-            setCdcData(data.data || []);
+            setGrowthReferenceSegments(data.data?.segments || []);
           } else {
-            setError(data.error || 'Failed to fetch CDC data');
+            setError(data.error || 'Failed to fetch growth reference data');
           }
         } else {
-          setError('Failed to fetch CDC data');
+          setError('Failed to fetch growth reference data');
         }
       } catch (err) {
-        console.error('Error fetching CDC data:', err);
-        setError('Error fetching CDC data');
+        console.error('Error fetching growth reference data:', err);
+        setError('Error fetching growth reference data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchCdcData();
+    fetchGrowthReferences();
   }, [selectedBaby, measurementType, effectiveStandard]);
 
   // Fetch baby measurements
@@ -547,9 +454,9 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
     fetchMeasurements();
   }, [selectedBaby, measurementType]);
 
-  // Process measurements with percentiles
+  // Process measurements with percentiles using the selected age-bounded reference segment.
   const measurementsWithPercentiles = useMemo((): MeasurementWithPercentile[] => {
-    if (!cdcData.length || !selectedBaby?.birthDate) return [];
+    if (!selectedBaby?.birthDate) return [];
 
     const displayUnit = getDisplayUnit(measurementType, settings);
 
@@ -558,19 +465,33 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
       .map(m => {
         const ageMonths = calculateAgeInMonths(selectedBaby.birthDate!.toString(), m.date);
 
-        // Convert to CDC units for percentile calculation
+        // Convert to reference units (kg/cm) for percentile calculation.
         const cdcValue = convertToCdcUnit(m.value, m.unit, measurementType);
 
-        // Find CDC data for this age
-        const cdcPoint = findCdcDataForAge(cdcData, ageMonths);
+        // Resolve the age-bounded reference row at the exact measurement age.
+        const resolvedReference = resolveGrowthReference(
+          growthReferenceSegments,
+          effectiveStandard,
+          measurementType,
+          ageMonths,
+        );
 
-        // Calculate percentile
-        const percentile = cdcPoint
-          ? calculatePercentile(cdcValue, cdcPoint.l, cdcPoint.m, cdcPoint.s)
-          : 50;
+        // Calculate percentile only when a supported reference exists.
+        const percentile = resolvedReference
+          ? calculatePercentile(
+              cdcValue,
+              resolvedReference.row.l,
+              resolvedReference.row.m,
+              resolvedReference.row.s,
+            )
+          : undefined;
 
-        // Convert to display unit
-        const displayValue = convertFromCdcToDisplayUnit(cdcValue, measurementType, displayUnit);
+        // Convert the raw measurement to the selected display unit.
+        const displayValue = convertFromCdcToDisplayUnit(
+          cdcValue,
+          measurementType,
+          displayUnit,
+        );
 
         return {
           ageMonths,
@@ -581,142 +502,62 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
           unit: displayUnit,
         };
       })
-      .filter(m => m.ageMonths >= 0 && m.ageMonths <= 36.5) // Filter to CDC range
+      .filter(m => m.ageMonths >= 0)
       .sort((a, b) => a.ageMonths - b.ageMonths);
-  }, [cdcData, measurements, measurementType, selectedBaby, settings]);
+  }, [
+    growthReferenceSegments,
+    measurements,
+    measurementType,
+    selectedBaby,
+    settings,
+    effectiveStandard,
+  ]);
 
-  // Calculate baby's current age in months
+  // Calculate baby's current age in months. Do not clamp to the infant reference range.
   const babyCurrentAgeMonths = useMemo((): number => {
-    if (!selectedBaby?.birthDate) return 12; // Default to 12 months if no birthdate
+    if (!selectedBaby?.birthDate) return 12;
 
     const now = new Date();
     const birth = new Date(selectedBaby.birthDate);
-
     const years = now.getFullYear() - birth.getFullYear();
     const months = now.getMonth() - birth.getMonth();
     const days = now.getDate() - birth.getDate();
 
     let totalMonths = years * 12 + months;
-    if (days < 0) {
-      totalMonths -= 1;
-    }
+    if (days < 0) totalMonths -= 1;
 
-    // Add 1 month buffer and round up to nearest month
-    const ageWithBuffer = Math.ceil(totalMonths + 1);
-
-    // Minimum of 3 months, maximum of 36 months
-    return Math.max(3, Math.min(36, ageWithBuffer));
+    // Add a 1 month chart buffer and keep the original 3 month minimum.
+    return Math.max(3, Math.ceil(totalMonths + 1));
   }, [selectedBaby]);
 
-  // Combine CDC data with baby measurements for chart
+  // Combine bounded reference segments with exact-age measurements for chart rendering.
   const chartData = useMemo((): ChartDataPoint[] => {
-    if (!cdcData.length || !selectedBaby?.birthDate) return [];
+    if (!selectedBaby?.birthDate) return [];
 
     const displayUnit = getDisplayUnit(measurementType, settings);
-
-    // Create base data from CDC percentiles, converted to display units
-    // Filter to only include data up to baby's current age + 1 month
-    const baseData: ChartDataPoint[] = cdcData
-      .filter(record => record.ageMonths <= babyCurrentAgeMonths)
-      .map(record => ({
-        ageMonths: record.ageMonths,
-        p3: convertFromCdcToDisplayUnit(record.p3, measurementType, displayUnit),
-        p5: convertFromCdcToDisplayUnit(record.p5, measurementType, displayUnit),
-        p10: convertFromCdcToDisplayUnit(record.p10, measurementType, displayUnit),
-        p25: convertFromCdcToDisplayUnit(record.p25, measurementType, displayUnit),
-        p50: convertFromCdcToDisplayUnit(record.p50, measurementType, displayUnit),
-        p75: convertFromCdcToDisplayUnit(record.p75, measurementType, displayUnit),
-        p90: convertFromCdcToDisplayUnit(record.p90, measurementType, displayUnit),
-        p95: convertFromCdcToDisplayUnit(record.p95, measurementType, displayUnit),
-        p97: convertFromCdcToDisplayUnit(record.p97, measurementType, displayUnit),
-      }));
-
-    // Create a map for measurement points
-    const measurementPointsMap: Map<number, { value: number; date: string; percentile: number }> = new Map();
-
-    measurementsWithPercentiles.forEach(m => {
-      // Round to nearest 0.5 month for matching with CDC data
-      const roundedAge = Math.round(m.ageMonths * 2) / 2;
-      measurementPointsMap.set(roundedAge, {
-        value: m.displayValue,
-        date: m.date,
-        percentile: m.percentile,
-      });
+    return buildGrowthReferenceChartPoints({
+      segments: growthReferenceSegments,
+      standard: effectiveStandard,
+      measurement: measurementType,
+      maxReferenceAgeMonths: babyCurrentAgeMonths,
+      measurements: measurementsWithPercentiles.map(measurement => ({
+        ageMonths: measurement.ageMonths,
+        value: measurement.displayValue,
+        date: measurement.date,
+        percentile: measurement.percentile,
+      })),
+      convertReferenceValue: value =>
+        convertFromCdcToDisplayUnit(value, measurementType, displayUnit),
     });
-
-    // Merge measurement points into chart data
-    const mergedData = baseData.map(point => {
-      const measurement = measurementPointsMap.get(point.ageMonths);
-      if (measurement) {
-        measurementPointsMap.delete(point.ageMonths); // Mark as used
-        return {
-          ...point,
-          measurement: measurement.value,
-          measurementDate: measurement.date,
-          percentile: measurement.percentile,
-        };
-      }
-      return point;
-    });
-
-    // Add any remaining measurement points that don't align with CDC data points
-    measurementPointsMap.forEach((measurement, age) => {
-      if (!baseData.length) return;
-
-      // Find the first CDC point with age greater than the measurement
-      const upperIdx = baseData.findIndex(d => d.ageMonths > age);
-
-      let interpolatedPoint: ChartDataPoint;
-
-      if (upperIdx > 0) {
-        // Normal case: interpolate between surrounding CDC points
-        const lower = baseData[upperIdx - 1];
-        const upper = baseData[upperIdx];
-        const ratio = (age - lower.ageMonths) / (upper.ageMonths - lower.ageMonths);
-
-        interpolatedPoint = {
-          ageMonths: age,
-          p3: lower.p3 + ratio * (upper.p3 - lower.p3),
-          p5: lower.p5 + ratio * (upper.p5 - lower.p5),
-          p10: lower.p10 + ratio * (upper.p10 - lower.p10),
-          p25: lower.p25 + ratio * (upper.p25 - lower.p25),
-          p50: lower.p50 + ratio * (upper.p50 - lower.p50),
-          p75: lower.p75 + ratio * (upper.p75 - lower.p75),
-          p90: lower.p90 + ratio * (upper.p90 - lower.p90),
-          p95: lower.p95 + ratio * (upper.p95 - lower.p95),
-          p97: lower.p97 + ratio * (upper.p97 - lower.p97),
-          measurement: measurement.value,
-          measurementDate: measurement.date,
-          percentile: measurement.percentile,
-        };
-      } else if (upperIdx === -1) {
-        // Edge case: measurement is at or beyond last CDC point — use last point's values
-        const last = baseData[baseData.length - 1];
-        interpolatedPoint = {
-          ...last,
-          ageMonths: age,
-          measurement: measurement.value,
-          measurementDate: measurement.date,
-          percentile: measurement.percentile,
-        };
-      } else {
-        // Edge case: measurement is before first CDC point — use first point's values
-        const first = baseData[0];
-        interpolatedPoint = {
-          ...first,
-          ageMonths: age,
-          measurement: measurement.value,
-          measurementDate: measurement.date,
-          percentile: measurement.percentile,
-        };
-      }
-
-      mergedData.push(interpolatedPoint);
-    });
-
-    // Sort by age
-    return mergedData.sort((a, b) => a.ageMonths - b.ageMonths);
-  }, [cdcData, measurementsWithPercentiles, measurementType, selectedBaby, settings, babyCurrentAgeMonths]);
+  }, [
+    growthReferenceSegments,
+    measurementsWithPercentiles,
+    measurementType,
+    selectedBaby,
+    settings,
+    babyCurrentAgeMonths,
+    effectiveStandard,
+  ]);
 
   const unitLabel = getUnitLabel(measurementType, settings);
 
@@ -827,7 +668,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
   // Get measurement type button config
   const measurementTypes: { type: GrowthMeasurementType; label: string; icon: React.ReactNode }[] = [
     { type: 'weight', label: 'Weight', icon: <Scale aria-hidden="true" className="h-4 w-4" /> },
-    { type: 'length', label: 'Length', icon: <Ruler aria-hidden="true" className="h-4 w-4" /> },
+    { type: 'length', label: 'Length / Height', icon: <Ruler aria-hidden="true" className="h-4 w-4" /> },
     { type: 'head_circumference', label: 'Head', icon: <CircleDot aria-hidden="true" className="h-4 w-4" /> },
   ];
 
@@ -882,7 +723,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
               )}
             >
               {icon}
-              <span>{label}</span>
+              <span>{t(label)}</span>
             </button>
           ))}
         </div>
@@ -950,6 +791,8 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
               <CartesianGrid strokeDasharray="3 3" className="growth-chart-grid" />
               <XAxis
                 dataKey="ageMonths"
+                type="number"
+                domain={[0, 'dataMax']}
                 label={{ value: 'Age (months)', position: 'insideBottom', offset: -10 }}
                 tickFormatter={(value) => value.toString()}
                 className="growth-chart-axis"
@@ -1069,9 +912,11 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
                 <div className={cn(growthChartStyles.measurementValue, "growth-chart-measurement-value")}>
                   {formatChartValue(m.displayValue, unitLabel)} {unitLabel}
                 </div>
-                <div className={cn(growthChartStyles.measurementPercentile, "growth-chart-measurement-percentile")}>
-                  {m.percentile.toFixed(1)}{t('th percentile')}
-                </div>
+                {m.percentile !== undefined && (
+                  <div className={cn(growthChartStyles.measurementPercentile, "growth-chart-measurement-percentile")}>
+                    {m.percentile.toFixed(1)}{t('th percentile')}
+                  </div>
+                )}
                 <div className={cn(growthChartStyles.measurementAge, "growth-chart-measurement-age")}>
                   {m.ageMonths.toFixed(1)} months
                 </div>

@@ -792,13 +792,13 @@ export interface GrowthChartData {
 
 export interface GrowthChartPoint {
   ageMonths: number;
-  p3: number;
-  p10: number;
-  p25: number;
-  p50: number;
-  p75: number;
-  p90: number;
-  p97: number;
+  p3?: number;
+  p10?: number;
+  p25?: number;
+  p50?: number;
+  p75?: number;
+  p90?: number;
+  p97?: number;
   measurement?: number;
   measurementDate?: string;
   percentile?: number;
@@ -807,6 +807,6 @@ export interface GrowthChartPoint {
 export interface GrowthMetric {
   value: number;
   unit: string;
-  percentile: number;
+  percentile: number | null;
   trend: 'up' | 'down' | 'stable';
 }

@@ -175,11 +175,13 @@ Measurement unit definitions with `unitAbbr` (unique), `unitName`, and `activity
 ## CDC Growth Data
 
 Reference data tables for growth chart percentile calculations:
-- `CdcWeightForAge` — Weight percentiles (0-36 months)
-- `CdcLengthForAge` — Length/height percentiles (0-36 months)
-- `CdcHeadCircumferenceForAge` — Head circumference percentiles (0-36 months)
+- `CdcWeightForAge` — Infant weight-for-age reference data (birth through 36 months)
+- `CdcLengthForAge` — Infant recumbent length-for-age reference data (birth through 36 months)
+- `CdcHeadCircumferenceForAge` — Infant head-circumference-for-age reference data (birth through 36 months)
+- `CdcChildWeightForAge` — CDC 2–20 year weight-for-age reference data (24 through 240 months)
+- `CdcStatureForAge` — CDC 2–20 year standing stature-for-age reference data (24 through 240 months)
 
-All use the LMS method (L, M, S parameters) with pre-calculated percentile columns (P3-P97).
+All use the LMS method (L, M, S parameters) with pre-calculated percentile columns (P3-P97). Growth-reference selection is age-bounded: CDC weight and length/stature transition explicitly at 24 months, while head-circumference percentiles stop when the infant reference data ends rather than extrapolating the final LMS row.
 
 ## External Integration
 
