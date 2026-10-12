@@ -73,6 +73,7 @@ const ENV_DEFAULTS = [
   {
     key: 'TZ',
     default: 'UTC',
+    runtimeEnvWins: true,
     comment: 'Timezone'
   },
   {

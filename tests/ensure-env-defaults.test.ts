@@ -122,3 +122,23 @@ describe('ensure-env-defaults.js runtime env precedence (issue #171)', () => {
     expect(existsSync(envPath())).toBe(true);
   });
 });
+
+// Issue #283: a persisted TZ=UTC (seeded by the image) silently overrode the
+// compose-provided TZ, so containers always ran in UTC.
+describe('ensure-env-defaults.js TZ precedence (issue #283)', () => {
+  it('replaces a persisted TZ with the runtime TZ', () => {
+    writeFileSync(envPath(), 'TZ=UTC\nJWT_SECRET="existing-secret"\n');
+    const vars = parse(run({ TZ: 'America/Chicago' }));
+    expect(vars.TZ).toBe('America/Chicago');
+    expect(vars.JWT_SECRET).toBe('existing-secret');
+  });
+
+  it('seeds a fresh file with the runtime TZ', () => {
+    expect(parse(run({ TZ: 'Europe/Berlin' })).TZ).toBe('Europe/Berlin');
+  });
+
+  it('keeps the persisted TZ when no runtime TZ is provided', () => {
+    writeFileSync(envPath(), 'TZ=Asia/Tokyo\n');
+    expect(parse(run()).TZ).toBe('Asia/Tokyo');
+  });
+});
