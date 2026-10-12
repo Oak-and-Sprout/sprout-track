@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Moon, Sun, Icon } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { cn } from "@/src/lib/utils";
@@ -23,33 +23,12 @@ export function StatusBubble({
   durationInMinutes,
   warningTime,
   className,
-  screenEdgeAware,
   startTime,
   activityType
 }: StatusBubbleProps & { startTime?: string }) {
   const { userTimezone, calculateDurationMinutes, formatDuration } = useTimezone();
   const { t } = useLocalization();
   const [calculatedDuration, setCalculatedDuration] = useState(durationInMinutes);
-  const bubbleRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!screenEdgeAware || !bubbleRef.current) return;
-
-    const checkPosition = () => {
-      const el = bubbleRef.current;
-      if (!el) return;
-      el.style.transform = '';
-      const rect = el.getBoundingClientRect();
-      if (rect.left < 2) {
-        el.style.transform = `translateX(${Math.ceil(Math.abs(rect.left) + 2)}px)`;
-      }
-    };
-
-    checkPosition();
-
-    window.addEventListener('resize', checkPosition);
-    return () => window.removeEventListener('resize', checkPosition);
-  }, [screenEdgeAware, status]);
   
   const updateDuration = useCallback(() => {
     if (startTime) {
@@ -174,7 +153,6 @@ export function StatusBubble({
 
   return (
     <div
-      ref={screenEdgeAware ? bubbleRef : undefined}
       role="img"
       aria-label={ariaLabel}
       className={cn(
@@ -184,7 +162,7 @@ export function StatusBubble({
       )}
     >
       {icon}
-      <span>{status === 'feedActive' ? t('Feeding') : formatDuration(displayDuration)}</span>
+      <span className="min-w-0 truncate">{status === 'feedActive' ? t('Feeding') : formatDuration(displayDuration)}</span>
     </div>
   );
 }

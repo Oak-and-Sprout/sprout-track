@@ -1,14 +1,15 @@
-import React, { useMemo, useEffect, useRef, useState } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Moon, Icon, LampWallDown } from 'lucide-react';
 import { diaper, bottleBaby } from '@lucide/lab';
 import { ActivityType } from '../types';
+import { useTimezone } from '@/app/context/timezone';
 import {
-  TIME_SLOTS,
   SLOT_MINUTES,
   HeatmapType,
-  HEATMAP_TYPES_IN_ORDER,
   HEATMAP_COLORS,
   buildHeatmapDataForActivities,
+  formatHeatmapHourLabel,
+  getHeatmapScrollTop,
   getSlotOpacity,
   interpolateColor,
 } from './timeline-heatmap.utils';
@@ -34,19 +35,12 @@ const HEATMAP_ICONS: Record<string, { icon: any; isLabIcon?: boolean }> = {
   pumps: { icon: LampWallDown },
 };
 
-// Format hour for labels (reuses pattern from Reports)
-const formatHourLabel = (hour: number): string => {
-  if (hour === 0 || hour === 24) return '12a';
-  if (hour === 12) return '12p';
-  if (hour < 12) return `${hour}a`;
-  return `${hour - 12}p`;
-};
-
 const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
   activities,
   selectedDate,
   isVisible = true,
 }) => {
+  const { timeFormat } = useTimezone();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -72,51 +66,65 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
     const content = contentRef.current;
     if (!container || !content) return;
 
+    let cancelled = false;
+    let frameId = 0;
+    const stopOnUserScroll = () => {
+      cancelled = true;
+    };
+
     const runAnimation = () => {
+      if (cancelled) return;
       const now = new Date();
       const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
-      const totalMinutes = 24 * 60;
 
       const containerHeight = container.clientHeight;
       const contentHeight = content.clientHeight;
 
       // If layout hasn't stabilized yet, retry on the next frame
       if (containerHeight === 0 || contentHeight === 0) {
-        requestAnimationFrame(runAnimation);
+        if (getComputedStyle(container).display === 'none') return;
+        frameId = requestAnimationFrame(runAnimation);
         return;
       }
 
-      const currentY = contentHeight - (minutesSinceMidnight / totalMinutes) * contentHeight;
-      const targetCenterY = containerHeight / 2;
-      const minOffset = containerHeight - contentHeight; // midnight at bottom (<= 0)
-      const maxOffset = 0; // content fully aligned at top
-      const initialOffset = minOffset;
-      // Center current time when possible, but don't scroll past top/bottom
-      const unclampedTargetOffset = targetCenterY - currentY;
-      const targetOffset = Math.max(minOffset, Math.min(maxOffset, unclampedTargetOffset));
+      const targetScrollTop = getHeatmapScrollTop({
+        containerHeight,
+        contentHeight,
+        minutesSinceMidnight,
+      });
+      const initialScrollTop = Math.max(0, contentHeight - containerHeight);
+
+      container.scrollTop = initialScrollTop;
 
       let start: number | null = null;
       const duration = 600; // ms
 
       const animate = (timestamp: number) => {
+        if (cancelled) return;
         if (start === null) start = timestamp;
         const elapsed = timestamp - start;
         const t = Math.min(1, elapsed / duration);
         const eased = t * t * (3 - 2 * t); // smoothstep
-        const currentOffset = initialOffset + (targetOffset - initialOffset) * eased;
-        content.style.transform = `translateY(${currentOffset}px)`;
+        container.scrollTop = initialScrollTop + (targetScrollTop - initialScrollTop) * eased;
 
         if (t < 1) {
-          requestAnimationFrame(animate);
+          frameId = requestAnimationFrame(animate);
         }
       };
 
-      // start with midnight at bottom
-      content.style.transform = `translateY(${initialOffset}px)`;
-      requestAnimationFrame(animate);
+      frameId = requestAnimationFrame(animate);
     };
 
-    runAnimation();
+    container.addEventListener('touchstart', stopOnUserScroll, { passive: true });
+    container.addEventListener('wheel', stopOnUserScroll, { passive: true });
+    frameId = requestAnimationFrame(runAnimation);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+      container.removeEventListener('touchstart', stopOnUserScroll);
+      container.removeEventListener('wheel', stopOnUserScroll);
+    };
   }, [isVisible, activities]);
 
   if (!heatmapData) {
@@ -129,11 +137,11 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden timeline-v2-heatmap-container"
+      className="relative h-full w-full overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y timeline-v2-heatmap-container"
     >
       <div
         ref={contentRef}
-        className="absolute inset-x-0 timeline-v2-heatmap-content"
+        className="relative timeline-v2-heatmap-content"
         style={{ height: CHART_HEIGHT, width: totalWidth, marginLeft: 8 }}
       >
         {/* Hour grid lines */}
@@ -161,7 +169,7 @@ const TimelineV2Heatmap: React.FC<TimelineV2HeatmapProps> = ({
                       transform: 'translateY(-50%)',
                     }}
                   >
-                    {formatHourLabel(hour)}
+                    {formatHeatmapHourLabel(hour, timeFormat)}
                   </span>
                 )}
               </div>

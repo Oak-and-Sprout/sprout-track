@@ -852,7 +852,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           )}
           
           {/* Main content area */}
-          <div className={`flex flex-col flex-1 h-dvh ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
+          <div className={`flex min-w-0 flex-col flex-1 h-dvh ${isWideScreen ? 'w-[calc(100%-16rem)]' : 'w-full'}`}>
             <header className="w-full bg-gradient-to-r from-teal-600 to-teal-700 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
               <div className="mx-auto py-2">
                 <div className="flex justify-between items-center h-16"> {/* Fixed height for consistency */}
@@ -923,7 +923,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
             {/* Account Expiration Banner - shows for both account users and caretakers */}
             <AccountExpirationBanner isAccountAuth={isAccountAuth} />
             
-            <main id="main-content" className="flex-1 min-h-0 overflow-y-auto relative z-0">
+            <main id="main-content" className="flex-1 min-h-0 min-w-0 overflow-y-auto relative z-0">
               {children}
             </main>
           </div>
