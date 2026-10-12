@@ -39,6 +39,7 @@ import { lbToLbOz, formatWeightDisplay } from '@/src/utils/weightUnits';
 import { formatPauseDuration } from '@/src/utils/pauseDisplay';
 import { isDirtyDiaper } from '@/src/utils/diaperStats';
 import { localizeSleepLocation } from '@/src/utils/sleepLocationUtils';
+import { formatSleepTimeSpan } from '@/src/utils/sleepTimeSpan';
 
 export { lbToLbOz, formatWeightDisplay };
 
@@ -792,10 +793,13 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
   }
   if ('type' in activity) {
     if ('duration' in activity) {
-      const startTimeFormatted = activity.startTime ? formatTime(activity.startTime, settings, true, t) : t('unknown');
-      const endTimeFormatted = activity.endTime ? formatTime(activity.endTime, settings, true, t) : t('ongoing');
       const duration = activity.duration ? formatDuration(activity.duration) : '';
-      const timeSpan = `${startTimeFormatted} - ${endTimeFormatted.split(' ').slice(-2).join(' ')}`;
+      const timeSpan = formatSleepTimeSpan(
+        activity.startTime ? String(activity.startTime) : null,
+        activity.endTime ? String(activity.endTime) : null,
+        (iso, includeDate) => formatTime(iso, settings, includeDate, t),
+        { unknown: t('unknown'), ongoing: t('ongoing') }
+      );
       const time = [duration, timeSpan].join(' ');
       
       // Format location (SleepLog only)
