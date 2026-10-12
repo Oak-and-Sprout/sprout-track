@@ -708,7 +708,6 @@ export function ActivityTileGroup({
           </div>
         );
       case 'pump':
-        const isLeftmost = activity === firstVisibleActivity;
         return (
           <div key="pump" className="relative w-[82px] min-h-24 flex-shrink-0 snap-start">
             <ActivityTile
@@ -739,8 +738,6 @@ export function ActivityTileGroup({
             {lastPumpTime[selectedBaby.id] && !exceeds24Hours(lastPumpTime[selectedBaby.id]) && (
               <StatusBubble
                 status="pump"
-                className={`overflow-visible ${isLeftmost ? 'z-[39]' : 'z-40'}`}
-                screenEdgeAware={isLeftmost}
                 durationInMinutes={0}
                 startTime={lastPumpTime[selectedBaby.id].toISOString()}
                 warningTime={selectedBaby.pumpWarningTime as string}
