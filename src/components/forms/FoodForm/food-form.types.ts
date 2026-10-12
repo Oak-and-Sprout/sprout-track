@@ -1,4 +1,5 @@
 import { FoodResponse, FoodLogResponse } from '@/app/api/types';
+import { FoodEnjoymentValue } from '@/src/utils/foodLogUtils';
 
 /**
  * Tab types for the FoodForm component
@@ -51,4 +52,24 @@ export interface ProgressTabProps {
   refreshTrigger: number;
   /** Called when a "View in log" link is followed, so the form can close. */
   onNavigate?: () => void;
+}
+
+/** One food's own details inside a multi-food entry (#271), as edited in the form. */
+export interface FoodItemDetailsValue {
+  /** Raw amount input ('' = not recorded). */
+  amount: string;
+  unitAbbr: string;
+  enjoyment: FoodEnjoymentValue | null;
+}
+
+/**
+ * Props for the FoodItemDetails panel
+ */
+export interface FoodItemDetailsProps {
+  /** DOM id of the panel (the food chip's aria-controls target). */
+  id: string;
+  foodName: string;
+  value: FoodItemDetailsValue;
+  onChange: (patch: Partial<FoodItemDetailsValue>) => void;
+  disabled?: boolean;
 }

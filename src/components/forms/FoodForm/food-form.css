@@ -160,3 +160,18 @@ html.dark .food-history-item-link,
 html.dark .food-allergen-link {
   color: #5eead4 !important; /* teal-300 */
 }
+
+/* Per-food details panel for multi-food entries (#271) */
+html.dark .food-item-details {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .food-item-details-title,
+html.dark .food-form-total-amount {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark .food-selected-tag-expanded {
+  box-shadow: 0 0 0 2px #2dd4bf !important; /* teal-400 ring */
+}

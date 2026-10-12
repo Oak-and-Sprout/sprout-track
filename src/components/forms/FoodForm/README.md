@@ -6,6 +6,7 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 
 - `index.tsx` — the `FormPage` shell with two tabs; fetches the family food catalog when opened. The footer renders Save/Cancel for the Log Food tab (Save submits the tab's form via the HTML `form` attribute) and a Close button for the Progress tab
 - `LogFoodTab.tsx` — log a new food try or edit an existing food log
+- `FoodItemDetails.tsx` — per-food amount/unit + enjoyment panel for one food of a multi-food entry (#271)
 - `ProgressTab.tsx` — unique-food counter, enjoyment breakdown, allergen list, per-food history
 - `food-form.types.ts` — prop types
 - `food-form.utils.ts` — `completeFoodLogSave()`, the pure post-save sequence (refresh → notify parent → close)
@@ -30,7 +31,8 @@ A tabbed form for the food tracker (issue #203). Lets caretakers log each food a
 - **Common allergen** checkbox is user-controlled for new foods, with helper text explaining when to check it (keyword auto-suggestion was removed — it only worked for English food names). For existing foods it mirrors the catalog flag and is read-only here.
 - **Amount** is an optional stepper input with a TBSP / G unit toggle (defaults to the family's `defaultSolidsUnit` setting, falling back to TBSP). It round-trips when editing and is sent as `amount`/`unitAbbr` (null when empty).
 - **Enjoyment** is an optional 5-option segmented picker (Hated / Disliked / Neutral / Liked / Loved); tapping the selected option clears it.
-- **Reaction occurred** switch reveals a description textarea; the description is only sent when the switch is on.
+- **Reaction occurred** switch reveals a description textarea; the description is only sent when the switch is on. With several foods it reveals a per-food checklist instead, so each reaction is attributed to the food that caused it.
+- **Per-food details (#271).** With two or more foods selected, tapping a food's chip opens `FoodItemDetails` for that food: its own amount + unit and its own enjoyment (the chip then shows e.g. "Carrot · 2 tbsp" and the enjoyment icon). Once any food has an amount, the meal Amount stepper is replaced by a read-only total ("3 tbsp, 15 g") and the server derives the row `amount`/`unitAbbr` from the foods (null amount when units are mixed — totals are then summed per unit from the items). The meal Enjoyment becomes "Overall enjoyment". Removing foods back down to one folds that food's details into the meal fields; a single-food entry never stores per-food details (`buildMealItems`). Date/time, notes, and photos stay on the entry.
 - **Photos** use the shared `PhotoAttachments` component with `activityType: 'foodLog'` links (only rendered when the deployment has photos enabled).
 - Saves via `POST /api/food-log` (or `PUT /api/food-log?id=` when editing). Times go through `toUTCString()`.
 - The Save/Cancel buttons live in the `FormPage` footer (`index.tsx`); the tab reports `{ isSubmitting, canSubmit }` up via `onFormStateChange` so the footer can disable them.

@@ -34,7 +34,7 @@ import {
   ActivityStyle
 } from './types';
 import { getSymbol } from '@/src/hooks/useUnit';
-import { FOOD_ENJOYMENT_LABELS, formatFoodMealTitle, isFoodLogActivity, isValidEnjoyment } from '@/src/utils/foodLogUtils';
+import { FOOD_ENJOYMENT_LABELS, formatFoodItemDetail, formatFoodLogAmountSummary, formatFoodMealTitle, isFoodLogActivity, isValidEnjoyment, type FoodItemDisplay } from '@/src/utils/foodLogUtils';
 import { lbToLbOz, formatWeightDisplay } from '@/src/utils/weightUnits';
 import { formatPauseDuration } from '@/src/utils/pauseDisplay';
 import { isDirtyDiaper } from '@/src/utils/diaperStats';
@@ -211,8 +211,17 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
       { label: t('Food'), value: mealTitle },
       { label: t('Time'), value: formatTime(foodLog.time, settings, true, t) },
     ];
+    // Multi-food meal: one row per food with its own details (#271)
+    const unit = (abbr: string | null | undefined) => getSymbol(abbr, t);
+    const itemRows = (Array.isArray(foodLog.foodItems) && foodLog.foodItems.length > 1 ? foodLog.foodItems as FoodItemDisplay[] : [])
+      .map(item => ({
+        label: item.name || t('Food'),
+        value: formatFoodItemDetail(item, { unit, enjoyment: value => t(FOOD_ENJOYMENT_LABELS[value]), reaction: t('Reaction') }),
+      }))
+      .filter(row => row.value);
+    foodDetails.push(...itemRows);
     if (foodLog.amount) {
-      foodDetails.push({ label: t('Amount'), value: `${foodLog.amount} ${getSymbol(foodLog.unitAbbr, t)}`.trim() });
+      foodDetails.push({ label: itemRows.length > 0 ? t('Total') : t('Amount'), value: `${foodLog.amount} ${unit(foodLog.unitAbbr)}`.trim() });
     }
     if (isValidEnjoyment(enjoyment)) {
       foodDetails.push({ label: t('Enjoyment'), value: t(FOOD_ENJOYMENT_LABELS[enjoyment]) });
@@ -226,7 +235,7 @@ export const getActivityDetails = (activity: ActivityType, settings: Settings | 
     if (foodLog.isFirstTry) {
       foodDetails.push({ label: t('First Try'), value: t('Yes') });
     }
-    if (foodLog.hadReaction) {
+    if (foodLog.hadReaction && itemRows.length === 0) {
       foodDetails.push({ label: t('Reaction'), value: foodLog.reactionDescription || t('Yes') });
     }
     if (foodLog.notes) {
@@ -730,9 +739,8 @@ export const getActivityDescription = (activity: ActivityType, settings: Setting
     const enjoyment: unknown = foodLog.enjoyment;
     const time = formatTime(foodLog.time, settings, true, t);
     const parts = [time];
-    if (foodLog.amount) {
-      parts.push(`${foodLog.amount} ${getSymbol(foodLog.unitAbbr, t)}`.trim());
-    }
+    const amountSummary = formatFoodLogAmountSummary(foodLog, abbr => getSymbol(abbr, t));
+    if (amountSummary) parts.push(amountSummary);
     if (isValidEnjoyment(enjoyment)) {
       parts.push(t(FOOD_ENJOYMENT_LABELS[enjoyment]));
     }
