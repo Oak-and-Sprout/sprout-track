@@ -43,6 +43,7 @@ import { useUnit } from '@/src/hooks/useUnit';
 import { fetchPhotosEnabled } from '@/src/utils/photoClientApi';
 import { countUniquePhotoIds } from '@/src/utils/photoUtils';
 import { isDirtyDiaper, isWetDiaper } from '@/src/utils/diaperStats';
+import { formatAmount } from '@/src/utils/formatAmount';
 
 import './TimelineV2DailyStats.css';
 
@@ -450,7 +451,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         const [medicineName, stats] = medicineEntries[0];
         tiles.push({
           filter: 'medicine',
-          label: `${medicineName}: ${stats.count}x (${stats.total} ${stats.unit})`,
+          label: `${medicineName}: ${stats.count}x (${formatAmount(stats.total)} ${stats.unit})`,
           value: stats.count.toString(),
           icon: <PillBottle className="h-full w-full" aria-hidden="true" />,
           bgColor: 'bg-gray-50',
@@ -461,7 +462,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       } else {
         const totalCount = medicineEntries.reduce((sum, [_, stats]) => sum + stats.count, 0);
         const label = medicineEntries
-          .map(([name, stats]) => `${name}: ${stats.count}x (${stats.total} ${stats.unit})`)
+          .map(([name, stats]) => `${name}: ${stats.count}x (${formatAmount(stats.total)} ${stats.unit})`)
           .join(', ');
         tiles.push({
           filter: 'medicine',
@@ -483,7 +484,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
         const [supplementName, stats] = supplementEntries[0];
         tiles.push({
           filter: 'medicine',
-          label: `${supplementName}: ${stats.count}x (${stats.total} ${stats.unit})`,
+          label: `${supplementName}: ${stats.count}x (${formatAmount(stats.total)} ${stats.unit})`,
           value: stats.count.toString(),
           icon: <Pill className="h-full w-full" aria-hidden="true" />,
           bgColor: 'bg-gray-50',
@@ -494,7 +495,7 @@ const TimelineV2DailyStats: React.FC<TimelineV2DailyStatsProps> = ({
       } else {
         const totalCount = supplementEntries.reduce((sum, [_, stats]) => sum + stats.count, 0);
         const label = supplementEntries
-          .map(([name, stats]) => `${name}: ${stats.count}x (${stats.total} ${stats.unit})`)
+          .map(([name, stats]) => `${name}: ${stats.count}x (${formatAmount(stats.total)} ${stats.unit})`)
           .join(', ');
         tiles.push({
           filter: 'medicine',

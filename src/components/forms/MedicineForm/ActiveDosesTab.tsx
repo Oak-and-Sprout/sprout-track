@@ -10,6 +10,7 @@ import { useTimezone } from '@/app/context/timezone';
 import { formatDateTimeDisplay } from '@/src/utils/dateFormat';
 import { useLocalization } from '@/src/context/localization';
 import { useUnit } from '@/src/hooks/useUnit';
+import { formatAmount } from '@/src/utils/formatAmount';
 
 // Contact interface
 interface Contact {
@@ -472,7 +473,7 @@ const ActiveDosesTab: React.FC<ActiveDosesTabProps> = ({ babyId, refreshData, on
 
                     <div className={cn(styles.totalDose, "medicine-form-total-dose mt-2")}>
                       {dose.hasRecentDoses ? (
-                        <>{t('Total in last 24h:')} {dose.totalIn24Hours} {dose.unit}</>
+                        <>{t('Total in last 24h:')} {formatAmount(dose.totalIn24Hours)} {dose.unit}</>
                       ) : (
                         <>{t('Last Dose:')} {formatDateTimeDisplay(new Date(dose.time), dateFormat, timeFormat)} - {dose.doseAmount} {dose.unit}</>
                       )}
