@@ -1,5 +1,11 @@
 # Sprout Track Changelog
 
+## Unreleased
+
+### Upgrade notes
+
+- **Docker `TZ`:** the container's `TZ` environment variable now always overrides the value saved in `/app/env/.env`. The image defaults `TZ` to `UTC`, so if you previously set a timezone by editing `/app/env/.env`, set `TZ` in your compose file instead or the server will run in UTC after upgrading. (#283)
+
 ## v1.6.7 - Postgres recovery and first party SaaS analytics
 
 ### Changes
