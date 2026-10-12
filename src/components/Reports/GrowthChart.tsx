@@ -27,6 +27,7 @@ import {
   type GrowthReferenceSegment,
 } from '@/src/utils/growthReferences';
 import {
+  buildGrowthChartXAxis,
   buildGrowthChartYAxis,
   formatGrowthChartAxisTick,
 } from '@/src/utils/growthChartAxis';
@@ -561,6 +562,11 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
 
   const unitLabel = getUnitLabel(measurementType, settings);
 
+  const xAxis = useMemo(
+    () => buildGrowthChartXAxis(chartData.map(point => point.ageMonths)),
+    [chartData],
+  );
+
   const yAxis = useMemo(
     () => buildGrowthChartYAxis(
       chartData.flatMap(point => [
@@ -792,9 +798,10 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
               <XAxis
                 dataKey="ageMonths"
                 type="number"
-                domain={[0, 'dataMax']}
+                domain={xAxis.domain}
+                ticks={xAxis.ticks}
                 label={{ value: 'Age (months)', position: 'insideBottom', offset: -10 }}
-                tickFormatter={(value) => value.toString()}
+                tickFormatter={(value) => Number(value).toFixed(0)}
                 className="growth-chart-axis"
               />
               <YAxis

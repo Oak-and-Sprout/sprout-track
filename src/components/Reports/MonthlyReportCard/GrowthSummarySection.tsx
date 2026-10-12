@@ -12,6 +12,7 @@ import type { GrowthSummarySectionProps } from './monthly-report-card.types';
 import type { GrowthMetric, GrowthChartData } from '@/app/api/types';
 import { formatChartValue } from '@/src/utils/weightUnits';
 import {
+  buildGrowthChartXAxis,
   buildGrowthChartYAxis,
   formatGrowthChartAxisTick,
 } from '@/src/utils/growthChartAxis';
@@ -175,6 +176,7 @@ function GrowthChartCard({
     p.measurement,
   ]);
   const unit = chartData.unit || '';
+  const xAxis = buildGrowthChartXAxis(chartData.points.map(point => point.ageMonths));
   const yAxis = buildGrowthChartYAxis(allValues, unit);
   const latestMeasurement = chartData.points.findLast(point => point.measurement !== undefined);
 
@@ -188,9 +190,10 @@ function GrowthChartCard({
             <XAxis
               dataKey="ageMonths"
               type="number"
-              domain={[0, 'dataMax']}
+              domain={xAxis.domain}
+              ticks={xAxis.ticks}
               tick={{ fontSize: 11 }}
-              tickFormatter={(v: number) => v === 0 ? '0' : `${v}`}
+              tickFormatter={(v: number) => v.toFixed(0)}
               label={{ value: t('Age (months)'), position: 'insideBottom', offset: -5, fontSize: 11 }}
             />
             <YAxis

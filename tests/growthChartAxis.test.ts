@@ -1,8 +1,43 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildGrowthChartXAxis,
   buildGrowthChartYAxis,
   formatGrowthChartAxisTick,
 } from '@/src/utils/growthChartAxis';
+
+describe('buildGrowthChartXAxis', () => {
+  it('rounds a fractional infant age up to whole-month ticks', () => {
+    expect(buildGrowthChartXAxis([0, 0.5, 3.633333333333333])).toEqual({
+      domain: [0, 4],
+      ticks: [0, 1, 2, 3, 4],
+      step: 1,
+    });
+  });
+
+  it('uses readable six-month ticks for a preschool-age chart', () => {
+    expect(buildGrowthChartXAxis([0, 24, 42.5])).toEqual({
+      domain: [0, 48],
+      ticks: [0, 6, 12, 18, 24, 30, 36, 42, 48],
+      step: 6,
+    });
+  });
+
+  it('keeps the full CDC 2-20 year range readable', () => {
+    expect(buildGrowthChartXAxis([0, 240])).toEqual({
+      domain: [0, 240],
+      ticks: [0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240],
+      step: 24,
+    });
+  });
+
+  it('returns a stable one-month fallback when no age data is available', () => {
+    expect(buildGrowthChartXAxis([])).toEqual({
+      domain: [0, 1],
+      ticks: [0, 1],
+      step: 1,
+    });
+  });
+});
 
 describe('buildGrowthChartYAxis', () => {
   it('uses 500 g ticks for a focused infant weight range', () => {
