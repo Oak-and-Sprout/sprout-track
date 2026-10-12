@@ -12,6 +12,9 @@
  * - Idempotent: converted feeds are deleted, and any feed whose id already
  *   appears in FoodLog.feedLogId is skipped (guards against a crash between
  *   the FoodLog insert and the FeedLog delete).
+ * - Deduplicated: a feed matching an existing non-deleted food log (same
+ *   family, baby, exact time and food-name set) is deleted without a second
+ *   food log — integrations that lost the deleted feed's id re-create it.
  * - Per family, distinct food names become catalog Food entries (matched
  *   case-insensitively; blank names fall back to the reaction cause, then to
  *   a generic 'Solids' entry).
@@ -24,6 +27,8 @@ const {
   foodNameKey,
   resolveCatalogFoodName,
   filterUnconverted,
+  foodLogFoodIds,
+  findDuplicateFoodLog,
   buildFoodLogData,
   placeFoodTile,
 } = require('./convert-solids-feeds-core');
@@ -73,10 +78,29 @@ async function placeFoodTiles(prisma) {
 }
 
 /**
+ * The non-deleted FoodLog row a solids entry `{ familyId, babyId, time, names,
+ * deletedAt? }` duplicates, or null (rules in findDuplicateFoodLog). Shared
+ * with the hooks API, which stores legacy SOLIDS feeds as food logs.
+ */
+async function findExistingFoodLog(prisma, entry) {
+  if (entry.deletedAt) return null;
+  const familyId = entry.familyId || null;
+  const logs = await prisma.foodLog.findMany({
+    where: { familyId, babyId: entry.babyId, time: entry.time, deletedAt: null },
+  });
+  if (logs.length === 0) return null;
+  const foods = await prisma.food.findMany({
+    where: { id: { in: Array.from(new Set(logs.flatMap(foodLogFoodIds))) }, familyId },
+    select: { id: true, name: true },
+  });
+  return findDuplicateFoodLog(entry, logs, new Map(foods.map((food) => [food.id, food.name])));
+}
+
+/**
  * Convert all remaining SOLIDS FeedLog rows into Food + FoodLog records.
  *
  * @param {import('@prisma/client').PrismaClient} prisma - connected client
- * @returns {Promise<{ total: number, converted: number, skipped: number, errors: number }>}
+ * @returns {Promise<{ total: number, converted: number, skipped: number, duplicates: number, errors: number }>}
  */
 async function convertSolidsFeeds(prisma) {
   // Place the food tile next to feed in saved tile orders. Runs on every
@@ -91,7 +115,7 @@ async function convertSolidsFeeds(prisma) {
   });
 
   if (feeds.length === 0) {
-    return { total: 0, converted: 0, skipped: 0, errors: 0, tileEntriesUpdated };
+    return { total: 0, converted: 0, skipped: 0, duplicates: 0, errors: 0, tileEntriesUpdated };
   }
 
   // Guard against double-conversion: skip feeds already linked from a food log
@@ -102,6 +126,7 @@ async function convertSolidsFeeds(prisma) {
   const pending = filterUnconverted(feeds, convertedLinks.map((link) => link.feedLogId));
 
   let converted = 0;
+  let duplicates = 0;
   let errors = 0;
 
   // Per-family catalog cache: familyId ('' for null) -> (name key -> food id)
@@ -124,30 +149,39 @@ async function convertSolidsFeeds(prisma) {
   for (const feed of pending) {
     try {
       const { name } = resolveCatalogFoodName(feed);
-      const catalog = await getCatalog(feed.familyId);
-      let foodId = catalog.get(foodNameKey(name));
-      if (!foodId) {
-        const food = await prisma.food.create({
-          data: { name, commonAllergen: false, familyId: feed.familyId || null },
-        });
-        foodId = food.id;
-        catalog.set(foodNameKey(name), foodId);
+      const duplicate = await findExistingFoodLog(prisma, { ...feed, names: [name] });
+      let foodId = null;
+      if (!duplicate) {
+        const catalog = await getCatalog(feed.familyId);
+        foodId = catalog.get(foodNameKey(name));
+        if (!foodId) {
+          const food = await prisma.food.create({
+            data: { name, commonAllergen: false, familyId: feed.familyId || null },
+          });
+          foodId = food.id;
+          catalog.set(foodNameKey(name), foodId);
+        }
       }
 
       await prisma.$transaction(async (tx) => {
-        const foodLog = await tx.foodLog.create({
+        const foodLog = duplicate || await tx.foodLog.create({
           data: { ...buildFoodLogData(feed), foodId },
         });
-        // Re-link photos from the feed to the new food log
+        // Photos already on a duplicate's food log stay put (PhotoLink is unique per activity)
+        const linked = duplicate
+          ? await tx.photoLink.findMany({ where: { activityType: 'foodLog', activityId: foodLog.id }, select: { photoId: true } })
+          : [];
+        // Re-link photos from the feed to the food log
         await tx.photoLink.updateMany({
-          where: { activityType: 'feed', activityId: feed.id },
+          where: { activityType: 'feed', activityId: feed.id, ...(linked.length ? { photoId: { notIn: linked.map((link) => link.photoId) } } : {}) },
           data: { activityType: 'foodLog', activityId: foodLog.id },
         });
         // Hard-delete the source feed (matches /api/feed-log DELETE)
         await tx.feedLog.delete({ where: { id: feed.id } });
       });
 
-      converted++;
+      if (duplicate) duplicates++;
+      else converted++;
     } catch (error) {
       errors++;
       console.error(`Solids conversion: failed to convert feed ${feed.id}, skipping. ${error.message}`);
@@ -158,6 +192,7 @@ async function convertSolidsFeeds(prisma) {
     total: feeds.length,
     converted,
     skipped: feeds.length - pending.length,
+    duplicates,
     errors,
     tileEntriesUpdated,
   };
@@ -173,8 +208,9 @@ function summarizeConversion(result) {
   }
   return (
     `Solids conversion: ${result.converted} feed(s) converted, ${result.skipped} skipped (already converted)` +
+    (result.duplicates > 0 ? `, ${result.duplicates} duplicate(s) of existing food logs removed` : '') +
     (result.errors > 0 ? `, ${result.errors} error(s)` : '') + `.${tileSuffix}`
   );
 }
 
-module.exports = { convertSolidsFeeds, summarizeConversion };
+module.exports = { convertSolidsFeeds, findExistingFoodLog, summarizeConversion };

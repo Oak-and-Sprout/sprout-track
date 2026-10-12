@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { foodNameKey as appFoodNameKey } from '@/src/utils/foodLogUtils';
+import { convertSolidsFeeds, summarizeConversion } from '../scripts/convert-solids-feeds-runner';
 import {
   GENERIC_FOOD_NAME,
   normalizeFoodName,
@@ -6,6 +8,8 @@ import {
   resolveCatalogFoodName,
   composeReactionDescription,
   filterUnconverted,
+  foodLogFoodIds,
+  findDuplicateFoodLog,
   buildFoodLogData,
   placeFoodTile,
 } from '../scripts/convert-solids-feeds-core';
@@ -42,6 +46,12 @@ describe('normalizeFoodName / foodNameKey (parity with foodLogUtils)', () => {
     expect(normalizeFoodName('banana-bread')).toBe('banana-bread');
     expect(foodNameKey('. Carrots')).toBe(foodNameKey('carrots'));
     expect(normalizeFoodName('...')).toBe('');
+  });
+
+  it('keys names exactly like the app', () => {
+    for (const name of ['  Sweet   POTATO ', '. carrots', '"Peas",', 'mac & cheese', '‘Kiwi’', '...']) {
+      expect(foodNameKey(name)).toBe(appFoodNameKey(name));
+    }
   });
 });
 
@@ -224,5 +234,135 @@ describe('placeFoodTile', () => {
     const second = placeFoodTile({ order: first.order, visible: first.visible });
     expect(second.changed).toBe(false);
     expect(second.order.filter((a: string) => a === 'food')).toHaveLength(1);
+  });
+});
+
+describe('foodLogFoodIds', () => {
+  it('prefers the foods JSON items, else the legacy foodId', () => {
+    expect(foodLogFoodIds({ foodId: null, foods: JSON.stringify([{ foodId: 'a' }, { foodId: 'b' }]) })).toEqual(['a', 'b']);
+    expect(foodLogFoodIds({ foodId: 'a', foods: null })).toEqual(['a']);
+    expect(foodLogFoodIds({ foodId: 'a', foods: '[]' })).toEqual(['a']);
+    expect(foodLogFoodIds({ foodId: 'a', foods: 'not json' })).toEqual(['a']);
+    expect(foodLogFoodIds({ foodId: null, foods: null })).toEqual([]);
+  });
+});
+
+describe('findDuplicateFoodLog', () => {
+  const time = new Date('2026-07-01T09:00:00Z');
+  const names = new Map([['f-carrot', 'Carrot'], ['f-pea', 'Peas'], ['f-egg', 'Egg']]);
+  const log = { id: 'log-1', familyId: 'family-1', babyId: 'baby-1', time: time.toISOString(), foodId: 'f-carrot', foods: null, deletedAt: null };
+  const entry = { familyId: 'family-1', babyId: 'baby-1', time, names: ['Carrot'] };
+
+  it('matches the same family, baby, exact time and food', () => {
+    expect(findDuplicateFoodLog(entry, [log], names)).toBe(log);
+  });
+
+  it('does not match a different baby, family, time or food', () => {
+    expect(findDuplicateFoodLog({ ...entry, babyId: 'baby-2' }, [log], names)).toBeNull();
+    expect(findDuplicateFoodLog({ ...entry, familyId: 'family-2' }, [log], names)).toBeNull();
+    expect(findDuplicateFoodLog({ ...entry, time: new Date(time.getTime() + 1) }, [log], names)).toBeNull();
+    expect(findDuplicateFoodLog({ ...entry, names: ['Peas'] }, [log], names)).toBeNull();
+  });
+
+  it('ignores case, whitespace and edge punctuation in names', () => {
+    expect(findDuplicateFoodLog({ ...entry, names: ['  . CARROT  '] }, [log], names)).toBe(log);
+  });
+
+  it('matches the foods JSON of a multi-food log as an order-insensitive set', () => {
+    const meal = { ...log, foodId: null, foods: JSON.stringify([{ foodId: 'f-carrot' }, { foodId: 'f-pea', amount: 1 }]) };
+    expect(findDuplicateFoodLog({ ...entry, names: ['peas', 'carrot'] }, [meal], names)).toBe(meal);
+    expect(findDuplicateFoodLog({ ...entry, names: ['carrot'] }, [meal], names)).toBeNull();
+    expect(findDuplicateFoodLog({ ...entry, names: ['carrot', 'peas', 'egg'] }, [meal], names)).toBeNull();
+  });
+
+  it('matches a legacy single-food foodId row with an empty foods JSON', () => {
+    expect(findDuplicateFoodLog(entry, [{ ...log, foods: '[]' }], names)).not.toBeNull();
+  });
+
+  it('never matches deleted logs, deleted entries, unknown food ids or blank names', () => {
+    expect(findDuplicateFoodLog(entry, [{ ...log, deletedAt: new Date() }], names)).toBeNull();
+    expect(findDuplicateFoodLog({ ...entry, deletedAt: new Date() }, [log], names)).toBeNull();
+    expect(findDuplicateFoodLog(entry, [{ ...log, foodId: 'f-gone' }], names)).toBeNull();
+    expect(findDuplicateFoodLog({ ...entry, names: ['  '] }, [log], names)).toBeNull();
+  });
+
+  it('treats a null and a missing family as the same family', () => {
+    expect(findDuplicateFoodLog({ ...entry, familyId: undefined }, [{ ...log, familyId: null }], names)).not.toBeNull();
+  });
+});
+
+describe('convertSolidsFeeds (mocked client)', () => {
+  const time = new Date('2026-07-01T09:00:00Z');
+
+  function mockClient(feeds: any[], existingLogs: any[], catalog: any[]) {
+    const tx = {
+      foodLog: { create: vi.fn(async ({ data }: any) => ({ id: 'new-log', ...data })) },
+      photoLink: { findMany: vi.fn(async () => [{ photoId: 'photo-1' }]), updateMany: vi.fn(async () => ({ count: 0 })) },
+      feedLog: { delete: vi.fn(async () => ({})) },
+    };
+    const prisma = {
+      settings: { findMany: vi.fn(async () => []) },
+      feedLog: { findMany: vi.fn(async () => feeds) },
+      foodLog: {
+        findMany: vi.fn(async ({ where }: any) => (where.feedLogId ? [] : existingLogs.filter((log) => log.babyId === where.babyId))),
+      },
+      food: {
+        findMany: vi.fn(async () => catalog),
+        create: vi.fn(async ({ data }: any) => ({ id: 'food-new', ...data })),
+      },
+      $transaction: vi.fn(async (fn: any) => fn(tx)),
+    };
+    return { prisma, tx };
+  }
+
+  const feed = { ...baseFeed, id: 'feed-again', type: 'SOLIDS', food: 'carrot ', time, deletedAt: null };
+  const existing = { id: 'log-1', familyId: 'family-1', babyId: 'baby-1', time, foodId: 'f-carrot', foods: null, deletedAt: null };
+
+  it('deletes a re-created feed that duplicates an existing food log instead of converting it again', async () => {
+    const { prisma, tx } = mockClient([feed], [existing], [{ id: 'f-carrot', name: 'Carrot' }]);
+
+    const result = await convertSolidsFeeds(prisma as any);
+
+    expect(prisma.foodLog.findMany).toHaveBeenCalledWith({
+      where: { familyId: 'family-1', babyId: 'baby-1', time, deletedAt: null },
+    });
+    expect(prisma.food.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['f-carrot'] }, familyId: 'family-1' },
+      select: { id: true, name: true },
+    });
+    expect(tx.foodLog.create).not.toHaveBeenCalled();
+    expect(prisma.food.create).not.toHaveBeenCalled();
+    expect(tx.photoLink.updateMany).toHaveBeenCalledWith({
+      where: { activityType: 'feed', activityId: 'feed-again', photoId: { notIn: ['photo-1'] } },
+      data: { activityType: 'foodLog', activityId: 'log-1' },
+    });
+    expect(tx.feedLog.delete).toHaveBeenCalledWith({ where: { id: 'feed-again' } });
+    expect(result).toMatchObject({ total: 1, converted: 0, duplicates: 1, errors: 0 });
+    expect(summarizeConversion(result)).toContain('1 duplicate(s) of existing food logs removed');
+  });
+
+  it('converts a feed for another baby at the same time and food', async () => {
+    const { prisma, tx } = mockClient([{ ...feed, babyId: 'baby-2' }], [existing], [{ id: 'f-carrot', name: 'Carrot' }]);
+
+    const result = await convertSolidsFeeds(prisma as any);
+
+    expect(tx.foodLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ babyId: 'baby-2', foodId: 'f-carrot', feedLogId: 'feed-again' }) });
+    expect(tx.photoLink.findMany).not.toHaveBeenCalled();
+    expect(tx.photoLink.updateMany).toHaveBeenCalledWith({
+      where: { activityType: 'feed', activityId: 'feed-again' },
+      data: { activityType: 'foodLog', activityId: 'new-log' },
+    });
+    expect(result).toMatchObject({ converted: 1, duplicates: 0 });
+  });
+
+  it('still converts a soft-deleted feed to a soft-deleted food log without a duplicate lookup', async () => {
+    const deletedAt = new Date('2026-07-02T00:00:00Z');
+    const { prisma, tx } = mockClient([{ ...feed, deletedAt }], [existing], [{ id: 'f-carrot', name: 'Carrot' }]);
+
+    const result = await convertSolidsFeeds(prisma as any);
+
+    expect(prisma.foodLog.findMany).toHaveBeenCalledTimes(1); // only the feedLogId idempotency query
+    expect(tx.foodLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ deletedAt }) });
+    expect(result).toMatchObject({ converted: 1, duplicates: 0 });
   });
 });

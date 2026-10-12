@@ -11,6 +11,9 @@
  *   name it is prefixed as 'Cause: <cause>. <description>'.
  * - Idempotency: a feed whose id already appears in FoodLog.feedLogId was
  *   converted by an earlier run and is skipped.
+ * - Duplicates: a feed matching an existing food log (same family, baby,
+ *   exact time and normalized food-name set) is not converted again — a client
+ *   that lost the deleted feed's id may re-create it under a new id.
  * - Catalog matching is case-insensitive on the normalized name; the first
  *   seen casing is preserved on create.
  */
@@ -65,6 +68,45 @@ function composeReactionDescription(feed, usedCause) {
 function filterUnconverted(feeds, convertedFeedLogIds) {
   const converted = new Set(convertedFeedLogIds);
   return feeds.filter((feed) => !converted.has(feed.id));
+}
+
+/**
+ * Food ids of a FoodLog row: its `foods` JSON items, else the legacy single
+ * `foodId` (mirrors src/utils/foodLogUtils expandFoodItems).
+ */
+function foodLogFoodIds(log) {
+  try {
+    const items = JSON.parse(log.foods || '[]');
+    const ids = Array.isArray(items) ? items.map((item) => item && item.foodId).filter((id) => typeof id === 'string' && id) : [];
+    if (ids.length) return ids;
+  } catch {
+    // Malformed JSON falls back to the legacy column, as expandFoodItems does
+  }
+  return log.foodId ? [log.foodId] : [];
+}
+
+/** Order-insensitive key of a set of food names (case/whitespace/edge punctuation ignored). */
+function foodNameSetKey(names) {
+  return Array.from(new Set(names.map(foodNameKey).filter(Boolean))).sort().join('\n');
+}
+
+/**
+ * The food log a solids entry `{ familyId, babyId, time, names, deletedAt? }`
+ * duplicates, or null: a non-deleted log of the same family and baby at the
+ * exact same time whose foods (legacy `foodId` or `foods` JSON) have the same
+ * normalized name set. `foodNameById` maps catalog ids to names; a log with an
+ * unknown id never matches. Deleted entries are never treated as duplicates.
+ */
+function findDuplicateFoodLog(entry, logs, foodNameById) {
+  const key = foodNameSetKey(entry.names);
+  if (entry.deletedAt || !key) return null;
+  const time = new Date(entry.time).getTime();
+  return logs.find((log) => {
+    if (log.deletedAt || (log.familyId || null) !== (entry.familyId || null) || log.babyId !== entry.babyId) return false;
+    if (new Date(log.time).getTime() !== time) return false;
+    const names = foodLogFoodIds(log).map((id) => foodNameById.get(id));
+    return names.length > 0 && names.every((name) => typeof name === 'string') && foodNameSetKey(names) === key;
+  }) || null;
 }
 
 /**
@@ -134,6 +176,8 @@ module.exports = {
   resolveCatalogFoodName,
   composeReactionDescription,
   filterUnconverted,
+  foodLogFoodIds,
+  findDuplicateFoodLog,
   buildFoodLogData,
   placeFoodTile,
 };
