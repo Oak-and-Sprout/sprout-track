@@ -73,20 +73,27 @@ All API requests from public/external networks must use HTTPS. Plain HTTP is all
 
 ## Rate Limiting
 
-| Method | Limit |
-|--------|-------|
-| GET | 60 requests per minute per key |
-| POST / PUT / DELETE | 30 requests per minute per key |
+Limits use a sliding 60-second window, tracked per API key and per HTTP method.
+
+| Method | Default limit | Override with |
+|--------|---------------|---------------|
+| GET | 60 requests per minute per key | `HOOKS_RATE_LIMIT_READS_PER_MINUTE` |
+| POST / PUT / DELETE | 30 requests per minute per key | `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE` |
+
+Self-hosters can raise or lower the limits by setting these environment variables to a positive integer (e.g. `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE=120` for a bulk import). A missing, non-numeric, or non-positive value falls back to the default. The limiter is in-memory, so the counts reset when the server restarts.
 
 Every response includes rate limit headers:
 
 ```
 X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 58
+X-RateLimit-Remaining: 57
 X-RateLimit-Reset: 1741789200
 ```
 
-When exceeded, the API returns `429` with error code `RATE_LIMITED`.
+- `X-RateLimit-Remaining` counts the current request, so `0` means the next request in this window will be rejected.
+- `X-RateLimit-Reset` is the Unix time (seconds) at which the oldest request in the window expires and a slot frees up.
+
+When exceeded, the API returns `429` with error code `RATE_LIMITED` and a `Retry-After` header giving the number of seconds until a retry will succeed. Clients doing bulk syncs should honor `Retry-After` rather than retrying on a fixed schedule.
 
 ---
 
@@ -632,7 +639,7 @@ curl -s -X DELETE \
   http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities/ACTIVITY_ID
 ```
 
-The hooks delete endpoint matches the current classic UI log behavior for these activity types: after confirming the row belongs to the API key's family and route baby, it hard-deletes the activity row. Add `?type=feed` if you already know the activity type and want to avoid type probing -- `?type=` accepts the same ten activity type values as PUT. DELETE shares the 30 requests/minute write rate limit.
+The hooks delete endpoint matches the current classic UI log behavior for these activity types: after confirming the row belongs to the API key's family and route baby, it hard-deletes the activity row. Add `?type=feed` if you already know the activity type and want to avoid type probing -- `?type=` accepts the same ten activity type values as PUT. DELETE shares the write rate limit (30 requests/minute by default).
 
 The response includes `activityType`, `id`, `babyId`, `time` when applicable, and `status: "deleted"`.
 

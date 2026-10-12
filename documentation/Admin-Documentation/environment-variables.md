@@ -105,6 +105,15 @@ build onward.
 |----------|---------|-------------|
 | `ENABLE_LOG` | `"false"` | Enable API request/response logging to a separate database |
 
+### Webhook API
+
+Optional. Not written to `.env` by `ensure-env-defaults.js`. Leave them unset to keep the defaults, or set them in `.env` or the container environment. See [webhook-api.md](webhook-api.md#rate-limiting).
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOOKS_RATE_LIMIT_READS_PER_MINUTE` | `60` | Max GET requests per minute per API key for `/api/hooks/v1`. Must be a positive integer; anything else falls back to the default. |
+| `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE` | `30` | Max POST/PUT/DELETE requests per minute per API key (counted separately per method). Must be a positive integer; anything else falls back to the default. |
+
 ### Service Management
 
 | Variable | Default | Description |

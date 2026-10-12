@@ -249,7 +249,7 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 
 **Validation:** Request bodies are strict — fields not accepted by the declared activity type are rejected with `400 INVALID_FIELD` rather than silently dropped. Enum-like fields (`condition`, `color`, `quality`, `bottleType`, `side`, `pumpAction`, and the known `bathType` values) are matched case-insensitively against canonical sets in `app/api/hooks/v1/field-values.ts` and stored with canonical casing; `unitAbbr` is validated against the `Unit` table. `GET /reference` advertises every one of these sets.
 
-**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts` — GET 60/min per key; POST/PUT/DELETE 30/min per key.
+**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts` — sliding 60 s window per key and method; GET 60/min and POST/PUT/DELETE 30/min by default, overridable with `HOOKS_RATE_LIMIT_READS_PER_MINUTE` / `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE`. 429s carry `Retry-After`.
 
 ## Notification Hooks
 
