@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { ActivityTile } from '@/src/components/ui/activity-tile';
 import { StatusBubble } from "@/src/components/ui/status-bubble";
+import { effectiveFeedTime as getEffectiveFeedTime } from "@/src/utils/latestStatus";
 import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, NoteResponse, BathLogResponse, PumpLogResponse, PlayLogResponse, MeasurementResponse, MilestoneResponse, MedicineLogResponse, VaccineLogResponse, FoodLogResponse, ActivitySettings } from '@/app/api/types';
 import { ArrowDownUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTheme } from '@/src/context/theme';
@@ -568,9 +569,7 @@ export function ActivityTileGroup({
               (() => {
                 const feedEndTime = lastFeedEndTime?.[selectedBaby.id!];
                 const feedStartTimeVal = lastFeedTime[selectedBaby.id!];
-                const effectiveFeedTime = selectedBaby?.feedTimerFrom === 'end' && feedEndTime
-                  ? feedEndTime
-                  : feedStartTimeVal;
+                const effectiveFeedTime = getEffectiveFeedTime(feedStartTimeVal, feedEndTime, selectedBaby?.feedTimerFrom);
 
                 return selectedBaby?.id && effectiveFeedTime && !exceeds24Hours(effectiveFeedTime) && (
                   <StatusBubble

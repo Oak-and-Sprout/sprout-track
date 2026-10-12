@@ -6,14 +6,7 @@ import { statusBubbleStyles as styles } from './status-bubble.styles';
 import { StatusBubbleProps, StatusStyle } from './status-bubble.types';
 import { useTimezone } from '@/app/context/timezone';
 import { useLocalization } from '@/src/context/localization';
-
-/**
- * Converts warning time (hh:mm) to minutes
- */
-const getWarningMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
+import { formatDurationLabel, isPastWarning } from '@/src/utils/latestStatus';
 
 /**
  * A component that displays the current status and duration in a stylized bubble
@@ -85,7 +78,7 @@ export function StatusBubble({
   const displayDuration = startTime ? calculatedDuration : durationInMinutes;
   
   // Check if duration exceeds warning time
-  const isWarning = warningTime && displayDuration >= getWarningMinutes(warningTime);
+  const isWarning = isPastWarning(displayDuration, warningTime);
 
   // Get status-specific styles and icon
   const getStatusStyles = (): StatusStyle => {
@@ -149,12 +142,7 @@ export function StatusBubble({
     }
   };
 
-  const labelHours = Math.floor(displayDuration / 60);
-  const labelMinutes = displayDuration % 60;
-  const durationLabel = [
-    labelHours > 0 ? `${labelHours} ${labelHours === 1 ? t('hour') : t('hours')}` : null,
-    `${labelMinutes} ${labelMinutes === 1 ? t('minute') : t('minutes')}`
-  ].filter(Boolean).join(' ');
+  const durationLabel = formatDurationLabel(displayDuration, t);
   const ariaLabel = status === 'feedActive'
     ? t('Feeding')
     : `${getStatusLabel()}, ${durationLabel}`;

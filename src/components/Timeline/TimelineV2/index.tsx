@@ -14,16 +14,15 @@ import VaccineForm from '@/src/components/forms/VaccineForm';
 import FoodForm from '@/src/components/forms/FoodForm';
 import PhotoForm from '@/src/components/forms/PhotoForm';
 import PhotoDetail from '@/src/components/PhotoDetail';
-import { ActivityType, FilterType, TimelineProps, LatestStatusData } from '../types';
-import { findLatestPumpTime } from '@/src/utils/pumpTimer';
+import { ActivityType, FilterType, TimelineProps } from '../types';
+import { computeLatestStatus } from '@/src/utils/latestStatus';
 import TimelineV2DailyStats from './TimelineV2DailyStats';
 import TimelineV2ActivityList from './TimelineV2ActivityList';
 import TimelineV2Heatmap from './TimelineV2Heatmap';
 import TimelineActivityDetails from '../TimelineActivityDetails';
 import { getActivityEndpoint, getActivityTime } from '../utils';
-import { groupBreastFeedSessions } from '@/src/utils/feedSessionUtils';
-import { parseFeedTimerTypes, feedCountsForTimer, foodCountsForTimer } from '@/src/utils/feedTimerConfig';
-import { SleepLogResponse, FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, FoodLogResponse, PhotoResponse } from '@/app/api/types';
+import { parseFeedTimerTypes } from '@/src/utils/feedTimerConfig';
+import { FeedLogResponse, DiaperLogResponse, PumpLogResponse, BreastMilkAdjustmentResponse, PlayLogResponse, VaccineLogResponse, FoodLogResponse, PhotoResponse } from '@/app/api/types';
 import { fetchPhotos } from '@/src/utils/photoClientApi';
 import { useActivityCache } from './useActivityCache';
 import { cacheDefaultBottleUnit, readCachedDefaultBottleUnit } from '@/src/utils/defaultBottleUnit';
@@ -69,83 +68,7 @@ const TimelineV2 = ({ babyId, refreshTrigger, initialDate, feedTimerTypes, onLat
   // Extract latest status data from activities and notify parent
   const emitLatestStatus = useCallback((activities: ActivityType[]) => {
     if (!onLatestStatusReady) return;
-
-    const status: LatestStatusData = {};
-
-    // Find last feed time. Food (issue #203) lives in FoodLog and is
-    // discriminated by `foodId`; when the FOOD category counts it can reset the
-    // timer alongside breast/bottle feeds.
-    const lastFeed = activities
-      .filter((a) => {
-        if (!('time' in a)) return false;
-        if ('foodId' in a) return foodCountsForTimer(feedTimerCategories);
-        return (
-          'amount' in a && 'type' in a &&
-          ((a as any).type === 'BOTTLE' || (a as any).type === 'BREAST') &&
-          feedCountsForTimer(a as any, feedTimerCategories)
-        );
-      })
-      .sort((a, b) => new Date((b as any).time).getTime() - new Date((a as any).time).getTime())[0];
-
-    if (lastFeed) {
-      const feedAny = lastFeed as any;
-      if (feedAny.type === 'BREAST') {
-        // Linked/paired rows count as one feeding (#198): time the timer against
-        // the whole nursing session, not just its latest row
-        const breastFeeds = activities.filter((a) =>
-          'amount' in a && (a as any).type === 'BREAST' && 'time' in a
-        ) as any[];
-        const session = groupBreastFeedSessions(breastFeeds)
-          .find(s => s.rows.some((r: any) => r.id === feedAny.id));
-        const rows: any[] = session?.rows ?? [feedAny];
-        // Prefer explicit startTime/endTime; `time` only equals the session end
-        // for newly logged feeds and can hold the start time after an edit
-        const startMs = Math.min(...rows.map(r => new Date(r.startTime || r.time).getTime()));
-        const endMs = Math.max(...rows.map(r => new Date(r.endTime || r.time).getTime()));
-        status.lastFeedTime = new Date(startMs);
-        status.lastFeedEndTime = new Date(endMs);
-      } else {
-        status.lastFeedTime = new Date(feedAny.time);
-      }
-    }
-
-    // Find last diaper time
-    const lastDiaper = activities
-      .filter((a) => 'condition' in a && 'time' in a)
-      .sort((a, b) => new Date((b as any).time).getTime() - new Date((a as any).time).getTime())[0];
-
-    if (lastDiaper) {
-      status.lastDiaperTime = new Date((lastDiaper as any).time);
-    }
-
-    status.lastPumpTime = findLatestPumpTime(activities);
-
-    // Find sleep status
-    const sleepLogs = activities
-      .filter((a): a is ActivityType =>
-        'duration' in a && 'startTime' in a &&
-        'type' in a && ((a as any).type === 'NAP' || (a as any).type === 'NIGHT_SLEEP')
-      );
-
-    const ongoingSleep = sleepLogs.find(log => !(log as any).endTime);
-    if (ongoingSleep) {
-      status.ongoingSleep = ongoingSleep as unknown as SleepLogResponse;
-    }
-
-    const completedSleeps = sleepLogs
-      .filter((log) => {
-        const endTime = (log as any).endTime;
-        return endTime !== null && typeof endTime === 'string';
-      })
-      .sort((a, b) => new Date((b as any).endTime).getTime() - new Date((a as any).endTime).getTime());
-
-    if (completedSleeps.length > 0) {
-      const lastSleep = completedSleeps[0] as any;
-      status.lastSleepEndTime = new Date(lastSleep.endTime);
-      status.lastEndedSleep = lastSleep as SleepLogResponse & { endTime: string };
-    }
-
-    onLatestStatusReady(status);
+    onLatestStatusReady(computeLatestStatus(activities, feedTimerCategories));
   }, [onLatestStatusReady, feedTimerCategories]);
 
   const fetchBreastMilkBalance = async (babyId: string) => {
