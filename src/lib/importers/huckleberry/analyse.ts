@@ -1,5 +1,6 @@
 import { ExternalImportFile } from '@/src/types/external-import';
 import { huckleberryDetector } from './detect';
+import { mapHuckleberryRows } from './map';
 import { parseHuckleberryCsv } from './parse';
 import {
   HUCKLEBERRY_SOURCE_CHILD_ID,
@@ -61,6 +62,7 @@ export function collectHuckleberryWarnings(
         !row['end condition']?.trim(),
       ).length,
     );
+    add('unmappable-row', mapHuckleberryRows(rows, 'preview').unmappableRows);
   });
 
   return Array.from(counts, ([code, affectedRows]) => ({

@@ -64,6 +64,8 @@ const warningLabels: Record<string, string> = {
     'Huckleberry pumping records do not include a duration and will use zero minutes',
   'bottle-amount-missing':
     'Bottle feeds without an amount will be imported without an amount',
+  'unmappable-row':
+    'Huckleberry rows that cannot be read will be skipped',
 };
 
 function childLabel(

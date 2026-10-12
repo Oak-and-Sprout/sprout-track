@@ -1183,6 +1183,7 @@
   "hr": "घं",
   "Huckleberry": "Huckleberry",
   "Huckleberry pumping records do not include a duration and will use zero minutes": "Huckleberry पंपिंग रिकॉर्ड में अवधि नहीं होती और शून्य मिनट उपयोग होंगे",
+  "Huckleberry rows that cannot be read will be skipped": "Huckleberry की जो पंक्तियाँ पढ़ी नहीं जा सकतीं, उन्हें छोड़ दिया जाएगा",
   "Hue": "रंग",
   "I Understand": "मैं समझ गया",
   "Icon color": "आइकन का रंग",

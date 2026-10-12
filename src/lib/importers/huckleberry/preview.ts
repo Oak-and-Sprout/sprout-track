@@ -4,14 +4,13 @@ import {
   ExternalImportPreviewer,
 } from '@/src/types/external-import';
 import { huckleberryDetector } from './detect';
+import { mapHuckleberryRows } from './map';
 import { parseHuckleberryCsv } from './parse';
 
-const supportedTypes = new Set(['feed', 'diaper', 'pump']);
-
+// Count rows that will actually import, so "ready" matches what execute does.
+// The record scope only affects IDs, which the preview does not use.
 function supportedRowCount(content: string): number {
-  return parseHuckleberryCsv(content).rows.filter(row =>
-    supportedTypes.has(row.type?.trim().toLowerCase()),
-  ).length;
+  return mapHuckleberryRows(parseHuckleberryCsv(content).rows, 'preview').records.length;
 }
 
 function previewFiles(

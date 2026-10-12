@@ -1183,6 +1183,7 @@
   "hr": "Std",
   "Huckleberry": "Huckleberry",
   "Huckleberry pumping records do not include a duration and will use zero minutes": "Huckleberry-Abpumpdaten enthalten keine Dauer und werden mit null Minuten importiert",
+  "Huckleberry rows that cannot be read will be skipped": "Huckleberry-Zeilen, die nicht gelesen werden können, werden übersprungen",
   "Hue": "Farbton",
   "I Understand": "Ich verstehe",
   "Icon color": "Symbolfarbe",

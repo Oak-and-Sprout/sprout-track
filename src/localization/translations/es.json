@@ -1183,6 +1183,7 @@
   "hr": "h",
   "Huckleberry": "Huckleberry",
   "Huckleberry pumping records do not include a duration and will use zero minutes": "Los registros de extracción de Huckleberry no incluyen una duración y usarán cero minutos",
+  "Huckleberry rows that cannot be read will be skipped": "Las filas de Huckleberry que no se puedan leer se omitirán",
   "Hue": "Tono",
   "I Understand": "Entiendo",
   "Icon color": "Color del icono",

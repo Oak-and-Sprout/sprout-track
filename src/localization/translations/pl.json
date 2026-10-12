@@ -1185,6 +1185,7 @@
   "hr": "godz.",
   "Huckleberry": "Huckleberry",
   "Huckleberry pumping records do not include a duration and will use zero minutes": "Wpisy odciągania Huckleberry nie zawierają czasu trwania i użyją zera minut",
+  "Huckleberry rows that cannot be read will be skipped": "Wiersze Huckleberry, których nie można odczytać, zostaną pominięte",
   "Hue": "Odcień",
   "I Understand": "Rozumiem",
   "Icon color": "Kolor ikony",

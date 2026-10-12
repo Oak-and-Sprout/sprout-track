@@ -217,11 +217,27 @@ function mapPump(
   };
 }
 
+export interface HuckleberryMappedRows {
+  readonly records: readonly ExternalImportRecord[];
+  readonly unmappableRows: number;
+}
+
+/**
+ * Maps supported rows, skipping (and counting) rows the mapper rejects so one
+ * odd row cannot abort the whole import.
+ *
+ * Huckleberry exports carry no child identifier, so record IDs are content
+ * fingerprints. `recordScope` (the destination baby ID) is prefixed so the same
+ * row imported into two babies, e.g. twins' identical bottles, is not treated as
+ * a duplicate of the other baby's record.
+ */
 export function mapHuckleberryRows(
   rows: readonly HuckleberryCsvRow[],
-): readonly ExternalImportRecord[] {
+  recordScope: string,
+): HuckleberryMappedRows {
   const occurrences = new Map<string, number>();
   const records: ExternalImportRecord[] = [];
+  let unmappableRows = 0;
 
   rows.forEach(row => {
     const activityType = row.type?.trim().toLowerCase();
@@ -230,12 +246,16 @@ export function mapHuckleberryRows(
     const fingerprint = fingerprintHuckleberryRow(row);
     const occurrence = (occurrences.get(fingerprint) ?? 0) + 1;
     occurrences.set(fingerprint, occurrence);
-    const recordId = `${activityType}-${fingerprint}-${occurrence}`;
+    const recordId = `${recordScope}:${activityType}-${fingerprint}-${occurrence}`;
 
-    if (activityType === 'feed') records.push(mapFeed(row, recordId));
-    if (activityType === 'diaper') records.push(mapDiaper(row, recordId));
-    if (activityType === 'pump') records.push(mapPump(row, recordId));
+    try {
+      if (activityType === 'feed') records.push(mapFeed(row, recordId));
+      if (activityType === 'diaper') records.push(mapDiaper(row, recordId));
+      if (activityType === 'pump') records.push(mapPump(row, recordId));
+    } catch {
+      unmappableRows += 1;
+    }
   });
 
-  return records;
+  return { records, unmappableRows };
 }

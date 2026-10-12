@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { Prisma } from '@prisma/client';
+import { describe, expect, it, vi } from 'vitest';
+import { executeExternalImport } from '@/src/lib/importers/execute';
+import { getExternalImportRuntimeProvider } from '@/src/lib/importers/runtime-registry';
 import {
   buildHuckleberryImportRecords,
   collectHuckleberryWarnings,
@@ -81,7 +84,7 @@ describe('Huckleberry record mapping', () => {
         'Diaper,2026-01-02 10:00,,brown,Solid,,"Both, poo:large",Changed,Parent',
         'Pump,2026-01-02 11:00,,,120ml,,,Stored,Parent',
       ),
-    ]);
+    ], 'baby-1');
 
     expect(records).toHaveLength(4);
     expect(records[0]).toMatchObject({
@@ -114,8 +117,8 @@ describe('Huckleberry record mapping', () => {
 
   it('creates stable, distinct IDs for exact duplicate rows', () => {
     const row = 'Pump,2026-01-02 11:00,,,120ml,,,Stored,Parent';
-    const first = buildHuckleberryImportRecords([careLog(row, row)]);
-    const second = buildHuckleberryImportRecords([careLog(row, row)]);
+    const first = buildHuckleberryImportRecords([careLog(row, row)], 'baby-1');
+    const second = buildHuckleberryImportRecords([careLog(row, row)], 'baby-1');
 
     expect(first[0].source.recordId).toBe(second[0].source.recordId);
     expect(first[1].source.recordId).toBe(second[1].source.recordId);
@@ -126,10 +129,10 @@ describe('Huckleberry record mapping', () => {
     const older = 'Pump,2026-01-02 11:00,,,120ml,,,Stored,Parent';
     const later = 'Pump,2026-01-02 14:00,,,95ml,,,Stored,Parent';
     const newer = 'Pump,2026-01-02 17:00,,,100ml,,,Stored,Parent';
-    const original = buildHuckleberryImportRecords([careLog(later, older)]);
+    const original = buildHuckleberryImportRecords([careLog(later, older)], 'baby-1');
     const cumulative = buildHuckleberryImportRecords([
       careLog(newer, later, older),
-    ]);
+    ], 'baby-1');
 
     expect(cumulative.map(record => record.source.recordId)).toEqual(
       expect.arrayContaining(original.map(record => record.source.recordId)),
@@ -139,7 +142,7 @@ describe('Huckleberry record mapping', () => {
   it('requires mapping all records to the synthetic activity-only child', () => {
     const [record] = buildHuckleberryImportRecords([
       careLog('Feed,2026-01-02 08:00,,,Breast Milk,Bottle,120ml,,Parent'),
-    ]);
+    ], 'baby-1');
 
     expect(record).toMatchObject({
       sourceChildId: 'huckleberry-care-log',
@@ -148,5 +151,121 @@ describe('Huckleberry record mapping', () => {
       providerId: 'huckleberry',
       childId: 'huckleberry-care-log',
     });
+  });
+});
+
+describe('Huckleberry rows that cannot be mapped', () => {
+  const valid = 'Feed,2026-01-02 08:00,,,Formula,Bottle,120ml,,Parent';
+  const unmappable = [
+    'Diaper,2026-01-02 09:00,,,,,Dry,,Parent',
+    'Feed,2026-01-02 10:00,,,,Solids,,,Parent',
+    'Feed,2026-01-02 11:00,,,00:05L,Breast,,,Parent',
+    'Pump,2026-01-02 8:00 PM,,,90ml,,,,Parent',
+  ];
+
+  it('previews only mappable rows and reports the rest as a warning', () => {
+    const file = careLog(valid, ...unmappable);
+
+    expect(huckleberryPreviewer.previewFiles([file])).toMatchObject({
+      totalRows: 1,
+      ready: true,
+    });
+    expect(collectHuckleberryWarnings([file])).toContainEqual({
+      code: 'unmappable-row',
+      entityType: 'care-log',
+      affectedRows: unmappable.length,
+    });
+  });
+
+  it('skips unmappable rows at execute instead of rejecting the file', () => {
+    const records = buildHuckleberryImportRecords(
+      [careLog(valid, ...unmappable)],
+      'baby-1',
+    );
+
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({ targetType: 'feed', type: 'BOTTLE' });
+  });
+
+  it('is not ready when no row can be mapped', () => {
+    expect(
+      huckleberryPreviewer.previewFiles([careLog(...unmappable)]),
+    ).toMatchObject({ totalRows: 0, ready: false });
+  });
+});
+
+describe('Huckleberry imports into more than one baby', () => {
+  const sharedRow = 'Feed,2026-01-02 08:00,,,Formula,Bottle,120ml,,Parent';
+  const destinations = (targetBabyId: string) => ({
+    sourceTimezone: 'UTC',
+    childDestinations: {
+      'huckleberry-care-log': { mode: 'existing' as const, targetBabyId },
+    },
+  });
+
+  it('scopes record IDs to the target baby', () => {
+    const [a] = buildHuckleberryImportRecords([careLog(sharedRow)], 'baby-a');
+    const [b] = buildHuckleberryImportRecords([careLog(sharedRow)], 'baby-b');
+    const [aAgain] = buildHuckleberryImportRecords([careLog(sharedRow)], 'baby-a');
+
+    expect(a.source.recordId).not.toBe(b.source.recordId);
+    expect(a.source.recordId).toBe(aAgain.source.recordId);
+  });
+
+  it('passes the destination baby from the execution configuration', () => {
+    const provider = getExternalImportRuntimeProvider('huckleberry')!;
+    const [record] = provider.buildRecords(
+      [careLog(sharedRow)],
+      undefined,
+      destinations('baby-a'),
+    );
+
+    expect(record.source.recordId).toBe(
+      buildHuckleberryImportRecords([careLog(sharedRow)], 'baby-a')[0].source.recordId,
+    );
+    expect(() => provider.buildRecords([careLog(sharedRow)], undefined, {
+      sourceTimezone: 'UTC',
+      childDestinations: {},
+    })).toThrow();
+  });
+
+  it('creates an identical row for each twin instead of skipping it as a duplicate', async () => {
+    // In-memory provenance table keyed like the real @@unique constraint.
+    const provenance = new Map<string, { targetRecordId: string }>();
+    const keyOf = (k: Record<string, string>) =>
+      [k.familyId, k.providerId, k.sourceEntityType, k.sourceRecordId].join('|');
+    let feedId = 0;
+    const tx = {
+      baby: {
+        findMany: vi.fn(async ({ where }) => where.id.in.map((id: string) => ({ id }))),
+      },
+      externalImportRecord: {
+        findUnique: vi.fn(async ({ where }) =>
+          provenance.get(keyOf(where.familyId_providerId_sourceEntityType_sourceRecordId)) ?? null),
+        create: vi.fn(async ({ data }) => {
+          provenance.set(keyOf(data), { targetRecordId: data.targetRecordId });
+          return data;
+        }),
+      },
+      feedLog: {
+        create: vi.fn(async (_args: { data: { babyId: string } }) => ({ id: `feed-${++feedId}` })),
+      },
+    };
+    const provider = getExternalImportRuntimeProvider('huckleberry')!;
+    const run = (targetBabyId: string) =>
+      executeExternalImport(tx as unknown as Prisma.TransactionClient, {
+        familyId: 'family-1',
+        records: provider.buildRecords([careLog(sharedRow)], undefined, destinations(targetBabyId)),
+        configuration: destinations(targetBabyId),
+      });
+
+    expect(await run('baby-a')).toMatchObject({ created: 1, duplicates: 0 });
+    expect(await run('baby-b')).toMatchObject({ created: 1, duplicates: 0 });
+    expect(await run('baby-a')).toMatchObject({ created: 0, duplicates: 1 });
+    expect(tx.feedLog.create).toHaveBeenCalledTimes(2);
+    expect(tx.feedLog.create.mock.calls.map(([args]) => args.data.babyId)).toEqual([
+      'baby-a',
+      'baby-b',
+    ]);
   });
 });

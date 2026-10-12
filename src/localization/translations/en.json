@@ -1183,6 +1183,7 @@
   "hr": "hr",
   "Huckleberry": "Huckleberry",
   "Huckleberry pumping records do not include a duration and will use zero minutes": "Huckleberry pumping records do not include a duration and will use zero minutes",
+  "Huckleberry rows that cannot be read will be skipped": "Huckleberry rows that cannot be read will be skipped",
   "Hue": "Hue",
   "I Understand": "I Understand",
   "Icon color": "Icon color",

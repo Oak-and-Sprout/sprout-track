@@ -11,7 +11,8 @@ export type HuckleberryWarningCode =
   | 'unsupported-activity-type'
   | 'both-breasts-without-side'
   | 'pumping-duration-unavailable'
-  | 'bottle-amount-missing';
+  | 'bottle-amount-missing'
+  | 'unmappable-row';
 
 export interface HuckleberryImportWarning {
   readonly code: HuckleberryWarningCode;

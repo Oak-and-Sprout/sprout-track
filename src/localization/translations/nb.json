@@ -1183,6 +1183,7 @@
   "hr": "t",
   "Huckleberry": "Huckleberry",
   "Huckleberry pumping records do not include a duration and will use zero minutes": "Huckleberry-pumpeoppføringer har ingen varighet og bruker null minutter",
+  "Huckleberry rows that cannot be read will be skipped": "Huckleberry-rader som ikke kan leses, blir hoppet over",
   "Hue": "Fargetone",
   "I Understand": "Jeg forstår",
   "Icon color": "Ikonfarge",

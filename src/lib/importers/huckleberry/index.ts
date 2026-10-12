@@ -24,3 +24,4 @@ export type {
   HuckleberryImportWarning,
   HuckleberryPreviewDetails,
 } from './types';
+export { HUCKLEBERRY_SOURCE_CHILD_ID } from './types';

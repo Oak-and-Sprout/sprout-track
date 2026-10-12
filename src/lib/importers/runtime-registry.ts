@@ -1,4 +1,5 @@
 import {
+  ExternalImportExecutionConfiguration,
   ExternalImportFile,
   ExternalImportPreview,
   ExternalImportRecord,
@@ -17,6 +18,7 @@ import {
   buildHuckleberryImportRecords,
   collectHuckleberryWarnings,
   huckleberryPreviewer,
+  HUCKLEBERRY_SOURCE_CHILD_ID,
   HuckleberryImportWarning,
   HuckleberryPreviewDetails,
 } from './huckleberry';
@@ -37,6 +39,7 @@ export interface ExternalImportRuntimeProvider {
   buildRecords(
     files: readonly ExternalImportFile[],
     configuration: unknown,
+    execution: ExternalImportExecutionConfiguration,
   ): readonly ExternalImportRecord[];
 }
 
@@ -137,8 +140,12 @@ const huckleberryRuntimeProvider: ExternalImportRuntimeProvider = {
     };
   },
 
-  buildRecords(files) {
-    return buildHuckleberryImportRecords(files);
+  buildRecords(files, _configuration, execution) {
+    const destination = execution.childDestinations[HUCKLEBERRY_SOURCE_CHILD_ID];
+    return buildHuckleberryImportRecords(
+      files,
+      destination?.mode === 'existing' ? destination.targetBabyId : '',
+    );
   },
 };
 
