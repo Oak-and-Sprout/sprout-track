@@ -79,8 +79,9 @@ Limits use a sliding 60-second window, tracked per API key and per HTTP method.
 |--------|---------------|
 | GET | 60 requests per minute per key |
 | POST / PUT / DELETE | 30 requests per minute per key |
+| POST `/activities/batch` | 5 requests per minute per key (up to 100 activities each) |
 
-The system administrator sets both limits for the whole server under **Webhook API** in the Family Manager's App Configuration (from 1 to 10,000 requests per minute). Raise them temporarily for a bulk import. Families can't change them. A saved change applies right away on the server that saved it and within a minute on any other instance. The limiter is in-memory, so the counts reset when the server restarts.
+Batch requests have their own window and don't count against the write limit. The system administrator sets all three limits for the whole server under **Webhook API** in the Family Manager's App Configuration (from 1 to 10,000 requests per minute). Raise them temporarily for a bulk import. Families can't change them. A saved change applies right away on the server that saved it and within a minute on any other instance. The limiter is in-memory, so the counts reset when the server restarts.
 
 Every response includes rate limit headers:
 
@@ -347,6 +348,9 @@ Create a new activity record.
 | `type` | Yes | Activity type (see below) |
 | `time` | No | ISO 8601 timestamp, defaults to now |
 | `caretakerName` | No | Matched against existing caretakers by name |
+| `externalId` | No | Your own ID for this entry, up to 255 characters. Makes the request safe to retry (see below) |
+
+**Idempotent writes with `externalId`.** When `externalId` is sent, Sprout Track remembers which activity it created for that ID. Sending the same `externalId` again for the same `type` doesn't create another activity: the response is `200` with `{ "activityType": "...", "id": "<original id>", "duplicate": true }`. IDs are unique per family and activity type, so prefix them with your integration's name if several integrations write to one family (e.g. `"nara:1234"`). The ID stays claimed even if the activity is later deleted in the app, so a re-sync doesn't bring back entries someone deleted. If a request fails, the ID isn't used, and you can retry it with a corrected payload. While another request with the same ID is still running, the API returns `409 EXTERNAL_ID_IN_PROGRESS`. `externalId` only applies to completed entries. It's rejected with `400 INVALID_EXTERNAL_ID` on timer actions (`start`, `end`, `switch`, `pause`, `resume`), or when it isn't a non-empty string of at most 255 characters.
 
 **Unknown fields are rejected.** Each activity type has a fixed set of accepted fields (documented per type below, plus the common fields above). Sending a field the type doesn't recognize returns `400 INVALID_FIELD` listing the offending field name(s), instead of silently accepting and dropping it. This also applies to `caretakerName`: a name that doesn't match any of the family's caretakers now returns `400 CARETAKER_NOT_FOUND` with the list of available caretaker names, rather than creating the activity unattributed.
 
@@ -704,6 +708,54 @@ New catalog foods are created only after every other field has been validated, s
 
 **playType:** `TUMMY_TIME`, `INDOOR_PLAY`, `OUTDOOR_PLAY`, `WALK`, or `CUSTOM`
 Optional fields: `duration` (minutes), `notes`, `activities` (sub-category string)
+
+---
+
+### POST /babies/:babyId/activities/batch
+
+Create up to 100 activities in one request, for bulk imports and backfills. Requires the `write` scope.
+
+```bash
+curl -s -X POST \
+  -H "Authorization: Bearer st_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activities": [
+      { "type": "feed", "time": "2025-08-01T08:00:00Z", "feedType": "formula", "amount": 4, "unitAbbr": "OZ", "externalId": "nara:feed:1001" },
+      { "type": "diaper", "time": "2025-08-01T08:30:00Z", "diaperType": "WET", "externalId": "nara:diaper:2001" },
+      { "type": "sleep", "time": "2025-08-01T09:00:00Z", "action": "log", "sleepType": "NAP", "duration": 45, "externalId": "nara:sleep:3001" }
+    ]
+  }' \
+  "http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities/batch"
+```
+
+Each item takes the same fields as `POST /activities`, with these differences:
+
+- **Completed entries only.** Timer actions (`start`, `end`, `switch`, `pause`, `resume`) are rejected for that item with `INVALID_ACTION`. Send sleeps and pumps with `"action": "log"` and a `duration`, and timed breastfeeds with a `duration`.
+- **No notifications.** Batch entries are treated as history: they never send push notifications and never reset the "time since last" notification timers. The app's timers still reflect the newest entry, as usual.
+- **Items are independent.** They're created one at a time, in order. A failed item doesn't stop the rest, and nothing is rolled back.
+
+Use `externalId` on every item so that a retried or re-run batch skips what was already imported.
+
+**Response:** `200` whenever the batch itself is well formed, with one result per item in request order:
+
+```json
+{
+  "success": true,
+  "data": {
+    "results": [
+      { "index": 0, "success": true, "data": { "activityType": "feed", "id": "...", "time": "2025-08-01T08:00:00.000Z", "details": { "type": "BOTTLE", "amount": 4, "unitAbbr": "OZ", "bottleType": "Formula", "side": null, "food": null } } },
+      { "index": 1, "success": true, "data": { "activityType": "diaper", "id": "...", "duplicate": true } },
+      { "index": 2, "success": false, "error": { "code": "INVALID_SLEEP_TYPE", "message": "sleepType must be NAP or NIGHT_SLEEP" } }
+    ],
+    "created": 1,
+    "duplicates": 1,
+    "failed": 1
+  }
+}
+```
+
+An item's `error` uses the same codes as `POST /activities`, plus `INVALID_ITEM` when the item isn't a JSON object. The request as a whole fails only for `400 INVALID_JSON`, `400 INVALID_BATCH` (`activities` missing, empty, or longer than 100), the usual authentication errors, or `429` when the batch rate limit is exceeded.
 
 ---
 

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../db';
 
-type HookMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+// BATCH is POST /activities/batch, limited separately from single writes
+type HookMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'BATCH';
 
 interface RateLimitEntry {
   timestamps: number[];
@@ -9,6 +10,7 @@ interface RateLimitEntry {
 
 export const DEFAULT_READS_PER_MINUTE = 60;
 export const DEFAULT_WRITES_PER_MINUTE = 30;
+export const DEFAULT_BATCH_PER_MINUTE = 5;
 const WINDOW_MS = 60_000;
 
 const store = new Map<string, RateLimitEntry>();
@@ -30,6 +32,7 @@ const CONFIG_TTL_MS = 60_000;
 export interface RateLimitConfig {
   hooksReadsPerMinute: number;
   hooksWritesPerMinute: number;
+  hooksBatchPerMinute: number;
 }
 
 /** A per-minute limit from the App Config form: an integer in 1..MAX, else null. */
@@ -38,11 +41,11 @@ export function parseRateLimitSetting(value: unknown): number | null {
   return typeof parsed === 'number' && Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_RATE_LIMIT_PER_MINUTE ? parsed : null;
 }
 
-/** Per-key, per-minute limit for a method: GET is a read, everything else a write. */
+/** Per-key, per-minute limit for a method: GET is a read, BATCH a batch, everything else a write. */
 export function getRateLimit(method: HookMethod, config: Partial<RateLimitConfig> | null): number {
-  return method === 'GET'
-    ? parseRateLimitSetting(config?.hooksReadsPerMinute) ?? DEFAULT_READS_PER_MINUTE
-    : parseRateLimitSetting(config?.hooksWritesPerMinute) ?? DEFAULT_WRITES_PER_MINUTE;
+  if (method === 'GET') return parseRateLimitSetting(config?.hooksReadsPerMinute) ?? DEFAULT_READS_PER_MINUTE;
+  if (method === 'BATCH') return parseRateLimitSetting(config?.hooksBatchPerMinute) ?? DEFAULT_BATCH_PER_MINUTE;
+  return parseRateLimitSetting(config?.hooksWritesPerMinute) ?? DEFAULT_WRITES_PER_MINUTE;
 }
 
 // Limits are deployment-wide (AppConfig), cached so each request doesn't hit the
@@ -58,7 +61,7 @@ async function loadRateLimitConfig(): Promise<RateLimitConfig | null> {
   if (configCache && configCache.expiresAt > Date.now()) return configCache.value;
   let value: RateLimitConfig | null = null;
   try {
-    value = await prisma.appConfig.findFirst({ select: { hooksReadsPerMinute: true, hooksWritesPerMinute: true } });
+    value = await prisma.appConfig.findFirst({ select: { hooksReadsPerMinute: true, hooksWritesPerMinute: true, hooksBatchPerMinute: true } });
   } catch (error) {
     console.error('Failed to load webhook rate limits; using defaults:', error);
   }
@@ -106,7 +109,7 @@ export async function checkRateLimit(
     return {
       allowed: false,
       response: NextResponse.json(
-        { success: false, error: { code: 'RATE_LIMITED', message: `Rate limit exceeded. Max ${limit} ${method} requests per minute.` } },
+        { success: false, error: { code: 'RATE_LIMITED', message: `Rate limit exceeded. Max ${limit} ${method === 'BATCH' ? 'batch' : method} requests per minute.` } },
         { status: 429, headers: { ...headers, 'Retry-After': String(result.retryAfterSeconds) } }
       ),
       headers,

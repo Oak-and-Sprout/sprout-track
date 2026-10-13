@@ -239,8 +239,9 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /api/hooks/v1/babies/` | List babies |
-| `GET /api/hooks/v1/babies/[babyId]/activities/` | Recent activities |
+| `GET /api/hooks/v1/babies/[babyId]/activities/` | Activities, with since/until windows and cursor pagination |
 | `POST /api/hooks/v1/babies/[babyId]/activities/` | Log a new activity (all eleven types, including `food`, plus feed/sleep/pump timer actions) |
+| `POST /api/hooks/v1/babies/[babyId]/activities/batch/` | Log up to 100 completed activities in one request (bulk import; no notifications, no timer actions) |
 | `PUT /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Edit an existing activity |
 | `DELETE /api/hooks/v1/babies/[babyId]/activities/[activityId]/` | Delete an existing activity |
 | `GET /api/hooks/v1/babies/[babyId]/measurements/latest/` | Latest measurements |
@@ -253,7 +254,11 @@ External integrations use a separate API surface at `app/api/hooks/v1/`:
 
 **Food activities:** The `food` type (`app/api/hooks/v1/food.ts`) accepts `foodName`/`foodId` or a `foods[]` array with per-food `amount`/`unitAbbr`/`enjoyment`, find-or-creates catalog foods by name, and writes through the same `buildFoodLogFoodFields()` / `deriveMealAmountFromItems()` helpers as `/api/food-log`, so webhook and app food logs are indistinguishable. A legacy `feed` with `feedType: "SOLIDS"` is stored as a `FoodLog` through the same path (`createFoodActivity(..., dedupe = true)`): an existing non-deleted food log of the same baby, exact time and food-name set (`findExistingFoodLog()`, shared with the startup conversion) is returned with `duplicate: true` instead of creating a second one. `type: "food"` posts are not deduplicated. Neither path calls `notifyActivityCreated()`.
 
-**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts` — sliding 60 s window per key and method; GET 60/min and POST/PUT/DELETE 30/min by default. The limits are deployment-wide `AppConfig` fields (`hooksReadsPerMinute` / `hooksWritesPerMinute`), set by the sysadmin in the Family Manager App Configuration form; there is deliberately no env var or per-family override. `checkRateLimit()` reads them through a 60 s in-memory cache that `PUT /api/app-config` clears on save, and falls back to the defaults when no row exists or the read fails. Every response carries `X-RateLimit-Limit` / `-Remaining` / `-Reset`; a 429 adds `Retry-After`, computed by the pure `evaluateSlidingWindow()` as the wait until the oldest counted request leaves the window.
+**Activity creation:** `POST /activities` and `POST /activities/batch` share `createHookActivity()` in `app/api/hooks/v1/create-activity.ts`, which validates and writes one activity and returns a `HookResult` (`{ ok, data }` or `{ ok: false, code, message, status }`) instead of a response. Options: `notify` (push notifications and `resetTimerNotificationState()`; off for batch, whose entries are historical) and `allowTimers` (feed/sleep/pump timer actions; off for batch). An optional `externalId` makes a create idempotent through `ExternalImportRecord` (provider `"webhook"`, keyed by family + request type + externalId): the record is claimed with an empty `targetRecordId` before the create so concurrent requests race on the unique key, filled in on success, and deleted on failure. A replay returns the original id with `duplicate: true`; a claim older than 60 s with no target is treated as abandoned and taken over.
+
+**Pagination:** `GET /activities` uses keyset pagination (`app/api/hooks/v1/pagination.ts`): page order is (time, activity type, id), each table fetches `limit + 1` rows after the cursor, and the merged rows are cut to `limit`. Tie-breaking on the type means ids are only compared within one table, so ordering doesn't depend on database collation.
+
+**Rate Limiting:** Implemented in `app/api/hooks/v1/rate-limiter.ts` — sliding 60 s window per key and method; GET 60/min, POST/PUT/DELETE 30/min and batch (`'BATCH'`, its own bucket) 5/min by default. The limits are deployment-wide `AppConfig` fields (`hooksReadsPerMinute` / `hooksWritesPerMinute` / `hooksBatchPerMinute`), set by the sysadmin in the Family Manager App Configuration form; there is deliberately no env var or per-family override. `checkRateLimit()` reads them through a 60 s in-memory cache that `PUT /api/app-config` clears on save, and falls back to the defaults when no row exists or the read fails. Every response carries `X-RateLimit-Limit` / `-Remaining` / `-Reset`; a 429 adds `Retry-After`, computed by the pure `evaluateSlidingWindow()` as the wait until the oldest counted request leaves the window.
 
 ## External Imports
 

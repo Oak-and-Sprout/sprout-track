@@ -122,7 +122,7 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       }
 
       const data: Partial<AppConfig> = {};
-      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail', 'enablePhotos', 'defaultPhotoQuotaMB', 'hooksReadsPerMinute', 'hooksWritesPerMinute'];
+      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail', 'enablePhotos', 'defaultPhotoQuotaMB', 'hooksReadsPerMinute', 'hooksWritesPerMinute', 'hooksBatchPerMinute'];
       for (const field of allowedAppFields) {
         if (appConfigData[field] !== undefined) {
           if (field === 'adminPass') {
@@ -138,7 +138,7 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
               );
             }
             (data as any)[field] = quota;
-          } else if (field === 'hooksReadsPerMinute' || field === 'hooksWritesPerMinute') {
+          } else if (field === 'hooksReadsPerMinute' || field === 'hooksWritesPerMinute' || field === 'hooksBatchPerMinute') {
             const limit = parseRateLimitSetting(appConfigData[field]);
             if (limit === null) {
               return NextResponse.json<ApiResponse<null>>(

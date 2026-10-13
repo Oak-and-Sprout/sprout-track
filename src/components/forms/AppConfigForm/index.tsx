@@ -42,6 +42,7 @@ interface AppConfigData {
   defaultPhotoQuotaMB: number;
   hooksReadsPerMinute: number;
   hooksWritesPerMinute: number;
+  hooksBatchPerMinute: number;
   updatedAt: string;
 }
 
@@ -109,6 +110,7 @@ export default function AppConfigForm({
     defaultPhotoQuotaMB: 5120,
     hooksReadsPerMinute: '60',
     hooksWritesPerMinute: '30',
+    hooksBatchPerMinute: '5',
   });
   const [emailFormData, setEmailFormData] = useState({
     providerType: 'SENDGRID' as EmailProviderType,
@@ -199,6 +201,7 @@ export default function AppConfigForm({
           defaultPhotoQuotaMB: data.data.appConfig?.defaultPhotoQuotaMB || 5120,
           hooksReadsPerMinute: String(data.data.appConfig?.hooksReadsPerMinute ?? 60),
           hooksWritesPerMinute: String(data.data.appConfig?.hooksWritesPerMinute ?? 30),
+          hooksBatchPerMinute: String(data.data.appConfig?.hooksBatchPerMinute ?? 5),
         });
         setEmailFormData({
           providerType: data.data.emailConfig?.providerType || 'SENDGRID',
@@ -853,10 +856,11 @@ export default function AppConfigForm({
                     {t('Webhook API')}
                   </Label>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {([
                     ['hooksReadsPerMinute', 'Read requests per minute'],
                     ['hooksWritesPerMinute', 'Write requests per minute'],
+                    ['hooksBatchPerMinute', 'Batch requests per minute'],
                   ] as const).map(([name, label]) => (
                     <div key={name} className="space-y-2">
                       <Label htmlFor={name} className="text-sm font-medium">
@@ -877,7 +881,7 @@ export default function AppConfigForm({
                   ))}
                 </div>
                 <p className="text-xs text-gray-500">
-                  {t('Limits apply to every API key on this server. Reads are GET requests; writes are POST, PUT and DELETE.')}
+                  {t('Limits apply to every API key on this server. Reads are GET requests; writes are POST, PUT and DELETE. Each batch request can create up to 100 activities.')}
                 </p>
               </div>
 

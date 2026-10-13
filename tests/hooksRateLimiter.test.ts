@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({ findFirst: vi.fn() }));
 vi.mock('../app/api/db', () => ({ default: { appConfig: { findFirst: mocks.findFirst } } }));
 
 import {
+  DEFAULT_BATCH_PER_MINUTE,
   DEFAULT_READS_PER_MINUTE,
   DEFAULT_WRITES_PER_MINUTE,
   MAX_RATE_LIMIT_PER_MINUTE,
@@ -40,6 +41,13 @@ describe('getRateLimit', () => {
     for (const method of ['POST', 'PUT', 'DELETE'] as const) {
       expect(getRateLimit(method, null)).toBe(30);
     }
+  });
+
+  it('limits batch requests separately, defaulting to 5 per minute', () => {
+    expect(DEFAULT_BATCH_PER_MINUTE).toBe(5);
+    expect(getRateLimit('BATCH', null)).toBe(5);
+    expect(getRateLimit('BATCH', { hooksBatchPerMinute: 12, hooksWritesPerMinute: 100 })).toBe(12);
+    expect(getRateLimit('BATCH', { hooksBatchPerMinute: 0 })).toBe(5);
   });
 
   it('reads GET from hooksReadsPerMinute and writes from hooksWritesPerMinute', () => {

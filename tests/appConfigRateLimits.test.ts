@@ -39,11 +39,11 @@ beforeEach(() => {
 
 describe('PUT /api/app-config webhook rate limits', () => {
   it('saves form-string limits as integers and clears the limiter cache', async () => {
-    const response = await put({ hooksReadsPerMinute: '240', hooksWritesPerMinute: '120' });
+    const response = await put({ hooksReadsPerMinute: '240', hooksWritesPerMinute: '120', hooksBatchPerMinute: '10' });
     expect(response.status).toBe(200);
     expect(mocks.prisma.appConfig.update).toHaveBeenCalledWith({
       where: { id: 'cfg-1' },
-      data: { hooksReadsPerMinute: 240, hooksWritesPerMinute: 120 },
+      data: { hooksReadsPerMinute: 240, hooksWritesPerMinute: 120, hooksBatchPerMinute: 10 },
     });
     expect(mocks.clearRateLimitConfigCache).toHaveBeenCalledTimes(1);
   });
@@ -54,6 +54,7 @@ describe('PUT /api/app-config webhook rate limits', () => {
     ['a fraction', { hooksWritesPerMinute: 1.5 }],
     ['above the maximum', { hooksReadsPerMinute: 10_001 }],
     ['text', { hooksReadsPerMinute: 'lots' }],
+    ['a zero batch limit', { hooksBatchPerMinute: 0 }],
   ])('rejects %s with 400 and saves nothing', async (_label, data) => {
     const response = await put(data);
     expect(response.status).toBe(400);

@@ -1,3 +1,4 @@
 -- AlterTable
 ALTER TABLE "AppConfig" ADD COLUMN "hooksReadsPerMinute" INTEGER NOT NULL DEFAULT 60;
 ALTER TABLE "AppConfig" ADD COLUMN "hooksWritesPerMinute" INTEGER NOT NULL DEFAULT 30;
+ALTER TABLE "AppConfig" ADD COLUMN "hooksBatchPerMinute" INTEGER NOT NULL DEFAULT 5;
