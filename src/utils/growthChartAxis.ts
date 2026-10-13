@@ -1,3 +1,9 @@
+export interface GrowthChartXAxis {
+  domain: [number, number];
+  ticks: number[];
+  step: number;
+}
+
 export interface GrowthChartYAxis {
   domain: [number, number];
   ticks: number[];
@@ -5,7 +11,9 @@ export interface GrowthChartYAxis {
 }
 
 const NICE_MULTIPLIERS = [1, 2, 2.5, 5, 10] as const;
+const AGE_STEPS_MONTHS = [1, 2, 3, 6, 12, 24, 36, 60] as const;
 const DEFAULT_MAX_INTERVALS = 7;
+const DEFAULT_MAX_AGE_INTERVALS = 10;
 
 function normalizeUnit(unit: string): string {
   return unit.trim().toLowerCase();
@@ -120,4 +128,37 @@ export function formatGrowthChartAxisTick(value: number, step: number, unit: str
   }
 
   return value.toFixed(decimalPlaces);
+}
+
+
+/**
+ * Builds a human-friendly age axis in months.
+ *
+ * Exact fractional ages remain in the chart data for interpolation and
+ * tooltips, while the visible domain is rounded up to a whole "nice" month
+ * interval. This prevents values such as 3.633333333333333 from becoming an
+ * axis endpoint.
+ */
+export function buildGrowthChartXAxis(
+  values: readonly (number | null | undefined)[],
+  maxIntervals = DEFAULT_MAX_AGE_INTERVALS,
+): GrowthChartXAxis {
+  const finiteValues = values.filter(
+    (value): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0,
+  );
+  const maxAgeMonths = finiteValues.length ? Math.max(...finiteValues) : 0;
+  const safeMaxIntervals = Math.max(2, Math.floor(maxIntervals));
+
+  const step = AGE_STEPS_MONTHS.find(
+    candidate => Math.ceil(maxAgeMonths / candidate) <= safeMaxIntervals,
+  ) ?? AGE_STEPS_MONTHS[AGE_STEPS_MONTHS.length - 1];
+
+  const upper = Math.max(step, Math.ceil(maxAgeMonths / step) * step);
+  const domain: [number, number] = [0, upper];
+
+  return {
+    domain,
+    ticks: buildTicks(domain, step),
+    step,
+  };
 }

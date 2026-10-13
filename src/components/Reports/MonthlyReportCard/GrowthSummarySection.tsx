@@ -12,6 +12,7 @@ import type { GrowthSummarySectionProps } from './monthly-report-card.types';
 import type { GrowthMetric, GrowthChartData } from '@/app/api/types';
 import { formatChartValue } from '@/src/utils/weightUnits';
 import {
+  buildGrowthChartXAxis,
   buildGrowthChartYAxis,
   formatGrowthChartAxisTick,
 } from '@/src/utils/growthChartAxis';
@@ -175,8 +176,10 @@ function GrowthChartCard({
     p.measurement,
   ]);
   const unit = chartData.unit || '';
+  const xAxis = buildGrowthChartXAxis(chartData.points.map(point => point.ageMonths));
   const yAxis = buildGrowthChartYAxis(allValues, unit);
   const latestMeasurement = chartData.points.findLast(point => point.measurement !== undefined);
+  const referenceTransitions = chartData.points.filter(point => point.referenceTransition);
 
   return (
     <div className={cn(s.card, 'report-card-card report-card-chart')}>
@@ -188,9 +191,10 @@ function GrowthChartCard({
             <XAxis
               dataKey="ageMonths"
               type="number"
-              domain={[0, 'dataMax']}
+              domain={xAxis.domain}
+              ticks={xAxis.ticks}
               tick={{ fontSize: 11 }}
-              tickFormatter={(v: number) => v === 0 ? '0' : `${v}`}
+              tickFormatter={(v: number) => v.toFixed(0)}
               label={{ value: t('Age (months)'), position: 'insideBottom', offset: -5, fontSize: 11 }}
             />
             <YAxis
@@ -200,6 +204,22 @@ function GrowthChartCard({
               tickFormatter={(value: number) => formatGrowthChartAxisTick(value, yAxis.step, unit)}
             />
             <Tooltip content={<GrowthChartTooltip babyName={babyName} unit={unit} t={t} />} />
+
+            {referenceTransitions.map(point => (
+              <ReferenceLine
+                key={`reference-transition-${point.ageMonths}`}
+                x={point.ageMonths}
+                stroke="#94a3b8"
+                strokeWidth={1}
+                strokeDasharray="4 4"
+                label={{
+                  value: `24 ${t('months')}`,
+                  position: 'insideTop',
+                  fill: '#64748b',
+                  fontSize: 9,
+                }}
+              />
+            ))}
 
             {latestMeasurement?.measurement !== undefined && (
               <ReferenceLine
@@ -247,6 +267,12 @@ function GrowthChartCard({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      {referenceTransitions.map(point => (
+        <p key={`reference-transition-note-${point.ageMonths}`} className="mt-2 text-xs text-gray-500 report-card-chart-transition-note">
+          <span className="font-medium">{t(point.referenceTransition!.labelKey)}:</span>{' '}
+          {t(point.referenceTransition!.descriptionKey)}
+        </p>
+      ))}
     </div>
   );
 }
