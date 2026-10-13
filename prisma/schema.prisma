@@ -1330,6 +1330,8 @@ model AppConfig {
   adminEmail  String? // Admin email for feedback replies
   enablePhotos        Boolean @default(false) // Enable the Photos feature deployment-wide
   defaultPhotoQuotaMB Int     @default(5120) // Default per-family photo storage quota in MB
+  hooksReadsPerMinute  Int     @default(60) // Webhook API GET requests per minute, per API key
+  hooksWritesPerMinute Int     @default(30) // Webhook API POST/PUT/DELETE requests per minute, per API key
   updatedAt   DateTime @updatedAt
 }
 

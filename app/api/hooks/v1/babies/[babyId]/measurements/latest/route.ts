@@ -7,7 +7,7 @@ import { hookSuccess } from '../../../../response';
 const MEASUREMENT_TYPES = ['WEIGHT', 'HEIGHT', 'HEAD_CIRCUMFERENCE', 'TEMPERATURE'] as const;
 
 async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any) {
-  const rl = checkRateLimit(ctx.keyId, 'GET');
+  const rl = await checkRateLimit(ctx.keyId, 'GET');
   if (!rl.allowed) return rl.response!;
 
   const params = await routeContext.params;

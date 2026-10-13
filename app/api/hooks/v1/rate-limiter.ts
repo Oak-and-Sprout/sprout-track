@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import prisma from '../../db';
 
 type HookMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -23,17 +24,46 @@ setInterval(() => {
   });
 }, 5 * 60_000);
 
-/** A positive integer from an env var, or `fallback` when unset/invalid. */
-export function parseRateLimit(value: string | undefined, fallback: number): number {
-  const parsed = value?.trim() ? Number(value) : NaN;
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+export const MAX_RATE_LIMIT_PER_MINUTE = 10_000;
+const CONFIG_TTL_MS = 60_000;
+
+export interface RateLimitConfig {
+  hooksReadsPerMinute: number;
+  hooksWritesPerMinute: number;
+}
+
+/** A per-minute limit from the App Config form: an integer in 1..MAX, else null. */
+export function parseRateLimitSetting(value: unknown): number | null {
+  const parsed = typeof value === 'string' && value.trim() ? Number(value) : value;
+  return typeof parsed === 'number' && Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_RATE_LIMIT_PER_MINUTE ? parsed : null;
 }
 
 /** Per-key, per-minute limit for a method: GET is a read, everything else a write. */
-export function getRateLimit(method: HookMethod, env: Record<string, string | undefined> = process.env): number {
+export function getRateLimit(method: HookMethod, config: Partial<RateLimitConfig> | null): number {
   return method === 'GET'
-    ? parseRateLimit(env.HOOKS_RATE_LIMIT_READS_PER_MINUTE, DEFAULT_READS_PER_MINUTE)
-    : parseRateLimit(env.HOOKS_RATE_LIMIT_WRITES_PER_MINUTE, DEFAULT_WRITES_PER_MINUTE);
+    ? parseRateLimitSetting(config?.hooksReadsPerMinute) ?? DEFAULT_READS_PER_MINUTE
+    : parseRateLimitSetting(config?.hooksWritesPerMinute) ?? DEFAULT_WRITES_PER_MINUTE;
+}
+
+// Limits are deployment-wide (AppConfig), cached so each request doesn't hit the
+// database. Saving App Config clears the cache in this process; other processes
+// pick the change up within CONFIG_TTL_MS.
+let configCache: { value: RateLimitConfig | null; expiresAt: number } | null = null;
+
+export function clearRateLimitConfigCache(): void {
+  configCache = null;
+}
+
+async function loadRateLimitConfig(): Promise<RateLimitConfig | null> {
+  if (configCache && configCache.expiresAt > Date.now()) return configCache.value;
+  let value: RateLimitConfig | null = null;
+  try {
+    value = await prisma.appConfig.findFirst({ select: { hooksReadsPerMinute: true, hooksWritesPerMinute: true } });
+  } catch (error) {
+    console.error('Failed to load webhook rate limits; using defaults:', error);
+  }
+  configCache = { value, expiresAt: Date.now() + CONFIG_TTL_MS };
+  return value;
 }
 
 /**
@@ -57,11 +87,11 @@ export function evaluateSlidingWindow(
   return { allowed: true, timestamps: next, remaining: limit - next.length, resetAt: next[0] + windowMs };
 }
 
-export function checkRateLimit(
+export async function checkRateLimit(
   keyId: string,
   method: HookMethod
-): { allowed: boolean; response?: NextResponse; headers: Record<string, string> } {
-  const limit = getRateLimit(method);
+): Promise<{ allowed: boolean; response?: NextResponse; headers: Record<string, string> }> {
+  const limit = getRateLimit(method, await loadRateLimitConfig());
   const storeKey = `${keyId}:${method}`;
   const result = evaluateSlidingWindow(store.get(storeKey)?.timestamps ?? [], Date.now(), limit);
   store.set(storeKey, { timestamps: result.timestamps });

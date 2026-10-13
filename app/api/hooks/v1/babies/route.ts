@@ -17,7 +17,7 @@ function formatAge(birthDate: Date): { ageInDays: number; ageFormatted: string }
 }
 
 async function handleGet(req: NextRequest, ctx: ApiKeyContext) {
-  const rl = checkRateLimit(ctx.keyId, 'GET');
+  const rl = await checkRateLimit(ctx.keyId, 'GET');
   if (!rl.allowed) return rl.response!;
 
   const where: any = { familyId: ctx.familyId, inactive: false };

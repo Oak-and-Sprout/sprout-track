@@ -647,7 +647,7 @@ async function readJsonBody(req: NextRequest): Promise<{ body?: JsonObject; erro
 }
 
 async function handlePut(req: NextRequest, ctx: ApiKeyContext, routeContext?: RouteContext) {
-  const rl = checkRateLimit(ctx.keyId, 'PUT');
+  const rl = await checkRateLimit(ctx.keyId, 'PUT');
   if (!rl.allowed) return rl.response!;
 
   const params = await routeContext?.params;
@@ -678,7 +678,7 @@ async function handlePut(req: NextRequest, ctx: ApiKeyContext, routeContext?: Ro
 }
 
 async function handleDelete(req: NextRequest, ctx: ApiKeyContext, routeContext?: RouteContext) {
-  const rl = checkRateLimit(ctx.keyId, 'DELETE');
+  const rl = await checkRateLimit(ctx.keyId, 'DELETE');
   if (!rl.allowed) return rl.response!;
 
   const params = await routeContext?.params;

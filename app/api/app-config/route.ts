@@ -5,6 +5,7 @@ import { AppConfig, EmailConfig, NotificationConfig } from '@prisma/client';
 import { encrypt } from '../utils/encryption';
 import { withSysAdminAuth } from '../utils/auth';
 import { clearNotificationConfigCache, resetWebPushState } from '../../../src/lib/notifications/config';
+import { MAX_RATE_LIMIT_PER_MINUTE, clearRateLimitConfigCache, parseRateLimitSetting } from '../hooks/v1/rate-limiter';
 import * as crypto from 'crypto';
 
 /**
@@ -121,7 +122,7 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       }
 
       const data: Partial<AppConfig> = {};
-      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail', 'enablePhotos', 'defaultPhotoQuotaMB'];
+      const allowedAppFields: (keyof AppConfig)[] = ['adminPass', 'rootDomain', 'enableHttps', 'adminEmail', 'enablePhotos', 'defaultPhotoQuotaMB', 'hooksReadsPerMinute', 'hooksWritesPerMinute'];
       for (const field of allowedAppFields) {
         if (appConfigData[field] !== undefined) {
           if (field === 'adminPass') {
@@ -137,12 +138,22 @@ async function putHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
               );
             }
             (data as any)[field] = quota;
+          } else if (field === 'hooksReadsPerMinute' || field === 'hooksWritesPerMinute') {
+            const limit = parseRateLimitSetting(appConfigData[field]);
+            if (limit === null) {
+              return NextResponse.json<ApiResponse<null>>(
+                { success: false, error: `Webhook API rate limits must be whole numbers from 1 to ${MAX_RATE_LIMIT_PER_MINUTE}` },
+                { status: 400 }
+              );
+            }
+            (data as any)[field] = limit;
           } else {
             (data as any)[field] = appConfigData[field];
           }
         }
       }
       updatedAppConfig = await prisma.appConfig.update({ where: { id: existingAppConfig.id }, data });
+      clearRateLimitConfigCache();
     }
 
     // Update EmailConfig

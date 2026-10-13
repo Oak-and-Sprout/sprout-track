@@ -189,7 +189,7 @@ async function createFoodActivity(
 
 // ── GET handler ──
 async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any) {
-  const rl = checkRateLimit(ctx.keyId, 'GET');
+  const rl = await checkRateLimit(ctx.keyId, 'GET');
   if (!rl.allowed) return rl.response!;
 
   const params = await routeContext.params;
@@ -419,7 +419,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
 
 // ── POST handler ──
 async function handlePost(req: NextRequest, ctx: ApiKeyContext, routeContext: any) {
-  const rl = checkRateLimit(ctx.keyId, 'POST');
+  const rl = await checkRateLimit(ctx.keyId, 'POST');
   if (!rl.allowed) return rl.response!;
 
   const params = await routeContext.params;

@@ -75,12 +75,12 @@ All API requests from public/external networks must use HTTPS. Plain HTTP is all
 
 Limits use a sliding 60-second window, tracked per API key and per HTTP method.
 
-| Method | Default limit | Override with |
-|--------|---------------|---------------|
-| GET | 60 requests per minute per key | `HOOKS_RATE_LIMIT_READS_PER_MINUTE` |
-| POST / PUT / DELETE | 30 requests per minute per key | `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE` |
+| Method | Default limit |
+|--------|---------------|
+| GET | 60 requests per minute per key |
+| POST / PUT / DELETE | 30 requests per minute per key |
 
-Self-hosters can raise or lower the limits by setting these environment variables to a positive integer (e.g. `HOOKS_RATE_LIMIT_WRITES_PER_MINUTE=120` for a bulk import). A missing, non-numeric, or non-positive value falls back to the default. The limiter is in-memory, so the counts reset when the server restarts.
+The system administrator sets both limits for the whole server under **Webhook API** in the Family Manager's App Configuration (from 1 to 10,000 requests per minute). Raise them temporarily for a bulk import. Families can't change them. A saved change applies right away on the server that saved it and within a minute on any other instance. The limiter is in-memory, so the counts reset when the server restarts.
 
 Every response includes rate limit headers:
 

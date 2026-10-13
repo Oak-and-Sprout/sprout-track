@@ -10,7 +10,7 @@ import {
   FormPageContent, 
   FormPageFooter 
 } from '@/src/components/ui/form-page';
-import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle, RefreshCw, Key, Image } from 'lucide-react';
+import { Settings, Loader2, Save, X, Mail, ChevronDown, Bell, CheckCircle, AlertCircle, XCircle, RefreshCw, Key, Image, Webhook } from 'lucide-react';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Badge } from '@/src/components/ui/badge';
 import { BackupRestore } from '@/src/components/BackupRestore';
@@ -40,6 +40,8 @@ interface AppConfigData {
   adminEmail: string | null;
   enablePhotos: boolean;
   defaultPhotoQuotaMB: number;
+  hooksReadsPerMinute: number;
+  hooksWritesPerMinute: number;
   updatedAt: string;
 }
 
@@ -105,6 +107,8 @@ export default function AppConfigForm({
     adminEmail: '',
     enablePhotos: false,
     defaultPhotoQuotaMB: 5120,
+    hooksReadsPerMinute: '60',
+    hooksWritesPerMinute: '30',
   });
   const [emailFormData, setEmailFormData] = useState({
     providerType: 'SENDGRID' as EmailProviderType,
@@ -193,6 +197,8 @@ export default function AppConfigForm({
           adminEmail: data.data.appConfig?.adminEmail || '',
           enablePhotos: data.data.appConfig?.enablePhotos || false,
           defaultPhotoQuotaMB: data.data.appConfig?.defaultPhotoQuotaMB || 5120,
+          hooksReadsPerMinute: String(data.data.appConfig?.hooksReadsPerMinute ?? 60),
+          hooksWritesPerMinute: String(data.data.appConfig?.hooksWritesPerMinute ?? 30),
         });
         setEmailFormData({
           providerType: data.data.emailConfig?.providerType || 'SENDGRID',
@@ -837,6 +843,42 @@ export default function AppConfigForm({
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Webhook API Section */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Webhook className="h-5 w-5 text-teal-600" aria-hidden="true" />
+                  <Label className="text-lg font-semibold">
+                    {t('Webhook API')}
+                  </Label>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {([
+                    ['hooksReadsPerMinute', 'Read requests per minute'],
+                    ['hooksWritesPerMinute', 'Write requests per minute'],
+                  ] as const).map(([name, label]) => (
+                    <div key={name} className="space-y-2">
+                      <Label htmlFor={name} className="text-sm font-medium">
+                        {t(label)}
+                      </Label>
+                      <Input
+                        type="number"
+                        id={name}
+                        name={name}
+                        min={1}
+                        max={10000}
+                        step={1}
+                        required
+                        value={formData[name]}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {t('Limits apply to every API key on this server. Reads are GET requests; writes are POST, PUT and DELETE.')}
+                </p>
               </div>
 
               {/* Email Configuration Section */}
