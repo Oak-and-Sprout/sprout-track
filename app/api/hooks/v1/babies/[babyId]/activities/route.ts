@@ -10,9 +10,7 @@ import { FOOD_FIELDS, formatFoodDetails, getDefaultSolidsUnit, loadFoodCatalog, 
 import { buildFoodLogFoodFields, deriveMealAmountFromItems } from '@/src/utils/foodLogUtils';
 import { findExistingFoodLog } from '@/scripts/convert-solids-feeds-runner';
 import { resolveCatalogFoodName } from '@/scripts/convert-solids-feeds-core';
-
-const VALID_TYPES = ['sleep', 'feed', 'diaper', 'note', 'pump', 'play', 'bath', 'measurement', 'medicine', 'supplement', 'food'] as const;
-type ActivityType = typeof VALID_TYPES[number];
+import { ACTIVITY_TYPES as VALID_TYPES, ActivityType, buildOrderBy, buildRangeWhere, paginate, parsePageParams } from '../../../pagination';
 
 // Fields each POST handler actually consumes, plus the shared fields
 // (type/time/caretakerName, and action where the type supports one).
@@ -201,13 +199,19 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
 
   const url = new URL(req.url);
   const typeFilter = url.searchParams.get('type') as ActivityType | null;
-  const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '10', 10) || 10, 1), 50);
-  const sinceParam = url.searchParams.get('since');
-  const since = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 24 * 60 * 60 * 1000);
-
   if (typeFilter && !VALID_TYPES.includes(typeFilter)) {
     return hookError('INVALID_ACTIVITY_TYPE', `Unknown activity type: '${typeFilter}'. Valid types: ${VALID_TYPES.join(', ')}`, 400, rl.headers);
   }
+
+  const pageParams = parsePageParams(url.searchParams);
+  if (!pageParams.ok) return hookError(pageParams.code, pageParams.message, 400, rl.headers);
+  const { limit, window } = pageParams;
+  // Each table returns its first limit + 1 rows in page order; see pagination.ts
+  const page = (type: ActivityType, field: string, where: Record<string, unknown>) => ({
+    where: { ...where, ...buildRangeWhere(type, field, window) },
+    orderBy: buildOrderBy(field, window.order),
+    take: limit + 1,
+  });
 
   const types = typeFilter ? [typeFilter] : [...VALID_TYPES];
   const activities: any[] = [];
@@ -217,9 +221,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('feed')) {
     queries.push(
       prisma.feedLog.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since } },
-        orderBy: { time: 'desc' },
-        take: limit,
+        ...page('feed', 'time', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } }, unit: { select: { unitAbbr: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -236,9 +238,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('diaper')) {
     queries.push(
       prisma.diaperLog.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since } },
-        orderBy: { time: 'desc' },
-        take: limit,
+        ...page('diaper', 'time', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -255,9 +255,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('sleep')) {
     queries.push(
       prisma.sleepLog.findMany({
-        where: { babyId, deletedAt: null, startTime: { gte: since } },
-        orderBy: { startTime: 'desc' },
-        take: limit,
+        ...page('sleep', 'startTime', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -274,9 +272,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('note')) {
     queries.push(
       prisma.note.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since } },
-        orderBy: { time: 'desc' },
-        take: limit,
+        ...page('note', 'time', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -293,9 +289,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('pump')) {
     queries.push(
       prisma.pumpLog.findMany({
-        where: { babyId, deletedAt: null, startTime: { gte: since } },
-        orderBy: { startTime: 'desc' },
-        take: limit,
+        ...page('pump', 'startTime', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -312,9 +306,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('bath')) {
     queries.push(
       prisma.bathLog.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since } },
-        orderBy: { time: 'desc' },
-        take: limit,
+        ...page('bath', 'time', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -331,9 +323,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('measurement')) {
     queries.push(
       prisma.measurement.findMany({
-        where: { babyId, deletedAt: null, date: { gte: since } },
-        orderBy: { date: 'desc' },
-        take: limit,
+        ...page('measurement', 'date', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -350,9 +340,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('medicine')) {
     queries.push(
       prisma.medicineLog.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since }, medicine: { isSupplement: false } },
-        orderBy: { time: 'desc' },
-        take: limit,
+        ...page('medicine', 'time', { babyId, deletedAt: null, medicine: { isSupplement: false } }),
         include: { caretaker: { select: { name: true } }, medicine: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -369,9 +357,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('supplement')) {
     queries.push(
       prisma.medicineLog.findMany({
-        where: { babyId, deletedAt: null, time: { gte: since }, medicine: { isSupplement: true } },
-        orderBy: { time: 'desc' },
-        take: limit,
+        ...page('supplement', 'time', { babyId, deletedAt: null, medicine: { isSupplement: true } }),
         include: { caretaker: { select: { name: true } }, medicine: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -388,9 +374,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('play')) {
     queries.push(
       prisma.playLog.findMany({
-        where: { babyId, deletedAt: null, startTime: { gte: since } },
-        orderBy: { startTime: 'desc' },
-        take: limit,
+        ...page('play', 'startTime', { babyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then((rows) => {
         rows.forEach((r) => activities.push({
@@ -407,9 +391,7 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
   if (types.includes('food')) {
     queries.push(
       prisma.foodLog.findMany({
-        where: { babyId, familyId: ctx.familyId, deletedAt: null, time: { gte: since } },
-        orderBy: { time: 'desc' },
-        take: limit,
+        ...page('food', 'time', { babyId, familyId: ctx.familyId, deletedAt: null }),
         include: { caretaker: { select: { name: true } } },
       }).then(async (rows) => {
         const catalog = await loadFoodCatalog(ctx.familyId, rows);
@@ -426,12 +408,10 @@ async function handleGet(req: NextRequest, ctx: ApiKeyContext, routeContext: any
 
   await Promise.all(queries);
 
-  // Sort by time descending and take the limit
-  activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  const trimmed = activities.slice(0, limit);
+  const { page: trimmed, hasMore, nextCursor } = paginate(activities, limit, window.order);
 
   return hookSuccess(
-    { activities: trimmed, count: trimmed.length, hasMore: activities.length > limit },
+    { activities: trimmed, count: trimmed.length, hasMore, nextCursor },
     { familyId: ctx.familyId, babyId },
     rl.headers
   );

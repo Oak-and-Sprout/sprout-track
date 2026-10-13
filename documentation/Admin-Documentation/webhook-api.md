@@ -244,15 +244,32 @@ Each `lastActivities` field reflects the most recent record of that type (regard
 
 ### GET /babies/:babyId/activities
 
-Recent activity logs with optional filtering.
+Activity logs with optional filtering and cursor pagination, newest first by default.
 
 **Query Parameters:**
 
 | Param | Default | Description |
 |-------|---------|-------------|
 | `type` | all | Filter by type: `feed`, `diaper`, `sleep`, `note`, `pump`, `play`, `bath`, `measurement`, `medicine`, `supplement`, `food` |
-| `limit` | 10 | Max records per type (1–50) |
-| `since` | 24h ago | ISO 8601 datetime cutoff |
+| `limit` | 10 | Max activities per page, across all requested types (1–200) |
+| `since` | 24h ago* | ISO 8601 datetime, inclusive lower bound |
+| `until` | none | ISO 8601 datetime, exclusive upper bound |
+| `order` | `desc` | `desc` (newest first) or `asc` (oldest first) |
+| `cursor` | none | `nextCursor` from the previous page |
+
+\* The 24-hour default only applies when none of `since`, `until` or `cursor` is sent. Send `since` to read further back.
+
+**Pagination.** When more activities match than fit in one page, `hasMore` is `true` and `nextCursor` is set. To get the next page, repeat the request with the same `type`, `since`, `until`, `order` and `limit` plus `cursor=<nextCursor>`. Continue until `hasMore` is `false`, when `nextCursor` is `null`. Pages are ordered by `time`, then activity type, then `id`, so activities with the same timestamp are never skipped or repeated. Rows added or deleted between page requests may be missed or shifted, like any live listing. Treat the cursor as an opaque string. A malformed cursor returns `400 INVALID_CURSOR`, an unparseable `since` or `until` returns `400 INVALID_TIME`, and an `order` other than `asc` or `desc` returns `400 INVALID_ORDER`.
+
+To enumerate a baby's full history in a window (for example, to reconcile a backfill), walk it oldest first:
+
+```bash
+curl -s -H "Authorization: Bearer st_live_YOUR_KEY" \
+  "http://localhost:3000/api/hooks/v1/babies/BABY_ID/activities?type=feed&since=2025-08-01T00:00:00Z&until=2025-09-01T00:00:00Z&order=asc&limit=200"
+# then repeat with &cursor=<data.nextCursor> while data.hasMore is true
+```
+
+Each page is one GET request against the read rate limit.
 
 ```bash
 curl -s \
@@ -286,7 +303,8 @@ curl -s \
       }
     ],
     "count": 1,
-    "hasMore": false
+    "hasMore": false,
+    "nextCursor": null
   }
 }
 ```
