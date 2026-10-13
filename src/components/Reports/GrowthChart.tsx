@@ -587,6 +587,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
   );
 
   const latestMeasurement = measurementsWithPercentiles.at(-1);
+  const referenceTransitions = chartData.filter(point => point.referenceTransition);
 
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
@@ -814,6 +815,22 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
               />
               <Tooltip content={<CustomTooltip settings={settings} measurementType={measurementType} t={t} />} />
 
+              {referenceTransitions.map(point => (
+                <ReferenceLine
+                  key={`reference-transition-${point.ageMonths}`}
+                  x={point.ageMonths}
+                  stroke="#94a3b8"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                  label={{
+                    value: `24 ${t('months')}`,
+                    position: 'insideTop',
+                    fill: '#94a3b8',
+                    fontSize: 10,
+                  }}
+                />
+              ))}
+
               {latestMeasurement && (
                 <ReferenceLine
                   y={latestMeasurement.displayValue}
@@ -906,6 +923,13 @@ const GrowthChart: React.FC<GrowthChartProps> = ({ className }) => {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {referenceTransitions.map(point => (
+        <div key={`reference-transition-note-${point.ageMonths}`} className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <span className="font-medium">{t(point.referenceTransition!.labelKey)}:</span>{' '}
+          {t(point.referenceTransition!.descriptionKey)}
+        </div>
+      ))}
 
       {/* Measurements list with percentiles */}
       {measurementsWithPercentiles.length > 0 && (

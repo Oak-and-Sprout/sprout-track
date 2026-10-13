@@ -72,6 +72,10 @@ describe('createGrowthReferenceSegments', () => {
     const segments = createGrowthReferenceSegments('CDC', 'length', [], [row(24)]);
     expect(segments[0].id).toBe('cdc-infant-length');
     expect(segments[0].breakAfter).toBe(true);
+    expect(segments[0].transitionAfter).toEqual({
+      labelKey: 'Length → standing height',
+      descriptionKey: 'At 24 months, CDC switches from recumbent length to standing height; standing height is typically about 0.8 cm lower.',
+    });
     expect(segments[1].id).toBe('cdc-child-stature');
     expect(segments[1].breakAfter).toBe(false);
   });
@@ -177,6 +181,7 @@ describe('buildGrowthReferenceChartPoints', () => {
       measurements: [],
     });
     expect(points.some(point => point.referenceBreak)).toBe(false);
+    expect(points.some(point => point.referenceTransition)).toBe(false);
     expect(points.find(point => point.ageMonths === 24)?.p50).toBe(224);
   });
 
@@ -198,6 +203,10 @@ describe('buildGrowthReferenceChartPoints', () => {
     expect(breakIndex).toBeGreaterThan(0);
     expect(points[breakIndex].ageMonths).toBe(24);
     expect(points[breakIndex].p50).toBeUndefined();
+    expect(points[breakIndex].referenceTransition).toEqual({
+      labelKey: 'Length → standing height',
+      descriptionKey: 'At 24 months, CDC switches from recumbent length to standing height; standing height is typically about 0.8 cm lower.',
+    });
     expect(points[breakIndex - 1].ageMonths).toBeLessThan(24);
     expect(points[breakIndex - 1].ageMonths).toBeCloseTo(24, 5);
     expect(points[breakIndex + 1].ageMonths).toBe(24);

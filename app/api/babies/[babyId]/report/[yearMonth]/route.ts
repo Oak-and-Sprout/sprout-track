@@ -503,6 +503,7 @@ async function handleGet(req: NextRequest, authContext: AuthResult): Promise<Nex
       measurement: point.measurement,
       measurementDate: point.measurementDate,
       percentile: point.percentile,
+      referenceTransition: point.referenceTransition,
     }));
 
     return { points, unit: displayUnit };

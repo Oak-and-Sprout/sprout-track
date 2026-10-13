@@ -6,6 +6,11 @@ const AGE_MATCH_EPSILON_MONTHS = 1e-9;
 
 export type GrowthReferenceMeasurement = 'weight' | 'length' | 'head_circumference';
 
+export interface GrowthReferenceTransition {
+  labelKey: string;
+  descriptionKey: string;
+}
+
 export interface GrowthReferenceRow {
   ageMonths: number;
   l: number;
@@ -40,6 +45,8 @@ export interface GrowthReferenceSegment {
    * Leave false/undefined when adjacent datasets represent a continuous curve.
    */
   breakAfter?: boolean;
+  /** User-facing explanation for a meaningful discontinuity at this segment's end. */
+  transitionAfter?: GrowthReferenceTransition;
   rows: readonly GrowthReferenceRow[];
 }
 
@@ -71,6 +78,8 @@ export interface GrowthReferenceChartPoint {
   percentile?: number;
   /** Internal rendering marker: percentile lines must break at dataset transitions. */
   referenceBreak?: true;
+  /** User-facing metadata explaining why this reference break exists. */
+  referenceTransition?: GrowthReferenceTransition;
 }
 
 const INTERPOLATED_FIELDS = [
@@ -152,6 +161,10 @@ export function createGrowthReferenceSegments(
         effectiveFromMonths: 0,
         effectiveToMonths: CDC_CHILD_REFERENCE_START_MONTHS,
         breakAfter: true,
+        transitionAfter: {
+          labelKey: 'Length → standing height',
+          descriptionKey: 'At 24 months, CDC switches from recumbent length to standing height; standing height is typically about 0.8 cm lower.',
+        },
         rows: primaryRows,
       },
       {
@@ -355,7 +368,11 @@ export function buildGrowthReferenceChartPoints(options: {
           points.push(referenceRowToChartPoint(outgoingRow, convertReferenceValue));
         }
       }
-      points.push({ ageMonths: boundary, referenceBreak: true });
+      points.push({
+        ageMonths: boundary,
+        referenceBreak: true,
+        referenceTransition: segment.transitionAfter,
+      });
     }
   }
 

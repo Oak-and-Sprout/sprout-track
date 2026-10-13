@@ -806,6 +806,10 @@ export interface GrowthChartPoint {
   measurement?: number;
   measurementDate?: string;
   percentile?: number;
+  referenceTransition?: {
+    labelKey: string;
+    descriptionKey: string;
+  };
 }
 
 export interface GrowthMetric {
