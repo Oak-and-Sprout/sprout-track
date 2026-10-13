@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, copyFileSync, chmodSync, rmSync } from 'fs';
+import { existsSync, readFileSync, mkdtempSync, mkdirSync, writeFileSync, copyFileSync, chmodSync, rmSync } from 'fs';
 import { spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import path from 'path';
@@ -8,9 +8,13 @@ import path from 'path';
  * Guards for the bare-metal deployment chain (deployment.sh -> update.sh -> service.sh),
  * which st-guardian runs non-interactively via POST /update.
  */
-const updateSh = readFileSync(path.join(process.cwd(), 'scripts/update.sh'), 'utf-8');
+const updateShPath = path.join(process.cwd(), 'scripts/update.sh');
+// .dockerignore keeps the bare-metal scripts and .git out of the Docker image, so
+// there is nothing to guard when the suite runs inside a container.
+const bareMetal = existsSync(updateShPath) ? describe : describe.skip;
+const updateSh = existsSync(updateShPath) ? readFileSync(updateShPath, 'utf-8') : '';
 
-describe('update.sh', () => {
+bareMetal('update.sh', () => {
   it('applies migrations with prisma migrate deploy, never migrate dev', () => {
     // migrate dev offers to reset (wipe) the DB on drift in a terminal and refuses to run
     // non-interactively, which is how st-guardian invokes this script.
@@ -40,7 +44,7 @@ describe('update.sh', () => {
   });
 });
 
-describe('deployment scripts are executable in git', () => {
+bareMetal('deployment scripts are executable in git', () => {
   // deployment.sh/backup.sh/update.sh call each other directly ("$SCRIPT_DIR/service.sh"), so a
   // script checked out as 0644 fails with "Permission denied" (servers with core.fileMode=false
   // can't rely on a local chmod surviving a pull).
@@ -54,7 +58,7 @@ describe('deployment scripts are executable in git', () => {
   });
 });
 
-describe('service.sh exit codes', () => {
+bareMetal('service.sh exit codes', () => {
   let root: string;
   const run = (action: string, sudoExit: number) =>
     spawnSync('bash', [path.join(root, 'scripts/service.sh'), action], {
