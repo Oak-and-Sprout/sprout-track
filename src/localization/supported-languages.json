@@ -1,5 +1,6 @@
 [
   { "code": "en", "name": "English", "abbreviation": "EN" },
+  { "code": "en-GB", "name": "English (UK)", "abbreviation": "EN-GB" },
   { "code": "de", "name": "Deutsch", "abbreviation": "DE" },
   { "code": "es", "name": "Español", "abbreviation": "ES" },
   { "code": "fr", "name": "Français", "abbreviation": "FR" },
