@@ -131,6 +131,24 @@ async function handlePut(req: NextRequest, authContext: AuthResult) {
     delete data.medicineId;
     delete data.caretakerId;
 
+    // Allow switching the log to another medicine/supplement, but only one that
+    // belongs to the caller's family (#299)
+    if (body.medicineId && body.medicineId !== existingLog.medicineId) {
+      const medicine = await prisma.medicine.findFirst({
+        where: { id: body.medicineId, familyId: userFamilyId, deletedAt: null },
+      });
+      if (!medicine) {
+        return NextResponse.json<ApiResponse<MedicineLogResponse>>(
+          {
+            success: false,
+            error: 'Medicine not found or access denied',
+          },
+          { status: 404 }
+        );
+      }
+      data.medicineId = body.medicineId;
+    }
+
     const medicineLog = await prisma.medicineLog.update({
       where: { id },
       data,
