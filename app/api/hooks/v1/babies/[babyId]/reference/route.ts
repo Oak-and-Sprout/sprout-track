@@ -28,7 +28,7 @@ const FEED_TYPES = [
 async function getMedicines(familyId: string, isSupplement: boolean = false) {
   const medicines = await prisma.medicine.findMany({
     where: { familyId, deletedAt: null, active: true, isSupplement },
-    select: { id: true, name: true, typicalDoseSize: true, unitAbbr: true, isSupplement: true },
+    select: { id: true, name: true, typicalDoseSize: true, unitAbbr: true, doseMinTime: true, isSupplement: true },
     orderBy: { name: 'asc' },
   });
   return medicines;

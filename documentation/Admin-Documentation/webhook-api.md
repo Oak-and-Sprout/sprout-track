@@ -794,10 +794,10 @@ curl -s \
 {
   "data": {
     "medicines": [
-      { "id": "...", "name": "Infant Tylenol", "typicalDoseSize": 1.25, "unitAbbr": "ML", "isSupplement": false }
+      { "id": "...", "name": "Infant Tylenol", "typicalDoseSize": 1.25, "unitAbbr": "ML", "doseMinTime": "00:04:00", "isSupplement": false }
     ],
     "supplements": [
-      { "id": "...", "name": "Vitamin D Drops", "typicalDoseSize": 1, "unitAbbr": "ML", "isSupplement": true }
+      { "id": "...", "name": "Vitamin D Drops", "typicalDoseSize": 1, "unitAbbr": "ML", "doseMinTime": null, "isSupplement": true }
     ],
     "sleepLocations": ["Bassinet", "Stroller", "Crib", "Car Seat", "Parents Room", "Contact", "Other"],
     "playCategories": ["Blocks", "Reading", "Sensory Play"],
@@ -826,6 +826,8 @@ curl -s \
   }
 }
 ```
+
+`doseMinTime` on medicines and supplements is the minimum time between doses as `DD:HH:MM` (e.g. `00:04:00` = 4 hours), or `null` if none is set. Together with the last medicine activity it lets an integration show when the next dose is allowed.
 
 `foods` is the family's food catalog (deleted foods excluded, sorted by name), which is what `POST` type `food` matches `foodName` against and what `foodId` must come from.
 

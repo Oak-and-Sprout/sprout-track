@@ -159,6 +159,32 @@ describe('hooks reference route', () => {
     });
   });
 
+  describe('medicine reference types (#298)', () => {
+    it('includes doseMinTime so clients can tell when the next dose is allowed', async () => {
+      const tylenol = { id: 'med-1', name: 'Infant Tylenol', typicalDoseSize: 1.25, unitAbbr: 'ML', doseMinTime: '00:04:00', isSupplement: false };
+      mocks.prisma.medicine.findMany.mockResolvedValue([tylenol]);
+
+      const response = await GET(getRequest('?type=medicines') as any, routeContext);
+      const payload = await json(response);
+
+      expect(response.status).toBe(200);
+      expect(payload.data).toEqual({ medicines: [tylenol] });
+      expect(mocks.prisma.medicine.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { familyId: 'family-1', deletedAt: null, active: true, isSupplement: false },
+        select: expect.objectContaining({ doseMinTime: true }),
+      }));
+    });
+
+    it('selects doseMinTime for supplements too', async () => {
+      await GET(getRequest('?type=supplements') as any, routeContext);
+
+      expect(mocks.prisma.medicine.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ isSupplement: true }),
+        select: expect.objectContaining({ doseMinTime: true }),
+      }));
+    });
+  });
+
   describe('sleep-locations dedup', () => {
     it('collapses a legacy underscore token onto its display-cased default (item 5)', async () => {
       mocks.prisma.sleepLog.findMany.mockResolvedValue([{ location: 'CAR_SEAT' }]);
