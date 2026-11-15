@@ -18,6 +18,26 @@ const translationFiles = fs.readdirSync(TRANSLATIONS_DIR).filter((file) => file.
 const reference = read('en.json');
 const referenceKeys = Object.keys(reference);
 
+/**
+ * American spellings/terms that must not appear in en-GB values.
+ * Deliberately substring-based where American forms can never appear inside the
+ * British replacement (favourite never contains 'favor'); word-bounded where a
+ * British word does contain the American form (catalogue > catalog, subscribe > crib).
+ */
+const AMERICAN_RESIDUE: RegExp[] = [
+  /diaper/i,
+  /stroller/i,
+  /crib/i,
+  /color/i,
+  /gray/i,
+  /favor/i,
+  /customiz|organiz|recogniz|categoriz/i,
+  /centimeter|milliliter/i,
+  /catalog/i,
+  /trash/i,
+  /daycare/i,
+];
+
 /** Placeholders such as {babyName} must survive translation untouched. */
 const placeholders = (value: string): string[] =>
   Array.from(value.matchAll(/\{[^}]*\}/g)).map((match) => match[0]).sort();
@@ -49,8 +69,54 @@ describe('translation files', () => {
     expect(mismatched).toEqual([]);
   });
 
-  it('hi.json translates every key', () => {
-    const hindi = read('hi.json');
-    expect(referenceKeys.filter((key) => !hindi[key].trim())).toEqual([]);
+  it.each(['hi.json', 'en-gb.json'])('%s translates every key', (file) => {
+    const translations = read(file);
+    expect(referenceKeys.filter((key) => !translations[key].trim())).toEqual([]);
+  });
+});
+
+describe('en-GB locale', () => {
+  const enGB = read('en-gb.json');
+
+  it('is registered as a supported language', () => {
+    expect(supportedCodes).toContain('en-gb');
+  });
+
+  it('has no extra keys beyond en.json', () => {
+    expect(Object.keys(enGB).filter((key) => !(key in reference))).toEqual([]);
+  });
+
+  it('uses regional terms for the intended value overrides', () => {
+    expect(enGB['Diaper']).toBe('Nappy');
+    expect(enGB['Diapers']).toBe('Nappies');
+    expect(enGB['Diaper logged']).toBe('Nappy logged');
+    expect(enGB['Stroller']).toBe('Pram');
+    expect(enGB['Crib']).toBe('Cot');
+    // Bassinet is standard Australian English and stays; this locale serves AU users too.
+    expect(enGB['Bassinet']).toBe('Bassinet');
+    expect(enGB['Color']).toBe('Colour');
+    expect(enGB['Gray']).toBe('Grey');
+    expect(enGB['unit.name.Centimeters']).toBe('Centimetres');
+    expect(enGB['unit.name.Cubic Centimeters']).toBe('Cubic Centimetres');
+    expect(enGB['unit.name.Milliliters']).toBe('Millilitres');
+    expect(enGB['Customize Notifications']).toBe('Customise Notifications');
+    expect(enGB['Trash']).toBe('Bin');
+    expect(
+      enGB[
+        'Sprout Track speaks thirteen languages, and every caretaker picks their own. Mom logs in English, oma logs in Deutsch. Same timeline, same entries.'
+      ]
+    ).toBe(
+      'Sprout Track speaks thirteen languages, and every caretaker picks their own. Mum logs in English, oma logs in Deutsch. Same timeline, same entries.'
+    );
+  });
+
+  it('keeps American vocabulary out of translated values', () => {
+    const hits: string[] = [];
+    for (const key of referenceKeys) {
+      for (const pattern of AMERICAN_RESIDUE) {
+        if (pattern.test(enGB[key])) hits.push(`${key}: "${enGB[key]}"`);
+      }
+    }
+    expect(hits).toEqual([]);
   });
 });
