@@ -74,4 +74,11 @@ function formatDuration(seconds) {
   return Math.floor(m / 60) + 'h' + (rm ? ' ' + rm + 'm' : '');
 }
 
-module.exports = { parseOffset, dayWindow, uptimePct, fillDays, groupIncidents, formatDuration };
+// Colour of the headline percentage: green from 99.9% up, yellow from 99%, red below.
+// Also inlined into the status page via toString(), so it must stay self-contained
+function overallColor(pct) {
+  if (pct >= 99.9) return '#0f766e';
+  return pct >= 99 ? '#eab308' : '#ef4444';
+}
+
+module.exports = { parseOffset, dayWindow, uptimePct, fillDays, groupIncidents, formatDuration, overallColor };

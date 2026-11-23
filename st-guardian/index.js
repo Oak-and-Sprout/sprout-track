@@ -7,7 +7,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const httpProxy = require('http-proxy-node16');
 const Database = require('better-sqlite3');
-const { parseOffset, dayWindow, uptimePct, fillDays, groupIncidents, formatDuration } = require('./uptime');
+const { parseOffset, dayWindow, uptimePct, fillDays, groupIncidents, formatDuration, overallColor } = require('./uptime');
 
 // =============================================================================
 // Configuration
@@ -1181,6 +1181,8 @@ function getStatusPage() {
   <script>
     ${formatDuration}
 
+    ${overallColor}
+
     function formatDate(iso) {
       const d = new Date(iso);
       return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -1202,9 +1204,7 @@ function getStatusPage() {
         const pctEl = document.getElementById('overallPct');
         pctEl.textContent = data.overall !== null ? data.overall + '%' : 'No data';
         if (data.overall !== null) {
-          if (data.overall < 99) pctEl.style.color = '#ef4444';
-          else if (data.overall < 100) pctEl.style.color = '#eab308';
-          else pctEl.style.color = '#0f766e';
+          pctEl.style.color = overallColor(data.overall);
         }
 
         // Bars

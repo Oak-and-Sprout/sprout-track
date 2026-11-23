@@ -5,7 +5,7 @@ import { join } from 'path';
 
 // st-guardian is a standalone CommonJS service, so load its helpers the way it does.
 const require = createRequire(import.meta.url);
-const { parseOffset, dayWindow, uptimePct, fillDays, groupIncidents, formatDuration } =
+const { parseOffset, dayWindow, uptimePct, fillDays, groupIncidents, formatDuration, overallColor } =
   require('../st-guardian/uptime.js');
 
 const INTERVAL = 30000;
@@ -93,6 +93,21 @@ describe('st-guardian uptime: formatDuration', () => {
 
   it('is self-contained so it can be inlined into the uptime page', () => {
     expect(new Function(`return (${formatDuration.toString()})(90)`)()).toBe('1m 30s');
+  });
+});
+
+describe('st-guardian uptime: overallColor', () => {
+  it('is green from 99.9% up, yellow from 99%, red below', () => {
+    expect(overallColor(100)).toBe('#0f766e');
+    expect(overallColor(99.98)).toBe('#0f766e');
+    expect(overallColor(99.9)).toBe('#0f766e');
+    expect(overallColor(99.89)).toBe('#eab308');
+    expect(overallColor(99)).toBe('#eab308');
+    expect(overallColor(98.99)).toBe('#ef4444');
+  });
+
+  it('is self-contained so it can be inlined into the status page', () => {
+    expect(new Function(`return (${overallColor.toString()})(99.98)`)()).toBe('#0f766e');
   });
 });
 
