@@ -106,6 +106,14 @@ describe('st-guardian routes', () => {
     expect(guardian).toContain("'GET /uptime': handleUptime");
   });
 
+  it('does not stop the app when guardian itself shuts down', () => {
+    const start = guardian.indexOf('function shutdown(signal)');
+    const shutdown = guardian.slice(start, guardian.indexOf("process.on('SIGTERM'"));
+    expect(start).toBeGreaterThan(-1);
+    expect(shutdown).not.toContain('service.sh');
+    expect(shutdown).not.toContain('execScript');
+  });
+
   it('the app reads guardian version info from the JSON route, not the HTML page', () => {
     expect(appRoute).toContain("targetPath = '/uptime'");
     expect(appRoute).not.toContain("targetPath = '/status'");

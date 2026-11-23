@@ -1336,29 +1336,27 @@ server.on('upgrade', (req, socket, head) => {
 // Graceful Shutdown
 // =============================================================================
 
-async function shutdown(signal) {
+// Guardian stopping must not take the app down with it: a guardian restart (e.g. after an
+// update that changed guardian) would otherwise be an outage, and when the unit is ordered
+// After= the app, asking systemd to stop the app from here deadlocks until the stop timeout.
+function shutdown(signal) {
   log(`Received ${signal} — shutting down`);
 
   if (healthIntervalId) {
     clearInterval(healthIntervalId);
   }
 
-  if (!PROXY_ONLY && serviceName) {
-    log('Stopping application service...');
-    await execScript(path.join(CONFIG.scriptsDir, 'service.sh'), ['stop']).catch(() => {});
-  }
-
-  server.close(() => {
+  const exit = (msg) => {
     try { db.close(); } catch (e) {}
-    log('Server closed');
+    log(msg);
     process.exit(0);
-  });
+  };
 
-  // Force exit after 10 seconds
-  setTimeout(() => {
-    log('Forcing exit');
-    process.exit(1);
-  }, 10000);
+  server.close(() => exit('Server closed'));
+  if (server.closeIdleConnections) server.closeIdleConnections();
+
+  // Proxied WebSockets and in-flight requests would otherwise hold the process open
+  setTimeout(() => exit('Open connections remain — exiting anyway'), 5000);
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));

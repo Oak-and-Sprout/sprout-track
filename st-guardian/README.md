@@ -26,6 +26,7 @@ ST_GUARDIAN_KEY=your-secret-key ST_APP_DIR=/path/to/sprout-track node index.js
 - Guardian's own routes (`/status`, `/uptime`, `/health`, `/maintenance`, `/update`, `/logs`) are intercepted before reaching the proxy
 - In maintenance mode, a branded status page is served instead of proxying
 - Health checks ping the app periodically; if it goes down, guardian attempts automatic restart
+- Stopping or restarting guardian leaves the app running; it only stops proxying to it
 - Docker-aware: when running in Docker, update/restart/log features are disabled (proxy + maintenance only)
 - Can run on a different machine than the app (see [Remote Mode](#remote-mode)) so outages of the app server itself are measured
 - `/status` is the public status page with a 60-day uptime history. Days are bucketed in the viewer's timezone, and each failed health check counts as one health interval of downtime
