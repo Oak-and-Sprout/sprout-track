@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createRequire } from 'module';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 // st-guardian is a standalone CommonJS service, so load its helpers the way it does.
 const require = createRequire(import.meta.url);
@@ -91,5 +93,21 @@ describe('st-guardian uptime: formatDuration', () => {
 
   it('is self-contained so it can be inlined into the uptime page', () => {
     expect(new Function(`return (${formatDuration.toString()})(90)`)()).toBe('1m 30s');
+  });
+});
+
+describe('st-guardian routes', () => {
+  const guardian = readFileSync(join(__dirname, '..', 'st-guardian', 'index.js'), 'utf8');
+  const appRoute = readFileSync(join(__dirname, '..', 'app', 'api', 'guardian', 'update', 'route.ts'), 'utf8');
+
+  it('serves the status page at /status and the JSON summary at /uptime', () => {
+    expect(guardian).toContain("'GET /status': handleStatusPage");
+    expect(guardian).toContain("'GET /status/data': handleStatusData");
+    expect(guardian).toContain("'GET /uptime': handleUptime");
+  });
+
+  it('the app reads guardian version info from the JSON route, not the HTML page', () => {
+    expect(appRoute).toContain("targetPath = '/uptime'");
+    expect(appRoute).not.toContain("targetPath = '/status'");
   });
 });

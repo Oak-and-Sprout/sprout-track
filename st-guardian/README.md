@@ -23,12 +23,12 @@ ST_GUARDIAN_KEY=your-secret-key ST_APP_DIR=/path/to/sprout-track node index.js
 ## How It Works
 
 - Listens on port 3001 (configurable) and proxies all requests to the Next.js app on port 3000
-- Management routes (`/status`, `/health`, `/maintenance`, `/update`, `/logs`) are intercepted before reaching the proxy
+- Guardian's own routes (`/status`, `/uptime`, `/health`, `/maintenance`, `/update`, `/logs`) are intercepted before reaching the proxy
 - In maintenance mode, a branded status page is served instead of proxying
 - Health checks ping the app periodically; if it goes down, guardian attempts automatic restart
 - Docker-aware: when running in Docker, update/restart/log features are disabled (proxy + maintenance only)
 - Can run on a different machine than the app (see [Remote Mode](#remote-mode)) so outages of the app server itself are measured
-- `/uptime` shows a 60-day history. Days are bucketed in the viewer's timezone, and each failed health check counts as one health interval of downtime
+- `/status` is the public status page with a 60-day uptime history. Days are bucketed in the viewer's timezone, and each failed health check counts as one health interval of downtime
 
 ## Environment Variables
 
@@ -48,8 +48,12 @@ ST_GUARDIAN_KEY=your-secret-key ST_APP_DIR=/path/to/sprout-track node index.js
 ### Public Endpoints
 
 **GET /status**
+
+The public status page (HTML): current state, 60-day uptime history, and recent incidents. Its data comes from `GET /status/data?tz=<minutes east of UTC>`.
+
+**GET /uptime**
 ```bash
-curl http://localhost:3001/status
+curl http://localhost:3001/uptime
 ```
 Returns: `{ "status": "up|down|maintenance", "version": "...", "guardianVersion": "1.1.0", "uptime": 3600, "dockerMode": false, "remoteMode": false }`
 

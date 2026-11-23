@@ -243,7 +243,7 @@ systemctl status st-guardian --no-pager || true
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo -e "  Status URL:  ${TEAL}http://localhost:${ST_GUARDIAN_PORT}/status${NC}"
+echo -e "  Status page: ${TEAL}http://localhost:${ST_GUARDIAN_PORT}/status${NC}"
 echo -e "  Health URL:  ${TEAL}http://localhost:${ST_GUARDIAN_PORT}/health${NC}"
 echo ""
 echo -e "  Guardian Key: ${YELLOW}${ST_GUARDIAN_KEY}${NC}"

@@ -456,7 +456,7 @@ function getMaintenancePage(message) {
 </head>
 <body>
   <div class="card">
-    <img class="logo" src="/uptime/logo.png" alt="" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='block'">
+    <img class="logo" src="/status/logo.png" alt="" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='block'">
     <div class="logo-fallback hidden" id="logoFallback">🌱</div>
     <h1 id="pageTitle">Sprout Track</h1>
     <p class="message" id="pageMessage">${escapeHtml(displayMessage)}</p>
@@ -630,7 +630,7 @@ function escapeHtml(str) {
 // Route Handlers
 // =============================================================================
 
-function handleStatus(req, res) {
+function handleUptime(req, res) {
   let status = 'up';
   if (state.maintenance) status = 'maintenance';
   else if (!state.appUp) status = 'down';
@@ -916,7 +916,7 @@ async function handleVersionCheck(req, res) {
 }
 
 // =============================================================================
-// Uptime Page
+// Status Page
 // =============================================================================
 
 function handleLogo(req, res) {
@@ -933,7 +933,7 @@ function handleLogo(req, res) {
   res.end(logoBuffer);
 }
 
-function handleUptimeData(req, res) {
+function handleStatusData(req, res) {
   // Bucket days in the viewer's timezone so the bars line up with the incident times
   // (shown in local time) and with "Today". One window drives bars, total and incidents.
   const offset = parseOffset(parseUrl(req).searchParams.get('tz'));
@@ -967,17 +967,17 @@ function handleUptimeData(req, res) {
   });
 }
 
-function handleUptime(req, res) {
-  sendHtml(res, 200, getUptimePage());
+function handleStatusPage(req, res) {
+  sendHtml(res, 200, getStatusPage());
 }
 
-function getUptimePage() {
+function getStatusPage() {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprout Track - Uptime</title>
+  <title>Sprout Track - Status</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -1152,7 +1152,7 @@ function getUptimePage() {
 </head>
 <body>
   <div class="header">
-    <img src="/uptime/logo.png" alt="Sprout Track" onerror="this.style.display='none'">
+    <img src="/status/logo.png" alt="Sprout Track" onerror="this.style.display='none'">
     <h1>Sprout Track</h1>
     <p>Service Status</p>
   </div>
@@ -1188,7 +1188,7 @@ function getUptimePage() {
 
     async function loadData() {
       try {
-        const res = await fetch('/uptime/data?tz=' + (-new Date().getTimezoneOffset()));
+        const res = await fetch('/status/data?tz=' + (-new Date().getTimezoneOffset()));
         const data = await res.json();
 
         // Status banner
@@ -1277,11 +1277,11 @@ proxy.on('error', (err, req, res) => {
 });
 
 const ROUTES = {
-  'GET /status': handleStatus,
-  'GET /health': handleHealth,
+  'GET /status': handleStatusPage,
+  'GET /status/data': handleStatusData,
+  'GET /status/logo.png': handleLogo,
   'GET /uptime': handleUptime,
-  'GET /uptime/data': handleUptimeData,
-  'GET /uptime/logo.png': handleLogo,
+  'GET /health': handleHealth,
   'GET /version': handleVersionCheck,
   'POST /maintenance': { handler: handleMaintenanceEnable, auth: true },
   'DELETE /maintenance': { handler: handleMaintenanceDisable, auth: true },

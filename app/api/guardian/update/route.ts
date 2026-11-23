@@ -33,7 +33,7 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
 
   switch (endpoint) {
     case 'status':
-      targetPath = '/status';
+      targetPath = '/uptime';
       break;
     case 'update-status':
       targetPath = '/update/status';
@@ -42,7 +42,7 @@ async function getHandler(req: NextRequest): Promise<NextResponse<ApiResponse<an
       targetPath = '/version';
       break;
     default:
-      targetPath = '/status';
+      targetPath = '/uptime';
   }
 
   try {
