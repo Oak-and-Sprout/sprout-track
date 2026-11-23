@@ -27,12 +27,15 @@ ST_GUARDIAN_KEY=your-secret-key ST_APP_DIR=/path/to/sprout-track node index.js
 - In maintenance mode, a branded status page is served instead of proxying
 - Health checks ping the app periodically; if it goes down, guardian attempts automatic restart
 - Docker-aware: when running in Docker, update/restart/log features are disabled (proxy + maintenance only)
+- Can run on a different machine than the app (see [Remote Mode](#remote-mode)) so outages of the app server itself are measured
+- `/uptime` shows a 60-day history. Days are bucketed in the viewer's timezone, and each failed health check counts as one health interval of downtime
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `ST_GUARDIAN_PORT` | `3001` | Port guardian listens on |
+| `ST_APP_HOST` | `127.0.0.1` | Host the app runs on. Any non-loopback value enables [Remote Mode](#remote-mode) |
 | `ST_APP_PORT` | `3000` | Port the Next.js app runs on |
 | `ST_GUARDIAN_KEY` | *(required)* | API key for authenticated management endpoints |
 | `ST_HEALTH_INTERVAL` | `30000` | Health check interval in milliseconds |
@@ -48,7 +51,7 @@ ST_GUARDIAN_KEY=your-secret-key ST_APP_DIR=/path/to/sprout-track node index.js
 ```bash
 curl http://localhost:3001/status
 ```
-Returns: `{ "status": "up|down|maintenance", "version": "...", "guardianVersion": "1.0.0", "uptime": 3600, "dockerMode": false }`
+Returns: `{ "status": "up|down|maintenance", "version": "...", "guardianVersion": "1.1.0", "uptime": 3600, "dockerMode": false, "remoteMode": false }`
 
 **GET /health**
 ```bash
@@ -103,6 +106,20 @@ When `/.dockerenv` is detected, the following endpoints return 403:
 - `GET /logs`
 
 Auto-restart and process management are also disabled. Guardian operates as a proxy and maintenance page server only.
+
+## Remote Mode
+
+A guardian on the same machine as the app cannot see that machine going down: it stops recording along with it, so reboots and host outages never reach the uptime page. Run guardian on a second machine to measure them.
+
+Set `ST_APP_HOST` to the app server's address (the setup script asks for it). Only the `st-guardian` folder is needed on the monitoring machine, not the whole app.
+
+In remote mode guardian proxies, health checks, records uptime, and serves the maintenance page, but like Docker mode it does not auto-restart the app and `POST /update` and `GET /logs` return 403, because it has no access to the app's scripts or journal. To keep in-app updates and auto-restart, leave a local guardian running on the app server and point the remote one at it:
+
+```
+reverse proxy -> remote guardian (ST_APP_HOST=<app server>, ST_APP_PORT=3001) -> local guardian :3001 -> app :3000
+```
+
+The app keeps talking to its local guardian on `127.0.0.1`, so nothing changes in the app's `.env`.
 
 ## Uninstall
 

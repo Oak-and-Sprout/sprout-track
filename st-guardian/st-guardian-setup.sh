@@ -98,17 +98,29 @@ fi
 echo -e "Service will run as user: ${GREEN}${RUN_USER}${NC}"
 echo ""
 
-# Prompt for ST_APP_DIR
-DEFAULT_APP_DIR="$(dirname "$GUARDIAN_DIR")"
-read -p "Sprout Track installation directory [$DEFAULT_APP_DIR]: " ST_APP_DIR
-ST_APP_DIR="${ST_APP_DIR:-$DEFAULT_APP_DIR}"
+# Prompt for the app host. Anything but this machine puts guardian in remote mode:
+# it proxies and monitors the app but cannot restart, update, or read logs for it.
+read -p "Host Sprout Track runs on [127.0.0.1]: " ST_APP_HOST
+ST_APP_HOST="${ST_APP_HOST:-127.0.0.1}"
+REMOTE=1
+case "$ST_APP_HOST" in 127.0.0.1|localhost|::1) REMOTE=0 ;; esac
 
-# Validate
-if [ ! -f "$ST_APP_DIR/package.json" ]; then
-    echo -e "${RED}Error: package.json not found in $ST_APP_DIR${NC}"
-    exit 1
+if [ "$REMOTE" = "1" ]; then
+    ST_APP_DIR="$GUARDIAN_DIR"
+    echo -e "Remote mode: monitoring ${GREEN}${ST_APP_HOST}${NC}"
+else
+    # Prompt for ST_APP_DIR
+    DEFAULT_APP_DIR="$(dirname "$GUARDIAN_DIR")"
+    read -p "Sprout Track installation directory [$DEFAULT_APP_DIR]: " ST_APP_DIR
+    ST_APP_DIR="${ST_APP_DIR:-$DEFAULT_APP_DIR}"
+
+    # Validate
+    if [ ! -f "$ST_APP_DIR/package.json" ]; then
+        echo -e "${RED}Error: package.json not found in $ST_APP_DIR${NC}"
+        exit 1
+    fi
+    echo -e "App directory: ${GREEN}${ST_APP_DIR}${NC}"
 fi
-echo -e "App directory: ${GREEN}${ST_APP_DIR}${NC}"
 
 # Prompt for ports
 read -p "Guardian port [3001]: " ST_GUARDIAN_PORT
@@ -130,7 +142,8 @@ ST_HEALTH_INTERVAL="${ST_HEALTH_INTERVAL:-30000}"
 
 echo ""
 echo "Configuration:"
-echo "  App directory:    $ST_APP_DIR"
+echo "  App host:         $ST_APP_HOST"
+[ "$REMOTE" = "1" ] || echo "  App directory:    $ST_APP_DIR"
 echo "  Guardian port:    $ST_GUARDIAN_PORT"
 echo "  App port:         $ST_APP_PORT"
 echo "  Health interval:  ${ST_HEALTH_INTERVAL}ms"
@@ -155,7 +168,9 @@ if [ -f "$ST_APP_DIR/.env" ]; then
 fi
 
 # Configure sudoers for service management
-if [ -n "$SERVICE_NAME" ]; then
+if [ "$REMOTE" = "1" ]; then
+    echo "Remote mode: skipping service management permissions."
+elif [ -n "$SERVICE_NAME" ]; then
     echo -e "${TEAL}Configuring sudo permissions for service management...${NC}"
     SYSTEMCTL_PATH=$(which systemctl)
     cat > /etc/sudoers.d/st-guardian << SUDOERS
@@ -196,6 +211,7 @@ ExecStart=${NODE_PATH} index.js
 Restart=always
 RestartSec=5
 Environment=ST_GUARDIAN_PORT=${ST_GUARDIAN_PORT}
+Environment=ST_APP_HOST=${ST_APP_HOST}
 Environment=ST_APP_PORT=${ST_APP_PORT}
 Environment=ST_GUARDIAN_KEY=${ST_GUARDIAN_KEY}
 Environment=ST_HEALTH_INTERVAL=${ST_HEALTH_INTERVAL}
@@ -234,7 +250,7 @@ echo -e "  Guardian Key: ${YELLOW}${ST_GUARDIAN_KEY}${NC}"
 echo -e "  ${RED}Save this key! It's required for management endpoints.${NC}"
 echo ""
 echo -e "  ${YELLOW}Reminder:${NC} Update your Nginx/reverse proxy to point"
-echo -e "  at port ${ST_GUARDIAN_PORT} instead of ${ST_APP_PORT}."
+echo -e "  at this machine on port ${ST_GUARDIAN_PORT} instead of the app on port ${ST_APP_PORT}."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "To uninstall: sudo bash $0 --uninstall"

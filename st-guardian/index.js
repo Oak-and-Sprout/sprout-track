@@ -7,6 +7,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const httpProxy = require('http-proxy-node16');
 const Database = require('better-sqlite3');
+const { parseOffset, dayWindow, uptimePct, fillDays, groupIncidents, formatDuration } = require('./uptime');
 
 // =============================================================================
 // Configuration
@@ -14,6 +15,7 @@ const Database = require('better-sqlite3');
 
 const CONFIG = {
   guardianPort: parseInt(process.env.ST_GUARDIAN_PORT || '3001', 10),
+  appHost: process.env.ST_APP_HOST || '127.0.0.1',
   appPort: parseInt(process.env.ST_APP_PORT || '3000', 10),
   guardianKey: process.env.ST_GUARDIAN_KEY || '',
   healthInterval: parseInt(process.env.ST_HEALTH_INTERVAL || '30000', 10),
@@ -22,12 +24,18 @@ const CONFIG = {
   logBuffer: parseInt(process.env.ST_LOG_BUFFER || '500', 10),
 };
 
-const GUARDIAN_VERSION = '1.0.0';
+const GUARDIAN_VERSION = '1.1.0';
 const DOCKER_MODE = fs.existsSync('/.dockerenv');
+// Remote mode: the app lives on another host, so guardian can watch and proxy it but
+// cannot run its scripts, read its logs, or see its files.
+const REMOTE_MODE = !['127.0.0.1', 'localhost', '::1'].includes(CONFIG.appHost);
+const PROXY_ONLY = DOCKER_MODE || REMOTE_MODE;
+const MODE_NAME = DOCKER_MODE ? 'Docker' : REMOTE_MODE ? 'remote' : 'standalone';
+const APP_URL = `http://${CONFIG.appHost.includes(':') ? `[${CONFIG.appHost}]` : CONFIG.appHost}:${CONFIG.appPort}`;
 
 // Read app version from package.json
 let appVersion = 'unknown';
-try {
+if (!REMOTE_MODE) try {
   const pkg = JSON.parse(fs.readFileSync(path.join(CONFIG.appDir, 'package.json'), 'utf8'));
   appVersion = pkg.version || 'unknown';
 } catch (e) {
@@ -71,6 +79,18 @@ try {
   logoBuffer = fs.readFileSync(path.join(CONFIG.appDir, 'public', 'sprout-256.png'));
 } catch (e) {
   // Logo won't be available
+}
+
+// Remote mode has no app files on disk, so take the logo from the app itself
+function fetchLogo() {
+  const req = http.get(`${APP_URL}/sprout-256.png`, { timeout: 5000 }, (res) => {
+    if (res.statusCode !== 200) return res.resume();
+    const chunks = [];
+    res.on('data', (chunk) => chunks.push(chunk));
+    res.on('end', () => { logoBuffer = Buffer.concat(chunks); });
+  });
+  req.on('error', () => {});
+  req.on('timeout', () => req.destroy());
 }
 
 // =============================================================================
@@ -214,7 +234,7 @@ function readLogs(lines) {
 function healthCheck() {
   return new Promise((resolve) => {
     const req = http.get(
-      `http://127.0.0.1:${CONFIG.appPort}/`,
+      `${APP_URL}/`,
       { timeout: 5000 },
       (res) => {
         res.resume(); // consume response
@@ -232,8 +252,8 @@ function healthCheck() {
 let healthIntervalId = null;
 
 function startHealthMonitor() {
-  if (DOCKER_MODE) {
-    // In Docker mode, still monitor health but don't auto-restart
+  if (PROXY_ONLY) {
+    // In Docker and remote mode, still monitor health but don't auto-restart
     healthIntervalId = setInterval(async () => {
       const healthy = await healthCheck();
       state.appUp = healthy;
@@ -622,6 +642,7 @@ function handleStatus(req, res) {
     uptime: Math.floor((Date.now() - state.startTime) / 1000),
     lastUpdate: state.updateJob ? state.updateJob.completedAt : null,
     dockerMode: DOCKER_MODE,
+    remoteMode: REMOTE_MODE,
   });
 }
 
@@ -649,8 +670,8 @@ function handleMaintenanceDisable(req, res) {
 }
 
 async function handleUpdate(req, res) {
-  if (DOCKER_MODE) {
-    return sendJson(res, 403, { error: 'Update not available in Docker mode' });
+  if (PROXY_ONLY) {
+    return sendJson(res, 403, { error: `Update not available in ${MODE_NAME} mode` });
   }
 
   if (state.updateJob && state.updateJob.status === 'running') {
@@ -779,8 +800,8 @@ function handleUpdateStatus(req, res) {
 }
 
 async function handleLogs(req, res) {
-  if (DOCKER_MODE) {
-    return sendJson(res, 403, { error: 'Logs not available in Docker mode' });
+  if (PROXY_ONLY) {
+    return sendJson(res, 403, { error: `Logs not available in ${MODE_NAME} mode` });
   }
 
   const url = parseUrl(req);
@@ -900,6 +921,7 @@ async function handleVersionCheck(req, res) {
 
 function handleLogo(req, res) {
   if (!logoBuffer) {
+    if (REMOTE_MODE) fetchLogo(); // app may have been down at startup
     res.writeHead(404);
     return res.end('Logo not found');
   }
@@ -912,83 +934,37 @@ function handleLogo(req, res) {
 }
 
 function handleUptimeData(req, res) {
-  // Get per-day stats for last 60 days
-  const days = db.prepare(`
-    SELECT
-      date(timestamp) as date,
-      COUNT(*) as total,
-      SUM(status) as up
+  // Bucket days in the viewer's timezone so the bars line up with the incident times
+  // (shown in local time) and with "Today". One window drives bars, total and incidents.
+  const offset = parseOffset(parseUrl(req).searchParams.get('tz'));
+  const { dates, since } = dayWindow(Date.now(), offset, 60);
+
+  const rows = db.prepare(`
+    SELECT date(timestamp, ?) as date, COUNT(*) as total, SUM(status) as up
     FROM health_pings
-    WHERE timestamp >= datetime('now', '-60 days')
-    GROUP BY date(timestamp)
-    ORDER BY date(timestamp) ASC
-  `).all().map((row) => ({
-    date: row.date,
-    total: row.total,
-    up: row.up,
-    pct: row.total > 0 ? Math.round((row.up / row.total) * 10000) / 100 : 100,
-  }));
+    WHERE timestamp >= ?
+    GROUP BY 1
+  `).all(`${offset < 0 ? '' : '+'}${offset} minutes`, since);
 
-  // Fill in missing days with no data
-  const dayMap = new Map(days.map((d) => [d.date, d]));
-  const filledDays = [];
-  for (let i = 59; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    filledDays.push(dayMap.get(dateStr) || { date: dateStr, total: 0, up: 0, pct: null });
-  }
-
-  // Overall uptime
-  const totals = db.prepare(`
-    SELECT COUNT(*) as total, SUM(status) as up
-    FROM health_pings
-    WHERE timestamp >= datetime('now', '-60 days')
-  `).get();
-  const overall = totals.total > 0
-    ? Math.round((totals.up / totals.total) * 10000) / 100
-    : null;
-
-  // Incidents: consecutive down pings
   const downPings = db.prepare(`
     SELECT timestamp FROM health_pings
-    WHERE status = 0 AND timestamp >= datetime('now', '-60 days')
+    WHERE status = 0 AND timestamp >= ?
     ORDER BY timestamp ASC
-  `).all();
+  `).all(since).map((row) => row.timestamp);
 
-  const incidents = [];
-  if (downPings.length > 0) {
-    // Group consecutive pings (gap > 2x health interval = separate incident)
-    const maxGap = CONFIG.healthInterval * 2.5;
-    let start = new Date(downPings[0].timestamp + 'Z');
-    let end = start;
-
-    for (let i = 1; i < downPings.length; i++) {
-      const ts = new Date(downPings[i].timestamp + 'Z');
-      if (ts - end <= maxGap) {
-        end = ts;
-      } else {
-        incidents.push({
-          start: start.toISOString(),
-          end: end.toISOString(),
-          duration: Math.round((end - start) / 1000),
-        });
-        start = ts;
-        end = ts;
-      }
-    }
-    incidents.push({
-      start: start.toISOString(),
-      end: end.toISOString(),
-      duration: Math.round((end - start) / 1000),
-    });
-  }
+  const total = rows.reduce((sum, r) => sum + r.total, 0);
+  const up = rows.reduce((sum, r) => sum + r.up, 0);
 
   let currentStatus = 'up';
   if (state.maintenance) currentStatus = 'maintenance';
   else if (!state.appUp) currentStatus = 'down';
 
-  sendJson(res, 200, { days: filledDays, overall, incidents: incidents.reverse(), currentStatus });
+  sendJson(res, 200, {
+    days: fillDays(rows, dates),
+    overall: uptimePct(up, total),
+    incidents: groupIncidents(downPings, CONFIG.healthInterval),
+    currentStatus,
+  });
 }
 
 function handleUptime(req, res) {
@@ -1040,6 +1016,7 @@ function getUptimePage() {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
       background: white;
       border-radius: 12px;
       padding: 20px 24px;
@@ -1065,6 +1042,7 @@ function getUptimePage() {
       font-size: 28px;
       font-weight: 700;
       color: #0f766e;
+      white-space: nowrap;
     }
     .chart-section {
       background: white;
@@ -1094,7 +1072,7 @@ function getUptimePage() {
       border-radius: 2px;
       cursor: pointer;
       position: relative;
-      min-width: 4px;
+      min-width: 0;
       transition: opacity 0.15s;
     }
     .bar:hover { opacity: 0.8; }
@@ -1134,6 +1112,7 @@ function getUptimePage() {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
       padding: 12px 0;
       border-bottom: 1px solid #f1f5f9;
       font-size: 14px;
@@ -1147,6 +1126,15 @@ function getUptimePage() {
       padding: 2px 8px;
       border-radius: 4px;
       font-size: 13px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    @media (max-width: 480px) {
+      .bars { gap: 1px; }
+      .status-banner { padding: 16px; }
+      .status-label { font-size: 15px; }
+      .overall-pct { font-size: 22px; }
+      .chart-section, .incidents-section { padding: 16px; }
     }
     .no-incidents {
       text-align: center;
@@ -1191,15 +1179,7 @@ function getUptimePage() {
   </div>
   <div class="footer">Powered by ST-Guardian</div>
   <script>
-    function formatDuration(seconds) {
-      if (seconds < 60) return seconds + 's';
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      if (m < 60) return m + 'm ' + (s > 0 ? s + 's' : '');
-      const h = Math.floor(m / 60);
-      const rm = m % 60;
-      return h + 'h ' + (rm > 0 ? rm + 'm' : '');
-    }
+    ${formatDuration}
 
     function formatDate(iso) {
       const d = new Date(iso);
@@ -1208,7 +1188,7 @@ function getUptimePage() {
 
     async function loadData() {
       try {
-        const res = await fetch('/uptime/data');
+        const res = await fetch('/uptime/data?tz=' + (-new Date().getTimezoneOffset()));
         const data = await res.json();
 
         // Status banner
@@ -1262,7 +1242,7 @@ function getUptimePage() {
           incEl.innerHTML = data.incidents.map(inc =>
             '<div class="incident-row">' +
               '<div class="incident-time">' + formatDate(inc.start) +
-                (inc.duration > 0 ? ' — ' + formatDate(inc.end) : '') +
+                (inc.duration >= 60 ? ' — ' + formatDate(inc.end) : '') +
               '</div>' +
               '<span class="incident-duration">' + formatDuration(inc.duration || 0) + '</span>' +
             '</div>'
@@ -1285,7 +1265,7 @@ function getUptimePage() {
 // =============================================================================
 
 const proxy = httpProxy.createProxyServer({
-  target: `http://127.0.0.1:${CONFIG.appPort}`,
+  target: APP_URL,
   ws: true,
 });
 
@@ -1363,7 +1343,7 @@ async function shutdown(signal) {
     clearInterval(healthIntervalId);
   }
 
-  if (!DOCKER_MODE && serviceName) {
+  if (!PROXY_ONLY && serviceName) {
     log('Stopping application service...');
     await execScript(path.join(CONFIG.scriptsDir, 'service.sh'), ['stop']).catch(() => {});
   }
@@ -1389,22 +1369,23 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // =============================================================================
 
 (async function startup() {
-  log(`Starting st-guardian v${GUARDIAN_VERSION} in ${DOCKER_MODE ? 'Docker' : 'standalone'} mode`);
+  log(`Starting st-guardian v${GUARDIAN_VERSION} in ${MODE_NAME} mode`);
   log(`Guardian port: ${CONFIG.guardianPort}`);
-  log(`App port: ${CONFIG.appPort}`);
+  log(`App: ${APP_URL}`);
   log(`Health interval: ${CONFIG.healthInterval}ms`);
   log(`Scripts dir: ${CONFIG.scriptsDir}`);
   log(`App dir: ${CONFIG.appDir}`);
 
-  if (DOCKER_MODE) {
-    log('Docker mode: update, logs, and process management are disabled');
+  if (PROXY_ONLY) {
+    log(`${MODE_NAME} mode: update, logs, and process management are disabled`);
   }
+  if (REMOTE_MODE && !logoBuffer) fetchLogo();
 
   if (!CONFIG.guardianKey) {
     log('WARNING: ST_GUARDIAN_KEY is not set — all authenticated management routes will return 500');
   }
 
-  if (!serviceName && !DOCKER_MODE) {
+  if (!serviceName && !PROXY_ONLY) {
     log('WARNING: SERVICE_NAME not found in .env — log reading and process management may not work');
   }
 
